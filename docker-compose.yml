@@ -1,0 +1,202 @@
+# Docker Compose for AgroGrowth Platform Development
+version: "3.8"
+
+services:
+  # =====================================
+  # Frontend Development Server
+  # =====================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8080/api
+    depends_on:
+      - backend
+    networks:
+      - agrogrowth-network
+
+  # =====================================
+  # Backend API Server
+  # =====================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - SOIL_ANALYSIS_URL=http://soil-analysis:8001
+      - CROP_RECOMMENDATION_URL=http://crop-recommendation:8002
+      - IMAGE_DIAGNOSIS_URL=http://image-diagnosis:8003
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/agrogrowth
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - agrogrowth-network
+
+  # =====================================
+  # AI Services
+  # =====================================
+  soil-analysis:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: soil_analysis/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_PORT=8001
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./models/soil_analysis:/app/models
+    networks:
+      - agrogrowth-network
+
+  crop-recommendation:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: crop_recommendation/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_PORT=8002
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./models/crop_recommendation:/app/models
+    networks:
+      - agrogrowth-network
+
+  image-diagnosis:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: image_diagnosis/Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - SERVICE_PORT=8003
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./models/image_diagnosis:/app/models
+    networks:
+      - agrogrowth-network
+
+  # =====================================
+  # Database Services
+  # =====================================
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=agrogrowth
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - agrogrowth-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - agrogrowth-network
+
+  # =====================================
+  # Monitoring and Development Tools
+  # =====================================
+  adminer:
+    image: adminer:4.8.1
+    ports:
+      - "8081:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    depends_on:
+      - postgres
+    networks:
+      - agrogrowth-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - agrogrowth-network
+
+  # =====================================
+  # Testing and Quality Assurance
+  # =====================================
+  cypress:
+    image: cypress/included:12.17.0
+    environment:
+      - CYPRESS_baseUrl=http://frontend:5173
+    volumes:
+      - .:/e2e
+    working_dir: /e2e
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - agrogrowth-network
+    profiles:
+      - testing
+
+  # =====================================
+  # Production-like Environment
+  # =====================================
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - agrogrowth-network
+    profiles:
+      - production
+
+# =====================================
+# Volumes
+# =====================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# =====================================
+# Networks
+# =====================================
+networks:
+  agrogrowth-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

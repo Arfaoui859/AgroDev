@@ -1,0 +1,56 @@
+{
+  "soil_type": {
+    "classification": "Sandy Loam",
+    "confidence": 0.85,
+    "sub_type": "Well-drained sandy loam",
+    "texture_class": "Medium"
+  },
+  "properties": {
+    "ph": 6.5,
+    "moisture": 45,
+    "organic_matter": 3.2,
+    "bulk_density": 1.4,
+    "porosity": 47,
+    "water_holding_capacity": 15.8
+  },
+  "health_score": 78,
+  "fertility_level": "Good",
+  "overall_recommendations": [
+    "Increase organic matter content through composting",
+    "Monitor pH levels regularly to maintain optimal range",
+    "Consider adding lime to slightly raise pH",
+    "Implement crop rotation to improve soil structure",
+    "Regular soil testing every 6 months recommended"
+  ],
+  "nutrient_analysis": {
+    "nitrogen": {
+      "level": 85,
+      "status": "adequate",
+      "recommendation": "Maintain current levels"
+    },
+    "phosphorus": {
+      "level": 42,
+      "status": "moderate",
+      "recommendation": "Consider phosphorus supplementation"
+    },
+    "potassium": {
+      "level": 118,
+      "status": "high",
+      "recommendation": "Reduce potassium inputs temporarily"
+    }
+  },
+  "crop_suitability": {
+    "wheat": 92,
+    "barley": 88,
+    "tomatoes": 75,
+    "olive_trees": 82,
+    "corn": 79
+  },
+  "analysis_timestamp": "2024-01-15T10:30:00Z",
+  "confidence_score": 0.89,
+  "lab_recommendations": [
+    "Schedule follow-up analysis in 3 months",
+    "Monitor nitrogen levels during growing season",
+    "Consider soil amendments for phosphorus deficiency"
+  ]
+}

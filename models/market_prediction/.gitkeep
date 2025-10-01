@@ -1,0 +1,10 @@
+# Placeholder for market prediction models
+# 
+# Models to place here:
+# - price_forecaster.pkl (ARIMA + XGBoost ensemble for price forecasting)
+# - demand_predictor.h5 (LSTM for supply-demand prediction)
+# - trend_analyzer.pkl (Time series analysis for market trends)
+# - volatility_predictor.pkl (GARCH model for price volatility)
+#
+# Note: Actual model files are not included in git due to size constraints.
+# Use the model loaders to generate dummy responses when models are not available.

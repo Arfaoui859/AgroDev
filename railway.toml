@@ -1,0 +1,46 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "agrogrowth-ai/Dockerfile.base"
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[services]]
+name = "soil-analysis"
+source = "./agrogrowth-ai/soil_analysis"
+variables = { SERVICE_PORT = "8001", MODEL_PATH = "/app/models" }
+
+[[services]]
+name = "crop-recommendation"
+source = "./agrogrowth-ai/crop_recommendation"
+variables = { SERVICE_PORT = "8002", MODEL_PATH = "/app/models" }
+
+[[services]]
+name = "image-diagnosis"
+source = "./agrogrowth-ai/image_diagnosis"
+variables = { SERVICE_PORT = "8003", MODEL_PATH = "/app/models" }
+
+[[services]]
+name = "market-prediction"
+source = "./agrogrowth-ai/market_prediction"
+variables = { SERVICE_PORT = "8004", MODEL_PATH = "/app/models" }
+
+[[services]]
+name = "intelligent-agent"
+source = "./agrogrowth-ai/intelligent_agent"
+variables = { SERVICE_PORT = "8005", MODEL_PATH = "/app/models" }
+
+[environments.production]
+variables = {
+  NODE_ENV = "production",
+  PYTHONPATH = "/app",
+  MODEL_CACHE_SIZE = "500MB",
+  REDIS_URL = "${{REDIS_URL}}",
+  DATABASE_URL = "${{DATABASE_URL}}",
+  WEATHER_API_KEY = "${{WEATHER_API_KEY}}",
+  SATELLITE_API_KEY = "${{SATELLITE_API_KEY}}"
+}

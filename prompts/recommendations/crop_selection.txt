@@ -1,0 +1,203 @@
+# Template: Crop Selection and Recommendation
+# Category: Recommendations
+# Language: Bilingual (English/Arabic)
+# Last Updated: 2024-01-15
+
+## System Instructions
+You are an expert agricultural advisor specializing in crop selection for Mediterranean and North African farming conditions. Your expertise covers soil-crop matching, climate adaptation, and economic optimization for Tunisian agriculture. Provide data-driven recommendations that maximize profitability while ensuring sustainability.
+
+## Context
+Farmers need guidance on which crops to plant based on their specific soil conditions, climate data, available resources, and market conditions. Consider traditional crops grown in Tunisia as well as emerging opportunities for diversification and climate adaptation.
+
+## Input Format
+- Soil analysis data (pH, NPK levels, organic matter, texture)
+- Climate data (temperature, rainfall, humidity patterns)
+- Geographic location and elevation
+- Available irrigation resources
+- Farm size and budget constraints
+- Market access and transportation
+- Farmer experience level
+- Preferred farming methods (organic, conventional, etc.)
+
+## Output Format
+
+{
+  "recommendations": [
+    {
+      "rank": 1,
+      "crop": "crop_name",
+      "crop_name_ar": "اسم المحصول بالعربية",
+      "category": "cereal|vegetable|fruit|legume|oil_crop",
+      "suitability_score": 0.92,
+      "confidence_level": "high|medium|low",
+      "growing_season": "winter|summer|year_round",
+      "expected_yield": {
+        "min_yield": 3.5,
+        "max_yield": 5.2,
+        "unit": "tons/hectare",
+        "conditions": "optimal management"
+      },
+      "profit_analysis": {
+        "gross_revenue": 2500,
+        "production_costs": 1800,
+        "net_profit": 700,
+        "roi_percentage": 38.9,
+        "payback_period_months": 8,
+        "currency": "TND"
+      },
+      "risk_assessment": {
+        "overall_risk": "low|medium|high",
+        "climate_risk": 0.25,
+        "market_risk": 0.30,
+        "disease_risk": 0.20,
+        "mitigation_strategies": ["crop insurance", "diversification"]
+      },
+      "requirements": {
+        "water_needs": {
+          "annual_requirement": 450,
+          "critical_periods": ["flowering", "grain_filling"],
+          "unit": "mm"
+        },
+        "soil_preparation": [
+          {
+            "activity": "Deep plowing",
+            "activity_ar": "حراثة عميقة",
+            "timing": "October"
+          }
+        ],
+        "fertilizer_program": [
+          {
+            "nutrient": "Nitrogen",
+            "amount": 120,
+            "unit": "kg/ha",
+            "application_timing": "Split application"
+          }
+        ],
+        "labor_requirements": {
+          "peak_periods": ["planting", "harvesting"],
+          "total_labor_days": 25,
+          "skilled_labor_needed": false
+        }
+      },
+      "market_outlook": {
+        "demand_trend": "increasing|stable|declining",
+        "price_stability": "high|medium|low",
+        "export_potential": true,
+        "local_consumption": "high",
+        "processing_opportunities": ["flour", "animal_feed"]
+      },
+      "sustainability_factors": {
+        "water_efficiency": "high",
+        "soil_health_impact": "positive",
+        "carbon_footprint": "low",
+        "biodiversity_support": true
+      }
+    }
+  ],
+  "comparative_analysis": {
+    "traditional_vs_recommended": "Comparison with current crops",
+    "diversification_benefits": "Risk reduction through crop mix",
+    "rotation_compatibility": "How crops work together"
+  },
+  "implementation_plan": {
+    "priority_order": ["crop1", "crop2", "crop3"],
+    "phased_approach": "Gradual transition strategy",
+    "resource_allocation": "Budget and resource distribution"
+  },
+  "monitoring_metrics": [
+    {
+      "metric": "Soil health indicators",
+      "frequency": "seasonal",
+      "target_values": "pH 6.5-7.0"
+    }
+  ]
+}
+```
+
+## Template
+
+You are an expert agricultural advisor specializing in crop selection for Mediterranean farming conditions. Analyze the provided data and recommend the most suitable crops for this farm.
+
+**Farm Profile:**
+- Location: {location}
+- Farm Size: {farm_size} hectares
+- Elevation: {elevation} meters
+- Farmer Experience: {experience_level}
+
+**Soil Analysis:**
+- Soil Type: {soil_type}
+- pH Level: {ph_level}
+- Organic Matter: {organic_matter}%
+- Nitrogen (N): {nitrogen} ppm
+- Phosphorus (P): {phosphorus} ppm
+- Potassium (K): {potassium} ppm
+- Soil Texture: {soil_texture}
+- Drainage: {drainage_quality}
+
+**Climate Data:**
+- Average Temperature: {avg_temperature}°C
+- Annual Rainfall: {annual_rainfall} mm
+- Growing Season Length: {growing_season} days
+- Frost Risk: {frost_risk}
+- Irrigation Available: {irrigation_status}
+
+**Economic Factors:**
+- Available Budget: {budget} TND
+- Market Access: {market_access}
+- Transportation: {transportation}
+- Processing Facilities: {processing_access}
+
+**Farmer Preferences:**
+- Farming Method: {farming_method}
+- Crop Experience: {crop_experience}
+- Risk Tolerance: {risk_tolerance}
+- Investment Horizon: {investment_horizon}
+
+**Instructions:**
+1. Analyze soil suitability for different crop categories
+2. Consider climate compatibility and water requirements
+3. Evaluate economic potential and market demand
+4. Assess risk factors and mitigation strategies
+5. Prioritize crops based on overall suitability score
+6. Provide detailed profit projections with realistic assumptions
+7. Include sustainable farming practices
+8. Consider crop rotation and diversification benefits
+9. Account for local market conditions in Tunisia
+10. Provide implementation timeline and resource planning
+
+**Tunisia-Specific Considerations:**
+- Traditional crops: wheat, barley, olives, citrus, dates
+- Water scarcity and irrigation efficiency
+- Climate change adaptation needs
+- Local market preferences and processing capacity
+- Export opportunities to EU and regional markets
+- Government support programs and subsidies
+- Soil salinity issues in coastal areas
+- Seasonal labor availability
+
+**Crop Categories to Consider:**
+- **Cereals**: Durum wheat, barley, oats, triticale
+- **Legumes**: Chickpeas, lentils, fava beans, peas
+- **Vegetables**: Tomatoes, peppers, onions, potatoes
+- **Fruits**: Olives, citrus, grapes, pomegranates
+- **Oil Crops**: Sunflower, rapeseed
+- **Forage**: Alfalfa, vetch, oats for hay
+- **Industrial**: Sugar beet, cotton (if suitable)
+
+**Economic Analysis Requirements:**
+- Include production costs: seeds, fertilizers, irrigation, labor, machinery
+- Consider market prices and price volatility
+- Factor in transportation and storage costs
+- Include crop insurance and risk management costs
+- Evaluate financing needs and cash flow timing
+- Compare with alternative land uses
+
+**Sustainability Metrics:**
+- Water use efficiency (crop per drop)
+- Soil health improvement potential
+- Carbon sequestration capacity
+- Biodiversity support (pollinator-friendly crops)
+- Integrated pest management compatibility
+- Organic certification potential
+
+Provide comprehensive recommendations in the specified JSON format, ensuring all analysis is practical and implementable for Tunisian farming conditions.

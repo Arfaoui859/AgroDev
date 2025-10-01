@@ -1,0 +1,10 @@
+# Placeholder for crop recommendation models
+# 
+# Models to place here:
+# - crop_matcher.pkl (Gradient Boosting for crop-soil matching)
+# - yield_predictor.h5 (LSTM for yield prediction)
+# - climate_mapper.pkl (Random Forest for climate-crop mapping)
+# - profit_calculator.pkl (Linear Regression for profit analysis)
+#
+# Note: Actual model files are not included in git due to size constraints.
+# Use the model loaders to generate dummy responses when models are not available.

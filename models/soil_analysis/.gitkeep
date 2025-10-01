@@ -1,0 +1,10 @@
+# Placeholder for soil analysis models
+# 
+# Models to place here:
+# - soil_classifier.pkl (Random Forest for soil type classification)
+# - fertility_predictor.h5 (Neural network for fertility prediction)
+# - nutrient_analyzer.pkl (XGBoost for NPK analysis)
+# - health_scorer.pkl (Ensemble model for soil health scoring)
+#
+# Note: Actual model files are not included in git due to size constraints.
+# Use the model loaders to generate dummy responses when models are not available.

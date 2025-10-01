@@ -1,0 +1,232 @@
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme for Soil Analyzer
+   * Green/earth color scheme with Arabic support
+   */
+  :root {
+    --background: 120 20% 98%;
+    --foreground: 120 10% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 120 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 10% 15%;
+
+    --primary: 120 60% 25%;
+    --primary-foreground: 120 20% 98%;
+
+    --secondary: 120 15% 92%;
+    --secondary-foreground: 120 10% 25%;
+
+    --muted: 120 10% 95%;
+    --muted-foreground: 120 5% 50%;
+
+    --accent: 80 60% 50%;
+    --accent-foreground: 120 20% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 120 20% 85%;
+    --input: 120 20% 90%;
+    --ring: 120 60% 25%;
+
+    --radius: 0.75rem;
+
+    /* Soil analyzer specific colors */
+    --soil-healthy: 120 80% 35%;
+    --soil-warning: 45 90% 60%;
+    --soil-danger: 0 80% 55%;
+    --soil-info: 210 80% 55%;
+
+    --earth-brown: 30 40% 45%;
+    --earth-light: 30 25% 85%;
+    --plant-green: 120 60% 40%;
+    --water-blue: 210 70% 50%;
+
+    --sidebar-background: 120 15% 96%;
+    --sidebar-foreground: 120 10% 25%;
+    --sidebar-primary: 120 60% 25%;
+    --sidebar-primary-foreground: 120 20% 98%;
+    --sidebar-accent: 120 10% 90%;
+    --sidebar-accent-foreground: 120 10% 25%;
+    --sidebar-border: 120 15% 80%;
+    --sidebar-ring: 120 60% 25%;
+  }
+
+  .dark {
+    --background: 120 15% 8%;
+    --foreground: 120 20% 95%;
+
+    --card: 120 15% 10%;
+    --card-foreground: 120 20% 95%;
+
+    --popover: 120 15% 10%;
+    --popover-foreground: 120 20% 95%;
+
+    --primary: 120 50% 60%;
+    --primary-foreground: 120 15% 8%;
+
+    --secondary: 120 10% 20%;
+    --secondary-foreground: 120 20% 95%;
+
+    --muted: 120 10% 18%;
+    --muted-foreground: 120 5% 65%;
+
+    --accent: 80 50% 60%;
+    --accent-foreground: 120 15% 8%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 120 20% 95%;
+
+    --border: 120 10% 25%;
+    --input: 120 10% 25%;
+    --ring: 120 50% 60%;
+
+    /* Dark mode soil colors */
+    --soil-healthy: 120 60% 50%;
+    --soil-warning: 45 80% 55%;
+    --soil-danger: 0 70% 50%;
+    --soil-info: 210 70% 60%;
+
+    --earth-brown: 30 30% 35%;
+    --earth-light: 30 15% 25%;
+    --plant-green: 120 50% 45%;
+    --water-blue: 210 60% 55%;
+
+    --sidebar-background: 120 15% 12%;
+    --sidebar-foreground: 120 20% 90%;
+    --sidebar-primary: 120 50% 60%;
+    --sidebar-primary-foreground: 120 15% 8%;
+    --sidebar-accent: 120 10% 20%;
+    --sidebar-accent-foreground: 120 20% 90%;
+    --sidebar-border: 120 10% 25%;
+    --sidebar-ring: 120 50% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    direction: rtl;
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Cairo", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    direction: rtl;
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+    /* Improve text rendering on mobile */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Better touch scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* RTL support utilities */
+  .ltr {
+    direction: ltr;
+  }
+
+  .rtl {
+    direction: rtl;
+  }
+
+  /* Soil analyzer specific styles */
+  .soil-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--earth-brown)),
+      hsl(var(--plant-green))
+    );
+  }
+
+  .earth-pattern {
+    background-image:
+      radial-gradient(
+        circle at 20% 80%,
+        hsl(var(--earth-brown)) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 80% 20%,
+        hsl(var(--plant-green)) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 40% 40%,
+        hsl(var(--earth-light)) 0%,
+        transparent 50%
+      );
+  }
+
+  /* Custom scrollbar for Arabic */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+  }
+
+  /* Mobile-specific improvements */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Better touch targets for mobile */
+  @media (max-width: 768px) {
+    button,
+    a,
+    input,
+    select,
+    textarea {
+      min-height: 44px;
+    }
+
+    /* Improve readability on small screens */
+    body {
+      font-size: 14px;
+    }
+
+    /* Prevent zoom on input focus on iOS */
+    input[type="email"],
+    input[type="password"],
+    input[type="text"],
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  /* Fix for iOS Safari bottom safe area */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
