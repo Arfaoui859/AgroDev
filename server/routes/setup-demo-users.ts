@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { supabaseAdmin, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { safeInsert as serverSafeInsert } from "../lib/supabaseHelpers";
 
 // Demo users to create
 const demoUsers = [
