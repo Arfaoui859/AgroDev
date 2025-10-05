@@ -561,6 +561,7 @@ export function createServer() {
   // Demo User Setup
   app.post("/api/setup-demo-users", setupDemoUsers);
   app.get("/api/demo-users", getDemoUsers);
+  app.delete("/api/setup-demo-users", deleteDemoUsers);
 
   // Test endpoint for development
   app.get("/api/ping", (req, res) => {
