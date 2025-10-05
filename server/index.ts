@@ -552,6 +552,10 @@ export function createServer() {
 
   // Supabase Connection Test
   app.get("/api/test/supabase", testSupabaseConnection);
+  // Admin: confirm unconfirmed users (requires x-admin-token header with service role key)
+  app.post("/api/admin/confirm-unconfirmed", (req, res, next) => {
+    return confirmUnconfirmedUsers(req, res, next as any);
+  });
 
   // Auth Test Endpoints
   app.post("/api/test/auth/signup", testAuthSignup);
