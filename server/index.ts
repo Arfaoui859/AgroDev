@@ -558,6 +558,11 @@ export function createServer() {
     return confirmUnconfirmedUsers(req, res, next as any);
   });
 
+  // Admin: set a user's password (requires x-admin-token header with service role key)
+  app.post('/api/admin/set-password', (req, res, next) => {
+    return (require('./routes/admin-set-password') as any).adminSetPassword(req, res, next);
+  });
+
   // Auth Test Endpoints
   app.post("/api/test/auth/signup", testAuthSignup);
   app.post("/api/test/auth/signin", testAuthSignin);
