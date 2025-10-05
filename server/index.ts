@@ -248,6 +248,7 @@ import {
   updateFarmerProfile,
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
+import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
 import { setupDemoUsers, getDemoUsers, deleteDemoUsers } from "./routes/setup-demo-users";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
