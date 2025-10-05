@@ -116,15 +116,19 @@ async function createDemoUser(userInfo: any) {
 
     // Try to create user record in custom table (if it exists)
     try {
-      const { error: userTableError } = await supabaseAdmin
-        .from("users")
-        .insert({
-          id: userId,
-          email: userInfo.email,
-          ...userInfo.userData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const payload = {
+        id: userId,
+        email: userInfo.email,
+        ...userInfo.userData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: userTableError } = await serverSafeInsert(
+        supabaseAdmin as any,
+        "users",
+        payload,
+      );
 
       if (userTableError) {
         results.errors.push(`Custom table error: ${userTableError.message}`);
