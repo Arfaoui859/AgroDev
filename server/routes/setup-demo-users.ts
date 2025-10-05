@@ -8,7 +8,7 @@ const demoUsers = [
     password: "demo123",
     userData: {
       full_name: "أحمد المزارع",
-      full_name_ar: "أحمد المزارع",
+      full_name_ar: "أ��مد المزارع",
       role: "farmer",
       location: "تونس",
       specialization: "الزراعة العامة",
@@ -171,6 +171,34 @@ async function createDemoUser(userInfo: any) {
 }
 
 export const setupDemoUsers: RequestHandler = async (req, res) => {
+  // Ensure Supabase admin credentials are present for admin operations
+  const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!isSupabaseConfigured) {
+    return res.status(500).json({
+      success: false,
+      error: "Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
+    });
+  }
+
+  if (!hasServiceRoleKey) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Missing SUPABASE_SERVICE_ROLE_KEY. Admin operations require the service role key.",
+      troubleshooting: [
+        "Set SUPABASE_SERVICE_ROLE_KEY in your environment variables (service role key from Supabase project settings).",
+        "Do NOT expose the service role key in client-side code.",
+      ],
+    });
+  }
+
+  if (!supabaseAdmin) {
+    return res.status(500).json({
+      success: false,
+      error:
+        "Supabase admin client is not available. Verify SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL.",
+    });
+  }
   try {
     console.log("🚀 Setting up demo users for AgroGrowth Platform...");
 
