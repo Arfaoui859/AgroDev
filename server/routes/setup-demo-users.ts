@@ -272,3 +272,89 @@ export const getDemoUsers: RequestHandler = async (req, res) => {
     })),
   });
 };
+
+export const deleteDemoUsers: RequestHandler = async (req, res) => {
+  // Delete demo users and related records. Requires SUPABASE_SERVICE_ROLE_KEY.
+  const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!isSupabaseConfigured) {
+    return res.status(500).json({
+      success: false,
+      error: "Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
+    });
+  }
+
+  if (!hasServiceRoleKey || !supabaseAdmin) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Missing SUPABASE_SERVICE_ROLE_KEY or admin client unavailable. Cannot perform deletion.",
+      troubleshooting: [
+        "Set SUPABASE_SERVICE_ROLE_KEY in your environment variables (service role key from Supabase project settings).",
+      ],
+    });
+  }
+
+  try {
+    // Fetch all users and filter demo emails
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) {
+      throw new Error(listError.message);
+    }
+
+    const emailsToDelete = demoUsers.map((u) => u.email);
+    const usersToDelete = listData.users.filter((u) => emailsToDelete.includes(u.email || ""));
+
+    const results: any[] = [];
+
+    for (const user of usersToDelete) {
+      const r: any = { email: user.email, id: user.id };
+      try {
+        // Delete from Auth
+        const { error: delAuthError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+        if (delAuthError) {
+          r.authDeleted = false;
+          r.authError = delAuthError.message;
+        } else {
+          r.authDeleted = true;
+        }
+      } catch (e: any) {
+        r.authDeleted = false;
+        r.authError = e.message;
+      }
+
+      try {
+        // Delete from custom 'users' table
+        const { error: delUserTableError } = await supabaseAdmin.from("users").delete().eq("id", user.id);
+        if (delUserTableError) {
+          r.userTableDeleted = false;
+          r.userTableError = delUserTableError.message;
+        } else {
+          r.userTableDeleted = true;
+        }
+      } catch (e: any) {
+        r.userTableDeleted = false;
+        r.userTableError = e.message;
+      }
+
+      try {
+        // Delete from 'user_profiles' table
+        const { error: delProfileError } = await supabaseAdmin.from("user_profiles").delete().eq("user_id", user.id);
+        if (delProfileError) {
+          r.profileDeleted = false;
+          r.profileError = delProfileError.message;
+        } else {
+          r.profileDeleted = true;
+        }
+      } catch (e: any) {
+        r.profileDeleted = false;
+        r.profileError = e.message;
+      }
+
+      results.push(r);
+    }
+
+    return res.json({ success: true, deleted: results });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
