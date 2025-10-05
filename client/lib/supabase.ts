@@ -1,41 +1,47 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Supabase configuration
-const supabaseUrl = "https://jymrhhlwdbclctobhbsi.supabase.co";
+// Supabase configuration (prefer Vite env vars for client builds)
+const supabaseUrl =
+  (import.meta.env.VITE_SUPABASE_URL as string) ||
+  "https://jymrhhlwdbclctobhbsi.supabase.co";
 
-// Your actual Supabase anon public key
+// Prefer Vite public anon key; fall back to embedded key only as last resort
 const supabaseAnonKey =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjc2NzEsImV4cCI6MjA0OTYwMzY3MX0.aAGN3jLnpCjNOw7-J3Lp4iQBbwMT9X6kMzgRgQtYz7E";
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Test the connection
-supabase.auth.getSession().then(({ error }) => {
-  if (error) {
-    console.error("Supabase connection error:", error.message);
+// Test the connection (best-effort; will log helpful guidance if key invalid)
+if (typeof window !== "undefined") {
+  supabase.auth
+    .getSession()
+    .then(({ error }) => {
+      if (error) {
+        console.error("Supabase connection error:", error.message);
 
-    // If it's an API key error, provide helpful information
-    if (error.message.includes("Invalid API key")) {
-      console.error(`
-🔑 SUPABASE API KEY ERROR
+        if (error.message.includes("Invalid API key")) {
+          console.error(`\n🔑 SUPABASE API KEY ERROR
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-The Supabase API key is invalid. Please follow these steps:
+The Supabase API key used by the client appears invalid. To fix:
 
-1. Go to your Supabase dashboard: https://app.supabase.com/projects
-2. Select your project: jymrhhlwdbclctobhbsi
-3. Navigate to Settings > API
-4. Copy the "anon public" key
-5. Replace the supabaseAnonKey in client/lib/supabase.ts
+1. Open your Supabase project settings > API and copy the ANON public key
+2. Set it in your dev environment as VITE_SUPABASE_ANON_KEY
+   (create a .env.local with VITE_SUPABASE_ANON_KEY=your_key)
+3. Restart the dev server
 
 Current URL: ${supabaseUrl}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      `);
-    }
-  } else {
-    console.log("✅ Supabase connected successfully");
-  }
-});
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+        }
+      } else {
+        console.log("✅ Supabase client initialized");
+      }
+    })
+    .catch((e) => {
+      console.warn("Supabase client test failed:", e?.message || e);
+    });
+}
 
 export type User = {
   id: string;
