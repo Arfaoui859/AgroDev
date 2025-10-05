@@ -284,7 +284,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Try to create user record in our custom table
         try {
-          const { error: userError } = await supabase.from("users").insert({
+          // Use safeInsert helper to tolerate missing columns in DB schema
+          const { error: userError } = await safeInsert(supabase, "users", {
             id: data.user.id,
             email: data.user.email,
             ...userData,
@@ -345,17 +346,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             console.log("✅ User record created in custom table");
 
             // Only try to create profile if user record succeeded
-            const { error: profileError } = await supabase
-              .from("user_profiles")
-              .insert({
-                user_id: data.user.id,
-                preferences: {
-                  language: "ar",
-                  notifications: true,
-                  weather_alerts: true,
-                  market_alerts: true,
-                },
-              });
+            const { error: profileError } = await safeInsert(supabase, "user_profiles", {
+              user_id: data.user.id,
+              preferences: {
+                language: "ar",
+                notifications: true,
+                weather_alerts: true,
+                market_alerts: true,
+              },
+            });
 
             if (profileError) {
               console.error(
