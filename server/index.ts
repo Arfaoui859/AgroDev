@@ -249,7 +249,7 @@ import {
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
-import { setupDemoUsers, getDemoUsers } from "./routes/setup-demo-users";
+import { setupDemoUsers, getDemoUsers, deleteDemoUsers } from "./routes/setup-demo-users";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
 import { debugAuth } from "./routes/debug-auth";
 
