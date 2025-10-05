@@ -143,19 +143,23 @@ async function createDemoUser(userInfo: any) {
 
     // Try to create user profile (if table exists)
     try {
-      const { error: profileError } = await supabaseAdmin
-        .from("user_profiles")
-        .insert({
-          user_id: userId,
-          preferences: {
-            language: "ar",
-            notifications: true,
-            weather_alerts: true,
-            market_alerts: true,
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const payload = {
+        user_id: userId,
+        preferences: {
+          language: "ar",
+          notifications: true,
+          weather_alerts: true,
+          market_alerts: true,
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: profileError } = await serverSafeInsert(
+        supabaseAdmin as any,
+        "user_profiles",
+        payload,
+      );
 
       if (profileError) {
         results.errors.push(`Profile table error: ${profileError.message}`);
