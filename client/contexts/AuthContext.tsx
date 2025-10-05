@@ -406,9 +406,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('signIn result:', result);
 
       if (result.error) throw result.error;
-      if (!result.data?.user) {
-        // Helpful debug message when auth token returned but no user
-        console.warn('signIn: no user in response, session:', result.data?.session);
+
+      const user = result.data?.user;
+      const sessionData = result.data?.session;
+
+      if (!user) {
+        console.warn('signIn: no user in response, session:', sessionData);
+        return result;
+      }
+
+      // Update local auth state immediately (don't rely solely on onAuthStateChange)
+      setSession(sessionData || null);
+      try {
+        await loadUserData(user.id);
+      } catch (e) {
+        console.error('Error loading user data after signIn:', e);
+      }
+
+      // Navigate to home
+      try {
+        navigate('/');
+      } catch (e) {
+        console.warn('Navigation after signIn failed:', e);
       }
 
       return result;
