@@ -397,12 +397,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const result = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      // Log full result for debugging
+      console.log('signIn result:', result);
+
+      if (result.error) throw result.error;
+      if (!result.data?.user) {
+        // Helpful debug message when auth token returned but no user
+        console.warn('signIn: no user in response, session:', result.data?.session);
+      }
+
+      return result;
     } catch (error) {
       console.error("Sign in error:", error);
       throw error;
