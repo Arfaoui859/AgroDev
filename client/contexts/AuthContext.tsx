@@ -211,21 +211,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setUser(userData);
 
-      // Try to load user profile with timeout
-      const profileQueryPromise = supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
+      // Try to load user profile with timeout and retries
+      const profileQuery = async () => {
+        const { data, error } = await supabase.from("user_profiles").select("*").eq("user_id", userId).single();
+        if (error) throw error;
+        return data;
+      };
 
-      const { data: profileData, error: profileError } = (await Promise.race([
-        profileQueryPromise,
-        timeoutPromise,
-      ])) as any;
+      let profileData: any = null;
+      try {
+        profileData = await retryWithBackoff(() =>
+          Promise.race([
+            profileQuery(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Database query timeout")), timeoutMs)),
+          ]),
+          2,
+          300,
+        );
+      } catch (e) {
+        console.log("Custom profile table not available or timed out, using defaults");
+      }
 
-      if (profileError) {
-        console.log("Custom profile table not available, using defaults");
-        // Set default profile
+      if (!profileData) {
         setUserProfile({
           id: "default",
           user_id: userId,
@@ -238,7 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
-      } else if (profileData) {
+      } else {
         setUserProfile(profileData);
       }
     } catch (error) {
