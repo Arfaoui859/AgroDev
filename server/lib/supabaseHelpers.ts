@@ -24,6 +24,28 @@ export async function safeInsert(
       }
     }
 
+    // Handle enum/role missing errors like: role "admin" does not exist
+    if (typeof error.message === 'string') {
+      const roleMatch = error.message.match(/role "(.+?)" does not exist/);
+      if (roleMatch && roleMatch[1]) {
+        const roleField = Object.keys(attemptPayload).find((k) => String(attemptPayload[k]) === roleMatch[1]);
+        if (roleField) {
+          delete attemptPayload[roleField];
+          continue; // retry without role
+        }
+      }
+
+      const enumMatch = error.message.match(/invalid input value for enum (\"|')?(.+?)(\"|')?:?\s*"?(.+?)"?/i);
+      if (enumMatch) {
+        const invalidValue = enumMatch[4] || enumMatch[2];
+        const field = Object.keys(attemptPayload).find((k) => String(attemptPayload[k]) === invalidValue);
+        if (field) {
+          delete attemptPayload[field];
+          continue;
+        }
+      }
+    }
+
     return { data: null, error };
   }
 }
