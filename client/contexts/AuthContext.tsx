@@ -155,22 +155,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Load user data from database
   const loadUserData = async (userId: string) => {
     try {
-      // Add timeout for database queries
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Database query timeout")), 5000); // 5 second timeout
-      });
+      // Add timeout for database queries and use retry logic
+      const timeoutMs = 15000; // 15 second timeout
 
-      // Try to load user details from custom table
-      const userQueryPromise = supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single();
+      // Try to load user details from custom table with retries
+      const userQuery = async () => {
+        const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
+        if (error) throw error;
+        return data;
+      };
 
-      const { data: userData, error: userError } = (await Promise.race([
-        userQueryPromise,
-        timeoutPromise,
-      ])) as any;
+      let userData: any = null;
+      let userError: any = null;
+      try {
+        // Retry up to 2 times with backoff
+        userData = await retryWithBackoff(() =>
+          Promise.race([
+            userQuery(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Database query timeout")), timeoutMs)),
+          ]),
+          2,
+          300,
+        );
+      } catch (e: any) {
+        userError = e;
+      }
 
       if (userError) {
         console.log(
