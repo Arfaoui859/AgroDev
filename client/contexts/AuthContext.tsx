@@ -68,15 +68,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const initializeAuth = async () => {
       try {
-        // Add timeout to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(
-            () => reject(new Error("Auth initialization timeout")),
-            10000,
-          ); // 10 second timeout
-        });
-
+        // Add timeout to prevent hanging. Increased to 30s and wrapped in retry logic
+        const timeoutMs = 30000; // 30 seconds
         const authPromise = supabase.auth.getSession();
+
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Auth initialization timeout")), timeoutMs);
+        });
 
         const {
           data: { session: initialSession },
