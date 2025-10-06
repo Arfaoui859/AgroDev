@@ -563,6 +563,11 @@ export function createServer() {
     return (require('./routes/admin-set-password') as any).adminSetPassword(req, res, next);
   });
 
+  // Admin: create a confirmed admin user (requires x-admin-token header with service role key)
+  app.post('/api/admin/create-user', (req, res, next) => {
+    return (require('./routes/admin-create-user') as any).adminCreateUser(req, res, next);
+  });
+
   // Auth Test Endpoints
   app.post("/api/test/auth/signup", testAuthSignup);
   app.post("/api/test/auth/signin", testAuthSignin);
