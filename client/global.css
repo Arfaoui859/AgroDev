@@ -154,6 +154,41 @@
     );
   }
 
+  /* Card overrides: ensure internal p-4 inside cards use p-6 for more breathing room */
+  .agro-card .p-4 {
+    padding: 1.5rem !important; /* p-6 */
+  }
+  .agro-card .p-3 {
+    padding: 1rem !important; /* keep small */
+  }
+
+  /* Hover and transition for cards */
+  .agro-card { transition: box-shadow 0.18s ease, transform 0.12s ease; }
+  .agro-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(2,6,23,0.08); }
+
+  /* Pulse animation for urgent alerts */
+  @keyframes pulse-urgent {
+    0% { box-shadow: 0 0 0 0 rgba(255,84,84,0.12); }
+    70% { box-shadow: 0 0 0 10px rgba(255,84,84,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,84,84,0); }
+  }
+  .pulse-urgent { animation: pulse-urgent 2s infinite; }
+
+  /* Slightly bolder headings */
+  h1, h2, h3, h4, h5 { font-weight: 600; }
+
+  /* Sidebar refinements */
+  .sidebar-divider { border-top: 1px solid hsl(var(--sidebar-border)); margin: 0.5rem 0; }
+  .sidebar-category { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.25rem; }
+  .sidebar-category .icon { width: 20px; height: 20px; }
+
+  /* Icon styling within KPI cards */
+  .kpi-icon { width: 40px; height: 40px; border-radius: 8px; display:flex; align-items:center; justify-content:center; }
+  .kpi-icon.bg-primary { background: hsl(var(--primary) / 0.12); color: hsl(var(--primary)); }
+
+  /* Subtle hover on links inside sidebar */
+  .sidebar a:hover { background: hsl(var(--sidebar-accent) / 0.7); }
+
   .earth-pattern {
     background-image:
       radial-gradient(
