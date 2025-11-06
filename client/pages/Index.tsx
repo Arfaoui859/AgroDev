@@ -55,6 +55,7 @@ import {
   CheckCircle,
   TrendingDown,
 } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 // ============ TYPES & INTERFACES ============
 
@@ -156,7 +157,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Crop Intelligence",
     titleArabic: "ذكاء المحاصيل",
     description: "Smart crop recommendations and rotation planning",
-    descriptionArabic: "توصيات المحاصيل الذكية وتخطيط الدورة الزراعية",
+    descriptionArabic: "توصيا�� المحاصيل الذكية وتخطيط الدورة الزراعية",
     icon: Leaf,
     href: "/smart-crop-suggestions",
     color: "bg-gradient-to-br from-emerald-500 to-green-600",
@@ -253,7 +254,7 @@ const dashboardCards: DashboardCard[] = [
     description:
       "Access real-time market prices, production data, and weather information",
     descriptionArabic:
-      "الوصول إلى أسعار السوق المباشرة وبيانات الإنتاج وال��قس",
+      "الوصول إلى أسعار السوق المب��شرة وبيانات الإنتاج وال��قس",
     icon: BarChart3,
     href: "/public-data",
     color: "bg-gradient-to-br from-cyan-500 to-teal-600",
