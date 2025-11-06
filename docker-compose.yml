@@ -83,6 +83,10 @@ services:
     environment:
       - SERVICE_PORT=8002
       - MODEL_PATH=/app/models
+      - SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
     volumes:
       - ./models/crop_recommendation:/app/models
     networks:
