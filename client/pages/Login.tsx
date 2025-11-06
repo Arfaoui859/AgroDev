@@ -71,8 +71,8 @@ export default function Login() {
       <div className="w-full max-w-sm sm:max-w-md space-y-4 sm:space-y-6">
         {/* Logo and Title */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
-            <Leaf className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-transparent rounded-full mb-4">
+            <Logo size={64} />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             AgroGrowth
