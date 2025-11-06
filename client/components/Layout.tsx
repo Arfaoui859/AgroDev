@@ -792,8 +792,8 @@ export default function Layout({ children }: LayoutProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Leaf className="h-8 w-8 text-green-600" />
+              <div className="p-1">
+                <img src="https://cdn.builder.io/api/v1/image/assets%2F0f904b57ad02434e8487cb8b11b1714d%2F7657e0e7a70f4336a2c3f5e39315d279?format=webp&width=800" alt="AgroGrowth logo" className="h-10 w-auto object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">AgroGrowth</h1>
