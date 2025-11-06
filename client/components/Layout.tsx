@@ -131,7 +131,7 @@ const quickActions: QuickActionItem[] = [
   },
   {
     name: "Veterinarian Dashboard",
-    nameArabic: "لوحة البيطري",
+    nameArabic: "لوح�� البيطري",
     href: "/veterinarian-dashboard",
     icon: Stethoscope,
     color: "text-teal-600",
@@ -816,7 +816,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           {/* User Info */}
-          <div className="p-4 border-b bg-gradient-to-r from-green-50 to-blue-50">
+          <div className="p-6 border-b bg-gradient-to-r from-green-50 to-blue-50">
             <div className="flex items-center space-x-3 rtl:space-x-reverse mb-3">
               <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
                 <User className="h-6 w-6 text-white" />
@@ -834,7 +834,7 @@ export default function Layout({ children }: LayoutProps) {
 
           {/* Role-based Quick Actions */}
           {filteredQuickActions.length > 0 && (
-            <div className="p-4 border-b bg-gradient-to-r from-green-50 to-blue-50">
+            <div className="p-6 border-b bg-gradient-to-r from-green-50 to-blue-50">
               <div
                 className={cn(
                   "grid gap-1",
