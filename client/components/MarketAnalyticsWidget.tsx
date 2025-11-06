@@ -244,19 +244,28 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
       <CardContent className="space-y-6">
         {/* Key Metrics */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
+          <div className="text-center p-3 bg-blue-50 rounded-lg flex flex-col items-center gap-3">
+            <div className="kpi-icon bg-primary text-white">
+              <BarChart3 className="h-5 w-5" />
+            </div>
             <div className="text-2xl font-bold text-blue-600">
               {marketSummary.totalCrops}
             </div>
             <div className="text-sm text-blue-700">محاصيل متتبعة</div>
           </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg">
+          <div className="text-center p-3 bg-green-50 rounded-lg flex flex-col items-center gap-3">
+            <div className="kpi-icon bg-primary text-white">
+              <Activity className="h-5 w-5" />
+            </div>
             <div className="text-2xl font-bold text-green-600">
               {marketSummary.avgPriceChange}
             </div>
             <div className="text-sm text-green-700">متوسط التغيير</div>
           </div>
-          <div className="text-center p-3 bg-orange-50 rounded-lg">
+          <div className="text-center p-3 bg-orange-50 rounded-lg flex flex-col items-center gap-3">
+            <div className="kpi-icon bg-primary text-white">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
             <div className="text-2xl font-bold text-orange-600">
               {marketSummary.activeAlerts}
             </div>
