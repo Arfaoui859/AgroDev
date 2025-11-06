@@ -139,8 +139,8 @@ const PWAInstallPrompt: React.FC = () => {
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">🌱</span>
+              <div className="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center">
+                <Logo size={48} />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900">AgroGrowth</h3>
