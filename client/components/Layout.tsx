@@ -71,6 +71,7 @@ import {
 import { useState } from "react";
 import UnifiedSearch from "./UnifiedSearch";
 import NotificationCenter from "./NotificationCenter";
+import Logo from "@/components/ui/Logo";
 
 interface LayoutProps {
   children: ReactNode;
