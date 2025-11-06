@@ -715,12 +715,15 @@ export default function Index() {
             <div className="w-32 h-32 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full opacity-20 animate-pulse"></div>
           </div>
           <div className="relative">
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-blue-600 bg-clip-text text-transparent mb-4">
-              {isArabic ? "أجرو جروث" : "AgroGrowth"}
-            </h1>
+            <div className="flex flex-col items-center gap-3">
+              <Logo size={96} className="mx-auto" />
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                {isArabic ? "أجرو جروث" : "AgroGrowth"}
+              </h1>
+            </div>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               {isArabic
-                ? "منصة الزراعة الذكية ال��دعومة بالذكاء الاصطنا��ي لإدارة المزارع ��لحديثة"
+                ? "منصة الزراعة الذكية المدعومة بالذكاء الاصطناعي لإدارة المزارع الحديثة"
                 : "AI-Powered Smart Agriculture Platform for Modern Farm Management"}
             </p>
           </div>
