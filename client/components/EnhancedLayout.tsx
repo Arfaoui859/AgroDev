@@ -47,6 +47,7 @@ import {
   ChevronDown,
   Plus,
 } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 interface NavigationItem {
   id: string;
