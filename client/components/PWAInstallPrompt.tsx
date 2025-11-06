@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { X, Download, Smartphone, Zap, Globe, Shield } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
