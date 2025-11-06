@@ -131,7 +131,7 @@ const quickActions: QuickActionItem[] = [
   },
   {
     name: "Veterinarian Dashboard",
-    nameArabic: "لوح�� البيطري",
+    nameArabic: "لوحة البيطري",
     href: "/veterinarian-dashboard",
     icon: Stethoscope,
     color: "text-teal-600",
@@ -572,7 +572,7 @@ const navigationCategories: NavigationCategory[] = [
       },
       {
         name: "Field Analytics",
-        nameArabic: "تحليلات الحقول",
+        nameArabic: "تحليلات ا��حقول",
         href: "/field-management?tab=analytics",
         icon: BarChart3,
         allowedRoles: ["farmer", "inspector", "admin"],
@@ -865,16 +865,17 @@ export default function Layout({ children }: LayoutProps) {
           {/* Role-based Navigation */}
           <ScrollArea className="flex-1 px-4">
             <div className="py-4 space-y-2">
-              {filteredCategories.map((category) => {
+              {filteredCategories.map((category, idx) => {
                 const isExpanded = expandedCategories.includes(category.name);
                 const categoryActive = isCategoryActive(category);
 
                 return (
                   <div key={category.name} className="space-y-1">
+                    {idx > 0 && <div className="sidebar-divider" />}
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start font-medium",
+                        "w-full justify-start font-medium sidebar-category",
                         categoryActive && "bg-green-50 text-green-700",
                       )}
                       onClick={() => toggleCategory(category.name)}
