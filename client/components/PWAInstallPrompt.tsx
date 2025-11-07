@@ -141,7 +141,7 @@ const PWAInstallPrompt: React.FC = () => {
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center">
-                <Logo size={48} />
+                <Logo size={72} />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900">AgroGrowth</h3>
@@ -249,7 +249,7 @@ const PWAInstallPrompt: React.FC = () => {
               </div>
               <p className="text-xs text-blue-700">
                 {isArabic
-                  ? 'اضغط على زر المشاركة في المتصفح ثم اختر "إضافة إلى الشاشة الرئيسية"'
+                  ? 'اضغط على زر المشاركة في المتصفح ثم اختر "إ��افة إلى الشاشة الرئيسية"'
                   : 'Tap the share button in your browser, then select "Add to Home Screen"'}
               </p>
             </div>

@@ -400,7 +400,7 @@ const quickActions: QuickAction[] = [
     title: "Scan for Diseases",
     titleArabic: "��حص الأمراض",
     description: "Take a photo to detect plant diseases",
-    descriptionArabic: "التقط صورة لاكتشاف أمراض النباتات",
+    descriptionArabic: "ال��قط صورة لاكتشاف أمراض النباتات",
     icon: Camera,
     href: "/disease-upload",
     color: "text-red-600",
@@ -717,7 +717,7 @@ export default function Index() {
           </div>
           <div className="relative">
             <div className="flex flex-col items-center gap-3">
-              <Logo size={96} className="mx-auto" />
+              <Logo size={140} className="mx-auto" />
               <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-blue-600 bg-clip-text text-transparent mb-4">
                 {isArabic ? "أجرو جروث" : "AgroGrowth"}
               </h1>

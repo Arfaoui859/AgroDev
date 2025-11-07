@@ -338,12 +338,12 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
         <div className="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700">
           {collapsed ? (
             <div className="p-2 rounded-lg">
-              <Logo size={28} />
+              <Logo size={40} />
             </div>
           ) : (
             <div className="flex items-center space-x-2">
               <div className="p-2 rounded-lg">
-                <Logo size={36} />
+                <Logo size={56} />
               </div>
               <div>
                 <h1

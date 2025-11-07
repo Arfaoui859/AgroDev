@@ -794,7 +794,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center justify-between p-6 border-b">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <div className="p-1">
-                <Logo size={40} />
+                <Logo size={64} />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">AgroGrowth</h1>
