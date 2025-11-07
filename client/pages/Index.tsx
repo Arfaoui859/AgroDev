@@ -147,7 +147,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Smart Soil Analysis",
     titleArabic: "تحليل التربة الذكي",
     description: "AI-powered soil analysis with instant recommendations",
-    descriptionArabic: "تحل��ل التربة بالذكاء الاصطناعي مع توصيات فورية",
+    descriptionArabic: "تحلل التربة بالذكاء الاصطناعي مع توصيات فورية",
     icon: Activity,
     href: "/enhanced-analysis",
     color: "bg-gradient-to-br from-blue-500 to-cyan-600",
@@ -157,7 +157,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Crop Intelligence",
     titleArabic: "ذكاء المحاصيل",
     description: "Smart crop recommendations and rotation planning",
-    descriptionArabic: "توصيا�� المحاصيل الذكية وتخطيط الدورة الزراعية",
+    descriptionArabic: "توصيا المحاصيل الذكية وتخطيط الدورة الزراعية",
     icon: Leaf,
     href: "/smart-crop-suggestions",
     color: "bg-gradient-to-br from-emerald-500 to-green-600",
@@ -177,7 +177,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Market Intelligence",
     titleArabic: "ذكاء السوق",
     description: "Real-time market prices and forecasting",
-    descriptionArabic: "أسعار السوق الفوري�� والتنبؤات",
+    descriptionArabic: "أسعار السوق الفوري والتنبؤات",
     icon: DollarSign,
     href: "/market-dashboard",
     color: "bg-gradient-to-br from-yellow-500 to-orange-600",
@@ -187,7 +187,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Smart Irrigation",
     titleArabic: "الري الذكي",
     description: "Intelligent water management and conservation",
-    descriptionArabic: "إدارة المي��ه الذكية والحفاظ عليه��",
+    descriptionArabic: "إدارة الميه الذكية والحفاظ عليه",
     icon: Droplets,
     href: "/smart-irrigation",
     color: "bg-gradient-to-br from-cyan-500 to-blue-600",
@@ -198,7 +198,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Weather Intelligence",
     titleArabic: "ذكاء الطقس",
     description: "Advanced weather monitoring and crop planning",
-    descriptionArabic: "مراقبة الطقس المتقدمة وتخطيط المح��صيل",
+    descriptionArabic: "مراقبة الطقس المتقدمة وتخطيط المحصيل",
     icon: CloudRain,
     href: "/weather-crop-planner",
     color: "bg-gradient-to-br from-indigo-500 to-purple-600",
@@ -206,7 +206,7 @@ const dashboardCards: DashboardCard[] = [
   {
     id: "livestock-management",
     title: "Livestock Management",
-    titleArabic: "إدارة الثروة الحيوان��ة",
+    titleArabic: "إدارة الثروة الحيوانة",
     description: "Complete livestock health and breeding management",
     descriptionArabic: "إدارة شاملة لصحة وتربية الثروة الحيوانية",
     icon: Users,
@@ -229,7 +229,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Achievements & Rewards",
     titleArabic: "الإنجازات والحوافز",
     description: "Track your progress, earn badges, and compete with others",
-    descriptionArabic: "تتبع تقدمك، اكسب الشارات، وتنافس مع الآخر��ن",
+    descriptionArabic: "تتبع تقدمك، اكسب الشارات، وتنافس مع الآخرن",
     icon: Trophy,
     href: "/gamification",
     color: "bg-gradient-to-br from-purple-500 to-pink-600",
@@ -254,7 +254,7 @@ const dashboardCards: DashboardCard[] = [
     description:
       "Access real-time market prices, production data, and weather information",
     descriptionArabic:
-      "الوصول إلى أسعار السوق المب��شرة وبيانات الإنتاج وال��قس",
+      "الوصول إلى أسعار السوق المبشرة وبيانات الإنتاج والقس",
     icon: BarChart3,
     href: "/public-data",
     color: "bg-gradient-to-br from-cyan-500 to-teal-600",
@@ -266,7 +266,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "مركز التعاون الزراعي",
     description:
       "Connect with experts, share experiences, and get consultations",
-    descriptionArabic: "تواصل مع الخب��اء، شارك التجارب، واحصل على الاستشارات",
+    descriptionArabic: "تواصل مع الخباء، شارك التجارب، واحصل على الاستشارات",
     icon: Users,
     href: "/farmer-collaboration",
     color: "bg-gradient-to-br from-rose-500 to-pink-600",
@@ -278,7 +278,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "تصنيف الفلاحين الذكي",
     description:
       "AI-powered farmer classification and insights for better targeting",
-    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي ور��ى لاستهداف أفضل",
+    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي ورى لاسته��اف أفضل",
     icon: Brain,
     href: "/farmer-segmentation",
     color: "bg-gradient-to-br from-violet-500 to-purple-600",
@@ -294,7 +294,7 @@ const dashboardCards: DashboardCard[] = [
     icon: Activity,
     href: "/enhanced-market",
     color: "bg-gradient-to-br from-emerald-500 to-green-600",
-    badge: "����",
+    badge: "",
   },
   {
     id: "market-analysis-advanced",
@@ -303,7 +303,7 @@ const dashboardCards: DashboardCard[] = [
     description:
       "Deep market analysis, global trends, and investment opportunities",
     descriptionArabic:
-      "تحل��ل عميق للسوق، الاتجاهات العالمية، والفرص الاستثمارية",
+      "تحلل عميق للسوق، الاتجاهات العالمية، والفرص الاستثمارية",
     icon: Target,
     href: "/market-intelligence",
     color: "bg-gradient-to-br from-amber-500 to-orange-600",
@@ -314,7 +314,7 @@ const dashboardCards: DashboardCard[] = [
     title: "Smart Irrigation Optimizer",
     titleArabic: "محسن الري الذكي",
     description: "AI-powered irrigation scheduling and water management",
-    descriptionArabic: "جدولة ��لري الذكي وإدارة المياه بالذكاء الاص��ناعي",
+    descriptionArabic: "جدولة لري الذكي وإدارة المياه بالذكاء الاصناعي",
     icon: Activity,
     href: "/irrigation-optimization",
     color: "bg-gradient-to-br from-blue-500 to-cyan-600",
@@ -334,7 +334,7 @@ const dashboardCards: DashboardCard[] = [
   {
     id: "weather-yield-planner",
     title: "Weather & Yield Planner",
-    titleArabic: "مخطط الطقس والمرد��دية",
+    titleArabic: "مخطط الطقس والمرددية",
     description: "Climate-based crop planning and yield prediction",
     descriptionArabic: "تخطيط المحاصيل حسب المناخ وتوقع المردودية",
     icon: Activity,
@@ -349,7 +349,7 @@ const dashboardCards: DashboardCard[] = [
     description:
       "Ultra-modern agronomist dashboard with AI insights and smart recommendations",
     descriptionArabic:
-      "لوحة تحكم ��لخبير الزراعي المطورة مع رؤى الذكاء الاصطناعي والتوصيات الذكية",
+      "لوحة تحكم لخبير الزراعي المطورة مع رؤى الذكاء الاصطناعي والتوصيات الذكية",
     icon: Activity,
     href: "/enhanced-agronomist",
     color: "bg-gradient-to-br from-emerald-500 to-teal-600",
@@ -369,7 +369,7 @@ const quickActions: QuickAction[] = [
     href: "/field-management",
     color: "text-green-600",
     category: "Field Management",
-    categoryArabic: "إد��رة الحقول",
+    categoryArabic: "إدرة الحقول",
   },
   {
     id: "soil-test",
@@ -398,9 +398,9 @@ const quickActions: QuickAction[] = [
   {
     id: "disease-scan",
     title: "Scan for Diseases",
-    titleArabic: "��حص الأمراض",
+    titleArabic: "حص الأمراض",
     description: "Take a photo to detect plant diseases",
-    descriptionArabic: "ال��قط صورة لاكتشاف أمراض النباتات",
+    descriptionArabic: "التقط صورة لاكتشاف أمراض النباتات",
     icon: Camera,
     href: "/disease-upload",
     color: "text-red-600",
@@ -700,7 +700,7 @@ export default function Index() {
         <div className="text-center space-y-4">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto text-green-600" />
           <p className="text-lg">
-            {isArabic ? "جار�� تحميل لوحة التحكم..." : "Loading dashboard..."}
+            {isArabic ? "جار تحميل لوحة التحكم..." : "Loading dashboard..."}
           </p>
         </div>
       </div>
@@ -738,7 +738,7 @@ export default function Index() {
             <Activity className="h-4 w-4" />
             <AlertDescription>
               {isArabic
-                ? "حالة خدمات الذكاء ��لاصطناعي: "
+                ? "حالة خدمات الذكاء لاصطناعي: "
                 : "AI Services Status: "}
               <Badge
                 variant={
@@ -863,7 +863,7 @@ export default function Index() {
             {isArabic ? "نظرة عامة" : "Overview"}
           </TabsTrigger>
           <TabsTrigger value="soil-input">
-            {isArabic ? "إدخال بيانات الت��بة" : "Soil Data Entry"}
+            {isArabic ? "إدخال بيانات التبة" : "Soil Data Entry"}
           </TabsTrigger>
           <TabsTrigger value="features">
             {isArabic ? "الميزات" : "Features"}
@@ -905,7 +905,7 @@ export default function Index() {
                         {farmOverview.currentCrops}
                       </p>
                       <p className="text-sm opacity-90">
-                        {isArabic ? "م��اصيل حالية" : "Current Crops"}
+                        {isArabic ? "ماصيل حالية" : "Current Crops"}
                       </p>
                     </div>
                     <div className="text-center">
@@ -954,7 +954,7 @@ export default function Index() {
                   <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse">
                     <CloudRain className="h-5 w-5" />
                     <span>
-                      {isArabic ? "الطقس الح��لي" : "Current Weather"}
+                      {isArabic ? "الطقس الحلي" : "Current Weather"}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -1070,7 +1070,7 @@ export default function Index() {
                         {weatherData.temperature}°C
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {isArabic ? "درج�� الحرارة" : "Temperature"}
+                        {isArabic ? "درج الحرارة" : "Temperature"}
                       </p>
                     </div>
                     <div className="text-center p-4 border rounded-lg">
@@ -1191,18 +1191,18 @@ export default function Index() {
               <Sparkles className="h-12 w-12 mx-auto mb-4 text-white" />
               <h2 className="text-2xl font-bold mb-2">
                 {isArabic
-                  ? "ابدأ مع نظام إدارة الحقول ��لجديد"
+                  ? "ابدأ مع نظام إدارة الحقول لجديد"
                   : "Get Started with New Field Management"}
               </h2>
               <p className="mb-6 opacity-90">
                 {isArabic
-                  ? "نظام شامل لإدارة المزارع والحقول مع الذكاء الاصط��اعي والخرائط ال��فاعلية"
+                  ? "نظام شامل لإدارة المزارع والحقول مع الذكاء الاصطاعي والخرائط الفاعلية"
                   : "Comprehensive farm and field management with AI insights and interactive maps"}
               </p>
               <Button size="lg" variant="secondary" asChild>
                 <Link to="/field-management">
                   <Play className="h-5 w-5 mr-2 rtl:ml-2 rtl:mr-0" />
-                  {isArabic ? "اس��كشف الآن" : "Explore Now"}
+                  {isArabic ? "اسكشف الآن" : "Explore Now"}
                 </Link>
               </Button>
             </CardContent>
@@ -1251,7 +1251,7 @@ function SoilDataInputForm() {
     // Validate required fields
     if (!formData.location || !formData.cropType || !formData.ph) {
       toast({
-        title: isArabic ? "حقول مطلوبة ف��رغة" : "Missing Required Fields",
+        title: isArabic ? "حقول مطلوبة فرغة" : "Missing Required Fields",
         description: isArabic
           ? "يرجى ملء الحقول المطلوبة"
           : "Please fill required fields",
@@ -1355,7 +1355,7 @@ function SoilDataInputForm() {
       <CardHeader>
         <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse">
           <Database className="h-5 w-5" />
-          <span>{isArabic ? "إدخال ��يانات التربة" : "Soil Data Entry"}</span>
+          <span>{isArabic ? "إدخال يانات التربة" : "Soil Data Entry"}</span>
         </CardTitle>
         <CardDescription>
           {isArabic
@@ -1393,7 +1393,7 @@ function SoilDataInputForm() {
                 type="text"
                 value={formData.area}
                 onChange={(e) => handleInputChange("area", e.target.value)}
-                placeholder={isArabic ? "��ثال: 5 هكتار" : "e.g., 5 hectares"}
+                placeholder={isArabic ? "ثال: 5 هكتار" : "e.g., 5 hectares"}
                 className="w-full p-3 border rounded-md"
                 dir={isArabic ? "rtl" : "ltr"}
               />
@@ -1481,7 +1481,7 @@ function SoilDataInputForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
-                {isArabic ? "الن��تروجين (ppm)" : "Nitrogen (ppm)"}
+                {isArabic ? "النتروجين (ppm)" : "Nitrogen (ppm)"}
               </label>
               <input
                 type="number"
@@ -1562,14 +1562,14 @@ function SoilDataInputForm() {
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              {isArabic ? "ملاحظات إضافية" : "Additional Notes"}
+              {isArabic ? "م��احظات إضافية" : "Additional Notes"}
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => handleInputChange("notes", e.target.value)}
               placeholder={
                 isArabic
-                  ? "��ي ملاحظات أو معلومات إضافية..."
+                  ? "ي ملاحظات أو معلومات إضافية..."
                   : "Any additional notes or information..."
               }
               rows={3}
