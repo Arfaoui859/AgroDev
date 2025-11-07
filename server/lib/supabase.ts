@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+// Support multiple env var names depending on runtime (Vite prefixes vars with VITE_ for client builds)
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || null;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || null;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   // Do not crash the dev server if Supabase variables are missing.
@@ -13,15 +16,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = isSupabaseConfigured
+export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(supabaseUrl as string, supabaseAnonKey as string)
   : null;
 
 // For server-side operations that need elevated permissions
-export const supabaseAdmin = isSupabaseConfigured
+export const supabaseAdmin: SupabaseClient | null = isSupabaseConfigured
   ? createClient(
       supabaseUrl as string,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || (supabaseAnonKey as string)
+      process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!
     )
   : null;
 
