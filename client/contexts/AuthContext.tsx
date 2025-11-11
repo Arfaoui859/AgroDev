@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, User, UserProfile } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
+import type { User as AppUser, UserProfile as AppUserProfile } from "../lib/supabase";
 import { safeInsert } from "../lib/supabaseHelpers";
 import { retryWithBackoff } from "../lib/retry";
 import { Session } from "@supabase/supabase-js";
