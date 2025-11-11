@@ -278,7 +278,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "تصنيف الفلاحين الذكي",
     description:
       "AI-powered farmer classification and insights for better targeting",
-    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي ورى لاسته��اف أفضل",
+    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطن��عي ورى لاسته��اف أفضل",
     icon: Brain,
     href: "/farmer-segmentation",
     color: "bg-gradient-to-br from-violet-500 to-purple-600",
@@ -454,7 +454,8 @@ export default function Index() {
     // Try native fetch first
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutMs = 15000; // shorter timeout to fail fast during development
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await window.fetch(resolvedUrl, {
         ...options,
@@ -462,9 +463,14 @@ export default function Index() {
       });
 
       clearTimeout(timeoutId);
+
+      if (!response) {
+        throw new Error(`Empty response for ${resolvedUrl}`);
+      }
+
       return response;
     } catch (error) {
-      console.warn("Native fetch failed, attempting fallback:", error);
+      console.warn("Native fetch failed for", resolvedUrl, "attempting fallback:", error);
 
       // If native fetch fails due to external script interference, try XMLHttpRequest
       if (error instanceof TypeError || error instanceof DOMException) {
@@ -860,7 +866,7 @@ export default function Index() {
       >
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">
-            {isArabic ? "نظرة عامة" : "Overview"}
+            {isArabic ? "نظرة عام��" : "Overview"}
           </TabsTrigger>
           <TabsTrigger value="soil-input">
             {isArabic ? "إدخال بيانات التبة" : "Soil Data Entry"}
