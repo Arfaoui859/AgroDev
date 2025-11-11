@@ -1,10 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { CheckCircle, XCircle, Database, RefreshCw } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { CheckCircle, XCircle, Database, RefreshCw } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 const DatabaseStatus: React.FC = () => {
   const [status, setStatus] = useState({
@@ -12,51 +18,51 @@ const DatabaseStatus: React.FC = () => {
     tablesExist: false,
     canInsert: false,
     loading: true,
-    error: null as string | null
+    error: null as string | null,
   });
 
   const checkDatabaseStatus = async () => {
-    setStatus(prev => ({ ...prev, loading: true, error: null }));
+    setStatus((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       // Test 1: Basic connection
-      console.log('Testing Supabase connection...');
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      console.log("Testing Supabase connection...");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       // Test 2: Check if tables exist
-      console.log('Checking if tables exist...');
+      console.log("Checking if tables exist...");
       const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('id')
+        .from("users")
+        .select("id")
         .limit(1);
 
       const { data: profilesData, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('id')
+        .from("user_profiles")
+        .select("id")
         .limit(1);
 
       const tablesExist = !usersError && !profilesError;
 
       // Test 3: Check insert permissions
-      console.log('Testing insert permissions...');
+      console.log("Testing insert permissions...");
       let canInsert = false;
       if (tablesExist) {
-        const testId = 'test-' + Date.now();
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: testId,
-            email: 'test@example.com',
-            full_name: 'Test User',
-            full_name_ar: 'مستخدم تجريبي',
-            role: 'farmer',
-            verified: false
-          });
+        const testId = "test-" + Date.now();
+        const { error: insertError } = await supabase.from("users").insert({
+          id: testId,
+          email: "test@example.com",
+          full_name: "Test User",
+          full_name_ar: "مستخدم تجريبي",
+          role: "farmer",
+          verified: false,
+        });
 
         if (!insertError) {
           canInsert = true;
           // Clean up test record
-          await supabase.from('users').delete().eq('id', testId);
+          await supabase.from("users").delete().eq("id", testId);
         }
       }
 
@@ -65,21 +71,20 @@ const DatabaseStatus: React.FC = () => {
         tablesExist,
         canInsert,
         loading: false,
-        error: null
+        error: null,
       });
 
       if (usersError || profilesError) {
-        console.error('Table errors:', { usersError, profilesError });
+        console.error("Table errors:", { usersError, profilesError });
       }
-
     } catch (error: any) {
-      console.error('Database status check failed:', error);
+      console.error("Database status check failed:", error);
       setStatus({
         connected: false,
         tablesExist: false,
         canInsert: false,
         loading: false,
-        error: error.message
+        error: error.message,
       });
     }
   };
@@ -89,15 +94,19 @@ const DatabaseStatus: React.FC = () => {
   }, []);
 
   const getStatusIcon = (isOk: boolean) => {
-    return isOk ? 
-      <CheckCircle className="h-5 w-5 text-green-600" /> : 
-      <XCircle className="h-5 w-5 text-red-600" />;
+    return isOk ? (
+      <CheckCircle className="h-5 w-5 text-green-600" />
+    ) : (
+      <XCircle className="h-5 w-5 text-red-600" />
+    );
   };
 
   const getStatusBadge = (isOk: boolean) => {
-    return isOk ? 
-      <Badge className="bg-green-100 text-green-700">جاهز</Badge> :
-      <Badge className="bg-red-100 text-red-700">غير جاهز</Badge>;
+    return isOk ? (
+      <Badge className="bg-green-100 text-green-700">جاهز</Badge>
+    ) : (
+      <Badge className="bg-red-100 text-red-700">غير جاهز</Badge>
+    );
   };
 
   return (
@@ -113,12 +122,14 @@ const DatabaseStatus: React.FC = () => {
               فحص جاهزية قاعدة البيانات للتسجيل الفعلي
             </p>
           </div>
-          <Button 
-            onClick={checkDatabaseStatus} 
+          <Button
+            onClick={checkDatabaseStatus}
             disabled={status.loading}
             className="flex items-center gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${status.loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${status.loading ? "animate-spin" : ""}`}
+            />
             إعادة فحص
           </Button>
         </div>
@@ -141,7 +152,9 @@ const DatabaseStatus: React.FC = () => {
             <CardContent>
               {getStatusBadge(status.connected)}
               <p className="text-sm text-muted-foreground mt-2">
-                {status.connected ? 'الاتصال بـ Supabase نجح' : 'فشل الاتصال بـ Supabase'}
+                {status.connected
+                  ? "الاتصال بـ Supabase نجح"
+                  : "فشل الاتصال بـ Supabase"}
               </p>
             </CardContent>
           </Card>
@@ -156,7 +169,9 @@ const DatabaseStatus: React.FC = () => {
             <CardContent>
               {getStatusBadge(status.tablesExist)}
               <p className="text-sm text-muted-foreground mt-2">
-                {status.tablesExist ? 'جداول users و user_profiles موجودة' : 'الجداول المطلوبة غير موجودة'}
+                {status.tablesExist
+                  ? "جداول users و user_profiles موجودة"
+                  : "الجداول المطلوبة غير موجودة"}
               </p>
             </CardContent>
           </Card>
@@ -171,7 +186,9 @@ const DatabaseStatus: React.FC = () => {
             <CardContent>
               {getStatusBadge(status.canInsert)}
               <p className="text-sm text-muted-foreground mt-2">
-                {status.canInsert ? 'يمكن إدراج بيانات جديدة' : 'لا يمكن إدراج البيانات'}
+                {status.canInsert
+                  ? "يمكن إدراج بيانات جديدة"
+                  : "لا يمكن إدراج البيانات"}
               </p>
             </CardContent>
           </Card>
@@ -193,8 +210,8 @@ const DatabaseStatus: React.FC = () => {
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>🎉 ممتاز!</strong> قاعدة البيانات جاهزة للتسجيل الفعلي. 
-                      يمكنك الآن إنشاء حسابات جديدة وتسجيل الدخول بنجاح.
+                      <strong>🎉 ممتاز!</strong> قاعدة البيانات جاهزة للتسجيل
+                      الفعلي. يمكنك الآن إنشاء حسابات جديدة وتسجيل الدخول بنجاح.
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -202,9 +219,15 @@ const DatabaseStatus: React.FC = () => {
                     <XCircle className="h-4 w-4" />
                     <AlertDescription>
                       <strong>تحتاج إصلاح:</strong>
-                      {!status.connected && <span> الاتصال بـ Supabase فاشل.</span>}
-                      {!status.tablesExist && <span> الجداول المطلوبة غير موجودة.</span>}
-                      {!status.canInsert && <span> صلاحيات الإدراج غير مفعلة.</span>}
+                      {!status.connected && (
+                        <span> الاتصال بـ Supabase فاشل.</span>
+                      )}
+                      {!status.tablesExist && (
+                        <span> الجداول المطلوبة غير موجودة.</span>
+                      )}
+                      {!status.canInsert && (
+                        <span> صلاحيات الإدراج غير مفعلة.</span>
+                      )}
                     </AlertDescription>
                   </Alert>
                 )}
