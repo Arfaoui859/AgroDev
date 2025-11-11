@@ -601,7 +601,7 @@ export function createServer() {
 
   // 💼 INVESTOR DASHBOARD ROUTES
   app.get("/api/investor/opportunities", getInvestmentOpportunities);
-  app.get("/api/investor/profitability", getProfitabilityAnalysis);
+  app.get("/api/investor/profitability", getInvestorProfitabilityAnalysis);
   app.get("/api/investor/insights", getMarketInsights);
   app.get("/api/investor/portfolio", getInvestorPortfolio);
   app.get("/api/investor/dashboard", getInvestorDashboard);
