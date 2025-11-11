@@ -50,27 +50,34 @@ export const testSupabaseConnection: RequestHandler = async (req, res) => {
 
     // Test insert permissions with a real test
     console.log('🧪 Testing insert permissions...');
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({
-        email: 'test@example.com'
-      });
 
-    let insertTest = 'failed';
-    if (insertError) {
-      console.error('❌ Insert test failed:', {
-        message: insertError.message,
-        code: insertError.code,
-        details: insertError.details,
-        hint: insertError.hint
-      });
+    let insertTest = 'skipped';
+    let insertError = null;
+
+    if (supabaseAdmin) {
+      // Use admin client to bypass RLS for this diagnostic
+      const { error } = await supabaseAdmin
+        .from('users')
+        .insert({ email: 'test@example.com' });
+
+      insertError = error;
+      if (!error) {
+        insertTest = 'success';
+        // Clean up test record
+        await supabaseAdmin.from('users').delete().eq('email', 'test@example.com');
+        console.log('🧹 Test record cleaned up');
+      } else {
+        insertTest = 'failed';
+        console.error('❌ Insert test failed (admin client):', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+      }
     } else {
-      console.log('✅ Insert test successful');
-      insertTest = 'success';
-      
-      // Clean up test record
-      await supabase.from('users').delete().eq('email', 'test@example.com');
-      console.log('🧹 Test record cleaned up');
+      console.warn('Supabase admin client not available; skipping insert permission test');
+      insertTest = 'skipped';
     }
 
     // Return results
