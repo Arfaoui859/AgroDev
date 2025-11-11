@@ -1,10 +1,15 @@
 import { RequestHandler } from 'express';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 
 export const testSupabaseConnection: RequestHandler = async (req, res) => {
   try {
     console.log('🔍 Testing Supabase connection...');
-    
+
+    if (!isSupabaseConfigured || !supabase) {
+      console.warn('Supabase not configured; skipping tests');
+      return res.json({ status: 'skipped', message: 'Supabase not configured in this environment' });
+    }
+
     // Test basic connection
     const { data: { session } } = await supabase.auth.getSession();
     console.log('✅ Supabase Auth connection successful');
