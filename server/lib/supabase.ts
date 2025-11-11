@@ -1,5 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Support multiple env var names depending on runtime (Vite prefixes vars with VITE_ for client builds)
