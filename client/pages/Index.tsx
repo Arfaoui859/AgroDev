@@ -253,8 +253,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "البيانات الزراعية العامة",
     description:
       "Access real-time market prices, production data, and weather information",
-    descriptionArabic:
-      "الوصول إلى أسعار السوق المبشرة وبيانات الإنتاج والقس",
+    descriptionArabic: "الوصول إلى أسعار السوق المبشرة وبيانات الإنتاج والقس",
     icon: BarChart3,
     href: "/public-data",
     color: "bg-gradient-to-br from-cyan-500 to-teal-600",
@@ -470,7 +469,12 @@ export default function Index() {
 
       return response;
     } catch (error) {
-      console.warn("Native fetch failed for", resolvedUrl, "attempting fallback:", error);
+      console.warn(
+        "Native fetch failed for",
+        resolvedUrl,
+        "attempting fallback:",
+        error,
+      );
 
       // If native fetch fails due to external script interference, try XMLHttpRequest
       if (error instanceof TypeError || error instanceof DOMException) {
@@ -486,16 +490,20 @@ export default function Index() {
             // Set headers
             if (options.headers) {
               try {
-                const headersObj = options.headers as Record<string, string> | Headers;
+                const headersObj = options.headers as
+                  | Record<string, string>
+                  | Headers;
                 if (headersObj instanceof Headers) {
-                  headersObj.forEach((value, key) => xhr.setRequestHeader(key, value));
+                  headersObj.forEach((value, key) =>
+                    xhr.setRequestHeader(key, value),
+                  );
                 } else {
                   Object.entries(headersObj).forEach(([key, value]) => {
                     xhr.setRequestHeader(key, value as string);
                   });
                 }
               } catch (hdrErr) {
-                console.warn('Failed to set XHR headers', hdrErr);
+                console.warn("Failed to set XHR headers", hdrErr);
               }
             }
 
@@ -968,9 +976,7 @@ export default function Index() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse">
                     <CloudRain className="h-5 w-5" />
-                    <span>
-                      {isArabic ? "الطقس الحلي" : "Current Weather"}
-                    </span>
+                    <span>{isArabic ? "الطقس الحلي" : "Current Weather"}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
