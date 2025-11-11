@@ -74,7 +74,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const authPromise = supabase.auth.getSession();
 
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Auth initialization timeout")), timeoutMs);
+          setTimeout(
+            () => reject(new Error("Auth initialization timeout")),
+            timeoutMs,
+          );
         });
 
         const {
@@ -161,7 +164,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Try to load user details from custom table with retries
       const userQuery = async () => {
-        const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .single();
         if (error) throw error;
         return data;
       };
@@ -170,11 +177,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       let userError: any = null;
       try {
         // Retry up to 2 times with backoff
-        userData = await retryWithBackoff(() =>
-          Promise.race([
-            userQuery(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("Database query timeout")), timeoutMs)),
-          ]),
+        userData = await retryWithBackoff(
+          () =>
+            Promise.race([
+              userQuery(),
+              new Promise((_, reject) =>
+                setTimeout(
+                  () => reject(new Error("Database query timeout")),
+                  timeoutMs,
+                ),
+              ),
+            ]),
           2,
           300,
         );
@@ -213,23 +226,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Try to load user profile with timeout and retries
       const profileQuery = async () => {
-        const { data, error } = await supabase.from("user_profiles").select("*").eq("user_id", userId).single();
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
         if (error) throw error;
         return data;
       };
 
       let profileData: any = null;
       try {
-        profileData = await retryWithBackoff(() =>
-          Promise.race([
-            profileQuery(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("Database query timeout")), timeoutMs)),
-          ]),
+        profileData = await retryWithBackoff(
+          () =>
+            Promise.race([
+              profileQuery(),
+              new Promise((_, reject) =>
+                setTimeout(
+                  () => reject(new Error("Database query timeout")),
+                  timeoutMs,
+                ),
+              ),
+            ]),
           2,
           300,
         );
       } catch (e) {
-        console.log("Custom profile table not available or timed out, using defaults");
+        console.log(
+          "Custom profile table not available or timed out, using defaults",
+        );
       }
 
       if (!profileData) {
@@ -362,15 +387,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             console.log("✅ User record created in custom table");
 
             // Only try to create profile if user record succeeded
-            const { error: profileError } = await safeInsert(supabase, "user_profiles", {
-              user_id: data.user.id,
-              preferences: {
-                language: "ar",
-                notifications: true,
-                weather_alerts: true,
-                market_alerts: true,
+            const { error: profileError } = await safeInsert(
+              supabase,
+              "user_profiles",
+              {
+                user_id: data.user.id,
+                preferences: {
+                  language: "ar",
+                  notifications: true,
+                  weather_alerts: true,
+                  market_alerts: true,
+                },
               },
-            });
+            );
 
             if (profileError) {
               console.error(
@@ -418,7 +447,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Log full result for debugging
-      console.log('signIn result:', result);
+      console.log("signIn result:", result);
 
       if (result.error) throw result.error;
 
@@ -426,7 +455,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const sessionData = result.data?.session;
 
       if (!user) {
-        console.warn('signIn: no user in response, session:', sessionData);
+        console.warn("signIn: no user in response, session:", sessionData);
         return result;
       }
 
@@ -435,14 +464,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         await loadUserData(user.id);
       } catch (e) {
-        console.error('Error loading user data after signIn:', e);
+        console.error("Error loading user data after signIn:", e);
       }
 
       // Navigate to home
       try {
-        navigate('/');
+        navigate("/");
       } catch (e) {
-        console.warn('Navigation after signIn failed:', e);
+        console.warn("Navigation after signIn failed:", e);
       }
 
       return result;
