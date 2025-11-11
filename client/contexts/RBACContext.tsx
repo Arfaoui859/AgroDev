@@ -1,7 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth, UserRole, Permission } from './AuthContext';
+import { useAuth, UserRole } from './AuthContext';
 
 // =============== RBAC TYPES & INTERFACES ===============
+
+export interface Permission {
+  id: string;
+  name: string;
+  nameArabic?: string;
+  resource?: string;
+  action?: string;
+  description?: string;
+  descriptionArabic?: string;
+}
 
 export interface Role {
   id: string;
@@ -231,7 +241,7 @@ const mockPermissionGroups: PermissionGroup[] = [
     name: 'Administration',
     nameArabic: 'الإدارة',
     description: 'Administrative functions and system management',
-    descriptionArabic: 'الوظائف الإدارية وإدارة النظام',
+    descriptionArabic: 'الوظائف الإداري�� وإدارة النظام',
     category: 'admin',
     icon: 'Settings',
     order: 3,
@@ -308,7 +318,7 @@ const mockRoles: Role[] = [
   {
     id: 'role-government',
     name: 'Government Official',
-    nameArabic: 'مسؤول حكومي',
+    nameArabic: '��سؤول حكومي',
     description: 'Government oversight and policy management',
     descriptionArabic: 'رقابة حكومية وإدارة السياسات',
     level: 2,
