@@ -80,7 +80,7 @@ self.addEventListener("activate", (event: any) => {
 });
 
 // Fetch event - handle network requests
-self.addEventListener("fetch", (event: FetchEvent) => {
+self.addEventListener("fetch", (event: any) => {
   const url = new URL(event.request.url);
 
   // Handle API requests
