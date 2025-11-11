@@ -253,8 +253,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "البيانات الزراعية العامة",
     description:
       "Access real-time market prices, production data, and weather information",
-    descriptionArabic:
-      "الوصول إلى أسعار السوق المبشرة وبيانات الإنتاج والقس",
+    descriptionArabic: "الوصول إلى أسعار السوق المبشرة وبيانات الإنتاج والقس",
     icon: BarChart3,
     href: "/public-data",
     color: "bg-gradient-to-br from-cyan-500 to-teal-600",
@@ -278,7 +277,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "تصنيف الفلاحين الذكي",
     description:
       "AI-powered farmer classification and insights for better targeting",
-    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي ورى لاسته��اف أفضل",
+    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي ورى لاست����اف أفضل",
     icon: Brain,
     href: "/farmer-segmentation",
     color: "bg-gradient-to-br from-violet-500 to-purple-600",
@@ -454,7 +453,8 @@ export default function Index() {
     // Try native fetch first
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutMs = 15000; // shorter timeout to fail fast during development
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await window.fetch(resolvedUrl, {
         ...options,
@@ -462,9 +462,19 @@ export default function Index() {
       });
 
       clearTimeout(timeoutId);
+
+      if (!response) {
+        throw new Error(`Empty response for ${resolvedUrl}`);
+      }
+
       return response;
     } catch (error) {
-      console.warn("Native fetch failed, attempting fallback:", error);
+      console.warn(
+        "Native fetch failed for",
+        resolvedUrl,
+        "attempting fallback:",
+        error,
+      );
 
       // If native fetch fails due to external script interference, try XMLHttpRequest
       if (error instanceof TypeError || error instanceof DOMException) {
@@ -479,9 +489,22 @@ export default function Index() {
 
             // Set headers
             if (options.headers) {
-              Object.entries(options.headers).forEach(([key, value]) => {
-                xhr.setRequestHeader(key, value as string);
-              });
+              try {
+                const headersObj = options.headers as
+                  | Record<string, string>
+                  | Headers;
+                if (headersObj instanceof Headers) {
+                  headersObj.forEach((value, key) =>
+                    xhr.setRequestHeader(key, value),
+                  );
+                } else {
+                  Object.entries(headersObj).forEach(([key, value]) => {
+                    xhr.setRequestHeader(key, value as string);
+                  });
+                }
+              } catch (hdrErr) {
+                console.warn("Failed to set XHR headers", hdrErr);
+              }
             }
 
             xhr.onload = () => {
@@ -953,9 +976,7 @@ export default function Index() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse">
                     <CloudRain className="h-5 w-5" />
-                    <span>
-                      {isArabic ? "الطقس الحلي" : "Current Weather"}
-                    </span>
+                    <span>{isArabic ? "الطقس الحلي" : "Current Weather"}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

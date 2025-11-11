@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, User, UserProfile } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
+import type {
+  User as AppUser,
+  UserProfile as AppUserProfile,
+} from "../lib/supabase";
 import { safeInsert } from "../lib/supabaseHelpers";
 import { retryWithBackoff } from "../lib/retry";
 import { Session } from "@supabase/supabase-js";
@@ -17,20 +21,20 @@ export type UserRole =
 export type Permission = string;
 
 interface AuthContextType {
-  user: User | null;
-  userProfile: UserProfile | null;
+  user: AppUser | null;
+  userProfile: AppUserProfile | null;
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signUp: (
     email: string,
     password: string,
-    userData: Partial<User>,
+    userData: Partial<AppUser>,
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   logout?: () => Promise<void>; // Alias for signOut
-  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  updateProfile: (updates: Partial<AppUserProfile>) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   // Add 2FA methods for compatibility
@@ -57,8 +61,8 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [userProfile, setUserProfile] = useState<AppUserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -282,7 +286,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signUp = async (
     email: string,
     password: string,
-    userData: Partial<User>,
+    userData: Partial<AppUser>,
   ) => {
     setIsLoading(true);
     try {
@@ -502,7 +506,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Update profile function
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  const updateProfile = async (updates: Partial<AppUserProfile>) => {
     if (!user) throw new Error("User not authenticated");
 
     try {

@@ -250,7 +250,11 @@ import {
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
-import { setupDemoUsers, getDemoUsers, deleteDemoUsers } from "./routes/setup-demo-users";
+import {
+  setupDemoUsers,
+  getDemoUsers,
+  deleteDemoUsers,
+} from "./routes/setup-demo-users";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
 import { debugAuth } from "./routes/debug-auth";
 
@@ -559,13 +563,21 @@ export function createServer() {
   });
 
   // Admin: set a user's password (requires x-admin-token header with service role key)
-  app.post('/api/admin/set-password', (req, res, next) => {
-    return (require('./routes/admin-set-password') as any).adminSetPassword(req, res, next);
+  app.post("/api/admin/set-password", (req, res, next) => {
+    return (require("./routes/admin-set-password") as any).adminSetPassword(
+      req,
+      res,
+      next,
+    );
   });
 
   // Admin: create a confirmed admin user (requires x-admin-token header with service role key)
-  app.post('/api/admin/create-user', (req, res, next) => {
-    return (require('./routes/admin-create-user') as any).adminCreateUser(req, res, next);
+  app.post("/api/admin/create-user", (req, res, next) => {
+    return (require("./routes/admin-create-user") as any).adminCreateUser(
+      req,
+      res,
+      next,
+    );
   });
 
   // Auth Test Endpoints
