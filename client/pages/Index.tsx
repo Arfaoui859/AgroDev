@@ -278,7 +278,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "تصنيف الفلاحين الذكي",
     description:
       "AI-powered farmer classification and insights for better targeting",
-    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطن��عي ورى لاسته��اف أفضل",
+    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي ورى لاست����اف أفضل",
     icon: Brain,
     href: "/farmer-segmentation",
     color: "bg-gradient-to-br from-violet-500 to-purple-600",
@@ -485,9 +485,18 @@ export default function Index() {
 
             // Set headers
             if (options.headers) {
-              Object.entries(options.headers).forEach(([key, value]) => {
-                xhr.setRequestHeader(key, value as string);
-              });
+              try {
+                const headersObj = options.headers as Record<string, string> | Headers;
+                if (headersObj instanceof Headers) {
+                  headersObj.forEach((value, key) => xhr.setRequestHeader(key, value));
+                } else {
+                  Object.entries(headersObj).forEach(([key, value]) => {
+                    xhr.setRequestHeader(key, value as string);
+                  });
+                }
+              } catch (hdrErr) {
+                console.warn('Failed to set XHR headers', hdrErr);
+              }
             }
 
             xhr.onload = () => {
@@ -866,7 +875,7 @@ export default function Index() {
       >
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">
-            {isArabic ? "نظرة عام��" : "Overview"}
+            {isArabic ? "نظرة عامة" : "Overview"}
           </TabsTrigger>
           <TabsTrigger value="soil-input">
             {isArabic ? "إدخال بيانات التبة" : "Soil Data Entry"}
