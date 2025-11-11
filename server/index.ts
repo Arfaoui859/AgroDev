@@ -213,7 +213,7 @@ import {
 } from "./routes/gamification";
 import {
   getInvestmentOpportunities,
-  getProfitabilityAnalysis,
+  getProfitabilityAnalysis as getInvestorProfitabilityAnalysis,
   getMarketInsights,
   getInvestorPortfolio,
   getInvestorDashboard,
