@@ -56,7 +56,7 @@ self.addEventListener("install", (event: any) => {
 });
 
 // Activate event - clean up old caches
-self.addEventListener("activate", (event: ExtendableEvent) => {
+self.addEventListener("activate", (event: any) => {
   console.log("[SW] Activating Service Worker");
 
   event.waitUntil(
