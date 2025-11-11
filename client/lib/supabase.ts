@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+import { createClient } from "@supabase/supabase-js";
+
 // Supabase configuration (prefer Vite env vars for client builds)
 const supabaseUrl =
   (import.meta.env.VITE_SUPABASE_URL as string) ||
