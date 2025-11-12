@@ -25,7 +25,7 @@
     "VITE_INTELLIGENT_AGENT_URL": "https://agrogrowth-intelligent-agent.onrender.com"
   },
   "buildCommand": "cd client && npm run build",
-  "outputDirectory": "client/dist",
+  "outputDirectory": "client/dist/spa",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "framework": "vite",
