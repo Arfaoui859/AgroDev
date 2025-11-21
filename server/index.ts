@@ -596,6 +596,9 @@ export function createServer() {
   app.post("/api/setup-inspector", setupInspectorUser);
   app.post("/api/setup-users", setupMultipleUsers);
 
+  // Admin User Setup
+  app.post("/api/setup-admin", setupAdminUser);
+
   // Test endpoint for development
   app.get("/api/ping", (req, res) => {
     res.json({
