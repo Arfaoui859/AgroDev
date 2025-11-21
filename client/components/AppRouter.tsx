@@ -125,6 +125,7 @@ export default function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth-test" element={<AuthTest />} />
+        <Route path="/setup-demo" element={<SetupDemo />} />
       </Routes>
     );
   }
