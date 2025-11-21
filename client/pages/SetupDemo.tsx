@@ -144,7 +144,40 @@ export default function SetupDemo() {
           <p className="text-gray-600">إنشاء حسابات اختبار لجميع أدوار المستخدمين في النظام</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Admin User Setup Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">إعداد المسؤول</CardTitle>
+              <CardDescription>
+                إنشاء حساب المسؤول (Admin)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-purple-50 p-4 rounded-lg text-sm space-y-2">
+                <p className="font-semibold text-purple-900">بيانات الدخول:</p>
+                <div className="space-y-1 text-purple-800">
+                  <p>البريد الإلكتروني: <code className="bg-white px-2 py-1 rounded">admin@agrogrowth.com</code></p>
+                  <p>كلمة المرور: <code className="bg-white px-2 py-1 rounded">admin123</code></p>
+                </div>
+              </div>
+              <Button
+                onClick={handleSetupAdmin}
+                disabled={loading}
+                className="w-full bg-purple-600 hover:bg-purple-700"
+              >
+                {loading ? (
+                  <>
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                    جاري الإعداد...
+                  </>
+                ) : (
+                  'إنشاء حساب المسؤول'
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Demo Users Setup Card */}
           <Card>
             <CardHeader>
@@ -207,7 +240,7 @@ export default function SetupDemo() {
                 {loading ? (
                   <>
                     <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    جاري الإعداد...
+                    جاري الإعدا��...
                   </>
                 ) : (
                   'إنشاء حساب مراقب الحقول'
