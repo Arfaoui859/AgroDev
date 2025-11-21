@@ -273,7 +273,14 @@ export default function AppRouter() {
             path="/field-inspector-dashboard"
             element={<FieldInspectorDashboard />}
           />
-          <Route path="/admin-panel" element={<AdminPanel />} />
+          <Route
+            path="/admin-panel"
+            element={
+              <ProtectedRoute allowedRoles={['admin']} fallbackRoute="/">
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/government-dashboard"
             element={<GovernmentDashboard />}
