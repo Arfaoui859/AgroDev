@@ -30,6 +30,18 @@ const demoUsers = [
     },
   },
   {
+    email: "admin@agrogrowth.com",
+    password: "admin123",
+    userData: {
+      full_name: "مدير النظام",
+      full_name_ar: "مدير النظام",
+      role: "admin",
+      location: "تونس",
+      specialization: "إدارة النظام",
+      verified: true,
+    },
+  },
+  {
     email: "admin@demo.com",
     password: "demo123",
     userData: {
@@ -38,6 +50,18 @@ const demoUsers = [
       role: "admin",
       location: "تونس",
       specialization: "إدارة النظام",
+      verified: true,
+    },
+  },
+  {
+    email: "arfaouisami.iaot@gmail.com",
+    password: "123456789",
+    userData: {
+      full_name: "خبير زراعي",
+      full_name_ar: "خبير زراعي",
+      role: "agronomist",
+      location: "تونس",
+      specialization: "الخبرة الزراعية",
       verified: true,
     },
   },
@@ -61,7 +85,7 @@ const demoUsers = [
       full_name_ar: "دكتور فاطمة البيطارة",
       role: "veterinarian",
       location: "تونس",
-      specialization: "الطب ا��بيطري",
+      specialization: "الطب البيطري",
       experience_years: 8,
       verified: true,
     },
