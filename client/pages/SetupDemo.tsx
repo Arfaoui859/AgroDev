@@ -49,6 +49,48 @@ export default function SetupDemo() {
     }
   };
 
+  const handleSetupAdmin = async () => {
+    setLoading(true);
+    setError('');
+    setResult(null);
+
+    try {
+      const response = await fetch('/api/setup-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'admin@agrogrowth.com',
+          password: 'admin123',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Setup failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setResult({
+          successful: [{
+            email: data.email,
+            role: data.role,
+            userId: data.userId,
+          }],
+          failed: [],
+          total: 1,
+        });
+      } else {
+        setError(data.error || 'Failed to set up admin user');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to set up admin user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSetupInspector = async () => {
     setLoading(true);
     setError('');
@@ -165,7 +207,7 @@ export default function SetupDemo() {
                 {loading ? (
                   <>
                     <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    جاري الإعد��د...
+                    جاري الإعداد...
                   </>
                 ) : (
                   'إنشاء حساب مراقب الحقول'
