@@ -95,6 +95,7 @@ import DatabaseDiagnostics from "../pages/DatabaseDiagnostics";
 import DatabaseStatus from "../pages/DatabaseStatus";
 import ServiceStatus from "../pages/ServiceStatus";
 import AuthTest from "../pages/AuthTest";
+import SetupDemo from "../pages/SetupDemo";
 import NotFound from "../pages/NotFound";
 
 export default function AppRouter() {
