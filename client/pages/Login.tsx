@@ -170,6 +170,51 @@ export default function Login() {
           </CardContent>
         </Card>
 
+        {/* Demo Credentials */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-base text-blue-900">
+              بيانات اختبار توضيحية
+            </CardTitle>
+            <CardDescription className="text-sm text-blue-700">
+              استخدم هذه البيانات لاختبار المنصة
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-blue-900">البريد الإلكتروني:</p>
+              <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                sami.arfaoui.itservice@gmail.com
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-blue-900">كلمة المرور:</p>
+              <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                adminstartup
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-blue-900">نوع المستخدم:</p>
+              <p className="text-sm bg-white p-2 rounded border border-blue-200">
+                المستخدم الزراعي (Agricole)
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mt-3"
+              onClick={() => {
+                setFormData({
+                  email: "sami.arfaoui.itservice@gmail.com",
+                  password: "adminstartup",
+                });
+              }}
+            >
+              تعبئة البيانات التوضيحية
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Additional Info */}
         <div className="text-center text-sm text-gray-600">
           <p>
