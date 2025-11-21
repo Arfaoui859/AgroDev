@@ -115,7 +115,7 @@ export default function AppRouter() {
   }
 
   // Public routes (login, signup, auth-test) - don't require authentication
-  const publicRoutes = ["/login", "/signup", "/auth-test"];
+  const publicRoutes = ["/login", "/signup", "/auth-test", "/setup-demo"];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   // If on public route, render without Layout
