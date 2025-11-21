@@ -30,7 +30,7 @@ export default function Login() {
     setError("");
 
     if (!formData.email || !formData.password) {
-      setError("يرجى إدخال البريد الإلكتروني وك��مة المرور");
+      setError("يرجى إدخال البريد الإلكتروني وكلمة المرور");
       return;
     }
 
@@ -274,7 +274,7 @@ export default function Login() {
         </Card>
 
         {/* Additional Info */}
-        <div className="text-center text-sm text-gray-600">
+        <div className="text-center text-sm text-gray-600 space-y-2">
           <p>
             بتسجيل الدخول، فإنك توافق على
             <Link
@@ -289,6 +289,14 @@ export default function Login() {
               className="text-green-600 hover:text-green-700 mx-1"
             >
               سياسة الخصوصية
+            </Link>
+          </p>
+          <p>
+            <Link
+              to="/setup-demo"
+              className="text-blue-600 hover:text-blue-700"
+            >
+              إنشاء حسابات اختبار توضيحية
             </Link>
           </p>
         </div>
