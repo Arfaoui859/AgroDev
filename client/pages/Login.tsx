@@ -30,7 +30,7 @@ export default function Login() {
     setError("");
 
     if (!formData.email || !formData.password) {
-      setError("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+      setError("يرجى إدخال البريد الإلكتروني وك��مة المرور");
       return;
     }
 
@@ -212,7 +212,7 @@ export default function Login() {
             </div>
 
             {/* Admin User */}
-            <div className="space-y-3">
+            <div className="space-y-3 pb-4 border-b border-blue-200">
               <h3 className="text-sm font-bold text-blue-900">المسؤول (Admin)</h3>
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
@@ -238,6 +238,36 @@ export default function Login() {
                 }}
               >
                 تعبئة بيانات المسؤول
+              </Button>
+            </div>
+
+            {/* Field Inspector User */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-blue-900">مراقب الحقول (Inspector)</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                  neuroforgesoultion@gmail.com
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">كلمة المرور:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                  123456789
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200"
+                onClick={() => {
+                  setFormData({
+                    email: "neuroforgesoultion@gmail.com",
+                    password: "123456789",
+                  });
+                }}
+              >
+                تعبئة بيانات مراقب الحقول
               </Button>
             </div>
           </CardContent>
