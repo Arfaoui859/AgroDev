@@ -257,6 +257,7 @@ import {
 } from "./routes/setup-demo-users";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
 import { debugAuth } from "./routes/debug-auth";
+import { setupInspectorUser, setupMultipleUsers } from "./routes/setup-inspector-user";
 
 export function createServer() {
   const app = express();
