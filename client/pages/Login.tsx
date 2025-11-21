@@ -180,38 +180,66 @@ export default function Login() {
               استخدم هذه البيانات لاختبار المنصة
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-blue-900">البريد الإلكتروني:</p>
-              <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
-                sami.arfaoui.itservice@gmail.com
-              </p>
+          <CardContent className="space-y-4">
+            {/* Agricole User */}
+            <div className="space-y-3 pb-4 border-b border-blue-200">
+              <h3 className="text-sm font-bold text-blue-900">المستخدم الزراعي (Agricole)</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                  sami.arfaoui.itservice@gmail.com
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">كلمة المرور:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                  adminstartup
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setFormData({
+                    email: "sami.arfaoui.itservice@gmail.com",
+                    password: "adminstartup",
+                  });
+                }}
+              >
+                تعبئة بيانات المزارع
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-blue-900">كلمة المرور:</p>
-              <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
-                adminstartup
-              </p>
+
+            {/* Admin User */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-blue-900">المسؤول (Admin)</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                  admin@agrogrowth.com
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">كلمة المرور:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                  admin123
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full bg-purple-50 hover:bg-purple-100 border-purple-200"
+                onClick={() => {
+                  setFormData({
+                    email: "admin@agrogrowth.com",
+                    password: "admin123",
+                  });
+                }}
+              >
+                تعبئة بيانات المسؤول
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-blue-900">نوع المستخدم:</p>
-              <p className="text-sm bg-white p-2 rounded border border-blue-200">
-                المستخدم الزراعي (Agricole)
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full mt-3"
-              onClick={() => {
-                setFormData({
-                  email: "sami.arfaoui.itservice@gmail.com",
-                  password: "adminstartup",
-                });
-              }}
-            >
-              تعبئة البيانات التوضيحية
-            </Button>
           </CardContent>
         </Card>
 
