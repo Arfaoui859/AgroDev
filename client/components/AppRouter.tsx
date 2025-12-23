@@ -40,6 +40,7 @@ import FeedManagement from "../pages/FeedManagement";
 import SoilProblemDetection from "../pages/SoilProblemDetection";
 import IdealSoilComparison from "../pages/IdealSoilComparison";
 import SoilAlertSystem from "../pages/SoilAlertSystem";
+import SoilAnalysisDetailedReport from "../pages/SoilAnalysisDetailedReport";
 import SmartCropSuggestions from "../pages/SmartCropSuggestions";
 import CropRotationPlanner from "../pages/CropRotationPlanner";
 import AlertHistory from "../pages/AlertHistory";
