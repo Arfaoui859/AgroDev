@@ -319,6 +319,11 @@ export function createServer() {
   // Soil AI Detector routes
   app.use("/api/soil-ai-detector", soilAiDetectorRoutes);
 
+  // Soil Analysis Detailed routes (AI-powered detailed analysis)
+  app.post("/api/soil-analysis/analyze", analyzeSoilDetailed);
+  app.post("/api/soil-analysis/batch", analyzeSoilBatch);
+  app.get("/api/soil-analysis/report/:analysisId", getSoilAnalysisReport);
+
   // Smart Crop Suggestions routes
   app.use("/api/smart-crop-suggestions", smartCropSuggestionsRoutes);
 
