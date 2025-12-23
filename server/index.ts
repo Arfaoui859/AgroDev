@@ -259,6 +259,11 @@ import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
 import { debugAuth } from "./routes/debug-auth";
 import { setupInspectorUser, setupMultipleUsers } from "./routes/setup-inspector-user";
 import { setupAdminUser } from "./routes/admin-setup";
+import {
+  analyzeSoilDetailed,
+  analyzeSoilBatch,
+  getSoilAnalysisReport,
+} from "./routes/soil-analysis-detailed";
 
 export function createServer() {
   const app = express();
