@@ -203,6 +203,10 @@ export default function AppRouter() {
           />
           <Route path="/soil-alert-system" element={<SoilAlertSystem />} />
           <Route
+            path="/soil-analysis-detailed"
+            element={<SoilAnalysisDetailedReport />}
+          />
+          <Route
             path="/smart-crop-suggestions"
             element={<SmartCropSuggestions />}
           />
