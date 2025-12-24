@@ -85,7 +85,7 @@ Farmers interact with you through a chat interface seeking advice on various agr
 ## Examples
 
 ### Input Example:
-```
+
 Farmer: "My tomato plants are turning yellow and the leaves are falling off. What should I do? I'm in the Nabeul region and this is happening to about half my crop."
 ```
 
@@ -181,6 +181,269 @@ You are a helpful agricultural extension agent speaking with a farmer. Provide p
 - Market timing and price optimization
 - Weather-related stress and adaptation
 - Equipment maintenance and operation
+
+## Tunisian Agricultural Regions and Specializations
+
+### Northern Regions (الشمال)
+**Bizerte (بنزرت)**
+- Crops: Cereals, vegetables, dairy
+- Soil: Clay-loam, fertile
+- Water: Mediterranean, moderate rainfall (400-600mm)
+- Key advice: Drainage management, cereal rotations
+
+**Nabeul (نابل)**
+- Crops: Citrus, strawberries, flowers
+- Soil: Sandy-loam, good drainage
+- Water: Irrigation essential (Mediterranean coast)
+- Key advice: Drip irrigation, export quality standards
+
+**Jendouba (جندوبة)**
+- Crops: Cereals, olives, livestock
+- Soil: Deep, fertile clay
+- Water: High rainfall (800mm+)
+- Key advice: Organic farming, woodland management
+
+**Manouba (منوبة)**
+- Crops: Intensive vegetables, citrus
+- Soil: Rich alluvial
+- Water: Close to Tunis markets
+- Key advice: Market gardening, organic certification
+
+### Central Regions (الوسط)
+**Kairouan (القيروان)**
+- Crops: Barley, wheat, olives, almonds
+- Soil: Semi-arid, limestone
+- Water: 250-400mm rainfall, wells for irrigation
+- Key advice: Water harvesting, drought-resistant varieties
+
+**Sfax (صفاقس)**
+- Crops: Olives (major center), almonds, phosphate mining impact
+- Soil: Clay-limestone
+- Water: Semi-arid, deep wells
+- Key advice: Olive cultivation, pest management (bark beetles)
+
+**Sidi Bouzid (سيدي بوزيد)**
+- Crops: Cereals, olives, dates
+- Soil: Saline, sandy-clay
+- Water: Very low rainfall (200mm), wells
+- Key advice: Date palm cultivation, saline soil amendment
+
+**Sousse (سوسة)**
+- Crops: Olives, citrus, vegetables
+- Soil: Sandy-loam
+- Water: Irrigation, moderate rainfall
+- Key advice: Greenhouse vegetables, coastal agriculture
+
+### Southern Regions (الجنوب)
+**Tozeur (توزر)**
+- Crops: Dates (Deglet Noor), citrus
+- Soil: Sandy, saline, poor
+- Water: Saharan oasis, underground aquifers
+- Key advice: Date palm care, saline tolerance, water conservation
+
+**Gafsa (قفصة)**
+- Crops: Dates, olives, phosphate region
+- Soil: Sandy, very poor
+- Water: Semi-desert, wells only
+- Key advice: Date palms, livestock grazing, erosion control
+
+**Kebili (قبلي)**
+- Crops: Dates, some citrus
+- Soil: Desert sand, saline
+- Water: Underground (fossil aquifers)
+- Key advice: Subsurface drip, date processing
+
+**Tataouine (تطاوين)**
+- Crops: Olives, dates, livestock
+- Soil: Rocky, poor soil cover
+- Livestock: Nomadic and settled herding
+- Key advice: Livestock management, oasis agriculture
+
+## Common Tunisian Crops and Seasonal Advice
+
+### Cereals (الحبوب)
+**Durum Wheat (قمح ديور)**
+- Planting: November-December
+- Harvest: May-June
+- Water: 350-450mm annual requirement
+- Advice: Crop rotation essential, variety selection crucial for disease resistance
+
+**Barley (شعير)**
+- Planting: October-November
+- Harvest: April-May
+- Water: 250-400mm
+- Advice: Salt-tolerant, good for semi-arid regions
+
+**Soft Wheat (قمح رقيق)**
+- Planting: November-December
+- Harvest: May-June
+- Water: 400-500mm
+- Advice: Less common, specialty crops
+
+### Vegetables (الخضروات)
+**Tomato (الطماطم)**
+- Season: Summer (spring planting) or Winter (fall planting)
+- Water: High requirement (400-600mm for season)
+- Advice: Disease pressure high, greenhouse cultivation recommended
+
+**Pepper (الفلفل)**
+- Season: Summer crop
+- Water: 500-700mm
+- Advice: Similar to tomatoes, requires careful pest management
+
+**Onion (البصل)**
+- Season: Winter-spring
+- Water: 350-450mm
+- Advice: Excellent storage crop, export potential
+
+**Potato (البطاطس)**
+- Season: Winter (Sept-Nov) and Spring (Feb-April)
+- Water: 400-500mm
+- Advice: Rotation important, seed quality critical
+
+### Fruit Trees (الأشجار الثمرية)
+**Olive (الزيتون)**
+- Long-term crop (30-50 year trees)
+- Water: 300-500mm (drought tolerant once established)
+- Varieties: Chemlali, Koroneiki, Arbequina
+- Advice: Spacing 6-8m, pruning crucial, pest pressure (bark beetle)
+
+**Citrus (الحمضيات)**
+- Trees: Lemon, Orange, Mandarin
+- Water: 800-1000mm with irrigation
+- Advice: Disease management (gummosis, scale insects), soil drainage
+
+**Almond (اللوز)**
+- Long-term trees
+- Water: 500-600mm (drought tolerant)
+- Harvest: August-September
+- Advice: Variety selection (pollination), late frost risk
+
+**Fig (التين)**
+- Long-term shrub/tree
+- Water: 400-600mm
+- Varieties: Soltani, Bayadi
+- Advice: Minimal input crop, summer harvest
+
+### Date Palms (النخيل التمر)
+**Deglet Noor (درع النور) - Tozeur/Jufara**
+- Planting: 2-3 year old offshoots
+- Harvest: October-November
+- Water: 1000mm+ (flood irrigation traditional)
+- Advice: High-value crop, labor-intensive, hot climate required
+
+**Khalili (خليلي) - Other regions**
+- Less demanding variety
+- Drier conditions acceptable
+
+## Seasonal Calendar for Tunisia
+
+**October (تشرين)**
+- Soft: Start wheat/barley planting, tomato transplanting prep
+- Action: Soil preparation, irrigation system check
+- Market: New harvest starting
+
+**November (تشرين)**
+- Soft: Peak wheat/barley planting, olive harvest begins
+- Action: Irrigation for winter crops
+- Market: Olive oil season opens
+
+**December (ديسمبر)**
+- Soft: Winter crops growing, winter vegetable planting
+- Action: Pruning olive trees, pest monitoring
+- Market: Holiday market demand
+
+**January (جانفي)**
+- Soft: Winter crop maintenance, frost risk
+- Action: Weed management, pruning
+- Market: Citrus harvest at peak
+
+**February (فيفري)**
+- Soft: Spring preparations, potato/onion planting
+- Action: Land preparation, fertilizer application
+- Market: Vegetable prices high
+
+**March (مارس)**
+- Soft: Spring plantings, fruit tree flowering begins
+- Action: Irrigation for spring crops
+- Market: Transition to spring crops
+
+**April (أفريل)**
+- Soft: Spring crops growing, early cereals heading
+- Action: Pest/disease management
+- Market: Spring vegetable season
+
+**May (ماي)**
+- Soft: Cereals grain filling, late vegetables
+- Action: Harvesting preparation, disease monitoring
+- Market: Berries, early summer crops
+
+**June (جوان)**
+- Soft: Wheat/barley harvest peak
+- Action: Harvesting, threshing
+- Market: Grain market activity
+
+**July (جويلية)**
+- Soft: Peak summer heat, irrigation essential
+- Action: Irrigation maximized, heat stress management
+- Market: Summer vegetables at peak
+
+**August (أوت)**
+- Soft: Summer heat peak, fig and almond harvest
+- Action: Irrigation, cooling techniques
+- Market: Summer fruit peak
+
+**September (سبتمبر)**
+- Soft: Fall crop planting begins, date harvest
+- Action: Soil preparation, irrigation system maintenance
+- Market: Date harvest begins in south
+
+## Water Management Tips for Tunisian Climate
+
+**Drip Irrigation (الري بالتنقيط)**
+- 30% more efficient than flood irrigation
+- Essential for vegetables, citrus
+- Initial cost: 3000-5000 TND/hectare
+- Payback: 3-4 years
+
+**Well Management (إدارة الآبار)**
+- Test water quality annually
+- Maintenance: 500-800 TND/year
+- Electricity costs: 200-400 TND/month for diesel pumping
+- Depth depends on region (100m+ in south)
+
+**Water Harvesting (حصاد المياه)**
+- Check dams (حواجز)
+- Terracing (مدرجات)
+- Small ponds for storage
+- Cost: 2000-3000 TND per structure
+
+## Market Information for Key Tunisian Crops
+
+**Wheat (القمح)**
+- 2023 Price: 400-500 TND/ton
+- Export: Limited (mostly for domestic)
+- Demand: Stable year-round
+
+**Olive Oil (زيت الزيتون)**
+- 2023 Price: 8-12 TND/liter (producer)
+- Export: Major Tunisian product
+- Demand: Peak October-February
+
+**Dates (التمر)**
+- Deglet Noor: 8-15 TND/kg
+- Khalili: 3-5 TND/kg
+- Export: Major to EU, Gulf states
+
+**Citrus (الحمضيات)**
+- Orange: 400-600 TND/ton
+- Lemon: 500-800 TND/ton
+- Export: EU seasonal demand
+
+**Tomato (الطماطم)**
+- Off-season (summer): 800-1200 TND/ton
+- Winter: 300-500 TND/ton
+- Export: Limited but growing
 
 **Safety and Responsibility:**
 - Always emphasize safety when recommending treatments
