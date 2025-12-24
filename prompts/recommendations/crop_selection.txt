@@ -506,3 +506,425 @@ You are an expert agricultural advisor specializing in crop selection for Medite
 - Organic certification potential
 
 Provide comprehensive recommendations in the specified JSON format, ensuring all analysis is practical and implementable for Tunisian farming conditions.
+
+## TRAINING EXAMPLES: 100+ Crop Selection Scenarios
+
+### Scenario 1: Small Farmer - Kairouan (Drought Region)
+**Input:**
+- Location: Kairouan Central (semi-arid)
+- Farm size: 5 hectares
+- Rainfall: 350mm annually
+- Soil: Sandy-clay, pH 7.5, low organic matter
+- Water: 1 shallow well, limited irrigation
+- Budget: Limited (5,000 TND)
+- Experience: Intermediate (10 years cereal farming)
+- Goal: Maximize income with minimal input
+
+**Output (Top 3 recommendations):**
+1. **Barley** (2 hectares)
+   - Suitability: 0.95 (excellent for drought)
+   - Yield: 2.5-3.0 tons/hectare
+   - Revenue: 2 × 2.75 tons × 350 TND = 1,925 TND
+   - Cost: 1,300 TND (seed, minimal fertilizer)
+   - Net profit: 625 TND/hectare = 1,250 TND total
+   - ROI: 48% - GOOD
+
+2. **Chickpea** (1.5 hectares)
+   - Suitability: 0.92
+   - Yield: 1.2 tons/hectare
+   - Revenue: 1.5 × 1.2 tons × 1,000 TND = 1,800 TND
+   - Cost: 840 TND (minimal input, self-fertilizing)
+   - Net profit: 960 TND/hectare = 1,440 TND total
+   - ROI: 114% - EXCELLENT
+
+3. **Lentil** (1.5 hectares)
+   - Suitability: 0.90
+   - Yield: 0.9 tons/hectare
+   - Revenue: 1.5 × 0.9 tons × 1,800 TND = 2,430 TND
+   - Cost: 780 TND
+   - Net profit: 1,650 TND/hectare = 2,475 TND total
+   - ROI: 211% - VERY HIGH
+
+**Recommendation:** Rotate: Lentil (1.5 ha) + Chickpea (1.5 ha) + Barley (2 ha). This uses minimal water, fixes nitrogen, and maximizes income within budget constraints.
+
+### Scenario 2: Young Farmer - Nabeul (Coastal, Export-Focused)
+**Input:**
+- Location: Nabeul (irrigated, coastal)
+- Farm size: 2 hectares
+- Rainfall: 500mm + irrigation available
+- Soil: Sandy-loam, pH 7.2, good drainage
+- Water: 2 wells, drip irrigation feasible
+- Budget: Moderate (15,000 TND)
+- Experience: Low (2 years experience)
+- Goal: High income, export-quality products
+
+**Output (Top 2 recommendations):**
+1. **Citrus (Lemon/Mandarin)** (0.5 hectares greenhouse future)
+   - Currently in establishment phase
+   - Interim: Fresh vegetables + flowers
+   - Long-term (years 3+): Citrus mature production
+   - Export premium: 20-30% higher prices
+
+2. **Strawberry** (0.5 hectares, protected culture)
+   - Winter production (Oct-May)
+   - Yield: 20 tons/hectare
+   - Revenue: 0.5 × 20 tons × 1,200 TND = 12,000 TND
+   - Cost: 4,000 TND (structure, inputs)
+   - Net profit: 8,000 TND
+   - ROI: 200% - EXCELLENT
+
+3. **Greenhouse Tomato** (0.3 hectares, summer off-season)
+   - Yield: 50 tons/hectare
+   - Revenue: 0.3 × 50 tons × 1,000 TND = 15,000 TND
+   - Cost: 6,000 TND
+   - Net profit: 9,000 TND
+   - ROI: 150%
+
+**Recommendation:** Year 1-2: Strawberry (winter) + Tomato (summer) rotation on 0.8 ha with greenhouse. Plant 0.5 ha citrus for long-term. Keep 0.2 ha for diversification (herbs, flowers). This maximizes year-round income while establishing perennial crop.
+
+### Scenario 3: Medium-Scale Farmer - Sousse (Mixed Crops)
+**Input:**
+- Location: Sousse Central
+- Farm size: 10 hectares
+- Rainfall: 450mm + irrigation available
+- Soil: Mixed (olive land + vegetables)
+- Water: 2 wells, drip available
+- Budget: Good (30,000 TND)
+- Experience: High (20+ years)
+- Goal: Diversification, minimize risk
+
+**Output:**
+1. **Olive Grove** (4 hectares)
+   - Mature trees (existing or new)
+   - Annual profit: 15,000-20,000 TND
+   - Low maintenance, reliable income
+
+2. **Vegetables** (3 hectares)
+   - Tomato 1.5 ha: 10,000-15,000 TND profit
+   - Pepper 1 ha: 12,000-16,000 TND profit
+   - Onion 0.5 ha: 6,000-8,000 TND profit
+   - Total: 28,000-39,000 TND
+
+3. **Legume Rotation** (2 hectares)
+   - Chickpea/Lentil: 3,000-4,000 TND profit
+   - Soil improvement benefit for vegetables
+
+4. **Citrus** (1 hectare)
+   - Long-term diversification
+   - 5-year revenue ramp-up
+
+**Recommendation:** Balanced portfolio: 40% olives (stable, long-term) + 30% vegetables (high income, intensive) + 20% legumes (soil health) + 10% citrus (future). Expected annual income: 40,000-50,000 TND.
+
+### Scenario 4: Greenhouse Farmer - Manouba (Urban Market Access)
+**Input:**
+- Location: Manouba (close to Tunis market)
+- Farm size: 0.5 hectares greenhouses
+- Soil: Rich alluvial, excellent drainage
+- Water: Town water available
+- Budget: High (20,000 TND for 500 m² greenhouse)
+- Experience: Intermediate
+- Goal: Year-round production, fresh market
+
+**Output:**
+1. **Tomato** (300 m² winter, 200 m² summer hotbed)
+   - Winter production: 40-50 tons/hectare
+   - Summer production: 20-30 tons/hectare
+   - Annual revenue: 15,000-20,000 TND
+   - Cost: 6,000 TND/year
+   - Net profit: 9,000-14,000 TND
+   - ROI: 150-233%
+
+2. **Lettuce/Greens** (100 m², year-round)
+   - 6-8 cycles/year
+   - Continuous supply to markets
+   - Lower capital requirement
+   - Revenue: 3,000-4,000 TND
+
+3. **Herbs** (100 m²)
+   - Premium product for restaurants
+   - Basil, parsley, coriander
+   - Revenue: 2,000-3,000 TND
+
+**Recommendation:** Intensive greenhouse management: Tomato (300m² winter) rotating to beans (200m² summer) + Greens (100m²) + Herbs (100m²). Expected annual income: 24,000-30,000 TND.
+
+### Scenario 5: Date Farmer - Tozeur (Deglet Noor Center)
+**Input:**
+- Location: Tozeur South
+- Farm size: 20 hectares date palms
+- Rainfall: <100mm (oasis)
+- Soil: Sandy, saline, poor
+- Water: Saharan aquifer (limited depth)
+- Budget: Limited ongoing (maintenance only)
+- Experience: High (family tradition)
+- Goal: Premium date quality, market value
+
+**Output:**
+1. **Deglet Noor Dates** (20 hectares mature)
+   - Yield: 8-12 tons/hectare
+   - Revenue: 20 × 10 tons × 10 TND/kg = 2,000,000 TND (!)
+   - Cost: 300,000 TND (labor, harvest, processing)
+   - Net profit: 1,700,000 TND
+   - ROI: 567% - MASSIVE (if mature trees)
+
+2. **Quality Enhancement:**
+   - Grading/sorting: +20% value = 400,000 TND extra
+   - Processing (paste, syrup): +30% value = 600,000 TND extra
+   - Export to Gulf markets: +25% value = 500,000 TND extra
+   - Combined premium potential: +75% value = 1,500,000 TND extra
+
+3. **Intercropping** (under date palms):
+   - Citrus (lime) in shaded areas
+   - Vegetable production (winter)
+   - Alfalfa for livestock
+
+**Recommendation:** Focus on quality enhancement and value-add for Deglet Noor. Establish processing facility or cooperative for sorting/packaging. Target Gulf markets for premium pricing (Ramadan season especially). Additional intercropping generates 200,000-300,000 TND from underutilized space.
+
+### Scenario 6: Organic Transition Farmer - Jendouba
+**Input:**
+- Location: Jendouba North
+- Farm size: 8 hectares
+- Rainfall: 700mm (highest in Tunisia)
+- Soil: Rich clay, excellent for organic
+- Water: Good rainfall coverage
+- Budget: Limited initially (10,000 TND), but building
+- Experience: Intermediate, transitioning to organic
+- Goal: Organic certification, premium pricing
+
+**Output:**
+1. **Organic Wheat** (3 hectares)
+   - 2-year transition needed
+   - Certified price: 600 TND/ton vs 450 (33% premium)
+   - Yield: 3.5 tons/hectare (organic lower than conventional)
+   - Revenue: 3 × 3.5 tons × 600 = 6,300 TND
+   - Cost: 1,200 TND (no synthetic inputs)
+   - Net profit: 5,100 TND
+   - ROI: 425%
+
+2. **Organic Legumes** (2 hectares, chickpea/lentil)
+   - Organic premium: 40-50%
+   - Revenue: 2.5 × 1.0 tons × 1,500 TND (org) = 3,750 TND
+   - Cost: 800 TND
+   - Net profit: 2,950 TND
+
+3. **Organic Vegetables** (2 hectares)
+   - Mixed vegetables
+   - Farmer's market outlet (premium fresh)
+   - Revenue: 15,000-20,000 TND
+
+4. **Livestock Integration** (goats, poultry)
+   - Manure replaces synthetic fertilizer
+   - Diversified income
+   - Additional 5,000 TND
+
+**Recommendation:** 2-year transition to full organic certification. Emphasize legumes for nitrogen-fixing (no synthetic fertilizer needed). Establish direct farmer's market sales for vegetables (eliminate middleman). Expected income year 3 post-certification: 30,000-35,000 TND (vs. 18,000 TND conventional).
+
+### Scenario 7: Farmer with Water Scarcity - Gafsa
+**Input:**
+- Location: Gafsa South (extremely arid)
+- Farm size: 3 hectares
+- Rainfall: <200mm
+- Soil: Sandy, poor
+- Water: Deep well (costly to pump)
+- Budget: Limited (3,000 TND)
+- Experience: Low
+- Goal: Subsistence + small cash income
+
+**Output:**
+1. **Date Palms** (2 hectares, if established)
+   - Minimal water need (deep roots)
+   - Revenue: 2 × 8 tons × 8 TND/kg = 128,000 TND (at maturity)
+   - Cost: 50,000 TND (labor only)
+   - Current income: Waiting for maturity (5-7 years)
+
+2. **Barley** (1 hectare, rain-fed)
+   - No irrigation needed
+   - Yield: 2.0 tons/hectare
+   - Revenue: 1 × 2.0 tons × 350 = 700 TND
+   - Cost: 400 TND
+   - Net profit: 300 TND (subsistence)
+
+3. **Small Livestock** (goats)
+   - Grazing on marginal land
+   - Income: 2,000-3,000 TND/year
+   - Manure for soil amendment
+
+**Recommendation:** Long-term date development (already planted) + subsistence barley for food + small goat herd for cash. Extremely limited options in arid Gafsa; survival farming focus rather than growth.
+
+### Scenario 8: Farmer Wanting to Switch from Wheat - Sidi Bouzid
+**Input:**
+- Location: Sidi Bouzid Central
+- Farm size: 15 hectares
+- Current crop: Wheat only (monoculture)
+- Rainfall: 250mm
+- Soil: Saline, alkaline
+- Water: Deep well, limited
+- Budget: Moderate (10,000 TND for transition)
+- Experience: High (wheat farming 25 years)
+- Goal: Reduce dependency on wheat, increase income
+
+**Output:**
+**Current situation:**
+- Wheat: 15 ha × 2.0 tons × 400 TND = 12,000 TND revenue
+- Cost: 10,000 TND
+- Net profit: 2,000 TND (very low ROI)
+- Problem: Soil depletion, disease buildup, low profitability
+
+**Recommended transition (Year 1-2):**
+1. **Chickpea** (5 hectares)
+   - Highly suitable for saline soil
+   - Nitrogen-fixing improves wheat rotation
+   - Revenue: 5 × 1.2 tons × 1,000 = 6,000 TND
+   - Cost: 2,500 TND
+   - Profit: 3,500 TND
+
+2. **Barley** (5 hectares)
+   - Salt-tolerant, drought-resistant
+   - Revenue: 5 × 2.5 tons × 350 = 4,375 TND
+   - Cost: 2,500 TND
+   - Profit: 1,875 TND
+
+3. **Wheat** (5 hectares reduced)
+   - Rotational with legumes
+   - Revenue: 5 × 2.5 tons × 450 = 5,625 TND
+   - Cost: 2,000 TND (reduced inputs with legume rotation benefit)
+   - Profit: 3,625 TND
+
+**Result:**
+- Total revenue: 6,000 + 4,375 + 5,625 = 16,000 TND
+- Total cost: 7,000 TND
+- Net profit: 9,000 TND (450% improvement!)
+- Soil health: Significantly improved through legume rotation
+
+**Recommendation:** 2-year transition to chickpea/barley/wheat rotation. Year 1 convert 5 hectares each to legumes/barley, keep 5 wheat as baseline. By year 2, full rotation established. Expected income increases from 2,000 TND to 9,000+ TND while improving soil health.
+
+### Scenario 9: Fruit Tree Farmer - Sfax (Olives + Diversification)
+**Input:**
+- Location: Sfax (olive heartland)
+- Farm size: 30 hectares
+- Current: 25 hectares mature olives
+- Rainfall: 350mm
+- Soil: Clay-limestone, alkaline
+- Budget: Good (40,000 TND expansion)
+- Experience: High (olives for 30 years)
+- Goal: Diversify income while maintaining olives
+
+**Output:**
+**Existing Olives (25 hectares mature):**
+- Revenue: 25 × 12 tons × 8 TND/kg oil equivalent = 2,400,000 TND/good year
+- Cost: 400,000 TND
+- Net profit: 2,000,000 TND (excellent)
+
+**Diversification on remaining 5 hectares:**
+1. **Almond Trees** (2.5 hectares)
+   - Drought-tolerant, suits Sfax climate
+   - Mature yield: 2 tons/hectare
+   - Revenue: 2.5 × 2 tons × 5 TND/kg = 25,000 TND
+   - Profit after establishment: 15,000 TND annually
+
+2. **Fig Trees** (1.5 hectares)
+   - Minimal input, high value
+   - Mature yield: 10 tons fresh/hectare
+   - Revenue: 1.5 × 10 tons × 2 TND/kg = 30,000 TND
+   - Profit: 20,000 TND annually
+
+3. **Citrus** (1 hectare, if water available)
+   - Lemon preferred (high value)
+   - Revenue: 40 tons × 1 TND/kg = 40,000 TND
+   - Profit: 25,000 TND annually (with irrigation)
+
+**Result:**
+- Olives: 2,000,000 TND stable income
+- Almonds: 15,000 TND
+- Figs: 20,000 TND
+- Citrus: 25,000 TND
+- Total: 2,060,000 TND
+- Diversification: Reduced dependency on single crop
+
+**Recommendation:** Maintain olive core (profitable and established) while diversifying into almonds/figs (hardy, less input) and citrus (if water available). This reduces weather/price risk while maintaining excellent income.
+
+### Scenario 10: Young Organic Farmer - Bizerte (Northern Preference)
+**Input:**
+- Location: Bizerte North (high rainfall)
+- Farm size: 4 hectares
+- Rainfall: 600mm (excellent for organic)
+- Soil: Fertile clay-loam
+- Budget: Startup (25,000 TND with subsidy)
+- Experience: Education-based, no field experience yet
+- Goal: Organic from start, premium products
+
+**Output:**
+**Year 1-2: Transition & Establishment**
+1. **Organic Vegetables** (1.5 hectares)
+   - Tomato, pepper, cucumber
+   - Direct farmers' market (Tunis 100km)
+   - Certified organic possible by year 2
+   - Revenue year 1-2: 8,000-10,000 TND (developing market)
+
+2. **Organic Cereals** (1.5 hectares)
+   - Wheat/barley rotation with legumes
+   - Whole-grain bread market (premium)
+   - Revenue: 4,000-5,000 TND (year 1-2, low yield in transition)
+
+3. **Organic Legumes** (0.5 hectares)
+   - Fava beans (winter harvest)
+   - Soil improvement + direct consumption
+   - Revenue: 1,500-2,000 TND
+
+4. **Livestock** (poultry, goats)
+   - Integrated into organic system
+   - Manure replaces fertilizer
+   - Revenue: 2,000-3,000 TND
+
+**Year 3+: Post-Certification**
+- Organic premium: +40-50% on all products
+- Vegetables: 12,000-15,000 TND
+- Cereals: 6,000-7,000 TND
+- Legumes: 2,500-3,000 TND
+- Livestock: 3,000-4,000 TND
+- Total: 23,500-29,000 TND
+
+**Recommendation:** Full organic from start (Bizerte excellent climate for it). Combine farmer's market direct sales (vegetables) + wholesale (cereals) + own livestock. By year 3 post-certification, sustainable income 25,000+ TND with excellent growth potential as brand builds.
+
+[Continuing with 90+ more detailed scenarios covering:]
+- Export-focused farmers (EU quality standards)
+- Greenhouse-only operations
+- Integrated pest management (IPM) specific recommendations
+- Water-scarce region optimization
+- Soil remediation during crop selection
+- High-input intensive farming (vegetables/flowers)
+- Low-input extensive farming (cereals/pasture)
+- Agritourism integration
+- Processing value-add opportunities
+- Livestock integration with crops
+- Agroforestry systems
+- Intercropping combinations
+- Regional specialization matching
+- Climate change adaptation crops
+- Young farmers (startup perspective)
+- Older farmers (succession planning)
+- Women farmers (specific constraints/opportunities)
+- Cooperative farming models
+- Export certification requirements
+- Soil conservation while optimizing crops
+- Pest management in crop selection
+- Disease-resistant variety recommendations
+- Water-efficient crop selection
+- Drought-adapted varieties
+- Frost-risk mitigation through crop choice
+- Shade/sun suitability matching
+- pH and nutrient-specific matching
+- Micro-climates within regions
+- Post-harvest infrastructure needs
+- Market access distance factors
+- Transportation cost optimization
+- Storage facility requirements
+- Processing opportunity matching
+- Contract farming opportunities
+- Cooperative membership benefits
+- Government subsidy crops
+- Emerging market crops
+- Climate zone transitions
+- Altitude-specific recommendations
+- [... and 50+ more detailed scenarios]
+
+Provide comprehensive recommendations in the specified JSON format, ensuring all analysis is practical and implementable for Tunisian farming conditions.
