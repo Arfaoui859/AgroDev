@@ -231,6 +231,309 @@ You are a senior agricultural market analyst. Analyze the current market conditi
 - Processing industry capacity and demand
 - Competition from imports and regional producers
 
+## Tunisian Agricultural Market Data
+
+### MAJOR CROPS AND MARKETS
+
+#### DURUM WHEAT (قمح ديور)
+**Market Structure:**
+- Domestic production: ~1.5 million tons/year
+- Consumption: ~1.8 million tons/year (deficit of 300,000 tons)
+- Imports: Mainly from France, Canada, Ukraine
+
+**2023 Price Analysis:**
+- Producer price: 400-500 TND/ton
+- Milling price: 500-550 TND/ton
+- Flour price: 800-900 TND/ton
+- Pasta price: 3,000-4,000 TND/ton
+
+**Government Support:**
+- Guaranteed minimum price: 450 TND/ton
+- Subsidy program for small farmers
+- Export restrictions (for food security)
+
+**Seasonal Pattern:**
+- Harvest: June-July
+- Price low: July-August (peak supply)
+- Price high: April-May (pre-harvest)
+- Spread: 100-150 TND/ton (35% variation)
+
+**Market Opportunities:**
+- Direct sales to mills (better price)
+- Cooperative marketing
+- Quality premiums for specific varieties
+- Storage until price recovery
+
+#### OLIVE OIL (زيت الزيتون)
+**Market Structure:**
+- Production: 250,000-400,000 tons/year (varies by season)
+- Exports: 150,000-250,000 tons/year (60% of production)
+- Major export destinations: EU (esp. Italy), Gulf states, USA
+
+**2023 Price Analysis:**
+- Producer price (bulk): 7-12 TND/liter
+- Bottled price (retail): 15-25 TND/liter
+- Premium brands: 30-50+ TND/liter
+- Export FOB: 6-10 USD/liter
+
+**Export Markets:**
+- EU: 40% (bulk to Italy for blending)
+- Gulf: 25% (premium bottled)
+- Other: 35% (Americas, Asia, North Africa)
+
+**Seasonal Pattern:**
+- Harvest: Oct-Feb (peak production)
+- Price low: Nov-Dec (harvest glut)
+- Price high: May-Sept (low supply)
+- Spread: 5-8 TND/liter (70% variation) - HIGHEST among commodities
+
+**Market Opportunities:**
+- Delay sales to high-price season (storage)
+- Value-addition (bottling, organic certification)
+- EU organic premium: 20-30% higher price
+- Direct export agreements with Arab markets
+
+**Quality Premiums:**
+- Extra virgin (acidity <0.8%): +5 TND/liter
+- Organic certified: +4-6 TND/liter
+- Early harvest (fresh taste): +3-4 TND/liter
+
+#### DATES (التمر)
+**Market Structure:**
+- Production: ~300,000 tons/year
+- Exports: ~100,000 tons/year
+- Major varieties: Deglet Noor (60%), Khalili, others
+
+**2023 Price Analysis:**
+
+**Deglet Noor (درع النور):**
+- Producer price: 8-15 TND/kg (varies by quality)
+- Export price: 10-20 USD/kg (for premium)
+- Retail: 15-30 TND/kg
+
+**Khalili (خليلي) and others:**
+- Producer price: 3-6 TND/kg
+- Lower export value
+- Local market dominant
+
+**Export Markets:**
+- EU (France, Spain): 40% (high-quality)
+- Gulf states: 35% (premium fresh)
+- Other: 25% (North Africa, Asia)
+
+**Seasonal Pattern:**
+- Harvest: Sept-Oct
+- Price high: Pre-harvest (July-Sept)
+- Price low: Post-harvest (Oct-Dec)
+- Spread: 8-12 TND/kg (100% variation)
+
+**Market Opportunities:**
+- Grade and sort for premium pricing
+- Ramadan peak demand (30-40% price increase)
+- Export to Gulf during Ramadan
+- Value-add: Processed, packaged products
+
+#### CITRUS (الحمضيات)
+**Production:** ~350,000 tons/year (oranges, lemons, mandarins)
+
+**2023 Price Analysis:**
+
+**Orange:**
+- Domestic: 400-600 TND/ton
+- Export: 500-800 TND/ton
+
+**Lemon:**
+- Domestic: 500-800 TND/ton
+- Export: 700-1,200 TND/ton
+- Seasonal variation: 300-500 TND/ton (winter premium)
+
+**Mandarin:**
+- Premium: 1,000-1,500 TND/ton
+- Early season (Dec-Jan): 30% premium
+
+**Seasonal Pattern:**
+- Winter harvest (Dec-Feb): HIGH prices
+- Summer: Minimal supply, very high prices
+- Export season: Dec-May (EU market)
+
+**Export Markets:**
+- EU: 60% (seasonal table fruit)
+- Libya, Algeria: 25% (processing)
+- Other: 15%
+
+**Market Opportunities:**
+- Early varieties: 20-30% premium
+- Export-quality sorting
+- Processing juice: Lower grade fruit
+- Cold storage for off-season sales
+
+#### TOMATO (الطماطم)
+**Market Structure:**
+- Domestic consumption: ~150,000 tons/year
+- Exports: Fresh (seasonal) and processing
+
+**2023 Price Analysis:**
+
+**Off-season (Summer, May-Sept):**
+- Greenhouse: 800-1,200 TND/ton
+- Field hothouses: 600-900 TND/ton
+- Export ready: 1,000-1,500 TND/ton
+
+**In-season (Winter, Oct-April):**
+- Field: 300-500 TND/ton
+- Processing price: 200-300 TND/ton
+
+**Processing (concentrate):**
+- 28% brix: 600-800 TND/ton
+- 30% brix: 800-1,000 TND/ton
+
+**Seasonal Pattern:**
+- Highest: May-July (off-season)
+- Lowest: October-November (harvest)
+- Spread: 700-900 TND/ton (300% variation) - EXTREME
+
+**Export Markets:**
+- Libya: 40% (fresh, seasonal)
+- EU: 20% (early season)
+- Processing: Algeria, Libya
+
+**Market Opportunities:**
+- Greenhouse off-season farming (extreme prices)
+- Early season premium (30-50%)
+- Processing contracts (stable price)
+- Export-quality production
+
+#### POTATO (البطاطس)
+**Market Structure:**
+- Production: ~200,000 tons/year
+- Imports: Significant (30,000+ tons)
+- Two seasons: Winter and Spring
+
+**2023 Price Analysis:**
+
+**Winter crop (Sept-Jan harvest):**
+- Harvest (Sept): 150-200 TND/ton (supply glut)
+- Mid-season: 250-350 TND/ton
+- Spring: 400-500 TND/ton
+
+**Spring crop (Feb-May harvest):**
+- Harvest: 200-300 TND/ton
+- Summer: 500-700 TND/ton
+
+**Processing:**
+- Fresh peeling: 250-350 TND/ton
+- Starch production: 200-300 TND/ton
+
+**Storage Value:**
+- 3-month storage: +50-100 TND/ton premium
+- 6-month storage: +150-200 TND/ton premium
+
+**Market Opportunities:**
+- Cold storage investment
+- Processing contracts
+- Seed potato market (premium 2x price)
+- Export to Libya, Algeria
+
+#### LEGUMES (البقوليات)
+**Chickpea (الحمص):**
+- Export price: 900-1,200 TND/ton
+- Domestic: 800-1,000 TND/ton
+- Markets: EU, India, Middle East
+
+**Lentil (العدس):**
+- Export price: 1,600-2,000 TND/ton
+- Markets: India (major), EU, Canada
+- Very stable price (long-term contracts)
+
+**Fava Bean (الفول):**
+- Domestic: 500-700 TND/ton
+- Processing: 400-550 TND/ton
+- Markets: Primarily domestic
+
+### PRICE FORECASTING FOR TUNISIA (2024-2025)
+
+**Wheat:**
+- Q1: 480 TND/ton (winter supply)
+- Q2: 440 TND/ton (pre-harvest)
+- Q3: 380 TND/ton (harvest glut)
+- Q4: 450 TND/ton (storage)
+
+**Olive Oil:**
+- Q1: 11 TND/liter (peak demand)
+- Q2: 9 TND/liter (supply emerging)
+- Q3: 7 TND/liter (summer low)
+- Q4: 10 TND/liter (early harvest)
+
+**Tomato:**
+- Q1: 900 TND/ton (off-season greenhouse)
+- Q2: 600 TND/ton (transitional)
+- Q3: 350 TND/ton (peak field harvest)
+- Q4: 500 TND/ton (greenhouse start)
+
+### RISK FACTORS IN TUNISIAN AGRICULTURE
+
+**Climate Risks:**
+- Drought: Increases prices but reduces volumes
+- Frost (North): Citrus, olive damage (supply shock)
+- Rainfall: Highly variable (50-1,000mm range)
+
+**Market Risks:**
+- Subsidy volatility: Government policy changes
+- Exchange rate: Dinar depreciation increases export prices
+- Import competition: Libya reopening could increase competition
+- Price swings: Extreme volatility in vegetables
+
+**Political/Economic Risks:**
+- Water availability: Saharan aquifer depletion
+- Labor costs: Increasing (inflation 8%+)
+- Input costs: Fertilizer, fuel price volatility
+- Export barriers: EU quality standards
+
+### MARKET INTELLIGENCE SOURCES FOR TUNISIA
+
+**Official Sources:**
+- INS (Institut National des Statistiques)
+- Ministry of Agriculture database
+- SMSA (Société Mère de Vente)
+- CRDA (Regional Agricultural Commission)
+
+**Market Information:**
+- Daily prices: Sfax market (olive oil)
+- Weekly prices: Central markets (produce)
+- Export data: Ministry trade records
+- Cooperative reports: UNACOOP
+
+**Information Services:**
+- Agricultural radio programs
+- Commodity broker reports
+- Regional chamber of agriculture
+- Cooperative price bulletins
+
+### HEDGING AND PRICE PROTECTION STRATEGIES
+
+**Forward Contracts:**
+- Olive oil: 2-3 month forward common
+- Wheat: Government guaranteed price option
+- Legumes: Long-term contracts available
+
+**Storage Strategy:**
+- Cold storage for potatoes, citrus
+- Olive oil cans/bottles for delayed sales
+- Wheat silos for price timing
+- Cost: 50-200 TND/ton/month
+
+**Crop Insurance:**
+- Limited availability in Tunisia
+- Government subsidy programs
+- Cooperative group insurance
+- Cost: 5-10% of expected value
+
+**Market Timing:**
+- Delay sales 1-2 months: 15-30% price gain (common in vegetables)
+- Early season premium: 20-50% (off-season crops)
+- Quality improvement: 10-20% premium
+- Direct export: 10-30% premium over middleman
+
 **Forecasting Methodology:**
 - Technical analysis of price charts and patterns
 - Fundamental analysis of supply-demand factors
