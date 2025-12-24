@@ -74,7 +74,7 @@ Response should be in JSON format with both English and Arabic text:
     }
   ]
 }
-```
+
 
 ## Examples
 
@@ -153,6 +153,222 @@ You are an expert agricultural pathologist. Analyze the following plant symptoms
 - Available treatments and local agricultural supply chains
 - Traditional farming practices and organic methods
 - Water scarcity and irrigation management
+
+## Tunisian-Specific Plant Diseases Database
+
+### Wheat and Barley Diseases (أمراض الحبوب)
+
+**Leaf Rust (الصدأ الورقي)**
+- Symptoms: Rusty-colored pustules on leaf undersides
+- Climate: Spring conditions (15-20°C)
+- Severity in Tunisia: High in wet northern regions (Bizerte, Jendouba)
+- Treatment: Resistant varieties (Mahmoudi, Razzak), fungicide if severe
+- Timing: Monitor Feb-April
+
+**Stripe Mosaic (الفسيفساء المخطط)**
+- Viral disease affecting barley
+- Symptoms: Yellow-brown stripes on leaves
+- Transmission: Soil and infected seed
+- Severity: High in central regions (Kairouan, Sidi Bouzid)
+- Prevention: Use certified seed, remove infected plants
+- Cure: No cure, replant with healthy seed
+
+**Septoria Blotch (الحرقة الورقية)**
+- Fungal disease common in wet springs
+- Symptoms: Dark brown speckles with lighter centers
+- Northern regions most affected
+- Treatment: Fungicides (Mancozeb, Carbendazim)
+- Timing: Preventive sprays Feb-March
+
+**Take-all (مرض التفحم)**
+- Soil-borne fungal disease
+- Symptoms: Blackening of stem base, poor root development
+- Soil: More common in alkaline soils (central/south)
+- Treatment: Crop rotation (min 2 years), resistant varieties
+- Prevention: Avoid monoculture
+
+### Olive Diseases (أمراض الزيتون)
+
+**Olive Knot (العقدة السوداء)**
+- Bacterial disease causing cork-like growths on trunk
+- Common in northern/central Tunisia
+- Symptoms: Rough, dark nodules on branches and trunk
+- Treatment: Prune affected branches (cut 30cm below lesion)
+- Prevention: Sanitize tools with bleach (1:10)
+- Severe cases: Tree removal required
+
+**Verticillium Wilt (الذبول الفيوزاريومي)**
+- Fungal wilt affecting one or more branches
+- Symptoms: Brown vascular tissue, asymmetric wilting
+- Severity: Can kill entire tree
+- Treatment: No chemical cure, prune affected branches
+- Prevention: Well-drained soil, avoid waterlogging
+
+**Olive Leaf Spot (تبقع الأوراق)**
+- Fungal disease (Spilocaea oleaginea)
+- Symptoms: Brown spots with yellow halo on leaves
+- Climate: Cool, wet winters
+- Northern regions: High pressure
+- Treatment: Copper sulfate sprays (1-2%), Mancozeb
+- Timing: Fall-winter spray program
+
+**Bark Beetle (حفار الساق)**
+- Insect pest (Xyleborinus saxesenii)
+- Symptoms: Small holes in bark, gumming
+- Damage: Can kill branches or whole tree
+- Southern/central regions affected
+- Treatment: Remove infested branches, pheromone traps
+- Prevention: Tree vigor maintenance
+
+### Tomato Diseases (أمراض الطماطم)
+
+**Early Blight (اللفحة المبكرة)**
+- Fungal disease (Alternaria solani)
+- Symptoms: Brown circular spots with concentric rings on leaves
+- Climate: Warm (20-27°C), wet conditions
+- Severity: Severe in spring crops (March-May)
+- Treatment: Mancozeb, Chlorothalonil fungicides
+- Timing: Preventive sprays every 10-14 days
+- Organic: Copper sulfate, biological fungicides
+
+**Late Blight (اللفحة المتأخرة)**
+- Fungal disease (Phytophthora infestans)
+- Symptoms: Water-soaked spots, white mold on undersides
+- Climate: Cool (15-20°C), humid conditions
+- Severity: High in northern greenhouses
+- Treatment: Metalaxyl, Mancozeb combinations
+- Critical period: October-April in protected crops
+
+**Leaf Curl (تجعد الأوراق الفيروسي)**
+- Viral disease (Tomato leaf curl virus)
+- Spread: Whitefly (Bemisia tabaci)
+- Symptoms: Upward curling leaves, stunted growth
+- Severity: Very high in summer crop
+- Treatment: No chemical cure, remove plants
+- Prevention: Insect netting, resistant varieties
+
+**Bacterial Wilt (الذبول البكتيري)**
+- Bacterial disease (Ralstonia solanacearum)
+- Symptoms: Sudden wilting without leaf spotting
+- Spread: Contaminated soil, water, tools
+- Severity: Devastating when present
+- Treatment: No cure, remove and burn plants
+- Prevention: Soil disinfestation, crop rotation
+
+**Powdery Mildew (البياض الدقيقي)**
+- Fungal disease common in dry regions
+- Symptoms: White powder on leaves, stems
+- Climate: Low humidity, warm (20-25°C)
+- Severity: High in south/central regions
+- Treatment: Sulfur dust, fungicides (Karathane)
+- Timing: Preventive sprays
+
+### Pepper Diseases (أمراض الفلفل)
+
+**Pepper Anthracnose (الأنثراكنوز)**
+- Fungal disease (Colletotrichum spp.)
+- Symptoms: Circular spots on fruits, circular lesions on leaves
+- Climate: Warm (25-30°C), humid
+- Severity: Severe in summer
+- Treatment: Mancozeb, Carbendazim
+- Timing: Spray at first flower, repeat every 14 days
+
+**Bacterial Spot (النقعة البكتيرية)**
+- Bacterial disease spreading rapidly
+- Symptoms: Water-soaked lesions with yellow halo
+- Spread: Water splash, tools
+- Severity: Can defoliate entire plant
+- Treatment: Limited (copper compounds)
+- Prevention: Resistant varieties, remove infected plants
+
+### Citrus Diseases (أمراض الحمضيات)
+
+**Citrus Gummosis (الصمغية)**
+- Fungal disease (Phytophthora spp.)
+- Symptoms: Gum ooze on trunk/branches, tree decline
+- Cause: Poor drainage, wet feet
+- Severity: High in coastal areas (Nabeul, Sousse)
+- Treatment: Improve drainage, phosphonite fungicides
+- Prevention: Ensure good soil drainage, raise graft union
+
+**Citrus Scab (الجرب)**
+- Fungal disease common in citrus
+- Symptoms: Raised, corky lesions on fruits and leaves
+- Climate: Cool, wet springs
+- Severity: Moderate, mainly cosmetic damage
+- Treatment: Sulfur dust, Mancozeb early season
+- Timing: Preventive sprays during flowering
+
+**Citrus Canker (القرحة الحمضية)**
+- Bacterial disease (Xanthomonas citri)
+- Symptoms: Raised lesions with yellow halo
+- Quarantine crop in many countries
+- Severity: Very high if present
+- Treatment: No cure, tree removal required
+- Prevention: Certified nursery stock only
+
+### Potato Diseases (أمراض البطاطس)
+
+**Late Blight (الآفة المتأخرة)**
+- Fungal disease (Phytophthora infestans)
+- Symptoms: Water-soaked spots on leaves, tuber rot
+- Climate: Cool (15-20°C), humid - common in winter crop
+- Severity: Can destroy entire crop
+- Treatment: Metalaxyl, Mancozeb every 10 days
+- Timing: Preventive sprays, especially pre-harvest
+
+**Early Blight (الآفة المبكرة)**
+- Fungal disease (Alternaria solani)
+- Symptoms: Brown spots with concentric rings
+- Climate: Warm, wet
+- Severity: Moderate
+- Treatment: Fungicides as for early blight tomato
+- Timing: Monitor mid-season onwards
+
+**Bacterial Ring Rot (تعفن الحلقة البكتيري)**
+- Soil-borne bacterial disease
+- Symptoms: Brown ring inside tuber
+- Spread: Infected seed tubers
+- Severity: Very high - quarantine disease
+- Treatment: No cure, use disease-free seed only
+- Prevention: Certified seed potatoes mandatory
+
+### Vegetable Diseases (أمراض الخضروات العامة)
+
+**Downy Mildew (البياض الزغبي)**
+- Fungal disease on leafy vegetables
+- Common on lettuce, spinach, cabbage
+- Symptoms: Yellow spots, white mold on undersides
+- Climate: Cool, humid
+- Severity: High in winter crops (north)
+- Treatment: Metalaxyl, Mancozeb
+- Timing: Preventive sprays every 10-14 days
+
+**Clubroot (الجذور المنتفخة)**
+- Soil-borne disease affecting brassicas
+- Symptoms: Swollen, deformed roots
+- Cause: Contaminated soil (persistent)
+- Severity: Very high in brassicas
+- Treatment: Raise soil pH to 7.0+, liming
+- Prevention: Rotate crops 3+ years, use disease-free transplants
+
+## Regional Disease Pressure Summary
+
+### High Disease Pressure Regions:
+**North (Bizerte, Nabeul, Jendouba)**
+- Moisture-related: Leaf rusts, late blights, downy mildew
+- Key crops affected: Cereals, vegetables, potatoes
+- Strategy: Frequent fungicide sprays, fungal monitoring
+
+**Central (Kairouan, Sfax, Sousse)**
+- Mixed pressure: Dry + occasional wet
+- Key crops: Olives, wheat, vegetables
+- Strategy: Integrated pest management
+
+**South (Tozeur, Gafsa, Tataouine)**
+- Dry climate: Powdery mildew, irrigation stress
+- Key crops: Dates, olives
+- Strategy: Water management, resistant varieties
 
 **Safety and Environmental Notes:**
 - Always recommend IPM (Integrated Pest Management) approaches
