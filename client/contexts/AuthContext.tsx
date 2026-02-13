@@ -200,9 +200,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       if (userError) {
-        console.log(
-          "Custom user table not available, using Supabase Auth data only",
-        );
+        // Check if this is a table-not-found error
+        const isTableMissing = userError.message?.includes('relation') && userError.message?.includes('does not exist');
+        const isPermissionDenied = userError.message?.includes('permission denied');
+
+        if (isTableMissing) {
+          console.warn(`
+⚠️  DATABASE TABLES NOT FOUND
+═══════════════════════════════════════════════════════════
+The 'users' table doesn't exist in your Supabase database.
+
+📋 QUICK FIX:
+1. Copy the file: supabase-tables-setup.sql (project root)
+2. Go to: https://app.supabase.com/projects/[project-id]/sql/new
+3. Paste and run the SQL script
+4. Refresh the application
+
+This is a one-time setup. After running, everything will work.
+═══════════════════════════════════════════════════════════
+          `);
+        } else if (isPermissionDenied) {
+          console.warn(`
+⚠️  PERMISSION DENIED - RLS Policy Issue
+═══════════════════════════════════════════════════════════
+Row Level Security (RLS) policies are blocking access.
+
+📋 FIX:
+1. Run supabase-tables-setup.sql to fix RLS policies
+2. Or check RLS policies in Supabase dashboard
+═══════════════════════════════════════════════════════════
+          `);
+        } else {
+          console.log(
+            "Custom user table not available, using Supabase Auth data only",
+          );
+        }
 
         // Fallback: create minimal user object from auth data
         const {
