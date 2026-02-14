@@ -42,6 +42,11 @@ services:
       - SOIL_ANALYSIS_URL=http://soil-analysis:8001
       - CROP_RECOMMENDATION_URL=http://crop-recommendation:8002
       - IMAGE_DIAGNOSIS_URL=http://image-diagnosis:8003
+      - MARKET_PREDICTION_URL=http://market-prediction:8003
+      - IRRIGATION_OPTIMIZATION_URL=http://irrigation-optimization:8004
+      - INTELLIGENT_AGENT_URL=http://intelligent-agent:8005
+      - PEST_CONTROL_URL=http://pest-control:8005
+      - WEATHER_YIELD_INTELLIGENCE_URL=http://weather-yield-intelligence:8006
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/agrogrowth
       - SUPABASE_URL=${VITE_SUPABASE_URL}
       - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
@@ -107,6 +112,84 @@ services:
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
     volumes:
       - ./models/image_diagnosis:/app/models
+    networks:
+      - agrogrowth-network
+
+  market-prediction:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: market_prediction/Dockerfile
+    ports:
+      - "8004:8003"
+    environment:
+      - SERVICE_PORT=8003
+      - MODEL_PATH=/app/models
+      - SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+    volumes:
+      - ./models/market_prediction:/app/models
+    networks:
+      - agrogrowth-network
+
+  irrigation-optimization:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: irrigation_optimization/Dockerfile
+    ports:
+      - "8005:8004"
+    environment:
+      - SERVICE_PORT=8004
+      - SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+    networks:
+      - agrogrowth-network
+
+  intelligent-agent:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: intelligent_agent/Dockerfile
+    ports:
+      - "8006:8005"
+    environment:
+      - SERVICE_PORT=8005
+      - SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+    networks:
+      - agrogrowth-network
+
+  pest-control:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: pest_control/Dockerfile
+    ports:
+      - "8007:8005"
+    environment:
+      - SERVICE_PORT=8005
+      - SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+    networks:
+      - agrogrowth-network
+
+  weather-yield-intelligence:
+    build:
+      context: ./agrogrowth-ai
+      dockerfile: weather_yield_intelligence/Dockerfile
+    ports:
+      - "8008:8006"
+    environment:
+      - SERVICE_PORT=8006
+      - SUPABASE_URL=${VITE_SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
     networks:
       - agrogrowth-network
 
