@@ -15,7 +15,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ai_common.base_service import BaseAIService, PredictionResponse
-from soil_analyzer import create_soil_analyzer
+from soil_analysis.soil_analyzer import create_soil_analyzer
 from climate_crop_matcher import create_climate_crop_matcher
 from soil_image_diagnosis import create_soil_image_diagnosis
 
