@@ -1,0 +1,60 @@
+================================================================================
+BUILDER VERIFICATION CHECK - 2 LINES (URGENT, FORCES REPLY)
+================================================================================
+
+Hi [Builder Name] 👋
+
+**URGENT: قبل ما تبدأ التنفيذ، أكدلي بكلمتين:**
+كل AI services (OpenAI + 5 Railway agents) شغالة production-ready ولا لسع mocks؟ 
+جواب بـ YES/NO يكفي 🚀
+
+---
+
+ENGLISH VERSION (If needed):
+Hi [Builder Name] 👋
+
+**URGENT: Before we start — confirm in 2 lines:**
+Are all AI services (OpenAI + 5 Railway agents) live in production, or still mocks?
+YES/NO is enough 🚀
+
+================================================================================
+STRATEGY:
+================================================================================
+
+✅ WHEN TO USE: 
+- After sending the main 3-line brief
+- If builder hasn't confirmed in 24 hours
+- Need quick acknowledgment before Monday
+- Want binary YES/NO (not long answers)
+
+✅ EXPECTED RESPONSE:
+- "YES, all live and tested ✅"
+- "NO, still in progress [details]"
+- "PARTIAL, [list which agents]"
+
+✅ FOLLOW-UP IF NO:
+→ Ask: "When will [agent name] be live?"
+→ Get: Specific timeline
+→ Plan: Adjust start date if needed
+
+================================================================================
+ALTERNATIVE: FULL CHECKLIST VERSION (if you need detailed confirmation)
+================================================================================
+
+Hi [Builder Name] 👋
+
+Before Monday, please confirm in checklist format:
+
+✅ Disease Detector → Live + tested
+✅ Soil Analyzer → Live + tested  
+✅ Crop Recommender → Live + tested
+✅ Market Forecast → Live + tested
+✅ Irrigation Optimizer → Live + tested
+✅ Orchestrator → Integrated + working
+✅ All tests passing
+✅ OpenAI account active
+✅ Railway services deployed
+
+Just reply with ✅ or ❌ per line
+
+================================================================================
