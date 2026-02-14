@@ -11,16 +11,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY agrogrowth-ai/requirements.txt .
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy common modules
-COPY agrogrowth-ai/ai_common ./ai_common
+COPY ai_common ./ai_common
 
 # Copy service-specific files
-COPY agrogrowth-ai/crop_recommendation ./crop_recommendation
+COPY crop_recommendation ./crop_recommendation
 
 # Set Python path
 ENV PYTHONPATH=/app
