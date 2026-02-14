@@ -24,7 +24,7 @@
     "VITE_MARKET_PREDICTION_URL": "https://agrogrowth-market-prediction.onrender.com",
     "VITE_INTELLIGENT_AGENT_URL": "https://agrogrowth-intelligent-agent.onrender.com"
   },
-  "buildCommand": "cd client && npm run build",
+  "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist/spa",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
