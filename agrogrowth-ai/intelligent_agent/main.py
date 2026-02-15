@@ -9,7 +9,7 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ai_common.base_service import create_base_app
+from ai_common.base_service import BaseAIService
 from intelligent_agent.agro_chat_ai import AgroChatAI
 from intelligent_agent.farming_tasks_planner import FarmingTasksPlanner
 from intelligent_agent.alert_notifier_ai import AlertNotifierAI
