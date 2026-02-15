@@ -22,7 +22,7 @@ export default defineConfig(({ mode, command }) => {
       hmr: isDevelopment ? true : false,
     },
     build: {
-      outDir: "dist/spa",
+      outDir: "dist",
       // Disable HMR in production builds
       minify: true,
       sourcemap: false,
