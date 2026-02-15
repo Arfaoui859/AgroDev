@@ -10,7 +10,7 @@ export default defineConfig(({ mode, command }) => {
   const isDevelopment = command === "serve";
 
   return {
-    base: "./", // relative paths for production build
+    base: "/", // relative paths for production build
     server: {
       host: "::",
       port: 8080,
