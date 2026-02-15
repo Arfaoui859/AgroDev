@@ -1,0 +1,159 @@
+{
+  "name": "AgroGrowth - منصة زراعية ذكية",
+  "short_name": "AgroGrowth",
+  "description": "منصة زراعية ذكية متكاملة مع الذكاء الاصطناعي لإدارة المزارع والمحاصيل",
+  "description_en": "Smart agricultural platform with AI for complete farm and crop management",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#22c55e",
+  "background_color": "#f0fdf4",
+  "categories": ["agriculture", "business", "productivity", "utilities"],
+  "lang": "ar",
+  "dir": "rtl",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-dashboard.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "mobile",
+      "label": "لوحة تحكم الفلاح"
+    },
+    {
+      "src": "/screenshots/mobile-analysis.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "platform": "mobile",
+      "label": "تحليل التربة الذكي"
+    },
+    {
+      "src": "/screenshots/desktop-overview.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "نظرة عامة على المنصة"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "تحليل التربة",
+      "short_name": "تحليل",
+      "description": "تحليل سريع للتربة",
+      "url": "/enhanced-analysis",
+      "icons": [
+        {
+          "src": "/icons/shortcut-analysis.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "لوحة الفلاح",
+      "short_name": "لوحة التحكم",
+      "description": "لوحة تحكم الفلاح الرئيسية",
+      "url": "/farmer-dashboard",
+      "icons": [
+        {
+          "src": "/icons/shortcut-dashboard.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "ذكاء السوق",
+      "short_name": "السوق",
+      "description": "أسعار السوق والتوقعات",
+      "url": "/market-dashboard",
+      "icons": [
+        {
+          "src": "/icons/shortcut-market.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "كشف الأمراض",
+      "short_name": "الأمراض",
+      "description": "كشف أمراض النباتات بالذكاء الاصطناعي",
+      "url": "/disease-upload",
+      "icons": [
+        {
+          "src": "/icons/shortcut-disease.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+agrogrowth",
+      "url": "/handle?type=%s"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.agrogrowth.app",
+      "id": "com.agrogrowth.app"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/agrogrowth/id123456789"
+    }
+  ]
+}
