@@ -28,7 +28,7 @@ export const useServiceHealthChecker = () => {
 
   const performHealthCheck = useCallback(async (service: ServiceStatus): Promise<HealthCheckResult> => {
     const startTime = Date.now();
-    
+
     try {
       // Skip health check if no endpoint provided
       if (!service.endpoint) {
@@ -41,61 +41,37 @@ export const useServiceHealthChecker = () => {
         };
       }
 
-      // For AI services that require local setup
+      // For AI services that require local setup - skip in production
       if (service.requiresLocal) {
-        try {
-          const response = await fetch(service.endpoint, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(3000) // 3 second timeout
-          });
-          
-          const responseTime = Date.now() - startTime;
-          
-          if (response.ok) {
-            return {
-              serviceId: service.id,
-              isAvailable: true,
-              responseTime,
-              lastChecked: new Date()
-            };
-          } else {
-            return {
-              serviceId: service.id,
-              isAvailable: false,
-              responseTime,
-              lastChecked: new Date(),
-              error: `HTTP ${response.status}: ${response.statusText}`
-            };
-          }
-        } catch (error) {
-          const responseTime = Date.now() - startTime;
-          return {
-            serviceId: service.id,
-            isAvailable: false,
-            responseTime,
-            lastChecked: new Date(),
-            error: service.requiresLocal ? 
-              'Local AI services not running (requires docker-compose up)' : 
-              error instanceof Error ? error.message : 'Connection failed'
-          };
-        }
+        // In production/deployed environments, assume local services are not available
+        const responseTime = Date.now() - startTime;
+        return {
+          serviceId: service.id,
+          isAvailable: false,
+          responseTime,
+          lastChecked: new Date(),
+          error: 'Local AI services not running (requires docker-compose up)'
+        };
       }
 
-      // For core services (Supabase)
-      if (service.id.includes('supabase')) {
+      // For core services (Supabase, etc.)
+      if (service.id.includes('supabase') || service.id.includes('auth')) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
           const response = await fetch(service.endpoint, {
             method: 'GET',
-            headers: { 
+            headers: {
               'Content-Type': 'application/json',
               'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || ''
             },
-            signal: AbortSignal.timeout(5000) // 5 second timeout for external services
+            signal: controller.signal
           });
-          
+
+          clearTimeout(timeoutId);
           const responseTime = Date.now() - startTime;
-          
+
           return {
             serviceId: service.id,
             isAvailable: response.ok,
@@ -105,12 +81,16 @@ export const useServiceHealthChecker = () => {
           };
         } catch (error) {
           const responseTime = Date.now() - startTime;
+          const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+
           return {
             serviceId: service.id,
             isAvailable: false,
             responseTime,
             lastChecked: new Date(),
-            error: error instanceof Error ? error.message : 'Connection failed'
+            error: errorMessage.includes('timeout') || errorMessage.includes('abort')
+              ? 'Service request timeout'
+              : errorMessage
           };
         }
       }
