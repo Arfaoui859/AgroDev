@@ -24,11 +24,13 @@ tasks_planner = FarmingTasksPlanner()
 alert_notifier = AlertNotifierAI()
 
 # Create FastAPI app with common configuration
-app = create_base_app(
-    title="AgroGrowth Intelligent Agent Service",
-    description="Smart agricultural assistance, task planning, and alert management",
-    version="1.0.0"
+service = BaseAIService(
+    service_name="Intelligent Agent",
+    description="AgroGrowth Intelligent AI Agent Service"
 )
+
+# FastAPI app for uvicorn (VERY IMPORTANT)
+app = service.app
 
 # Request/Response Models
 class ChatQueryRequest(BaseModel):
