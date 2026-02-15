@@ -14,8 +14,8 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from crop_recommender.crop_recommender import create_crop_recommender
-from crop_recommender.profit_estimator import create_profit_estimator
+from crop_recommendation.crop_recommender import create_crop_recommender
+from crop_recommendation.profit_estimator import create_profit_estimator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
