@@ -1,0 +1,109 @@
+services:
+  # Soil Analysis Service
+  - type: web
+    name: agrogrowth-soil-analysis
+    env: python
+    repo: https://github.com/your-repo/agrogrowth.git
+    rootDir: ./agrogrowth-ai/soil_analysis
+    buildCommand: pip install -r ../requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: SERVICE_PORT
+        value: 8001
+      - key: MODEL_PATH
+        value: /app/models
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agrogrowth-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: agrogrowth-redis
+          property: connectionString
+
+  # Crop Recommendation Service
+  - type: web
+    name: agrogrowth-crop-recommendation
+    env: python
+    repo: https://github.com/your-repo/agrogrowth.git
+    rootDir: ./agrogrowth-ai/crop_recommendation
+    buildCommand: pip install -r ../requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: SERVICE_PORT
+        value: 8002
+      - key: MODEL_PATH
+        value: /app/models
+
+  # Image Diagnosis Service
+  - type: web
+    name: agrogrowth-image-diagnosis
+    env: python
+    repo: https://github.com/your-repo/agrogrowth.git
+    rootDir: ./agrogrowth-ai/image_diagnosis
+    buildCommand: pip install -r ../requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: SERVICE_PORT
+        value: 8003
+      - key: MODEL_PATH
+        value: /app/models
+
+  # Market Prediction Service
+  - type: web
+    name: agrogrowth-market-prediction
+    env: python
+    repo: https://github.com/your-repo/agrogrowth.git
+    rootDir: ./agrogrowth-ai/market_prediction
+    buildCommand: pip install -r ../requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: SERVICE_PORT
+        value: 8004
+      - key: MODEL_PATH
+        value: /app/models
+
+  # Intelligent Agent Service
+  - type: web
+    name: agrogrowth-intelligent-agent
+    env: python
+    repo: https://github.com/your-repo/agrogrowth.git
+    rootDir: ./agrogrowth-ai/intelligent_agent
+    buildCommand: pip install -r ../requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: SERVICE_PORT
+        value: 8005
+      - key: MODEL_PATH
+        value: /app/models
+
+databases:
+  - name: agrogrowth-postgres
+    databaseName: agrogrowth
+    user: postgres
+    plan: starter
+    region: frankfurt
+    ipAllowList: []
+
+  - name: agrogrowth-redis
+    plan: starter
+    region: frankfurt
+    ipAllowList: []

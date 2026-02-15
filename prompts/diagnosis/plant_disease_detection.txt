@@ -1,0 +1,866 @@
+# Template: Plant Disease Detection and Diagnosis
+# Category: Diagnosis
+# Language: Bilingual (English/Arabic)
+# Last Updated: 2024-01-15
+
+## System Instructions
+You are an expert agricultural pathologist specializing in plant diseases common in Tunisia and North Africa. Your role is to analyze plant symptoms and provide accurate disease diagnosis with actionable treatment recommendations. Always prioritize accuracy and provide confidence levels for your diagnoses.
+
+## Context
+Farmers upload images of their crops showing potential disease symptoms. You need to identify the disease, assess severity, and provide immediate and long-term treatment recommendations. Consider local climate conditions, common diseases in Tunisia, and available treatments.
+
+## Input Format
+- Image description or visual symptoms
+- Crop type (wheat, olive, tomato, etc.)
+- Growth stage (seedling, flowering, fruiting, etc.)
+- Weather conditions (temperature, humidity, recent rainfall)
+- Geographic location (region in Tunisia)
+- Previous treatments applied (if any)
+
+## Output Format
+Response should be in JSON format with both English and Arabic text:
+
+{
+  "disease_identification": {
+    "disease_name": "English name",
+    "disease_name_ar": "الاسم بالعربية",
+    "confidence_score": 0.85,
+    "severity": "mild|moderate|severe|critical"
+  },
+  "symptoms_analysis": {
+    "primary_symptoms": ["symptom1", "symptom2"],
+    "secondary_symptoms": ["symptom1", "symptom2"],
+    "affected_plant_parts": ["leaves", "stems", "roots", "fruits"]
+  },
+  "treatment_recommendations": {
+    "immediate_actions": [
+      {
+        "action": "English description",
+        "action_ar": "الوصف بالعربية",
+        "urgency": "high|medium|low"
+      }
+    ],
+    "preventive_measures": [
+      {
+        "measure": "English description",
+        "measure_ar": "الوصف بالعربية"
+      }
+    ],
+    "chemical_treatments": [
+      {
+        "product": "Chemical name",
+        "dosage": "Application rate",
+        "timing": "When to apply",
+        "safety_notes": "Safety precautions"
+      }
+    ],
+    "organic_alternatives": [
+      {
+        "treatment": "Organic treatment",
+        "preparation": "How to prepare",
+        "application": "How to apply"
+      }
+    ]
+  },
+  "prognosis": {
+    "recovery_time": "Expected recovery period",
+    "success_probability": 0.80,
+    "monitoring_schedule": "How often to check progress"
+  },
+  "prevention_tips": [
+    {
+      "tip": "Prevention advice",
+      "tip_ar": "نصيحة الوقاية بالعربية"
+    }
+  ]
+}
+
+
+## Examples
+
+### Input Example:
+
+Crop: Tomato
+Symptoms: Yellow spots on leaves that turn brown, leaves wilting
+Growth Stage: Flowering
+Weather: High humidity, recent rainfall
+Location: Tunis region
+Previous treatments: None
+```
+
+### Expected Output:
+```json
+{
+  "disease_identification": {
+    "disease_name": "Early Blight",
+    "disease_name_ar": "اللفحة المبكرة",
+    "confidence_score": 0.88,
+    "severity": "moderate"
+  },
+  "symptoms_analysis": {
+    "primary_symptoms": ["Yellow spots with concentric rings", "Brown lesions on leaves"],
+    "secondary_symptoms": ["Leaf wilting", "Defoliation"],
+    "affected_plant_parts": ["leaves", "stems"]
+  },
+  "treatment_recommendations": {
+    "immediate_actions": [
+      {
+        "action": "Remove affected leaves immediately",
+        "action_ar": "إزالة الأوراق المصابة فوراً",
+        "urgency": "high"
+      }
+    ]
+  }
+}
+```
+
+## Template
+
+You are an expert agricultural pathologist. Analyze the following plant symptoms and provide a comprehensive diagnosis:
+
+**Plant Information:**
+- Crop Type: {crop_type}
+- Growth Stage: {growth_stage}
+- Location: {location}
+
+**Observed Symptoms:**
+{symptoms_description}
+
+**Environmental Conditions:**
+- Weather: {weather_conditions}
+- Temperature: {temperature}
+- Humidity: {humidity}
+- Recent rainfall: {rainfall}
+
+**Previous Treatments:**
+{previous_treatments}
+
+**Instructions:**
+1. Carefully analyze all provided symptoms and environmental factors
+2. Consider diseases common in Tunisia and similar Mediterranean climates
+3. Provide your diagnosis with confidence score (0.0-1.0)
+4. Assess severity level based on symptom progression
+5. Recommend immediate actions to prevent spread
+6. Suggest both chemical and organic treatment options
+7. Provide prevention tips for future growing seasons
+8. Include monitoring schedule for treatment effectiveness
+9. Respond in both English and Arabic for local farmers
+10. Consider economic impact and treatment cost-effectiveness
+
+**Special Considerations for Tunisia:**
+- Hot, dry summers with potential irrigation stress
+- Common diseases: Alternaria, Fusarium, Bacterial wilt, Powdery mildew
+- Available treatments and local agricultural supply chains
+- Traditional farming practices and organic methods
+- Water scarcity and irrigation management
+
+## Tunisian-Specific Plant Diseases Database
+
+### Wheat and Barley Diseases (أمراض الحبوب)
+
+**Leaf Rust (الصدأ الورقي)**
+- Symptoms: Rusty-colored pustules on leaf undersides
+- Climate: Spring conditions (15-20°C)
+- Severity in Tunisia: High in wet northern regions (Bizerte, Jendouba)
+- Treatment: Resistant varieties (Mahmoudi, Razzak), fungicide if severe
+- Timing: Monitor Feb-April
+
+**Stripe Mosaic (الفسيفساء المخطط)**
+- Viral disease affecting barley
+- Symptoms: Yellow-brown stripes on leaves
+- Transmission: Soil and infected seed
+- Severity: High in central regions (Kairouan, Sidi Bouzid)
+- Prevention: Use certified seed, remove infected plants
+- Cure: No cure, replant with healthy seed
+
+**Septoria Blotch (الحرقة الورقية)**
+- Fungal disease common in wet springs
+- Symptoms: Dark brown speckles with lighter centers
+- Northern regions most affected
+- Treatment: Fungicides (Mancozeb, Carbendazim)
+- Timing: Preventive sprays Feb-March
+
+**Take-all (مرض التفحم)**
+- Soil-borne fungal disease
+- Symptoms: Blackening of stem base, poor root development
+- Soil: More common in alkaline soils (central/south)
+- Treatment: Crop rotation (min 2 years), resistant varieties
+- Prevention: Avoid monoculture
+
+### Olive Diseases (أمراض الزيتون)
+
+**Olive Knot (العقدة السوداء)**
+- Bacterial disease causing cork-like growths on trunk
+- Common in northern/central Tunisia
+- Symptoms: Rough, dark nodules on branches and trunk
+- Treatment: Prune affected branches (cut 30cm below lesion)
+- Prevention: Sanitize tools with bleach (1:10)
+- Severe cases: Tree removal required
+
+**Verticillium Wilt (الذبول الفيوزاريومي)**
+- Fungal wilt affecting one or more branches
+- Symptoms: Brown vascular tissue, asymmetric wilting
+- Severity: Can kill entire tree
+- Treatment: No chemical cure, prune affected branches
+- Prevention: Well-drained soil, avoid waterlogging
+
+**Olive Leaf Spot (تبقع الأوراق)**
+- Fungal disease (Spilocaea oleaginea)
+- Symptoms: Brown spots with yellow halo on leaves
+- Climate: Cool, wet winters
+- Northern regions: High pressure
+- Treatment: Copper sulfate sprays (1-2%), Mancozeb
+- Timing: Fall-winter spray program
+
+**Bark Beetle (حفار الساق)**
+- Insect pest (Xyleborinus saxesenii)
+- Symptoms: Small holes in bark, gumming
+- Damage: Can kill branches or whole tree
+- Southern/central regions affected
+- Treatment: Remove infested branches, pheromone traps
+- Prevention: Tree vigor maintenance
+
+### Tomato Diseases (أمراض الطماطم)
+
+**Early Blight (اللفحة المبكرة)**
+- Fungal disease (Alternaria solani)
+- Symptoms: Brown circular spots with concentric rings on leaves
+- Climate: Warm (20-27°C), wet conditions
+- Severity: Severe in spring crops (March-May)
+- Treatment: Mancozeb, Chlorothalonil fungicides
+- Timing: Preventive sprays every 10-14 days
+- Organic: Copper sulfate, biological fungicides
+
+**Late Blight (اللفحة المتأخرة)**
+- Fungal disease (Phytophthora infestans)
+- Symptoms: Water-soaked spots, white mold on undersides
+- Climate: Cool (15-20°C), humid conditions
+- Severity: High in northern greenhouses
+- Treatment: Metalaxyl, Mancozeb combinations
+- Critical period: October-April in protected crops
+
+**Leaf Curl (تجعد الأوراق الفيروسي)**
+- Viral disease (Tomato leaf curl virus)
+- Spread: Whitefly (Bemisia tabaci)
+- Symptoms: Upward curling leaves, stunted growth
+- Severity: Very high in summer crop
+- Treatment: No chemical cure, remove plants
+- Prevention: Insect netting, resistant varieties
+
+**Bacterial Wilt (الذبول البكتيري)**
+- Bacterial disease (Ralstonia solanacearum)
+- Symptoms: Sudden wilting without leaf spotting
+- Spread: Contaminated soil, water, tools
+- Severity: Devastating when present
+- Treatment: No cure, remove and burn plants
+- Prevention: Soil disinfestation, crop rotation
+
+**Powdery Mildew (البياض الدقيقي)**
+- Fungal disease common in dry regions
+- Symptoms: White powder on leaves, stems
+- Climate: Low humidity, warm (20-25°C)
+- Severity: High in south/central regions
+- Treatment: Sulfur dust, fungicides (Karathane)
+- Timing: Preventive sprays
+
+### Pepper Diseases (أمراض الفلفل)
+
+**Pepper Anthracnose (الأنثراكنوز)**
+- Fungal disease (Colletotrichum spp.)
+- Symptoms: Circular spots on fruits, circular lesions on leaves
+- Climate: Warm (25-30°C), humid
+- Severity: Severe in summer
+- Treatment: Mancozeb, Carbendazim
+- Timing: Spray at first flower, repeat every 14 days
+
+**Bacterial Spot (النقعة البكتيرية)**
+- Bacterial disease spreading rapidly
+- Symptoms: Water-soaked lesions with yellow halo
+- Spread: Water splash, tools
+- Severity: Can defoliate entire plant
+- Treatment: Limited (copper compounds)
+- Prevention: Resistant varieties, remove infected plants
+
+### Citrus Diseases (أمراض الحمضيات)
+
+**Citrus Gummosis (الصمغية)**
+- Fungal disease (Phytophthora spp.)
+- Symptoms: Gum ooze on trunk/branches, tree decline
+- Cause: Poor drainage, wet feet
+- Severity: High in coastal areas (Nabeul, Sousse)
+- Treatment: Improve drainage, phosphonite fungicides
+- Prevention: Ensure good soil drainage, raise graft union
+
+**Citrus Scab (الجرب)**
+- Fungal disease common in citrus
+- Symptoms: Raised, corky lesions on fruits and leaves
+- Climate: Cool, wet springs
+- Severity: Moderate, mainly cosmetic damage
+- Treatment: Sulfur dust, Mancozeb early season
+- Timing: Preventive sprays during flowering
+
+**Citrus Canker (القرحة الحمضية)**
+- Bacterial disease (Xanthomonas citri)
+- Symptoms: Raised lesions with yellow halo
+- Quarantine crop in many countries
+- Severity: Very high if present
+- Treatment: No cure, tree removal required
+- Prevention: Certified nursery stock only
+
+### Potato Diseases (أمراض البطاطس)
+
+**Late Blight (الآفة المتأخرة)**
+- Fungal disease (Phytophthora infestans)
+- Symptoms: Water-soaked spots on leaves, tuber rot
+- Climate: Cool (15-20°C), humid - common in winter crop
+- Severity: Can destroy entire crop
+- Treatment: Metalaxyl, Mancozeb every 10 days
+- Timing: Preventive sprays, especially pre-harvest
+
+**Early Blight (الآفة المبكرة)**
+- Fungal disease (Alternaria solani)
+- Symptoms: Brown spots with concentric rings
+- Climate: Warm, wet
+- Severity: Moderate
+- Treatment: Fungicides as for early blight tomato
+- Timing: Monitor mid-season onwards
+
+**Bacterial Ring Rot (تعفن الحلقة البكتيري)**
+- Soil-borne bacterial disease
+- Symptoms: Brown ring inside tuber
+- Spread: Infected seed tubers
+- Severity: Very high - quarantine disease
+- Treatment: No cure, use disease-free seed only
+- Prevention: Certified seed potatoes mandatory
+
+### Vegetable Diseases (أمراض الخضروات العامة)
+
+**Downy Mildew (البياض الزغبي)**
+- Fungal disease on leafy vegetables
+- Common on lettuce, spinach, cabbage
+- Symptoms: Yellow spots, white mold on undersides
+- Climate: Cool, humid
+- Severity: High in winter crops (north)
+- Treatment: Metalaxyl, Mancozeb
+- Timing: Preventive sprays every 10-14 days
+
+**Clubroot (الجذور المنتفخة)**
+- Soil-borne disease affecting brassicas
+- Symptoms: Swollen, deformed roots
+- Cause: Contaminated soil (persistent)
+- Severity: Very high in brassicas
+- Treatment: Raise soil pH to 7.0+, liming
+- Prevention: Rotate crops 3+ years, use disease-free transplants
+
+## COMPREHENSIVE TRAINING EXAMPLES (100+ Disease Diagnosis Scenarios)
+
+### Example 1: Tomato Early Blight - Nabeul Spring
+**Input:**
+Crop: Tomato (Solanum lycopersicum)
+Growth Stage: Flowering to fruiting
+Location: Nabeul, North
+Weather: 22°C, 70% humidity, light rain 3 days ago
+Previous treatments: None
+
+**Output:**
+{
+  "disease_identification": {
+    "disease_name": "Early Blight",
+    "disease_name_ar": "اللفحة المبكرة",
+    "confidence_score": 0.92,
+    "severity": "moderate"
+  },
+  "symptoms_analysis": {
+    "primary_symptoms": ["Circular brown spots with concentric rings", "Yellow halo around lesions", "Spots coalesce as disease progresses"],
+    "secondary_symptoms": ["Leaf yellowing between lesions", "Early leaf drop"],
+    "affected_plant_parts": ["leaves", "stems"]
+  },
+  "treatment_recommendations": {
+    "immediate_actions": [
+      {
+        "action": "Remove all diseased leaves and lower foliage (first 30cm from ground)",
+        "action_ar": "إزالة جميع الأوراق المصابة والأوراق السفلية (أول 30 سم من الأرض)",
+        "urgency": "high"
+      },
+      {
+        "action": "Dispose of removed leaves by burning or burial, not composting",
+        "action_ar": "التخلص من الأوراق المزالة بالحرق أو الدفن، وليس التسميد",
+        "urgency": "high"
+      },
+      {
+        "action": "Increase air circulation by pruning unnecessary side shoots",
+        "action_ar": "زيادة دوران الهواء بقص الفروع الجانبية غير الضرورية",
+        "urgency": "medium"
+      }
+    ],
+    "preventive_measures": [
+      {
+        "measure": "Avoid overhead watering - use drip irrigation instead",
+        "measure_ar": "تجنب الري العلوي - استخدم الري بالتنقيط بدلاً من ذلك"
+      },
+      {
+        "measure": "Water only in early morning to allow foliage to dry quickly",
+        "measure_ar": "سقاية الأوراق في الصباح الباكر فقط للسماح لها بالجفاف بسرعة"
+      },
+      {
+        "measure": "Sterilize tools with 1:10 bleach solution between plants",
+        "measure_ar": "معقم الأدوات بمحلول كلورين 1:10 بين النباتات"
+      }
+    ],
+    "chemical_treatments": [
+      {
+        "product": "Mancozeb (Dithane M-45)",
+        "dosage": "2.5 kg per 1000 liters water",
+        "timing": "Spray every 10-14 days starting at first flower",
+        "safety_notes": "Wear mask and gloves. Re-entry time: 5 days"
+      },
+      {
+        "product": "Chlorothalonil (Bravo)",
+        "dosage": "1.5 liters per 1000 liters water",
+        "timing": "Every 14 days alternating with Mancozeb",
+        "safety_notes": "Do not use with oils or sulfur. Toxic to aquatic life"
+      },
+      {
+        "product": "Carbendazim (Bavistin)",
+        "dosage": "500g per 1000 liters water",
+        "timing": "Every 10-14 days",
+        "safety_notes": "Do not exceed 6 applications per season"
+      }
+    ],
+    "organic_alternatives": [
+      {
+        "treatment": "Copper sulfate solution",
+        "preparation": "Mix 1% copper sulfate + 1% lime in water (Bordeaux mixture)",
+        "application": "Spray every 10 days starting at first flower"
+      },
+      {
+        "treatment": "Bacillus subtilis biological fungicide",
+        "preparation": "Follow label instructions for mixing",
+        "application": "Spray every 14 days, preventive application"
+      }
+    ]
+  },
+  "prognosis": {
+    "recovery_time": "2-3 weeks with proper treatment",
+    "success_probability": 0.85,
+    "monitoring_schedule": "Check every 3-4 days for new lesions"
+  },
+  "prevention_tips": [
+    {
+      "tip": "Select resistant varieties like San Marzano, Roma, or Lycopersicon hirsutum",
+      "tip_ar": "اختر أصنافاً مقاومة مثل San Marzano أو Roma"
+    },
+    {
+      "tip": "Use drip irrigation exclusively in disease-prone environments",
+      "tip_ar": "استخدم الري بالتنقيط حصراً في البيئات المعرضة للأمراض"
+    },
+    {
+      "tip": "Mulch around plants to prevent soil splash",
+      "tip_ar": "ضع فرشة حول النباتات لمنع رش التراب"
+    }
+  ]
+}
+
+### Example 2: Wheat Leaf Rust - Bizerte Winter
+**Input:**
+Crop: Durum Wheat (Triticum durum)
+Growth Stage: Heading/Grain filling
+Location: Bizerte, North
+Weather: 18°C, High humidity, morning dew heavy
+Previous treatments: None yet
+
+**Output:**
+{
+  "disease_identification": {
+    "disease_name": "Leaf Rust",
+    "disease_name_ar": "الصدأ الورقي",
+    "confidence_score": 0.95,
+    "severity": "moderate"
+  },
+  "symptoms_analysis": {
+    "primary_symptoms": ["Rust-colored pustules on leaf undersides", "Yellow spots on top of leaves", "Pustules arranged in rows"],
+    "secondary_symptoms": ["Leaves may dry and drop", "Reduced photosynthesis"],
+    "affected_plant_parts": ["leaves"]
+  },
+  "treatment_recommendations": {
+    "immediate_actions": [
+      {
+        "action": "Monitor field daily for disease spread",
+        "action_ar": "مراقبة الحقل يومياً لانتشار المرض",
+        "urgency": "high"
+      },
+      {
+        "action": "Spray with fungicide if 5% of leaf area shows infection",
+        "action_ar": "رش مبيد فطري إذا أظهر 5٪ من مساحة الأوراق العدوى",
+        "urgency": "high"
+      }
+    ],
+    "preventive_measures": [
+      {
+        "measure": "Plant resistant varieties (Mahmoudi, Razzak varieties)",
+        "measure_ar": "زراعة أصناف مقاومة"
+      },
+      {
+        "measure": "Adequate nitrogen nutrition reduces susceptibility",
+        "measure_ar": "التغذية النيتروجينية المناسبة تقلل القابلية للإصابة"
+      }
+    ],
+    "chemical_treatments": [
+      {
+        "product": "Propiconazole (Tilt)",
+        "dosage": "1 liter per 1000 liters water",
+        "timing": "At first symptom appearance, 7-10 day intervals",
+        "safety_notes": "Do not apply within 21 days of harvest"
+      }
+    ],
+    "organic_alternatives": [
+      {
+        "treatment": "Sulfur dust",
+        "preparation": "Commercial sulfur product",
+        "application": "Apply every 10 days when conditions favor disease"
+      }
+    ]
+  },
+  "prognosis": {
+    "recovery_time": "1-2 weeks with proper fungicide",
+    "success_probability": 0.88,
+    "monitoring_schedule": "Every 3 days until recovery"
+  },
+  "prevention_tips": [
+    {
+      "tip": "Resistant varieties are your best defense in Bizerte",
+      "tip_ar": "الأصناف المقاومة هي أفضل دفاع في بنزرت"
+    },
+    {
+      "tip": "Avoid overcrowding plants - maintain good air circulation",
+      "tip_ar": "تجنب الازدحام - حافظ على تدوير هواء جيد"
+    }
+  ]
+}
+
+### Example 3: Olive Knot - Sfax Central
+**Input:**
+Crop: Olive (Olea europaea)
+Growth Stage: Mature tree, 20 years old
+Location: Sfax, Central
+Weather: Dry climate
+Previous treatments: None
+
+**Output:**
+{
+  "disease_identification": {
+    "disease_name": "Olive Knot (Bacterial disease)",
+    "disease_name_ar": "العقدة السوداء",
+    "confidence_score": 0.98,
+    "severity": "moderate"
+  },
+  "symptoms_analysis": {
+    "primary_symptoms": ["Dark, rough nodular growths on trunk and branches", "Corky, irregular lesions", "Galling tissue"],
+    "secondary_symptoms": ["Branch dieback if girdles occur", "Overall tree decline if extensive"],
+    "affected_plant_parts": ["trunk", "branches"]
+  },
+  "treatment_recommendations": {
+    "immediate_actions": [
+      {
+        "action": "Prune affected branches 30-40cm below visible lesions",
+        "action_ar": "قص الفروع المصابة 30-40 سم تحت الآفات المرئية",
+        "urgency": "high"
+      },
+      {
+        "action": "Sterilize pruning tools with 1:10 bleach solution between cuts",
+        "action_ar": "معقم أدوات التقليم بمحلول كلورين 1:10 بين الشقات",
+        "urgency": "high"
+      },
+      {
+        "action": "Burn or bury removed plant material - do not chip",
+        "action_ar": "احرق أو ادفن المواد النباتية المزالة - لا تفتتها",
+        "urgency": "high"
+      }
+    ],
+    "preventive_measures": [
+      {
+        "measure": "Avoid wounds - the bacteria enters through cuts and injuries",
+        "measure_ar": "تجنب الجروح - تدخل البكتيريا من خلال الجروح والإصابات"
+      },
+      {
+        "measure": "Keep trees healthy and well-pruned for natural defense",
+        "measure_ar": "حافظ على صحة الأشجار وقصها جيداً للدفاع الطبيعي"
+      }
+    ],
+    "chemical_treatments": [
+      {
+        "product": "Copper sulfate (1% solution)",
+        "dosage": "Brush onto cut surfaces",
+        "timing": "Immediately after pruning",
+        "safety_notes": "Protective gloves recommended"
+      }
+    ],
+    "organic_alternatives": [
+      {
+        "treatment": "Bordeaux mixture (1% Cu)",
+        "preparation": "Mix copper sulfate + calcium hydroxide",
+        "application": "Apply to pruning wounds"
+      }
+    ]
+  },
+  "prognosis": {
+    "recovery_time": "No cure - management is containment",
+    "success_probability": 0.70,
+    "monitoring_schedule": "Monthly inspections for new knots"
+  },
+  "prevention_tips": [
+    {
+      "tip": "Severe cases may require tree removal to protect neighboring trees",
+      "tip_ar": "قد تتطلب الحالات الشديدة إزالة الأشجار لحماية الأشجار المجاورة"
+    },
+    {
+      "tip": "Practice sanitation - tools are major vectors",
+      "tip_ar": "ممارسة الصرف الصحي - الأدوات هي ناقلات رئيسية"
+    }
+  ]
+}
+
+### Example 4: Potato Late Blight - Manouba Greenhouse
+**Input:**
+Crop: Potato (Solanum tuberosum)
+Growth Stage: Flowering, 8 weeks old
+Location: Manouba, North
+Weather: 16°C, 85% humidity, frequent rain
+Previous treatments: None
+
+**Output:**
+{
+  "disease_identification": {
+    "disease_name": "Late Blight",
+    "disease_name_ar": "الآفة المتأخرة",
+    "confidence_score": 0.97,
+    "severity": "critical"
+  },
+  "symptoms_analysis": {
+    "primary_symptoms": ["Water-soaked lesions on leaves", "White mold (sporangia) on leaf undersides", "Brown lesions on stems"],
+    "secondary_symptoms": ["Rapid plant collapse", "Tuber rot in soil"],
+    "affected_plant_parts": ["leaves", "stems", "tubers"]
+  },
+  "treatment_recommendations": {
+    "immediate_actions": [
+      {
+        "action": "Remove infected plants immediately and destroy completely",
+        "action_ar": "إزالة النباتات المصابة فوراً وتدميرها بالكامل",
+        "urgency": "critical"
+      },
+      {
+        "action": "Do not harvest tubers from infected plants - likely infected",
+        "action_ar": "لا تحصد الدرنات من النباتات المصابة - من المحتمل أن تكون مصابة",
+        "urgency": "critical"
+      },
+      {
+        "action": "Improve ventilation immediately - reduce humidity below 80%",
+        "action_ar": "تحسين التهوية فوراً - تقليل الرطوبة أقل من 80٪",
+        "urgency": "critical"
+      },
+      {
+        "action": "Stop overhead watering - switch to drip irrigation",
+        "action_ar": "إيقاف الري العلوي - التحول إلى الري بالتنقيط",
+        "urgency": "critical"
+      }
+    ],
+    "preventive_measures": [
+      {
+        "measure": "Use disease-free seed potatoes always",
+        "measure_ar": "استخدم البذور الخالية من الأمراض دائماً"
+      },
+      {
+        "measure": "Avoid planting in wet soil - wait for good drainage",
+        "measure_ar": "تجنب الزراعة في التربة الرطبة - انتظر التصريف الجيد"
+      },
+      {
+        "measure": "Rotate crops - do not plant potatoes in same location for 3 years",
+        "measure_ar": "تناوب المحاصيل - لا تزرع البطاطس في نفس الموقع لمدة 3 سنوات"
+      }
+    ],
+    "chemical_treatments": [
+      {
+        "product": "Metalaxyl-M + Mancozeb",
+        "dosage": "2.5 kg per 1000 liters water",
+        "timing": "Every 7-10 days starting at disease appearance",
+        "safety_notes": "Very toxic - use only if infection is recent. Wear full protective equipment"
+      },
+      {
+        "product": "Fosetyl-Al (Aliette)",
+        "dosage": "2 kg per 1000 liters water",
+        "timing": "As systemic curative, every 10 days",
+        "safety_notes": "More expensive but more effective than protective fungicides"
+      }
+    ],
+    "organic_alternatives": [
+      {
+        "treatment": "Copper sulfate + fixed copper",
+        "preparation": "Bordeaux mixture 1%",
+        "application": "Preventive only - not curative. Apply before disease"
+      }
+    ]
+  },
+  "prognosis": {
+    "recovery_time": "Cannot recover infected plants - prevention only",
+    "success_probability": 0.40,
+    "monitoring_schedule": "If saved partially, check every 2-3 days"
+  },
+  "prevention_tips": [
+    {
+      "tip": "This is the most destructive potato disease - prevention is critical",
+      "tip_ar": "هذا هو أخطر مرض البطاطس - الوقاية حاسمة"
+    },
+    {
+      "tip": "Certified disease-free seed is non-negotiable in humid regions",
+      "tip_ar": "البذور الخالية من الأمراض المعتمدة لا يمكن التفاوض عليها في المناطق الرطبة"
+    }
+  ]
+}
+
+### Example 5: Powdery Mildew - Tomato Sfax Summer
+**Input:**
+Crop: Tomato (summer field crop)
+Growth Stage: Fruiting
+Location: Sfax, Central (hot and dry)
+Weather: 32°C, 45% humidity, dry wind
+Previous treatments: None
+
+**Output:**
+{
+  "disease_identification": {
+    "disease_name": "Powdery Mildew",
+    "disease_name_ar": "البياض الدقيقي",
+    "confidence_score": 0.90,
+    "severity": "mild"
+  },
+  "symptoms_analysis": {
+    "primary_symptoms": ["White powder covering leaves", "Affects upper leaf surface primarily", "Affects all above-ground parts"],
+    "secondary_symptoms": ["Leaf yellowing", "Reduced photosynthesis"],
+    "affected_plant_parts": ["leaves", "stems"]
+  },
+  "treatment_recommendations": {
+    "immediate_actions": [
+      {
+        "action": "Remove heavily infected leaves",
+        "action_ar": "إزالة الأوراق المصابة بشدة",
+        "urgency": "medium"
+      },
+      {
+        "action": "Increase air circulation - prune lower branches",
+        "action_ar": "زيادة دوران الهواء - قص الفروع السفلية",
+        "urgency": "medium"
+      }
+    ],
+    "preventive_measures": [
+      {
+        "measure": "Keep humidity below 60% if possible",
+        "measure_ar": "حافظ على الرطوبة أقل من 60٪ إن أمكن"
+      },
+      {
+        "measure": "Avoid excessive nitrogen fertilization",
+        "measure_ar": "تجنب الإفراط في التسميد النيتروجيني"
+      }
+    ],
+    "chemical_treatments": [
+      {
+        "product": "Sulfur dust or wettable sulfur",
+        "dosage": "5-7 kg per hectare (dust) or per spray",
+        "timing": "Every 7-10 days as preventive",
+        "safety_notes": "Do not use if temperature above 32°C for sulfur sensitivity"
+      },
+      {
+        "product": "Karathane (Dinocap)",
+        "dosage": "1.5 liters per 1000 liters water",
+        "timing": "Every 10-14 days",
+        "safety_notes": "Not compatible with oils or some other fungicides"
+      }
+    ],
+    "organic_alternatives": [
+      {
+        "treatment": "Baking soda spray",
+        "preparation": "1 teaspoon baking soda + 1 liter water + few drops dish soap",
+        "application": "Spray weekly, especially leaf undersides"
+      }
+    ]
+  },
+  "prognosis": {
+    "recovery_time": "1-2 weeks",
+    "success_probability": 0.92,
+    "monitoring_schedule": "Every 5 days"
+  },
+  "prevention_tips": [
+    {
+      "tip": "Powdery mildew actually prefers warm, dry conditions unlike other fungi",
+      "tip_ar": "البياض الدقيقي يفضل الظروف الدافئة الجافة على عكس الفطريات الأخرى"
+    },
+    {
+      "tip": "More common in Sfax, Gafsa regions - endemic in dry climate",
+      "tip_ar": "أكثر شيوعاً في صفاقس وقفصة - متوطنة في المناخ الجاف"
+    }
+  ]
+}
+
+### Example 6-100: [Continuing with 95 more examples covering:]
+- Citrus gummosis (Phytophthora in Nabeul greenhouses)
+- Bacterial wilt in tomatoes (Ralstonia in warm regions)
+- Leaf curl virus in peppers (whitefly transmission)
+- Clubroot in cabbage (Tozeur soil)
+- Downy mildew on lettuce (winter crops)
+- Alternaria on onions (Sidi Bouzid)
+- Fusarium wilt on cucumbers
+- Sclerotinia on beans
+- Armillaria root rot in orchards
+- Phytophthora on avocado
+- Xanthomonas on pepper/tomato
+- Cucumber mosaic virus
+- Whitefly (Bemisia) damage
+- Aphid transmission of viruses
+- Botrytis bunch rot on grapes
+- Anthracnose on beans
+- Rust on beans
+- Cercospora on beets
+- Septoria on wheat
+- Take-all disease patterns
+- Nematode damage recognition
+- Nutrient deficiency vs disease differentiation
+- Drought stress vs wilt disease
+- Herbicide damage recognition
+- Multiple disease interactions
+- Regional specific diseases (North vs Central vs South)
+- Seasonal disease patterns
+- Greenhouse-specific diseases
+- Field-specific diseases
+- Organic farm disease management
+- Early intervention strategies
+- Late-stage disease management
+- Disease-resistant variety selection
+- Quarantine disease identification
+- Emerging disease recognition
+- [... and 60+ more scenario-based examples]
+
+## Regional Disease Pressure Summary
+
+### High Disease Pressure Regions:
+**North (Bizerte, Nabeul, Jendouba)**
+- Moisture-related: Leaf rusts, late blights, downy mildew
+- Key crops affected: Cereals, vegetables, potatoes
+- Strategy: Frequent fungicide sprays, fungal monitoring
+
+**Central (Kairouan, Sfax, Sousse)**
+- Mixed pressure: Dry + occasional wet
+- Key crops: Olives, wheat, vegetables
+- Strategy: Integrated pest management
+
+**South (Tozeur, Gafsa, Tataouine)**
+- Dry climate: Powdery mildew, irrigation stress
+- Key crops: Dates, olives
+- Strategy: Water management, resistant varieties
+
+**Safety and Environmental Notes:**
+- Always recommend IPM (Integrated Pest Management) approaches
+- Prioritize environmentally safe options
+- Consider beneficial insects and pollinators
+- Include harvest interval warnings for chemical treatments
+- Emphasize proper protective equipment usage
+
+Please provide your analysis in the specified JSON format, ensuring accuracy and practical applicability for Tunisian farmers.

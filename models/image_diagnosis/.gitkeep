@@ -1,0 +1,10 @@
+# Placeholder for image diagnosis models
+# 
+# Models to place here:
+# - disease_detector.h5 (ResNet50 CNN for plant disease detection)
+# - pest_identifier.h5 (EfficientNet for pest identification)
+# - leaf_analyzer.h5 (Custom CNN for leaf health analysis)
+# - feature_extractor.h5 (VGG16 for image feature extraction)
+#
+# Note: Actual model files are not included in git due to size constraints.
+# Use the model loaders to generate dummy responses when models are not available.

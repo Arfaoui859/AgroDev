@@ -1,0 +1,407 @@
+name: 🚀 Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.9"
+
+jobs:
+  # =====================================
+  # DETERMINE DEPLOYMENT ENVIRONMENT
+  # =====================================
+  setup:
+    name: 🎯 Setup Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🎯 Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📝 Generate version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+          fi
+
+  # =====================================
+  # BUILD AND PREPARE ARTIFACTS
+  # =====================================
+  build:
+    name: 🏗️ Build Application
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📋 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_APP_VERSION: ${{ needs.setup.outputs.version }}
+          VITE_APP_ENVIRONMENT: ${{ needs.setup.outputs.environment }}
+
+      - name: 📦 Create deployment package
+        run: |
+          mkdir -p deploy
+          cp -r dist deploy/
+          cp -r server deploy/
+          cp package.json deploy/
+          cp package-lock.json deploy/
+
+          # Create deployment info
+          cat > deploy/deployment-info.json << EOF
+          {
+            "version": "${{ needs.setup.outputs.version }}",
+            "environment": "${{ needs.setup.outputs.environment }}",
+            "commit": "${{ github.sha }}",
+            "build_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+
+      - name: 📦 Upload deployment artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-package
+          path: deploy/
+          retention-days: 30
+
+  # =====================================
+  # DOCKER BUILD AND PUSH
+  # =====================================
+  docker:
+    name: 🐳 Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download deployment package
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+          path: deploy/
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🔐 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📊 Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            agrogrowth/platform
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ needs.setup.outputs.environment }}
+
+      - name: 🏗️ Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.setup.outputs.version }}
+            ENVIRONMENT=${{ needs.setup.outputs.environment }}
+
+  # =====================================
+  # DEPLOY TO STAGING
+  # =====================================
+  deploy-staging:
+    name: 🎪 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [setup, build, docker]
+    if: needs.setup.outputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.agrogrowth.tn
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download deployment package
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+          path: deploy/
+
+      - name: 🚀 Deploy to Netlify (Frontend)
+        uses: nwtgck/actions-netlify@v2.1
+        with:
+          publish-dir: "./deploy/dist"
+          production-branch: main
+          deploy-message: "Deploy from GitHub Actions - ${{ needs.setup.outputs.version }}"
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_STAGING_SITE_ID }}
+
+      - name: 🚀 Deploy to Railway (Backend)
+        run: |
+          # Install Railway CLI
+          npm install -g @railway/cli
+
+          # Deploy backend
+          cd deploy
+          railway login --token ${{ secrets.RAILWAY_TOKEN }}
+          railway up --service backend --environment staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 🧪 Run smoke tests
+        run: |
+          sleep 60 # Wait for deployment to be ready
+
+          # Test frontend
+          curl -f https://staging.agrogrowth.tn || exit 1
+
+          # Test backend API
+          curl -f https://api-staging.agrogrowth.tn/api/health || exit 1
+
+          echo "✅ Staging deployment successful!"
+
+  # =====================================
+  # DEPLOY TO PRODUCTION
+  # =====================================
+  deploy-production:
+    name: 🌟 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [setup, build, docker]
+    if: needs.setup.outputs.environment == 'production'
+    environment:
+      name: production
+      url: https://agrogrowth.tn
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download deployment package
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+          path: deploy/
+
+      - name: 🔍 Run pre-deployment checks
+        run: |
+          echo "🔍 Running pre-deployment checks..."
+
+          # Verify deployment package
+          if [ ! -f deploy/deployment-info.json ]; then
+            echo "❌ Deployment info missing!"
+            exit 1
+          fi
+
+          # Check if this is a tagged release
+          if [[ "${{ github.ref }}" != refs/tags/* ]]; then
+            echo "❌ Production deployment requires a tagged release!"
+            exit 1
+          fi
+
+          echo "✅ Pre-deployment checks passed"
+
+      - name: 🚀 Deploy to Vercel (Frontend)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./deploy/dist
+          vercel-args: "--prod"
+
+      - name: 🚀 Deploy to Railway (Backend)
+        run: |
+          # Install Railway CLI
+          npm install -g @railway/cli
+
+          # Deploy backend to production
+          cd deploy
+          railway login --token ${{ secrets.RAILWAY_TOKEN }}
+          railway up --service backend --environment production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 🧪 Run production smoke tests
+        run: |
+          sleep 120 # Wait longer for production deployment
+
+          # Test frontend
+          curl -f https://agrogrowth.tn || exit 1
+
+          # Test backend API
+          curl -f https://api.agrogrowth.tn/api/health || exit 1
+
+          # Test key endpoints
+          curl -f https://api.agrogrowth.tn/api/ai/health || exit 1
+
+          echo "✅ Production deployment successful!"
+
+      - name: 📊 Update deployment status
+        run: |
+          # Create deployment record
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/deployments \
+            -d '{
+              "ref": "${{ github.sha }}",
+              "environment": "production",
+              "description": "Deployed version ${{ needs.setup.outputs.version }}"
+            }'
+
+  # =====================================
+  # POST-DEPLOYMENT TASKS
+  # =====================================
+  post-deployment:
+    name: 📋 Post-Deployment Tasks
+    runs-on: ubuntu-latest
+    needs: [setup, deploy-staging, deploy-production]
+    if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+
+    steps:
+      - name: 📊 Generate deployment report
+        run: |
+          echo "## 🚀 Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.setup.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.setup.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.setup.outputs.environment }}" == "production" ]; then
+            echo "- **URL**: https://agrogrowth.tn" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **URL**: https://staging.agrogrowth.tn" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🔔 Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: "#deployments"
+          title: "AgroGrowth Deployment"
+          text: |
+            🚀 Deployed to ${{ needs.setup.outputs.environment }}
+            📦 Version: ${{ needs.setup.outputs.version }}
+            🌐 Environment: ${{ needs.setup.outputs.environment }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: 📧 Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "AgroGrowth Deployment - ${{ needs.setup.outputs.environment }}"
+          body: |
+            Deployment completed successfully!
+
+            Environment: ${{ needs.setup.outputs.environment }}
+            Version: ${{ needs.setup.outputs.version }}
+            Commit: ${{ github.sha }}
+
+            Visit: https://${{ needs.setup.outputs.environment == 'production' && 'agrogrowth.tn' || 'staging.agrogrowth.tn' }}
+          to: ${{ secrets.DEPLOYMENT_EMAIL_LIST }}
+          from: "AgroGrowth CI/CD <noreply@agrogrowth.tn>"
+
+      - name: 🏷️ Create GitHub release
+        if: needs.setup.outputs.environment == 'production' && startsWith(github.ref, 'refs/tags/')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.setup.outputs.version }}
+          release_name: Release ${{ needs.setup.outputs.version }}
+          body: |
+            ## 🚀 AgroGrowth Platform Release ${{ needs.setup.outputs.version }}
+
+            ### 🎯 What's New
+            - Full-stack agricultural platform with AI integration
+            - Comprehensive soil analysis and crop recommendations
+            - Market intelligence and investment insights
+            - Real-time collaboration tools for farmers
+            - Offline-first architecture with data synchronization
+
+            ### 🛠️ Technical Improvements
+            - Enhanced performance and reliability
+            - Improved mobile responsiveness
+            - Better error handling and user experience
+            - Updated dependencies and security patches
+
+            ### 📊 Deployment Info
+            - **Deployed**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+            - **Commit**: ${{ github.sha }}
+            - **Environment**: Production
+
+            Visit the platform at: https://agrogrowth.tn
+          draft: false
+          prerelease: false

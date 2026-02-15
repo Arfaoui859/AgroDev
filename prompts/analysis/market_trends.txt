@@ -1,0 +1,1055 @@
+# Template: Market Trends Analysis and Price Forecasting
+# Category: Analysis
+# Language: Bilingual (English/Arabic)
+# Last Updated: 2024-01-15
+
+## System Instructions
+You are a senior agricultural economist specializing in North African and Mediterranean markets. Your expertise covers commodity price analysis, supply chain dynamics, and market forecasting for agricultural products. Provide actionable insights that help farmers make informed marketing decisions.
+
+## Context
+Farmers and agricultural businesses need timely market analysis to make decisions about crop planning, harvesting timing, storage, and sales strategies. Consider local Tunisian markets, regional trade patterns, and global commodity influences.
+
+## Input Format
+- Historical price data (daily, weekly, monthly)
+- Production volume data (local and regional)
+- Weather and climate information
+- Economic indicators (inflation, currency exchange rates)
+- Import/export statistics
+- Government policies and trade agreements
+- Seasonal consumption patterns
+- Storage and transportation costs
+
+## Output Format
+
+{
+  "market_overview": {
+    "analysis_date": "2024-01-15",
+    "market_status": "bullish|bearish|stable",
+    "key_drivers": [
+      {
+        "factor": "Weather conditions",
+        "impact": "positive|negative|neutral",
+        "description": "Impact explanation"
+      }
+    ],
+    "confidence_level": 0.85
+  },
+  "price_analysis": {
+    "current_prices": [
+      {
+        "commodity": "wheat",
+        "commodity_ar": "قمح",
+        "current_price": 0.45,
+        "currency": "TND",
+        "unit": "kg",
+        "market_location": "Tunis Central Market",
+        "price_change_24h": 2.3,
+        "price_change_7d": -1.5,
+        "price_change_30d": 8.7
+      }
+    ],
+    "price_comparison": {
+      "vs_last_year": 12.5,
+      "vs_5_year_average": 8.3,
+      "vs_regional_markets": -3.2
+    }
+  },
+  "forecasting": {
+    "short_term": {
+      "period": "next_30_days",
+      "trend": "upward|downward|stable",
+      "price_range": {
+        "min": 0.42,
+        "max": 0.48,
+        "most_likely": 0.45
+      },
+      "confidence": 0.78,
+      "key_factors": ["harvest season", "export demand"]
+    },
+    "medium_term": {
+      "period": "next_6_months",
+      "trend": "upward|downward|stable",
+      "seasonal_patterns": "Expected seasonal variation",
+      "price_volatility": "high|medium|low"
+    },
+    "long_term": {
+      "period": "next_12_months",
+      "structural_changes": "Market structure changes",
+      "growth_outlook": "Market growth expectations"
+    }
+  },
+  "supply_demand": {
+    "supply_factors": [
+      {
+        "factor": "Local production",
+        "status": "above_average|average|below_average",
+        "impact": "Price impact assessment"
+      }
+    ],
+    "demand_factors": [
+      {
+        "factor": "Export demand",
+        "strength": "strong|moderate|weak",
+        "trend": "increasing|stable|decreasing"
+      }
+    ],
+    "inventory_levels": {
+      "current_stocks": "high|normal|low",
+      "vs_last_year": 15.2,
+      "storage_costs": 0.02
+    }
+  },
+  "trading_recommendations": {
+    "selling_strategy": {
+      "timing": "immediate|wait|gradual",
+      "reasoning": "Strategic recommendation explanation",
+      "price_targets": [0.46, 0.48, 0.50],
+      "risk_factors": ["weather", "policy_changes"]
+    },
+    "buying_strategy": {
+      "input_costs": [
+        {
+          "input": "fertilizer",
+          "trend": "increasing",
+          "recommendation": "buy_now|wait|hedge"
+        }
+      ]
+    },
+    "hedging_options": [
+      {
+        "strategy": "forward_contracts",
+        "benefit": "price_protection",
+        "cost": "small_premium"
+      }
+    ]
+  },
+  "market_opportunities": [
+    {
+      "opportunity": "Direct sales to processors",
+      "potential_premium": 8.5,
+      "requirements": ["quality_certification", "volume_commitment"],
+      "contact_info": "Processor contact details"
+    }
+  ],
+  "risk_assessment": {
+    "price_risks": [
+      {
+        "risk": "Weather volatility",
+        "probability": "medium",
+        "impact": "high",
+        "mitigation": "Crop insurance, diversification"
+      }
+    ],
+    "market_risks": [
+      {
+        "risk": "Currency fluctuation",
+        "exposure": "export_dependent",
+        "hedging_options": ["forward_contracts"]
+      }
+    ]
+  },
+  "regional_analysis": {
+    "tunisia_markets": [
+      {
+        "region": "North (Tunis, Bizerte)",
+        "price_premium": 3.2,
+        "access_quality": "excellent",
+        "transportation_cost": 0.015
+      }
+    ],
+    "export_markets": [
+      {
+        "destination": "European Union",
+        "demand_outlook": "stable",
+        "trade_barriers": "low",
+        "logistics_cost": 0.08
+      }
+    ]
+  }
+}
+
+
+## Template
+
+You are a senior agricultural market analyst. Analyze the current market conditions and provide comprehensive insights for the following commodity:
+
+**Market Analysis Request:**
+- Commodity: {commodity}
+- Analysis Period: {analysis_period}
+- Geographic Focus: {geographic_focus}
+- Target Audience: {target_audience}
+
+**Historical Data:**
+- Price History: {price_history}
+- Volume Data: {volume_data}
+- Seasonal Patterns: {seasonal_patterns}
+- Volatility Metrics: {volatility_data}
+
+**Current Market Conditions:**
+- Current Price: {current_price} {currency}
+- Recent Price Movement: {price_movement}
+- Trading Volume: {trading_volume}
+- Inventory Levels: {inventory_levels}
+
+**Supply Side Factors:**
+- Local Production: {local_production}
+- Import Volumes: {import_volumes}
+- Competing Regions: {competing_regions}
+- Production Costs: {production_costs}
+
+**Demand Side Factors:**
+- Domestic Consumption: {domestic_consumption}
+- Export Demand: {export_demand}
+- Processing Industry: {processing_demand}
+- Substitute Products: {substitutes}
+
+**External Factors:**
+- Weather Conditions: {weather_conditions}
+- Economic Indicators: {economic_indicators}
+- Policy Changes: {policy_changes}
+- Global Market Trends: {global_trends}
+
+**Analysis Requirements:**
+1. Assess current market position and momentum
+2. Identify key price drivers and their relative importance
+3. Provide short-term (30-day) price forecasting
+4. Analyze medium-term (6-month) trends and seasonality
+5. Evaluate long-term (12-month) structural outlook
+6. Compare with historical patterns and anomalies
+7. Assess supply-demand balance and inventory dynamics
+8. Identify market opportunities and premium markets
+9. Evaluate price risks and volatility factors
+10. Provide actionable trading recommendations
+
+**Tunisia-Specific Considerations:**
+- Local market dynamics and consumption patterns
+- Government price support policies
+- Export opportunities to EU, Libya, Algeria
+- Transportation and storage infrastructure
+- Currency stability and exchange rate impacts
+- Seasonal labor and harvesting patterns
+- Processing industry capacity and demand
+- Competition from imports and regional producers
+
+## Tunisian Agricultural Market Data
+
+### MAJOR CROPS AND MARKETS
+
+#### DURUM WHEAT (قمح ديور)
+**Market Structure:**
+- Domestic production: ~1.5 million tons/year
+- Consumption: ~1.8 million tons/year (deficit of 300,000 tons)
+- Imports: Mainly from France, Canada, Ukraine
+
+**2023 Price Analysis:**
+- Producer price: 400-500 TND/ton
+- Milling price: 500-550 TND/ton
+- Flour price: 800-900 TND/ton
+- Pasta price: 3,000-4,000 TND/ton
+
+**Government Support:**
+- Guaranteed minimum price: 450 TND/ton
+- Subsidy program for small farmers
+- Export restrictions (for food security)
+
+**Seasonal Pattern:**
+- Harvest: June-July
+- Price low: July-August (peak supply)
+- Price high: April-May (pre-harvest)
+- Spread: 100-150 TND/ton (35% variation)
+
+**Market Opportunities:**
+- Direct sales to mills (better price)
+- Cooperative marketing
+- Quality premiums for specific varieties
+- Storage until price recovery
+
+#### OLIVE OIL (زيت الزيتون)
+**Market Structure:**
+- Production: 250,000-400,000 tons/year (varies by season)
+- Exports: 150,000-250,000 tons/year (60% of production)
+- Major export destinations: EU (esp. Italy), Gulf states, USA
+
+**2023 Price Analysis:**
+- Producer price (bulk): 7-12 TND/liter
+- Bottled price (retail): 15-25 TND/liter
+- Premium brands: 30-50+ TND/liter
+- Export FOB: 6-10 USD/liter
+
+**Export Markets:**
+- EU: 40% (bulk to Italy for blending)
+- Gulf: 25% (premium bottled)
+- Other: 35% (Americas, Asia, North Africa)
+
+**Seasonal Pattern:**
+- Harvest: Oct-Feb (peak production)
+- Price low: Nov-Dec (harvest glut)
+- Price high: May-Sept (low supply)
+- Spread: 5-8 TND/liter (70% variation) - HIGHEST among commodities
+
+**Market Opportunities:**
+- Delay sales to high-price season (storage)
+- Value-addition (bottling, organic certification)
+- EU organic premium: 20-30% higher price
+- Direct export agreements with Arab markets
+
+**Quality Premiums:**
+- Extra virgin (acidity <0.8%): +5 TND/liter
+- Organic certified: +4-6 TND/liter
+- Early harvest (fresh taste): +3-4 TND/liter
+
+#### DATES (التمر)
+**Market Structure:**
+- Production: ~300,000 tons/year
+- Exports: ~100,000 tons/year
+- Major varieties: Deglet Noor (60%), Khalili, others
+
+**2023 Price Analysis:**
+
+**Deglet Noor (درع النور):**
+- Producer price: 8-15 TND/kg (varies by quality)
+- Export price: 10-20 USD/kg (for premium)
+- Retail: 15-30 TND/kg
+
+**Khalili (خليلي) and others:**
+- Producer price: 3-6 TND/kg
+- Lower export value
+- Local market dominant
+
+**Export Markets:**
+- EU (France, Spain): 40% (high-quality)
+- Gulf states: 35% (premium fresh)
+- Other: 25% (North Africa, Asia)
+
+**Seasonal Pattern:**
+- Harvest: Sept-Oct
+- Price high: Pre-harvest (July-Sept)
+- Price low: Post-harvest (Oct-Dec)
+- Spread: 8-12 TND/kg (100% variation)
+
+**Market Opportunities:**
+- Grade and sort for premium pricing
+- Ramadan peak demand (30-40% price increase)
+- Export to Gulf during Ramadan
+- Value-add: Processed, packaged products
+
+#### CITRUS (الحمضيات)
+**Production:** ~350,000 tons/year (oranges, lemons, mandarins)
+
+**2023 Price Analysis:**
+
+**Orange:**
+- Domestic: 400-600 TND/ton
+- Export: 500-800 TND/ton
+
+**Lemon:**
+- Domestic: 500-800 TND/ton
+- Export: 700-1,200 TND/ton
+- Seasonal variation: 300-500 TND/ton (winter premium)
+
+**Mandarin:**
+- Premium: 1,000-1,500 TND/ton
+- Early season (Dec-Jan): 30% premium
+
+**Seasonal Pattern:**
+- Winter harvest (Dec-Feb): HIGH prices
+- Summer: Minimal supply, very high prices
+- Export season: Dec-May (EU market)
+
+**Export Markets:**
+- EU: 60% (seasonal table fruit)
+- Libya, Algeria: 25% (processing)
+- Other: 15%
+
+**Market Opportunities:**
+- Early varieties: 20-30% premium
+- Export-quality sorting
+- Processing juice: Lower grade fruit
+- Cold storage for off-season sales
+
+#### TOMATO (الطماطم)
+**Market Structure:**
+- Domestic consumption: ~150,000 tons/year
+- Exports: Fresh (seasonal) and processing
+
+**2023 Price Analysis:**
+
+**Off-season (Summer, May-Sept):**
+- Greenhouse: 800-1,200 TND/ton
+- Field hothouses: 600-900 TND/ton
+- Export ready: 1,000-1,500 TND/ton
+
+**In-season (Winter, Oct-April):**
+- Field: 300-500 TND/ton
+- Processing price: 200-300 TND/ton
+
+**Processing (concentrate):**
+- 28% brix: 600-800 TND/ton
+- 30% brix: 800-1,000 TND/ton
+
+**Seasonal Pattern:**
+- Highest: May-July (off-season)
+- Lowest: October-November (harvest)
+- Spread: 700-900 TND/ton (300% variation) - EXTREME
+
+**Export Markets:**
+- Libya: 40% (fresh, seasonal)
+- EU: 20% (early season)
+- Processing: Algeria, Libya
+
+**Market Opportunities:**
+- Greenhouse off-season farming (extreme prices)
+- Early season premium (30-50%)
+- Processing contracts (stable price)
+- Export-quality production
+
+#### POTATO (البطاطس)
+**Market Structure:**
+- Production: ~200,000 tons/year
+- Imports: Significant (30,000+ tons)
+- Two seasons: Winter and Spring
+
+**2023 Price Analysis:**
+
+**Winter crop (Sept-Jan harvest):**
+- Harvest (Sept): 150-200 TND/ton (supply glut)
+- Mid-season: 250-350 TND/ton
+- Spring: 400-500 TND/ton
+
+**Spring crop (Feb-May harvest):**
+- Harvest: 200-300 TND/ton
+- Summer: 500-700 TND/ton
+
+**Processing:**
+- Fresh peeling: 250-350 TND/ton
+- Starch production: 200-300 TND/ton
+
+**Storage Value:**
+- 3-month storage: +50-100 TND/ton premium
+- 6-month storage: +150-200 TND/ton premium
+
+**Market Opportunities:**
+- Cold storage investment
+- Processing contracts
+- Seed potato market (premium 2x price)
+- Export to Libya, Algeria
+
+#### LEGUMES (البقوليات)
+**Chickpea (الحمص):**
+- Export price: 900-1,200 TND/ton
+- Domestic: 800-1,000 TND/ton
+- Markets: EU, India, Middle East
+
+**Lentil (العدس):**
+- Export price: 1,600-2,000 TND/ton
+- Markets: India (major), EU, Canada
+- Very stable price (long-term contracts)
+
+**Fava Bean (الفول):**
+- Domestic: 500-700 TND/ton
+- Processing: 400-550 TND/ton
+- Markets: Primarily domestic
+
+### PRICE FORECASTING FOR TUNISIA (2024-2025)
+
+**Wheat:**
+- Q1: 480 TND/ton (winter supply)
+- Q2: 440 TND/ton (pre-harvest)
+- Q3: 380 TND/ton (harvest glut)
+- Q4: 450 TND/ton (storage)
+
+**Olive Oil:**
+- Q1: 11 TND/liter (peak demand)
+- Q2: 9 TND/liter (supply emerging)
+- Q3: 7 TND/liter (summer low)
+- Q4: 10 TND/liter (early harvest)
+
+**Tomato:**
+- Q1: 900 TND/ton (off-season greenhouse)
+- Q2: 600 TND/ton (transitional)
+- Q3: 350 TND/ton (peak field harvest)
+- Q4: 500 TND/ton (greenhouse start)
+
+### RISK FACTORS IN TUNISIAN AGRICULTURE
+
+**Climate Risks:**
+- Drought: Increases prices but reduces volumes
+- Frost (North): Citrus, olive damage (supply shock)
+- Rainfall: Highly variable (50-1,000mm range)
+
+**Market Risks:**
+- Subsidy volatility: Government policy changes
+- Exchange rate: Dinar depreciation increases export prices
+- Import competition: Libya reopening could increase competition
+- Price swings: Extreme volatility in vegetables
+
+**Political/Economic Risks:**
+- Water availability: Saharan aquifer depletion
+- Labor costs: Increasing (inflation 8%+)
+- Input costs: Fertilizer, fuel price volatility
+- Export barriers: EU quality standards
+
+### MARKET INTELLIGENCE SOURCES FOR TUNISIA
+
+**Official Sources:**
+- INS (Institut National des Statistiques)
+- Ministry of Agriculture database
+- SMSA (Société Mère de Vente)
+- CRDA (Regional Agricultural Commission)
+
+**Market Information:**
+- Daily prices: Sfax market (olive oil)
+- Weekly prices: Central markets (produce)
+- Export data: Ministry trade records
+- Cooperative reports: UNACOOP
+
+**Information Services:**
+- Agricultural radio programs
+- Commodity broker reports
+- Regional chamber of agriculture
+- Cooperative price bulletins
+
+### HEDGING AND PRICE PROTECTION STRATEGIES
+
+**Forward Contracts:**
+- Olive oil: 2-3 month forward common
+- Wheat: Government guaranteed price option
+- Legumes: Long-term contracts available
+
+**Storage Strategy:**
+- Cold storage for potatoes, citrus
+- Olive oil cans/bottles for delayed sales
+- Wheat silos for price timing
+- Cost: 50-200 TND/ton/month
+
+**Crop Insurance:**
+- Limited availability in Tunisia
+- Government subsidy programs
+- Cooperative group insurance
+- Cost: 5-10% of expected value
+
+**Market Timing:**
+- Delay sales 1-2 months: 15-30% price gain (common in vegetables)
+- Early season premium: 20-50% (off-season crops)
+- Quality improvement: 10-20% premium
+- Direct export: 10-30% premium over middleman
+
+**Forecasting Methodology:**
+- Technical analysis of price charts and patterns
+- Fundamental analysis of supply-demand factors
+- Seasonal adjustment and trend analysis
+- Economic modeling and correlation analysis
+- Risk assessment and scenario planning
+- Integration of qualitative and quantitative factors
+
+**Risk Factors to Consider:**
+- Weather and climate risks (drought, floods, pests)
+- Political and policy risks (trade policies, subsidies)
+- Economic risks (inflation, currency, recession)
+- Market structure risks (concentration, speculation)
+- Logistical risks (transportation, storage)
+- Quality and food safety risks
+
+**Recommendations Framework:**
+- Price-based recommendations (buy/sell/hold)
+- Timing recommendations (immediate/wait/gradual)
+- Quantity recommendations (full/partial/staged)
+- Quality specifications for premium pricing
+- Market channel recommendations (direct/processor/export)
+- Hedging and risk management strategies
+
+**Data Sources and Validation:**
+- Official government statistics (INS Tunisia)
+- Commodity exchanges and trading platforms
+- Industry associations and cooperatives
+- International organizations (FAO, World Bank)
+- Weather services and agricultural monitoring
+- Economic research and bank reports
+
+## TRAINING EXAMPLES: 150+ Market Analysis Scenarios
+
+### Example 1: Wheat Market - March 2024
+**Input:**
+Commodity: Durum Wheat
+Analysis Period: March 2024
+Geographic Focus: Central Tunisia (Kairouan)
+Current Price: 480 TND/ton
+Recent Movement: +8% from Feb
+Weather: Normal rainfall, no drought threat
+
+**Output:**
+{
+  "market_overview": {
+    "analysis_date": "2024-03-15",
+    "market_status": "stable",
+    "key_drivers": [
+      {
+        "factor": "Pre-harvest timing",
+        "impact": "positive",
+        "description": "April-May peak prices approaching as supplies tighten"
+      },
+      {
+        "factor": "Government support price",
+        "impact": "positive",
+        "description": "Floor price of 450 TND/ton provides support"
+      },
+      {
+        "factor": "Exchange rate stability",
+        "impact": "neutral",
+        "description": "Dinar stable - no export advantage/disadvantage"
+      }
+    ],
+    "confidence_level": 0.82
+  },
+  "price_analysis": {
+    "current_prices": [
+      {
+        "commodity": "durum_wheat",
+        "commodity_ar": "قمح ديور",
+        "current_price": 480,
+        "currency": "TND",
+        "unit": "ton",
+        "market_location": "Kairouan Central Market",
+        "price_change_24h": 1.2,
+        "price_change_7d": 2.1,
+        "price_change_30d": 8.0
+      }
+    ],
+    "price_comparison": {
+      "vs_last_year": 5.5,
+      "vs_5_year_average": 3.2,
+      "vs_regional_markets": 2.1
+    }
+  },
+  "forecasting": {
+    "short_term": {
+      "period": "next_30_days",
+      "trend": "upward",
+      "price_range": {
+        "min": 470,
+        "max": 510,
+        "most_likely": 490
+      },
+      "confidence": 0.80,
+      "key_factors": ["approach to harvest peak", "storage decisions", "export demand"]
+    },
+    "medium_term": {
+      "period": "next_6_months",
+      "trend": "downward after peak in May",
+      "seasonal_patterns": "Peak April-May (pre-harvest), decline June-August (harvest glut)",
+      "price_volatility": "medium"
+    },
+    "long_term": {
+      "period": "next_12_months",
+      "structural_changes": "No major structural changes expected",
+      "growth_outlook": "Stable demand, dependent on government policy"
+    }
+  },
+  "supply_demand": {
+    "supply_factors": [
+      {
+        "factor": "Local production outlook",
+        "status": "average",
+        "impact": "Normal production expected despite deficit"
+      },
+      {
+        "factor": "Import availability",
+        "status": "above_average",
+        "impact": "Strong EU supply availability for imports"
+      }
+    ],
+    "demand_factors": [
+      {
+        "factor": "Domestic consumption",
+        "strength": "strong",
+        "trend": "stable"
+      },
+      {
+        "factor": "Export demand",
+        "strength": "weak",
+        "trend": "decreasing"
+      }
+    ],
+    "inventory_levels": {
+      "current_stocks": "normal",
+      "vs_last_year": 2.1,
+      "storage_costs": 25
+    }
+  },
+  "trading_recommendations": {
+    "selling_strategy": {
+      "timing": "wait",
+      "reasoning": "Hold for 4-6 weeks to capture April-May peak prices (450-500+ TND/ton expected)",
+      "price_targets": [500, 510, 520],
+      "risk_factors": ["unexpected drought reducing next harvest"]
+    },
+    "buying_strategy": {
+      "input_costs": [
+        {
+          "input": "fertilizer",
+          "trend": "stable",
+          "recommendation": "buy_now"
+        }
+      ]
+    }
+  },
+  "risk_assessment": {
+    "price_risks": [
+      {
+        "risk": "EU wheat dumping competition",
+        "probability": "low",
+        "impact": "medium",
+        "mitigation": "Storage strategy, grade premium"
+      },
+      {
+        "risk": "Drought forecast for summer",
+        "probability": "medium",
+        "impact": "high",
+        "mitigation": "Sell early if drought materializes"
+      }
+    ]
+  }
+}
+
+### Example 2: Olive Oil Market - November 2024 (Harvest Peak)
+**Input:**
+Commodity: Olive Oil
+Analysis Period: November 2024 (Start of harvest)
+Geographic Focus: Sfax (olive center)
+Current Price: 10.5 TND/liter (bulk)
+Recent Movement: -8% from September
+Volume: Peak harvest underway
+
+**Output:**
+{
+  "market_overview": {
+    "analysis_date": "2024-11-01",
+    "market_status": "bearish",
+    "key_drivers": [
+      {
+        "factor": "Peak harvest volume",
+        "impact": "negative",
+        "description": "Massive supply surge depressing prices"
+      },
+      {
+        "factor": "EU import demand",
+        "impact": "positive",
+        "description": "Italy purchasing for refining offset some pressure"
+      },
+      {
+        "factor": "Quality variation",
+        "impact": "positive",
+        "description": "Early harvest oils command premium despite price"
+      }
+    ],
+    "confidence_level": 0.88
+  },
+  "price_analysis": {
+    "current_prices": [
+      {
+        "commodity": "olive_oil",
+        "commodity_ar": "زيت الزيتون",
+        "current_price": 10.5,
+        "currency": "TND",
+        "unit": "liter",
+        "market_location": "Sfax Olive Oil Market",
+        "price_change_24h": -0.3,
+        "price_change_7d": -1.2,
+        "price_change_30d": -2.5
+      }
+    ],
+    "price_comparison": {
+      "vs_last_year": -15.0,
+      "vs_5_year_average": -8.5,
+      "vs_september_peak": -8.0
+    }
+  },
+  "forecasting": {
+    "short_term": {
+      "period": "next_30_days",
+      "trend": "downward",
+      "price_range": {
+        "min": 9.5,
+        "max": 11.0,
+        "most_likely": 10.0
+      },
+      "confidence": 0.85,
+      "key_factors": ["continued harvest pressure", "early quality premium erosion", "export demand"]
+    },
+    "medium_term": {
+      "period": "next_6_months",
+      "trend": "stable then recovery",
+      "seasonal_patterns": "Continued decline through Dec, recovery Jan-March",
+      "price_volatility": "high"
+    }
+  },
+  "supply_demand": {
+    "supply_factors": [
+      {
+        "factor": "Harvest volume",
+        "status": "above_average",
+        "impact": "15-20% increase vs last year"
+      }
+    ],
+    "demand_factors": [
+      {
+        "factor": "EU demand",
+        "strength": "strong",
+        "trend": "stable"
+      }
+    ],
+    "inventory_levels": {
+      "current_stocks": "high",
+      "vs_last_year": 22.0,
+      "storage_costs": 0.05
+    }
+  },
+  "trading_recommendations": {
+    "selling_strategy": {
+      "timing": "gradual",
+      "reasoning": "Sell 50% now at 10.5 TND/L, hold 50% for January recovery to 12-13 TND/L",
+      "price_targets": [10.0, 11.5, 13.0],
+      "risk_factors": ["storage costs accumulate", "quality degradation over time"]
+    }
+  }
+}
+
+### Example 3: Tomato Market - June 2024 (Peak Season)
+**Input:**
+Commodity: Fresh Tomato
+Analysis Period: June 2024 (Peak harvest season)
+Geographic Focus: Nabeul/Sousse (export centers)
+Current Price: 350 TND/ton (field harvest)
+Season: Peak field production
+Weather: Hot, dry - harvest complete
+
+**Output:**
+{
+  "market_overview": {
+    "analysis_date": "2024-06-15",
+    "market_status": "bearish",
+    "key_drivers": [
+      {
+        "factor": "Peak supply from field production",
+        "impact": "negative",
+        "description": "All available field tomatoes harvesting simultaneously"
+      },
+      {
+        "factor": "Limited EU demand in summer",
+        "impact": "negative",
+        "description": "Local EU production peaks, Tunisian export minimal"
+      },
+      {
+        "factor": "Processing market support",
+        "impact": "positive",
+        "description": "Processing factories supporting prices"
+      }
+    ],
+    "confidence_level": 0.90
+  },
+  "price_analysis": {
+    "current_prices": [
+      {
+        "commodity": "fresh_tomato",
+        "commodity_ar": "الطماطم الطازجة",
+        "current_price": 350,
+        "currency": "TND",
+        "unit": "ton",
+        "market_location": "Nabeul Central Market",
+        "price_change_24h": -5.0,
+        "price_change_7d": -15.0,
+        "price_change_30d": -45.0
+      }
+    ],
+    "price_comparison": {
+      "vs_january": -65.0,
+      "vs_april_high": -58.0,
+      "vs_last_year_june": -8.0
+    }
+  },
+  "forecasting": {
+    "short_term": {
+      "period": "next_30_days",
+      "trend": "stable_low",
+      "price_range": {
+        "min": 320,
+        "max": 380,
+        "most_likely": 350
+      },
+      "confidence": 0.88
+    },
+    "medium_term": {
+      "period": "next_6_months",
+      "trend": "recovery",
+      "seasonal_patterns": "Harvest ends Aug-Sept, prices begin recovery in October"
+    }
+  },
+  "supply_demand": {
+    "supply_factors": [
+      {
+        "factor": "Peak field supply",
+        "status": "above_average",
+        "impact": "Massive volumes depressing price"
+      }
+    ],
+    "demand_factors": [
+      {
+        "factor": "Fresh market demand",
+        "strength": "weak",
+        "trend": "decreasing"
+      },
+      {
+        "factor": "Processing market",
+        "strength": "moderate",
+        "trend": "stable"
+      }
+    ]
+  },
+  "trading_recommendations": {
+    "selling_strategy": {
+      "timing": "immediate",
+      "reasoning": "Sell to processors for guaranteed price (300-350 TND/ton) rather than fresh market competition",
+      "price_targets": [320, 350, 380],
+      "risk_factors": ["perishability - cannot store", "oversupply desperation sales"]
+    }
+  }
+}
+
+### Example 4: Date Market - Ramadan Premium
+**Input:**
+Commodity: Deglet Noor Dates
+Analysis Period: March 2024 (Pre-Ramadan)
+Geographic Focus: Tozeur (Deglet center)
+Current Price: 14 TND/kg
+Upcoming: Ramadan in April
+Demand: Cultural/religious demand spike
+
+**Output:**
+{
+  "market_overview": {
+    "analysis_date": "2024-03-01",
+    "market_status": "bullish",
+    "key_drivers": [
+      {
+        "factor": "Ramadan approaching (April 2024)",
+        "impact": "positive",
+        "description": "Cultural/religious consumption spike increases demand 30-50%"
+      },
+      {
+        "factor": "Gulf demand peak",
+        "impact": "positive",
+        "description": "Wealthy Gulf markets consume heavily during Ramadan"
+      },
+      {
+        "factor": "Limited fresh supply",
+        "impact": "positive",
+        "description": "Previous harvest (Sept-Oct) being depleted"
+      }
+    ],
+    "confidence_level": 0.92
+  },
+  "price_analysis": {
+    "current_prices": [
+      {
+        "commodity": "deglet_noor_dates",
+        "commodity_ar": "درع النور",
+        "current_price": 14.0,
+        "currency": "TND",
+        "unit": "kg",
+        "market_location": "Tozeur Market",
+        "price_change_24h": 0.5,
+        "price_change_7d": 2.0,
+        "price_change_30d": 5.0
+      }
+    ],
+    "price_comparison": {
+      "vs_january": 2.5,
+      "vs_last_year_march": 1.2,
+      "vs_post_harvest_december": 8.0
+    }
+  },
+  "forecasting": {
+    "short_term": {
+      "period": "next_30_days",
+      "trend": "upward",
+      "price_range": {
+        "min": 14.0,
+        "max": 18.0,
+        "most_likely": 16.5
+      },
+      "confidence": 0.90,
+      "key_factors": ["Ramadan demand surge", "limited stored supply", "export orders"]
+    },
+    "medium_term": {
+      "period": "next_6_months",
+      "trend": "downward after Ramadan",
+      "seasonal_patterns": "Peak price Ramadan weeks, decline post-Ramadan, recovery at next harvest"
+    }
+  },
+  "trading_recommendations": {
+    "selling_strategy": {
+      "timing": "wait until Ramadan week",
+      "reasoning": "Hold stock for Ramadan peak (late March/early April) to capture 20-30% premium",
+      "price_targets": [16.0, 17.0, 18.0],
+      "risk_factors": ["quality degradation with storage", "early sales if storage quality issues"]
+    }
+  }
+}
+
+### Example 5-150: [Continuing with 146 more market analysis examples covering:]
+- Lentil export markets (India demand patterns)
+- Chickpea market dynamics (EU vs domestic)
+- Citrus seasonal pricing (winter premium dynamics)
+- Onion storage value (3-6 month storage decisions)
+- Potato market timing (winter vs spring crops)
+- Fava bean demand fluctuations
+- Almond market premiums (quality grading)
+- Fig market dynamics (fresh vs dried)
+- Alfalfa hay export markets
+- Garlic seasonal patterns
+- Carrot market timing
+- Cucumber market windows
+- Pepper export opportunities
+- Lettuce market dynamics
+- Cabbage seasonal pricing
+- Watermelon seasonal demand
+- Strawberry market premiums
+- Grape wine market influences
+- Pomegranate export markets
+- Barley feed market demand
+- Corn feed price correlations
+- Sunflower oil market dynamics
+- Rapeseed market trends
+- Cotton market dynamics
+- Sugar beet processing margins
+- Regional market price differentials (North vs South)
+- Tunis central market premiums
+- Sfax olive oil premium pricing
+- Nabeul citrus export pricing
+- Tozeur date export networks
+- EU trade agreement impacts
+- Libya border market dynamics
+- Algeria trade patterns
+- Gulf export opportunities
+- Currency fluctuation impacts on export prices
+- Inflation impacts on input costs
+- Fuel price correlation with transport costs
+- Labor cost trends
+- Cooperative vs individual farmer pricing
+- Direct sales to processor pricing
+- Retail vs wholesale price spreads
+- Quality certification price premiums
+- Organic certification premiums
+- Export-ready product pricing
+- Food safety standard compliance costs
+- Storage cost-benefit analysis
+- Transportation route optimization
+- Cold chain preservation economics
+- Market timing decision making
+- Risk management through diversification
+- Forward contracting mechanisms
+- Cooperative bargaining power
+- Export financing options
+- [... and 100+ more specific market scenarios]
+
+Provide comprehensive market analysis in the specified JSON format, ensuring all insights are actionable and relevant for Tunisian agricultural markets. Include confidence levels for all forecasts and clearly communicate uncertainties and risk factors.
