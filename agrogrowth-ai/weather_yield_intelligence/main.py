@@ -11,8 +11,8 @@ from datetime import datetime
 import uvicorn
 import base64
 
-from .smart_weather_crop_planner import create_smart_weather_crop_planner
-from .yield_predictor_ai import create_yield_predictor_ai
+from weather_yield_intelligence.smart_weather_crop_planner import create_smart_weather_crop_planner
+from weather_yield_intelligence.yield_predictor_ai import create_yield_predictor_ai
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -389,6 +389,6 @@ def _generate_executive_summary(weather_analysis: Dict, yield_analysis: Dict) ->
         ],
         'confidence_level': 'متوسط إلى عالي'
     }
-
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8006)
+    port = int(os.environ.get("PORT", 8004))  # Render يعطي PORT
+    uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)

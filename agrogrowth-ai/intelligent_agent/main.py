@@ -9,7 +9,7 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ai_common.base_service import create_base_app
+from ai_common.base_service import BaseAIService
 from intelligent_agent.agro_chat_ai import AgroChatAI
 from intelligent_agent.farming_tasks_planner import FarmingTasksPlanner
 from intelligent_agent.alert_notifier_ai import AlertNotifierAI
@@ -24,11 +24,13 @@ tasks_planner = FarmingTasksPlanner()
 alert_notifier = AlertNotifierAI()
 
 # Create FastAPI app with common configuration
-app = create_base_app(
-    title="AgroGrowth Intelligent Agent Service",
-    description="Smart agricultural assistance, task planning, and alert management",
-    version="1.0.0"
+service = BaseAIService(
+    service_name="Intelligent Agent",
+    description="AgroGrowth Intelligent AI Agent Service"
 )
+
+# FastAPI app for uvicorn (VERY IMPORTANT)
+app = service.app
 
 # Request/Response Models
 class ChatQueryRequest(BaseModel):
@@ -554,5 +556,5 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8005)
+    port = int(os.environ.get("PORT", 8005))  # Render يعطي PORT
+    uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)

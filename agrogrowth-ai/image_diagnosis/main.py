@@ -14,8 +14,8 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from plant_disease_detector import create_plant_disease_detector
-from leaf_scan_ai import create_leaf_scan_ai
+from image_diagnosis.plant_disease_detector import create_plant_disease_detector
+from image_diagnosis.leaf_scan_ai import create_leaf_scan_ai
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -563,5 +563,5 @@ async def general_exception_handler(request, exc):
     return {"status": "error", "message": "Internal server error"}
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8003)
+    port = int(os.environ.get("PORT", 8003))  # Render يعطي PORT
+    uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)

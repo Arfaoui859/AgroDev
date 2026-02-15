@@ -9,7 +9,7 @@ import os
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ai_common.base_service import create_base_app
+from ai_common.base_service import BaseAIService
 from market_prediction.market_forecast_ai import MarketForecastAI
 from market_prediction.supply_demand_ai import SupplyDemandAI
 
@@ -22,11 +22,12 @@ market_forecast_ai = MarketForecastAI()
 supply_demand_ai = SupplyDemandAI()
 
 # Create FastAPI app with common configuration
-app = create_base_app(
-    title="AgroGrowth Market Prediction AI Service",
-    description="Advanced market forecasting and supply-demand analysis for agricultural products",
-    version="1.0.0"
+service = BaseAIService(
+    service_name="Market Prediction",
+    description="AI market prediction service"
 )
+
+app = service.app
 
 # Request/Response Models
 class PriceForecastRequest(BaseModel):
@@ -449,7 +450,5 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    import uvicorn
-    # Use port from environment or default to 8003
-    port = int(os.environ.get('SERVICE_PORT', 8003))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8006))  # Render يعطي PORT
+    uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)
