@@ -41,7 +41,50 @@ export const useServiceHealthChecker = () => {
         };
       }
 
-      // For AI services that require local setup - skip in production
+      // For AI services on Render or other external services
+      if (service.id.includes('crop-recommendation') ||
+          service.id.includes('soil-analysis') ||
+          service.id.includes('market-forecast') ||
+          service.id.includes('supply-demand') ||
+          service.id.includes('farming-tasks') ||
+          service.id.includes('agro-chat')) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for external services
+
+          const response = await fetch(service.endpoint, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+          const responseTime = Date.now() - startTime;
+
+          return {
+            serviceId: service.id,
+            isAvailable: response.ok,
+            responseTime,
+            lastChecked: new Date(),
+            error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`
+          };
+        } catch (error) {
+          const responseTime = Date.now() - startTime;
+          const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+
+          return {
+            serviceId: service.id,
+            isAvailable: false,
+            responseTime,
+            lastChecked: new Date(),
+            error: errorMessage.includes('timeout') || errorMessage.includes('abort')
+              ? 'Service request timeout'
+              : errorMessage
+          };
+        }
+      }
+
+      // For local AI services that require docker-compose
       if (service.requiresLocal) {
         // In production/deployed environments, assume local services are not available
         const responseTime = Date.now() - startTime;

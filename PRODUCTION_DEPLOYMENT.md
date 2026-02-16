@@ -53,6 +53,15 @@ SUPABASE_ANON_KEY=your-anon-key-here
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
 
+### External AI Services Configuration (Render Microservices)
+```bash
+# Render service URLs for AI microservices
+VITE_RENDER_SOIL_ANALYSIS_URL=https://soil-analysis-20qd.onrender.com
+VITE_RENDER_CROP_RECOMMENDATION_URL=https://crop-recommendation-0zlf.onrender.com
+VITE_RENDER_MARKET_PREDICTION_URL=https://market-prediction-ew18.onrender.com
+VITE_RENDER_INTELLIGENT_AGENT_URL=https://intelligent-agent-ub30.onrender.com
+```
+
 ### Application Configuration
 ```bash
 NODE_ENV=production
@@ -84,10 +93,35 @@ fly secrets set NODE_ENV="production"
 fly deploy
 ```
 
-### For Netlify/Vercel Deployment
+### For Vercel Deployment
 
-1. **Add Environment Variables in Dashboard**:
-   - Go to Site Settings → Environment Variables
+1. **Add Environment Variables in Vercel Dashboard**:
+   - Go to Project Settings → Environment Variables
+   - Add the following variables:
+     - `VITE_SUPABASE_URL` = https://your-project.supabase.co
+     - `VITE_SUPABASE_ANON_KEY` = your-anon-key
+     - `VITE_RENDER_SOIL_ANALYSIS_URL` = https://soil-analysis-20qd.onrender.com
+     - `VITE_RENDER_CROP_RECOMMENDATION_URL` = https://crop-recommendation-0zlf.onrender.com
+     - `VITE_RENDER_MARKET_PREDICTION_URL` = https://market-prediction-ew18.onrender.com
+     - `VITE_RENDER_INTELLIGENT_AGENT_URL` = https://intelligent-agent-ub30.onrender.com
+
+2. **Build Command**:
+```bash
+npm run build
+```
+
+3. **Output Directory**:
+```
+dist/spa
+```
+
+4. **Deploy**:
+   - Push to your repository or use `vercel deploy` from CLI
+
+### For Netlify Deployment
+
+1. **Add Environment Variables in Netlify Dashboard**:
+   - Go to Site Settings → Build & Deploy → Environment
    - Add all variables listed above
 
 2. **Build Command**:
@@ -95,9 +129,9 @@ fly deploy
 npm run build
 ```
 
-3. **Start Command**:
-```bash
-npm start
+3. **Publish Directory**:
+```
+dist/spa
 ```
 
 ### For Docker Deployment
