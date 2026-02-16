@@ -37,7 +37,7 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "soil-analysis",
         name: "Soil Analysis AI",
         status: "unavailable",
-        endpoint: `${RENDER_SOIL_ANALYSIS_URL}/api/soil-analysis`,
+        endpoint: `${RENDER_SOIL_ANALYSIS_URL}/analyze-soil`,
         description: "Intelligent soil health assessment and recommendations",
         requiresLocal: false
       },
