@@ -14,6 +14,12 @@ export interface ServiceCategory {
   services: ServiceStatus[];
 }
 
+// Get Render service URLs from environment or use defaults
+const RENDER_SOIL_ANALYSIS_URL = import.meta.env.VITE_RENDER_SOIL_ANALYSIS_URL || "https://soil-analysis-20qd.onrender.com";
+const RENDER_CROP_RECOMMENDATION_URL = import.meta.env.VITE_RENDER_CROP_RECOMMENDATION_URL || "https://crop-recommendation-0zlf.onrender.com";
+const RENDER_MARKET_PREDICTION_URL = import.meta.env.VITE_RENDER_MARKET_PREDICTION_URL || "https://market-prediction-ew18.onrender.com";
+const RENDER_INTELLIGENT_AGENT_URL = import.meta.env.VITE_RENDER_INTELLIGENT_AGENT_URL || "https://intelligent-agent-ub30.onrender.com";
+
 // Define all AI services and their status
 export const AI_SERVICES: ServiceCategory[] = [
   {
@@ -23,17 +29,17 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "crop-recommendation",
         name: "Smart Crop Recommendations",
         status: "unavailable",
-        endpoint: "/api/ai/crop-recommendation",
+        endpoint: `${RENDER_CROP_RECOMMENDATION_URL}/api/crop-recommendation`,
         description: "AI-powered crop selection based on soil and climate conditions",
-        requiresLocal: true
+        requiresLocal: false
       },
       {
         id: "soil-analysis",
         name: "Soil Analysis AI",
-        status: "unavailable", 
-        endpoint: "/api/ai/soil-analysis",
+        status: "unavailable",
+        endpoint: `${RENDER_SOIL_ANALYSIS_URL}/analyze-soil`,
         description: "Intelligent soil health assessment and recommendations",
-        requiresLocal: true
+        requiresLocal: false
       },
       {
         id: "climate-crop-matcher",
@@ -110,25 +116,25 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "market-forecast",
         name: "Market Forecast AI",
         status: "unavailable",
-        endpoint: "/api/ai/market-forecast",
+        endpoint: `${RENDER_MARKET_PREDICTION_URL}/api/market-forecast`,
         description: "Predict market prices and demand trends",
-        requiresLocal: true
+        requiresLocal: false
       },
       {
         id: "supply-demand",
         name: "Supply Demand AI",
         status: "unavailable",
-        endpoint: "/api/ai/supply-demand",
+        endpoint: `${RENDER_MARKET_PREDICTION_URL}/api/supply-demand`,
         description: "Analyze supply and demand patterns for better decision making",
-        requiresLocal: true
+        requiresLocal: false
       },
       {
         id: "smart-match",
         name: "Smart Match AI",
         status: "unavailable",
-        endpoint: "/api/ai/smart-match",
+        endpoint: `${RENDER_MARKET_PREDICTION_URL}/api/smart-match`,
         description: "Match farmers with buyers and optimize pricing",
-        requiresLocal: true
+        requiresLocal: false
       }
     ]
   },
@@ -139,25 +145,25 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "farming-tasks-planner",
         name: "Farming Tasks Planner",
         status: "unavailable",
-        endpoint: "/api/ai/farming-tasks-planner", 
+        endpoint: `${RENDER_INTELLIGENT_AGENT_URL}/api/farming-tasks-planner`,
         description: "Intelligent farm task scheduling and planning",
-        requiresLocal: true
+        requiresLocal: false
       },
       {
         id: "agro-chat",
         name: "Agro Chat AI",
         status: "unavailable",
-        endpoint: "/api/ai/agro-chat",
-        description: "AI assistant for farming questions and guidance", 
-        requiresLocal: true
+        endpoint: `${RENDER_INTELLIGENT_AGENT_URL}/api/agro-chat`,
+        description: "AI assistant for farming questions and guidance",
+        requiresLocal: false
       },
       {
         id: "alert-notifier",
         name: "Alert Notifier AI",
         status: "unavailable",
-        endpoint: "/api/ai/alert-notifier",
+        endpoint: `${RENDER_INTELLIGENT_AGENT_URL}/api/alert-notifier`,
         description: "Intelligent alert system for farm conditions",
-        requiresLocal: true
+        requiresLocal: false
       }
     ]
   }

@@ -249,7 +249,7 @@ import {
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
-import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
+import { testAuthSignup, testAuthSignin, testAuthHealth } from "./routes/test-auth";
 import {
   setupDemoUsers,
   getDemoUsers,
@@ -593,6 +593,7 @@ export function createServer() {
   });
 
   // Auth Test Endpoints
+  app.get("/api/test/auth", testAuthHealth);
   app.post("/api/test/auth/signup", testAuthSignup);
   app.post("/api/test/auth/signin", testAuthSignin);
   app.get("/api/debug/auth", debugAuth);

@@ -561,37 +561,40 @@ export default function Index() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       setLoading(true);
-      try {
-        // Check AI services health from system health
-        try {
-          if (systemHealth) {
-            setAiServicesStatus(systemHealth.overall || "unavailable");
-          } else {
-            setAiServicesStatus("checking");
-          }
-        } catch (error) {
-          console.error("Failed to check AI services health:", error);
-          // Provide a more helpful error message
-          if (
-            error instanceof Error &&
-            error.message.includes("Network connection failed")
-          ) {
-            console.warn("External scripts may be interfering with API calls");
-          }
-          setAiServicesStatus("unavailable");
-        }
+      let hasErrors = false;
 
-        // Fetch farm overview data
+      // Check AI services health from system health
+      try {
+        if (systemHealth) {
+          setAiServicesStatus(systemHealth.overall || "unavailable");
+        } else {
+          setAiServicesStatus("checking");
+        }
+      } catch (error) {
+        console.error("Failed to check AI services health:", error);
+        setAiServicesStatus("unavailable");
+      }
+
+      // Fetch farm overview data (with individual error handling)
+      try {
         const farmResponse = await robustFetch("/api/farm-management/overview");
         if (farmResponse.ok) {
           const farmData = await farmResponse.json();
           setFarmOverview(farmData);
+        } else {
+          console.warn(`Farm overview returned status ${farmResponse.status}`);
+          hasErrors = true;
         }
+      } catch (error) {
+        console.error("Failed to fetch farm overview:", error);
+        hasErrors = true;
+      }
 
-        // Fetch weather data
+      // Fetch weather data (with individual error handling)
+      try {
         const weatherResponse = await robustFetch(
           "/api/weather/coordinates?lat=36.8065&lon=10.1815",
-        ); // Tunis coordinates
+        );
         if (weatherResponse.ok) {
           const weather = await weatherResponse.json();
           setWeatherData({
@@ -621,9 +624,17 @@ export default function Index() {
                     }))
                 : [],
           });
+        } else {
+          console.warn(`Weather data returned status ${weatherResponse.status}`);
+          hasErrors = true;
         }
+      } catch (error) {
+        console.error("Failed to fetch weather data:", error);
+        hasErrors = true;
+      }
 
-        // Fetch notifications for alerts
+      // Fetch notifications for alerts (with individual error handling)
+      try {
         const alertsResponse = await robustFetch(
           "/api/notifications?status=unread&limit=3",
         );
@@ -644,32 +655,29 @@ export default function Index() {
               href: notif.action_url,
             })) || [];
           setSystemAlerts(alerts);
+        } else {
+          console.warn(`Notifications returned status ${alertsResponse.status}`);
+          hasErrors = true;
         }
       } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
+        console.error("Failed to fetch notifications:", error);
+        hasErrors = true;
+      }
 
-        // Provide specific error handling for fetch interference
-        let errorMessage = isArabic
-          ? "تعذر تحميل بيانات لوحة التحكم"
-          : "Could not load dashboard data";
-
-        if (
-          error instanceof Error &&
-          error.message.includes("Failed to fetch")
-        ) {
-          errorMessage = isArabic
-            ? "مشكلة في الاتصال بالشبكة. يرجى تحديث الصفحة أو المحاولة لاحقاً"
-            : "Network connection issue. Please refresh the page or try again later";
-        }
+      // Only show error toast if critical data couldn't be loaded
+      if (hasErrors && !farmOverview) {
+        const errorMessage = isArabic
+          ? "مشكلة في تحميل بعض بيانات لوحة التحكم. يرجى تحديث الصفحة"
+          : "Some dashboard data could not be loaded. Please refresh the page";
 
         toast({
-          title: isArabic ? "خطأ في تحميل البيانات" : "Failed to load data",
+          title: isArabic ? "تحذير" : "Warning",
           description: errorMessage,
-          variant: "destructive",
+          variant: "default",
         });
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
     fetchDashboardData();

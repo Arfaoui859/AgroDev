@@ -1,6 +1,27 @@
 import { RequestHandler } from 'express';
 import { supabase } from '../lib/supabase';
 
+// Simple health check endpoint for auth service (no credentials required)
+export const testAuthHealth: RequestHandler = async (req, res) => {
+  try {
+    // Simple check to see if Supabase auth is responding
+    const { data: { session } } = await supabase.auth.getSession();
+
+    res.json({
+      status: 'success',
+      message: 'Auth service is operational',
+      authenticated: !!session
+    });
+  } catch (error: any) {
+    console.error('❌ Auth health check failed:', error);
+    res.status(503).json({
+      status: 'error',
+      message: 'Auth service unavailable',
+      error: error.message
+    });
+  }
+};
+
 export const testAuthSignup: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
