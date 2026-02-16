@@ -1,24 +1,33 @@
-
 {
   "version": 2,
   "name": "agrogrowth-platform",
-  "buildCommand": "npm install && npm run build",
+
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
+
+  "framework": "vite",
+  "regions": ["fra1"],
+
   "functions": {
     "api/api.ts": {
       "maxDuration": 30
     }
   },
+
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "^/api/(.*)",
       "dest": "/api/api.ts"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ],
+
   "env": {
     "VITE_API_URL": "https://agrogrowth-platform.vercel.app/api",
     "VITE_SOIL_ANALYSIS_URL": "https://agrogrowth-soil-analysis.onrender.com",
@@ -26,7 +35,5 @@
     "VITE_IMAGE_DIAGNOSIS_URL": "https://agrogrowth-image-diagnosis.onrender.com",
     "VITE_MARKET_PREDICTION_URL": "https://agrogrowth-market-prediction.onrender.com",
     "VITE_INTELLIGENT_AGENT_URL": "https://agrogrowth-intelligent-agent.onrender.com"
-  },
-  "framework": "vite",
-  "regions": ["fra1"]
+  }
 }
