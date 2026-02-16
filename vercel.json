@@ -34,6 +34,14 @@
     "VITE_CROP_RECOMMENDATION_URL": "https://crop-recommendation-0zlf.onrender.com",
     "VITE_IMAGE_DIAGNOSIS_URL": "https://image-diagnosis-fpmg.onrender.com",
     "VITE_MARKET_PREDICTION_URL": "https://market-prediction-ew18.onrender.com",
-    "VITE_INTELLIGENT_AGENT_URL": "https://intelligent-agent-ub30.onrender.com"
+    "VITE_INTELLIGENT_AGENT_URL": "https://intelligent-agent-ub30.onrender.com",
+    " VITE_SUPABASE_URL"="postgresql://postgres:123456789@db.jymrhhlwdbclctobhbsi.supabase.co:5432/postgres",
+    "VITE_SUPABASE_ANON_KEY"="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MTM2NDYsImV4cCI6MjA3MDE4OTY0Nn0.l2VjAq1vZgkiAeL2EtAJp3iUWBHWbXPmQdNuNq197po",
+    "SUPABASE_URL"="postgresql://postgres:123456789@db.jymrhhlwdbclctobhbsi.supabase.co:5432/postgres",
+    "SUPABASE_ANON_KEY"="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MTM2NDYsImV4cCI6MjA3MDE4OTY0Nn0.l2VjAq1vZgkiAeL2EtAJp3iUWBHWbXPmQdNuNq197po",
+    "SUPABASE_SERVICE_ROLE_KEY"="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDYxMzY0NiwiZXhwIjoyMDcwMTg5NjQ2fQ.29lp45xN0ENLHUkqPqhS1faEptu0aQFoWTgcPwVvF38"
+
+
+
   }
 }
