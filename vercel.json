@@ -29,11 +29,11 @@
   ],
 
   "env": {
-    "VITE_API_URL": "https://agrogrowth-platform.vercel.app/api",
-    "VITE_SOIL_ANALYSIS_URL": "https://agrogrowth-soil-analysis.onrender.com",
-    "VITE_CROP_RECOMMENDATION_URL": "https://agrogrowth-crop-recommendation.onrender.com",
-    "VITE_IMAGE_DIAGNOSIS_URL": "https://agrogrowth-image-diagnosis.onrender.com",
-    "VITE_MARKET_PREDICTION_URL": "https://agrogrowth-market-prediction.onrender.com",
-    "VITE_INTELLIGENT_AGENT_URL": "https://agrogrowth-intelligent-agent.onrender.com"
+    "VITE_API_URL": "https://agro-dev.vercel.app/api",
+    "VITE_SOIL_ANALYSIS_URL": "https://soil-analysis-20qd.onrender.com",
+    "VITE_CROP_RECOMMENDATION_URL": "https://crop-recommendation-0zlf.onrender.com",
+    "VITE_IMAGE_DIAGNOSIS_URL": "https://image-diagnosis-fpmg.onrender.com",
+    "VITE_MARKET_PREDICTION_URL": "https://market-prediction-ew18.onrender.com",
+    "VITE_INTELLIGENT_AGENT_URL": "https://intelligent-agent-ub30.onrender.com"
   }
 }
