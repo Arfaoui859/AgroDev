@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { X, Download, Smartphone, Zap, Globe, Shield } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -139,8 +140,8 @@ const PWAInstallPrompt: React.FC = () => {
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-                <span className="text-2xl">🌱</span>
+              <div className="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center">
+                <Logo size={72} />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900">AgroGrowth</h3>
@@ -248,7 +249,7 @@ const PWAInstallPrompt: React.FC = () => {
               </div>
               <p className="text-xs text-blue-700">
                 {isArabic
-                  ? 'اضغط على زر المشاركة في المتصفح ثم اختر "إضافة إلى الشاشة الرئيسية"'
+                  ? 'اضغط على زر المشاركة في المتصفح ثم اختر "إ��افة إلى الشاشة الرئيسية"'
                   : 'Tap the share button in your browser, then select "Add to Home Screen"'}
               </p>
             </div>

@@ -47,6 +47,7 @@ import {
   ChevronDown,
   Plus,
 } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 interface NavigationItem {
   id: string;
@@ -106,7 +107,7 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
       href: "/analysis",
       icon: BarChart3,
       category: "Main",
-      categoryArabic: "الرئيسية",
+      categoryArabic: "الر��يسية",
       children: [
         {
           id: "soil-analysis",
@@ -336,13 +337,13 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
         {/* Logo */}
         <div className="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700">
           {collapsed ? (
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg">
-              <Leaf className="h-6 w-6 text-white" />
+            <div className="p-2 rounded-lg">
+              <Logo size={40} />
             </div>
           ) : (
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg">
-                <Leaf className="h-6 w-6 text-white" />
+              <div className="p-2 rounded-lg">
+                <Logo size={56} />
               </div>
               <div>
                 <h1

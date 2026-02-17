@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Logo from "@/components/ui/Logo";
 import {
   Select,
   SelectContent,
@@ -72,7 +73,7 @@ export default function Signup() {
 
   const governorateOptions = [
     { value: "tunis", label: "Tunis", labelArabic: "تونس" },
-    { value: "ariana", label: "Ariana", labelArabic: "أريانة" },
+    { value: "ariana", label: "Ariana", labelArabic: "أري��نة" },
     { value: "ben_arous", label: "Ben Arous", labelArabic: "بن عروس" },
     { value: "manouba", label: "Manouba", labelArabic: "منوبة" },
     { value: "nabeul", label: "Nabeul", labelArabic: "نابل" },
@@ -175,8 +176,8 @@ export default function Signup() {
       <div className="w-full max-w-lg sm:max-w-2xl space-y-4 sm:space-y-6">
         {/* Logo and Title */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
-            <Leaf className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-transparent rounded-full mb-4">
+            <Logo size={64} />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             AgroGrowth

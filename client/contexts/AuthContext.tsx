@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, User, UserProfile } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
+import type {
+  User as AppUser,
+  UserProfile as AppUserProfile,
+} from "../lib/supabase";
+import { safeInsert } from "../lib/supabaseHelpers";
+import { retryWithBackoff } from "../lib/retry";
 import { Session } from "@supabase/supabase-js";
 
 // =============== TYPES & INTERFACES ===============
@@ -15,20 +21,20 @@ export type UserRole =
 export type Permission = string;
 
 interface AuthContextType {
-  user: User | null;
-  userProfile: UserProfile | null;
+  user: AppUser | null;
+  userProfile: AppUserProfile | null;
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signUp: (
     email: string,
     password: string,
-    userData: Partial<User>,
+    userData: Partial<AppUser>,
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   logout?: () => Promise<void>; // Alias for signOut
-  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  updateProfile: (updates: Partial<AppUserProfile>) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   // Add 2FA methods for compatibility
@@ -55,8 +61,8 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [userProfile, setUserProfile] = useState<AppUserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -67,15 +73,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const initializeAuth = async () => {
       try {
-        // Add timeout to prevent hanging
+        // Add timeout to prevent hanging. Increased to 30s and wrapped in retry logic
+        const timeoutMs = 30000; // 30 seconds
+        const authPromise = supabase.auth.getSession();
+
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(
             () => reject(new Error("Auth initialization timeout")),
-            10000,
-          ); // 10 second timeout
+            timeoutMs,
+          );
         });
-
-        const authPromise = supabase.auth.getSession();
 
         const {
           data: { session: initialSession },
@@ -156,27 +163,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Load user data from database
   const loadUserData = async (userId: string) => {
     try {
-      // Add timeout for database queries
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Database query timeout")), 5000); // 5 second timeout
-      });
+      // Add timeout for database queries and use retry logic
+      const timeoutMs = 15000; // 15 second timeout
 
-      // Try to load user details from custom table
-      const userQueryPromise = supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single();
+      // Try to load user details from custom table with retries
+      const userQuery = async () => {
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .single();
+        if (error) throw error;
+        return data;
+      };
 
-      const { data: userData, error: userError } = (await Promise.race([
-        userQueryPromise,
-        timeoutPromise,
-      ])) as any;
+      let userData: any = null;
+      let userError: any = null;
+      try {
+        // Retry up to 2 times with backoff
+        userData = await retryWithBackoff(
+          () =>
+            Promise.race([
+              userQuery(),
+              new Promise((_, reject) =>
+                setTimeout(
+                  () => reject(new Error("Database query timeout")),
+                  timeoutMs,
+                ),
+              ),
+            ]),
+          2,
+          300,
+        );
+      } catch (e: any) {
+        userError = e;
+      }
 
       if (userError) {
-        console.log(
-          "Custom user table not available, using Supabase Auth data only",
-        );
+        // Check if this is a table-not-found error
+        const isTableMissing = userError.message?.includes('relation') && userError.message?.includes('does not exist');
+        const isPermissionDenied = userError.message?.includes('permission denied');
+
+        if (isTableMissing) {
+          console.warn(`
+⚠️  DATABASE TABLES NOT FOUND
+═══════════════════════════════════════════════════════════
+The 'users' table doesn't exist in your Supabase database.
+
+📋 QUICK FIX:
+1. Copy the file: supabase-tables-setup.sql (project root)
+2. Go to: https://app.supabase.com/projects/[project-id]/sql/new
+3. Paste and run the SQL script
+4. Refresh the application
+
+This is a one-time setup. After running, everything will work.
+═══════════════════════════════════════════════════════════
+          `);
+        } else if (isPermissionDenied) {
+          console.warn(`
+⚠️  PERMISSION DENIED - RLS Policy Issue
+═══════════════════════════════════════════════════════════
+Row Level Security (RLS) policies are blocking access.
+
+📋 FIX:
+1. Run supabase-tables-setup.sql to fix RLS policies
+2. Or check RLS policies in Supabase dashboard
+═══════════════════════════════════════════════════════════
+          `);
+        } else {
+          console.log(
+            "Custom user table not available, using Supabase Auth data only",
+          );
+        }
 
         // Fallback: create minimal user object from auth data
         const {
@@ -202,21 +260,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setUser(userData);
 
-      // Try to load user profile with timeout
-      const profileQueryPromise = supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
+      // Try to load user profile with timeout and retries
+      const profileQuery = async () => {
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
+        if (error) throw error;
+        return data;
+      };
 
-      const { data: profileData, error: profileError } = (await Promise.race([
-        profileQueryPromise,
-        timeoutPromise,
-      ])) as any;
+      let profileData: any = null;
+      try {
+        profileData = await retryWithBackoff(
+          () =>
+            Promise.race([
+              profileQuery(),
+              new Promise((_, reject) =>
+                setTimeout(
+                  () => reject(new Error("Database query timeout")),
+                  timeoutMs,
+                ),
+              ),
+            ]),
+          2,
+          300,
+        );
+      } catch (e) {
+        console.log(
+          "Custom profile table not available or timed out, using defaults",
+        );
+      }
 
-      if (profileError) {
-        console.log("Custom profile table not available, using defaults");
-        // Set default profile
+      if (!profileData) {
         setUserProfile({
           id: "default",
           user_id: userId,
@@ -229,7 +306,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
-      } else if (profileData) {
+      } else {
         setUserProfile(profileData);
       }
     } catch (error) {
@@ -241,7 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signUp = async (
     email: string,
     password: string,
-    userData: Partial<User>,
+    userData: Partial<AppUser>,
   ) => {
     setIsLoading(true);
     try {
@@ -284,7 +361,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Try to create user record in our custom table
         try {
-          const { error: userError } = await supabase.from("users").insert({
+          // Use safeInsert helper to tolerate missing columns in DB schema
+          const { error: userError } = await safeInsert(supabase, "users", {
             id: data.user.id,
             email: data.user.email,
             ...userData,
@@ -345,9 +423,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             console.log("✅ User record created in custom table");
 
             // Only try to create profile if user record succeeded
-            const { error: profileError } = await supabase
-              .from("user_profiles")
-              .insert({
+            const { error: profileError } = await safeInsert(
+              supabase,
+              "user_profiles",
+              {
                 user_id: data.user.id,
                 preferences: {
                   language: "ar",
@@ -355,7 +434,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   weather_alerts: true,
                   market_alerts: true,
                 },
-              });
+              },
+            );
 
             if (profileError) {
               console.error(
@@ -397,12 +477,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const result = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      // Log full result for debugging
+      console.log("signIn result:", result);
+
+      if (result.error) throw result.error;
+
+      const user = result.data?.user;
+      const sessionData = result.data?.session;
+
+      if (!user) {
+        console.warn("signIn: no user in response, session:", sessionData);
+        return result;
+      }
+
+      // Update local auth state immediately (don't rely solely on onAuthStateChange)
+      setSession(sessionData || null);
+      try {
+        await loadUserData(user.id);
+      } catch (e) {
+        console.error("Error loading user data after signIn:", e);
+      }
+
+      // Navigate to home
+      try {
+        navigate("/");
+      } catch (e) {
+        console.warn("Navigation after signIn failed:", e);
+      }
+
+      return result;
     } catch (error) {
       console.error("Sign in error:", error);
       throw error;
@@ -430,7 +538,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Update profile function
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  const updateProfile = async (updates: Partial<AppUserProfile>) => {
     if (!user) throw new Error("User not authenticated");
 
     try {

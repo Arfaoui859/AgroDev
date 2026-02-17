@@ -15,9 +15,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ai_common.base_service import BaseAIService, PredictionResponse
-from soil_analyzer import create_soil_analyzer
-from climate_crop_matcher import create_climate_crop_matcher
-from soil_image_diagnosis import create_soil_image_diagnosis
+from soil_analysis.soil_analyzer import create_soil_analyzer
+from soil_analysis.climate_crop_matcher import create_climate_crop_matcher
+from soil_analysis.soil_image_diagnosis import create_soil_image_diagnosis
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -259,7 +259,6 @@ async def value_error_handler(request, exc):
 async def general_exception_handler(request, exc):
     logger.error(f"Unhandled exception: {exc}")
     return {"status": "error", "message": "Internal server error"}
-
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.environ.get("PORT", 8000))  # Render يعطي PORT
+    uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)

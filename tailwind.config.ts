@@ -26,6 +26,15 @@ export default {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        // Map green utilities to primary to keep existing classes consistent
+        green: {
+          50: 'hsl(var(--primary) / 0.08)',
+          100: 'hsl(var(--primary) / 0.16)',
+          200: 'hsl(var(--primary) / 0.24)',
+          500: 'hsl(var(--primary) / 0.6)',
+          600: 'hsl(var(--primary))',
+          700: 'hsl(var(--primary) / 0.84)'
+        },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",

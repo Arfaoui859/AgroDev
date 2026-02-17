@@ -71,6 +71,7 @@ import {
 import { useState } from "react";
 import UnifiedSearch from "./UnifiedSearch";
 import NotificationCenter from "./NotificationCenter";
+import Logo from "@/components/ui/Logo";
 
 interface LayoutProps {
   children: ReactNode;
@@ -572,7 +573,7 @@ const navigationCategories: NavigationCategory[] = [
       },
       {
         name: "Field Analytics",
-        nameArabic: "تحليلات الحقول",
+        nameArabic: "تحليلات ا��حقول",
         href: "/field-management?tab=analytics",
         icon: BarChart3,
         allowedRoles: ["farmer", "inspector", "admin"],
@@ -601,7 +602,7 @@ const navigationCategories: NavigationCategory[] = [
       },
       {
         name: "Advanced Livestock",
-        nameArabic: "لوحة الثروة الحيوانية المتقدمة",
+        nameArabic: "لوحة الثروة ال��يوانية المتقدمة",
         href: "/advanced-livestock",
         icon: Users,
         badge: "Pro",
@@ -792,8 +793,8 @@ export default function Layout({ children }: LayoutProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Leaf className="h-8 w-8 text-green-600" />
+              <div className="p-1">
+                <Logo size={64} />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">AgroGrowth</h1>
@@ -816,7 +817,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           {/* User Info */}
-          <div className="p-4 border-b bg-gradient-to-r from-green-50 to-blue-50">
+          <div className="p-6 border-b bg-gradient-to-r from-green-50 to-blue-50">
             <div className="flex items-center space-x-3 rtl:space-x-reverse mb-3">
               <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
                 <User className="h-6 w-6 text-white" />
@@ -834,7 +835,7 @@ export default function Layout({ children }: LayoutProps) {
 
           {/* Role-based Quick Actions */}
           {filteredQuickActions.length > 0 && (
-            <div className="p-4 border-b bg-gradient-to-r from-green-50 to-blue-50">
+            <div className="p-6 border-b bg-gradient-to-r from-green-50 to-blue-50">
               <div
                 className={cn(
                   "grid gap-1",
@@ -865,16 +866,17 @@ export default function Layout({ children }: LayoutProps) {
           {/* Role-based Navigation */}
           <ScrollArea className="flex-1 px-4">
             <div className="py-4 space-y-2">
-              {filteredCategories.map((category) => {
+              {filteredCategories.map((category, idx) => {
                 const isExpanded = expandedCategories.includes(category.name);
                 const categoryActive = isCategoryActive(category);
 
                 return (
                   <div key={category.name} className="space-y-1">
+                    {idx > 0 && <div className="sidebar-divider" />}
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start font-medium",
+                        "w-full justify-start font-medium sidebar-category",
                         categoryActive && "bg-green-50 text-green-700",
                       )}
                       onClick={() => toggleCategory(category.name)}

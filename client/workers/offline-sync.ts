@@ -34,8 +34,11 @@ const apiEndpointsToCache = [
   "/api/ai/health",
 ];
 
+// Loosen worker globals/types to avoid TS issues in the build environment
+declare const self: any;
+
 // Install event - cache static resources
-self.addEventListener("install", (event: ExtendableEvent) => {
+self.addEventListener("install", (event: any) => {
   console.log("[SW] Installing Service Worker");
 
   event.waitUntil(
@@ -53,7 +56,7 @@ self.addEventListener("install", (event: ExtendableEvent) => {
 });
 
 // Activate event - clean up old caches
-self.addEventListener("activate", (event: ExtendableEvent) => {
+self.addEventListener("activate", (event: any) => {
   console.log("[SW] Activating Service Worker");
 
   event.waitUntil(
@@ -77,7 +80,7 @@ self.addEventListener("activate", (event: ExtendableEvent) => {
 });
 
 // Fetch event - handle network requests
-self.addEventListener("fetch", (event: FetchEvent) => {
+self.addEventListener("fetch", (event: any) => {
   const url = new URL(event.request.url);
 
   // Handle API requests

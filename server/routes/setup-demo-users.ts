@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
-import { supabaseAdmin } from "../lib/supabase";
+import { supabaseAdmin, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { safeInsert as serverSafeInsert } from "../lib/supabaseHelpers";
 
 // Demo users to create
 const demoUsers = [
@@ -8,7 +9,7 @@ const demoUsers = [
     password: "demo123",
     userData: {
       full_name: "أحمد المزارع",
-      full_name_ar: "أحمد المزارع",
+      full_name_ar: "أ��مد المزارع",
       role: "farmer",
       location: "تونس",
       specialization: "الزراعة العامة",
@@ -29,6 +30,18 @@ const demoUsers = [
     },
   },
   {
+    email: "admin@agrogrowth.com",
+    password: "admin123",
+    userData: {
+      full_name: "مدير النظام",
+      full_name_ar: "مدير النظام",
+      role: "admin",
+      location: "تونس",
+      specialization: "إدارة النظام",
+      verified: true,
+    },
+  },
+  {
     email: "admin@demo.com",
     password: "demo123",
     userData: {
@@ -37,6 +50,18 @@ const demoUsers = [
       role: "admin",
       location: "تونس",
       specialization: "إدارة النظام",
+      verified: true,
+    },
+  },
+  {
+    email: "arfaouisami.iaot@gmail.com",
+    password: "123456789",
+    userData: {
+      full_name: "خبير زراعي",
+      full_name_ar: "خبير زراعي",
+      role: "agronomist",
+      location: "تونس",
+      specialization: "الخبرة الزراعية",
       verified: true,
     },
   },
@@ -62,6 +87,18 @@ const demoUsers = [
       location: "تونس",
       specialization: "الطب البيطري",
       experience_years: 8,
+      verified: true,
+    },
+  },
+  {
+    email: "neuroforgesoultion@gmail.com",
+    password: "123456789",
+    userData: {
+      full_name: "مراقب الحقول",
+      full_name_ar: "مراقب الحقول",
+      role: "inspector",
+      location: "تونس",
+      specialization: "مراقبة الحقول",
       verified: true,
     },
   },
@@ -115,15 +152,19 @@ async function createDemoUser(userInfo: any) {
 
     // Try to create user record in custom table (if it exists)
     try {
-      const { error: userTableError } = await supabaseAdmin
-        .from("users")
-        .insert({
-          id: userId,
-          email: userInfo.email,
-          ...userInfo.userData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const payload = {
+        id: userId,
+        email: userInfo.email,
+        ...userInfo.userData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: userTableError } = await serverSafeInsert(
+        supabaseAdmin as any,
+        "users",
+        payload,
+      );
 
       if (userTableError) {
         results.errors.push(`Custom table error: ${userTableError.message}`);
@@ -138,19 +179,23 @@ async function createDemoUser(userInfo: any) {
 
     // Try to create user profile (if table exists)
     try {
-      const { error: profileError } = await supabaseAdmin
-        .from("user_profiles")
-        .insert({
-          user_id: userId,
-          preferences: {
-            language: "ar",
-            notifications: true,
-            weather_alerts: true,
-            market_alerts: true,
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const payload = {
+        user_id: userId,
+        preferences: {
+          language: "ar",
+          notifications: true,
+          weather_alerts: true,
+          market_alerts: true,
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: profileError } = await serverSafeInsert(
+        supabaseAdmin as any,
+        "user_profiles",
+        payload,
+      );
 
       if (profileError) {
         results.errors.push(`Profile table error: ${profileError.message}`);
@@ -171,6 +216,34 @@ async function createDemoUser(userInfo: any) {
 }
 
 export const setupDemoUsers: RequestHandler = async (req, res) => {
+  // Ensure Supabase admin credentials are present for admin operations
+  const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!isSupabaseConfigured) {
+    return res.status(500).json({
+      success: false,
+      error: "Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
+    });
+  }
+
+  if (!hasServiceRoleKey) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Missing SUPABASE_SERVICE_ROLE_KEY. Admin operations require the service role key.",
+      troubleshooting: [
+        "Set SUPABASE_SERVICE_ROLE_KEY in your environment variables (service role key from Supabase project settings).",
+        "Do NOT expose the service role key in client-side code.",
+      ],
+    });
+  }
+
+  if (!supabaseAdmin) {
+    return res.status(500).json({
+      success: false,
+      error:
+        "Supabase admin client is not available. Verify SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL.",
+    });
+  }
   try {
     console.log("🚀 Setting up demo users for AgroGrowth Platform...");
 
@@ -243,4 +316,90 @@ export const getDemoUsers: RequestHandler = async (req, res) => {
       name: u.userData.full_name,
     })),
   });
+};
+
+export const deleteDemoUsers: RequestHandler = async (req, res) => {
+  // Delete demo users and related records. Requires SUPABASE_SERVICE_ROLE_KEY.
+  const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!isSupabaseConfigured) {
+    return res.status(500).json({
+      success: false,
+      error: "Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.",
+    });
+  }
+
+  if (!hasServiceRoleKey || !supabaseAdmin) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Missing SUPABASE_SERVICE_ROLE_KEY or admin client unavailable. Cannot perform deletion.",
+      troubleshooting: [
+        "Set SUPABASE_SERVICE_ROLE_KEY in your environment variables (service role key from Supabase project settings).",
+      ],
+    });
+  }
+
+  try {
+    // Fetch all users and filter demo emails
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) {
+      throw new Error(listError.message);
+    }
+
+    const emailsToDelete = demoUsers.map((u) => u.email);
+    const usersToDelete = listData.users.filter((u) => emailsToDelete.includes(u.email || ""));
+
+    const results: any[] = [];
+
+    for (const user of usersToDelete) {
+      const r: any = { email: user.email, id: user.id };
+      try {
+        // Delete from Auth
+        const { error: delAuthError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+        if (delAuthError) {
+          r.authDeleted = false;
+          r.authError = delAuthError.message;
+        } else {
+          r.authDeleted = true;
+        }
+      } catch (e: any) {
+        r.authDeleted = false;
+        r.authError = e.message;
+      }
+
+      try {
+        // Delete from custom 'users' table
+        const { error: delUserTableError } = await supabaseAdmin.from("users").delete().eq("id", user.id);
+        if (delUserTableError) {
+          r.userTableDeleted = false;
+          r.userTableError = delUserTableError.message;
+        } else {
+          r.userTableDeleted = true;
+        }
+      } catch (e: any) {
+        r.userTableDeleted = false;
+        r.userTableError = e.message;
+      }
+
+      try {
+        // Delete from 'user_profiles' table
+        const { error: delProfileError } = await supabaseAdmin.from("user_profiles").delete().eq("user_id", user.id);
+        if (delProfileError) {
+          r.profileDeleted = false;
+          r.profileError = delProfileError.message;
+        } else {
+          r.profileDeleted = true;
+        }
+      } catch (e: any) {
+        r.profileDeleted = false;
+        r.profileError = e.message;
+      }
+
+      results.push(r);
+    }
+
+    return res.json({ success: true, deleted: results });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
 };

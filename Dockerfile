@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Copy package files for better caching
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy source code and build frontend
 COPY . .
@@ -53,7 +53,7 @@ WORKDIR /app
 
 # Install production dependencies
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # Copy built frontend from builder stage
 COPY --from=frontend-builder /app/dist ./dist

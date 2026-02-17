@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 
 export async function testDatabaseSchema() {
   console.log('🔍 Testing database schema...');
-  
+
   try {
     // Test if users table exists and what columns it has
     console.log('Testing users table...');
@@ -10,16 +10,40 @@ export async function testDatabaseSchema() {
       .from('users')
       .select('*')
       .limit(1);
-    
+
     if (usersError) {
       console.error('❌ Users table error:');
       console.error('Message:', usersError.message || 'No message');
       console.error('Details:', usersError.details || 'No details');
       console.error('Hint:', usersError.hint || 'No hint');
       console.error('Code:', usersError.code || 'No code');
+
       if (usersError.message?.includes('relation') && usersError.message?.includes('does not exist')) {
-        console.error('🔍 DIAGNOSIS: Users table does not exist');
-        console.error('💡 SOLUTION: Create the users table using the SQL setup files');
+        console.error(`
+════════════════════════════════════════════════════════════════
+🔍 DIAGNOSIS: Users table does not exist
+
+💡 SOLUTION:
+1. Go to Supabase dashboard: https://app.supabase.com
+2. Navigate to SQL Editor
+3. Run the script from 'supabase-tables-setup.sql'
+4. Refresh your application
+
+This will create the users and user_profiles tables with proper
+RLS (Row Level Security) policies configured.
+════════════════════════════════════════════════════════════════
+        `);
+      } else if (usersError.message?.includes('permission denied')) {
+        console.error(`
+════════════════════════════════════════════════════════════════
+🔍 DIAGNOSIS: Permission denied (likely RLS policy issue)
+
+💡 SOLUTION:
+1. Check RLS policies in Supabase dashboard
+2. Re-run 'supabase-tables-setup.sql' to fix policies
+3. Or disable RLS for testing (not recommended for production)
+════════════════════════════════════════════════════════════════
+        `);
       }
     } else {
       console.log('✅ Users table accessible');

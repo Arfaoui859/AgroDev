@@ -45,7 +45,8 @@ EXPOSE 8003
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8003/health || exit 1
+    CMD sh -c 'curl -f http://localhost:$SERVICE_PORT/health || exit 1'
 
 # Run the service
-CMD ["python", "image_diagnosis/main.py"]
+ENV SERVICE_PORT=8003
+CMD ["sh", "-c", "uvicorn image_diagnosis.main:app --host 0.0.0.0 --port $SERVICE_PORT"]

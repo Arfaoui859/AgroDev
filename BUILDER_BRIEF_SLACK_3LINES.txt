@@ -1,0 +1,40 @@
+═══════════════════════════════════════════════════════════════════════════════════
+ULTRA-SHORT SLACK/WHATSAPP VERSION - COPY & PASTE EXACTLY
+═══════════════════════════════════════════════════════════════════════════════════
+
+Hi [Builder Name] 👋
+
+المشروع: AgroGrowth (Agricultural AI Platform) | الحالة: Demo جاهز، كل AI agents ترجع نتائج وهمية | المطلوب: تحويل كل الـ AI endpoints إلى production-ready متصلة بـ OpenAI + Railway، مع caching، low-latency، و full documentation | Timeline: 4 أسابيع | 6 مهام أساسية: 1️⃣ Disease Detector (GPT-4V Vision) 2️⃣ Soil Analyzer (OpenAI) 3️⃣ Crop Recommender (Railway) 4️⃣ Market Forecast (Real data) 5️⃣ Irrigation Optimizer (Low-latency) 6️⃣ Orchestrator (Manages all agents) | Targets: <3s latency, <0.02$/query, 100% tested | Notes: كل شيء موثق، لا أسئلة مفتوحة، يمكن البدء مباشرة يوم الإثنين | 🚀 Ready to start. Go!
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+[OR - WITH LINE BREAKS FOR READABILITY]
+
+Hi [Builder Name] 👋
+
+**المشروع**: AgroGrowth (Agricultural AI Platform)
+**الحالة**: Demo جاهز، كل AI agents ترجع نتائج وهمية
+**المطلوب**: تحويل كل الـ AI endpoints إلى production-ready متصلة بـ OpenAI + Railway، مع caching، low-latency، و full documentation
+
+**Timeline**: 4 أسابيع
+**6 مهام**: 
+1️⃣ Disease Detector (GPT-4V Vision)
+2️⃣ Soil Analyzer (OpenAI)
+3️⃣ Crop Recommender (Railway)
+4️⃣ Market Forecast (Real data)
+5️⃣ Irrigation Optimizer (Low-latency)
+6️⃣ Orchestrator (Manages all agents)
+
+**Targets**: <3s latency, <0.02$/query, 100% tested
+
+**Notes**: كل شيء موثق، لا أسئلة مفتوحة، يمكن البدء مباشرة يوم الإثنين
+
+🚀 Ready to start. Go!
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+[MINIMAL - JUST COPY & PASTE THIS]
+
+مرحبا [اسم الـ Builder] 👋 المشروع: AgroGrowth | الحالة: كل AI agents ترجع نتائج وهمية | المطلوب: تحويل لـ production-ready (OpenAI + Railway) | 6 مهام: 1-Disease Detector 2-Soil Analyzer 3-Crop Recommender 4-Market Forecast 5-Irrigation Optimizer 6-Orchestrator | Targets: <3s latency، <0.02$/query، كل شيء tested | Timeline: 4 أسابيع | كل شيء موثق، لا أسئلة مفتوحة، ابدأ يوم الإثنين | 🚀 Let's ship!
+
+═══════════════════════════════════════════════════════════════════════════════════

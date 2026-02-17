@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Leaf, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import Logo from "@/components/ui/Logo";
 
 export default function Login() {
   const { signIn, isLoading } = useAuth();
@@ -70,8 +71,8 @@ export default function Login() {
       <div className="w-full max-w-sm sm:max-w-md space-y-4 sm:space-y-6">
         {/* Logo and Title */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
-            <Leaf className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-transparent rounded-full mb-4">
+            <Logo size={64} />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             AgroGrowth
@@ -169,8 +170,141 @@ export default function Login() {
           </CardContent>
         </Card>
 
+        {/* Demo Credentials */}
+        <Card className="bg-blue-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-base text-blue-900">
+              بيانات اختبار توضيحية
+            </CardTitle>
+            <CardDescription className="text-sm text-blue-700">
+              استخدم هذه البيانات لاختبار المنصة
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Agricole User */}
+            <div className="space-y-3 pb-4 border-b border-blue-200">
+              <h3 className="text-sm font-bold text-blue-900">المستخدم الزراعي (Agricole)</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                  sami.arfaoui.itservice@gmail.com
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">كلمة المرور:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                  adminstartup
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setFormData({
+                    email: "sami.arfaoui.itservice@gmail.com",
+                    password: "adminstartup",
+                  });
+                }}
+              >
+                تعبئة بيانات المزارع
+              </Button>
+            </div>
+
+            {/* Agronomist User */}
+            <div className="space-y-3 pb-4 border-b border-blue-200">
+              <h3 className="text-sm font-bold text-blue-900">خبير زراعي (Agronomist)</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                  arfaouisami.iaot@gmail.com
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">كلمة المرور:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                  123456789
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200"
+                onClick={() => {
+                  setFormData({
+                    email: "arfaouisami.iaot@gmail.com",
+                    password: "123456789",
+                  });
+                }}
+              >
+                تعبئة بيانات الخبير الزراعي
+              </Button>
+            </div>
+
+            {/* Admin User */}
+            <div className="space-y-3 pb-4 border-b border-blue-200">
+              <h3 className="text-sm font-bold text-blue-900">المسؤول (Admin)</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                  admin@agrogrowth.com
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">كلمة المرور:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                  admin123
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full bg-purple-50 hover:bg-purple-100 border-purple-200"
+                onClick={() => {
+                  setFormData({
+                    email: "admin@agrogrowth.com",
+                    password: "admin123",
+                  });
+                }}
+              >
+                تعبئة بيانات المسؤول
+              </Button>
+            </div>
+
+            {/* Field Inspector User */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-blue-900">مراقب الحقول (Inspector)</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">البريد الإلكتروني:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
+                  neuroforgesoultion@gmail.com
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-blue-800">كلمة المرور:</p>
+                <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
+                  123456789
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200"
+                onClick={() => {
+                  setFormData({
+                    email: "neuroforgesoultion@gmail.com",
+                    password: "123456789",
+                  });
+                }}
+              >
+                تعبئة بيانات مراقب الحقول
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Additional Info */}
-        <div className="text-center text-sm text-gray-600">
+        <div className="text-center text-sm text-gray-600 space-y-2">
           <p>
             بتسجيل الدخول، فإنك توافق على
             <Link
@@ -185,6 +319,14 @@ export default function Login() {
               className="text-green-600 hover:text-green-700 mx-1"
             >
               سياسة الخصوصية
+            </Link>
+          </p>
+          <p>
+            <Link
+              to="/setup-demo"
+              className="text-blue-600 hover:text-blue-700"
+            >
+              إنشاء حسابات اختبار توضيحية
             </Link>
           </p>
         </div>

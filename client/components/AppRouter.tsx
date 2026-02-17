@@ -40,6 +40,7 @@ import FeedManagement from "../pages/FeedManagement";
 import SoilProblemDetection from "../pages/SoilProblemDetection";
 import IdealSoilComparison from "../pages/IdealSoilComparison";
 import SoilAlertSystem from "../pages/SoilAlertSystem";
+import SoilAnalysisDetailedReport from "../pages/SoilAnalysisDetailedReport";
 import SmartCropSuggestions from "../pages/SmartCropSuggestions";
 import CropRotationPlanner from "../pages/CropRotationPlanner";
 import AlertHistory from "../pages/AlertHistory";
@@ -95,6 +96,7 @@ import DatabaseDiagnostics from "../pages/DatabaseDiagnostics";
 import DatabaseStatus from "../pages/DatabaseStatus";
 import ServiceStatus from "../pages/ServiceStatus";
 import AuthTest from "../pages/AuthTest";
+import SetupDemo from "../pages/SetupDemo";
 import NotFound from "../pages/NotFound";
 
 export default function AppRouter() {
@@ -114,7 +116,7 @@ export default function AppRouter() {
   }
 
   // Public routes (login, signup, auth-test) - don't require authentication
-  const publicRoutes = ["/login", "/signup", "/auth-test"];
+  const publicRoutes = ["/login", "/signup", "/auth-test", "/setup-demo"];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   // If on public route, render without Layout
@@ -124,6 +126,7 @@ export default function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth-test" element={<AuthTest />} />
+        <Route path="/setup-demo" element={<SetupDemo />} />
       </Routes>
     );
   }
@@ -200,6 +203,10 @@ export default function AppRouter() {
           />
           <Route path="/soil-alert-system" element={<SoilAlertSystem />} />
           <Route
+            path="/soil-analysis-detailed"
+            element={<SoilAnalysisDetailedReport />}
+          />
+          <Route
             path="/smart-crop-suggestions"
             element={<SmartCropSuggestions />}
           />
@@ -273,7 +280,14 @@ export default function AppRouter() {
             path="/field-inspector-dashboard"
             element={<FieldInspectorDashboard />}
           />
-          <Route path="/admin-panel" element={<AdminPanel />} />
+          <Route
+            path="/admin-panel"
+            element={
+              <ProtectedRoute allowedRoles={['admin']} fallbackRoute="/">
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/government-dashboard"
             element={<GovernmentDashboard />}

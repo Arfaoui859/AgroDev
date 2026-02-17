@@ -213,7 +213,7 @@ import {
 } from "./routes/gamification";
 import {
   getInvestmentOpportunities,
-  getProfitabilityAnalysis,
+  getProfitabilityAnalysis as getInvestorProfitabilityAnalysis,
   getMarketInsights,
   getInvestorPortfolio,
   getInvestorDashboard,
@@ -248,10 +248,22 @@ import {
   updateFarmerProfile,
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
+import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
-import { setupDemoUsers, getDemoUsers } from "./routes/setup-demo-users";
+import {
+  setupDemoUsers,
+  getDemoUsers,
+  deleteDemoUsers,
+} from "./routes/setup-demo-users";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
 import { debugAuth } from "./routes/debug-auth";
+import { setupInspectorUser, setupMultipleUsers } from "./routes/setup-inspector-user";
+import { setupAdminUser } from "./routes/admin-setup";
+import {
+  analyzeSoilDetailed,
+  analyzeSoilBatch,
+  getSoilAnalysisReport,
+} from "./routes/soil-analysis-detailed";
 
 export function createServer() {
   const app = express();
@@ -306,6 +318,11 @@ export function createServer() {
 
   // Soil AI Detector routes
   app.use("/api/soil-ai-detector", soilAiDetectorRoutes);
+
+  // Soil Analysis Detailed routes (AI-powered detailed analysis)
+  app.post("/api/soil-analysis/analyze", analyzeSoilDetailed);
+  app.post("/api/soil-analysis/batch", analyzeSoilBatch);
+  app.get("/api/soil-analysis/report/:analysisId", getSoilAnalysisReport);
 
   // Smart Crop Suggestions routes
   app.use("/api/smart-crop-suggestions", smartCropSuggestionsRoutes);
@@ -552,6 +569,28 @@ export function createServer() {
 
   // Supabase Connection Test
   app.get("/api/test/supabase", testSupabaseConnection);
+  // Admin: confirm unconfirmed users (requires x-admin-token header with service role key)
+  app.post("/api/admin/confirm-unconfirmed", (req, res, next) => {
+    return confirmUnconfirmedUsers(req, res, next as any);
+  });
+
+  // Admin: set a user's password (requires x-admin-token header with service role key)
+  app.post("/api/admin/set-password", (req, res, next) => {
+    return (require("./routes/admin-set-password") as any).adminSetPassword(
+      req,
+      res,
+      next,
+    );
+  });
+
+  // Admin: create a confirmed admin user (requires x-admin-token header with service role key)
+  app.post("/api/admin/create-user", (req, res, next) => {
+    return (require("./routes/admin-create-user") as any).adminCreateUser(
+      req,
+      res,
+      next,
+    );
+  });
 
   // Auth Test Endpoints
   app.post("/api/test/auth/signup", testAuthSignup);
@@ -561,6 +600,14 @@ export function createServer() {
   // Demo User Setup
   app.post("/api/setup-demo-users", setupDemoUsers);
   app.get("/api/demo-users", getDemoUsers);
+  app.delete("/api/setup-demo-users", deleteDemoUsers);
+
+  // Inspector User Setup
+  app.post("/api/setup-inspector", setupInspectorUser);
+  app.post("/api/setup-users", setupMultipleUsers);
+
+  // Admin User Setup
+  app.post("/api/setup-admin", setupAdminUser);
 
   // Test endpoint for development
   app.get("/api/ping", (req, res) => {
@@ -585,7 +632,7 @@ export function createServer() {
 
   // 💼 INVESTOR DASHBOARD ROUTES
   app.get("/api/investor/opportunities", getInvestmentOpportunities);
-  app.get("/api/investor/profitability", getProfitabilityAnalysis);
+  app.get("/api/investor/profitability", getInvestorProfitabilityAnalysis);
   app.get("/api/investor/insights", getMarketInsights);
   app.get("/api/investor/portfolio", getInvestorPortfolio);
   app.get("/api/investor/dashboard", getInvestorDashboard);
