@@ -16,16 +16,27 @@
 import express, { Request, Response } from "express";
 import { analyzeSoilForUI, recommendCropsForUI } from "../services/ai/cropAdvisor";
 import { isLLMConfigured, getLLMInfo } from "../services/providers/llmProvider";
+import { probeService } from "../services/providers/serviceProbe";
 
 const router = express.Router();
 
-type Engine = "llm" | "vision-model" | "rule-based" | "microservice" | "unavailable";
+type Engine =
+  | "llm"
+  | "vision-model"
+  | "rule-based"
+  | "heuristic"
+  | "microservice"
+  | "unavailable";
 
 interface Capability {
   id: string;
   name: string;
   nameAr: string;
   engine: Engine;
+  /** External microservice backing this capability, if one is configured. */
+  microserviceUrl?: string;
+  /** Engine to report when the microservice is configured but unreachable. */
+  fallbackEngine?: Engine;
   /** True when an external microservice URL is configured for this capability. */
   microserviceConfigured?: boolean;
   /** Human-readable explanation of where the answer actually comes from. */
@@ -39,12 +50,18 @@ const LLM_CONFIG_HINT =
   "IMAGE_DIAGNOSIS_URL for vision inference";
 
 /**
+ * Short-lived reachability cache. A capability backed by a microservice is only
+ * "available" if that service actually answers — a configured URL is not proof
+ * that a model is running behind it.
+ */
+/**
  * Capability registry. `engine` is computed at request time for anything that
  * depends on configuration (LLM / vision), so the client sees the truth.
  */
-function capabilities(): Capability[] {
+async function capabilities(): Promise<Capability[]> {
   const llmReady = isLLMConfigured();
-  const visionReady = Boolean(process.env.IMAGE_DIAGNOSIS_URL);
+  const visionUrl = process.env.IMAGE_DIAGNOSIS_URL;
+  const visionReady = Boolean(visionUrl);
   const microservices = Boolean(
     process.env.SOIL_ANALYSIS_URL || process.env.CROP_RECOMMENDATION_URL,
   );
@@ -88,11 +105,13 @@ function capabilities(): Capability[] {
       name: "Plant Disease Detection",
       nameAr: "كشف أمراض النبات",
       engine: visionReady ? "vision-model" : "unavailable",
+      microserviceUrl: visionUrl,
+      fallbackEngine: "unavailable",
       provenance: visionReady
-        ? "Forwarded to the configured vision inference service."
+        ? "Forwarded to the configured vision inference service (reachability checked live)."
         : "No vision inference service is configured.",
       provenanceAr: visionReady
-        ? "يُحوّل إلى خدمة الرؤية المُهيّأة."
+        ? "يُحوّل إلى خدمة الرؤية المُهيّأة (يُتحقّق من توفرها فعلياً)."
         : "لا توجد خدمة استدلال بالصور مُهيّأة.",
       requiresConfiguration: visionReady ? undefined : LLM_CONFIG_HINT,
     },
@@ -101,8 +120,10 @@ function capabilities(): Capability[] {
       name: "Leaf Scan AI",
       nameAr: "فحص الأوراق",
       engine: visionReady ? "vision-model" : "unavailable",
+      microserviceUrl: visionUrl,
+      fallbackEngine: "unavailable",
       provenance: visionReady
-        ? "Forwarded to the configured vision inference service."
+        ? "Forwarded to the configured vision inference service (reachability checked live)."
         : "No vision inference service is configured.",
       provenanceAr: visionReady
         ? "يُحوّل إلى خدمة الرؤية المُهيّأة."
@@ -205,24 +226,77 @@ function capabilities(): Capability[] {
   ];
 }
 
-function findCapability(id: string): Capability | undefined {
-  return capabilities().find((c) => c.id === id);
+async function findCapability(id: string): Promise<Capability | undefined> {
+  const caps = await capabilities();
+  return caps.find((c) => c.id === id);
+}
+
+/**
+ * Resolve the effective engine for a capability. A microservice-backed
+ * capability that is configured but unreachable must not be advertised as a
+ * working model — it is downgraded to its declared fallback.
+ */
+async function resolveEngine(cap: Capability): Promise<{
+  engine: Engine;
+  reachable: boolean | null;
+  configured: boolean;
+  modelSource: string | null;
+}> {
+  if (!cap.microserviceUrl) {
+    return { engine: cap.engine, reachable: null, configured: false, modelSource: null };
+  }
+  const probe = await probeService(cap.microserviceUrl);
+  if (!probe.reachable) {
+    return {
+      engine: cap.fallbackEngine ?? "unavailable",
+      reachable: false,
+      configured: true,
+      modelSource: null,
+    };
+  }
+  // The service is up. If it self-reports heuristic/demo inference, report
+  // that honestly instead of advertising it as a trained model.
+  if (probe.heuristic && cap.engine === "vision-model") {
+    return {
+      engine: "heuristic",
+      reachable: true,
+      configured: true,
+      modelSource: probe.modelSource,
+    };
+  }
+  return {
+    engine: cap.engine,
+    reachable: true,
+    configured: true,
+    modelSource: probe.modelSource,
+  };
 }
 
 /** Standard, honest envelope for a capability probe. */
-function capabilityPayload(cap: Capability, extra: Record<string, unknown> = {}) {
+async function capabilityPayload(
+  cap: Capability,
+  extra: Record<string, unknown> = {},
+) {
+  const { engine, reachable, configured, modelSource } = await resolveEngine(cap);
+  const available = engine !== "unavailable";
   return {
     capability: cap.id,
     name: cap.name,
     nameAr: cap.nameAr,
-    available: cap.engine !== "unavailable",
-    engine: cap.engine,
+    available,
+    engine,
     microserviceConfigured: cap.microserviceConfigured ?? false,
-    dataSource: cap.engine,
-    isRealData: cap.engine === "llm" || cap.engine === "vision-model",
+    microserviceUrl: cap.microserviceUrl ?? null,
+    microserviceReachable: reachable,
+    modelSource,
+    dataSource: engine,
+    isRealData: engine === "llm" || engine === "vision-model",
     provenance: cap.provenance,
     provenanceAr: cap.provenanceAr,
-    requiresConfiguration: cap.requiresConfiguration,
+    requiresConfiguration:
+      !available && configured
+        ? `Configured service at ${cap.microserviceUrl} is not reachable`
+        : cap.requiresConfiguration,
     llm: getLLMInfo(),
     checkedAt: new Date().toISOString(),
     ...extra,
@@ -231,45 +305,57 @@ function capabilityPayload(cap: Capability, extra: Record<string, unknown> = {})
 
 // ---------------------------------------------------------------- discovery
 
-router.get("/capabilities", (_req, res) => {
-  const caps = capabilities();
+router.get("/capabilities", async (_req, res) => {
+  const caps = await capabilities();
+  const resolved = await Promise.all(
+    caps.map(async (cap) => ({
+      id: cap.id,
+      name: cap.name,
+      nameAr: cap.nameAr,
+      engine: (await resolveEngine(cap)).engine,
+      microserviceConfigured: cap.microserviceConfigured ?? false,
+      provenance: cap.provenance,
+      provenanceAr: cap.provenanceAr,
+    })),
+  );
   res.json({
-    capabilities: caps,
+    capabilities: resolved,
     summary: {
-      total: caps.length,
-      available: caps.filter((c) => c.engine !== "unavailable").length,
-      unavailable: caps.filter((c) => c.engine === "unavailable").length,
-      modelPowered: caps.filter((c) => c.engine === "llm" || c.engine === "vision-model")
-        .length,
+      total: resolved.length,
+      available: resolved.filter((c) => c.engine !== "unavailable").length,
+      unavailable: resolved.filter((c) => c.engine === "unavailable").length,
+      modelPowered: resolved.filter(
+        (c) => c.engine === "llm" || c.engine === "vision-model",
+      ).length,
     },
     llm: getLLMInfo(),
   });
 });
 
 // Capability probe: the client uses this to decide whether to enable a feature.
-router.get("/capabilities/:id", (req, res) => {
-  const cap = findCapability(req.params.id);
+router.get("/capabilities/:id", async (req, res) => {
+  const cap = await findCapability(req.params.id);
   if (!cap) return res.status(404).json({ error: "Unknown AI capability" });
-  res.json(capabilityPayload(cap));
+  res.json(await capabilityPayload(cap));
 });
 
 // --------------------------------------------------- soil analysis (client)
 // EnhancedAnalysis.tsx posts the raw sensor form directly to this path.
-router.get("/soil-analysis", (_req, res) => {
-  const cap = findCapability("soil-analysis")!;
+router.get("/soil-analysis", async (_req, res) => {
+  const cap = (await findCapability("soil-analysis"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "POST sensor data (ph, nitrogen, phosphorus, potassium, ...) to this path for analysis.",
     }),
   );
 });
 
-router.post("/soil-analysis", (req: Request, res: Response) => {
+router.post("/soil-analysis", async (req: Request, res: Response) => {
   const body = req.body ?? {};
-  const cap = findCapability("soil-analysis")!;
+  const cap = (await findCapability("soil-analysis"))!;
   try {
     const analysis = analyzeSoilForUI(body);
-    res.json(capabilityPayload(cap, { ...analysis }));
+    res.json(await capabilityPayload(cap, { ...analysis }));
   } catch (error) {
     res.status(400).json({
       error: "Invalid soil data",
@@ -281,11 +367,11 @@ router.post("/soil-analysis", (req: Request, res: Response) => {
 });
 
 // ------------------------------------------------- crop recommendation (client)
-router.post("/crop-recommendation", (req: Request, res: Response) => {
-  const cap = findCapability("crop-recommendation")!;
+router.post("/crop-recommendation", async (req: Request, res: Response) => {
+  const cap = (await findCapability("crop-recommendation"))!;
   try {
     const result = recommendCropsForUI(req.body ?? {});
-    res.json(capabilityPayload(cap, { ...result }));
+    res.json(await capabilityPayload(cap, { ...result }));
   } catch (error) {
     res.status(400).json({
       error: "Invalid crop request",
@@ -296,8 +382,8 @@ router.post("/crop-recommendation", (req: Request, res: Response) => {
   }
 });
 
-router.get("/crop-recommendation", (req, res) => {
-  const cap = findCapability("crop-recommendation")!;
+router.get("/crop-recommendation", async (req, res) => {
+  const cap = (await findCapability("crop-recommendation"))!;
   const result = recommendCropsForUI({
     ph: parseFloat(req.query.ph as string) || undefined,
     temperature: parseFloat(req.query.temperature as string) || undefined,
@@ -305,79 +391,79 @@ router.get("/crop-recommendation", (req, res) => {
     salinity: parseFloat(req.query.salinity as string) || undefined,
     season: (req.query.season as string) || undefined,
   });
-  res.json(capabilityPayload(cap, { ...result }));
+  res.json(await capabilityPayload(cap, { ...result }));
 });
 
 // ----------------------------------------------------- simple GET probes
 // These back the remaining serviceStatus.ts checks. They report honest engine
 // provenance and, where a real engine exists, a live sample of its output.
-router.get("/climate-crop-matcher", (_req, res) => {
-  const cap = findCapability("climate-crop-matcher")!;
+router.get("/climate-crop-matcher", async (_req, res) => {
+  const cap = (await findCapability("climate-crop-matcher"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Send climate_data + soil_data to /api/ai/soil/match-crops for a full match.",
     }),
   );
 });
 
-router.get("/pest-control", (_req, res) => {
-  const cap = findCapability("pest-control")!;
+router.get("/pest-control", async (_req, res) => {
+  const cap = (await findCapability("pest-control"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Send crop and symptoms to /api/pest-control/analyze-problem.",
     }),
   );
 });
 
-router.get("/irrigation-optimizer", (_req, res) => {
-  const cap = findCapability("irrigation-optimizer")!;
+router.get("/irrigation-optimizer", async (_req, res) => {
+  const cap = (await findCapability("irrigation-optimizer"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Irrigation scheduling is served by /api/smart-irrigation.",
     }),
   );
 });
 
-router.get("/weather-yield-planner", (_req, res) => {
-  const cap = findCapability("weather-yield-planner")!;
+router.get("/weather-yield-planner", async (_req, res) => {
+  const cap = (await findCapability("weather-yield-planner"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Weather planning is served by /api/weather-crop-planner.",
     }),
   );
 });
 
-router.get("/smart-match", (_req, res) => {
-  const cap = findCapability("smart-match")!;
+router.get("/smart-match", async (_req, res) => {
+  const cap = (await findCapability("smart-match"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Matching is served by /api/smart-marketplace.",
     }),
   );
 });
 
-router.get("/farming-tasks-planner", (_req, res) => {
-  const cap = findCapability("farming-tasks-planner")!;
+router.get("/farming-tasks-planner", async (_req, res) => {
+  const cap = (await findCapability("farming-tasks-planner"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Task planning is served by /api/tasks.",
     }),
   );
 });
 
-router.get("/alert-notifier", (_req, res) => {
-  const cap = findCapability("alert-notifier")!;
+router.get("/alert-notifier", async (_req, res) => {
+  const cap = (await findCapability("alert-notifier"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Alerts are served by /api/alerts and /api/smart-crop-alerts.",
     }),
   );
 });
 
-router.get("/agro-chat", (_req, res) => {
-  const cap = findCapability("agro-chat")!;
+router.get("/agro-chat", async (_req, res) => {
+  const cap = (await findCapability("agro-chat"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Chat is served by POST /api/ai/assistant/chat.",
     }),
   );
@@ -386,37 +472,37 @@ router.get("/agro-chat", (_req, res) => {
 // Vision + market capabilities that are genuinely unavailable without
 // configuration. They answer 200 (so the client can read the reason) but
 // clearly report `available: false`.
-router.get("/plant-disease-detection", (_req, res) => {
-  const cap = findCapability("plant-disease-detection")!;
+router.get("/plant-disease-detection", async (_req, res) => {
+  const cap = (await findCapability("plant-disease-detection"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Image upload endpoint: POST /api/ai/images/detect-disease.",
     }),
   );
 });
 
-router.get("/leaf-scan", (_req, res) => {
-  const cap = findCapability("leaf-scan")!;
+router.get("/leaf-scan", async (_req, res) => {
+  const cap = (await findCapability("leaf-scan"))!;
   res.json(
-    capabilityPayload(cap, {
+    await capabilityPayload(cap, {
       note: "Leaf analysis endpoint: POST /api/ai/images/analyze-leaf.",
     }),
   );
 });
 
-router.get("/yield-predictor", (_req, res) => {
-  const cap = findCapability("yield-predictor")!;
-  res.json(capabilityPayload(cap));
+router.get("/yield-predictor", async (_req, res) => {
+  const cap = (await findCapability("yield-predictor"))!;
+  res.json(await capabilityPayload(cap));
 });
 
-router.get("/market-forecast", (_req, res) => {
-  const cap = findCapability("market-forecast")!;
-  res.json(capabilityPayload(cap));
+router.get("/market-forecast", async (_req, res) => {
+  const cap = (await findCapability("market-forecast"))!;
+  res.json(await capabilityPayload(cap));
 });
 
-router.get("/supply-demand", (_req, res) => {
-  const cap = findCapability("supply-demand")!;
-  res.json(capabilityPayload(cap));
+router.get("/supply-demand", async (_req, res) => {
+  const cap = (await findCapability("supply-demand"))!;
+  res.json(await capabilityPayload(cap));
 });
 
 export default router;

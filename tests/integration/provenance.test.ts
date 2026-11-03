@@ -1,0 +1,122 @@
+/**
+ * Provenance-probe tests.
+ *
+ * A configured microservice URL is not proof that a trained model is running.
+ * These tests boot real HTTP services that self-report their model source, and
+ * assert the platform labels their output honestly:
+ *   - /health with model_source "heuristic-demo"  -> engine "heuristic",
+ *     isRealData false
+ *   - /health with a real model source            -> engine "vision-model",
+ *     isRealData true
+ *   - no service reachable                        -> "unavailable"
+ */
+import http from "node:http";
+import type { AddressInfo } from "node:net";
+import request from "supertest";
+import express from "express";
+import { createServer } from "../../server/index";
+import { resetServiceProbeCache } from "../../server/services/providers/serviceProbe";
+
+type Kind = "heuristic" | "trained" | "none";
+
+let kind: Kind = "none";
+let server: http.Server | undefined;
+let visionUrl: string;
+const savedEnv: Record<string, string | undefined> = {};
+
+async function startService(reportedModelSource: string) {
+  const srv = http.createServer((req, res) => {
+    if (req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          status: "healthy",
+          model_source: reportedModelSource,
+        }),
+      );
+      return;
+    }
+    res.writeHead(404).end("{}");
+  });
+  await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+  return srv;
+}
+
+beforeAll(() => {
+  savedEnv.IMAGE_DIAGNOSIS_URL = process.env.IMAGE_DIAGNOSIS_URL;
+});
+
+afterEach(async () => {
+  if (server) {
+    await new Promise<void>((resolve) => server!.close(() => resolve()));
+    server = undefined;
+  }
+  resetServiceProbeCache();
+});
+
+afterAll(() => {
+  if (savedEnv.IMAGE_DIAGNOSIS_URL === undefined) delete process.env.IMAGE_DIAGNOSIS_URL;
+  else process.env.IMAGE_DIAGNOSIS_URL = savedEnv.IMAGE_DIAGNOSIS_URL;
+});
+
+describe("🔬 Microservice provenance probe", () => {
+  let app: express.Application;
+  beforeAll(() => {
+    app = createServer();
+  });
+
+  test("heuristic-reporting service is not advertised as a trained model", async () => {
+    server = await startService("heuristic-demo");
+    visionUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    process.env.IMAGE_DIAGNOSIS_URL = visionUrl;
+    resetServiceProbeCache();
+
+    const response = await request(app)
+      .get("/api/ai/plant-disease-detection")
+      .expect(200);
+    expect(response.body.microserviceReachable).toBe(true);
+    expect(response.body.engine).toBe("heuristic");
+    expect(response.body.isRealData).toBe(false);
+    expect(response.body.modelSource).toBe("heuristic-demo");
+  });
+
+  test("trained-model-reporting service is advertised as model-powered", async () => {
+    server = await startService("plantnet-v2");
+    visionUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    process.env.IMAGE_DIAGNOSIS_URL = visionUrl;
+    resetServiceProbeCache();
+
+    const response = await request(app)
+      .get("/api/ai/plant-disease-detection")
+      .expect(200);
+    expect(response.body.microserviceReachable).toBe(true);
+    expect(response.body.engine).toBe("vision-model");
+    expect(response.body.isRealData).toBe(true);
+    expect(response.body.modelSource).toBe("plantnet-v2");
+  });
+
+  test("configured but unreachable service is unavailable, not fabricated", async () => {
+    // Point at a port nothing is listening on.
+    process.env.IMAGE_DIAGNOSIS_URL = "http://127.0.0.1:1";
+    resetServiceProbeCache();
+
+    const response = await request(app)
+      .get("/api/ai/plant-disease-detection")
+      .expect(200);
+    expect(response.body.microserviceReachable).toBe(false);
+    expect(response.body.available).toBe(false);
+    expect(response.body.isRealData).toBe(false);
+    expect(response.body.requiresConfiguration).toContain("not reachable");
+  });
+
+  test("capability catalogue never counts an unavailable engine as available", async () => {
+    process.env.IMAGE_DIAGNOSIS_URL = "http://127.0.0.1:1";
+    resetServiceProbeCache();
+    const response = await request(app).get("/api/ai/capabilities").expect(200);
+    const vision = response.body.capabilities.find(
+      (c: { id: string }) => c.id === "plant-disease-detection",
+    );
+    expect(vision.engine).toBe("unavailable");
+    expect(response.body.summary.available).toBeLessThan(response.body.summary.total);
+  });
+});
