@@ -4,6 +4,7 @@ import axios from "axios";
 import fs from "fs/promises";
 import path from "path";
 import { RawSoilData, SoilAnalysisResponse } from "@shared/api";
+import { markSimulated, markReal } from "../lib/provenance";
 
 // Resolve the project root from the current working directory. Using import.meta
 // here breaks CommonJS consumers (e.g. Jest) that load this module.
@@ -78,7 +79,7 @@ function formatSoilDataForAI(data: RawSoilData): string {
 async function callAIService(
   systemPrompt: string,
   userMessage: string
-): Promise<string> {
+): Promise<{ text: string; real: boolean }> {
   try {
     // If OpenAI API is configured
     if (AI_SERVICE_URL.includes("openai") && AI_API_KEY) {
@@ -112,7 +113,7 @@ async function callAIService(
       if (!content) {
         throw new Error("Empty response from AI service");
       }
-      return content;
+      return { text: content, real: true };
     }
 
     // If custom AI service is configured
@@ -132,14 +133,14 @@ async function callAIService(
         }
       );
 
-      return response.data.result || response.data.content;
+      return { text: response.data.result || response.data.content, real: true };
     }
 
     // Fallback to demo mode if no external service is configured
     console.warn(
       "No AI service configured. Using demo analysis mode. Please set AI_SERVICE_URL and AI_API_KEY to enable real AI analysis."
     );
-    return generateDemoAnalysis(userMessage);
+    return { text: generateDemoAnalysis(userMessage), real: false };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("AI Service Error:", error.response?.data || error.message);
@@ -430,23 +431,22 @@ export const analyzeSoilDetailed: RequestHandler = async (req, res) => {
 
     // Call AI service
     const aiResponse = await callAIService(systemPrompt, formattedSoilData);
+    const { text, real } = aiResponse;
 
     // Extract JSON from AI response
-    const analysisResult = extractJSON(aiResponse);
+    const analysisResult = extractJSON(text);
 
-    // Validate response structure
-    if (!analysisResult.soilAnalysis && !analysisResult.error) {
-      // If AI returned valid JSON but without expected structure, wrap it
-      return res.status(200).json({
-        success: true,
-        data: analysisResult,
-        note: "Response structure may vary - this is demo or partial analysis",
-      });
+    if (real) {
+      markReal(res, "ai-provider");
+    } else {
+      markSimulated(res, "rule-based-demo");
     }
 
     return res.status(200).json({
       success: true,
       data: analysisResult,
+      dataSource: real ? "ai-provider" : "rule-based-demo",
+      isRealData: real,
     });
   } catch (error) {
     console.error("Soil analysis error:", error);
@@ -504,20 +504,32 @@ export const analyzeSoilBatch: RequestHandler = async (req, res) => {
       soils.map(async (soil) => {
         const formattedData = formatSoilDataForAI(soil);
         const aiResponse = await callAIService(systemPrompt, formattedData);
-        return extractJSON(aiResponse);
+        return { analysis: extractJSON(aiResponse.text), real: aiResponse.real };
       })
     );
 
     const analyses = results.map((result, index) => ({
       fieldId: soils[index].fieldId || `field_${index + 1}`,
       status: result.status,
-      data: result.status === "fulfilled" ? result.value : { error: result.reason },
+      data: result.status === "fulfilled" ? result.value.analysis : { error: result.reason },
     }));
+
+    // A batch is only real if every sample was answered by a configured provider.
+    const allReal =
+      results.length > 0 &&
+      results.every((r) => r.status === "fulfilled" && r.value.real);
+    if (allReal) {
+      markReal(res, "ai-provider");
+    } else {
+      markSimulated(res, "rule-based-demo");
+    }
 
     res.status(200).json({
       success: true,
       totalRequested: soils.length,
       successfulAnalyses: analyses.filter((a) => a.status === "fulfilled").length,
+      dataSource: allReal ? "ai-provider" : "rule-based-demo",
+      isRealData: allReal,
       analyses,
     });
   } catch (error) {
@@ -533,31 +545,29 @@ export const analyzeSoilBatch: RequestHandler = async (req, res) => {
 
 /**
  * Get analysis report as formatted HTML
+ *
+ * Reports are not persisted yet: the analyse endpoints return their result
+ * inline and store nothing, so there is no report to look up afterwards.
+ * Returning `success: true` here previously told the client a report existed
+ * when it did not. Answer 501 until report storage is implemented.
  */
 export const getSoilAnalysisReport: RequestHandler = async (req, res) => {
-  try {
-    const { analysisId } = req.params;
+  const { analysisId } = req.params;
 
-    if (!analysisId) {
-      return res.status(400).json({
-        success: false,
-        error: "Analysis ID is required",
-      });
-    }
-
-    // In a real implementation, fetch from database
-    // For now, return a placeholder
-    res.status(200).json({
-      success: true,
-      message: "Report generation feature coming soon",
-      analysisId,
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!analysisId) {
+    return res.status(400).json({
       success: false,
-      error: "Report generation failed",
+      error: "Analysis ID is required",
     });
   }
+
+  return res.status(501).json({
+    success: false,
+    error: "Report storage is not implemented",
+    message:
+      "لا يتم تخزين تقارير التحليل حالياً. تُعاد نتيجة التحليل مباشرة من نقطة التحليل.",
+    analysisId,
+  });
 };
 
 export default {
