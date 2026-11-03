@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -103,6 +105,7 @@ const SubscriptionManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('plans');
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
 
   useEffect(() => {
     fetchSubscriptionData();
@@ -126,6 +129,7 @@ const SubscriptionManagement: React.FC = () => {
       if (plansData.success) setPlans(plansData.data);
       if (paymentData.success) setPaymentMethods(paymentData.data);
       if (promoData.success) setPromoCodes(promoData.data);
+      setProvenance(readProvenance(plansRes.headers, plansData));
     } catch (error) {
       console.error('Error fetching subscription data:', error);
     } finally {
@@ -213,7 +217,6 @@ const SubscriptionManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">إدارة الاشتراكات</h1>
           <p className="text-gray-600">إدارة خطط الاشتراك وأساليب الدفع والعروض الترويجية</p>
         </div>
-        
         <div className="flex flex-wrap items-center gap-3">
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
@@ -254,6 +257,13 @@ const SubscriptionManagement: React.FC = () => {
           </Dialog>
         </div>
       </div>
+
+      {provenance.simulated && (
+        <SimulatedDataNotice
+          title={SIMULATED_RECORDS_TITLE_AR}
+          description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        />
+      )}
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

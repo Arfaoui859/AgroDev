@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -203,6 +205,7 @@ const SmartLogistics: React.FC = () => {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
 
   useEffect(() => {
     fetchLogisticsData();
@@ -229,6 +232,7 @@ const SmartLogistics: React.FC = () => {
       if (ordersData.success) setOrders(ordersData.data);
       if (metricsData.success) setMetrics(metricsData.data);
       if (optimizationData.success) setRouteOptimizations(optimizationData.data);
+      setProvenance(readProvenance(vehiclesRes.headers, vehiclesData));
     } catch (error) {
       console.error('Error fetching logistics data:', error);
     } finally {
@@ -377,6 +381,13 @@ const SmartLogistics: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {provenance.simulated && (
+        <SimulatedDataNotice
+          title={SIMULATED_RECORDS_TITLE_AR}
+          description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        />
+      )}
 
       {/* Key Metrics */}
       {metrics && (

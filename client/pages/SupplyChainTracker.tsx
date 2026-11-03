@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -171,6 +173,7 @@ const SupplyChainTracker: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedRecord, setSelectedRecord] = useState<TrackingRecord | null>(null);
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
 
   useEffect(() => {
     fetchSupplyChainData();
@@ -191,6 +194,7 @@ const SupplyChainTracker: React.FC = () => {
 
       if (recordsData.success) setTrackingRecords(recordsData.data);
       if (metricsData.success) setMetrics(metricsData.data);
+      setProvenance(readProvenance(recordsRes.headers, recordsData));
     } catch (error) {
       console.error('Error fetching supply chain data:', error);
     } finally {
@@ -340,6 +344,13 @@ const SupplyChainTracker: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {provenance.simulated && (
+        <SimulatedDataNotice
+          title={SIMULATED_RECORDS_TITLE_AR}
+          description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        />
+      )}
 
       {/* Key Metrics */}
       {metrics && (

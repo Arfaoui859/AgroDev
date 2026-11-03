@@ -337,6 +337,14 @@ export function createServer() {
       // discloses that the community/transformation content is not persisted.
       "/api/collaboration",
       "/api/digital-transformation",
+      // SaaS / logistics / supply-chain modules are served from fixed in-memory
+      // fixtures (mock vehicles, orders, plans, tracking records). Stamp them so
+      // the SPA can disclose that these are illustrative, not live records.
+      "/api/saas",
+      "/api/subscription",
+      "/api/supply-chain",
+      "/api/logistics",
+      "/api/marketplace",
     ],
     withSimulatedProvenance("simulated"),
   );

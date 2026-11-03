@@ -35,6 +35,25 @@ describe("🗂  Simulated-data provenance headers", () => {
     "/api/farmer-dashboard/overview",
     "/api/digital-transformation/projects",
     "/api/collaboration/chat-rooms",
+    // SaaS / logistics / supply-chain modules serve fixed in-memory fixtures
+    // (mock vehicles, orders, plans, tracking records). They must be labelled
+    // too, otherwise the SPA shows demo numbers as live operational records.
+    "/api/saas/metrics",
+    "/api/saas/analytics",
+    "/api/saas/subscriptions",
+    "/api/saas/plans",
+    "/api/subscription/plans",
+    "/api/subscription/payment-methods",
+    "/api/subscription/promo-codes",
+    "/api/supply-chain/tracking",
+    "/api/supply-chain/metrics",
+    "/api/supply-chain/nodes",
+    "/api/logistics/vehicles",
+    "/api/logistics/orders",
+    "/api/logistics/metrics",
+    "/api/marketplace/listings",
+    "/api/marketplace/inquiries",
+    "/api/marketplace/analytics",
   ];
 
   test.each(simulatedPaths)(
@@ -49,6 +68,20 @@ describe("🗂  Simulated-data provenance headers", () => {
       }
     },
   );
+
+  test("the fixture-backed modules actually return payloads", async () => {
+    // Guards against the provenance assertion above silently passing on a 404:
+    // these paths are consumed by five SPA screens, so they must resolve.
+    for (const path of [
+      "/api/saas/metrics",
+      "/api/logistics/vehicles",
+      "/api/supply-chain/tracking",
+      "/api/marketplace/listings",
+    ]) {
+      const res = await request(app).get(path);
+      expect(res.status).toBe(200);
+    }
+  });
 
   test("real weather is not labelled simulated", async () => {
     const res = await request(app).get(

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -97,6 +99,7 @@ const SaaSManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
 
   useEffect(() => {
     fetchDashboardData();
@@ -123,6 +126,7 @@ const SaaSManagement: React.FC = () => {
       if (analyticsData.success) setAnalytics(analyticsData.data);
       if (subscriptionsData.success) setSubscriptions(subscriptionsData.data);
       if (plansData.success) setPlans(plansData.data);
+      setProvenance(readProvenance(metricsRes.headers, metricsData));
     } catch (error) {
       console.error('Error fetching SaaS data:', error);
     } finally {
@@ -201,7 +205,6 @@ const SaaSManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">إدارة منصة SaaS</h1>
           <p className="text-gray-600">لوحة تحكم شاملة للاشتراكات والتحليلات والإيرادات</p>
         </div>
-        
         <div className="flex flex-wrap items-center gap-3">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-[120px]">
@@ -226,6 +229,13 @@ const SaaSManagement: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {provenance.simulated && (
+        <SimulatedDataNotice
+          title={SIMULATED_RECORDS_TITLE_AR}
+          description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        />
+      )}
 
       {/* Key Metrics */}
       {metrics && (
