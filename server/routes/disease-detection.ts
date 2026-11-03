@@ -1,7 +1,8 @@
 import { RequestHandler } from "express";
 import multer from "multer";
-import path from "path";
 import { uploadError } from "../middleware/upload";
+import { isLLMConfigured } from "../services/providers/llmProvider";
+import { diagnosePlantImage } from "../services/providers/visionProvider";
 
 // Configure multer for image upload
 const storage = multer.memoryStorage();
@@ -251,31 +252,85 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
     }
 
     const processingStart = Date.now();
-    const processingTime = Date.now() - processingStart;
 
-    // Heuristic analysis (no trained vision model is configured for this route).
+    // Prefer a real multimodal vision model when one is configured.
+    if (isLLMConfigured()) {
+      try {
+        const vision = await diagnosePlantImage({
+          image: { buffer: files[0].buffer, mimetype: files[0].mimetype },
+          cropType: requestData.cropType,
+          plantPart: requestData.plantPart,
+          symptoms: requestData.symptoms,
+        });
+        const d = vision.diagnosis;
+        const processingTime = Date.now() - processingStart;
+        const visionResponse: DiseaseDetectionResponse = {
+          id: `diag-${Date.now()}`,
+          confidence: Math.round(d.confidence * 100),
+          diagnosis: {
+            disease: d.disease,
+            diseaseId: d.diseaseId ?? "vision-model",
+            confidence: Math.round(d.confidence * 100),
+            severity: d.severity ?? "medium",
+            description: d.description,
+            symptoms: d.symptoms,
+            causes: d.causes,
+            treatment: d.treatment,
+            prevention: d.prevention,
+            urgency:
+              d.severity === "high"
+                ? "high"
+                : d.severity === "low"
+                  ? "low"
+                  : "medium",
+          },
+          imageAnalysis: {
+            quality: 0,
+            clarity: 0,
+            relevantSymptoms: d.symptoms.slice(0, 3),
+            detectedAreas: d.detectedAreas,
+          },
+          recommendations: generateRecommendations({
+            symptoms: d.symptoms,
+            causes: d.causes,
+            treatment: d.treatment,
+            prevention: d.prevention,
+            urgency: d.severity ?? "medium",
+          } as never),
+          economicImpact: calculateEconomicImpact(
+            { severity: d.severity ?? "medium" } as never,
+            requestData.cropType,
+          ),
+          metadata: {
+            processedAt: new Date().toISOString(),
+            model: vision.modelSource,
+            version: "1.0.0",
+            dataSource: "model",
+            isRealData: true,
+            processingTime,
+          },
+        };
+        return res.json(visionResponse);
+      } catch (error) {
+        console.error("Vision model error (disease/analyze):", (error as Error).message);
+      }
+    }
+
+    // Heuristic analysis (no trained vision model is configured/reachable).
     const analysisResult = await performMockAIAnalysis(files, requestData);
+    const processingTime = Date.now() - processingStart;
     
     const response: DiseaseDetectionResponse = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: `diag-${Date.now()}`,
       confidence: analysisResult.confidence,
       diagnosis: analysisResult.diagnosis,
       imageAnalysis: {
-        quality: 75 + Math.random() * 20,
-        clarity: 80 + Math.random() * 15,
+        // No image-quality model runs here; report zeros instead of inventing
+        // plausible-looking scores.
+        quality: 0,
+        clarity: 0,
         relevantSymptoms: analysisResult.diagnosis.symptoms.slice(0, 3),
-        detectedAreas: [
-          {
-            region: "الجزء العلوي الأيسر",
-            confidence: 85 + Math.random() * 10,
-            severity: 70 + Math.random() * 20
-          },
-          {
-            region: "المنطقة الوسطى",
-            confidence: 78 + Math.random() * 15,
-            severity: 60 + Math.random() * 25
-          }
-        ]
+        detectedAreas: []
       },
       recommendations: generateRecommendations(analysisResult.diagnosis),
       economicImpact: calculateEconomicImpact(analysisResult.diagnosis, requestData.cropType),
@@ -329,8 +384,10 @@ async function performMockAIAnalysis(
         )
       ) || partDiseases[0];
     } else {
-      // Random selection with higher probability for more common diseases
-      selectedDisease = partDiseases[Math.floor(Math.random() * partDiseases.length)];
+      // No symptoms supplied: return the first (primary) entry from the
+      // reference table rather than drawing one at random, so repeated calls
+      // are reproducible.
+      selectedDisease = partDiseases[0];
     }
   } else {
     // Fallback for unknown crop/part combinations

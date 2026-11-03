@@ -16,6 +16,7 @@
 import express, { Request, Response } from "express";
 import { analyzeSoilForUI, recommendCropsForUI } from "../services/ai/cropAdvisor";
 import { isLLMConfigured, getLLMInfo } from "../services/providers/llmProvider";
+import { isVisionConfigured } from "../services/providers/visionProvider";
 import { probeService } from "../services/providers/serviceProbe";
 
 const router = express.Router();
@@ -61,7 +62,18 @@ const LLM_CONFIG_HINT =
 async function capabilities(): Promise<Capability[]> {
   const llmReady = isLLMConfigured();
   const visionUrl = process.env.IMAGE_DIAGNOSIS_URL;
-  const visionReady = Boolean(visionUrl);
+  // A multimodal LLM (AI_VISION_MODEL) is a valid vision back-end too, so the
+  // capability is "ready" when either the LLM or a vision service is set.
+  const visionReady = isVisionConfigured();
+  // Nominal engine for vision: a real model. The live probe downgrades this to
+  // "heuristic" when the configured service self-reports demo inference.
+  const visionEngine: Engine = "vision-model";
+  const visionProvenance = llmReady
+    ? "Answered by the configured multimodal LLM (AI_VISION_MODEL)."
+    : "Forwarded to the configured vision inference service (reachability checked live).";
+  const visionProvenanceAr = llmReady
+    ? "يُحلّل بواسطة نموذج لغوي متعدد الوسائط مُهيّأ (AI_VISION_MODEL)."
+    : "يُحوّل إلى خدمة الرؤية المُهيّأة (يُتحقّق من توفرها فعلياً).";
   const microservices = Boolean(
     process.env.SOIL_ANALYSIS_URL || process.env.CROP_RECOMMENDATION_URL,
   );
@@ -104,14 +116,12 @@ async function capabilities(): Promise<Capability[]> {
       id: "plant-disease-detection",
       name: "Plant Disease Detection",
       nameAr: "كشف أمراض النبات",
-      engine: visionReady ? "vision-model" : "unavailable",
+      engine: visionReady ? visionEngine : "unavailable",
       microserviceUrl: visionUrl,
       fallbackEngine: "unavailable",
-      provenance: visionReady
-        ? "Forwarded to the configured vision inference service (reachability checked live)."
-        : "No vision inference service is configured.",
+      provenance: visionReady ? visionProvenance : "No vision back-end is configured.",
       provenanceAr: visionReady
-        ? "يُحوّل إلى خدمة الرؤية المُهيّأة (يُتحقّق من توفرها فعلياً)."
+        ? visionProvenanceAr
         : "لا توجد خدمة استدلال بالصور مُهيّأة.",
       requiresConfiguration: visionReady ? undefined : LLM_CONFIG_HINT,
     },
@@ -119,15 +129,11 @@ async function capabilities(): Promise<Capability[]> {
       id: "leaf-scan",
       name: "Leaf Scan AI",
       nameAr: "فحص الأوراق",
-      engine: visionReady ? "vision-model" : "unavailable",
+      engine: visionReady ? visionEngine : "unavailable",
       microserviceUrl: visionUrl,
       fallbackEngine: "unavailable",
-      provenance: visionReady
-        ? "Forwarded to the configured vision inference service (reachability checked live)."
-        : "No vision inference service is configured.",
-      provenanceAr: visionReady
-        ? "يُحوّل إلى خدمة الرؤية المُهيّأة."
-        : "لا توجد خدمة استدلال بالصور مُهيّأة.",
+      provenance: visionReady ? visionProvenance : "No vision back-end is configured.",
+      provenanceAr: visionReady ? visionProvenanceAr : "لا توجد خدمة استدلال بالصور مُهيّأة.",
       requiresConfiguration: visionReady ? undefined : LLM_CONFIG_HINT,
     },
     {

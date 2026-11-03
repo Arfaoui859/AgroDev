@@ -13,6 +13,11 @@ import {
   answerAgriculturalQuestion,
   detectLanguage,
 } from "../services/ai/farmAdvisor";
+import {
+  diagnosePlantImage,
+  type VisionDiagnosis,
+} from "../services/providers/visionProvider";
+import { isLLMConfigured } from "../services/providers/llmProvider";
 import { getLLMInfo } from "../services/providers/llmProvider";
 import { probeService } from "../services/providers/serviceProbe";
 
@@ -346,14 +351,80 @@ export const compareCropProfitability = async (req: Request, res: Response) => {
 };
 
 // 📸 IMAGE DIAGNOSIS ENDPOINTS
+
+/**
+ * Map a real vision-model diagnosis to the payload shape the client already
+ * consumes (disease_detection.primary_disease + treatment_plan + severity).
+ */
+function visionDiagnosisToPayload(
+  diagnosis: VisionDiagnosis,
+  modelSource: string,
+  provider: string,
+) {
+  return {
+    dataSource: "llm",
+    isRealData: true,
+    modelSource,
+    provider,
+    disease_detection: {
+      primary_disease: {
+        disease: diagnosis.diseaseId ?? diagnosis.disease,
+        disease_name_ar: diagnosis.disease,
+        description: diagnosis.description,
+        probability: diagnosis.confidence,
+        severity_level: diagnosis.severity ?? "medium",
+        symptoms: diagnosis.symptoms,
+        causes: diagnosis.causes,
+      },
+      top_predictions: [],
+    },
+    severity_assessment: {
+      severity_level: diagnosis.severity ?? "medium",
+    },
+    treatment_plan: {
+      immediate_treatment: diagnosis.treatment,
+      general_care: [],
+      prevention_measures: diagnosis.prevention,
+      follow_up_schedule: [],
+    },
+  };
+}
+
 export const detectPlantDisease = [
   upload.single("file"),
   async (req: Request, res: Response) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No image file provided" });
-      }
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided" });
+    }
 
+    // Prefer a real multimodal vision model when one is configured.
+    if (isLLMConfigured()) {
+      try {
+        const result = await diagnosePlantImage({
+          image: { buffer: req.file.buffer, mimetype: req.file.mimetype },
+          cropType: req.body.plant_type,
+          plantPart: req.body.plant_part,
+          symptoms: req.body.symptoms,
+        });
+        return res.json(
+          visionDiagnosisToPayload(result.diagnosis, result.modelSource, result.provider),
+        );
+      } catch (error) {
+        console.error("Vision model error:", (error as Error).message);
+        // If a microservice is also configured, try it; otherwise report the
+        // failure instead of fabricating a diagnosis.
+        if (!process.env.IMAGE_DIAGNOSIS_URL) {
+          return res.status(502).json({
+            error: "Vision analysis failed",
+            message: "تعذّر تحليل الصورة بواسطة نموذج الرؤية. حاول مرة أخرى.",
+            code: "VISION_FAILED",
+            dataAvailable: false,
+          });
+        }
+      }
+    }
+
+    try {
       const formData = new FormData();
       formData.append("file", req.file.buffer, {
         filename: req.file.originalname,

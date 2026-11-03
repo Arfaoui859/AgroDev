@@ -16,9 +16,15 @@
 
 import { fetchJson, ProviderError } from "./http";
 
+/** Multimodal content part (OpenAI-compatible vision payload). */
+export type ChatContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
-  content: string;
+  /** Plain text, or an array of parts for multimodal (vision) requests. */
+  content: string | ChatContentPart[];
 }
 
 export interface ChatOptions {
@@ -26,6 +32,8 @@ export interface ChatOptions {
   maxTokens?: number;
   timeoutMs?: number;
   retries?: number;
+  /** Override the configured model (e.g. a dedicated vision model). */
+  model?: string;
   /** When true, request a JSON object response (OpenAI-compatible flag). */
   json?: boolean;
 }
@@ -90,7 +98,7 @@ export async function chatComplete(
   }
 
   const body: Record<string, unknown> = {
-    model,
+    model: options.model || model,
     messages,
     temperature: options.temperature ?? 0.3,
     max_tokens: options.maxTokens ?? 900,
