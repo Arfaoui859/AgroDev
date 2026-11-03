@@ -3,6 +3,7 @@ import {
   getWeatherFromOpenMeteo,
   calculateEvapotranspiration as calculateEt0FromWeather,
 } from '../services/providers/weatherProvider';
+import { markSimulated } from '../lib/provenance';
 
 const router = express.Router();
 
@@ -288,13 +289,23 @@ router.get('/alerts/:stationId', async (req, res) => {
 });
 
 // Water usage analytics
+//
+// AgroGrowth has no metered irrigation telemetry: the platform never receives
+// real per-field water consumption. The figures below are therefore an
+// illustrative baseline, stamped as simulated so the SPA can disclose them
+// instead of showing them as measured usage.
 router.post('/analytics/water-usage', (req, res) => {
+  markSimulated(res, 'simulated');
   const { farmId, period, cropTypes } = req.body;
-  
-  // Generate mock water usage data
   const analytics = generateWaterUsageAnalytics(farmId, period, cropTypes);
-  
-  res.json(analytics);
+  res.json({
+    ...analytics,
+    dataSource: 'simulated',
+    isRealData: false,
+    disclaimer:
+      'بيانات استهلاك مياه تقديرية توضيحية وليست قياسات عدّادات حقيقية. ' +
+      'Illustrative water-usage estimate, not metered measurements.',
+  });
 });
 
 // Helper functions
@@ -557,7 +568,9 @@ function generateWeatherAlerts(forecast: any[]) {
 }
 
 function generateWaterUsageAnalytics(farmId: string, period: string, cropTypes: string[]) {
-  // Mock analytics data
+  // Illustrative baseline: no metered irrigation telemetry is available, so the
+  // breakdown uses fixed per-crop reference values rather than random noise.
+  const baselineWaterPerCrop = 4000; // litres per crop block, reference value
   const usage = {
     totalWaterUsed: 15000, // liters
     averageDailyUsage: 500,
@@ -573,9 +586,9 @@ function generateWaterUsageAnalytics(farmId: string, period: string, cropTypes: 
     },
     breakdown: cropTypes.map(crop => ({
       crop,
-      waterUsed: 3000 + Math.random() * 2000,
-      efficiency: 75 + Math.random() * 20,
-      cost: 30 + Math.random() * 25
+      waterUsed: baselineWaterPerCrop,
+      efficiency: 85,
+      cost: Math.round(baselineWaterPerCrop * 0.012 * 100) / 100
     })),
     trends: generateUsageTrends(period),
     recommendations: [
@@ -599,9 +612,9 @@ function generateUsageTrends(period: string) {
     
     trends.push({
       date: date.toISOString().split('T')[0],
-      usage: 400 + Math.random() * 200,
-      cost: 5 + Math.random() * 3,
-      efficiency: 75 + Math.random() * 20
+      usage: 500,
+      cost: 6,
+      efficiency: 85
     });
   }
   

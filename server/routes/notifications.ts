@@ -1,4 +1,5 @@
 import { RequestHandler } from 'express';
+import { markSimulated } from '../lib/provenance';
 
 // ============ TYPES & INTERFACES ============
 
@@ -627,8 +628,12 @@ export const bulkUpdateNotifications: RequestHandler = async (req, res) => {
 };
 
 // Get IoT sensors
+// AgroGrowth is not connected to a physical IoT fleet: no device registry or
+// telemetry broker is configured, so this endpoint serves a fixed demo fleet and
+// labels it as such instead of implying a live sensor network.
 export const getSensors: RequestHandler = async (req, res) => {
   try {
+    markSimulated(res, 'demo-fleet');
     const { fieldId, status } = req.query;
 
     let filteredSensors = mockSensors;
@@ -643,7 +648,12 @@ export const getSensors: RequestHandler = async (req, res) => {
 
     res.json({
       success: true,
-      data: filteredSensors
+      data: filteredSensors,
+      dataSource: 'simulated',
+      isRealData: false,
+      disclaimer:
+        'أسطول حسّاسات توضيحي وليس شبكة أجهزة حقيقية متصلة. ' +
+        'Demo sensor fleet, not a live device network.'
     });
   } catch (error) {
     res.status(500).json({
@@ -653,39 +663,45 @@ export const getSensors: RequestHandler = async (req, res) => {
   }
 };
 
-// Get real-time data
+// Get real-time data.
+//
+// There is no live telemetry link, so this reports each demo sensor's last
+// stored reading unchanged and marks the payload as demo data. It previously
+// added Math.random() jitter, which made frozen demo values look like a live
+// feed and would have triggered bogus change alerts.
 export const getRealTimeData: RequestHandler = async (req, res) => {
   try {
+    markSimulated(res, 'demo-fleet');
     const realTimeData: RealTimeData = {
       timestamp: new Date().toISOString(),
       sensors: mockSensors.reduce((acc, sensor) => {
         acc[sensor.id] = {
-          value: sensor.lastReading.value + (Math.random() - 0.5) * 2,
+          value: sensor.lastReading.value,
           status: sensor.status,
-          change: Math.random() > 0.5 ? 'increase' : 'decrease',
-          changePercent: (Math.random() - 0.5) * 10
+          change: 'unchanged',
+          changePercent: 0
         };
         return acc;
       }, {} as any),
-      weather: {
-        temperature: 24.5 + (Math.random() - 0.5) * 2,
-        humidity: 65 + (Math.random() - 0.5) * 10,
-        windSpeed: 12 + (Math.random() - 0.5) * 5,
-        pressure: 1013.2 + (Math.random() - 0.5) * 5,
-        precipitation: Math.random() * 5,
-        condition: 'partly_cloudy'
-      },
+      // No weather station is wired into this module; the SPA reads live weather
+      // from /api/weather/*. Reported as unavailable rather than invented.
+      weather: null,
       systemHealth: {
         connectedSensors: mockSensors.filter(s => s.status === 'online').length,
         totalSensors: mockSensors.length,
-        dataLatency: 120 + Math.random() * 50,
-        errorRate: Math.random() * 10
+        dataLatency: null,
+        errorRate: null
       }
     };
 
     res.json({
       success: true,
-      data: realTimeData
+      data: realTimeData,
+      dataSource: 'simulated',
+      isRealData: false,
+      disclaimer:
+        'قراءات توضيحية مجمّدة وليست بثاً حياً من حسّاسات. ' +
+        'Frozen demo readings, not a live sensor stream.'
     });
   } catch (error) {
     res.status(500).json({
