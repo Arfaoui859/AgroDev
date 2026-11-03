@@ -1,4 +1,6 @@
 import { RequestHandler } from "express";
+import { getWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
+import { ProviderError } from "../services/providers/http";
 import { WeatherData } from "./weather";
 
 
@@ -98,6 +100,8 @@ export interface AIRecommendationResponse {
      * live feeds. Surfaced so clients never treat them as observed data. */
     dataSource: "rule-based";
     isRealData: false;
+    /** False when the weather provider was unavailable for this request. */
+    weatherAvailable: boolean;
     confidence: number;
   };
 }
@@ -112,9 +116,6 @@ export const generateCropRecommendations: RequestHandler = async (req, res) => {
       });
     }
 
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     const recommendations = await generateAIRecommendations(input);
     
     res.json(recommendations);
@@ -127,8 +128,9 @@ export const generateCropRecommendations: RequestHandler = async (req, res) => {
 };
 
 async function generateAIRecommendations(input: CropRecommendationInput): Promise<AIRecommendationResponse> {
-  // Simulate fetching weather and market data
-  const weatherData = await simulateWeatherData(input.location);
+  // Real weather for the coordinates; market data has no live feed in this
+  // deployment, so it stays a clearly-labelled proxy.
+  const weatherData = await fetchWeatherForRecommendation(input.location);
   const marketData = await simulateMarketData();
   
   // Define crop database with detailed information
@@ -169,6 +171,7 @@ async function generateAIRecommendations(input: CropRecommendationInput): Promis
       algorithmVersion: "2.1",
       dataSource: "rule-based",
       isRealData: false,
+      weatherAvailable: weatherData !== null,
       confidence: calculateOverallConfidence(topRecommendations)
     }
   };
@@ -626,9 +629,11 @@ function generateAnalysis(
   
   const locationAssessment = `الموقع في محافظة ${input.location.governorate || 'غير محدد'} مناسب لزراعة ${recommendations.length} محصول مختلف`;
   
-  const climateAssessment = weather?.temperature > 30 ? 
-    "المناخ حار نسبياً، مناسب للمحاصيل الصيفية" :
-    "المناخ معتدل، مناسب للمحاصيل الشتوية";
+  const climateAssessment = !weather
+    ? "تعذّر جلب بيانات الطقس الحقيقية؛ لم يُؤخذ المناخ الحالي في الحسبان."
+    : weather.temperature > 30
+      ? "المناخ حار نسبياً، مناسب للمحاصيل الصيفية"
+      : "المناخ معتدل، مناسب للمحاصيل الشتوية";
   
   const marketAssessment = "السوق المحلي يظهر طلباً جيداً على معظم المحاصيل المقترحة";
   
@@ -652,13 +657,29 @@ function generateAnalysis(
   };
 }
 
-async function simulateWeatherData(location: any) {
-  // Model-generated weather proxy (no live provider wired into this route).
-  return {
-    temperature: 25 + Math.random() * 10,
-    humidity: 60 + Math.random() * 20,
-    rainfall: Math.random() * 5
-  };
+/**
+ * Real current weather for the requested coordinates. Returns null (rather than
+ * a random proxy) when the provider is unavailable, so the caller can state that
+ * climate inputs were unavailable instead of scoring against invented weather.
+ */
+async function fetchWeatherForRecommendation(
+  location: CropRecommendationInput["location"],
+): Promise<{ temperature: number; humidity: number; rainfall: number } | null> {
+  try {
+    const weather = await getWeatherFromOpenMeteo({
+      lat: location.latitude,
+      lon: location.longitude,
+      governorate: location.governorate,
+    });
+    return {
+      temperature: weather.current.temperature,
+      humidity: weather.current.humidity,
+      rainfall: weather.forecast.daily[0]?.rainfall ?? 0,
+    };
+  } catch (error) {
+    if (error instanceof ProviderError) return null;
+    throw error;
+  }
 }
 
 async function simulateMarketData() {

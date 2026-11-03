@@ -326,7 +326,7 @@ export function createServer() {
       "/api/field-inspector",
       "/api/segmentation",
       "/api/farm-management",
-      "/api/weather-crop-planner",
+      "/api/smart-crop-suggestions",
       "/api/weather-yield-intelligence",
       "/api/predictive-analytics",
       "/api/risk-detection",

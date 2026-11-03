@@ -1,4 +1,5 @@
 import express from 'express';
+import { SIMULATED_DISCLAIMER_AR, SIMULATED_DISCLAIMER_EN } from '../lib/provenance';
 
 const router = express.Router();
 
@@ -1035,7 +1036,8 @@ router.get('/market-analysis/:cropId', (req, res) => {
   try {
     const { cropId } = req.params;
 
-    // Generate mock market analysis
+    // No licensed market feed is configured; the figures below are synthesised
+    // and labelled as such in the response body.
     const analysis = {
       cropId,
       currentPrice: 800 + Math.random() * 1000,
@@ -1062,6 +1064,9 @@ router.get('/market-analysis/:cropId', (req, res) => {
 
     res.json({
       success: true,
+      dataSource: 'simulated',
+      isRealData: false,
+      disclaimer: `${SIMULATED_DISCLAIMER_AR} ${SIMULATED_DISCLAIMER_EN}`,
       data: analysis
     });
 
