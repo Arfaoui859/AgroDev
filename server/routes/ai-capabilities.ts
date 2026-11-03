@@ -18,6 +18,7 @@ import { analyzeSoilForUI, recommendCropsForUI } from "../services/ai/cropAdviso
 import { isLLMConfigured, getLLMInfo } from "../services/providers/llmProvider";
 import { isVisionConfigured } from "../services/providers/visionProvider";
 import { probeService } from "../services/providers/serviceProbe";
+import { capabilityStatus } from "../services/providers/aiTelemetry";
 
 const router = express.Router();
 
@@ -278,6 +279,14 @@ async function resolveEngine(cap: Capability): Promise<{
   };
 }
 
+/**
+ * Capability ids that are backed by an external provider we can monitor. The
+ * chat capability is tracked under "agro-chat" by the advisor.
+ */
+function telemetryId(cap: Capability): string {
+  return cap.id;
+}
+
 /** Standard, honest envelope for a capability probe. */
 async function capabilityPayload(
   cap: Capability,
@@ -285,25 +294,46 @@ async function capabilityPayload(
 ) {
   const { engine, reachable, configured, modelSource } = await resolveEngine(cap);
   const available = engine !== "unavailable";
+  const isReal = engine === "llm" || engine === "vision-model";
+  const llm = getLLMInfo();
+  // A capability is "configured" when a real engine is set up for it, or a
+  // microservice URL is present. Rule-based engines are always available but
+  // never count as an external provider.
+  const engineConfigured =
+    isReal || Boolean(cap.microserviceUrl) || configured;
+  const telemetry = capabilityStatus(telemetryId(cap), engineConfigured, available, isReal);
+
   return {
     capability: cap.id,
     name: cap.name,
     nameAr: cap.nameAr,
     available,
+    /** CONFIGURED | LIVE_VERIFIED | DEGRADED | FALLBACK | UNAVAILABLE | NOT_CONFIGURED */
+    status: telemetry.status,
     engine,
     microserviceConfigured: cap.microserviceConfigured ?? false,
     microserviceUrl: cap.microserviceUrl ?? null,
     microserviceReachable: reachable,
     modelSource,
     dataSource: engine,
-    isRealData: engine === "llm" || engine === "vision-model",
+    isRealData: isReal,
     provenance: cap.provenance,
     provenanceAr: cap.provenanceAr,
     requiresConfiguration:
       !available && configured
         ? `Configured service at ${cap.microserviceUrl} is not reachable`
         : cap.requiresConfiguration,
-    llm: getLLMInfo(),
+    /** Observability: last error category (never a stack trace) and latency. */
+    lastError: telemetry.lastError,
+    lastChecked: telemetry.lastChecked,
+    lastLatencyMs: telemetry.lastLatencyMs,
+    llm: {
+      configured: llm.configured,
+      credentialAvailable: llm.credentialAvailable,
+      provider: llm.provider,
+      textModel: llm.textModel,
+      visionModel: llm.visionModel,
+    },
     checkedAt: new Date().toISOString(),
     ...extra,
   };

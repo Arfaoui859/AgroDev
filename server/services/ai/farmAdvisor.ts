@@ -9,7 +9,13 @@
  *  - Never present rule-based or heuristic output as LLM/model inference.
  */
 
-import { chatComplete, getLLMInfo, isLLMConfigured, type ChatMessage } from "../providers/llmProvider";
+import {
+  chatCompleteDetailed,
+  getLLMInfo,
+  isLLMConfigured,
+  type ChatMessage,
+} from "../providers/llmProvider";
+import { recordFailure, recordSuccess } from "../providers/aiTelemetry";
 import { ProviderError } from "../providers/http";
 import {
   analyzeSoil,
@@ -49,6 +55,10 @@ export interface AdvisorResponse {
   usedAgents: string[];
   contextSummary: string[];
   modelInfo?: { provider: string; model: string };
+  /** Wall-clock latency of the LLM call, when one was made. */
+  latencyMs?: number;
+  /** Token usage reported by the provider, when available. */
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   disclaimer: string;
   note?: string;
 }
@@ -243,28 +253,32 @@ export async function answerAgriculturalQuestion(
       }
       messages.push({ role: "user", content: request.question });
 
-      const answer = await chatComplete(messages, {
+      const result = await chatCompleteDetailed(messages, {
         temperature: 0.3,
         maxTokens: 900,
         timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 30_000,
         retries: Number(process.env.AI_MAX_RETRIES) || 1,
       });
+      recordSuccess("agro-chat", `${result.provider}:${result.model}`, true, result.latencyMs);
 
       const info = getLLMInfo();
       return {
-        answer,
+        answer: result.text,
         language,
         dataSource: "llm",
         isRealData: true,
-        modelSource: `${info.provider}:${info.model}`,
+        modelSource: `${info.provider}:${result.model}`,
         usedAgents: agents,
         contextSummary,
-        modelInfo: { provider: info.provider, model: info.model },
+        modelInfo: { provider: info.provider, model: result.model },
+        latencyMs: result.latencyMs,
+        usage: result.usage,
         disclaimer:
           "تم توليد هذه الإجابة بواسطة نموذج لغوي. تحقّق من التوصيات الحساسة مع مهندس زراعي.",
       };
     } catch (error) {
       // Fall through to the deterministic engine but surface why.
+      recordFailure("agro-chat", "llm", error);
       const reason =
         error instanceof ProviderError ? error.message : (error as Error).message;
       const fallback = buildRuleBasedAnswer(request, agents);

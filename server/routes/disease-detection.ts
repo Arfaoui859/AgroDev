@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import multer from "multer";
 import { uploadError } from "../middleware/upload";
 import { isLLMConfigured } from "../services/providers/llmProvider";
+import { recordFailure, recordSuccess } from "../services/providers/aiTelemetry";
 import { diagnosePlantImage } from "../services/providers/visionProvider";
 
 // Configure multer for image upload
@@ -264,6 +265,12 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
         });
         const d = vision.diagnosis;
         const processingTime = Date.now() - processingStart;
+        recordSuccess(
+          "plant-disease-detection",
+          vision.modelSource,
+          true,
+          vision.latencyMs ?? processingTime,
+        );
         const visionResponse: DiseaseDetectionResponse = {
           id: `diag-${Date.now()}`,
           confidence: Math.round(d.confidence * 100),
@@ -313,6 +320,7 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
         return res.json(visionResponse);
       } catch (error) {
         console.error("Vision model error (disease/analyze):", (error as Error).message);
+        recordFailure("plant-disease-detection", "vision", error, Date.now() - processingStart);
       }
     }
 
