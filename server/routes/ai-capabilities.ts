@@ -20,6 +20,7 @@ import { isLLMConfigured, getLLMInfo } from "../services/providers/llmProvider";
 import { isVisionConfigured } from "../services/providers/visionProvider";
 import { probeService } from "../services/providers/serviceProbe";
 import { capabilityStatus } from "../services/providers/aiTelemetry";
+import { firstEnv } from "../lib/env";
 
 const router = express.Router();
 
@@ -63,7 +64,6 @@ const LLM_CONFIG_HINT =
  */
 async function capabilities(): Promise<Capability[]> {
   const llmReady = isLLMConfigured();
-  const visionUrl = process.env.IMAGE_DIAGNOSIS_URL;
   // A multimodal LLM (AI_VISION_MODEL) is a valid vision back-end too, so the
   // capability is "ready" when either the LLM or a vision service is set.
   const visionReady = isVisionConfigured();
@@ -76,14 +76,27 @@ async function capabilities(): Promise<Capability[]> {
   const visionProvenanceAr = llmReady
     ? "يُحلّل بواسطة نموذج لغوي متعدد الوسائط مُهيّأ (AI_VISION_MODEL)."
     : "يُحوّل إلى خدمة الرؤية المُهيّأة (يُتحقّق من توفرها فعلياً).";
-  const soilUrl = process.env.SOIL_ANALYSIS_URL;
-  const cropUrl = process.env.CROP_RECOMMENDATION_URL;
-  const pestUrl = process.env.PEST_CONTROL_URL;
-  const irrigationUrl = process.env.IRRIGATION_OPTIMIZATION_URL;
+  // Resolve each capability's backing service the same way the AI gateway
+  // does: an explicit env URL, else the gateway's localhost default. Reading
+  // only the env var made a running default service (e.g. market_prediction on
+  // :8004) look "not configured", so the UI reported the capability as
+  // unavailable even though the gateway would have reached it.
+  const soilUrl = firstEnv("SOIL_ANALYSIS_URL") ?? "http://localhost:8001";
+  const cropUrl = firstEnv("CROP_RECOMMENDATION_URL") ?? "http://localhost:8002";
+  const visionUrlDefault =
+    firstEnv("IMAGE_DIAGNOSIS_URL") ?? "http://localhost:8003";
+  const visionUrl = visionUrlDefault;
+  const pestUrl = firstEnv("PEST_CONTROL_URL") ?? "http://localhost:8007";
+  const irrigationUrl =
+    firstEnv("IRRIGATION_OPTIMIZATION_URL") ?? "http://localhost:8008";
   const weatherYieldUrl =
-    process.env.WEATHER_YIELD_INTELLIGENCE_URL ??
-    process.env.SMART_MARKETPLACE_URL;
-  const marketForecastUrl = process.env.MARKET_FORECAST_URL;
+    firstEnv(
+      "WEATHER_YIELD_INTELLIGENCE_URL",
+      "SMART_MARKETPLACE_URL",
+    ) ?? "http://localhost:8006";
+  const marketForecastUrl =
+    firstEnv("MARKET_FORECAST_URL", "MARKET_PREDICTION_URL") ??
+    "http://localhost:8004";
 
   return [
     {

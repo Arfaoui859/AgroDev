@@ -1,3 +1,4 @@
+import { firstEnv } from "../lib/env";
 import { Request, Response } from "express";
 import crypto from "crypto";
 import axios, { AxiosError } from "axios";
@@ -53,10 +54,16 @@ const AI_SERVICES = {
     return normalizeServiceUrl(process.env.IMAGE_DIAGNOSIS_URL, "http://localhost:8003");
   },
   get MARKET_FORECAST() {
-    return normalizeServiceUrl(process.env.MARKET_FORECAST_URL, "http://localhost:8004");
+    return normalizeServiceUrl(
+      firstEnv("MARKET_FORECAST_URL", "MARKET_PREDICTION_URL"),
+      "http://localhost:8004",
+    );
   },
   get SMART_ASSISTANT() {
-    return normalizeServiceUrl(process.env.SMART_ASSISTANT_URL, "http://localhost:8005");
+    return normalizeServiceUrl(
+      firstEnv("SMART_ASSISTANT_URL", "INTELLIGENT_AGENT_URL"),
+      "http://localhost:8005",
+    );
   },
   get SMART_MARKETPLACE() {
     return normalizeServiceUrl(

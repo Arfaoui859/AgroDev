@@ -1,18 +1,18 @@
 /**
  * Plant-disease vision provider adapter.
  *
- * Two real inference back-ends are supported, in priority order:
+ * `diagnosePlantImage` performs real inference against an OpenAI-compatible
+ * multimodal Chat Completions endpoint (AI_BASE_URL / AI_API_KEY /
+ * AI_VISION_MODEL). This covers OpenAI, OpenRouter, Groq vision models, a local
+ * Ollama with a vision model, ...
  *
- *  1. An OpenAI-compatible multimodal Chat Completions endpoint
- *     (AI_BASE_URL / AI_API_KEY / AI_VISION_MODEL). This covers OpenAI,
- *     OpenRouter, Groq vision models, a local Ollama with a vision model, ...
- *  2. An external vision microservice at IMAGE_DIAGNOSIS_URL
- *     (POST /detect-disease, multipart) when it is configured and reachable.
- *
- * When neither is available the adapter throws ProviderError("vision",
- * "unconfigured"). Callers must then report that diagnosis is unavailable —
- * never invent a disease. That contract is what keeps a rule-based guess from
- * being shown to a farmer as a model prediction.
+ * It deliberately does NOT fall back to a rule-based guess: when no multimodal
+ * model is configured it throws ProviderError("vision", "unconfigured"). The
+ * caller (server/routes/disease-detection.ts, server/routes/ai-services-gateway.ts)
+ * then tries the IMAGE_DIAGNOSIS_URL microservice and, if that is absent too,
+ * reports diagnosis as unavailable — it never invents a disease. That contract
+ * is what keeps a heuristic guess from being shown to a farmer as a model
+ * prediction.
  */
 
 import {
