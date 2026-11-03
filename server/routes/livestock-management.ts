@@ -2,6 +2,36 @@ import express from "express";
 
 const router = express.Router();
 
+/**
+ * AgroGrowth has no livestock database wired yet, so this router serves a
+ * seeded demonstration herd. Two properties matter for the UI to work:
+ *
+ *  1. The herd must be identical on every request. Generating it from
+ *     `Math.random()` per request meant `/animals` and `/health-alerts` each
+ *     drew a different herd, so alert.animalId never matched any animal the
+ *     client had rendered and the alerts list could not be joined to animals.
+ *  2. Responses must say they are simulated, so the UI does not present a demo
+ *     herd as real farm records.
+ */
+const SIMULATED_PROVENANCE = {
+  dataSource: "simulated" as const,
+  isRealData: false,
+  disclaimer:
+    "بيانات قطيع توضيحية مولّدة محلياً وليست سجلات حيوانات حقيقية. لا تعتمد عليها لقرارات بيطرية أو مالية.",
+} as const;
+
+/** Deterministic PRNG (mulberry32) so the demo herd is stable across requests. */
+function createRng(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 // Types and interfaces for livestock management
 interface Animal {
   id: string;
@@ -114,7 +144,7 @@ interface HealthAlert {
 }
 
 // Sample data generators
-function generateAnimalData(): Animal[] {
+function generateAnimalData(rng: () => number = Math.random): Animal[] {
   const breeds = {
     cattle: ["هولشتاين", "فريزيان", "ج��رسي", "سيمينتال", "أنجوس"],
     sheep: ["أواسي", "ماريشان", "مريني", "رومانوف", "دورسيت"],
@@ -128,11 +158,11 @@ function generateAnimalData(): Animal[] {
       i % 4
     ] as keyof typeof breeds;
     const breed =
-      breeds[species][Math.floor(Math.random() * breeds[species].length)];
+      breeds[species][Math.floor(rng() * breeds[species].length)];
     const birthDate = new Date(
-      2020 + Math.floor(Math.random() * 4),
-      Math.floor(Math.random() * 12),
-      Math.floor(Math.random() * 28),
+      2020 + Math.floor(rng() * 4),
+      Math.floor(rng() * 12),
+      Math.floor(rng() * 28),
     );
 
     return {
@@ -140,50 +170,52 @@ function generateAnimalData(): Animal[] {
       earTag: `TN${String(i + 1).padStart(4, "0")}`,
       species,
       breed,
-      gender: (Math.random() > 0.5 ? "female" : "male") as "male" | "female",
+      gender: (rng() > 0.5 ? "female" : "male") as "male" | "female",
       birthDate: birthDate.toISOString().split("T")[0],
       weight:
         species === "cattle"
-          ? 450 + Math.random() * 200
+          ? 450 + rng() * 200
           : species === "sheep"
-            ? 45 + Math.random() * 25
+            ? 45 + rng() * 25
             : species === "goat"
-              ? 35 + Math.random() * 20
-              : 2 + Math.random() * 2,
+              ? 35 + rng() * 20
+              : 2 + rng() * 2,
       healthStatus: ["excellent", "good", "fair"][
-        Math.floor(Math.random() * 3)
+        Math.floor(rng() * 3)
       ] as any,
       breedingStatus: ["active", "inactive"][
-        Math.floor(Math.random() * 2)
+        Math.floor(rng() * 2)
       ] as any,
-      location: `المربع ${String.fromCharCode(65 + Math.floor(Math.random() * 4))}${Math.floor(Math.random() * 10) + 1}`,
+      location: `المربع ${String.fromCharCode(65 + Math.floor(rng() * 4))}${Math.floor(rng() * 10) + 1}`,
       purchaseDate: new Date(
         2023,
-        Math.floor(Math.random() * 12),
-        Math.floor(Math.random() * 28),
+        Math.floor(rng() * 12),
+        Math.floor(rng() * 28),
       )
         .toISOString()
         .split("T")[0],
       purchasePrice:
         species === "cattle"
-          ? 15000 + Math.random() * 10000
+          ? 15000 + rng() * 10000
           : species === "sheep"
-            ? 2500 + Math.random() * 1500
+            ? 2500 + rng() * 1500
             : species === "goat"
-              ? 2000 + Math.random() * 1000
-              : 150 + Math.random() * 100,
+              ? 2000 + rng() * 1000
+              : 150 + rng() * 100,
       currentValue: 0, // Will be calculated
       nutritionalNeeds: generateNutritionalProfile(species),
+      // Spread over 0-90 days so the "check overdue" alert rule (>30 days) can
+      // actually fire; the previous 0-30 day window made that branch dead code.
       lastHealthCheck: new Date(
-        Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+        Date.now() - rng() * 90 * 24 * 60 * 60 * 1000,
       )
         .toISOString()
         .split("T")[0],
-      vaccinationStatus: generateVaccinationRecords(),
-      breedingHistory: Math.random() > 0.3 ? [generateBreedingRecord()] : [],
+      vaccinationStatus: generateVaccinationRecords(rng),
+      breedingHistory: rng() > 0.3 ? [generateBreedingRecord(rng)] : [],
       milkProduction:
-        species === "cattle" && Math.random() > 0.4
-          ? generateMilkProduction()
+        species === "cattle" && rng() > 0.4
+          ? generateMilkProduction(rng)
           : undefined,
       meatProduction: undefined,
     };
@@ -240,7 +272,7 @@ function generateNutritionalProfile(species: string): NutritionalProfile {
   return profiles[species as keyof typeof profiles] || profiles.cattle;
 }
 
-function generateVaccinationRecords(): VaccinationRecord[] {
+function generateVaccinationRecords(rng: () => number): VaccinationRecord[] {
   const vaccines = [
     "لقاح الحمى القلاعية",
     "لقاح الجمرة الخبيثة",
@@ -250,27 +282,27 @@ function generateVaccinationRecords(): VaccinationRecord[] {
   ];
 
   return vaccines
-    .slice(0, Math.floor(Math.random() * 3) + 1)
+    .slice(0, Math.floor(rng() * 3) + 1)
     .map((vaccine) => ({
       vaccineType: vaccine,
       dateAdministered: new Date(
-        Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
+        Date.now() - rng() * 180 * 24 * 60 * 60 * 1000,
       )
         .toISOString()
         .split("T")[0],
       nextDueDate: new Date(
-        Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000,
+        Date.now() + rng() * 180 * 24 * 60 * 60 * 1000,
       )
         .toISOString()
         .split("T")[0],
       veterinarian: "د. أحمد محمد الطبيب البيطري",
-      batchNumber: `VAC${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      batchNumber: `VAC${Math.floor(rng() * 0xfffffff).toString(36).toUpperCase().padStart(6, "0")}`,
     }));
 }
 
-function generateBreedingRecord(): BreedingRecord {
+function generateBreedingRecord(rng: () => number): BreedingRecord {
   const matingDate = new Date(
-    Date.now() - Math.random() * 300 * 24 * 60 * 60 * 1000,
+    Date.now() - rng() * 300 * 24 * 60 * 60 * 1000,
   );
   const expectedDelivery = new Date(
     matingDate.getTime() + 280 * 24 * 60 * 60 * 1000,
@@ -278,21 +310,21 @@ function generateBreedingRecord(): BreedingRecord {
 
   return {
     matingDate: matingDate.toISOString().split("T")[0],
-    partner: `animal_${Math.floor(Math.random() * 10) + 1}`,
+    partner: `animal_${Math.floor(rng() * 10) + 1}`,
     expectedDelivery: expectedDelivery.toISOString().split("T")[0],
-    success: Math.random() > 0.2,
+    success: rng() > 0.2,
     offspring:
-      Math.random() > 0.3
-        ? [`offspring_${Math.random().toString(36).substr(2, 5)}`]
+      rng() > 0.3
+        ? [`offspring_${Math.floor(rng() * 0xfffff).toString(36)}`]
         : undefined,
   };
 }
 
-function generateMilkProduction(): MilkProductionRecord[] {
+function generateMilkProduction(rng: () => number): MilkProductionRecord[] {
   return Array.from({ length: 30 }, (_, i) => {
     const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-    const morningYield = 12 + Math.random() * 8;
-    const eveningYield = 10 + Math.random() * 6;
+    const morningYield = 12 + rng() * 8;
+    const eveningYield = 10 + rng() * 6;
 
     return {
       date: date.toISOString().split("T")[0],
@@ -300,9 +332,9 @@ function generateMilkProduction(): MilkProductionRecord[] {
       eveningYield,
       totalDaily: morningYield + eveningYield,
       quality: {
-        fatContent: 3.2 + Math.random() * 0.8,
-        proteinContent: 3.0 + Math.random() * 0.5,
-        cellCount: 150000 + Math.random() * 100000,
+        fatContent: 3.2 + rng() * 0.8,
+        proteinContent: 3.0 + rng() * 0.5,
+        cellCount: 150000 + rng() * 100000,
       },
     };
   });
@@ -326,7 +358,7 @@ function calculateCurrentValue(animal: Animal): number {
   );
 }
 
-function generateFeedInventory(): FeedInventory[] {
+function generateFeedInventory(rng: () => number = Math.random): FeedInventory[] {
   const feedTypes = [
     { name: "علف مركز للأبقار", cost: 2.5 },
     { name: "علف الشعير", cost: 1.8 },
@@ -340,16 +372,16 @@ function generateFeedInventory(): FeedInventory[] {
     id: `feed_${i + 1}`,
     feedType: feed.name,
     brand: `شركة العلف المتميز ${i + 1}`,
-    quantity: 500 + Math.random() * 1500,
+    quantity: 500 + rng() * 1500,
     unitCost: feed.cost,
     nutritionalValue: generateNutritionalProfile("cattle"),
     expiryDate: new Date(
-      Date.now() + (30 + Math.random() * 90) * 24 * 60 * 60 * 1000,
+      Date.now() + (30 + rng() * 90) * 24 * 60 * 60 * 1000,
     )
       .toISOString()
       .split("T")[0],
     purchaseDate: new Date(
-      Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+      Date.now() - rng() * 30 * 24 * 60 * 60 * 1000,
     )
       .toISOString()
       .split("T")[0],
@@ -400,18 +432,6 @@ function generateHealthAlerts(animals: Animal[]): HealthAlert[] {
       });
     }
 
-    // Weight loss alerts (simulated)
-    if (Math.random() > 0.8) {
-      alerts.push({
-        id: `alert_${alerts.length + 1}`,
-        animalId: animal.id,
-        alertType: "weight_loss",
-        severity: "medium",
-        message: `انخفاض ملحوظ في وزن الحيوان ${animal.earTag}`,
-        dateCreated: new Date().toISOString().split("T")[0],
-        resolved: false,
-      });
-    }
   });
 
   return alerts;
@@ -419,12 +439,17 @@ function generateHealthAlerts(animals: Animal[]): HealthAlert[] {
 
 // API Routes
 
+/** The demo herd, generated once so every endpoint sees the same animals. */
+const DEMO_HERD: Animal[] = generateAnimalData(createRng(0x51e2d));
+const DEMO_FEED_INVENTORY: FeedInventory[] = generateFeedInventory(createRng(0xfeed0));
+
 // Get all animals
 router.get("/animals", (req, res) => {
   try {
-    const animals = generateAnimalData();
+    const animals = DEMO_HERD;
     res.json({
       success: true,
+      ...SIMULATED_PROVENANCE,
       data: animals,
       summary: {
         totalAnimals: animals.length,
@@ -449,8 +474,7 @@ router.get("/animals", (req, res) => {
 router.get("/animals/:animalId", (req, res) => {
   try {
     const { animalId } = req.params;
-    const animals = generateAnimalData();
-    const animal = animals.find((a) => a.id === animalId);
+    const animal = DEMO_HERD.find((a) => a.id === animalId);
 
     if (!animal) {
       return res.status(404).json({
@@ -461,6 +485,7 @@ router.get("/animals/:animalId", (req, res) => {
 
     res.json({
       success: true,
+      ...SIMULATED_PROVENANCE,
       data: animal,
     });
   } catch (error) {
@@ -475,11 +500,11 @@ router.get("/animals/:animalId", (req, res) => {
 // Get health alerts
 router.get("/health-alerts", (req, res) => {
   try {
-    const animals = generateAnimalData();
-    const alerts = generateHealthAlerts(animals);
+    const alerts = generateHealthAlerts(DEMO_HERD);
 
     res.json({
       success: true,
+      ...SIMULATED_PROVENANCE,
       data: alerts,
       summary: {
         totalAlerts: alerts.length,
@@ -500,8 +525,7 @@ router.get("/health-alerts", (req, res) => {
 // Get breeding schedule
 router.get("/breeding-schedule", (req, res) => {
   try {
-    const animals = generateAnimalData();
-    const breedingAnimals = animals.filter(
+    const breedingAnimals = DEMO_HERD.filter(
       (a) => a.breedingStatus === "active",
     );
 
@@ -518,11 +542,13 @@ router.get("/breeding-schedule", (req, res) => {
 
     res.json({
       success: true,
+      ...SIMULATED_PROVENANCE,
       data: schedule,
       summary: {
         totalBreedingAnimals: breedingAnimals.length,
-        pregnantAnimals: animals.filter((a) => a.breedingStatus === "pregnant")
-          .length,
+        pregnantAnimals: DEMO_HERD.filter(
+          (a) => a.breedingStatus === "pregnant",
+        ).length,
         upcomingDeliveries: schedule.filter((s) => s.expectedDelivery).length,
       },
     });
@@ -563,10 +589,11 @@ function calculateBreedingRecommendation(animal: Animal): string {
 // Get feed inventory
 router.get("/feed-inventory", (req, res) => {
   try {
-    const inventory = generateFeedInventory();
+    const inventory = DEMO_FEED_INVENTORY;
 
     res.json({
       success: true,
+      ...SIMULATED_PROVENANCE,
       data: inventory,
       summary: {
         totalFeedTypes: inventory.length,
@@ -596,8 +623,8 @@ router.get("/feed-inventory", (req, res) => {
 router.post("/feed-optimization", (req, res) => {
   try {
     const { targetCosts, nutritionalGoals } = req.body;
-    const animals = generateAnimalData();
-    const inventory = generateFeedInventory();
+    const animals = DEMO_HERD;
+    const inventory = DEMO_FEED_INVENTORY;
 
     const recommendations = animals.map((animal) => {
       const dailyNeeds = animal.nutritionalNeeds;
@@ -617,6 +644,7 @@ router.post("/feed-optimization", (req, res) => {
 
     res.json({
       success: true,
+      ...SIMULATED_PROVENANCE,
       data: recommendations,
       summary: {
         totalAnimals: recommendations.length,
@@ -653,10 +681,11 @@ function optimizeFeedPlan(
   return {
     feeds: selectedFeeds,
     totalCost,
+    // Coverage derived from the plan itself, not a random figure.
     coverage: {
-      calories: 95 + Math.random() * 10,
-      protein: 90 + Math.random() * 15,
-      minerals: 85 + Math.random() * 20,
+      calories: Math.min(100, Math.round((needs.dailyCalories / 25000) * 100)),
+      protein: Math.min(100, Math.round((needs.protein / 1200) * 100)),
+      minerals: Math.min(100, Math.round((needs.minerals.calcium / 45) * 100)),
     },
     efficiency: Math.round((1 / totalCost) * 100),
   };
@@ -666,7 +695,7 @@ function optimizeFeedPlan(
 router.get("/production-analytics", (req, res) => {
   try {
     const { period = "30" } = req.query;
-    const animals = generateAnimalData();
+    const animals = DEMO_HERD;
 
     const milkProducers = animals.filter((a) => a.milkProduction);
     const meatAnimals = animals.filter((a) => a.species !== "poultry");
@@ -705,6 +734,7 @@ router.get("/production-analytics", (req, res) => {
 
     res.json({
       success: true,
+      ...SIMULATED_PROVENANCE,
       data: {
         period: `${period} يوم`,
         milk: milkAnalytics,
@@ -721,14 +751,19 @@ router.get("/production-analytics", (req, res) => {
   }
 });
 
+/**
+ * Demo production series. Seeded so repeated requests return the same curve:
+ * a "trend" that changes on every poll is not a trend, and the UI charts it.
+ */
 function generateProductionTrends(days: number) {
+  const rng = createRng(0x5eed);
   return Array.from({ length: days }, (_, i) => {
     const date = new Date(Date.now() - (days - i - 1) * 24 * 60 * 60 * 1000);
     return {
       date: date.toISOString().split("T")[0],
-      milkProduction: 180 + Math.random() * 40,
-      feedCosts: 450 + Math.random() * 100,
-      revenue: 800 + Math.random() * 200,
+      milkProduction: Math.round((180 + rng() * 40) * 10) / 10,
+      feedCosts: Math.round((450 + rng() * 100) * 10) / 10,
+      revenue: Math.round((800 + rng() * 200) * 10) / 10,
     };
   });
 }
