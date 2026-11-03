@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Progress } from '../components/ui/progress';
+import { SimulatedDataNotice } from '../components/SimulatedDataNotice';
 import { 
   ShoppingCart, 
   Users, 
@@ -170,6 +172,7 @@ interface SupplyChainNode {
 }
 
 const SmartMarketplace: React.FC = () => {
+  const { toast } = useToast();
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [inquiries, setInquiries] = useState<BuyerInquiry[]>([]);
   const [analytics, setAnalytics] = useState<MarketAnalytics | null>(null);
@@ -186,308 +189,99 @@ const SmartMarketplace: React.FC = () => {
     fetchMarketplaceData();
   }, [selectedCategory, selectedLocation, sortBy]);
 
-  const generateDemoListings = (): MarketListing[] => {
-    const products = [
-      { name: 'Tomatoes', nameAr: 'طماطم', category: 'vegetables', variety: 'روما', basePrice: 2.5 },
-      { name: 'Wheat', nameAr: 'قمح', category: 'grains', variety: 'قمح شتوي', basePrice: 0.45 },
-      { name: 'Olives', nameAr: 'زيتون', category: 'fruits', variety: 'زيتون أخضر', basePrice: 4.2 },
-      { name: 'Barley', nameAr: 'شعير', category: 'grains', variety: 'شعير علفي', basePrice: 0.38 },
-      { name: 'Dates', nameAr: 'تمر', category: 'fruits', variety: 'دقلة نور', basePrice: 8.5 },
-      { name: 'Potatoes', nameAr: 'بطاطس', category: 'vegetables', variety: 'بطاطس بيضاء', basePrice: 1.8 },
-      { name: 'Oranges', nameAr: 'برتقال', category: 'fruits', variety: 'برتقال مالطي', basePrice: 1.2 },
-      { name: 'Onions', nameAr: 'بصل', category: 'vegetables', variety: 'بصل أحمر', basePrice: 0.9 }
-    ];
-
-    const locations = [
-      { governorate: 'تونس', city: 'تونس العاصمة', coords: [36.8065, 10.1815] },
-      { governorate: 'صفاقس', city: 'صفاقس', coords: [34.7406, 10.7603] },
-      { governorate: 'سوسة', city: 'سوسة', coords: [35.8256, 10.6369] },
-      { governorate: 'القيروان', city: 'القيروان', coords: [35.6781, 10.0963] },
-      { governorate: 'بنزرت', city: 'بنزرت', coords: [37.2744, 9.8739] },
-      { governorate: 'قابس', city: 'قابس', coords: [33.8815, 10.0982] }
-    ];
-
-    const sellers = [
-      { name: 'محمد الحبيب', type: 'farmer', rating: 4.8 },
-      { name: 'فاطمة السعيدي', type: 'farmer', rating: 4.6 },
-      { name: 'تعاونية الفلاحين', type: 'cooperative', rating: 4.9 },
-      { name: 'أحمد التاجر', type: 'wholesaler', rating: 4.3 },
-      { name: 'مزرعة البركة', type: 'farmer', rating: 4.7 },
-      { name: 'شركة الأغذية الطبيعية', type: 'wholesaler', rating: 4.5 }
-    ];
-
-    return products.flatMap((product, productIndex) =>
-      Array.from({ length: 3 + Math.floor(Math.random() * 4) }, (_, index) => {
-        const seller = sellers[Math.floor(Math.random() * sellers.length)];
-        const location = locations[Math.floor(Math.random() * locations.length)];
-        const quantity = 50 + Math.floor(Math.random() * 950);
-        const priceVariation = 0.8 + Math.random() * 0.4; // ±20% price variation
-        const price = product.basePrice * priceVariation;
-        const isOrganic = Math.random() > 0.7;
-        const isFeatured = Math.random() > 0.85;
-        const qualityGrades = ['A', 'B', 'C'] as const;
-        const quality = qualityGrades[Math.floor(Math.random() * qualityGrades.length)];
-        const statuses = ['active', 'active', 'active', 'reserved', 'sold'] as const;
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
-
-        const harvestDate = new Date();
-        harvestDate.setDate(harvestDate.getDate() - Math.floor(Math.random() * 30));
-
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + Math.floor(Math.random() * 14) + 1);
-
-        return {
-          id: `listing-${productIndex}-${index}`,
-          sellerId: `seller-${Math.floor(Math.random() * 100)}`,
-          sellerName: seller.name,
-          sellerRating: seller.rating,
-          sellerLocation: location.city,
-          sellerType: seller.type as 'farmer' | 'wholesaler' | 'cooperative',
-          productName: product.name,
-          productNameAr: product.nameAr,
-          category: product.category as 'vegetables' | 'fruits' | 'grains' | 'livestock' | 'dairy' | 'equipment',
-          variety: product.variety,
-          quantity,
-          unit: product.category === 'grains' ? 'كغ' : product.category === 'fruits' ? 'كغ' : 'كغ',
-          pricePerUnit: Number(price.toFixed(2)),
-          totalValue: Number((price * quantity).toFixed(2)),
-          currency: 'TND',
-          qualityGrade: quality,
-          organic: isOrganic,
-          harvestDate: harvestDate.toISOString(),
-          expiryDate: expiryDate.toISOString(),
-          location: {
-            governorate: location.governorate,
-            city: location.city,
-            coordinates: location.coords as [number, number]
-          },
-          images: [`/images/${product.name.toLowerCase()}.jpg`],
-          description: `منتج طازج عالي الجودة من مزارع ${location.governorate}`,
-          descriptionAr: `منتج طازج عالي الجودة من مزارع ${location.governorate}`,
-          certifications: isOrganic ? ['عضوي معتمد'] : [],
-          status,
-          createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date().toISOString(),
-          views: Math.floor(Math.random() * 200) + 10,
-          inquiries: Math.floor(Math.random() * 15) + 1,
-          isFeatured,
-          negotiations: {
-            enabled: Math.random() > 0.3,
-            minPrice: price * 0.9,
-            autoAcceptPrice: price * 1.1
-          },
-          logistics: {
-            deliveryAvailable: Math.random() > 0.4,
-            pickupAvailable: true,
-            shippingCost: Math.floor(Math.random() * 50) + 10,
-            processingTime: Math.floor(Math.random() * 3) + 1
-          }
-        };
-      })
-    );
-  };
-
-  const generateDemoInquiries = (): BuyerInquiry[] => {
-    const buyers = [
-      { name: 'مطعم الأصالة', type: 'restaurant' },
-      { name: 'سوق المركزي', type: 'retailer' },
-      { name: 'شركة التصدير', type: 'trader' },
-      { name: 'مصنع المعلبات', type: 'processor' }
-    ];
-
-    return Array.from({ length: 12 }, (_, index) => {
-      const buyer = buyers[Math.floor(Math.random() * buyers.length)];
-      const statuses = ['pending', 'accepted', 'rejected', 'negotiating'] as const;
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-
-      return {
-        id: `inquiry-${index}`,
-        buyerId: `buyer-${index}`,
-        buyerName: buyer.name,
-        buyerType: buyer.type as 'trader' | 'retailer' | 'restaurant' | 'processor',
-        listingId: `listing-${Math.floor(Math.random() * 10)}`,
-        quantity: Math.floor(Math.random() * 500) + 50,
-        proposedPrice: Number((Math.random() * 3 + 1).toFixed(2)),
-        message: 'مهتم بشراء هذا المنتج، هل يمكن التفاوض على السعر والكمية؟',
-        status,
-        createdAt: new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000).toISOString(),
-        responses: status === 'negotiating' ? [
-          {
-            id: 'response-1',
-            senderId: 'seller-1',
-            senderType: 'seller',
-            message: 'يمكننا التفاوض، ما هي الكمية المطلوبة بالضبط؟',
-            timestamp: new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        ] : []
-      };
-    });
-  };
-
-  const generateDemoAnalytics = (): MarketAnalytics => {
-    return {
-      totalListings: 156,
-      activeListings: 128,
-      totalValue: 245000,
-      averagePrice: 2.85,
-      topCategories: [
-        { category: 'vegetables', categoryAr: 'خضروات', count: 45, value: 85000, trend: 'up' },
-        { category: 'fruits', categoryAr: 'فواكه', count: 38, value: 92000, trend: 'up' },
-        { category: 'grains', categoryAr: 'حبوب', count: 32, value: 48000, trend: 'stable' },
-        { category: 'dairy', categoryAr: 'ألبان', count: 25, value: 35000, trend: 'down' }
-      ],
-      topRegions: [
-        { region: 'صفاقس', listings: 42, value: 98000 },
-        { region: 'تونس', listings: 38, value: 85000 },
-        { region: 'سوسة', listings: 28, value: 62000 },
-        { region: 'القيروان', listings: 22, value: 45000 }
-      ],
-      priceHistory: [],
-      marketTrends: {
-        weeklyGrowth: 12.5,
-        monthlyGrowth: 28.3,
-        topGrowing: ['طماطم عضوية', 'زيتون مكبوس', 'تمر مجهول', 'قمح شتوي'],
-        declining: ['بطاطس صيفية', 'خيار مخلل']
-      }
-    };
-  };
-
-  const generateDemoSupplyChain = (): SupplyChainNode[] => {
-    return [
-      {
-        id: 'farm-1',
-        type: 'farm',
-        name: 'مزرعة البركة',
-        location: 'صفاقس، تونس',
-        coordinates: [34.7406, 10.7603],
-        status: 'active',
-        capacity: 1000,
-        utilization: 85,
-        lastUpdate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'warehouse-1',
-        type: 'warehouse',
-        name: 'مستودع المركزي',
-        location: 'تونس العاصمة',
-        coordinates: [36.8065, 10.1815],
-        status: 'active',
-        capacity: 5000,
-        utilization: 72,
-        lastUpdate: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'processing-1',
-        type: 'processing',
-        name: 'مصنع التعليب',
-        location: 'سوسة',
-        coordinates: [35.8256, 10.6369],
-        status: 'active',
-        capacity: 2000,
-        utilization: 90,
-        lastUpdate: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'distribution-1',
-        type: 'distribution',
-        name: 'مركز التوزيع',
-        location: 'بنزرت',
-        coordinates: [37.2744, 9.8739],
-        status: 'maintenance',
-        capacity: 3000,
-        utilization: 45,
-        lastUpdate: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'retail-1',
-        type: 'retail',
-        name: 'سوق البلدي',
-        location: 'قابس',
-        coordinates: [33.8815, 10.0982],
-        status: 'active',
-        capacity: 800,
-        utilization: 95,
-        lastUpdate: new Date(Date.now() - 15 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'farm-2',
-        type: 'farm',
-        name: 'مزرعة الزيتون',
-        location: 'القيروان',
-        coordinates: [35.6781, 10.0963],
-        status: 'active',
-        capacity: 750,
-        utilization: 68,
-        lastUpdate: new Date(Date.now() - 45 * 60 * 1000).toISOString()
-      }
-    ];
-  };
-
   const fetchMarketplaceData = async () => {
     try {
       setLoading(true);
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const [listingsRes, inquiriesRes, analyticsRes, supplyChainRes] =
+        await Promise.all([
+          fetch('/api/marketplace/listings'),
+          fetch('/api/marketplace/inquiries'),
+          fetch('/api/marketplace/analytics'),
+          fetch('/api/supply-chain/nodes'),
+        ]);
 
-      // Generate realistic demo data
-      let demoListings = generateDemoListings();
-      const demoInquiries = generateDemoInquiries();
-      const demoAnalytics = generateDemoAnalytics();
-      const demoSupplyChain = generateDemoSupplyChain();
+      if (
+        !listingsRes.ok ||
+        !inquiriesRes.ok ||
+        !analyticsRes.ok ||
+        !supplyChainRes.ok
+      ) {
+        throw new Error('تعذّر تحميل بيانات السوق');
+      }
 
-      // Apply filters
+      const [
+        listingsPayload,
+        inquiriesPayload,
+        analyticsPayload,
+        supplyChainPayload,
+      ] = await Promise.all([
+        listingsRes.json(),
+        inquiriesRes.json(),
+        analyticsRes.json(),
+        supplyChainRes.json(),
+      ]);
+
+      let resultListings = (listingsPayload?.data ?? []) as MarketListing[];
+
       if (selectedCategory !== 'all') {
-        demoListings = demoListings.filter(listing => listing.category === selectedCategory);
+        resultListings = resultListings.filter(
+          (listing) => listing.category === selectedCategory,
+        );
       }
 
       if (selectedLocation !== 'all') {
-        demoListings = demoListings.filter(listing =>
-          listing.location.governorate.includes(selectedLocation) ||
-          listing.location.city.includes(selectedLocation)
+        resultListings = resultListings.filter(
+          (listing) =>
+            listing.location.governorate.includes(selectedLocation) ||
+            listing.location.city.includes(selectedLocation),
         );
       }
 
       if (searchQuery) {
-        demoListings = demoListings.filter(listing =>
-          listing.productNameAr.includes(searchQuery) ||
-          listing.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          listing.variety.includes(searchQuery) ||
-          listing.sellerName.includes(searchQuery)
+        const q = searchQuery.toLowerCase();
+        resultListings = resultListings.filter(
+          (listing) =>
+            listing.productNameAr.includes(searchQuery) ||
+            listing.productName.toLowerCase().includes(q) ||
+            listing.variety.includes(searchQuery) ||
+            listing.sellerName.includes(searchQuery),
         );
       }
 
-      // Apply sorting
       switch (sortBy) {
         case 'price_low':
-          demoListings.sort((a, b) => a.pricePerUnit - b.pricePerUnit);
+          resultListings.sort((a, b) => a.pricePerUnit - b.pricePerUnit);
           break;
         case 'price_high':
-          demoListings.sort((a, b) => b.pricePerUnit - a.pricePerUnit);
+          resultListings.sort((a, b) => b.pricePerUnit - a.pricePerUnit);
           break;
         case 'quantity':
-          demoListings.sort((a, b) => b.quantity - a.quantity);
+          resultListings.sort((a, b) => b.quantity - a.quantity);
           break;
         case 'rating':
-          demoListings.sort((a, b) => b.sellerRating - a.sellerRating);
-          break;
-        case 'nearest':
-          // For demo, randomize
-          demoListings.sort(() => Math.random() - 0.5);
+          resultListings.sort((a, b) => b.sellerRating - a.sellerRating);
           break;
         case 'newest':
         default:
-          demoListings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          resultListings.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
           break;
       }
 
-      setListings(demoListings);
-      setInquiries(demoInquiries);
-      setAnalytics(demoAnalytics);
-      setSupplyChain(demoSupplyChain);
-
+      setListings(resultListings);
+      setInquiries((inquiriesPayload?.data ?? []) as BuyerInquiry[]);
+      setAnalytics((analyticsPayload?.data ?? null) as MarketAnalytics | null);
+      setSupplyChain((supplyChainPayload?.data ?? []) as SupplyChainNode[]);
     } catch (error) {
       console.error('Error fetching marketplace data:', error);
+      toast({
+        title: 'تعذّر تحميل بيانات السوق',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -590,7 +384,7 @@ const SmartMarketplace: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">السوق الذكي المتكامل</h1>
           <p className="text-gray-600">منصة ربط المزارعين والتجار مع تتبع سلسلة التوريد</p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-gray-500" />
@@ -707,6 +501,8 @@ const SmartMarketplace: React.FC = () => {
           </Card>
         </div>
       )}
+
+      <SimulatedDataNotice />
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

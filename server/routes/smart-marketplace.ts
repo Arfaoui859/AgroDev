@@ -214,6 +214,17 @@ const mockSupplyChainNodes = [
   }
 ];
 
+/** Provenance attached to every response so seeded demonstration data is never
+ * mistaken for real marketplace activity. AgroGrowth has no marketplace
+ * database wired yet, so listings, inquiries, analytics and supply-chain nodes
+ * all come from the seeded dataset below. */
+const SIMULATED_PROVENANCE = {
+  dataSource: "simulated" as const,
+  isRealData: false,
+  disclaimer:
+    "بيانات سوق توضيحية وليست عروضاً حقيقية من منتجين أو مشترين. لا تعتمد عليها لإتمام صفقات.",
+} as const;
+
 export const getMarketplaceListings: RequestHandler = (req, res) => {
   try {
     const { category = 'all', location = 'all', sort = 'newest', search = '' } = req.query;
@@ -259,7 +270,8 @@ export const getMarketplaceListings: RequestHandler = (req, res) => {
     
     res.json({
       success: true,
-      data: filteredListings
+      data: filteredListings,
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -273,7 +285,8 @@ export const getMarketplaceInquiries: RequestHandler = (req, res) => {
   try {
     res.json({
       success: true,
-      data: mockInquiries
+      data: mockInquiries,
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -287,7 +300,8 @@ export const getMarketplaceAnalytics: RequestHandler = (req, res) => {
   try {
     res.json({
       success: true,
-      data: mockAnalytics
+      data: mockAnalytics,
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -301,7 +315,8 @@ export const getSupplyChainNodes: RequestHandler = (req, res) => {
   try {
     res.json({
       success: true,
-      data: mockSupplyChainNodes
+      data: mockSupplyChainNodes,
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({

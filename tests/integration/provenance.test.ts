@@ -177,3 +177,24 @@ describe("🏷️ Uniform provenance contract across AI endpoints", () => {
     expect(res.body.modelSource).toBe("rule-based-engine");
   });
 });
+
+describe("marketplace data provenance", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = createServer();
+  });
+
+  it.each([
+    "/api/marketplace/listings",
+    "/api/marketplace/inquiries",
+    "/api/marketplace/analytics",
+    "/api/supply-chain/nodes",
+  ])("labels %s as simulated so demo data is not read as real", async (path) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(200);
+    expect(res.body.dataSource).toBe("simulated");
+    expect(res.body.isRealData).toBe(false);
+    expect(typeof res.body.disclaimer).toBe("string");
+  });
+});
