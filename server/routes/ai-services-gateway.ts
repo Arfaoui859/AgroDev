@@ -25,6 +25,14 @@ import { probeService } from "../services/providers/serviceProbe";
 import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
 
 /**
+ * Model-source markers that mean "this service is not running a model trained
+ * on real field data". Shared with the health view so a reachable-but-synthetic
+ * service is labelled honestly instead of shown as production inference.
+ */
+const HEURISTIC_MODEL_SOURCE_RE =
+  /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i;
+
+/**
  * Normalize a service base URL. Render's `fromService` `hostport` property yields
  * "host:port" with no scheme, and Docker/Render sometimes supply a trailing slash.
  * Axios needs an absolute URL, so we prepend http:// when the scheme is missing.
@@ -997,9 +1005,21 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
         const checkStart = Date.now();
         try {
           const response = await axios.get(`${service.url}/health`, { timeout: 3000 });
+          // A reachable service is not evidence of a trained model: the bundled
+          // services self-report "synthetic-demo"/"heuristic-demo" in their own
+          // /health payload. Surface that so the monitoring view does not
+          // present synthetic inference as production model output.
+          const declared =
+            response.data?.model_source ?? response.data?.modelSource ?? null;
+          const modelSource = typeof declared === "string" ? declared : null;
+          const heuristic =
+            modelSource !== null && HEURISTIC_MODEL_SOURCE_RE.test(modelSource);
           return {
             ...service,
             status: "available",
+            modelSource,
+            isRealModel: modelSource !== null && !heuristic,
+            modelTrainedOnSyntheticData: heuristic,
             responseTime: Date.now() - checkStart,
             lastChecked: new Date().toISOString()
           };
@@ -1031,12 +1051,18 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
 
     const availableCount = serviceResults.filter(s => s.status === "available").length;
     const unavailableCount = serviceResults.length - availableCount;
+    // Services that answer /health but self-declare synthetic/heuristic models.
+    const syntheticCount = serviceResults.filter(
+      (s: any) => s.modelTrainedOnSyntheticData === true,
+    ).length;
 
     const results = {
       overview: {
         totalServices: serviceResults.length,
         availableServices: availableCount,
         unavailableServices: unavailableCount,
+        /** Reachable services whose own /health reports a synthetic/heuristic model. */
+        syntheticModelServices: syntheticCount,
         lastUpdated: new Date().toISOString(),
         checkDuration: Date.now() - startTime,
       },
@@ -1051,7 +1077,9 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
       note:
         unavailableCount > 0
           ? "بعض خدمات الذكاء الاصطناعي غير متاحة؛ يتم استخدام محرك القواعد الزراعية كبديل شفاف."
-          : "جميع خدمات الذكاء الاصطناعي تعمل بشكل طبيعي",
+          : syntheticCount > 0
+            ? "جميع الخدمات تعمل، لكن بعضها مصرّح بأنه مدرّب على بيانات اصطناعية (model_source: synthetic-demo) وليس على بيانات حقلية موثّقة."
+            : "جميع خدمات الذكاء الاصطناعي تعمل بشكل طبيعي",
     };
 
     // Always return 200 status since unavailable services are expected in development
@@ -1064,6 +1092,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
         totalServices: 5,
         availableServices: 0,
         unavailableServices: 5,
+        syntheticModelServices: 0,
         lastUpdated: new Date().toISOString(),
         checkDuration: 0
       },

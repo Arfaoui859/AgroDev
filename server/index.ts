@@ -353,6 +353,11 @@ export function createServer() {
       "/api/ip-management",
       "/api/emerging-tech",
       "/api/trader-dashboard",
+      // Investor and agronomist dashboards generate their figures from seeded
+      // demo generators (no licensed market feed, no farm database behind
+      // them). Mounted at /api/investor/* and /api/agronomist-dashboard/*.
+      "/api/investor",
+      "/api/agronomist-dashboard",
     ],
     withSimulatedProvenance("simulated"),
   );

@@ -24,6 +24,10 @@ interface ServiceHealth {
   lastChecked: string;
   responseTime?: number;
   error?: string;
+  /** Model provenance the service declares in its own /health payload. */
+  modelSource?: string | null;
+  /** True when the service reports a synthetic/heuristic model, not a trained one. */
+  modelTrainedOnSyntheticData?: boolean;
 }
 
 interface AIHealthResponse {
@@ -31,6 +35,8 @@ interface AIHealthResponse {
     totalServices: number;
     availableServices: number;
     unavailableServices: number;
+    /** Reachable services that self-report synthetic/heuristic models. */
+    syntheticModelServices?: number;
     lastUpdated: string;
   };
   services: ServiceHealth[];
@@ -204,6 +210,21 @@ const AIServicesTest: React.FC = () => {
           </Alert>
         )}
 
+        {/* Reachability is not the same as a trained model. The bundled services
+            answer /health while declaring synthetic/heuristic models, so state
+            that plainly instead of implying validated inference. */}
+        {healthData && (healthData.overview.syntheticModelServices ?? 0) > 0 && (
+          <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {healthData.overview.syntheticModelServices} من الخدمات المتاحة تُصرّح بأنها
+              مدرّبة على بيانات اصطناعية (model_source: synthetic-demo / heuristic-demo)،
+              وليست مدرّبة على بيانات حقلية موثّقة. نتائجها مؤشرات مساعدة وليست توصيات
+              معتمدة.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Honest AI-backend disclosure: a microservice answering /health is not
             the same as a trained model producing its output. Show whether a real
             LLM provider is wired up, and name the rule-based fallback when it is
@@ -265,6 +286,15 @@ const AIServicesTest: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center gap-4">
+                      {service.modelTrainedOnSyntheticData && (
+                        <Badge
+                          variant="outline"
+                          className="border-amber-300 bg-amber-50 text-amber-800"
+                          title={`model_source: ${service.modelSource}`}
+                        >
+                          بيانات اصطناعية
+                        </Badge>
+                      )}
                       {service.responseTime && (
                         <div className="text-xs text-muted-foreground">
                           {service.responseTime}ms

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { DataProvenanceBanner } from '../components/DataProvenanceBanner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -317,6 +318,9 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
 
   return (
     <div className={`container mx-auto p-6 space-y-6 ${isArabic ? 'rtl' : 'ltr'}`}>
+      {/* These dashboards are generated from seeded demo data, not real farm
+          records; disclose that before the KPI cards. */}
+      <DataProvenanceBanner />
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>

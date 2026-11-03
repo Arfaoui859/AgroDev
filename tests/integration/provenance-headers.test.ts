@@ -71,6 +71,18 @@ describe("🗂  Simulated-data provenance headers", () => {
     "/api/trader-dashboard/orders",
     "/api/livestock-management/animals",
     "/api/livestock-management/feed-inventory",
+    // Investor and agronomist dashboards are generated from seeded demo
+    // generators: fabricated returns, portfolios and supervised farms.
+    "/api/investor/dashboard",
+    "/api/investor/opportunities",
+    "/api/investor/profitability",
+    "/api/investor/insights",
+    "/api/investor/portfolio",
+    "/api/agronomist-dashboard/overview",
+    "/api/agronomist-dashboard/farms",
+    "/api/agronomist-dashboard/disease-analyses",
+    "/api/agronomist-dashboard/recommendations",
+    "/api/agronomist-dashboard/training-programs",
   ];
 
   test.each(simulatedPaths)(
