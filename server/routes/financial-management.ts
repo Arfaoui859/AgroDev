@@ -900,7 +900,36 @@ export async function getFinancialSummary(req: Request, res: Response) {
       });
     }
     
-    // Calculate trends (compare with previous period)
+    // Trends compare the selected period with the immediately preceding one of
+    // the same length. Computed from the stored records — never hardcoded.
+    const periodMonths =
+      period === 'monthly' ? 1 : period === 'quarterly' ? 3 : 12;
+    const monthStart = period === 'monthly' && month
+      ? parseInt(month as string) - 1
+      : period === 'quarterly' && quarter
+        ? (parseInt(quarter as string) - 1) * 3
+        : 0;
+    const previousStart = monthStart - periodMonths;
+    const inWindow = (date: Date) => {
+      const idx = date.getMonth();
+      return idx >= previousStart && idx < monthStart;
+    };
+    const previousExpenses = expenses.filter(exp =>
+      (!farmerId || exp.farmerId === farmerId) &&
+      new Date(exp.date).getFullYear() === currentYear &&
+      inWindow(new Date(exp.date))
+    );
+    const previousRevenues = revenues.filter(rev =>
+      (!farmerId || rev.farmerId === farmerId) &&
+      rev.seasonYear === currentYear &&
+      inWindow(new Date(rev.saleDate))
+    );
+    const previousIncome = previousRevenues.reduce((s, r) => s + r.totalRevenue, 0);
+    const previousExpenseTotal = previousExpenses.reduce((s, e) => s + e.amount, 0);
+    const previousProfit = previousIncome - previousExpenseTotal;
+    const growth = (current: number, previous: number) =>
+      previous === 0 ? 0 : Number((((current - previous) / Math.abs(previous)) * 100).toFixed(1));
+
     const summary: FinancialSummary = {
       farmerId: farmerId as string || 'current-farmer',
       period: period as 'monthly' | 'quarterly' | 'yearly',
@@ -911,14 +940,14 @@ export async function getFinancialSummary(req: Request, res: Response) {
       totalExpenses,
       netProfit,
       profitMargin,
-      avgMonthlyProfit: netProfit / (period === 'monthly' ? 1 : period === 'quarterly' ? 3 : 12),
+      avgMonthlyProfit: netProfit / periodMonths,
       topPerformingCrop,
       highestExpenseCategory: AIFinancialAnalysisEngine.translateCategory(highestExpenseCategory),
       cashFlow,
       trends: {
-        incomeGrowth: 5.2, // Mock data for now
-        expenseGrowth: 3.1,
-        profitGrowth: 8.7
+        incomeGrowth: growth(totalIncome, previousIncome),
+        expenseGrowth: growth(totalExpenses, previousExpenseTotal),
+        profitGrowth: growth(netProfit, previousProfit)
       }
     };
     

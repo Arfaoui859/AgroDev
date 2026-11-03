@@ -5,6 +5,10 @@ import fs from "fs/promises";
 import path from "path";
 import { RawSoilData, SoilAnalysisResponse } from "@shared/api";
 import { markSimulated, markReal } from "../lib/provenance";
+import {
+  chatCompleteDetailed,
+  isLLMConfigured,
+} from "../services/providers/llmProvider";
 
 // Resolve the project root from the current working directory. Using import.meta
 // here breaks CommonJS consumers (e.g. Jest) that load this module.
@@ -80,6 +84,21 @@ async function callAIService(
   systemPrompt: string,
   userMessage: string
 ): Promise<{ text: string; real: boolean }> {
+  // Prefer the shared provider adapter: it already handles Gemini, OpenRouter,
+  // Groq, Together, Ollama and any OpenAI-compatible endpoint with timeouts and
+  // retries. Without it, only the raw OPENAI_* env vars below would work, so a
+  // deployment configured for another provider silently fell back to demo data.
+  if (isLLMConfigured()) {
+    const result = await chatCompleteDetailed(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      { temperature: 0.3, maxTokens: 4096, json: true },
+    );
+    return { text: result.text, real: true };
+  }
+
   try {
     // If OpenAI API is configured
     if (AI_SERVICE_URL.includes("openai") && AI_API_KEY) {
