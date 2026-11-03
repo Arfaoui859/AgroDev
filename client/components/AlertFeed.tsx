@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DataProvenanceBanner } from './DataProvenanceBanner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -206,6 +207,8 @@ const AlertFeed: React.FC<AlertFeedProps> = ({
 
   return (
     <Card className="w-full">
+      {/* Alerts come from the seeded demo feed, not live field sensors. */}
+      <DataProvenanceBanner className="m-3" />
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

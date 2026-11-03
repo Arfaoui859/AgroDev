@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -359,6 +360,8 @@ const AlertHistory: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-7xl" dir="rtl">
+      {/* Alert history is served from the seeded demo feed, not live sensors. */}
+      <DataProvenanceBanner />
       <div className="flex items-center justify-between">
         <div className="flex gap-3">
           <Button variant="outline" size="sm" onClick={fetchAlerts}>

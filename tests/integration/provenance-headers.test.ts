@@ -83,6 +83,11 @@ describe("🗂  Simulated-data provenance headers", () => {
     "/api/agronomist-dashboard/disease-analyses",
     "/api/agronomist-dashboard/recommendations",
     "/api/agronomist-dashboard/training-programs",
+    // The alert/task feed serves a seeded fixture for `user-123`; there is no
+    // per-farmer alert store behind it.
+    "/api/alerts/user/user-123",
+    "/api/alerts/user/user-123/stats",
+    "/api/tasks/user/user-123/today",
   ];
 
   test.each(simulatedPaths)(

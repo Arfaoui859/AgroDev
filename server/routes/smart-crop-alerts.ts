@@ -1,7 +1,19 @@
 import express from "express";
 import { safeErrorMessage } from "../lib/errors";
+import { markSimulated } from "../lib/provenance";
 
 const router = express.Router();
+
+/**
+ * Every endpoint in this router answers from the seeded `alertsDB` / `tasksDB`
+ * fixtures below — there is no per-farmer alert feed or task store behind them.
+ * The SPA shows these on the farmer's alert and task screens, so they are
+ * stamped as simulated to avoid presenting demo fixtures as live field alerts.
+ */
+router.use(["/alerts", "/tasks"], (_req, res, next) => {
+  markSimulated(res, "simulated");
+  next();
+});
 
 // Types and interfaces for smart crop alerts
 interface AlertData {
