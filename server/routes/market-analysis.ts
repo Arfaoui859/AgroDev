@@ -1,4 +1,5 @@
 import express from 'express';
+import { seededRandom } from '../lib/seededRandom';
 
 const router = express.Router();
 
@@ -64,20 +65,26 @@ function generatePriceData(crop: string, days: number = 30) {
   const data = [];
   let currentPrice = basePrice;
   const today = new Date();
+  // Seed from crop + day so the same simulated series is returned for every
+  // request within a day. The payload is labelled simulated either way, but a
+  // value that jitters per poll reads like a live feed that is moving.
+  const rnd = seededRandom(
+    `market-price:${crop}:${today.toISOString().slice(0, 10)}`,
+  );
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
     
     // Add realistic price volatility
-    const volatility = 0.05 + Math.random() * 0.1;
-    const change = (Math.random() - 0.5) * volatility;
+    const volatility = 0.05 + rnd() * 0.1;
+    const change = (rnd() - 0.5) * volatility;
     currentPrice = Math.max(0.1, currentPrice * (1 + change));
     
     data.push({
       date: date.toISOString().split('T')[0],
       price: parseFloat(currentPrice.toFixed(2)),
-      volume: Math.floor(Math.random() * 1000) + 100,
+      volume: Math.floor(rnd() * 1000) + 100,
       change: i === 0 ? 0 : parseFloat((change * 100).toFixed(2))
     });
   }
@@ -100,6 +107,9 @@ function generatePredictions(crop: string, historicalData: any[]) {
   };
   
   const factors = seasonalFactors[crop] || Array(12).fill(1.0);
+  const rnd = seededRandom(
+    `market-predict:${crop}:${new Date().toISOString().slice(0, 10)}`,
+  );
   const currentMonth = new Date().getMonth();
   
   for (let i = 1; i <= 30; i++) {
@@ -108,7 +118,7 @@ function generatePredictions(crop: string, historicalData: any[]) {
     const futureMonth = futureDate.getMonth();
     
     const seasonalMultiplier = factors[futureMonth];
-    const trendFactor = 1 + (Math.random() - 0.5) * 0.03;
+    const trendFactor = 1 + (rnd() - 0.5) * 0.03;
     
     predictedPrice = predictedPrice * seasonalMultiplier * trendFactor;
     
@@ -118,9 +128,9 @@ function generatePredictions(crop: string, historicalData: any[]) {
       confidence: Math.max(0.6, 0.95 - (i * 0.01)),
       factors: {
         seasonal: seasonalMultiplier,
-        weather: 1 + (Math.random() - 0.5) * 0.05,
-        demand: 1 + (Math.random() - 0.5) * 0.03,
-        supply: 1 + (Math.random() - 0.5) * 0.04
+        weather: 1 + (rnd() - 0.5) * 0.05,
+        demand: 1 + (rnd() - 0.5) * 0.03,
+        supply: 1 + (rnd() - 0.5) * 0.04
       }
     });
   }
@@ -130,9 +140,11 @@ function generatePredictions(crop: string, historicalData: any[]) {
 
 // Get current market prices
 router.get('/prices/current', (req, res) => {
+  const dayBucket = new Date().toISOString().slice(0, 10);
   const currentPrices = tunisianCrops.map(crop => {
     const priceData = generatePriceData(crop.id, 1);
     const prediction = generatePredictions(crop.id, priceData);
+    const rnd = seededRandom(`market-current:${crop.id}:${dayBucket}`);
     
     return {
       id: crop.id,
@@ -140,9 +152,9 @@ router.get('/prices/current', (req, res) => {
       category: crop.category,
       currentPrice: priceData[0].price,
       currency: 'TND',
-      change24h: parseFloat(((Math.random() - 0.5) * 10).toFixed(2)),
+      change24h: parseFloat(((rnd() - 0.5) * 10).toFixed(2)),
       volume: priceData[0].volume,
-      trend: Math.random() > 0.5 ? 'up' : 'down',
+      trend: rnd() > 0.5 ? 'up' : 'down',
       nextWeekForecast: prediction[6].predictedPrice,
       confidence: prediction[6].confidence
     };
@@ -173,7 +185,9 @@ router.get('/prices/history/:cropId', (req, res) => {
       highest: Math.max(...historicalData.map(d => d.price)),
       lowest: Math.min(...historicalData.map(d => d.price)),
       average: parseFloat((historicalData.reduce((sum, d) => sum + d.price, 0) / historicalData.length).toFixed(2)),
-      volatility: parseFloat((Math.random() * 15 + 5).toFixed(2))
+      volatility: parseFloat(
+        (seededRandom(`market-vol:${cropId}:${days}`)() * 15 + 5).toFixed(2),
+      )
     }
   }));
 });
@@ -192,8 +206,9 @@ router.get('/predictions/:cropId', (req, res) => {
   const predictions = generatePredictions(cropId, historicalData).slice(0, days);
   
   // Analysis of factors affecting price
+  const arnd = seededRandom(`market-analysis:${cropId}:${days}`);
   const analysis = {
-    outlook: Math.random() > 0.5 ? 'bullish' : 'bearish',
+    outlook: arnd() > 0.5 ? 'bullish' : 'bearish',
     keyFactors: [
       'تقلبات الطقس المتوقعة',
       'الطلب من الأسواق الأوروبية',
@@ -201,8 +216,8 @@ router.get('/predictions/:cropId', (req, res) => {
       'أسعار الطاقة والنقل',
       'السياسات الحكومية'
     ],
-    riskLevel: ['منخفض', 'متوسط', 'عالي'][Math.floor(Math.random() * 3)],
-    recommendation: Math.random() > 0.5 ? 'شراء' : 'انتظار'
+    riskLevel: ['منخفض', 'متوسط', 'عالي'][Math.floor(arnd() * 3)],
+    recommendation: arnd() > 0.5 ? 'شراء' : 'انتظار'
   };
   
   res.json(simulated({
@@ -333,6 +348,7 @@ router.get('/comparison/:cropId', (req, res) => {
   }
   
   const tunisianPrice = generatePriceData(cropId, 1)[0].price;
+  const crnd = seededRandom(`market-comparison:${cropId}`);
   
   const comparison = {
     crop: crop,
@@ -343,22 +359,22 @@ router.get('/comparison/:cropId', (req, res) => {
     },
     regionalPrices: {
       algeria: {
-        price: parseFloat((tunisianPrice * (0.9 + Math.random() * 0.2)).toFixed(2)),
+        price: parseFloat((tunisianPrice * (0.9 + crnd() * 0.2)).toFixed(2)),
         currency: 'DZD',
         exchangeRate: 14.5
       },
       morocco: {
-        price: parseFloat((tunisianPrice * (0.95 + Math.random() * 0.1)).toFixed(2)),
+        price: parseFloat((tunisianPrice * (0.95 + crnd() * 0.1)).toFixed(2)),
         currency: 'MAD',
         exchangeRate: 1.1
       },
       libya: {
-        price: parseFloat((tunisianPrice * (1.1 + Math.random() * 0.2)).toFixed(2)),
+        price: parseFloat((tunisianPrice * (1.1 + crnd() * 0.2)).toFixed(2)),
         currency: 'LYD',
         exchangeRate: 0.21
       }
     },
-    competitiveness: Math.random() > 0.5 ? 'competitive' : 'expensive',
+    competitiveness: crnd() > 0.5 ? 'competitive' : 'expensive',
     exportOpportunities: [
       'السوق الأوروبي - طلب مرتفع',
       'دول الخليج - جودة عالية مطلوبة',

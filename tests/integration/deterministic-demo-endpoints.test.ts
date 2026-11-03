@@ -116,3 +116,31 @@ describe("🌐 Public data API is stable across requests", () => {
     expect(res.body.meta.dataSource).toBe("simulated");
   });
 });
+
+describe("📈 Simulated market-analysis series are stable", () => {
+  let app: express.Application;
+  beforeAll(() => {
+    app = createServer();
+  });
+
+  test("two consecutive current-price calls return the same figures", async () => {
+    const a = await request(app).get("/api/market-analysis/prices/current");
+    const b = await request(app).get("/api/market-analysis/prices/current");
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+    expect(a.body).toEqual(b.body);
+    // Simulated provenance travels in headers for the array-shaped response.
+    expect(a.headers["x-data-provenance"]).toBe("simulated");
+    expect(a.headers["x-is-real-data"]).toBe("false");
+  });
+
+  test("two consecutive prediction calls return the same figures", async () => {
+    const a = await request(app).get("/api/market-analysis/predictions/olive");
+    const b = await request(app).get("/api/market-analysis/predictions/olive");
+    expect(a.status).toBe(200);
+    expect(a.body.predictions).toEqual(b.body.predictions);
+    expect(a.body.analysis).toEqual(b.body.analysis);
+    expect(a.body.dataSource).toBe("simulated");
+    expect(a.body.isRealData).toBe(false);
+  });
+});
