@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { Request, Response } from "express";
 
 // Types for investor dashboard
@@ -450,7 +451,7 @@ export const getInvestmentOpportunities = async (
     res.status(500).json({
       success: false,
       error: "Failed to get investment opportunities",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -486,7 +487,7 @@ export const getProfitabilityAnalysis = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get profitability analysis",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -525,7 +526,7 @@ export const getMarketInsights = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get market insights",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -549,7 +550,7 @@ export const getInvestorPortfolio = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get investor portfolio",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -585,7 +586,7 @@ export const getInvestorDashboard = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get investor dashboard",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -619,7 +620,7 @@ export const createInvestment = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to create investment",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };

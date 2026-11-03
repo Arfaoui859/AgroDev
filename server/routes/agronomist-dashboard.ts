@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import express from 'express';
 
 const router = express.Router();
@@ -645,7 +646,7 @@ router.get('/overview', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving agronomist dashboard data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -684,7 +685,7 @@ router.get('/farms', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving farms data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -720,7 +721,7 @@ router.get('/disease-analyses', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving disease analyses',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -762,7 +763,7 @@ router.put('/disease-analyses/:analysisId/review', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error reviewing disease analysis',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -804,7 +805,7 @@ router.get('/recommendations', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving recommendations',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -849,7 +850,7 @@ router.post('/recommendations', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error creating recommendation',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -884,7 +885,7 @@ router.get('/training-programs', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving training programs',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -938,7 +939,7 @@ router.post('/training-programs', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error creating training program',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -972,7 +973,7 @@ router.get('/performance-analysis', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving performance analysis',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -992,7 +993,7 @@ router.get('/metrics', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving expert metrics',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });

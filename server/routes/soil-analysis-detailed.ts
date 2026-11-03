@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { RequestHandler } from "express";
 import axios from "axios";
 import fs from "fs/promises";
@@ -525,7 +526,7 @@ export const analyzeSoilBatch: RequestHandler = async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Batch soil analysis failed",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };

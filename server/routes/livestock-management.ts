@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import express from "express";
 
 const router = express.Router();
@@ -465,7 +466,7 @@ router.get("/animals", (req, res) => {
     res.status(500).json({
       success: false,
       message: "خطأ في استرجاع بيانات الحيوانات",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 });
@@ -492,7 +493,7 @@ router.get("/animals/:animalId", (req, res) => {
     res.status(500).json({
       success: false,
       message: "خطأ في استرجاع ��يانات الحيوان",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 });
@@ -517,7 +518,7 @@ router.get("/health-alerts", (req, res) => {
     res.status(500).json({
       success: false,
       message: "خطأ في استرجاع التنبيهات الصحية",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 });
@@ -556,7 +557,7 @@ router.get("/breeding-schedule", (req, res) => {
     res.status(500).json({
       success: false,
       message: "خطأ في استرجاع جدول التناسل",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 });
@@ -614,7 +615,7 @@ router.get("/feed-inventory", (req, res) => {
     res.status(500).json({
       success: false,
       message: "خطأ في استرجاع مخزون الأعلاف",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 });
@@ -659,7 +660,7 @@ router.post("/feed-optimization", (req, res) => {
     res.status(500).json({
       success: false,
       message: "خطأ في تحليل تحسين الأعلاف",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 });
@@ -746,7 +747,7 @@ router.get("/production-analytics", (req, res) => {
     res.status(500).json({
       success: false,
       message: "خطأ في تحليل الإنتاج",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 });

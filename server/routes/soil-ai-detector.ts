@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import express from 'express';
 import { markSimulated } from '../lib/provenance';
 
@@ -904,7 +905,7 @@ router.post('/analyze', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في تحليل التربة بالذكاء الاصطناعي',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -936,7 +937,7 @@ router.get('/ideal-profile', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في استرجاع المعايير المثالية للتربة',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -982,7 +983,7 @@ router.get('/history/:fieldId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في استرجاع تاريخ التحليلات',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -1035,7 +1036,7 @@ router.get('/alerts', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في استرجاع التنبيهات',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -1060,7 +1061,7 @@ router.patch('/alerts/:alertId/resolve', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ ف�� تسوية التنبيه',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -1116,7 +1117,7 @@ router.get('/statistics', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في استرجاع الإحصائيات',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });

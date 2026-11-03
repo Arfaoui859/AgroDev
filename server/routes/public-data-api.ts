@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { Request, Response, NextFunction } from "express";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
@@ -523,7 +524,7 @@ export const getMarketPrices = [
     } catch (error) {
       res.status(500).json({
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: safeErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -599,7 +600,7 @@ export const getProductionData = [
     } catch (error) {
       res.status(500).json({
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: safeErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -663,7 +664,7 @@ export const getExportData = [
     } catch (error) {
       res.status(500).json({
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: safeErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -714,7 +715,7 @@ export const getWeatherData = [
     } catch (error) {
       res.status(500).json({
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: safeErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -761,7 +762,7 @@ export const getAPIKeyInfo = [
     } catch (error) {
       res.status(500).json({
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: safeErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -799,7 +800,7 @@ export const getPublicStats = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       error: "Internal server error",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -850,7 +851,7 @@ export const createAPIKey = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       error: "Internal server error",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };

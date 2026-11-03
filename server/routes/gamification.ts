@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { Request, Response } from "express";
 
 // Types for gamification system
@@ -323,7 +324,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get user profile",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -384,7 +385,7 @@ export const awardXP = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to award XP",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -423,7 +424,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get leaderboard",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -508,7 +509,7 @@ export const getAvailableAchievements = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get achievements",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -538,7 +539,7 @@ export const getUserActivity = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get user activity",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -582,7 +583,7 @@ export const getGamificationStats = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get gamification stats",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };

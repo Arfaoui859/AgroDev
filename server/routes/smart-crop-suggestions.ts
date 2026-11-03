@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import express from 'express';
 import { SIMULATED_DISCLAIMER_AR, SIMULATED_DISCLAIMER_EN } from '../lib/provenance';
 
@@ -934,7 +935,7 @@ router.post('/recommendations', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في إنشاء توصيات المحاصيل',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -974,7 +975,7 @@ router.post('/rotation-plans', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في إنشاء خطط الدورة الزراعية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -1026,7 +1027,7 @@ router.get('/crop-database', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في استرجاع قاعدة بيانات المحاصيل',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -1074,7 +1075,7 @@ router.get('/market-analysis/:cropId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'خطأ في تحليل السوق',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });

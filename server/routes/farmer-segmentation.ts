@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { Request, Response } from "express";
 
 // Types for farmer segmentation
@@ -776,7 +777,7 @@ export const getFarmerSegments = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get farmer segments",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -880,7 +881,7 @@ export const segmentFarmer = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to segment farmer",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -947,7 +948,7 @@ export const getAllFarmersSegmentation = async (
     res.status(500).json({
       success: false,
       error: "Failed to get all farmers segmentation",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -1023,7 +1024,7 @@ export const getSegmentationAnalytics = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get segmentation analytics",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -1076,7 +1077,7 @@ export const updateFarmerProfile = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to update farmer profile",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };

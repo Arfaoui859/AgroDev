@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import express from 'express';
 
 const router = express.Router();
@@ -449,7 +450,7 @@ router.get('/overview', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving farmer dashboard data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -467,7 +468,7 @@ router.get('/soil-status', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving soil status',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -485,7 +486,7 @@ router.get('/crops', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving crops data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -509,7 +510,7 @@ router.get('/tasks/today', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving today\'s tasks',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -527,7 +528,7 @@ router.get('/tasks', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving tasks data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -548,7 +549,7 @@ router.put('/tasks/:taskId/status', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating task status',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -568,7 +569,7 @@ router.get('/alerts/active', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving active alerts',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -589,7 +590,7 @@ router.put('/alerts/:alertId/resolve', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error resolving alert',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -607,7 +608,7 @@ router.get('/market-prices', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving market prices',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -625,7 +626,7 @@ router.get('/iot-sensors', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving IoT sensor data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -643,7 +644,7 @@ router.get('/experts', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving expert communications',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -661,7 +662,7 @@ router.get('/financial-summary', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving financial summary',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });

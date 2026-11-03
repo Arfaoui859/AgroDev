@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { Request, Response } from 'express';
 
 // Financial Data Interfaces
@@ -450,7 +451,7 @@ export async function createExpense(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في إضافة المصروف',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -501,7 +502,7 @@ export async function getExpenses(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في استرجاع المصروفات',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -526,7 +527,7 @@ export async function updateExpense(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في تحديث المصروف',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -551,7 +552,7 @@ export async function deleteExpense(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في حذف المصروف',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -576,7 +577,7 @@ export async function updateRevenue(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في تحديث الإيراد',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -601,7 +602,7 @@ export async function deleteRevenue(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في حذف الإيراد',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -626,7 +627,7 @@ export async function createRevenue(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في إضافة الإيراد',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -679,7 +680,7 @@ export async function getRevenues(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في استرجاع الإيرادات',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -704,7 +705,7 @@ export async function deleteBudgetPlan(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في حذف خطة الميزانية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -819,7 +820,7 @@ export async function getProfitabilityAnalysis(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في تحليل الربحية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -929,7 +930,7 @@ export async function getFinancialSummary(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في إنشاء الملخص المالي',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -1037,7 +1038,7 @@ export async function createBudgetPlan(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في إنشاء خطة الميزانية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -1072,7 +1073,7 @@ export async function getBudgetPlans(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في استرجاع خطط الميزانية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -1106,7 +1107,7 @@ export async function updateBudgetPlan(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في تحديث خطة الميزانية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }

@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { Request, Response } from 'express';
 
 // Advanced Livestock Data Interfaces
@@ -864,7 +865,7 @@ export async function getAnimals(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في استرجاع بيانات الحيوانات',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -894,7 +895,7 @@ export async function getAnimalHealth(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في تحليل الحالة الصحية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -918,7 +919,7 @@ export async function getBreedingRecommendations(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في توليد توصيات التناسل',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -945,7 +946,7 @@ export async function getFeedRecommendations(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في حساب احتياجات التغذية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -969,7 +970,7 @@ export async function optimizeFeedBudget(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في تحسين ميزانية الأعلاف',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -1008,7 +1009,7 @@ export async function getHealthAlerts(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في استرجاع التنبيهات الصحية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }
@@ -1073,7 +1074,7 @@ export async function getLivestockDashboard(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في إنشاء لوحة الثروة الحيوانية',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 }

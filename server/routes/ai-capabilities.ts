@@ -13,6 +13,7 @@
  * never reports a capability as "model-powered" when only rules are available.
  */
 
+import { safeErrorMessage } from '../lib/errors';
 import express, { Request, Response } from "express";
 import { analyzeSoilForUI, recommendCropsForUI } from "../services/ai/cropAdvisor";
 import { isLLMConfigured, getLLMInfo } from "../services/providers/llmProvider";
@@ -395,7 +396,7 @@ router.post("/soil-analysis", async (req: Request, res: Response) => {
   } catch (error) {
     res.status(400).json({
       error: "Invalid soil data",
-      message: error instanceof Error ? error.message : "unknown error",
+      message: safeErrorMessage(error, "unknown error"),
       dataSource: "rule-based",
       isRealData: false,
     });
@@ -411,7 +412,7 @@ router.post("/crop-recommendation", async (req: Request, res: Response) => {
   } catch (error) {
     res.status(400).json({
       error: "Invalid crop request",
-      message: error instanceof Error ? error.message : "unknown error",
+      message: safeErrorMessage(error, "unknown error"),
       dataSource: "rule-based",
       isRealData: false,
     });

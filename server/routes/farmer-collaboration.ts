@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import { Request, Response } from "express";
 
 // Types for collaboration system
@@ -533,7 +534,7 @@ export const getChatRooms = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get chat rooms",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -565,7 +566,7 @@ export const getRoomMessages = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get room messages",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -626,7 +627,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to send message",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -710,7 +711,7 @@ export const getConsultations = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get consultations",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -771,7 +772,7 @@ export const createConsultation = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to create consultation",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -866,7 +867,7 @@ export const getForumPosts = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get forum posts",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -931,7 +932,7 @@ export const createForumPost = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to create forum post",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -963,7 +964,7 @@ export const getPostReplies = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get post replies",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -1005,7 +1006,7 @@ export const getOnlineExperts = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get online experts",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };
@@ -1076,7 +1077,7 @@ export const getCollaborationStats = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to get collaboration stats",
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: safeErrorMessage(error, "Unknown error"),
     });
   }
 };

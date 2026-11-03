@@ -1,3 +1,4 @@
+import { safeErrorMessage } from '../lib/errors';
 import express from 'express';
 
 const router = express.Router();
@@ -565,7 +566,7 @@ router.get('/overview', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving trader dashboard data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -603,7 +604,7 @@ router.get('/inventory', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving inventory data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -645,7 +646,7 @@ router.get('/orders', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving orders data',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -700,7 +701,7 @@ router.post('/orders', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error creating order',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -721,7 +722,7 @@ router.put('/orders/:orderId/status', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating order status',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -763,7 +764,7 @@ router.get('/market-opportunities', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving market opportunities',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -798,7 +799,7 @@ router.get('/alerts', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving inventory alerts',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -819,7 +820,7 @@ router.put('/alerts/:alertId/acknowledge', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error acknowledging alert',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -846,7 +847,7 @@ router.get('/financial-summary', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving financial summary',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -865,7 +866,7 @@ router.get('/metrics', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving trader metrics',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });

@@ -695,7 +695,7 @@ router.get('/weather/:location', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب بيانات الطقس',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
@@ -846,7 +846,7 @@ router.post('/schedule', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في إنشاء جدول الري',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: safeErrorMessage(error, 'Unknown error')
     });
   }
 });
