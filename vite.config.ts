@@ -28,7 +28,12 @@ export default defineConfig(({ command }) => {
       host: "0.0.0.0",
       port: 8080,
       fs: {
-        allow: ["./client", "./shared"],
+        // The SPA entry `index.html` lives at the repo root, so it must be
+        // allow-listed or Vite answers 403 for "/". Allow-list the exact entry
+        // file plus the real source trees and the public dir -- never the whole
+        // root, which would expose backend/config files despite the deny rules
+        // below (Vite gives `allow` precedence over `deny`).
+        allow: ["./index.html", "./client", "./shared", "./public"],
         deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],
       },
       hmr: true,
