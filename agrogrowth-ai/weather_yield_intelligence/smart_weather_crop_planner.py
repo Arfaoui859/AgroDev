@@ -874,6 +874,740 @@ class SmartWeatherCropPlanner:
         
         return recommendations
 
+    # ------------------------------------------------------------------
+    # Climate analysis
+    # ------------------------------------------------------------------
+
+    def _analyze_climate_trends(self, historical_weather: Dict) -> Dict[str, Any]:
+        """تحليل اتجاهات المناخ من المعطيات التاريخية.
+
+        عند غياب سلسلة تاريخية صريحة نُعيد اتجاهات التغير المناخي المرجعية
+        للمنطقة (من قاعدة المعرفة) بدل اختلاق قيم عشوائية.
+        """
+        historical_weather = historical_weather or {}
+        warming_rate = float(
+            historical_weather.get('warming_rate',
+                                   self.climate_change_indicators['temperature_trends']['warming_rate'])
+        )
+        rainfall_change = float(historical_weather.get('rainfall_change_percent', -10.0))
+        extreme_events = float(
+            historical_weather.get('extreme_events_factor',
+                                   self.climate_change_indicators['temperature_trends']['extreme_events_increase'])
+        )
+        return {
+            'warming_rate': warming_rate,
+            'rainfall_change': rainfall_change,
+            'extreme_events': extreme_events,
+            'seasonal_shift_days': self.climate_change_indicators['temperature_trends']['seasonal_shifts'],
+            'trend_direction': (
+                'ارتفاع الحرارة وانخفاض الأمطار'
+                if warming_rate > 0 and rainfall_change < 0
+                else 'مستقر نسبياً'
+            ),
+            'data_basis': 'reference_trends' if not historical_weather else 'historical_input',
+        }
+
+    def _assess_current_weather_conditions(self, current_conditions: Dict) -> Dict[str, Any]:
+        """تقييم الظروف الجوية الحالية مقابل المجالات الملائمة للزراعة."""
+        c = current_conditions or {}
+        temp = float(c.get('temperature', 25.0))
+        humidity = float(c.get('humidity', 60.0))
+        rainfall = float(c.get('recent_rainfall', c.get('annual_rainfall', 0.0)))
+
+        if 15 <= temp <= 30:
+            temp_status = 'ملائم'
+        elif 10 <= temp < 15 or 30 < temp <= 35:
+            temp_status = 'مقبول'
+        else:
+            temp_status = 'مجهد'
+
+        humidity_status = 'ملائم' if 40 <= humidity <= 70 else ('مرتفع' if humidity > 70 else 'منخفض')
+
+        return {
+            'temperature_c': temp,
+            'humidity_percent': humidity,
+            'recent_rainfall_mm': rainfall,
+            'temperature_status': temp_status,
+            'humidity_status': humidity_status,
+            'overall_status': 'ملائم' if temp_status == 'ملائم' else ('مقبول' if temp_status == 'مقبول' else 'غير ملائم'),
+        }
+
+    def _compare_with_historical_averages(self, current_conditions: Dict,
+                                          historical_weather: Dict) -> Dict[str, Any]:
+        """مقارنة الظروف الحالية بالمعدلات التاريخية."""
+        c = current_conditions or {}
+        h = historical_weather or {}
+        cur_temp = float(c.get('temperature', 25.0))
+        avg_temp = float(h.get('average_temperature', 25.0))
+        cur_rain = float(c.get('annual_rainfall', 400.0))
+        avg_rain = float(h.get('annual_rainfall', 400.0))
+
+        temp_anomaly = cur_temp - avg_temp
+        rain_deviation = ((cur_rain - avg_rain) / avg_rain * 100) if avg_rain else 0.0
+
+        return {
+            'temperature_anomaly_c': temp_anomaly,
+            'rainfall_deviation_percent': rain_deviation,
+            'comparison_basis': 'historical_input' if h else 'assumed_normals',
+            'interpretation': (
+                'أدفأ من المعتاد' if temp_anomaly > 1.5 else
+                'أبرد من المعتاد' if temp_anomaly < -1.5 else 'قريب من المعدل'
+            ),
+        }
+
+    def _detect_climate_anomalies(self, current_conditions: Dict,
+                                  historical_weather: Dict) -> List[Dict[str, Any]]:
+        """كشف الشذوذ المناخي (حرارة/أمطار خارج النطاق الطبيعي)."""
+        anomalies = []
+        c = current_conditions or {}
+        temp = float(c.get('temperature', 25.0))
+        rainfall = float(c.get('annual_rainfall', 400.0))
+
+        if temp >= 40:
+            anomalies.append({'type': 'heat_wave', 'name_ar': 'موجة حر', 'severity': 'عالي',
+                              'value': temp})
+        elif temp >= 35:
+            anomalies.append({'type': 'heat_stress', 'name_ar': 'إجهاد حراري', 'severity': 'متوسط',
+                              'value': temp})
+        if temp <= 2:
+            anomalies.append({'type': 'frost', 'name_ar': 'خطر صقيع', 'severity': 'عالي',
+                              'value': temp})
+        if rainfall < 200:
+            anomalies.append({'type': 'drought_risk', 'name_ar': 'خطر جفاف', 'severity': 'متوسط',
+                              'value': rainfall})
+
+        return anomalies
+
+    def _assess_seasonal_outlook(self, current_conditions: Dict,
+                                 climate_trends: Dict) -> Dict[str, Any]:
+        """نظرة موسمية مبنية على الشهر الحالي والاتجاهات المناخية."""
+        month = datetime.now().month
+        season = next(
+            (name for name, info in self.planting_seasons.items() if month in info['months']),
+            'spring',
+        )
+        season_info = self.planting_seasons[season]
+        return {
+            'current_season': season,
+            'season_name_ar': season_info['name_ar'],
+            'favorable_crops': season_info['suitable_crops'],
+            'water_requirement': season_info['characteristics']['water_requirement'],
+            'pest_pressure': season_info['characteristics']['pest_pressure'],
+            'climate_risk_note': (
+                'يُنصح بمراقبة تواتر الظواهر المتطرفة'
+                if float(climate_trends.get('extreme_events', 1.0)) > 1.2
+                else 'ظروف موسمية معتادة'
+            ),
+        }
+
+    # ------------------------------------------------------------------
+    # Crop suitability
+    # ------------------------------------------------------------------
+
+    def _estimate_crop_suitability(self, crop: str, climate_analysis: Dict) -> float:
+        """تقدير ملاءمة محصول للمناخ (0..1) بقواعد صريحة."""
+        zone = climate_analysis.get('climate_zone', {})
+        suitable = zone.get('suitable_crops', [])
+        characteristics = zone.get('characteristics', {})
+        rainfall_range = characteristics.get('annual_rainfall', (200, 800))
+        temp_range = characteristics.get('summer_temp_range', (20, 35))
+
+        score = 0.6 if crop in suitable else 0.3
+
+        current = climate_analysis.get('current_assessment', {})
+        temp = float(current.get('temperature_c', 25.0))
+        if temp_range[0] <= temp <= temp_range[1]:
+            score += 0.2
+        else:
+            score -= 0.15
+
+        recent_rain = float(current.get('recent_rainfall_mm', 0.0))
+        if recent_rain < rainfall_range[0] * 0.2:
+            score -= 0.1  # شح مطري
+
+        return float(max(0.0, min(1.0, score)))
+
+    def _analyze_crop_specific_requirements(self, crop: str,
+                                            climate_analysis: Dict) -> Dict[str, Any]:
+        """متطلبات المحصول المناخية مقابل الظروف المتاحة."""
+        zone = climate_analysis.get('climate_zone', {})
+        characteristics = zone.get('characteristics', {})
+        requirements = {
+            'wheat': {'temp': (10, 25), 'rainfall': (300, 900), 'water_need': 'متوسط'},
+            'barley': {'temp': (8, 26), 'rainfall': (250, 700), 'water_need': 'منخفض'},
+            'corn': {'temp': (18, 32), 'rainfall': (500, 1000), 'water_need': 'مرتفع'},
+            'tomato': {'temp': (18, 28), 'rainfall': (400, 900), 'water_need': 'مرتفع'},
+            'potato': {'temp': (15, 25), 'rainfall': (400, 800), 'water_need': 'مرتفع'},
+            'olive': {'temp': (15, 35), 'rainfall': (300, 700), 'water_need': 'منخفض'},
+            'dates': {'temp': (25, 45), 'rainfall': (50, 300), 'water_need': 'مرتفع'},
+        }
+        req = requirements.get(crop, {'temp': (15, 30), 'rainfall': (300, 800), 'water_need': 'متوسط'})
+
+        return {
+            'crop': crop,
+            'required_temperature_range': req['temp'],
+            'required_rainfall_range': req['rainfall'],
+            'water_requirement': req['water_need'],
+            'zone_matches_rainfall': (
+                characteristics.get('annual_rainfall', (0, 1000))[1] >= req['rainfall'][0]
+            ),
+        }
+
+    def _identify_crop_challenges_opportunities(self, crop: str,
+                                                climate_analysis: Dict) -> Dict[str, Any]:
+        """تحديد التحديات والفرص لمحصول في مناخ معين."""
+        zone = climate_analysis.get('climate_zone', {})
+        challenges = list(zone.get('main_challenges', []))
+        trends = climate_analysis.get('climate_trends', {})
+
+        opportunities = []
+        if crop in zone.get('suitable_crops', []):
+            opportunities.append('المحصول متكيف أصلاً مع المنطقة المناخية')
+        if float(trends.get('warming_rate', 0)) > 0:
+            opportunities.append('إمكانية إدخال أصناف محسّنة للحرارة')
+
+        return {
+            'challenges': challenges or ['لا توجد تحديات جوهرية مسجّلة'],
+            'opportunities': opportunities or ['تحسين الممارسات الزراعية'],
+        }
+
+    def _recommend_climate_adapted_varieties(self, crop: str,
+                                             climate_analysis: Dict) -> List[str]:
+        """توصية أصناف متكيفة مع المناخ (مبادئ عامة، لا أسماء تجارية)."""
+        varieties = {
+            'wheat': ['أصناف قصيرة الساق مقاومة للحرارة', 'أصناف مبكرة النضج لتفادي الجفاف'],
+            'barley': ['أصناف مبكرة متحملة للملوحة'],
+            'corn': ['هجين متوسط النضج', 'أصناف متحملة للإجهاد المائي'],
+            'tomato': ['أصناف مقاومة للحرارة ومتحملة للأمراض الفطرية'],
+            'potato': ['أصناف متحملة للجفاف', 'أصناف مقاومة للفحة المتأخرة'],
+            'olive': ['أصناف متحملة للجفاف وملائمة للزيت'],
+            'dates': ['أصناف متحملة للحرارة العالية والملوحة'],
+        }
+        base = varieties.get(crop, ['أصناف محلية متأقلمة مع الظروف المحلية'])
+        if float(climate_analysis.get('climate_trends', {}).get('warming_rate', 0)) > 0:
+            base = base + ['الاعتماد على أصناف مرنة تجاه تقلب المناخ']
+        return base
+
+    # ------------------------------------------------------------------
+    # Planting timing
+    # ------------------------------------------------------------------
+
+    def _simulate_monthly_conditions(self, month: int,
+                                     climate_analysis: Dict) -> Dict[str, Any]:
+        """محاكاة الظروف المتوقعة لشهر معيّن من المنحنى المناخي للمنطقة.
+
+        ليست قياسات مسجّلة؛ تُشتق من مدى الحرارة/الأمطار للمنطقة المناخية
+        وتُوسم صراحةً كتقدير موسمي.
+        """
+        characteristics = climate_analysis.get('climate_zone', {}).get('characteristics', {})
+        winter = characteristics.get('winter_temp_range', (8, 18))
+        summer = characteristics.get('summer_temp_range', (25, 35))
+        annual_rainfall = characteristics.get('annual_rainfall', (300, 800))
+
+        # منحنى موسمي بسيط: الذروة في يوليوز/أوت، والحد الأدنى في يناير.
+        phase = np.cos((month - 7) / 12 * 2 * np.pi)  # 1 في جويلية، -1 في يناير
+        mid_winter = sum(winter) / 2
+        mid_summer = sum(summer) / 2
+        mid_temp = mid_summer if phase >= 0 else mid_winter
+        amplitude = abs(mid_summer - mid_winter) / 2
+        expected_temp = mid_temp + phase * amplitude * 0.5
+        expected_temp = float(max(winter[0] - 3, min(summer[1] + 3, expected_temp)))
+
+        # الأمطار المتوسطية: معظمها شتاءً.
+        rain_share = max(0.0, (1 - phase) / 2)
+        expected_rainfall = float(rain_share * (sum(annual_rainfall) / 2) / 6.0)
+
+        return {
+            'month': month,
+            'expected_temperature_c': round(expected_temp, 1),
+            'expected_monthly_rainfall_mm': round(expected_rainfall, 1),
+            'estimation_basis': 'seasonal_model',
+            'note': 'تقدير موسمي مبني على نطاقات المناخ الإقليمية وليس قياساً مسجّلاً',
+        }
+
+    def _extract_timing_features(self, month: int, month_conditions: Dict,
+                                 climate_analysis: Dict) -> List[float]:
+        """استخراج متجه الميزات لتوقيت الزراعة (نفس أبعاد نموذج التدريب)."""
+        current = climate_analysis.get('current_assessment', {})
+        location = {'latitude': 35.0, 'elevation': 100.0}
+        trends = climate_analysis.get('climate_trends', {})
+
+        avg_temp = float(month_conditions.get('expected_temperature_c',
+                                              current.get('temperature_c', 25.0)))
+        return [
+            avg_temp,
+            abs(float(current.get('temperature_c', 25.0)) - avg_temp),
+            float(month_conditions.get('expected_monthly_rainfall_mm', 0.0)) * 12,
+            float(current.get('humidity_percent', 60.0)) / 100.0,
+            float(month),
+            float(current.get('humidity_percent', 60.0)),
+            5.0,
+            25.0,
+            float(location['elevation']),
+            float(location['latitude']),
+            0.6,
+            float(trends.get('warming_rate', 0.2)),
+            float(trends.get('rainfall_change', 0.0)),
+            float(trends.get('extreme_events', 1.0)),
+        ]
+
+    def _estimate_monthly_suitability(self, month: int,
+                                      climate_analysis: Dict) -> float:
+        """تقدير ملاءمة الشهر للزراعة بقواعد موسمية."""
+        if month in [3, 4, 5, 10, 11]:
+            return 0.85
+        if month in [12, 1, 2]:
+            return 0.6
+        return 0.3
+
+    def _assess_monthly_risks(self, month: int,
+                              climate_analysis: Dict) -> List[Dict[str, Any]]:
+        """المخاطر الجوية المتوقعة في شهر معيّن."""
+        risks = []
+        if month in [6, 7, 8]:
+            risks.append({'type': 'heat_wave', 'name_ar': 'موجة حر', 'severity': 'متوسط'})
+            risks.append({'type': 'drought', 'name_ar': 'جفاف صيفي', 'severity': 'عالي'})
+        if month in [12, 1]:
+            risks.append({'type': 'frost', 'name_ar': 'صقيع', 'severity': 'متوسط'})
+        if month in [10, 11, 3, 4]:
+            risks.append({'type': 'heavy_rain', 'name_ar': 'أمطار غزيرة', 'severity': 'متوسط'})
+        return risks or [{'type': 'none', 'name_ar': 'مخاطر محدودة', 'severity': 'منخفض'}]
+
+    def _categorize_timing(self, score: float) -> str:
+        """تصنيف ملاءمة التوقيت."""
+        if score >= 0.8:
+            return 'ممتاز'
+        if score >= 0.6:
+            return 'جيد'
+        if score >= 0.4:
+            return 'مقبول'
+        return 'غير مناسب'
+
+    def _get_month_recommended_crops(self, month: int) -> List[str]:
+        """المحاصيل الموصى بها للزراعة في شهر معيّن."""
+        season = next(
+            (info for info in self.planting_seasons.values() if month in info['months']),
+            None,
+        )
+        return list(season['suitable_crops']) if season else ['wheat', 'barley']
+
+    def _get_month_planting_activities(self, month: int) -> List[str]:
+        """الأنشطة الزراعية النموذجية للشهر."""
+        if month in [3, 4, 5]:
+            return ['تحضير الأرض للزراعة الربيعية', 'زراعة المحاصيل الصيفية', 'بدء التسميد']
+        if month in [6, 7, 8]:
+            return ['مراقبة الري', 'مكافحة الآفات الصيفية', 'حصاد المحاصيل المبكرة']
+        if month in [9, 10]:
+            return ['زراعة المحاصيل الخريفية', 'حصاد الصيف', 'تحضير التربة']
+        return ['زراعة الحبوب الشتوية', 'تسميد أساسي', 'حماية من الصقيع']
+
+    def _identify_optimal_planting_windows(self,
+                                           monthly_suitability: List[Dict]) -> List[Dict[str, Any]]:
+        """نوافذ الزراعة المثلى (الأشهر ذات الملاءمة الأعلى)."""
+        ranked = sorted(monthly_suitability, key=lambda m: m['suitability_score'], reverse=True)
+        windows = []
+        for entry in ranked[:4]:
+            windows.append({
+                'month': entry['month'],
+                'month_name_ar': entry['month_name_ar'],
+                'suitability_score': entry['suitability_score'],
+                'suitability_level': entry['suitability_level'],
+                'recommended_crops': entry['recommended_crops'],
+            })
+        return windows
+
+    def _generate_seasonal_recommendations(self, monthly_suitability: List[Dict],
+                                           climate_analysis: Dict) -> List[str]:
+        """توصيات موسمية مبنية على تحليل الأشهر."""
+        best = max(monthly_suitability, key=lambda m: m['suitability_score'])
+        worst = min(monthly_suitability, key=lambda m: m['suitability_score'])
+        return [
+            f"أفضل شهر للزراعة: {best['month_name_ar']} ({best['suitability_level']})",
+            f"يُنصح بتجنّب الزراعة في {worst['month_name_ar']} قدر الإمكان",
+            'اعتمد الري التكميلي خلال الأشهر الجافة',
+            'راقب توقعات الطقس قبل كل عملية زراعية',
+        ]
+
+    # ------------------------------------------------------------------
+    # Weather risk
+    # ------------------------------------------------------------------
+
+    def _identify_regional_weather_risks(self, location: Dict) -> List[Dict[str, Any]]:
+        """المخاطر الجوية الشائعة حسب المنطقة."""
+        region = str(location.get('region', '')).lower()
+        risks = [
+            {'type': 'drought', 'name_ar': 'الجفاف', 'likelihood': 'عالي'},
+            {'type': 'heat_wave', 'name_ar': 'موجات الحر', 'likelihood': 'متوسط'},
+            {'type': 'irregular_rainfall', 'name_ar': 'عدم انتظام الأمطار', 'likelihood': 'عالي'},
+        ]
+        if 'tunis' in region or 'تونس' in str(location.get('region', '')):
+            risks.append({'type': 'flood', 'name_ar': 'فيضانات مفاجئة', 'likelihood': 'متوسط'})
+        return risks
+
+    def _assess_extreme_weather_risk(self, climate_analysis: Dict) -> Dict[str, Any]:
+        """احتمالية الظواهر الجوية المتطرفة."""
+        trends = climate_analysis.get('climate_trends', {})
+        extreme = float(trends.get('extreme_events', 1.0))
+        level = 'عالي' if extreme >= 1.5 else ('متوسط' if extreme >= 1.1 else 'منخفض')
+        return {
+            'level': level,
+            'extreme_events_factor': extreme,
+            'events_considered': ['heat_wave', 'drought', 'heavy_rain', 'frost'],
+        }
+
+    def _analyze_seasonal_weather_risks(self, climate_analysis: Dict) -> List[Dict[str, Any]]:
+        """مخاطر الطقس حسب الموسم الحالي."""
+        month = datetime.now().month
+        return self._assess_monthly_risks(month, climate_analysis)
+
+    def _assess_climate_change_risks(self, climate_analysis: Dict,
+                                     location: Dict) -> Dict[str, Any]:
+        """تأثير التغير المناخي على المنطقة."""
+        trends = climate_analysis.get('climate_trends', {})
+        return {
+            'warming_rate_c_per_decade': float(trends.get('warming_rate', 0.2)),
+            'rainfall_change_percent': float(trends.get('rainfall_change', -10.0)),
+            'risk_level': 'عالي' if float(trends.get('warming_rate', 0.2)) >= 0.3 else 'متوسط',
+            'implications': [
+                'زيادة احتياجات الري',
+                'تقلب مواعيد الزراعة',
+                'ضرورة أصناف مقاومة للحرارة',
+            ],
+        }
+
+    def _analyze_water_security_risks(self, climate_analysis: Dict,
+                                      input_data: Dict) -> Dict[str, Any]:
+        """مخاطر أمن المياه."""
+        zone = climate_analysis.get('climate_zone', {}).get('zone_type', 'mediterranean')
+        base_risk = {'arid': 'عالي', 'semi_arid': 'متوسط', 'mediterranean': 'متوسط'}.get(zone, 'متوسط')
+        return {
+            'risk_level': base_risk,
+            'zone_type': zone,
+            'mitigation': ['تحسين كفاءة الري', 'حصاد مياه الأمطار', 'تنويع مصادر المياه'],
+        }
+
+    def _calculate_overall_weather_risk(self, regional_risks: List,
+                                        extreme_events_risk: Dict,
+                                        seasonal_risks: List) -> str:
+        """المستوى الإجمالي لمخاطر الطقس."""
+        score = 0
+        score += 2 if extreme_events_risk.get('level') == 'عالي' else (
+            1 if extreme_events_risk.get('level') == 'متوسط' else 0)
+        for risk in regional_risks or []:
+            if risk.get('likelihood') == 'عالي':
+                score += 2
+            elif risk.get('likelihood') == 'متوسط':
+                score += 1
+        for risk in seasonal_risks or []:
+            if risk.get('severity') == 'عالي':
+                score += 2
+            elif risk.get('severity') == 'متوسط':
+                score += 1
+        if score >= 7:
+            return 'عالي'
+        if score >= 4:
+            return 'متوسط'
+        return 'منخفض'
+
+    def _prioritize_weather_risks(self, regional_risks: List,
+                                  extreme_events_risk: Dict,
+                                  seasonal_risks: List) -> List[Dict[str, Any]]:
+        """ترتيب المخاطر حسب الأولوية."""
+        weight = {'عالي': 3, 'متوسط': 2, 'منخفض': 1}
+        merged = []
+        for risk in (regional_risks or []):
+            merged.append({'name_ar': risk.get('name_ar'), 'priority': risk.get('likelihood', 'متوسط')})
+        for risk in (seasonal_risks or []):
+            merged.append({'name_ar': risk.get('name_ar'), 'priority': risk.get('severity', 'متوسط')})
+        merged.append({'name_ar': 'ظواهر متطرفة', 'priority': extreme_events_risk.get('level', 'منخفض')})
+        merged.sort(key=lambda r: weight.get(r['priority'], 1), reverse=True)
+        return merged
+
+    # ------------------------------------------------------------------
+    # Adaptation strategies
+    # ------------------------------------------------------------------
+
+    def _recommend_water_management_strategies(self, climate_analysis: Dict,
+                                               weather_risks: Dict) -> List[Dict[str, Any]]:
+        return [
+            {
+                'category': 'إدارة المياه',
+                'title': 'تحويل إلى الري بالتنقيط',
+                'description': 'رفع كفاءة استخدام المياه إلى أكثر من 90%',
+                'cost_level': 'مرتفع',
+                'impact': 'عالي',
+            },
+            {
+                'category': 'إدارة المياه',
+                'title': 'جدولة الري حسب الرطوبة',
+                'description': 'الري بناءً على قياس رطوبة التربة بدل الجدول الثابت',
+                'cost_level': 'منخفض',
+                'impact': 'متوسط',
+            },
+        ]
+
+    def _recommend_crop_diversification_strategies(self, climate_analysis: Dict,
+                                                   weather_risks: Dict) -> List[Dict[str, Any]]:
+        return [
+            {
+                'category': 'تنويع المحاصيل',
+                'title': 'إدخال محاصيل مقاومة للجفاف',
+                'description': 'تقليل الاعتماد على محصول واحد حساس للمناخ',
+                'cost_level': 'منخفض',
+                'impact': 'عالي',
+            },
+            {
+                'category': 'تنويع المحاصيل',
+                'title': 'تناوب المحاصيل',
+                'description': 'كسر دورة الآفات وتحسين خصوبة التربة',
+                'cost_level': 'منخفض',
+                'impact': 'متوسط',
+            },
+        ]
+
+    def _recommend_soil_management_strategies(self,
+                                              climate_analysis: Dict) -> List[Dict[str, Any]]:
+        return [
+            {
+                'category': 'إدارة التربة',
+                'title': 'زيادة المادة العضوية',
+                'description': 'تحسين قدرة التربة على الاحتفاظ بالماء',
+                'cost_level': 'متوسط',
+                'impact': 'عالي',
+            },
+            {
+                'category': 'إدارة التربة',
+                'title': 'المهاد (Mulching)',
+                'description': 'تقليل تبخر الماء من سطح التربة',
+                'cost_level': 'منخفض',
+                'impact': 'متوسط',
+            },
+        ]
+
+    def _recommend_technology_adaptation(self, climate_analysis: Dict,
+                                         farm_profile: Dict) -> List[Dict[str, Any]]:
+        return [
+            {
+                'category': 'التقنية',
+                'title': 'حساسات رطوبة التربة',
+                'description': 'قياس مباشر لتوجيه قرارات الري',
+                'cost_level': 'متوسط',
+                'impact': 'عالي',
+            },
+            {
+                'category': 'التقنية',
+                'title': 'نظام إنذار مبكر للطقس',
+                'description': 'تنبيهات عند اقتراب موجات حر أو صقيع',
+                'cost_level': 'منخفض',
+                'impact': 'متوسط',
+            },
+        ]
+
+    def _recommend_economic_adaptation(self, weather_risks: Dict,
+                                       farm_profile: Dict) -> List[Dict[str, Any]]:
+        return [
+            {
+                'category': 'التكيف الاقتصادي',
+                'title': 'تأمين فلاحي ضد المخاطر المناخية',
+                'description': 'حماية جزئية من خسائر الجفاف والفيضانات',
+                'cost_level': 'متوسط',
+                'impact': 'متوسط',
+            },
+            {
+                'category': 'التكيف الاقتصادي',
+                'title': 'تنويع مصادر الدخل',
+                'description': 'أنشطة تكميلية لتقليل الاعتماد على محصول واحد',
+                'cost_level': 'منخفض',
+                'impact': 'متوسط',
+            },
+        ]
+
+    def _calculate_strategy_priority(self, strategy: Dict, weather_risks: Dict,
+                                     farm_profile: Dict) -> float:
+        """أولوية الاستراتيجية (0..1) حسب الأثر والتكلفة ومستوى المخاطر."""
+        impact = {'عالي': 1.0, 'متوسط': 0.6, 'منخفض': 0.3}.get(strategy.get('impact'), 0.5)
+        cost = {'منخفض': 1.0, 'متوسط': 0.7, 'مرتفع': 0.4}.get(strategy.get('cost_level'), 0.6)
+        risk = {'عالي': 1.0, 'متوسط': 0.7, 'منخفض': 0.4}.get(
+            weather_risks.get('overall_risk_level', 'متوسط'), 0.7)
+        return float(round(0.45 * impact + 0.30 * cost + 0.25 * risk, 3))
+
+    def _prioritize_long_term_adaptations(self,
+                                          future_trends: Dict) -> List[Dict[str, Any]]:
+        return [
+            {'timeframe': 'فوري', 'priority': 'عالي',
+             'actions': self.climate_change_indicators['adaptation_urgency']['immediate']},
+            {'timeframe': 'متوسط المدى', 'priority': 'متوسط',
+             'actions': self.climate_change_indicators['adaptation_urgency']['medium_term']},
+            {'timeframe': 'طويل المدى', 'priority': 'متوسط',
+             'actions': self.climate_change_indicators['adaptation_urgency']['long_term']},
+        ]
+
+    def _recommend_climate_investments(self, future_trends: Dict,
+                                       input_data: Dict) -> List[Dict[str, Any]]:
+        return [
+            {'investment': 'أنظمة ري موفرة للمياه', 'horizon': '1-3 سنوات',
+             'expected_benefit': 'خفض استهلاك المياه 30-40%'},
+            {'investment': 'حصاد مياه الأمطار', 'horizon': '2-5 سنوات',
+             'expected_benefit': 'مصدر مياه تكميلي في المواسم الجافة'},
+            {'investment': 'طاقة شمسية للضخ', 'horizon': '3-7 سنوات',
+             'expected_benefit': 'خفض تكلفة الطاقة وتشغيل الري المستقل'},
+        ]
+
+    # ------------------------------------------------------------------
+    # Seasonal plan
+    # ------------------------------------------------------------------
+
+    def _select_crops_for_month(self, month: int, crop_suitability: List[Dict],
+                                optimal_timing: Dict) -> List[str]:
+        """أفضل المحاصيل لشهر معيّن بمزج ملاءمة المحصول والموسم."""
+        season_crops = set(self._get_month_recommended_crops(month))
+        ranked = [c['crop'] for c in (crop_suitability or [])]
+        # الأولوية لمحاصيل الموسم، ثم حسب ترتيب الملاءمة.
+        ordered = [c for c in ranked if c in season_crops]
+        ordered += [c for c in ranked if c not in season_crops]
+        if not ordered:
+            ordered = list(season_crops)
+        return ordered[:4]
+
+    def _plan_monthly_activities(self, month: int, month_crops: List[str],
+                                 weather_risks: Dict) -> List[str]:
+        """أنشطة الشهر الموصى بها."""
+        activities = list(self._get_month_planting_activities(month))
+        if weather_risks.get('overall_risk_level') == 'عالي':
+            activities.append('تفعيل خطة الطوارئ المناخية')
+        if month_crops:
+            activities.append(f"متابعة محاصيل: {', '.join(month_crops[:2])}")
+        return activities
+
+    def _plan_monthly_preparations(self, month: int, month_crops: List[str],
+                                   weather_risks: Dict) -> List[str]:
+        """التحضيرات المطلوبة للشهر."""
+        preps = ['تجهيز المعدات والري']
+        if month in [6, 7, 8]:
+            preps.append('تأمين الظل ومصادر مياه إضافية')
+        if month in [12, 1]:
+            preps.append('وسائل الحماية من الصقيع')
+        if month in [9, 10, 3, 4]:
+            preps.append('تحسين الصرف لتفادي تجمع المياه')
+        return preps
+
+    def _get_monthly_weather_considerations(self, month: int,
+                                            weather_risks: Dict) -> Dict[str, Any]:
+        """الاعتبارات الجوية للشهر."""
+        return {
+            'expected_risks': self._assess_monthly_risks(month, {}),
+            'overall_risk_level': weather_risks.get('overall_risk_level', 'متوسط'),
+        }
+
+    def _develop_annual_strategy(self, crop_suitability: List[Dict],
+                                 optimal_timing: Dict,
+                                 weather_risks: Dict) -> Dict[str, Any]:
+        """استراتيجية سنوية شاملة."""
+        top_crops = [c['crop'] for c in (crop_suitability or [])[:3]]
+        windows = optimal_timing.get('optimal_windows', [])
+        return {
+            'primary_crops': top_crops,
+            'planting_windows': windows,
+            'risk_level': weather_risks.get('overall_risk_level', 'متوسط'),
+            'guiding_principles': [
+                'تنويع المحاصيل لتقليل المخاطر',
+                'مزامنة الزراعة مع نوافذ الملاءمة العليا',
+                'إدارة مائية استباقية',
+            ],
+        }
+
+    def _plan_crop_rotation(self, crop_suitability: List[Dict]) -> List[Dict[str, Any]]:
+        """خطة تناوب مبسطة على أساس عائلات المحاصيل."""
+        families = {
+            'wheat': 'حبوب', 'barley': 'حبوب', 'corn': 'حبوب',
+            'tomato': 'خضروات', 'potato': 'خضروات',
+            'olive': 'أشجار مثمرة', 'dates': 'أشجار مثمرة',
+        }
+        crops = [c['crop'] for c in (crop_suitability or [])] or ['wheat', 'barley']
+        plan = []
+        for idx, crop in enumerate(crops[:4]):
+            plan.append({
+                'season': f'موسم {idx + 1}',
+                'crop': crop,
+                'family': families.get(crop, 'أخرى'),
+                'rationale': 'تعاقب عائلات مختلفة لكسر دورة الآفات',
+            })
+        return plan
+
+    def _plan_resource_allocation(self, monthly_plans: List[Dict]) -> Dict[str, Any]:
+        """تخطيط الموارد على مدار السنة."""
+        heavy_months = [p['month_name_ar'] for p in monthly_plans
+                        if any('ري' in a for a in p.get('activities', []))]
+        return {
+            'irrigation_intensive_months': heavy_months[:6],
+            'labor_note': 'ذروة الطلب على العمالة خلال أشهر الزراعة والحصاد',
+            'water_note': 'تخطيط مسبق لتخزين المياه في الأشهر الجافة',
+        }
+
+    def _create_risk_mitigation_calendar(self, monthly_plans: List[Dict],
+                                         weather_risks: Dict) -> List[Dict[str, Any]]:
+        """رزنامة إجراءات التخفيف من المخاطر."""
+        calendar = []
+        for plan in monthly_plans:
+            risks = plan.get('weather_considerations', {}).get('expected_risks', [])
+            if risks:
+                calendar.append({
+                    'month': plan['month_name_ar'],
+                    'actions': [f"الاستعداد لـ {r.get('name_ar', '')}" for r in risks],
+                })
+        return calendar
+
+    # ------------------------------------------------------------------
+    # Risk management
+    # ------------------------------------------------------------------
+
+    def _develop_response_protocols(self, weather_risks: Dict) -> List[Dict[str, Any]]:
+        return [
+            {'event': 'موجة حر', 'protocol': 'زيادة الري وتفعيل الظل وتجنب الأنشطة في الذروة'},
+            {'event': 'صقيع', 'protocol': 'أغطية حماية وري وقائي قبل الصقيع'},
+            {'event': 'أمطار غزيرة', 'protocol': 'تفعيل الصرف وإيقاف الري'},
+            {'event': 'جفاف', 'protocol': 'ترتيب أولويات الري وتأجيل العمليات غير الضرورية'},
+        ]
+
+    def _develop_emergency_response_plans(self, weather_risks: Dict,
+                                          farm_profile: Dict) -> List[Dict[str, Any]]:
+        return [
+            {'scenario': 'جفاف ممتد', 'immediate_actions': ['التحول لمحاصيل أقل استهلاكاً للماء',
+                                                            'حصر مياه الطوارئ']},
+            {'scenario': 'فيضان', 'immediate_actions': ['تصريف المياه', 'حماية المخزون']},
+            {'scenario': 'موجة حر', 'immediate_actions': ['ري تكميلي عاجل', 'حماية الثمار']},
+        ]
+
+    def _recommend_financial_protection(self, weather_risks: Dict,
+                                        farm_profile: Dict) -> Dict[str, Any]:
+        return {
+            'insurance_type': 'تأمين فلاحي ضد المخاطر المناخية',
+            'coverage_priority': ['جفاف', 'فيضانات', 'موجات حر'],
+            'note': 'تُراجع الشروط مع مؤسسة التأمين الفلاحي المحلية',
+        }
+
+    def _identify_support_networks(self, input_data: Dict) -> List[str]:
+        return [
+            'المرشد الفلاحي المحلي',
+            'التعاونيات الفلاحية',
+            'مراكز الإرشاد الزراعي',
+            'المنصات الرقمية للطقس الفلاحي',
+        ]
+
+    def _identify_training_needs(self, weather_risks: Dict) -> List[str]:
+        needs = ['إدارة الري الموفّر للمياه', 'قراءة توقعات الطقس']
+        if weather_risks.get('overall_risk_level') in ['عالي', 'متوسط']:
+            needs.append('خطط الطوارئ المناخية')
+        return needs
+
+    def _recommend_infrastructure_improvements(self, weather_risks: Dict,
+                                               farm_profile: Dict) -> List[Dict[str, Any]]:
+        return [
+            {'improvement': 'شبكة ري بالتنقيط', 'priority': 'عالي', 'cost': 'مرتفع'},
+            {'improvement': 'خزان تجميع مياه الأمطار', 'priority': 'متوسط', 'cost': 'متوسط'},
+            {'improvement': 'شبكة صرف فعالة', 'priority': 'متوسط', 'cost': 'متوسط'},
+        ]
+
 # Factory function
 def create_smart_weather_crop_planner() -> SmartWeatherCropPlanner:
     """إنشاء وإرجاع نسخة من SmartWeatherCropPlanner"""

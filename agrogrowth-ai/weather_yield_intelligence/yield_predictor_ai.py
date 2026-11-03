@@ -421,7 +421,9 @@ class YieldPredictorAI:
             
             # تحليل الصورة إذا وجدت
             image_analysis = None
-            if 'field_image' in input_data:
+            # Pydantic fills optional fields with None, so a key's presence is not
+            # proof of an image; only analyse when bytes/base64 were actually sent.
+            if input_data.get('field_image'):
                 image_analysis = self._analyze_field_image(input_data['field_image'])
             
             # تحليل الظروف الحالية
@@ -979,6 +981,482 @@ class YieldPredictorAI:
         total_costs['total'] = sum(total_costs.values())
         
         return total_costs
+
+    # ------------------------------------------------------------------
+    # Image analysis
+    # ------------------------------------------------------------------
+
+    def _analyze_vegetation_coverage(self, img_array: np.ndarray) -> Dict[str, Any]:
+        """نسبة الغطاء النباتي (النباتات الخضراء) في الصورة."""
+        hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
+        green = cv2.inRange(hsv, (35, 40, 40), (85, 255, 255))
+        coverage = float(np.sum(green > 0) / green.size * 100)
+        return {
+            'coverage_percent': coverage,
+            'coverage_level': 'كثيف' if coverage > 60 else ('متوسط' if coverage > 30 else 'ضعيف'),
+        }
+
+    def _analyze_plant_health_from_image(self, img_array: np.ndarray) -> Dict[str, Any]:
+        """تقدير صحة النباتات من الألوان (أخضر صحي مقابل أصفر/بني)."""
+        hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
+        green = np.sum(cv2.inRange(hsv, (35, 40, 40), (85, 255, 255)) > 0) / img_array[:, :, 0].size
+        yellow = np.sum(cv2.inRange(hsv, (15, 50, 50), (35, 255, 255)) > 0) / img_array[:, :, 0].size
+        brown = np.sum(cv2.inRange(hsv, (5, 50, 20), (20, 255, 200)) > 0) / img_array[:, :, 0].size
+
+        health_score = float(max(0.0, min(1.0, green - (yellow * 0.5) - (brown * 0.8))))
+        return {
+            'green_fraction': float(green),
+            'yellow_fraction': float(yellow),
+            'brown_fraction': float(brown),
+            'health_score': health_score,
+            'health_level': 'جيد' if health_score > 0.5 else ('متوسط' if health_score > 0.25 else 'ضعيف'),
+        }
+
+    def _estimate_plant_density(self, img_array: np.ndarray) -> Dict[str, Any]:
+        """تقدير كثافة النباتات من النسيج البصري (تباين التدرج)."""
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        edge_density = float(np.sum(edges > 0) / edges.size)
+        return {
+            'edge_density': edge_density,
+            'density_estimate': 'كثيفة' if edge_density > 0.15 else ('متوسطة' if edge_density > 0.07 else 'منخفضة'),
+        }
+
+    def _detect_growth_stage_from_image(self, img_array: np.ndarray) -> Dict[str, Any]:
+        """مؤشر أولي لمرحلة النمو من الغطاء الأخضر (تقدير بصري لا قياس)."""
+        coverage = self._analyze_vegetation_coverage(img_array)['coverage_percent']
+        if coverage > 70:
+            return {'stage_hint': 'نمو خضري متقدم', 'confidence': 'منخفض'}
+        if coverage > 35:
+            return {'stage_hint': 'نمو خضري متوسط', 'confidence': 'منخفض'}
+        return {'stage_hint': 'مرحلة مبكرة', 'confidence': 'منخفض'}
+
+    def _extract_visual_yield_indicators(self, img_array: np.ndarray) -> Dict[str, Any]:
+        """مؤشرات بصرية مرتبطة بالإنتاج (كثافة الغطاء وصحته)."""
+        vegetation = self._analyze_vegetation_coverage(img_array)
+        health = self._analyze_plant_health_from_image(img_array)
+        indicator = float((vegetation['coverage_percent'] / 100 * 0.5) + (health['health_score'] * 0.5))
+        return {
+            'visual_yield_indicator': round(indicator, 3),
+            'interpretation': 'مؤشر بصري مساعد وليس تنبؤاً بعائد كمّي',
+        }
+
+    def _assess_image_quality_for_analysis(self, img_array: np.ndarray) -> Dict[str, Any]:
+        """تقييم جودة الصورة لصلاحيتها للتحليل."""
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        sharpness = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        brightness = float(np.mean(img_array))
+        score = 0
+        score += 50 if sharpness > 100 else 25
+        score += 50 if 50 < brightness < 200 else 20
+        return {
+            'sharpness': sharpness,
+            'brightness': brightness,
+            'quality_score': score,
+            'suitable_for_analysis': score >= 60,
+        }
+
+    # ------------------------------------------------------------------
+    # Growing conditions
+    # ------------------------------------------------------------------
+
+    def _assess_temperature_stress(self, temperature: float, crop_info: Dict) -> float:
+        """مستوى الإجهاد الحراري (0 = لا إجهاد، 1 = إجهاد أقصى)."""
+        crop = crop_info.get('name_ar', '')
+        optimal = (20, 30)
+        for name, ranges in self.environmental_factors['temperature']['optimal_ranges'].items():
+            if crop_info.get('crop_type') == name:
+                optimal = ranges
+                break
+        if optimal[0] <= temperature <= optimal[1]:
+            return 0.0
+        if temperature > optimal[1]:
+            return float(min(1.0, (temperature - optimal[1]) / 15.0))
+        return float(min(1.0, (optimal[0] - temperature) / 15.0))
+
+    def _assess_water_stress(self, soil_moisture: float, recent_rainfall: float,
+                             crop_info: Dict) -> float:
+        """مستوى الإجهاد المائي (0 = رطوبة كافية، 1 = جفاف شديد)."""
+        soil_moisture = float(soil_moisture or 0)
+        recent_rainfall = float(recent_rainfall or 0)
+        effective = soil_moisture + recent_rainfall * 2
+        if effective >= 50:
+            return 0.0
+        return float(min(1.0, (50 - effective) / 50.0))
+
+    def _assess_soil_health_impact(self, soil_data: Dict, crop_info: Dict) -> Dict[str, Any]:
+        """تأثير صحة التربة على الإنتاج."""
+        soil_data = soil_data or {}
+        ph = float(soil_data.get('ph', 6.5))
+        fertility = float(soil_data.get('fertility_score', 0.7))
+        organic_matter = float(soil_data.get('organic_matter', 3.0))
+
+        if 6.0 <= ph <= 7.5:
+            ph_factor = 1.0
+        elif 5.5 <= ph < 6.0 or 7.5 < ph <= 8.5:
+            ph_factor = 0.9
+        else:
+            ph_factor = 0.7
+
+        fertility_factor = 0.7 + 0.5 * max(0.0, min(1.0, fertility))
+        organic_factor = min(1.1, 0.8 + organic_matter / 20.0)
+        score = float(min(1.0, ph_factor * fertility_factor * organic_factor))
+
+        return {
+            'ph': ph,
+            'ph_factor': ph_factor,
+            'fertility_factor': fertility_factor,
+            'organic_matter_factor': organic_factor,
+            'score': score,
+            'nutrient_stress': float(max(0.0, 1.0 - score)),
+        }
+
+    def _assess_management_practices(self, management_data: Dict,
+                                     crop_info: Dict) -> Dict[str, Any]:
+        """تقييم فعالية الممارسات الإدارية."""
+        m = management_data or {}
+        irrigation = float(m.get('irrigation_efficiency', 0.8))
+        fertilizer = float(m.get('fertilizer_application_rate', 1.0))
+        pest = float(m.get('pest_management_score', 0.8))
+        disease = float(m.get('disease_control_score', 0.8))
+
+        score = float(min(1.0, irrigation * 0.3 + min(1.0, fertilizer) * 0.25 + pest * 0.2 + disease * 0.25))
+        return {
+            'irrigation_efficiency': irrigation,
+            'fertilizer_rate': fertilizer,
+            'pest_management_score': pest,
+            'disease_control_score': disease,
+            'overall_score': score,
+        }
+
+    def _calculate_overall_condition_score(self, temp_stress: float, water_stress: float,
+                                           soil_health: Dict,
+                                           management_effectiveness: Dict) -> float:
+        """درجة الحالة العامة للنمو (0..1)."""
+        env = (1 - temp_stress) * 0.35 + (1 - water_stress) * 0.35
+        soil = float(soil_health.get('score', 0.7)) * 0.15
+        mgmt = float(management_effectiveness.get('overall_score', 0.7)) * 0.15
+        return float(max(0.0, min(1.0, env + soil + mgmt)))
+
+    def _categorize_growing_conditions(self, score: float) -> str:
+        if score >= 0.85:
+            return 'ممتازة'
+        if score >= 0.7:
+            return 'جيدة'
+        if score >= 0.5:
+            return 'متوسطة'
+        if score >= 0.3:
+            return 'ضعيفة'
+        return 'سيئة'
+
+    def _identify_limiting_factors(self, temp_stress: float, water_stress: float,
+                                   soil_health: Dict,
+                                   management_effectiveness: Dict) -> List[str]:
+        """العوامل المحدّدة للإنتاج بترتيب الأهمية."""
+        factors = []
+        if water_stress > 0.3:
+            factors.append(f"إجهاد مائي ({water_stress:.0%})")
+        if temp_stress > 0.3:
+            factors.append(f"إجهاد حراري ({temp_stress:.0%})")
+        if float(soil_health.get('nutrient_stress', 0)) > 0.3:
+            factors.append('نقص خصوبة/عناصر غذائية')
+        if float(management_effectiveness.get('overall_score', 1)) < 0.7:
+            factors.append('ضعف الممارسات الإدارية')
+        return factors or ['لا توجد عوامل محدّدة بارزة']
+
+    # ------------------------------------------------------------------
+    # Yield prediction helpers
+    # ------------------------------------------------------------------
+
+    def _estimate_prediction_uncertainty(self, features_scaled: np.ndarray) -> float:
+        """تقدير عدم اليقين في التنبؤ عبر تباين تنبؤات أشجار الغابة."""
+        try:
+            model = self.yield_prediction_model
+            if hasattr(model, 'estimators_') and len(model.estimators_) > 1:
+                preds = np.array([tree.predict(features_scaled)[0] for tree in model.estimators_])
+                return float(np.std(preds))
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning('uncertainty estimate failed: %s', exc)
+        return 0.1 * float(np.mean(features_scaled)) if features_scaled.size else 1.0
+
+    def _compare_with_regional_averages(self, predicted_yield: float,
+                                        crop_type: str) -> Dict[str, Any]:
+        """مقارنة العائد المتوقع بالمعدل الإقليمي المرجعي."""
+        crop_info = self.crop_yield_database.get(crop_type, self.crop_yield_database['wheat'])
+        regional_avg = crop_info['baseline_yield']['average_conditions']
+        ratio = predicted_yield / regional_avg if regional_avg else 1.0
+        return {
+            'regional_average_kg_ha': regional_avg,
+            'ratio_to_regional': round(float(ratio), 3),
+            'position': 'أعلى من المعدل' if ratio > 1.05 else ('أقل من المعدل' if ratio < 0.95 else 'قريب من المعدل'),
+        }
+
+    def _calculate_yield_deviation(self, predicted_yield: float,
+                                   average_yield: float) -> Dict[str, Any]:
+        """الانحراف عن المعدل (مطلق ونسبي)."""
+        deviation = predicted_yield - average_yield
+        percent = (deviation / average_yield * 100) if average_yield else 0.0
+        return {
+            'absolute_deviation_kg_ha': float(deviation),
+            'percent_deviation': round(float(percent), 2),
+        }
+
+    def _assess_parameter_quality(self, value: float, specs: Dict) -> str:
+        """تصنيف جودة معيار واحد مقابل مواصفاته."""
+        optimal = specs.get('optimal', value)
+        low = specs.get('min', value)
+        high = specs.get('max', value)
+        if value == optimal or (abs(value - optimal) <= (high - low) * 0.1):
+            return 'ممتاز'
+        if low <= value <= high:
+            return 'مقبول'
+        return 'خارج النطاق'
+
+    def _analyze_quality_factors(self, input_data: Dict, current_conditions: Dict,
+                                 crop_info: Dict) -> List[Dict[str, Any]]:
+        """العوامل المؤثرة على جودة المحصول."""
+        return [
+            {'factor': 'التغذية المعدنية', 'score': float(current_conditions.get('soil_conditions', {}).get('score', 0.7))},
+            {'factor': 'إدارة الري', 'score': float(current_conditions.get('management_assessment', {}).get('irrigation_efficiency', 0.8))},
+            {'factor': 'الظروف الحرارية', 'score': float(1 - current_conditions.get('temperature_conditions', {}).get('stress_level', 0.2))},
+        ]
+
+    def _grade_crop_quality(self, quality_score: float) -> str:
+        if quality_score >= 0.85:
+            return 'درجة أولى'
+        if quality_score >= 0.7:
+            return 'درجة ثانية'
+        if quality_score >= 0.5:
+            return 'درجة ثالثة'
+        return 'درجة رابعة'
+
+    def _assess_market_value_impact(self, quality_score: float) -> Dict[str, Any]:
+        """أثر الجودة على القيمة السوقية (نسبي، ليس سعراً حقيقياً)."""
+        premium = (quality_score - 0.6) * 50 if quality_score > 0.6 else (quality_score - 0.6) * 40
+        return {
+            'price_premium_percent': round(float(premium), 1),
+            'note': 'تقدير نسبي لأثر الجودة؛ لا يمثل سعراً سوقياً حقيقياً',
+        }
+
+    def _assess_quality_improvement_potential(self, quality_score: float,
+                                              current_conditions: Dict) -> Dict[str, Any]:
+        """إمكانية تحسين الجودة."""
+        gap = max(0.0, 1.0 - quality_score)
+        return {
+            'potential_gain': round(gap, 3),
+            'levers': ['تحسين التسميد', 'ضبط الري', 'مكافحة الأمراض'],
+        }
+
+    def _calculate_temperature_impact(self, weather_data: Dict,
+                                      crop_info: Dict) -> Dict[str, Any]:
+        temp = float((weather_data or {}).get('temperature', 25.0))
+        stress = self._assess_temperature_stress(temp, crop_info)
+        return {'score': float(1 - stress), 'temperature': temp, 'stress_level': stress}
+
+    def _calculate_water_impact(self, soil_data: Dict, weather_data: Dict) -> Dict[str, Any]:
+        moisture = float((soil_data or {}).get('moisture_percentage', 50))
+        rain = float((weather_data or {}).get('recent_rainfall', 0))
+        stress = self._assess_water_stress(moisture, rain, {})
+        return {'score': float(1 - stress), 'moisture': moisture, 'stress_level': stress}
+
+    def _calculate_soil_fertility_impact(self, soil_data: Dict) -> Dict[str, Any]:
+        health = self._assess_soil_health_impact(soil_data, {})
+        return {'score': float(health['score']), 'ph': health['ph']}
+
+    def _assess_irrigation_impact(self, management_data: Dict) -> Dict[str, Any]:
+        eff = float((management_data or {}).get('irrigation_efficiency', 0.8))
+        return {'score': eff, 'efficiency': eff}
+
+    def _assess_fertilization_impact(self, management_data: Dict) -> Dict[str, Any]:
+        rate = float((management_data or {}).get('fertilizer_application_rate', 1.0))
+        return {'score': float(min(1.0, rate)), 'rate': rate}
+
+    def _assess_pest_disease_control_impact(self, management_data: Dict) -> Dict[str, Any]:
+        m = management_data or {}
+        pest = float(m.get('pest_management_score', 0.8))
+        disease = float(m.get('disease_control_score', 0.8))
+        return {'score': float((pest + disease) / 2), 'pest_score': pest, 'disease_score': disease}
+
+    def _assess_variety_impact(self, variety_info: Dict, crop_info: Dict) -> Dict[str, Any]:
+        perf = float((variety_info or {}).get('performance_factor', 1.0))
+        return {'score': float(min(1.0, perf)), 'performance_factor': perf}
+
+    def _assess_plant_density_impact(self, plant_density: float) -> Dict[str, Any]:
+        density = float(plant_density or 1.0)
+        # الكثافة المثلى حول 1.0؛ الانحراف يخفض النتيجة.
+        score = float(max(0.0, 1.0 - abs(density - 1.0)))
+        return {'score': score, 'density_factor': density}
+
+    def _assess_growth_timing_impact(self, planting_date, crop_info: Dict) -> Dict[str, Any]:
+        """أثر توقيت الزراعة على العائد."""
+        if not planting_date:
+            return {'score': 0.7, 'note': 'تاريخ الزراعة غير متوفر'}
+        try:
+            planted = datetime.fromisoformat(str(planting_date))
+            days = (datetime.now() - planted).days
+            return {'score': 0.8 if 0 <= days <= 200 else 0.6, 'days_from_planting': days}
+        except Exception:
+            return {'score': 0.7, 'note': 'صيغة تاريخ غير صالحة'}
+
+    def _calculate_total_factor_impact(self, environmental_factors: Dict,
+                                       management_factors: Dict,
+                                       biological_factors: Dict) -> float:
+        """التأثير الكلي المجمّع للعوامل (0..1)."""
+        def avg(group):
+            vals = [v.get('score', 0.7) for v in group.values() if isinstance(v, dict)]
+            return sum(vals) / len(vals) if vals else 0.7
+        env = avg(environmental_factors)
+        mgmt = avg(management_factors)
+        bio = avg(biological_factors)
+        return float(max(0.0, min(1.0, env * 0.5 + mgmt * 0.3 + bio * 0.2)))
+
+    def _identify_most_influential_factors(self, environmental_factors: Dict,
+                                           management_factors: Dict,
+                                           biological_factors: Dict) -> List[Dict[str, Any]]:
+        """أكثر العوامل تأثيراً (الأدنى نقاطاً = الأكثر تحديداً)."""
+        all_factors = {}
+        for group in (environmental_factors, management_factors, biological_factors):
+            for name, data in group.items():
+                if isinstance(data, dict):
+                    all_factors[name] = float(data.get('score', 0.7))
+        ranked = sorted(all_factors.items(), key=lambda x: x[1])
+        return [{'factor': k, 'score': v} for k, v in ranked[:3]]
+
+    def _identify_improvement_opportunities(self, environmental_factors: Dict,
+                                            management_factors: Dict,
+                                            biological_factors: Dict) -> List[str]:
+        opportunities = []
+        for group in (environmental_factors, management_factors, biological_factors):
+            for name, data in group.items():
+                if isinstance(data, dict) and float(data.get('score', 1.0)) < 0.7:
+                    opportunities.append(f"تحسين {name.replace('_', ' ')}")
+        return opportunities or ['الظروف الحالية قريبة من المثالية']
+
+    # ------------------------------------------------------------------
+    # Risk / economics
+    # ------------------------------------------------------------------
+
+    def _assess_production_risk(self, yield_prediction: Dict) -> str:
+        """مستوى مخاطر الإنتاج بناءً على اتساع مجال الثقة."""
+        try:
+            rng = yield_prediction['yield_range_kg_ha']
+            mid = yield_prediction['predicted_yield_kg_ha'] or 1
+            spread = (rng['maximum'] - rng['minimum']) / mid
+            if spread > 0.6:
+                return 'عالي'
+            if spread > 0.35:
+                return 'متوسط'
+            return 'منخفض'
+        except Exception:
+            return 'متوسط'
+
+    def _assess_price_volatility(self, crop_type: str) -> str:
+        """تقلب السعر المرجعي حسب المحصول (وصفي)."""
+        volatile = {'tomato', 'potato'}
+        stable = {'wheat', 'olive'}
+        if crop_type in volatile:
+            return 'عالي'
+        if crop_type in stable:
+            return 'منخفض'
+        return 'متوسط'
+
+    def _perform_sensitivity_analysis(self, predicted_yield: float, expected_price: float,
+                                      production_costs: Dict, farm_size: float) -> Dict[str, Any]:
+        """تحليل حساسية بسيط: تغيّر العائد والسعر ±10/20%."""
+        total_cost = production_costs.get('total', 0)
+        scenarios = {}
+        for delta in (-0.2, -0.1, 0.0, 0.1, 0.2):
+            revenue = predicted_yield * (1 + delta) * expected_price * (1 + delta) * farm_size
+            scenarios[f'{int(delta * 100):+d}%'] = {
+                'gross_revenue': round(float(revenue), 2),
+                'net_profit': round(float(revenue - total_cost), 2),
+            }
+        return {'scenarios': scenarios, 'note': 'تحليل حساسية تقديري'}
+
+    def _project_future_growth_stages(self, input_data: Dict, growth_stage_assessment: Dict,
+                                      crop_info: Dict) -> List[Dict[str, Any]]:
+        """توقعات مراحل النمو القادمة زمنياً (مبنية على مدة المراحل)."""
+        stages = crop_info.get('critical_growth_stages', {})
+        current = growth_stage_assessment.get('current_stage')
+        keys = list(stages.keys())
+        start = keys.index(current) + 1 if current in keys else 0
+        projections = []
+        cursor = datetime.now()
+        for name in keys[start:start + 3]:
+            duration = int(stages[name].get('duration_days', 20))
+            cursor = cursor + timedelta(days=duration)
+            projections.append({
+                'stage': name,
+                'expected_start': cursor.strftime('%Y-%m-%d'),
+                'duration_days': duration,
+                'yield_impact': stages[name].get('yield_impact'),
+            })
+        return projections
+
+    def _calculate_prediction_confidence(self, input_data: Dict,
+                                         current_conditions: Dict) -> Dict[str, Any]:
+        """مؤشر ثقة التنبؤ بناءً على اكتمال المعطيات."""
+        required = ['weather_data', 'soil_data', 'management_practices']
+        provided = sum(1 for k in required if input_data.get(k))
+        completeness = provided / len(required)
+        condition_score = float(current_conditions.get('overall_score', 0.7))
+        confidence = round(0.5 * completeness + 0.5 * condition_score, 3)
+        return {
+            'confidence_score': confidence,
+            'level': 'عالي' if confidence > 0.75 else ('متوسط' if confidence > 0.5 else 'منخفض'),
+            'data_completeness': completeness,
+            'note': 'الثقة تعكس اكتمال المعطيات؛ التنبؤ مبني على نماذج مدربة على بيانات اصطناعية',
+        }
+
+    def _assess_current_growth_stage(self, input_data: Dict,
+                                     crop_info: Dict) -> Dict[str, Any]:
+        """تقييم مرحلة النمو الحالية من عدد الأيام منذ الزراعة."""
+        planting_date = input_data.get('planting_date')
+        days = None
+        if planting_date:
+            try:
+                days = (datetime.now() - datetime.fromisoformat(str(planting_date))).days
+            except Exception:
+                days = None
+        if days is None:
+            days = int(input_data.get('days_from_planting', 60))
+
+        stages = crop_info.get('critical_growth_stages', {})
+        cumulative = 0
+        current_stage = next(iter(stages), 'vegetative')
+        for name, info in stages.items():
+            cumulative += int(info.get('duration_days', 20))
+            if days <= cumulative:
+                current_stage = name
+                break
+        else:
+            current_stage = list(stages.keys())[-1] if stages else 'maturity'
+
+        return {
+            'current_stage': current_stage,
+            'days_from_planting': days,
+            'progress_note': f'المرحلة الحالية: {current_stage}',
+        }
+
+    def _analyze_yield_risks_opportunities(self, input_data: Dict, current_conditions: Dict,
+                                           crop_info: Dict) -> Dict[str, Any]:
+        """تحليل مخاطر وفرص العائد."""
+        risks = []
+        opportunities = []
+        water_stress = float(current_conditions.get('water_conditions', {}).get('stress_level', 0))
+        temp_stress = float(current_conditions.get('temperature_conditions', {}).get('stress_level', 0))
+        if water_stress > 0.4:
+            risks.append('إجهاد مائي محتمل يهدد العائد')
+        if temp_stress > 0.4:
+            risks.append('إجهاد حراري محتمل')
+        if float(current_conditions.get('soil_conditions', {}).get('score', 0.7)) > 0.8:
+            opportunities.append('خصوبة تربة جيدة يمكن استغلالها')
+        if float(current_conditions.get('overall_score', 0.7)) > 0.75:
+            opportunities.append('ظروف نمو مواتية لتحقيق عائد مرتفع')
+        return {
+            'risks': risks or ['لا توجد مخاطر كبرى ملحوظة'],
+            'opportunities': opportunities or ['تحسين الممارسات الإدارية'],
+        }
 
 # Factory function
 def create_yield_predictor_ai() -> YieldPredictorAI:

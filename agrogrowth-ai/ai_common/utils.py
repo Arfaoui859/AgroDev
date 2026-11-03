@@ -243,3 +243,25 @@ def estimate_water_requirement(crop_type: str, growth_stage: int,
     humidity_factor = 1 - (weather_data.get('humidity', 60) - 60) * 0.01
     
     return base_req * temp_factor * humidity_factor
+
+
+def to_json_safe(value: Any) -> Any:
+    """Recursively convert NumPy scalars/arrays to native Python types.
+
+    Model outputs (``predict_proba``, ``argmax``, comparisons on NumPy arrays)
+    routinely produce ``np.float64``/``np.str_``/``np.bool_`` values. FastAPI's
+    JSON encoder cannot serialise those, so an endpoint that looks correct can
+    still fail at response time. Converting at the boundary keeps every service
+    response JSON-serialisable regardless of which internals produced it.
+    """
+    if isinstance(value, dict):
+        return {str(k): to_json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [to_json_safe(v) for v in value]
+    if isinstance(value, np.ndarray):
+        return to_json_safe(value.tolist())
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, (datetime,)):
+        return value.isoformat()
+    return value

@@ -502,7 +502,9 @@ class PestControlRecommender:
             
             # استخراج وتحليل الصورة إذا وجدت
             image_analysis = None
-            if 'image_data' in input_data:
+            # Pydantic fills optional fields with None, so a key's presence is not
+            # proof of an image; only analyse when an image was actually sent.
+            if input_data.get('image_data'):
                 image_analysis = self._analyze_pest_image(input_data['image_data'])
             
             # تحليل الأعراض المدخلة
@@ -689,6 +691,22 @@ class PestControlRecommender:
                 (symptoms_analysis.get('most_likely_pest', 'aphids'),
                  symptoms_analysis.get('confidence_level', 0.5))
             ]
+
+        # دمج مطابقة الأعراض (قاعدة ثابتة ومفسّرة) مع النموذج. النموذج مدرب على
+        # بيانات اصطناعية فيقل وزنه، لكن الإشارة النصية القوية للأعراض تُرفع
+        # النتيجة لأنها مبنية على قاعدة معرفية صريحة.
+        if self.is_trained and symptoms_analysis.get('symptom_count'):
+            symptom_scores = symptoms_analysis.get('pest_likelihood_scores', {})
+            if symptom_scores and max(symptom_scores.values()) > 0:
+                blended = {}
+                for pest, prob in pest_predictions[:5]:
+                    blended[str(pest)] = float(prob) * 0.6
+                for pest, score in symptom_scores.items():
+                    if score > 0:
+                        blended[pest] = blended.get(pest, 0.0) + float(score) * 0.4
+                pest_predictions = sorted(
+                    blended.items(), key=lambda x: x[1], reverse=True
+                )
         
         # دمج نتائج تحليل الصورة إذا توفرت
         if image_analysis and 'pest_probabilities' in image_analysis:
@@ -704,7 +722,7 @@ class PestControlRecommender:
             pest_predictions = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)
         
         # الحصول على معلومات الآفة الأكثر احتمالاً
-        most_likely_pest = pest_predictions[0][0]
+        most_likely_pest = str(pest_predictions[0][0])
         confidence = pest_predictions[0][1]
         pest_info = self.pest_disease_database.get(most_likely_pest, {})
         
@@ -720,7 +738,7 @@ class PestControlRecommender:
                     'probability': float(prob),
                     'category': self.pest_disease_database.get(pest, {}).get('category', 'غير محدد')
                 }
-                for pest, prob in pest_predictions[:5]
+                for pest, prob in [(str(p), pr) for p, pr in pest_predictions[:5]]
             ],
             'identification_method': 'model_based' if self.is_trained else 'symptom_based',
             'pest_characteristics': {
@@ -778,7 +796,7 @@ class PestControlRecommender:
             'severity_level': severity_level,
             'urgency_level': urgency,
             'economic_threshold': economic_threshold,
-            'above_threshold': predicted_severity > 0.3,  # عتبة افتراضية
+            'above_threshold': bool(predicted_severity > 0.3),  # عتبة افتراضية
             'damage_assessment': {
                 'current_damage_percent': float(predicted_severity * 100),
                 'potential_yield_loss': float(min(80, predicted_severity * 60)),
@@ -1541,7 +1559,361 @@ class PestControlRecommender:
         else:
             return 'أولوية منخفضة'
 
-# Additional helper methods continue...
+    # ------------------------------------------------------------------
+    # Treatment evaluation helpers
+    # ------------------------------------------------------------------
+
+    def _estimate_treatment_effectiveness(self, treatment: Dict, severity: float,
+                                          input_data: Dict) -> float:
+        """تقدير فعالية العلاج للحالة الحالية (0..1).
+
+        الفعالية المرجعية مأخوذة من قاعدة البيانات، ثم تُعدَّل حسب شدة الإصابة
+        والظروف الجوية: العلاجات الجهازية تحافظ على فعاليتها مع ارتفاع الضغط،
+        بينما تفقد العلاجات الملامسة/الحيوية جزءاً منها، ويزيد الغسل بالمطر
+        والرياح من فقدان الرش.
+        """
+        base = float(treatment.get('effectiveness', 70)) / 100.0
+        method = str(treatment.get('method', ''))
+        systemic = any(k in method for k in ('systemic', 'insecticide', 'miticide'))
+
+        pressure_penalty = float(severity) * (0.10 if systemic else 0.30)
+
+        weather = input_data.get('weather_conditions') or {}
+        weather_penalty = 0.0
+        if float(weather.get('recent_rainfall', 0) or 0) > 5 and any(
+            k in method for k in ('soap', 'organic')
+        ):
+            weather_penalty += 0.15  # الأمطار تغسل الرش الملامس
+        if float(weather.get('wind_speed', 0) or 0) > 20:
+            weather_penalty += 0.10  # انجراف الرش
+        if float(weather.get('temperature', 25) or 25) > 35:
+            weather_penalty += 0.05  # تبخر سريع / إجهاد حراري
+
+        effectiveness = base - pressure_penalty - weather_penalty
+        return float(max(0.05, min(1.0, effectiveness)))
+
+    def _analyze_treatment_cost_benefit(self, treatment: Dict, farm_size: float,
+                                        effectiveness: float) -> Dict[str, Any]:
+        """تحليل التكلفة والفائدة لخيار علاج واحد."""
+        farm_size = max(float(farm_size or 1.0), 0.01)
+        cost_per_hectare = float(treatment.get('cost_per_hectare', 0))
+        frequency = str(treatment.get('application_frequency', ''))
+        applications = 1 if 'مرة واحدة' in frequency else (3 if 'يوم' in frequency else 2)
+
+        total_cost = cost_per_hectare * farm_size * applications
+        # قيمة الإنتاج المعرضة للخطر، معدّلة بفعالية العلاج المتوقعة.
+        at_risk_value = farm_size * 5000.0 * 0.30
+        loss_avoided = at_risk_value * float(effectiveness)
+        ratio = (loss_avoided / total_cost) if total_cost > 0 else 0.0
+
+        return {
+            'total_cost': float(total_cost),
+            'applications': applications,
+            'expected_loss_avoided': float(loss_avoided),
+            'ratio': float(ratio),
+            'verdict': (
+                'مجدٍ اقتصادياً' if ratio >= 2 else
+                'مقبول' if ratio >= 1 else
+                'تكلفة أعلى من الفائدة المتوقعة'
+            ),
+        }
+
+    def _get_treatment_safety_info(self, treatment: Dict) -> Dict[str, Any]:
+        """معلومات السلامة وفترة الأمان بعد الرش."""
+        safety_level = treatment.get('safety_level', 'حذر')
+        reentry_hours = {
+            'آمن جداً': 0,
+            'آمن': 4,
+            'حذر': 24,
+            'خطر': 48,
+        }.get(safety_level, 24)
+
+        if reentry_hours == 0:
+            equipment = ['قفازات عند التحضير']
+        elif reentry_hours <= 4:
+            equipment = ['قفازات', 'كمامة']
+        else:
+            equipment = ['قفازات', 'كمامة', 'ملابس واقية', 'نظارات واقية']
+
+        return {
+            'safety_level': safety_level,
+            'reentry_interval_hours': reentry_hours,
+            'residual_effect_days': treatment.get('residual_effect_days', 0),
+            'protective_equipment': equipment,
+            'notes': [
+                'يُمنع الرش أثناء هبوب الرياح القوية',
+                'لا تخلط المبيدات مع مواد غير موصى بها',
+            ],
+        }
+
+    def _get_application_conditions(self, treatment: Dict,
+                                    weather: Dict) -> Dict[str, Any]:
+        """شروط التطبيق المناسبة مقارنة بالظروف الحالية."""
+        weather = weather or {}
+        temp = float(weather.get('temperature', 25) or 25)
+        wind = float(weather.get('wind_speed', 0) or 0)
+        rain = float(weather.get('recent_rainfall', 0) or 0)
+        method = str(treatment.get('method', ''))
+        is_spray = any(k in method for k in ('spray', 'soap', 'insecticide', 'miticide', 'organic'))
+
+        max_wind = 15.0
+        reasons = []
+        if is_spray and wind > max_wind:
+            reasons.append('سرعة الرياح مرتفعة: احتمال انجراف الرش')
+        if not (10 <= temp <= 30):
+            reasons.append('درجة الحرارة خارج المجال المناسب للرش (10-30°م)')
+        if is_spray and rain > 5:
+            reasons.append('أمطار حديثة قد تغسل المادة الفعالة')
+
+        return {
+            'suitable_now': len(reasons) == 0,
+            'temperature_range': [10, 30],
+            'max_wind_speed_kmh': max_wind,
+            'rain_free_hours_required': 6 if is_spray else 0,
+            'blocking_reasons': reasons,
+        }
+
+    def _calculate_treatment_suitability(self, treatment: Dict, severity: float,
+                                         input_data: Dict) -> float:
+        """ملاءمة العلاج (0..1) بدمج الفعالية والسلامة والتكلفة والتفضيل العضوي."""
+        effectiveness = self._estimate_treatment_effectiveness(
+            treatment, severity, input_data
+        )
+        safety = {
+            'آمن جداً': 1.0, 'آمن': 0.85, 'حذر': 0.6, 'خطر': 0.3,
+        }.get(treatment.get('safety_level', 'حذر'), 0.6)
+
+        cost = float(treatment.get('cost_per_hectare', 0))
+        cost_score = 1.0 if cost <= 100 else (0.7 if cost <= 250 else 0.45)
+
+        score = 0.55 * effectiveness + 0.25 * safety + 0.20 * cost_score
+
+        method = str(treatment.get('method', ''))
+        organic = any(k in method for k in ('biological', 'organic', 'predatory'))
+        if input_data.get('organic_preference'):
+            score += 0.15 if organic else -0.20
+
+        budget = input_data.get('budget_constraint')
+        if budget is not None and cost > float(budget):
+            score -= 0.25
+
+        return float(max(0.0, min(1.0, score)))
+
+    def _get_treatment_pros_cons(self, treatment: Dict) -> Dict[str, List[str]]:
+        """إيجابيات وسلبيات خيار العلاج."""
+        method = str(treatment.get('method', ''))
+        safety = treatment.get('safety_level', 'حذر')
+        effectiveness = float(treatment.get('effectiveness', 70))
+
+        pros: List[str] = []
+        cons: List[str] = []
+
+        if any(k in method for k in ('biological', 'organic', 'predatory')):
+            pros += ['صديق للبيئة', 'آمن للإنسان والحشرات النافعة']
+            cons += ['بطيء النتائج', 'يحتاج ظروفاً مناسبة']
+        if any(k in method for k in ('systemic', 'insecticide', 'miticide')):
+            pros += ['سريع المفعول', 'فعالية عالية ضد الإصابة الشديدة']
+            cons += ['قد يؤثر على الحشرات النافعة', 'فترة أمان قبل الحصاد']
+        if safety == 'آمن جداً':
+            pros.append('فترة أمان قصيرة')
+        if safety in ('حذر', 'خطر'):
+            cons.append('يتطلب معدات حماية وفترة إعادة دخول')
+        if effectiveness >= 90:
+            pros.append('فعالية موثقة عالية')
+        elif effectiveness < 70:
+            cons.append('فعالية متوسطة، قد تحتاج تكراراً')
+
+        return {'pros': pros, 'cons': cons}
+
+    # ------------------------------------------------------------------
+    # Treatment schedule helpers
+    # ------------------------------------------------------------------
+
+    def _determine_best_application_time(self, treatment: Dict,
+                                         weather: Dict) -> str:
+        """أفضل وقت في اليوم للتطبيق."""
+        weather = weather or {}
+        temp = float(weather.get('temperature', 25) or 25)
+        method = str(treatment.get('method', ''))
+        if any(k in method for k in ('biological', 'predatory')):
+            return 'الصباح الباكر (6-9) لإطلاق الأعداء الطبيعية'
+        if temp > 28:
+            return 'الصباح الباكر (6-9) أو المساء (17-20) لتفادي الحرارة'
+        return 'الصباح الباكر (7-10) مع رطوبة مناسبة'
+
+    def _calculate_dosage(self, treatment: Dict, farm_size: float) -> Dict[str, Any]:
+        """حساب الجرعة الإجمالية حسب المساحة."""
+        farm_size = max(float(farm_size or 1.0), 0.01)
+        return {
+            'farm_size_hectares': float(farm_size),
+            'water_volume_liters': float(farm_size * 200),
+            'note': 'استخدم الجرعة الموصى بها على البطاقة؛ لا تزد الجرعة لتجنب المقاومة',
+        }
+
+    def _get_weather_requirements(self, treatment: Dict) -> Dict[str, Any]:
+        """الظروف الجوية المطلوبة للتطبيق."""
+        method = str(treatment.get('method', ''))
+        is_spray = any(k in method for k in ('spray', 'soap', 'insecticide', 'miticide', 'organic'))
+        return {
+            'min_temperature_c': 10,
+            'max_temperature_c': 30,
+            'max_wind_speed_kmh': 15,
+            'rain_free_hours': 6 if is_spray else 0,
+        }
+
+    def _get_preparation_steps(self, treatment: Dict) -> List[str]:
+        """خطوات التحضير قبل التطبيق."""
+        return [
+            'قراءة بطاقة المنتج واحترام الجرعة',
+            'تحضير المحلول في خزان نظيف',
+            'ارتداء معدات الحماية',
+            'معايرة آلة الرش قبل الاستعمال',
+        ]
+
+    def _get_safety_precautions(self, treatment: Dict) -> List[str]:
+        """احتياطات السلامة أثناء وبعد التطبيق."""
+        reentry = self._get_treatment_safety_info(treatment)['reentry_interval_hours']
+        steps = [
+            'تجنب الرش عكس اتجاه الريح',
+            'عدم الأكل أو الشرب أثناء التطبيق',
+            'غسل المعدات والملابس بعد الانتهاء',
+        ]
+        if reentry > 0:
+            steps.append(f'منع دخول المزرعة لمدة {reentry} ساعة')
+        return steps
+
+    def _determine_monitoring_intervals(self, treatment: Dict) -> Dict[str, Any]:
+        """فترات المراقبة بعد العلاج."""
+        residual = int(treatment.get('residual_effect_days', 0) or 0)
+        return {
+            'first_check_days': 3,
+            'follow_up_interval_days': 7,
+            'duration_days': max(14, residual + 7),
+            'note': 'سجّل النتائج لكل زيارة لمقارنة التقدم',
+        }
+
+    def _define_success_indicators(self, treatment: Dict) -> List[str]:
+        """مؤشرات نجاح العلاج."""
+        return [
+            'انخفاض نسبة الأوراق المصابة',
+            'توقف انتشار الإصابة إلى نباتات جديدة',
+            'ظهور نمو جديد سليم',
+            'انخفاض أعداد الحشرات تحت العتبة الاقتصادية',
+        ]
+
+    # ------------------------------------------------------------------
+    # Image analysis helpers
+    # ------------------------------------------------------------------
+
+    def _extract_dominant_colors(self, img_array: np.ndarray, k: int = 3) -> List[Dict[str, Any]]:
+        """استخراج الألوان السائدة عبر k-means."""
+        try:
+            small = cv2.resize(img_array, (60, 60)).reshape(-1, 3).astype(np.float32)
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
+            _, labels, centers = cv2.kmeans(
+                small, k, None, criteria, 3, cv2.KMEANS_PP_CENTERS
+            )
+            counts = np.bincount(labels.flatten(), minlength=k)
+            total = int(counts.sum()) or 1
+            colors = []
+            for i in range(k):
+                rgb = [int(max(0, min(255, c))) for c in centers[i]]
+                colors.append({
+                    'rgb': rgb,
+                    'hex': '#%02x%02x%02x' % tuple(rgb),
+                    'percentage': float(counts[i] / total * 100),
+                })
+            colors.sort(key=lambda c: c['percentage'], reverse=True)
+            return colors
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning('dominant colour extraction failed: %s', exc)
+            return []
+
+    def _detect_brown_content(self, img_array: np.ndarray) -> float:
+        """نسبة المحتوى البني (أنسجة ميتة/تلف) في الصورة."""
+        hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
+        brown_mask = cv2.inRange(hsv, (5, 50, 20), (20, 255, 200))
+        return float(np.sum(brown_mask > 0) / brown_mask.size * 100)
+
+    def _assess_pattern_regularity(self, gray: np.ndarray) -> float:
+        """انتظام النمط (0..1): الأنماط المنتظمة تركّز الطاقة في ترددات قليلة."""
+        f = np.fft.fft2(gray.astype(np.float32))
+        mag = np.abs(np.fft.fftshift(f))
+        h, w = mag.shape
+        mag[h // 2 - 2:h // 2 + 3, w // 2 - 2:w // 2 + 3] = 0  # إزالة المكوّن المستمر
+        total = float(mag.sum())
+        if total <= 0:
+            return 0.0
+        top = np.sort(mag.ravel())[-max(1, mag.size // 1000):].sum()
+        return float(min(1.0, (top / total) * 10))
+
+    def _identify_damage_patterns(self, img_array: np.ndarray) -> List[str]:
+        """وصف أنماط الضرر الظاهرة في الصورة."""
+        hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
+        yellow = np.sum(cv2.inRange(hsv, (15, 50, 50), (35, 255, 255)) > 0) / img_array[:, :, 0].size
+        brown = np.sum(cv2.inRange(hsv, (5, 50, 20), (20, 255, 200)) > 0) / img_array[:, :, 0].size
+        white = np.sum(cv2.inRange(hsv, (0, 0, 200), (180, 30, 255)) > 0) / img_array[:, :, 0].size
+
+        patterns = []
+        if yellow > 0.05:
+            patterns.append('اصفرار الأوراق (نقص تغذية أو إصابة)')
+        if brown > 0.05:
+            patterns.append('بقع بنية (تلف نسيجي أو فطري)')
+        if white > 0.03:
+            patterns.append('بقع بيضاء (فطريات أو حشرات دقيقة)')
+        return patterns or ['لا توجد أنماط ضرر واضحة']
+
+    def _calculate_overall_damage_level(self, yellow_percentage: float,
+                                        brown_percentage: float) -> str:
+        """المستوى الإجمالي للضرر المرئي."""
+        combined = float(yellow_percentage or 0) + float(brown_percentage or 0)
+        if combined > 0.40:
+            return 'شديد'
+        if combined > 0.20:
+            return 'متوسط'
+        if combined > 0.05:
+            return 'خفيف'
+        return 'طفيف'
+
+    def _analyze_damage_distribution(self, yellow_mask: np.ndarray,
+                                     brown_mask: np.ndarray) -> Dict[str, Any]:
+        """توزيع الضرر: منتظم أم بقعي أم على الحواف."""
+        combined = ((yellow_mask > 0) | (brown_mask > 0)).astype(np.uint8)
+        affected = float(combined.mean() * 100)
+        if affected <= 0:
+            return {'affected_percentage': 0.0, 'distribution': 'لا يوجد ضرر', 'spread': 'محدود'}
+
+        h, w = combined.shape
+        edge_band = combined[:max(1, h // 10), :].mean() + combined[-max(1, h // 10):, :].mean()
+        center = combined[h // 3: 2 * h // 3, w // 3: 2 * w // 3].mean()
+
+        if edge_band > 0 and edge_band > center * 1.5:
+            distribution = 'متمركز على الحواف'
+        elif center > edge_band * 1.5:
+            distribution = 'متمركز في الوسط'
+        else:
+            distribution = 'منتظم/بقعي'
+
+        spread = 'واسع' if affected > 30 else ('متوسط' if affected > 10 else 'محدود')
+        return {
+            'affected_percentage': affected,
+            'distribution': distribution,
+            'spread': spread,
+        }
+
+    def _get_image_improvement_tips(self, quality_score: int) -> List[str]:
+        """نصائح لتحسين جودة الصورة عند إعادة التصوير."""
+        if quality_score > 80:
+            return ['جودة الصورة جيدة للتحليل']
+        tips = []
+        if quality_score < 60:
+            tips.append('التقط الصورة في إضاءة طبيعية كافية')
+        tips += [
+            'قرّب الكاميرا من الورقة المصابة',
+            'تجنب الاهتزاز واستخدم التركيز التلقائي',
+            'أظهر الوجه العلوي والسفلي للورقة',
+        ]
+        return tips
 
 # Factory function
 def create_pest_control_recommender() -> PestControlRecommender:

@@ -13,6 +13,7 @@ import uvicorn
 import base64
 
 from pest_control.pest_control_recommender import create_pest_control_recommender
+from ai_common.utils import to_json_safe
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -76,7 +77,7 @@ async def analyze_pest_problem(request: PestAnalysisRequest):
         
         return {
             'success': True,
-            'data': result,
+            'data': to_json_safe(result),
             'message': 'تم تحليل مشكلة الآفات بنجاح'
         }
         
@@ -113,11 +114,11 @@ async def identify_pest(request: PestIdentificationRequest):
         
         return {
             'success': True,
-            'data': {
+            'data': to_json_safe({
                 'identification': identification,
                 'symptoms_analysis': symptoms_analysis,
                 'image_analysis': image_analysis
-            },
+            }),
             'message': 'تم تحديد الآفة بنجاح'
         }
         
@@ -155,7 +156,7 @@ async def recommend_treatment(request: TreatmentRecommendationRequest):
         
         return {
             'success': True,
-            'data': treatments,
+            'data': to_json_safe(treatments),
             'message': 'تم إنشاء توصيات العلاج بنجاح'
         }
         
@@ -177,7 +178,7 @@ async def upload_pest_image(file: UploadFile = File(...)):
         
         return {
             'success': True,
-            'data': analysis,
+            'data': to_json_safe(analysis),
             'message': 'تم تحليل الصورة بنجاح'
         }
         
@@ -193,7 +194,7 @@ async def get_pest_database():
     try:
         return {
             'success': True,
-            'data': pest_recommender.pest_disease_database,
+            'data': to_json_safe(pest_recommender.pest_disease_database),
             'message': 'تم جلب قاعدة البيانات بنجاح'
         }
         
@@ -215,7 +216,7 @@ async def get_prevention_measures(crop_type: str):
         
         return {
             'success': True,
-            'data': measures,
+            'data': to_json_safe(measures),
             'message': 'تم جلب التدابير الوقائية بنجاح'
         }
         
@@ -252,7 +253,7 @@ async def assess_severity(
         
         return {
             'success': True,
-            'data': assessment,
+            'data': to_json_safe(assessment),
             'message': 'تم تقييم شدة الإصابة بنجاح'
         }
         

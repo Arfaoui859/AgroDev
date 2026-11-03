@@ -49,6 +49,9 @@ import TreatmentRecommendations from "../pages/TreatmentRecommendations";
 import TreatmentProgress from "../pages/TreatmentProgress";
 import TreatmentHistory from "../pages/TreatmentHistory";
 import SmartIrrigationDashboard from "../pages/SmartIrrigationDashboard";
+import IrrigationOptimization from "../pages/IrrigationOptimization";
+import PestControl from "../pages/PestControl";
+import WeatherYieldPlanner from "../pages/WeatherYieldPlanner";
 import WaterConservationAnalytics from "../pages/WaterConservationAnalytics";
 import FinancialDashboard from "../pages/FinancialDashboard";
 import ExpenseTracker from "../pages/ExpenseTracker";
@@ -304,6 +307,15 @@ export default function AppRouter() {
           <Route path="/ai-assistant" element={<AIAssistantChatbot />} />
           <Route path="/ai-chatbot" element={<AIAssistantChatbot />} />
           <Route path="/smart-advisor" element={<SmartAdvisor />} />
+          <Route
+            path="/irrigation-optimization"
+            element={<IrrigationOptimization />}
+          />
+          <Route path="/pest-control" element={<PestControl />} />
+          <Route
+            path="/weather-yield-planner"
+            element={<WeatherYieldPlanner />}
+          />
           <Route path="/gamification" element={<GamificationDashboard />} />
           <Route path="/investor-dashboard" element={<InvestorDashboard />} />
           <Route path="/public-data" element={<PublicDataDashboard />} />

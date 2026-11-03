@@ -15,6 +15,7 @@ import base64
 
 from weather_yield_intelligence.smart_weather_crop_planner import create_smart_weather_crop_planner
 from weather_yield_intelligence.yield_predictor_ai import create_yield_predictor_ai
+from ai_common.utils import to_json_safe
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -138,7 +139,7 @@ async def create_weather_based_plan(request: WeatherPlanningRequest):
         
         return {
             'success': True,
-            'data': result,
+            'data': to_json_safe(result),
             'message': 'تم إنشاء الخطة المناخية بنجاح'
         }
         
@@ -159,7 +160,7 @@ async def predict_crop_yield(request: YieldPredictionRequest):
         
         return {
             'success': True,
-            'data': result,
+            'data': to_json_safe(result),
             'message': 'تم التنبؤ بالمردودية بنجاح'
         }
         
@@ -195,7 +196,7 @@ async def comprehensive_analysis(request: CombinedAnalysisRequest):
         
         return {
             'success': True,
-            'data': {
+            'data': to_json_safe({
                 'weather_analysis': weather_analysis,
                 'yield_analysis': yield_analysis,
                 'combined_insights': combined_insights,
@@ -203,7 +204,7 @@ async def comprehensive_analysis(request: CombinedAnalysisRequest):
                 'executive_summary': _generate_executive_summary(
                     weather_analysis, yield_analysis
                 )
-            },
+            }),
             'message': 'تم إنجاز التحليل الشامل بنجاح'
         }
         
@@ -225,7 +226,7 @@ async def analyze_field_image(file: UploadFile = File(...)):
         
         return {
             'success': True,
-            'data': analysis,
+            'data': to_json_safe(analysis),
             'message': 'تم تحليل صورة الحقل بنجاح'
         }
         
@@ -241,7 +242,7 @@ async def get_climate_zones():
     try:
         return {
             'success': True,
-            'data': get_weather_planner().climate_zones,
+            'data': to_json_safe(get_weather_planner().climate_zones),
             'message': 'تم جلب معلومات المناطق المناخية'
         }
         
@@ -257,7 +258,7 @@ async def get_crop_yield_database():
     try:
         return {
             'success': True,
-            'data': get_yield_predictor().crop_yield_database,
+            'data': to_json_safe(get_yield_predictor().crop_yield_database),
             'message': 'تم جلب قاعدة بيانات العوائد'
         }
         
@@ -293,7 +294,7 @@ async def assess_crop_climate_suitability(
         
         return {
             'success': True,
-            'data': suitability[0] if suitability else {},
+            'data': to_json_safe(suitability[0] if suitability else {}),
             'message': 'تم تقييم الملائمة المناخية'
         }
         
@@ -329,7 +330,7 @@ async def optimize_planting_schedule(
         
         return {
             'success': True,
-            'data': optimal_timing,
+            'data': to_json_safe(optimal_timing),
             'message': 'تم تحسين جدولة الزراعة'
         }
         

@@ -78,6 +78,11 @@ async function capabilities(): Promise<Capability[]> {
     : "يُحوّل إلى خدمة الرؤية المُهيّأة (يُتحقّق من توفرها فعلياً).";
   const soilUrl = process.env.SOIL_ANALYSIS_URL;
   const cropUrl = process.env.CROP_RECOMMENDATION_URL;
+  const pestUrl = process.env.PEST_CONTROL_URL;
+  const irrigationUrl = process.env.IRRIGATION_OPTIMIZATION_URL;
+  const weatherYieldUrl =
+    process.env.WEATHER_YIELD_INTELLIGENCE_URL ??
+    process.env.SMART_MARKETPLACE_URL;
 
   return [
     {
@@ -151,37 +156,73 @@ async function capabilities(): Promise<Capability[]> {
       id: "pest-control",
       name: "Pest Control Recommender",
       nameAr: "مكافحة الآفات",
-      engine: "rule-based",
-      provenance: "Curated pest knowledge base with rule-based treatment guidance.",
-      provenanceAr: "قاعدة معرفية للآفات مع إرشادات علاج بقواعد ثابتة.",
+      // Backed by the pest_control microservice (symptom keyword matching +
+      // classifier trained on synthetic samples). Reachability is probed live;
+      // its synthetic provenance is surfaced rather than hidden.
+      engine: "microservice",
+      microserviceUrl: pestUrl,
+      microserviceConfigured: Boolean(pestUrl),
+      fallbackEngine: "unavailable",
+      provenance: pestUrl
+        ? "Answered by the pest_control microservice (symptom matching + classifier trained on synthetic samples)."
+        : "No pest-control microservice is configured (set PEST_CONTROL_URL).",
+      provenanceAr: pestUrl
+        ? "يُجاب بواسطة خدمة مكافحة الآفات (مطابقة الأعراض + مصنّف مدرّب على بيانات اصطناعية)."
+        : "لا توجد خدمة مكافحة آفات مُهيّأة (اضبط PEST_CONTROL_URL).",
+      requiresConfiguration: pestUrl ? undefined : "PEST_CONTROL_URL",
     },
     {
       id: "weather-yield-planner",
       name: "Smart Weather Crop Planner",
       nameAr: "مخطط الطقس والمحاصيل",
-      engine: "rule-based",
-      provenance:
-        "Live weather from the configured provider (Open-Meteo) combined with rule-based crop planning.",
-      provenanceAr: "بيانات طقس حقيقية مع تخطيط محاصيل بقواعد ثابتة.",
+      // Served by the weather_yield_intelligence microservice (seasonal planner
+      // trained on synthetic samples).
+      engine: "microservice",
+      microserviceUrl: weatherYieldUrl,
+      microserviceConfigured: Boolean(weatherYieldUrl),
+      fallbackEngine: "unavailable",
+      provenance: weatherYieldUrl
+        ? "Answered by the weather_yield_intelligence microservice (seasonal planning model trained on synthetic samples)."
+        : "No weather/yield microservice is configured (set WEATHER_YIELD_INTELLIGENCE_URL).",
+      provenanceAr: weatherYieldUrl
+        ? "يُجاب بواسطة خدمة الطقس والمردودية (نموذج تخطيط موسمي مدرّب على بيانات اصطناعية)."
+        : "لا توجد خدمة طقس/مردودية مُهيّأة (اضبط WEATHER_YIELD_INTELLIGENCE_URL).",
+      requiresConfiguration: weatherYieldUrl ? undefined : "WEATHER_YIELD_INTELLIGENCE_URL",
     },
     {
       id: "yield-predictor",
       name: "Yield Predictor AI",
       nameAr: "توقّع الإنتاجية",
-      engine: "unavailable",
-      provenance:
-        "No trained yield model is hosted in-process; this capability is declared unavailable rather than faked.",
-      provenanceAr:
-        "لا يوجد نموذج توقّع إنتاجية مُدرّب داخل المنصة؛ تُعلن هذه القدرة غير متاحة بدل تزييف النتائج.",
-      requiresConfiguration: LLM_CONFIG_HINT,
+      // Served by the same weather_yield_intelligence microservice.
+      engine: "microservice",
+      microserviceUrl: weatherYieldUrl,
+      microserviceConfigured: Boolean(weatherYieldUrl),
+      fallbackEngine: "unavailable",
+      provenance: weatherYieldUrl
+        ? "Answered by the weather_yield_intelligence microservice (yield regression trained on synthetic samples)."
+        : "No yield-prediction microservice is configured (set WEATHER_YIELD_INTELLIGENCE_URL).",
+      provenanceAr: weatherYieldUrl
+        ? "يُجاب بواسطة خدمة الطقس والمردودية (انحدار المردودية مدرّب على بيانات اصطناعية)."
+        : "لا توجد خدمة توقّع مردودية مُهيّأة (اضبط WEATHER_YIELD_INTELLIGENCE_URL).",
+      requiresConfiguration: weatherYieldUrl ? undefined : "WEATHER_YIELD_INTELLIGENCE_URL",
     },
     {
       id: "irrigation-optimizer",
       name: "Smart Irrigation Optimizer",
       nameAr: "تحسين الري",
-      engine: "rule-based",
-      provenance: "Water-balance calculation from weather data and rule-based scheduling.",
-      provenanceAr: "حساب الميزان المائي من بيانات الطقس مع جدولة بقواعد ثابتة.",
+      // Served by the irrigation_optimization microservice (water-balance
+      // scheduling model trained on synthetic samples).
+      engine: "microservice",
+      microserviceUrl: irrigationUrl,
+      microserviceConfigured: Boolean(irrigationUrl),
+      fallbackEngine: "unavailable",
+      provenance: irrigationUrl
+        ? "Answered by the irrigation_optimization microservice (water-balance scheduling model trained on synthetic samples)."
+        : "No irrigation microservice is configured (set IRRIGATION_OPTIMIZATION_URL).",
+      provenanceAr: irrigationUrl
+        ? "يُجاب بواسطة خدمة تحسين الري (نموذج جدولة بالميزان المائي مدرّب على بيانات اصطناعية)."
+        : "لا توجد خدمة ري مُهيّأة (اضبط IRRIGATION_OPTIMIZATION_URL).",
+      requiresConfiguration: irrigationUrl ? undefined : "IRRIGATION_OPTIMIZATION_URL",
     },
     {
       id: "market-forecast",
