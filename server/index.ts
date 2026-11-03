@@ -328,7 +328,6 @@ export function createServer() {
       "/api/farm-management",
       "/api/weather-crop-planner",
       "/api/weather-yield-intelligence",
-      "/api/soil-ai-detector",
       "/api/predictive-analytics",
       "/api/risk-detection",
       "/api/farmer-dashboard",

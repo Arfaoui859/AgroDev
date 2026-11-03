@@ -1,4 +1,5 @@
 import express from 'express';
+import { markSimulated } from '../lib/provenance';
 
 const router = express.Router();
 
@@ -861,6 +862,8 @@ const soilAI = new SoilProblemDetector();
 
 // Analyze soil data and detect problems
 router.post('/analyze', (req, res) => {
+  res.set('X-Data-Provenance', 'rule-based');
+  res.set('X-Is-Real-Data', 'false');
   try {
     const soilData: SoilData = req.body;
     
@@ -940,6 +943,7 @@ router.get('/ideal-profile', (req, res) => {
 
 // Get historical analysis and trends
 router.get('/history/:fieldId', (req, res) => {
+  markSimulated(res);
   try {
     const { fieldId } = req.params;
     
@@ -985,6 +989,7 @@ router.get('/history/:fieldId', (req, res) => {
 
 // Get active alerts
 router.get('/alerts', (req, res) => {
+  markSimulated(res);
   try {
     const { severity, resolved } = req.query;
     
@@ -1062,6 +1067,7 @@ router.patch('/alerts/:alertId/resolve', (req, res) => {
 
 // Get problem statistics and insights
 router.get('/statistics', (req, res) => {
+  markSimulated(res);
   try {
     const stats = {
       commonProblems: [
