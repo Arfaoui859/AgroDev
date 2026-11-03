@@ -393,7 +393,7 @@ router.post('/technologies', (req, res) => {
     res.status(201).json(newTechnology);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
+      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.issues });
     } else {
       res.status(500).json({ error: 'حدث خطأ في إنشاء التقنية' });
     }
@@ -474,7 +474,7 @@ router.post('/investments', (req, res) => {
     res.status(201).json(newInvestment);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
+      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.issues });
     } else {
       res.status(500).json({ error: 'حدث خطأ في إنشاء الاستثمار' });
     }

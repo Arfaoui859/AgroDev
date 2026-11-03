@@ -571,7 +571,7 @@ router.post('/scenarios/:id/simulate', (req, res) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
+      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.issues });
     } else {
       res.status(500).json({ error: 'حدث خطأ في تشغيل المحاكاة' });
     }
@@ -627,7 +627,7 @@ router.patch('/plans/:planId/steps/:stepId/status', (req, res) => {
     res.json({ message: 'تم تحديث حالة الخطوة بنجاح' });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
+      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.issues });
     } else {
       res.status(500).json({ error: 'حدث خطأ في تحديث حالة الخطوة' });
     }

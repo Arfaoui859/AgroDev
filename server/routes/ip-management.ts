@@ -436,7 +436,7 @@ router.post('/patents', (req, res) => {
     res.status(201).json(newPatent);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
+      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.issues });
     } else {
       res.status(500).json({ error: 'حدث خطأ في إنشاء البراءة' });
     }
@@ -586,7 +586,7 @@ router.post('/licenses', (req, res) => {
     res.status(201).json(newLicense);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
+      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.issues });
     } else {
       res.status(500).json({ error: 'حدث خطأ في إنشاء الترخيص' });
     }

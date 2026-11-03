@@ -403,7 +403,7 @@ router.post('/chat', async (req, res) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
+      res.status(400).json({ error: 'بيانات غير صحيحة', details: error.issues });
     } else {
       console.error('Smart advisor chat error:', error);
       res.status(500).json({ error: 'حدث خطأ في معالجة الرسالة' });
