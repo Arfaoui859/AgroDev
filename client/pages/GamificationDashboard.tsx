@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   Trophy,
   Star,
@@ -106,9 +107,7 @@ const GamificationDashboard = () => {
     setLoading(true);
     try {
       // Fetch user profile
-      const profileResponse = await fetch(
-        "/api/gamification/profile?userId=demo-user",
-      );
+      const profileResponse = await apiFetch("/api/gamification/profile");
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
         setUserProfile(profileData.data);
@@ -124,8 +123,8 @@ const GamificationDashboard = () => {
       }
 
       // Fetch achievements
-      const achievementsResponse = await fetch(
-        "/api/gamification/achievements?userId=demo-user",
+      const achievementsResponse = await apiFetch(
+        "/api/gamification/achievements",
       );
       if (achievementsResponse.ok) {
         const achievementsData = await achievementsResponse.json();
@@ -133,8 +132,8 @@ const GamificationDashboard = () => {
       }
 
       // Fetch activities
-      const activitiesResponse = await fetch(
-        "/api/gamification/activity?userId=demo-user&limit=10",
+      const activitiesResponse = await apiFetch(
+        "/api/gamification/activity?limit=10",
       );
       if (activitiesResponse.ok) {
         const activitiesData = await activitiesResponse.json();
@@ -154,13 +153,12 @@ const GamificationDashboard = () => {
 
   const awardXP = async (action: string, metadata?: any) => {
     try {
-      const response = await fetch("/api/gamification/award-xp", {
+      const response = await apiFetch("/api/gamification/award-xp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: "demo-user",
           action,
           metadata,
         }),

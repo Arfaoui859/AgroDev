@@ -278,7 +278,8 @@ function checkBadgeEligibility(
 
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
-    const userId = (req.query.userId as string) || "demo-user";
+    // Identity comes from requireAuth; never trust a client-supplied userId.
+    const userId = req.userId as string;
     const userReward = getUserRewards(userId);
 
     // Update streak if necessary
@@ -329,7 +330,9 @@ export const getUserProfile = async (req: Request, res: Response) => {
 
 export const awardXP = async (req: Request, res: Response) => {
   try {
-    const { userId = "demo-user", action, metadata } = req.body;
+    const { action, metadata } = req.body;
+    // Identity comes from requireAuth; ignore any userId in the body.
+    const userId = req.userId as string;
 
     const xpEvent = XP_REWARDS[action];
     if (!xpEvent) {
@@ -427,7 +430,7 @@ export const getLeaderboard = async (req: Request, res: Response) => {
 
 export const getAvailableAchievements = async (req: Request, res: Response) => {
   try {
-    const userId = (req.query.userId as string) || "demo-user";
+    const userId = req.userId as string;
     const userReward = getUserRewards(userId);
     const userActivitiesCount = userActivities.filter(
       (a) => a.userId === userId,
@@ -512,7 +515,7 @@ export const getAvailableAchievements = async (req: Request, res: Response) => {
 
 export const getUserActivity = async (req: Request, res: Response) => {
   try {
-    const userId = (req.query.userId as string) || "demo-user";
+    const userId = req.userId as string;
     const { limit = 20 } = req.query;
 
     const activities = userActivities

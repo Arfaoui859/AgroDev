@@ -10,6 +10,7 @@ import {
   requireAdminToken,
   keyMintRateLimiter,
 } from "./middleware/security";
+import { requireAuth } from "./middleware/auth";
 import { handleUploadError } from "./middleware/upload";
 import {
   getWeatherByCoordinates,
@@ -665,11 +666,14 @@ export function createServer() {
   app.get("/api/auth/check-user/:userId", requireAdminToken(), checkUserExists);
 
   // 🎮 GAMIFICATION SYSTEM ROUTES
-  app.get("/api/gamification/profile", getUserProfile);
-  app.post("/api/gamification/award-xp", awardXP);
+  // Per-user endpoints resolve identity from the verified JWT (requireAuth) so
+  // a caller cannot read or award XP to another user by naming their id.
+  app.get("/api/gamification/profile", requireAuth, getUserProfile);
+  app.post("/api/gamification/award-xp", requireAuth, awardXP);
+  app.get("/api/gamification/achievements", requireAuth, getAvailableAchievements);
+  app.get("/api/gamification/activity", requireAuth, getUserActivity);
+  // Leaderboard and aggregate stats are intentionally public.
   app.get("/api/gamification/leaderboard", getLeaderboard);
-  app.get("/api/gamification/achievements", getAvailableAchievements);
-  app.get("/api/gamification/activity", getUserActivity);
   app.get("/api/gamification/stats", getGamificationStats);
 
   // 💼 INVESTOR DASHBOARD ROUTES
