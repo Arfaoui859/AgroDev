@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import multer from "multer";
 import path from "path";
+import { uploadError } from "../middleware/upload";
 
 // Configure multer for image upload
 const storage = multer.memoryStorage();
@@ -15,7 +16,7 @@ const upload = multer({
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('نوع الملف غير مدعوم. يرجى رفع صور بصيغة JPEG, PNG, أو WebP فقط'));
+      cb(uploadError({ message: 'نوع الملف غير مدعوم. يرجى رفع صور بصيغة JPEG, PNG, أو WebP فقط' }));
     }
   }
 });

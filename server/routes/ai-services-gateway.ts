@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import axios, { AxiosError } from "axios";
 import FormData from "form-data";
 import multer from "multer";
+import { uploadError } from "../middleware/upload";
 import {
   analyzeSoilForUI,
   recommendCropsForUI,
@@ -37,7 +38,7 @@ const upload = multer({
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed"));
+      cb(uploadError({ message: "Only image files are allowed (JPEG, PNG, WebP)" }));
     }
   },
 });

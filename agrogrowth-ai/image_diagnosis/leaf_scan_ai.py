@@ -6,8 +6,6 @@ Specialized in analyzing leaf health, nutrition status, and growth patterns
 import numpy as np
 import cv2
 from PIL import Image
-import tensorflow as tf
-from tensorflow import keras
 from typing import Dict, List, Tuple, Any, Union, Optional
 import base64
 import io
@@ -15,6 +13,34 @@ from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
+
+# TensorFlow is optional: it is only needed to *construct* the CNN
+# architectures, while the inference paths are feature-based heuristics. Importing
+# it lazily keeps the service bootable in environments without the (heavy)
+# deep-learning stack instead of failing at import time.
+keras = None
+layers = None
+
+
+def _load_keras() -> bool:
+    """Load TensorFlow/Keras on first use. Returns True when available."""
+    global keras, layers
+    if keras is not None:
+        return True
+    try:
+        from tensorflow import keras as _keras
+        from tensorflow.keras import layers as _layers
+
+        keras, layers = _keras, _layers
+        return True
+    except Exception as exc:  # pragma: no cover - depends on environment
+        logger.warning(
+            "TensorFlow unavailable (%s); CNN layers disabled, heuristic inference unaffected",
+            exc,
+        )
+        return False
+
+
 
 class LeafScanAI:
     """AI system for comprehensive leaf analysis and health assessment"""
@@ -24,6 +50,7 @@ class LeafScanAI:
         self.growth_model = None
         self.leaf_health_model = None
         self.is_trained = False
+        self.model_unavailable_reason: Optional[str] = None
         self.input_shape = (224, 224, 3)
         
         # Nutritional deficiency database
@@ -132,6 +159,13 @@ class LeafScanAI:
     
     def _initialize_models(self):
         """Initialize the leaf analysis models"""
+        if not _load_keras():
+            self.model_unavailable_reason = "tensorflow-not-installed"
+            self.is_trained = True
+            logger.info(
+                "LeafScanAI running in heuristic mode (TensorFlow not installed)"
+            )
+            return
         try:
             self._build_nutrition_analysis_model()
             self._build_growth_assessment_model()

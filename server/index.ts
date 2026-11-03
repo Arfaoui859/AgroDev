@@ -9,6 +9,7 @@ import {
   jsonBodyErrorHandler,
   requireAdminToken,
 } from "./middleware/security";
+import { handleUploadError } from "./middleware/upload";
 import {
   getWeatherByCoordinates,
   getWeatherByLocation,
@@ -717,9 +718,17 @@ export function createServer() {
 
   // Final error handler: never leak stack traces or internal details
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    // Upload validation errors are client mistakes, not server faults.
+    if (handleUploadError(err, res)) return;
     console.error("Unhandled API error:", err?.message || err);
+    // Only messages explicitly marked safe are returned; everything else stays
+    // opaque so internal details never leak.
     const status = typeof err?.status === "number" ? err.status : 500;
-    res.status(status).json({ error: "Internal server error" });
+    const message =
+      err?.expose === true && typeof err?.message === "string"
+        ? err.message
+        : "Internal server error";
+    res.status(status).json({ error: message });
   });
 
   return app;

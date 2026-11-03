@@ -6,9 +6,6 @@ Uses deep learning to identify diseases, pests, and health issues from plant ima
 import numpy as np
 import cv2
 from PIL import Image
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 import logging
 from typing import Dict, List, Tuple, Any, Union, Optional
 import base64
@@ -18,6 +15,34 @@ import json
 
 logger = logging.getLogger(__name__)
 
+# TensorFlow is optional: it is only needed to *construct* the CNN
+# architectures, while the inference paths are feature-based heuristics. Importing
+# it lazily keeps the service bootable in environments without the (heavy)
+# deep-learning stack instead of failing at import time.
+keras = None
+layers = None
+
+
+def _load_keras() -> bool:
+    """Load TensorFlow/Keras on first use. Returns True when available."""
+    global keras, layers
+    if keras is not None:
+        return True
+    try:
+        from tensorflow import keras as _keras
+        from tensorflow.keras import layers as _layers
+
+        keras, layers = _keras, _layers
+        return True
+    except Exception as exc:  # pragma: no cover - depends on environment
+        logger.warning(
+            "TensorFlow unavailable (%s); CNN layers disabled, heuristic inference unaffected",
+            exc,
+        )
+        return False
+
+
+
 class PlantDiseaseDetector:
     """CNN-based AI model for detecting plant diseases and health issues"""
     
@@ -25,6 +50,7 @@ class PlantDiseaseDetector:
         self.disease_model = None
         self.severity_model = None
         self.is_trained = False
+        self.model_unavailable_reason: Optional[str] = None
         self.input_shape = (224, 224, 3)
         
         # Comprehensive disease database
@@ -202,6 +228,15 @@ class PlantDiseaseDetector:
     
     def _initialize_models(self):
         """Initialize the disease detection models"""
+        if not _load_keras():
+            # Heuristic inference needs no CNN weights, so the detector stays
+            # fully usable; only the (unused) CNN construction is skipped.
+            self.model_unavailable_reason = "tensorflow-not-installed"
+            self.is_trained = True
+            logger.info(
+                "PlantDiseaseDetector running in heuristic mode (TensorFlow not installed)"
+            )
+            return
         try:
             self._build_disease_detection_model()
             self._build_severity_assessment_model()
@@ -428,6 +463,8 @@ class PlantDiseaseDetector:
         
         green_ratio = np.sum(green_mask) / green_mask.size
         brown_ratio = np.sum(brown_mask) / brown_mask.size
+        features['brown_ratio'] = float(brown_ratio)
+        features['green_ratio'] = float(green_ratio)
         features['green_brown_ratio'] = float(green_ratio / (brown_ratio + 0.001))
         
         # Texture analysis
