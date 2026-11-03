@@ -9,7 +9,7 @@ const demoUsers = [
     password: "demo123",
     userData: {
       full_name: "أحمد المزارع",
-      full_name_ar: "أ��مد المزارع",
+      full_name_ar: "أحمد المزارع",
       role: "farmer",
       location: "تونس",
       specialization: "الزراعة العامة",
@@ -54,18 +54,6 @@ const demoUsers = [
     },
   },
   {
-    email: "arfaouisami.iaot@gmail.com",
-    password: "123456789",
-    userData: {
-      full_name: "خبير زراعي",
-      full_name_ar: "خبير زراعي",
-      role: "agronomist",
-      location: "تونس",
-      specialization: "الخبرة الزراعية",
-      verified: true,
-    },
-  },
-  {
     email: "trader@demo.com",
     password: "demo123",
     userData: {
@@ -87,18 +75,6 @@ const demoUsers = [
       location: "تونس",
       specialization: "الطب البيطري",
       experience_years: 8,
-      verified: true,
-    },
-  },
-  {
-    email: "neuroforgesoultion@gmail.com",
-    password: "123456789",
-    userData: {
-      full_name: "مراقب الحقول",
-      full_name_ar: "مراقب الحقول",
-      role: "inspector",
-      location: "تونس",
-      specialization: "مراقبة الحقول",
       verified: true,
     },
   },

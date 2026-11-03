@@ -211,5 +211,103 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
       const response = await request(app).get("/api/ping").expect(200);
       expect(response.status).toBe(200);
     });
+
+    describe("Privileged maintenance endpoints are not anonymous", () => {
+      const privileged: Array<[string, string]> = [
+        ["post", "/api/setup-admin"],
+        ["post", "/api/setup-demo-users"],
+        ["get", "/api/demo-users"],
+        ["post", "/api/setup-inspector"],
+        ["post", "/api/setup-users"],
+        ["get", "/api/debug/auth"],
+        ["post", "/api/test/auth/signup"],
+        ["post", "/api/test/auth/signin"],
+        ["get", "/api/test/supabase"],
+        ["post", "/api/auth/create-user-profile"],
+        ["get", "/api/auth/check-user/00000000-0000-0000-0000-000000000000"],
+      ];
+
+      test.each(privileged)(
+        "%s %s requires the admin token in production",
+        async (method, path) => {
+          const previousEnv = process.env.NODE_ENV;
+          const previousToken = process.env.ADMIN_API_TOKEN;
+          const previousDemo = process.env.ENABLE_DEMO_ENDPOINTS;
+          process.env.NODE_ENV = "production";
+          delete process.env.ADMIN_API_TOKEN;
+          delete process.env.ENABLE_DEMO_ENDPOINTS;
+          try {
+            const prodApp = createServer();
+            const agent = request(prodApp) as any;
+            const response = await agent[method](path).send({});
+            expect([401, 403]).toContain(response.status);
+          } finally {
+            if (previousEnv === undefined) delete process.env.NODE_ENV;
+            else process.env.NODE_ENV = previousEnv;
+            if (previousToken !== undefined)
+              process.env.ADMIN_API_TOKEN = previousToken;
+            if (previousDemo !== undefined)
+              process.env.ENABLE_DEMO_ENDPOINTS = previousDemo;
+          }
+        },
+      );
+
+      test("a matching x-admin-token is accepted", async () => {
+        const previousToken = process.env.ADMIN_API_TOKEN;
+        process.env.ADMIN_API_TOKEN = "test-admin-token";
+        try {
+          const prodApp = createServer();
+          const response = await request(prodApp)
+            .get("/api/demo-users")
+            .set("x-admin-token", "test-admin-token");
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveProperty("demoUsers");
+        } finally {
+          if (previousToken === undefined) delete process.env.ADMIN_API_TOKEN;
+          else process.env.ADMIN_API_TOKEN = previousToken;
+        }
+      });
+
+      test("a wrong x-admin-token is rejected in production", async () => {
+        const previousEnv = process.env.NODE_ENV;
+        const previousToken = process.env.ADMIN_API_TOKEN;
+        process.env.NODE_ENV = "production";
+        process.env.ADMIN_API_TOKEN = "test-admin-token";
+        try {
+          const prodApp = createServer();
+          const response = await request(prodApp)
+            .get("/api/demo-users")
+            .set("x-admin-token", "wrong-token");
+          expect([401, 403]).toContain(response.status);
+        } finally {
+          if (previousEnv === undefined) delete process.env.NODE_ENV;
+          else process.env.NODE_ENV = previousEnv;
+          if (previousToken === undefined) delete process.env.ADMIN_API_TOKEN;
+          else process.env.ADMIN_API_TOKEN = previousToken;
+        }
+      });
+    });
+
+    test("demo user list never contains real personal email addresses", async () => {
+      const previousToken = process.env.ADMIN_API_TOKEN;
+      process.env.ADMIN_API_TOKEN = "test-admin-token";
+      try {
+        const prodApp = createServer();
+        const response = await request(prodApp)
+          .get("/api/demo-users")
+          .set("x-admin-token", "test-admin-token")
+          .expect(200);
+        const emails: string[] = response.body.demoUsers.map(
+          (u: any) => u.email,
+        );
+        expect(emails.length).toBeGreaterThan(0);
+        for (const email of emails) {
+          expect(email).toMatch(/@demo\.com$|@agrogrowth\.com$/);
+        }
+      } finally {
+        if (previousToken === undefined) delete process.env.ADMIN_API_TOKEN;
+        else process.env.ADMIN_API_TOKEN = previousToken;
+      }
+    });
   });
 });

@@ -2,6 +2,7 @@ import { RequestHandler, Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import crypto from "crypto";
 
 /**
  * Security headers. The API is consumed by the SPA and by external clients, so
@@ -90,4 +91,56 @@ export function jsonBodyErrorHandler(): (
     }
     return next(err);
   };
+}
+
+/**
+ * Guard for privileged maintenance endpoints (demo/admin user provisioning,
+ * auth debug helpers). These MUST NOT be reachable anonymously in production.
+ *
+ * Access is granted when either:
+ *  - ADMIN_API_TOKEN is set and the request carries a matching
+ *    `x-admin-token` header (timing-safe comparison), or
+ *  - the environment is explicitly non-production AND
+ *    ENABLE_DEMO_ENDPOINTS is not set to "false".
+ *
+ * In production with no token configured the endpoint is disabled entirely,
+ * which fails closed rather than exposing privileged operations.
+ */
+export function requireAdminToken(): RequestHandler {
+  const isProd = process.env.NODE_ENV === "production";
+
+  return (req, res, next) => {
+    const expected = process.env.ADMIN_API_TOKEN;
+    const provided = req.header("x-admin-token") || "";
+
+    if (expected && timingSafeEqualStr(provided, expected)) {
+      return next();
+    }
+
+    const demoAllowed =
+      !isProd && process.env.ENABLE_DEMO_ENDPOINTS !== "false";
+    if (demoAllowed) {
+      return next();
+    }
+
+    if (!expected && isProd) {
+      return res.status(403).json({
+        error: "This endpoint is disabled.",
+      });
+    }
+
+    return res.status(401).json({ error: "Unauthorized" });
+  };
+}
+
+/** Constant-time string comparison to avoid leaking the token via timing. */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    // Still compare against itself to keep timing roughly constant.
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
 }

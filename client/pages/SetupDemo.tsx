@@ -61,8 +61,8 @@ export default function SetupDemo() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'admin@agrogrowth.com',
-          password: 'admin123',
+          email: 'admin@demo.com',
+          password: 'demo123',
         }),
       });
 
@@ -103,8 +103,8 @@ export default function SetupDemo() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: 'neuroforgesoultion@gmail.com',
-          password: '123456789',
+          email: 'inspector@demo.com',
+          password: 'demo123',
           full_name: 'مراقب الحقول',
           full_name_ar: 'مراقب الحقول',
           role: 'inspector',
@@ -157,8 +157,8 @@ export default function SetupDemo() {
               <div className="bg-purple-50 p-4 rounded-lg text-sm space-y-2">
                 <p className="font-semibold text-purple-900">بيانات الدخول:</p>
                 <div className="space-y-1 text-purple-800">
-                  <p>البريد الإلكتروني: <code className="bg-white px-2 py-1 rounded">admin@agrogrowth.com</code></p>
-                  <p>كلمة المرور: <code className="bg-white px-2 py-1 rounded">admin123</code></p>
+                  <p>البريد الإلكتروني: <code className="bg-white px-2 py-1 rounded">admin@demo.com</code></p>
+                  <p>كلمة المرور: <code className="bg-white px-2 py-1 rounded">demo123</code></p>
                 </div>
               </div>
               <Button
@@ -194,7 +194,7 @@ export default function SetupDemo() {
                   <li>• agronomist@demo.com (خبير زراعي)</li>
                   <li>• trader@demo.com (تاجر)</li>
                   <li>• veterinarian@demo.com (طبيب بيطري)</li>
-                  <li>• neuroforgesoultion@gmail.com (مراقب حقول)</li>
+                  <li>• inspector@demo.com (مراقب حقول)</li>
                   <li>• admin@demo.com (مسؤول)</li>
                 </ul>
                 <p className="text-xs text-blue-700 mt-2">كلمة المرور لجميعهم: <code>demo123</code></p>
@@ -228,8 +228,8 @@ export default function SetupDemo() {
               <div className="bg-green-50 p-4 rounded-lg text-sm space-y-2">
                 <p className="font-semibold text-green-900">بيانات الدخول:</p>
                 <div className="space-y-1 text-green-800">
-                  <p>البريد الإلكتروني: <code className="bg-white px-2 py-1 rounded">neuroforgesoultion@gmail.com</code></p>
-                  <p>كلمة المرور: <code className="bg-white px-2 py-1 rounded">123456789</code></p>
+                  <p>البريد الإلكتروني: <code className="bg-white px-2 py-1 rounded">inspector@demo.com</code></p>
+                  <p>كلمة المرور: <code className="bg-white px-2 py-1 rounded">demo123</code></p>
                 </div>
               </div>
               <Button

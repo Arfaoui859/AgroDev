@@ -7,6 +7,7 @@ import {
   apiRateLimiter,
   aiRateLimiter,
   jsonBodyErrorHandler,
+  requireAdminToken,
 } from "./middleware/security";
 import {
   getWeatherByCoordinates,
@@ -587,7 +588,7 @@ export function createServer() {
   app.get("/api/ai/health", getAIServicesHealth);
 
   // Supabase Connection Test
-  app.get("/api/test/supabase", testSupabaseConnection);
+  app.get("/api/test/supabase", requireAdminToken(), testSupabaseConnection);
   // Admin: confirm unconfirmed users (requires x-admin-token header with service role key)
   app.post("/api/admin/confirm-unconfirmed", (req, res, next) => {
     return confirmUnconfirmedUsers(req, res, next as any);
@@ -612,21 +613,21 @@ export function createServer() {
   });
 
   // Auth Test Endpoints
-  app.post("/api/test/auth/signup", testAuthSignup);
-  app.post("/api/test/auth/signin", testAuthSignin);
-  app.get("/api/debug/auth", debugAuth);
+  app.post("/api/test/auth/signup", requireAdminToken(), testAuthSignup);
+  app.post("/api/test/auth/signin", requireAdminToken(), testAuthSignin);
+  app.get("/api/debug/auth", requireAdminToken(), debugAuth);
 
   // Demo User Setup
-  app.post("/api/setup-demo-users", setupDemoUsers);
-  app.get("/api/demo-users", getDemoUsers);
-  app.delete("/api/setup-demo-users", deleteDemoUsers);
+  app.post("/api/setup-demo-users", requireAdminToken(), setupDemoUsers);
+  app.get("/api/demo-users", requireAdminToken(), getDemoUsers);
+  app.delete("/api/setup-demo-users", requireAdminToken(), deleteDemoUsers);
 
   // Inspector User Setup
-  app.post("/api/setup-inspector", setupInspectorUser);
-  app.post("/api/setup-users", setupMultipleUsers);
+  app.post("/api/setup-inspector", requireAdminToken(), setupInspectorUser);
+  app.post("/api/setup-users", requireAdminToken(), setupMultipleUsers);
 
   // Admin User Setup
-  app.post("/api/setup-admin", setupAdminUser);
+  app.post("/api/setup-admin", requireAdminToken(), setupAdminUser);
 
   // Test endpoint for development
   app.get("/api/ping", (req, res) => {
@@ -638,8 +639,8 @@ export function createServer() {
   });
 
   // Auth Helper Endpoints (bypass RLS)
-  app.post("/api/auth/create-user-profile", createUserWithProfile);
-  app.get("/api/auth/check-user/:userId", checkUserExists);
+  app.post("/api/auth/create-user-profile", requireAdminToken(), createUserWithProfile);
+  app.get("/api/auth/check-user/:userId", requireAdminToken(), checkUserExists);
 
   // 🎮 GAMIFICATION SYSTEM ROUTES
   app.get("/api/gamification/profile", getUserProfile);
