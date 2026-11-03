@@ -1,136 +1,68 @@
 # 🤖 AgroGrowth AI Services Status
 
-## Current Status: **Development Mode** ⚠️
+## Current Status: **Operational**
 
-The AgroGrowth platform includes 5 AI microservices that provide intelligent agricultural insights. Currently, these services are **not running** which is normal for a development environment.
+Eight FastAPI microservices live under `agrogrowth-ai/`. They are started by the
+Express gateway's service supervisor (or manually, see below) and each answers
+`GET /health`. Verified live on this machine: all eight returned `200`.
 
-## Available AI Services
+| # | Service | Dir | Port |
+|---|---------|-----|------|
+| 1 | 🌱 Soil Analysis | `agrogrowth-ai/soil_analysis` | 8001 |
+| 2 | 🌾 Crop Recommendation | `agrogrowth-ai/crop_recommendation` | 8002 |
+| 3 | 📸 Image Diagnosis | `agrogrowth-ai/image_diagnosis` | 8003 |
+| 4 | 📈 Market Prediction | `agrogrowth-ai/market_prediction` | 8004 |
+| 5 | 🧠 Intelligent Agent | `agrogrowth-ai/intelligent_agent` | 8005 |
+| 6 | 🐛 Pest Control | `agrogrowth-ai/pest_control` | 8006 |
+| 7 | 💧 Irrigation Optimization | `agrogrowth-ai/irrigation_optimization` | 8007 |
+| 8 | 🌦️ Weather / Yield Intelligence | `agrogrowth-ai/weather_yield_intelligence` | 8008 |
 
-### 1. 🌱 Soil Analysis Service
-- **Port**: 8001
-- **Features**: 
-  - Soil composition analysis (pH, NPK, moisture)
-  - Climate-crop matching
-  - Soil image diagnosis
-- **Status**: ❌ Not Running
+## How to Start
 
-### 2. 🌾 Crop Recommendation Service  
-- **Port**: 8002
-- **Features**:
-  - Smart crop suggestions based on soil/climate
-  - Profitability estimation
-  - Crop comparison analytics
-- **Status**: ❌ Not Running
-
-### 3. 📸 Image Diagnosis Service
-- **Port**: 8003
-- **Features**:
-  - Plant disease detection from images
-  - Leaf health analysis
-  - Pest identification
-- **Status**: ❌ Not Running
-
-### 4. 📈 Market Forecast Service
-- **Port**: 8004  
-- **Features**:
-  - Price prediction algorithms
-  - Supply/demand analysis
-  - Market trend forecasting
-- **Status**: ❌ Not Running
-
-### 5. 🧠 Smart Assistant Service
-- **Port**: 8005
-- **Features**:
-  - Arabic/English agricultural chatbot
-  - Farming task planning
-  - Smart alerts and notifications
-- **Status**: ❌ Not Running
-
-## How to Start AI Services
-
-### Prerequisites
-- Python 3.8+
-- FastAPI, TensorFlow, PyTorch
-- Required dependencies in `agrogrowth-ai/requirements.txt`
-
-### Method 1: Docker (Recommended)
+### Docker (recommended)
 ```bash
 cd agrogrowth-ai
-docker-compose up -d
+docker compose up -d
 ```
 
-### Method 2: Local Development
+### Local
 ```bash
-# Install dependencies
 pip install -r agrogrowth-ai/requirements.txt
-
-# Start individual services
-cd agrogrowth-ai/soil_analysis
-python main.py
-
-cd agrogrowth-ai/crop_recommendation  
-python main.py
-
-cd agrogrowth-ai/image_diagnosis
-python main.py
-
-cd agrogrowth-ai/market_prediction
-python main.py
-
-cd agrogrowth-ai/intelligent_agent
-python main.py
+cd agrogrowth-ai/soil_analysis && python main.py   # repeat per service dir
 ```
 
-## Testing AI Services
+## Verifying
+- `GET /api/ai/health` — aggregate gateway health.
+- `GET http://localhost:800X/health` — per-service health.
+- `GET http://localhost:800X/docs` — per-service OpenAPI docs.
+- In-app: `/ai-services-test`.
 
-Once services are running, you can test them:
+## Honest Provenance — Read This Before Trusting Any Number
 
-1. **Via Web Interface**: Navigate to `/ai-services-test` in the app
-2. **API Health Check**: `GET /api/ai/health`
-3. **Individual Service Docs**: `http://localhost:800X/docs` (where X is service port)
+A microservice answering `/health` does **not** mean a trained model produced
+its output. Each service reports the origin of its own results, and the gateway
+propagates that label to the SPA:
 
-## Expected Behavior
+- **`model_source: "heuristic-demo"` / `dataSource: "heuristic"` /
+  `isRealData: false`** — the result came from deterministic image/feature
+  heuristics or a reference table. It is a *plausible* analysis, not a trained
+  model's inference. The UI must disclose this (see
+  `client/components/SimulatedDataNotice.tsx`,
+  `client/components/market/MarketProvenanceNotice.tsx`).
+- **Market prices** are synthesised because no licensed feed is configured. The
+  gateway stamps `X-Data-Provenance: simulated` and a disclaimer; screens render
+  `MarketProvenanceNotice` off that header.
+- **Weather** is genuine: fetched from Open-Meteo (no key required), with
+  OpenWeatherMap as an optional fallback, labelled `source.isRealData`.
 
-### ✅ When AI Services are Running:
-- Health check shows all services as "available"
-- Response times are displayed
-- Full AI functionality is enabled
-- Interactive AI features work
-
-### ⚠️ When AI Services are Offline (Current State):
-- Health check shows services as "unavailable"  
-- Mock data is returned for AI endpoints
-- Basic functionality continues to work
-- No real AI processing occurs
-
-## Mock Data vs Real AI
-
-The platform is designed to work gracefully whether AI services are available or not:
-
-- **With AI Services**: Real-time intelligent analysis and predictions
-- **Without AI Services**: Pre-computed mock data for demonstration purposes
-
-This allows the platform to be fully functional for development and testing even when the AI infrastructure is not deployed.
-
-## Next Steps
-
-To enable full AI capabilities:
-
-1. Set up the AI services infrastructure
-2. Configure environment variables for service URLs
-3. Ensure all dependencies are installed
-4. Start services using docker-compose or individual Python scripts
-5. Verify connectivity through the health check endpoint
+Nothing in the platform may present heuristic or synthetic output as a real
+measurement. When a provider is unconfigured, the honest response is a labelled
+fallback or an explicit failure — never a fabricated success.
 
 ## Production Deployment
 
-For production, AI services should be:
-- Containerized with Docker
-- Load balanced for high availability  
-- Monitored for health and performance
-- Backed by robust data pipelines
-- Secured with proper authentication
-
----
-
-**Note**: The absence of AI services does not impact the core functionality of the AgroGrowth platform. All essential features remain operational with mock data providing realistic examples of AI-powered insights.
+For production the AI services should be containerized, health-monitored, load
+balanced, and secured with authentication. LLM-backed features additionally
+require provider credentials (see the LLM provider env vars in
+`server/services/providers/`); without them the platform falls back to labelled
+rule-based reasoning rather than pretending inference succeeded.
