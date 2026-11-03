@@ -379,12 +379,40 @@ export const estimateCropProfitability = async (
 };
 
 export const compareCropProfitability = async (req: Request, res: Response) => {
+  const b = req.body ?? {};
+  // The service expects {crops_data: ProfitEstimationRequest[]}; forwarding the
+  // raw body made Pydantic answer 422 whenever the caller sent a bare list.
+  const rawList = Array.isArray(b.crops_data)
+    ? b.crops_data
+    : Array.isArray(b.crops)
+      ? b.crops
+      : null;
+  if (!rawList || rawList.length === 0) {
+    return res.status(400).json({
+      error: "crops_data is required",
+      message: "Pass { crops_data: [{ crop_name, farm_size, ... }] } to compare crops.",
+    });
+  }
+  const crops_data = rawList
+    .map((c: any) => ({
+      ...c,
+      crop_name: c?.crop_name ?? c?.crop ?? c?.name,
+      farm_size: toNumber(c?.farm_size ?? c?.field_area ?? b.farm_size),
+    }))
+    .filter((c: any) => c.crop_name && c.farm_size !== undefined);
+
+  if (crops_data.length === 0) {
+    return res.status(400).json({
+      error: "Each crop needs crop_name and farm_size",
+      message: "Provide crop_name and farm_size for at least one crop.",
+    });
+  }
   try {
     const response = await callAIService(
       AI_SERVICES.CROP_RECOMMENDATION,
       "/compare-crops",
       "POST",
-      req.body,
+      { crops_data },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.CROP_RECOMMENDATION);
   } catch (error) {
@@ -702,20 +730,41 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
 };
 
 export const generateFarmingTasks = async (req: Request, res: Response) => {
+  const b = req.body ?? {};
+  // The service (TaskPlanRequest) requires crop_type, field_id, planting_date
+  // and field_area (>0). Accept the aliases the UI uses so a valid request is
+  // not rejected as 422, and answer 400 with a clear message when a required
+  // field is genuinely missing instead of letting Pydantic 422 through.
+  const crop_type = b.crop_type ?? b.crop ?? b.cropId;
+  const field_id = b.field_id ?? b.fieldId ?? b.farm_id ?? b.farmId;
+  const planting_date =
+    b.planting_date ?? b.plantingDate ?? b.sowing_date ?? b.sowingDate;
+  const field_area = toNumber(
+    b.field_area ?? b.fieldArea ?? b.area ?? b.area_hectares ?? b.farm_size,
+  );
+
+  const missing: string[] = [];
+  if (!crop_type) missing.push("crop_type");
+  if (!field_id) missing.push("field_id");
+  if (!planting_date) missing.push("planting_date");
+  if (field_area === undefined || field_area <= 0) missing.push("field_area (>0)");
+  if (missing.length) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      message: `Provide: ${missing.join(", ")}`,
+    });
+  }
+
   try {
-    const b = req.body ?? {};
-    // The service (TaskPlanRequest) requires crop_type, field_id, planting_date
-    // and field_area (>0). Accept the camelCase aliases the UI uses so a valid
-    // request is not rejected as 422.
     const response = await callAIService(
       AI_SERVICES.SMART_ASSISTANT,
       "/plan-season",
       "POST",
       {
-        crop_type: b.crop_type ?? b.crop ?? b.cropId,
-        field_id: b.field_id ?? b.fieldId,
-        planting_date: b.planting_date ?? b.plantingDate ?? b.sowing_date,
-        field_area: toNumber(b.field_area ?? b.fieldArea ?? b.area),
+        crop_type,
+        field_id,
+        planting_date,
+        field_area,
         available_resources: b.available_resources ?? b.resources,
       },
     );

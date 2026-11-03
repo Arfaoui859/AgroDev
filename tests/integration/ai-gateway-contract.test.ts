@@ -120,6 +120,47 @@ describe("🔌 AI gateway → microservice request contracts", () => {
     });
   });
 
+  test("crop comparison wraps the list in crops_data (the service's shape)", async () => {
+    await request(app)
+      .post("/api/ai/crops/compare")
+      .send({ crops_data: [{ crop_name: "olive", farm_size: 3 }] });
+
+    const req = lastRequest();
+    expect(req.url).toContain("/compare-crops");
+    // A bare list makes Pydantic answer 422; the service wants {crops_data: [...]}.
+    expect(Array.isArray(req.data.crops_data)).toBe(true);
+    expect(req.data.crops_data[0]).toMatchObject({
+      crop_name: "olive",
+      farm_size: 3,
+    });
+  });
+
+  test("crop comparison accepts a bare crops list and normalises names", async () => {
+    await request(app)
+      .post("/api/ai/crops/compare")
+      .send({ crops: [{ crop: "wheat", farm_size: 2 }] });
+
+    expect(lastRequest().data.crops_data[0]).toMatchObject({
+      crop_name: "wheat",
+      farm_size: 2,
+    });
+  });
+
+  test("crop comparison answers 400, not a silent 422, when nothing is comparable", async () => {
+    const res = await request(app).post("/api/ai/crops/compare").send({});
+    expect(res.status).toBe(400);
+    expect(sentConfigs.length).toBe(0);
+  });
+
+  test("task planning answers 400 with the missing fields, not a Pydantic 422", async () => {
+    const res = await request(app)
+      .post("/api/ai/assistant/generate-tasks")
+      .send({ crop: "olive" });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/field_id/);
+    expect(sentConfigs.length).toBe(0);
+  });
+
   test("supply-demand forwards the fields the service requires", async () => {
     await request(app)
       .post("/api/ai/market/supply-demand")
