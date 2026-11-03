@@ -34,6 +34,19 @@ interface AIHealthResponse {
     lastUpdated: string;
   };
   services: ServiceHealth[];
+  /** Whether a real LLM provider is wired up, and which one. */
+  llm?: {
+    configured: boolean;
+    credentialAvailable: boolean;
+    provider: string;
+    model: string;
+  };
+  fallbackEngine?: {
+    available: boolean;
+    type: string;
+    description: string;
+  };
+  note?: string;
   error?: string;
 }
 
@@ -188,6 +201,41 @@ const AIServicesTest: React.FC = () => {
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{healthData.error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Honest AI-backend disclosure: a microservice answering /health is not
+            the same as a trained model producing its output. Show whether a real
+            LLM provider is wired up, and name the rule-based fallback when it is
+            what will actually answer. */}
+        {healthData && (
+          <Alert
+            className={
+              healthData.llm?.credentialAvailable
+                ? 'border-green-300 bg-green-50 text-green-900'
+                : 'border-amber-300 bg-amber-50 text-amber-900'
+            }
+          >
+            {healthData.llm?.credentialAvailable ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+            <AlertDescription>
+              {healthData.llm?.credentialAvailable ? (
+                <>
+                  مزوّد الذكاء الاصطناعي الحقيقي مُفعّل: {healthData.llm.provider} (
+                  {healthData.llm.model}). تُنتَج إجابات النموذج اللغوي فعلياً من هذا المزوّد.
+                </>
+              ) : (
+                <>
+                  لا يوجد مفتاح لمزوّد ذكاء اصطناعي حقيقي، لذا تُجاب الطلبات بمحرّك
+                  قواعد زراعية ({healthData.fallbackEngine?.type ?? 'rule-based'}) وتُوسَم
+                  النتائج بـ isRealData=false. أضف بيانات اعتماد المزوّد لتفعيل استدلال
+                  النموذج اللغوي.
+                </>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 

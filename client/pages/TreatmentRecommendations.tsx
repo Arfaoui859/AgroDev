@@ -116,6 +116,9 @@ interface TreatmentPlan {
   aiConfidence: number;
   riskFactors: string[];
   alternativeTreatments: string[];
+  /** Provenance from the treatment gateway (rule-based when no LLM is configured). */
+  dataSource?: string;
+  isRealData?: boolean;
 }
 
 const TreatmentRecommendations: React.FC = () => {
@@ -195,6 +198,8 @@ const TreatmentRecommendations: React.FC = () => {
       if (data.success) {
         setTreatmentPlan({
           ...data.data,
+          dataSource: data.dataSource,
+          isRealData: data.isRealData,
           createdAt: new Date(data.data.createdAt)
         });
         toast.success('تم توليد خطة العلاج بنجاح');
@@ -395,6 +400,18 @@ const TreatmentRecommendations: React.FC = () => {
       {/* Treatment Plan Display */}
       {treatmentPlan && (
         <div className="space-y-6">
+          {/* Provenance: the gateway generates plans from a rule engine when no
+              LLM provider is configured. Disclose it so the plan is not read as
+              a model-backed prescription. */}
+          {treatmentPlan.isRealData === false && (
+            <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                هذه الخطة مولّدة بمحرّك قواعد زراعية (المصدر: {treatmentPlan.dataSource ?? 'rule-based'})،
+                وليست مخرجات نموذج ذكاء اصطناعي مدرّب. راجعها مع مهندس زراعي قبل التطبيق.
+              </AlertDescription>
+            </Alert>
+          )}
           {/* Plan Overview */}
           <Card>
             <CardHeader>
