@@ -15,7 +15,12 @@
  * being shown to a farmer as a model prediction.
  */
 
-import { chatComplete, getLLMInfo, isLLMConfigured } from "./llmProvider";
+import {
+  chatComplete,
+  getLLMInfo,
+  getVisionModel,
+  isLLMConfigured,
+} from "./llmProvider";
 import { ProviderError } from "./http";
 
 export interface VisionDiagnosis {
@@ -42,10 +47,15 @@ export interface VisionResult {
   isRealData: true;
   modelSource: string;
   provider: string;
+  /** Wall-clock latency of the vision inference call in milliseconds. */
+  latencyMs: number;
 }
 
 function visionModel(): string {
-  return process.env.AI_VISION_MODEL || getLLMInfo().model;
+  // AI_VISION_MODEL takes precedence, then the shared model. Never substitute a
+  // text-only model for vision: if the configured model is not multimodal the
+  // provider will reject the request and the caller reports diagnosis as failed.
+  return getVisionModel();
 }
 
 export function isVisionConfigured(): boolean {
@@ -60,6 +70,7 @@ export function getVisionInfo(): {
   if (isLLMConfigured()) {
     return { configured: true, dataSource: "llm", model: visionModel() };
   }
+
   if (process.env.IMAGE_DIAGNOSIS_URL) {
     return {
       configured: true,
@@ -173,6 +184,7 @@ export async function diagnosePlantImage(request: VisionRequest): Promise<Vision
     { type: "image_url" as const, image_url: { url: dataUrl } },
   ];
 
+  const started = Date.now();
   const answer = await chatComplete(
     [
       { role: "system", content: SYSTEM_PROMPT },
@@ -194,5 +206,6 @@ export async function diagnosePlantImage(request: VisionRequest): Promise<Vision
     isRealData: true,
     modelSource: `vision:${visionModel()}`,
     provider: getLLMInfo().provider,
+    latencyMs: Date.now() - started,
   };
 }
