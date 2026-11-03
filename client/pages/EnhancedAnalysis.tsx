@@ -873,6 +873,20 @@ const EnhancedAnalysis: React.FC = () => {
             </div>
           </div>
 
+          {/* Provenance: this report is produced by the in-process rule-based
+              agronomic engine, not a trained model. Say so instead of letting
+              the farmer read rule output as model inference. */}
+          {rawAIOutput && rawAIOutput.isRealData === false && (
+            <Alert className="border-amber-300 bg-amber-50 text-left rtl:text-right">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800">
+                هذا التحليل صادر عن محرك قواعد زراعية محلي وليس عن نموذج ذكاء
+                اصطناعي مدرّب (المصدر: {rawAIOutput.dataSource ?? "rule-based"}).
+                النتائج إرشادية ويُستحسن تأكيدها مع مهندس زراعي.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Debug Mode Toggle for Admins */}
           <div className="flex items-center justify-center gap-2">
             <Switch
