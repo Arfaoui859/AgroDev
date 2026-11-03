@@ -164,7 +164,11 @@ export const analyzeSoilData = async (req: Request, res: Response) => {
       AI_SERVICES.SOIL_ANALYSIS,
       "/analyze-soil",
       "POST",
-      { sensor_data: sensorData, location: req.body?.location, farm_id: req.body?.farm_id },
+      {
+        sensor_data: sensorData,
+        location: normaliseLocation(req.body?.location),
+        farm_id: req.body?.farm_id,
+      },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.SOIL_ANALYSIS);
   } catch (error) {
@@ -255,11 +259,29 @@ export const getSmartCropRecommendations = async (
   res: Response,
 ) => {
   try {
+    // The crop microservice expects {temperature, annual_rainfall, soil_ph};
+    // the UI sends {temperature, rainfall, ph}. Without this mapping the
+    // service answers 422 and every request silently fell back to rules.
+    const b = req.body ?? {};
     const response = await callAIService(
       AI_SERVICES.CROP_RECOMMENDATION,
       "/recommend-crops",
       "POST",
-      req.body,
+      {
+        temperature: toNumber(b.temperature ?? b.climate_data?.temperature),
+        annual_rainfall: toNumber(
+          b.annual_rainfall ?? b.rainfall ?? b.climate_data?.rainfall,
+        ),
+        soil_ph: toNumber(b.soil_ph ?? b.ph ?? b.soil_data?.ph),
+        soil_quality_score: toNumber(b.soil_quality_score),
+        water_availability: toNumber(b.water_availability),
+        target_market_price: toNumber(b.target_market_price),
+        farmer_experience_years: toNumber(b.farmer_experience_years),
+        available_capital: toNumber(b.available_capital),
+        farm_size: toNumber(b.farm_size ?? b.area_hectares),
+        risk_tolerance: toNumber(b.risk_tolerance),
+        location: normaliseLocation(b.location),
+      },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.CROP_RECOMMENDATION);
   } catch (error) {
@@ -282,11 +304,16 @@ export const getQuickCropRecommendation = async (
   const farm_size = parseFloat(req.query.farm_size as string) || 2.0;
 
   try {
+    const qs = new URLSearchParams({
+      temperature: String(temperature),
+      rainfall: String(rainfall),
+      soil_ph: String(soil_ph),
+      farm_size: String(farm_size),
+    });
     const response = await callAIService(
       AI_SERVICES.CROP_RECOMMENDATION,
-      "/quick-recommendation",
+      `/quick-recommendation?${qs.toString()}`,
       "POST",
-      { temperature, rainfall, soil_ph, farm_size },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.CROP_RECOMMENDATION);
   } catch (error) {
@@ -576,11 +603,17 @@ export const quickPlantHealthCheck = [
 // 📈 MARKET FORECAST ENDPOINTS (Placeholder for future implementation)
 export const forecastMarketPrices = async (req: Request, res: Response) => {
   try {
+    const b = req.body ?? {};
     const response = await callAIService(
       AI_SERVICES.MARKET_FORECAST,
-      "/forecast-prices",
+      "/forecast-price",
       "POST",
-      req.body,
+      {
+        crop_type: b.crop_type ?? b.crop ?? b.cropId,
+        current_price: toNumber(b.current_price ?? b.price),
+        forecast_days: toNumber(b.forecast_days ?? b.days) ?? 30,
+        market_conditions: b.market_conditions,
+      },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.MARKET_FORECAST);
   } catch (error) {
@@ -590,11 +623,19 @@ export const forecastMarketPrices = async (req: Request, res: Response) => {
 
 export const analyzeSupplyDemand = async (req: Request, res: Response) => {
   try {
+    const b = req.body ?? {};
     const response = await callAIService(
       AI_SERVICES.MARKET_FORECAST,
       "/analyze-supply-demand",
       "POST",
-      req.body,
+      {
+        crop_type: b.crop_type ?? b.crop ?? b.cropId,
+        current_production: toNumber(
+          b.current_production ?? b.production ?? b.production_tons,
+        ),
+        region: b.region ?? "tunisia",
+        analysis_period: toNumber(b.analysis_period ?? b.period) ?? 30,
+      },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.MARKET_FORECAST);
   } catch (error) {
@@ -632,7 +673,7 @@ export const generateFarmingTasks = async (req: Request, res: Response) => {
   try {
     const response = await callAIService(
       AI_SERVICES.SMART_ASSISTANT,
-      "/generate-tasks",
+      "/plan-season",
       "POST",
       req.body,
     );
@@ -674,6 +715,24 @@ function normaliseSoilInput(data: Record<string, any>) {
     salinity: toNumber(d.salinity ?? d.conductivity),
     temperature: toNumber(d.temperature),
   };
+}
+
+/**
+ * The AI microservices type `location` as optional GPS coordinates
+ * ({latitude, longitude}). The UI sometimes sends a free-text place name, which
+ * makes Pydantic answer 422 and silently disables the microservice. Convert to a
+ * GPS object when possible, otherwise drop the field rather than send junk.
+ */
+function normaliseLocation(raw: any): { latitude: number; longitude: number } | undefined {
+  if (!raw) return undefined;
+  if (typeof raw === "object") {
+    const lat = toNumber(raw.latitude ?? raw.lat);
+    const lon = toNumber(raw.longitude ?? raw.lng ?? raw.lon);
+    return lat !== undefined && lon !== undefined
+      ? { latitude: lat, longitude: lon }
+      : undefined;
+  }
+  return undefined;
 }
 
 /** Normalise varied crop request payloads into the crop advisor input shape. */

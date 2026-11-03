@@ -327,7 +327,7 @@ async def quick_recommendation(
                 'crop_name': crop['crop'],
                 'crop_name_ar': crop['name_ar'],
                 'suitability_score': crop['suitability_score'],
-                'expected_profit_per_hectare': crop['profit_analysis']['profit_per_hectare'],
+                'expected_profit_per_hectare': crop['profit_analysis']['net_profit'],
                 'risk_level': crop['risk_assessment']['overall_risk']['level'],
                 'growing_season': crop['growing_season']
             })

@@ -1,0 +1,101 @@
+/**
+ * The AI gateway must translate UI payloads into the exact shapes the Python
+ * microservices declare, otherwise Pydantic answers 422 and every request
+ * silently degrades to the rule-based fallback while the UI still shows a
+ * plausible-looking result.
+ *
+ * These tests pin the outbound request contract by mocking axios, so they do
+ * not require the Python services to be running.
+ */
+import express from "express";
+import request from "supertest";
+
+const sentConfigs: any[] = [];
+
+jest.mock("axios", () => {
+  const callable: any = jest.fn(async (config: any) => {
+    sentConfigs.push(config);
+    return { data: { ok: true }, status: 200 };
+  });
+  callable.__esModule = true;
+  callable.default = callable;
+  callable.post = callable;
+  return callable;
+});
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { createServer } = require("../../server/index");
+
+let app: express.Application;
+
+beforeAll(() => {
+  app = createServer();
+});
+
+beforeEach(() => {
+  sentConfigs.length = 0;
+});
+
+const lastRequest = () => sentConfigs[sentConfigs.length - 1];
+
+describe("🔌 AI gateway → microservice request contracts", () => {
+  test("soil analysis drops a place-name location instead of sending a string", async () => {
+    await request(app)
+      .post("/api/ai/soil/analyze")
+      .send({ sensor_data: { ph: 6.5 }, location: "Sfax" });
+
+    const req = lastRequest();
+    expect(req.url).toContain("/analyze-soil");
+    expect(req.data.sensor_data).toEqual({ ph: 6.5 });
+    // A string location makes Pydantic answer 422.
+    expect(req.data.location).toBeUndefined();
+  });
+
+  test("soil analysis forwards real GPS coordinates", async () => {
+    await request(app)
+      .post("/api/ai/soil/analyze")
+      .send({
+        sensor_data: { ph: 6.5 },
+        location: { latitude: 34.7, longitude: 10.7 },
+      });
+
+    expect(lastRequest().data.location).toEqual({
+      latitude: 34.7,
+      longitude: 10.7,
+    });
+  });
+
+  test("crop recommendation renames rainfall→annual_rainfall and ph→soil_ph", async () => {
+    await request(app)
+      .post("/api/ai/crops/recommend")
+      .send({ ph: 6.5, temperature: 24, rainfall: 350, area_hectares: 2 });
+
+    const req = lastRequest();
+    expect(req.url).toContain("/recommend-crops");
+    expect(req.data.soil_ph).toBe(6.5);
+    expect(req.data.annual_rainfall).toBe(350);
+    expect(req.data.temperature).toBe(24);
+    expect(req.data.farm_size).toBe(2);
+  });
+
+  test("market forecast hits /forecast-price with the required fields", async () => {
+    await request(app)
+      .post("/api/ai/market/forecast-prices")
+      .send({ crop: "olive", price: 8.5 });
+
+    const req = lastRequest();
+    // "/forecast-prices" does not exist on the service; the real path is singular.
+    expect(req.url).toContain("/forecast-price");
+    expect(req.url).not.toContain("/forecast-prices");
+    expect(req.data.crop_type).toBe("olive");
+    expect(req.data.current_price).toBe(8.5);
+    expect(req.data.forecast_days).toBe(30);
+  });
+
+  test("farming task planning uses the real /plan-season endpoint", async () => {
+    await request(app).post("/api/ai/assistant/generate-tasks").send({});
+
+    expect(lastRequest().url).toContain("/plan-season");
+    expect(lastRequest().url).not.toContain("/generate-tasks");
+  });
+});
