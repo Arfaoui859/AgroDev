@@ -2,6 +2,20 @@ import express from 'express';
 
 const router = express.Router();
 
+/**
+ * AgroGrowth has no agronomist-dashboard database wired yet: the supervised
+ * farms, disease analyses, training programmes and expert metrics below are a
+ * seeded demonstration dataset. Every response carries explicit provenance so
+ * the UI never presents these figures as real farm records.
+ */
+const SIMULATED_PROVENANCE = {
+  dataSource: "simulated" as const,
+  isRealData: false,
+  disclaimer:
+    "بيانات توضيحية من مجموعة تجريبية وليست سجلات مزارع حقيقية. لا تعتمد عليها لقرارات ميدانية.",
+} as const;
+
+
 interface FarmOverview {
   id: string;
   name: string;
@@ -608,7 +622,9 @@ router.get('/overview', (req, res) => {
     const dashboardData = {
       farms,
       summary: {
-        totalFarms: metrics.totalFarms,
+        // Derive the count from the farms actually returned so the KPI card and
+        // the farm list can never disagree.
+        totalFarms: farms.length,
         urgentFarms: farms.filter(f => f.urgencyLevel === 'critical').length,
         pendingDiseaseAnalyses: pendingAnalyses,
         overdueRecommendations,
@@ -622,7 +638,8 @@ router.get('/overview', (req, res) => {
     res.json({
       success: true,
       data: dashboardData,
-      message: 'Agronomist dashboard data retrieved successfully'
+      message: 'Agronomist dashboard data retrieved successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -660,7 +677,8 @@ router.get('/farms', (req, res) => {
     res.json({
       success: true,
       data: filteredFarms,
-      message: 'Farms data retrieved successfully'
+      message: 'Farms data retrieved successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -695,7 +713,8 @@ router.get('/disease-analyses', (req, res) => {
     res.json({
       success: true,
       data: filteredAnalyses,
-      message: 'Disease analyses retrieved successfully'
+      message: 'Disease analyses retrieved successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -736,7 +755,8 @@ router.put('/disease-analyses/:analysisId/review', (req, res) => {
     res.json({
       success: true,
       data: reviewData,
-      message: 'Disease analysis reviewed successfully'
+      message: 'Disease analysis reviewed successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -777,7 +797,8 @@ router.get('/recommendations', (req, res) => {
     res.json({
       success: true,
       data: filteredRecommendations,
-      message: 'Recommendations retrieved successfully'
+      message: 'Recommendations retrieved successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -821,7 +842,8 @@ router.post('/recommendations', (req, res) => {
     res.json({
       success: true,
       data: newRecommendation,
-      message: 'Recommendation created successfully'
+      message: 'Recommendation created successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -855,7 +877,8 @@ router.get('/training-programs', (req, res) => {
     res.json({
       success: true,
       data: filteredPrograms,
-      message: 'Training programs retrieved successfully'
+      message: 'Training programs retrieved successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -908,7 +931,8 @@ router.post('/training-programs', (req, res) => {
     res.json({
       success: true,
       data: newProgram,
-      message: 'Training program created successfully'
+      message: 'Training program created successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -941,7 +965,8 @@ router.get('/performance-analysis', (req, res) => {
     res.json({
       success: true,
       data: filteredAnalyses,
-      message: 'Performance analysis retrieved successfully'
+      message: 'Performance analysis retrieved successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -960,7 +985,8 @@ router.get('/metrics', (req, res) => {
     res.json({
       success: true,
       data: metrics,
-      message: 'Expert metrics retrieved successfully'
+      message: 'Expert metrics retrieved successfully',
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({

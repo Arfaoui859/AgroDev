@@ -70,6 +70,8 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
   );
   const [priceData, setPriceData] = useState<PriceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRealData, setIsRealData] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     fetchMarketSummary();
@@ -77,9 +79,13 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
 
   const fetchMarketSummary = async () => {
     try {
-      // Fetch market dashboard data
-      const response = await fetch("/api/market-analysis/dashboard");
+      // Fetch market dashboard data plus a real historical series for the chart.
+      const [response, historyResponse] = await Promise.all([
+        fetch("/api/market-analysis/dashboard"),
+        fetch("/api/market-analysis/prices/history/olive?days=7"),
+      ]);
       const data = await response.json();
+      setIsRealData(data.isRealData === true);
 
       // Transform the data for our widget
       const summary: MarketSummary = {
@@ -104,36 +110,25 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
 
       setMarketSummary(summary);
 
-      // Generate sample price data for mini chart
-      const chartData: PriceData[] = [];
-      const now = new Date();
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(now);
-        date.setHours(now.getHours() - i);
-        chartData.push({
-          time: date.toLocaleTimeString("ar-TN", {
-            hour: "2-digit",
-            minute: "2-digit",
+      // Use the real historical series from the backend for the mini chart
+      // instead of inventing a random walk in the browser.
+      if (historyResponse.ok) {
+        const history = await historyResponse.json();
+        const series: PriceData[] = (history?.data ?? []).map(
+          (point: { date: string; price: number }) => ({
+            time: new Date(point.date).toLocaleDateString("ar-TN", {
+              day: "2-digit",
+              month: "2-digit",
+            }),
+            value: Number(point.price),
           }),
-          value: 100 + Math.random() * 20 - 10,
-        });
+        );
+        setPriceData(series);
       }
-      setPriceData(chartData);
     } catch (error) {
       console.error("Error fetching market summary:", error);
-      // Set fallback data
-      setMarketSummary({
-        totalCrops: 10,
-        avgPriceChange: "+2.3%",
-        marketTrend: "bullish",
-        activeAlerts: 3,
-        topPerformer: { name: "الزيتون", change: "+15%" },
-        topDecliner: { name: "البطاطا", change: "-3%" },
-        quickStats: {
-          totalVolume: 12500,
-          marketCap: 850000,
-        },
-      });
+      // Do not substitute invented figures; show that the feed is unavailable.
+      setUnavailable(true);
     } finally {
       setIsLoading(false);
     }
@@ -160,9 +155,21 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
     );
   }
 
-  if (!marketSummary) {
-    return null;
+  if (unavailable || !marketSummary) {
+    return (
+      <Card className={className}>
+        <CardContent className="p-6 text-center text-sm text-muted-foreground">
+          تعذّر تحميل بيانات السوق حالياً. حاول مرة أخرى لاحقاً.
+        </CardContent>
+      </Card>
+    );
   }
+
+  const provenanceNote = !isRealData ? (
+    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+      الأرقام أعلاه بيانات محاكاة توضيحية وليست أسعاراً حقيقية من السوق.
+    </p>
+  ) : null;
 
   if (compact) {
     return (
@@ -207,6 +214,7 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
               {marketSummary.topPerformer.change}
             </Badge>
           </div>
+          {provenanceNote}
         </CardContent>
       </Card>
     );
@@ -359,6 +367,8 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
             </p>
           </div>
         )}
+
+        {provenanceNote}
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-4 border-t">

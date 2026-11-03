@@ -323,14 +323,14 @@ export default function TwoFactorAuth({ isOpen, onClose, method = 'authenticator
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 p-4 bg-gray-50 rounded-lg">
-                  {Array.from({ length: 10 }, (_, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 bg-white rounded border">
-                      <code className="text-sm font-mono">{`${Math.random().toString(36).substring(2, 8).toUpperCase()}`}</code>
+                  {backupCodes.map((backup, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                      <code className="text-sm font-mono">{backup.code}</code>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-6 w-6 p-0"
-                        onClick={() => copyToClipboard(`CODE-${i + 1}`)}
+                        onClick={() => copyToClipboard(backup.code)}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>

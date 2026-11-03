@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { toast } from "sonner";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 import {
   Card,
   CardContent,
@@ -92,6 +94,63 @@ interface SmartAlert {
   dismissible: boolean;
 }
 
+interface FarmCrop {
+  name: string;
+  nameArabic: string;
+  area: number;
+  health: string;
+  stage: string;
+  stageArabic: string;
+}
+
+interface FarmAlert {
+  type: string;
+  message: string;
+  messageArabic: string;
+  severity: string;
+  timestamp: string;
+}
+
+interface FarmOverview {
+  id: string;
+  name: string;
+  nameArabic: string;
+  farmerName: string;
+  farmerNameArabic: string;
+  location: string;
+  locationArabic: string;
+  totalArea: number;
+  cultivatedArea: number;
+  soilHealth: number;
+  cropCount: number;
+  healthyPercentage: number;
+  alertCount: number;
+  lastVisit: string;
+  urgencyLevel: "low" | "medium" | "high" | "critical";
+  crops: FarmCrop[];
+  recentAlerts: FarmAlert[];
+}
+
+interface ExpertMetrics {
+  totalFarms?: number;
+  totalFarmers?: number;
+  diseaseDetections?: number;
+  treatmentSuccessRate?: number;
+  farmerComplianceRate?: number;
+  trainingSessionsConducted?: number;
+  farmerSatisfactionScore?: number;
+  averageResponseTime?: number;
+}
+
+interface ExpertSummary {
+  totalFarms?: number;
+  urgentFarms?: number;
+  pendingDiseaseAnalyses?: number;
+  overdueRecommendations?: number;
+  averageFarmHealth?: number;
+  totalAlerts?: number;
+}
+
 interface QuickAction {
   id: string;
   icon: any;
@@ -114,6 +173,7 @@ interface WeatherInsight {
   recommendationArabic: string;
   alert?: string;
   alertArabic?: string;
+  isRealData?: boolean;
 }
 
 interface CropPerformanceMetric {
@@ -159,136 +219,151 @@ const EnhancedAgronomistDashboard: React.FC<
     "online" | "offline"
   >("online");
   const [lastSync, setLastSync] = useState<Date>(new Date());
+  const [farms, setFarms] = useState<FarmOverview[]>([]);
+  const [metrics, setMetrics] = useState<ExpertMetrics>({});
+  const [summary, setSummary] = useState<ExpertSummary>({});
 
-  // Mock data initialization
+  /**
+   * Load the agronomist's real workspace: supervised farms, pending analyses,
+   * recommendations and the expert metrics from the backend, plus current
+   * weather and market conditions. Previously every widget was filled with
+   * hardcoded sample farms, alerts and prices, and connection status was a
+   * random flip, so the dashboard showed numbers unrelated to any real farm.
+   */
   useEffect(() => {
-    initializeMockData();
-    // Simulate network status
-    const interval = setInterval(() => {
-      setConnectionStatus(Math.random() > 0.1 ? "online" : "offline");
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    let cancelled = false;
 
-  const initializeMockData = () => {
-    // Smart Alerts
-    setSmartAlerts([
-      {
-        id: "1",
-        type: "urgent",
-        title: "Disease Detection Alert",
-        titleArabic: "تنبيه اكتشاف مرض",
-        message:
-          "Wheat plantation in Farm A3 shows signs of rust disease. Immediate action required.",
-        messageArabic:
-          "زراعة القمح في المزرعة أ3 تظهر علامات مرض الصدأ. مطلوب إجراء فوري.",
-        action: "Review & Treat",
-        actionArabic: "مراجعة وعلاج",
-        timestamp: new Date().toISOString(),
-        farmId: "farm_a3",
-        dismissible: false,
-      },
-      {
-        id: "2",
-        type: "warning",
-        title: "Weather Warning",
-        titleArabic: "تحذير جوي",
-        message:
-          "High temperature forecast (42°C) for next 3 days. Irrigation adjustments recommended.",
-        messageArabic:
-          "توقع درجة حرارة عالية (42°م) للأيام الثلاثة القادمة. يُنصح بتعديل الري.",
-        action: "Adjust Irrigation",
-        actionArabic: "تعديل الري",
-        timestamp: new Date().toISOString(),
-        dismissible: true,
-      },
-      {
-        id: "3",
-        type: "info",
-        title: "Optimal Planting Window",
-        titleArabic: "نافذة زراعة مثلى",
-        message:
-          "Conditions are optimal for tomato planting in the next 5 days.",
-        messageArabic: "الظروف مثالية لزراعة الطماطم في الأيام الخمسة القادمة.",
-        action: "Schedule Planting",
-        actionArabic: "جدولة الزراعة",
-        timestamp: new Date().toISOString(),
-        dismissible: true,
-      },
-    ]);
+    const loadDashboard = async () => {
+      try {
+        const [overviewRes, weatherRes, marketRes] = await Promise.all([
+          fetch(`/api/agronomist-dashboard/overview?expertId=${encodeURIComponent(expertId)}`),
+          fetch("/api/weather/location?governorate=tunis"),
+          fetch("/api/market-analysis/prices/current"),
+        ]);
 
-    // Weather Insights
-    setWeatherInsights({
-      location: "تونس العاصمة",
-      temperature: 28,
-      humidity: 65,
-      rainfall: 0,
-      windSpeed: 12,
-      uvIndex: 7,
-      recommendation:
-        "Good conditions for field work. Recommend early morning irrigation.",
-      recommendationArabic:
-        "ظروف جيدة للعمل الحقلي. يُنصح بالري في الصباح الباكر.",
-      alert:
-        "UV levels are high. Ensure protective measures for field workers.",
-      alertArabic:
-        "مستويات الأشعة فوق البنفسجية عالية. تأكد من اتخاذ تدابير الحماية للعمال.",
-    });
+        if (cancelled) return;
 
-    // Crop Performance
-    setCropPerformance([
-      {
-        cropType: "wheat",
-        cropTypeArabic: "القمح",
-        healthScore: 85,
-        yieldProjection: 4200,
-        riskLevel: "low",
-        trend: "up",
-        area: 25.5,
-      },
-      {
-        cropType: "tomato",
-        cropTypeArabic: "الطماطم",
-        healthScore: 92,
-        yieldProjection: 45000,
-        riskLevel: "low",
-        trend: "stable",
-        area: 12.3,
-      },
-      {
-        cropType: "olive",
-        cropTypeArabic: "الزيتون",
-        healthScore: 78,
-        yieldProjection: 3800,
-        riskLevel: "medium",
-        trend: "down",
-        area: 18.7,
-      },
-    ]);
+        if (!overviewRes.ok) throw new Error(`Overview failed: ${overviewRes.status}`);
+        const overview = await overviewRes.json();
+        const farms: FarmOverview[] = overview?.data?.farms ?? [];
+        const metrics = overview?.data?.metrics ?? {};
+        const summary = overview?.data?.summary ?? {};
 
-    // Market Insights
-    setMarketInsights([
-      {
-        cropName: "Wheat",
-        cropNameArabic: "القمح",
-        currentPrice: 2.45,
-        priceChange: 0.15,
-        marketTrend: "bullish",
-        recommendation: "Hold production, prices trending upward",
-        recommendationArabic: "الاحتفاظ بالإنتاج، الأسعار في اتجاه صاعد",
-      },
-      {
-        cropName: "Tomato",
-        cropNameArabic: "الطماطم",
-        currentPrice: 3.2,
-        priceChange: -0.25,
-        marketTrend: "bearish",
-        recommendation: "Consider early harvest or value-added processing",
-        recommendationArabic:
-          "النظر في الحصاد المبكر أو المعالجة ذات القيمة المضافة",
-      },
-    ]);
-  };
+        setFarms(farms);
+        setMetrics(metrics);
+        setLastSync(
+          overview?.data?.lastUpdated ? new Date(overview.data.lastUpdated) : new Date(),
+        );
+        setConnectionStatus("online");
+
+        // Smart alerts come from the farm alerts the backend actually reports.
+        const alerts: SmartAlert[] = farms
+          .flatMap((farm) =>
+            (farm.recentAlerts ?? []).map((a, i) => ({
+              id: `${farm.id}-${i}`,
+              type:
+                a.severity === "high"
+                  ? ("urgent" as const)
+                  : a.severity === "medium"
+                    ? ("warning" as const)
+                    : ("info" as const),
+              title: a.type,
+              titleArabic: a.type,
+              message: a.message,
+              messageArabic: a.messageArabic,
+              timestamp: a.timestamp,
+              farmId: farm.id,
+              dismissible: a.severity !== "high",
+            })),
+          )
+          .slice(0, 6);
+        setSmartAlerts(alerts);
+
+        // Crop performance is aggregated from the supervised farms.
+        const byCrop = new Map<string, CropPerformanceMetric>();
+        farms.forEach((farm) => {
+          (farm.crops ?? []).forEach((crop) => {
+            const existing = byCrop.get(crop.name);
+            const healthScore =
+              crop.health === "excellent" ? 95 : crop.health === "good" ? 82 : 65;
+            if (existing) {
+              existing.area += crop.area;
+              existing.healthScore = Math.round(
+                (existing.healthScore + healthScore) / 2,
+              );
+            } else {
+              byCrop.set(crop.name, {
+                cropType: crop.name,
+                cropTypeArabic: crop.nameArabic,
+                healthScore,
+                yieldProjection: 0,
+                riskLevel: healthScore >= 85 ? "low" : healthScore >= 70 ? "medium" : "high",
+                trend: "stable",
+                area: crop.area,
+              });
+            }
+          });
+        });
+        setCropPerformance([...byCrop.values()]);
+
+        if (weatherRes.ok) {
+          const weather = await weatherRes.json();
+          const current = weather?.current;
+          const indices = weather?.agriculturalIndices;
+          if (current) {
+            const isReal = weather?.source?.isRealData === true;
+            const rainfall = weather?.forecast?.daily?.[0]?.rainfall ?? 0;
+            setWeatherInsights({
+              location: weather?.location?.name ?? "تونس",
+              temperature: Number(current.temperature),
+              humidity: Number(current.humidity),
+              rainfall: Number(rainfall),
+              windSpeed: Number(current.windSpeed),
+              uvIndex: 0,
+              recommendation: indices
+                ? `Evapotranspiration ${indices.evapotranspiration} mm/j, soil moisture ${indices.soilMoisture}%, crop stress ${indices.cropStress}.`
+                : "",
+              recommendationArabic: indices
+                ? `النتح التبخري ${indices.evapotranspiration} مم/يوم، رطوبة التربة ${indices.soilMoisture}%، إجهاد المحصول: ${indices.cropStress}.`
+                : "",
+              isRealData: isReal,
+            });
+          }
+        }
+
+        if (marketRes.ok) {
+          const prices = await marketRes.json();
+          if (Array.isArray(prices)) {
+            setMarketInsights(
+              prices.slice(0, 4).map((p: any) => ({
+                cropName: p.name,
+                cropNameArabic: p.name,
+                currentPrice: Number(p.currentPrice),
+                priceChange: Number(p.change24h ?? 0),
+                marketTrend:
+                  p.trend === "up" ? "bullish" : p.trend === "down" ? "bearish" : "stable",
+                recommendation: "",
+                recommendationArabic: "",
+              })),
+            );
+          }
+        }
+
+        setSummary(summary);
+      } catch (error) {
+        console.error("Agronomist dashboard load failed:", error);
+        if (!cancelled) {
+          setConnectionStatus("offline");
+          toast.error("تعذّر تحميل بيانات لوحة الخبير الزراعي");
+        }
+      }
+    };
+
+    loadDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [expertId]);
 
   const quickActions: QuickAction[] = [
     {
@@ -617,6 +692,10 @@ const EnhancedAgronomistDashboard: React.FC<
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           <div className="p-6 space-y-6">
+            {/* The supervised-farm and market figures below come from the
+                backend's seeded demonstration dataset, not from a live farm
+                registry or market feed. */}
+            <SimulatedDataNotice />
             {/* Enhanced KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Active Farms */}
@@ -627,7 +706,9 @@ const EnhancedAgronomistDashboard: React.FC<
                       <p className="text-blue-100 text-sm font-medium">
                         {isArabic ? "المزارع النشطة" : "Active Farms"}
                       </p>
-                      <p className="text-3xl font-bold mt-1">24</p>
+                      <p className="text-3xl font-bold mt-1">
+                        {summary.totalFarms ?? farms.length}
+                      </p>
                       <div className="flex items-center mt-2 text-sm">
                         <ArrowUp className="h-4 w-4 mr-1" />
                         <span>
@@ -650,7 +731,9 @@ const EnhancedAgronomistDashboard: React.FC<
                       <p className="text-red-100 text-sm font-medium">
                         {isArabic ? "تنبيهات حرجة" : "Critical Alerts"}
                       </p>
-                      <p className="text-3xl font-bold mt-1">3</p>
+                      <p className="text-3xl font-bold mt-1">
+                        {summary.totalAlerts ?? smartAlerts.length}
+                      </p>
                       <div className="flex items-center mt-2 text-sm">
                         <AlertTriangle className="h-4 w-4 mr-1" />
                         <span>
@@ -675,7 +758,11 @@ const EnhancedAgronomistDashboard: React.FC<
                       <p className="text-green-100 text-sm font-medium">
                         {isArabic ? "معدل النجاح" : "Success Rate"}
                       </p>
-                      <p className="text-3xl font-bold mt-1">94.2%</p>
+                      <p className="text-3xl font-bold mt-1">
+                        {metrics.treatmentSuccessRate !== undefined
+                          ? `${metrics.treatmentSuccessRate}%`
+                          : "—"}
+                      </p>
                       <div className="flex items-center mt-2 text-sm">
                         <Star className="h-4 w-4 mr-1" />
                         <span>
@@ -698,7 +785,9 @@ const EnhancedAgronomistDashboard: React.FC<
                       <p className="text-purple-100 text-sm font-medium">
                         {isArabic ? "رؤى الذكاء الاصطناعي" : "AI Insights"}
                       </p>
-                      <p className="text-3xl font-bold mt-1">127</p>
+                      <p className="text-3xl font-bold mt-1">
+                        {metrics.diseaseDetections ?? "—"}
+                      </p>
                       <div className="flex items-center mt-2 text-sm">
                         <Cpu className="h-4 w-4 mr-1" />
                         <span>

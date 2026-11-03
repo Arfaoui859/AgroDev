@@ -231,12 +231,49 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
     {} as Record<string, NavigationItem[]>,
   );
 
-  // Network status simulation
+  // Real backend reachability: poll the health endpoint instead of flipping a
+  // random status, so "online" means the API actually answered.
   useEffect(() => {
-    const interval = setInterval(() => {
-      setConnectionStatus(Math.random() > 0.1 ? "online" : "offline");
-    }, 30000);
-    return () => clearInterval(interval);
+    let cancelled = false;
+
+    const checkConnection = async () => {
+      try {
+        const response = await fetch("/api/health");
+        if (!cancelled) setConnectionStatus(response.ok ? "online" : "offline");
+      } catch {
+        if (!cancelled) setConnectionStatus("offline");
+      }
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Unread notification count from the notifications API, not a fixed badge.
+  useEffect(() => {
+    let cancelled = false;
+    const loadUnreadCount = async () => {
+      try {
+        const response = await fetch("/api/notifications?status=unread");
+        if (!response.ok) return;
+        const payload = await response.json();
+        const items = Array.isArray(payload) ? payload : (payload?.data ?? []);
+        const unread = items.filter(
+          (n: { isRead?: boolean }) => n.isRead !== true,
+        ).length;
+        if (!cancelled) setNotifications(unread);
+      } catch {
+        // Leave the badge as-is when the endpoint is unreachable.
+      }
+    };
+    loadUnreadCount();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Handle search

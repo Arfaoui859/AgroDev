@@ -159,6 +159,8 @@ export default function EnhancedMarketDashboard() {
       setDashboardData(dashboard);
       setMarketAlerts(alerts);
       setLastUpdate(new Date());
+      // Real-time only if the feed is not the simulated demonstration dataset.
+      setIsRealTime(dashboard?.isRealData === true);
 
       // Set default selected crop if not set
       if (!selectedCrop && prices.length > 0) {
@@ -166,6 +168,11 @@ export default function EnhancedMarketDashboard() {
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
+      // Leave the view empty rather than showing invented prices.
+      setMarketPrices([]);
+      setDashboardData(null);
+      setMarketAlerts([]);
+      setIsRealTime(false);
     } finally {
       setIsLoading(false);
     }
@@ -174,22 +181,23 @@ export default function EnhancedMarketDashboard() {
   const fetchChartData = async (cropId: string, days: string) => {
     try {
       const daysNum = parseInt(days.replace("d", ""));
-      const response = await fetch(
-        `/api/market-analysis/prices/history/${cropId}?days=${daysNum}`,
-      );
-      const data = await response.json();
+      const [historyRes, forecastRes] = await Promise.all([
+        fetch(`/api/market-analysis/prices/history/${cropId}?days=${daysNum}`),
+        fetch(`/api/market-analysis/predictions/${cropId}?days=7`),
+      ]);
+      const data = await historyRes.json();
 
-      // Generate forecast data
-      const lastPrice = data.data[data.data.length - 1]?.price || 0;
-      const forecastData = [];
-      for (let i = 1; i <= 7; i++) {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + i);
-        forecastData.push({
-          date: futureDate.toISOString().split("T")[0],
-          forecast: lastPrice * (1 + (Math.random() - 0.5) * 0.1),
-          volume: Math.floor(Math.random() * 500) + 100,
-        });
+      // Forecast points come from the backend's prediction model, not a browser
+      // random walk. The model returns 30 days; we chart the first week.
+      let forecastData: ChartData[] = [];
+      if (forecastRes.ok) {
+        const predictions = await forecastRes.json();
+        forecastData = (predictions?.predictions ?? [])
+          .slice(0, 7)
+          .map((point: { date: string; predictedPrice: number }) => ({
+            date: point.date,
+            forecast: Number(point.predictedPrice),
+          }));
       }
 
       const combinedData = [
@@ -319,7 +327,7 @@ export default function EnhancedMarketDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={isRealTime ? "default" : "outline"} className="mr-2">
-            {isRealTime ? "مباشر" : "ثابت"}
+            {isRealTime ? "تحديث تلقائي" : "تحديث يدوي"}
           </Badge>
           <span className="text-sm text-muted-foreground">
             آخر تحديث: {lastUpdate.toLocaleTimeString("ar-TN")}
@@ -333,7 +341,7 @@ export default function EnhancedMarketDashboard() {
             <Activity
               className={cn("h-4 w-4 ml-2", isRealTime && "animate-pulse")}
             />
-            {isRealTime ? "إيقاف المباشر" : "تشغيل المباشر"}
+            {isRealTime ? "إيقاف التحديث التلقائي" : "تشغيل التحديث التلقائي"}
           </Button>
           <Button
             variant="outline"

@@ -198,3 +198,41 @@ describe("marketplace data provenance", () => {
     expect(typeof res.body.disclaimer).toBe("string");
   });
 });
+
+/**
+ * The agronomist dashboard renders supervised farms, disease analyses, training
+ * programmes and expert metrics. AgroGrowth has no agronomist database wired
+ * yet, so those are a seeded demonstration dataset. The UI must be able to tell
+ * that apart from real records, otherwise a hardcoded "24 active farms" reads
+ * as live production data.
+ */
+describe("agronomist dashboard data provenance", () => {
+  let app: express.Express;
+
+  beforeAll(() => {
+    app = createServer();
+  });
+
+  it.each([
+    "/api/agronomist-dashboard/overview",
+    "/api/agronomist-dashboard/farms",
+    "/api/agronomist-dashboard/disease-analyses",
+    "/api/agronomist-dashboard/training-programs",
+    "/api/agronomist-dashboard/performance-analysis",
+    "/api/agronomist-dashboard/metrics",
+  ])("labels %s as simulated", async (path) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(200);
+    expect(res.body.dataSource).toBe("simulated");
+    expect(res.body.isRealData).toBe(false);
+    expect(typeof res.body.disclaimer).toBe("string");
+  });
+
+  it("reports the farm figures the UI displays from one source", async () => {
+    const res = await request(app)
+      .get("/api/agronomist-dashboard/overview")
+      .expect(200);
+    expect(res.body.data.farms.length).toBeGreaterThan(0);
+    expect(res.body.data.summary.totalFarms).toBe(res.body.data.farms.length);
+  });
+});
