@@ -88,12 +88,21 @@ export const getAllMarketData: RequestHandler = async (req, res) => {
   try {
     const latestPrices = await CropService.getLatestMarketPrices();
 
+    // Resolve crop names via a separate lookup (no PostgREST embedded join:
+    // market_prices has no FK to crops in the deployed schema).
+    const crops = await CropService.getAllCrops().catch(() => []);
+    const cropById = new Map(crops.map((c) => [c.id, c]));
+
     // Group by crop
-    const marketData = {};
+    const marketData: Record<string, any> = {};
     latestPrices.forEach((price) => {
       if (!marketData[price.crop_id]) {
+        const crop = cropById.get(price.crop_id);
         marketData[price.crop_id] = {
-          crop: price.crop,
+          crop: crop
+            ? { id: crop.id, name: crop.name, name_ar: crop.name_ar }
+            : null,
+          cropId: price.crop_id,
           prices: [],
           currentPrice: 0,
           averagePrice: 0,
@@ -111,23 +120,26 @@ export const getAllMarketData: RequestHandler = async (req, res) => {
         data.prices.length;
     });
 
+    const overview = Object.values(marketData);
+    const currentPrices = overview.map((d: any) => Number(d.currentPrice ?? 0));
+
     const response = {
-      marketOverview: Object.values(marketData),
-      totalCrops: Object.keys(marketData).length,
+      marketOverview: overview,
+      totalCrops: overview.length,
       lastUpdated: new Date().toISOString(),
       summary: {
-        highestPrice: Math.max(
-          ...Object.values(marketData).map((d: any) => d.currentPrice),
-        ),
-        lowestPrice: Math.min(
-          ...Object.values(marketData).map((d: any) => d.currentPrice),
-        ),
-        averagePrice:
-          (Object.values(marketData) as any[]).reduce(
-            (sum, d) => sum + Number(d.currentPrice ?? 0),
-            0,
-          ) / Math.max(Object.keys(marketData).length, 1),
+        // No prices recorded yet: report nulls rather than ±Infinity from
+        // Math.max/min over an empty list.
+        highestPrice: currentPrices.length ? Math.max(...currentPrices) : null,
+        lowestPrice: currentPrices.length ? Math.min(...currentPrices) : null,
+        averagePrice: currentPrices.length
+          ? currentPrices.reduce((sum, v) => sum + v, 0) / currentPrices.length
+          : null,
       },
+      dataSource: "database",
+      isRealData: true,
+      disclaimer:
+        "الأسعار من قاعدة بيانات المنصة وقد تكون غير محدّثة. تحقق من المصادر الرسمية قبل أي قرار تجاري.",
     };
 
     res.json({
@@ -178,6 +190,11 @@ export const getMarketTrends: RequestHandler = async (req, res) => {
       insights: generateMarketInsights(trends),
       recommendations: generateMarketRecommendations(trends),
       lastUpdated: new Date().toISOString(),
+      dataSource: "database",
+      isRealData: true,
+      sampleSize: filteredPrices.length,
+      disclaimer:
+        "الاتجاهات محسوبة من الأسعار المخزّنة في قاعدة بيانات المنصة؛ قد تكون محدودة عند قلّة السجلات.",
     };
 
     res.json({

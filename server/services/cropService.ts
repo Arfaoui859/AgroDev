@@ -144,12 +144,12 @@ export class CropService {
   }
 
   static async getLatestMarketPrices() {
+    // No embedded `crops(...)` join: the deployed schema has no foreign key
+    // from market_prices.crop_id to crops.id, so PostgREST rejects the
+    // relationship (PGRST200). Callers attach crop names via a separate lookup.
     const { data, error } = await supabase
       .from('market_prices')
-      .select(`
-        *,
-        crop:crops(name, name_ar)
-      `)
+      .select('*')
       .order('price_date', { ascending: false })
       .limit(100);
     
@@ -171,10 +171,7 @@ export class CropService {
   static async getMarketPricesByLocation(location: string, limit: number = 50) {
     const { data, error } = await supabase
       .from('market_prices')
-      .select(`
-        *,
-        crop:crops(name, name_ar)
-      `)
+      .select('*')
       .eq('market_location', location)
       .order('price_date', { ascending: false })
       .limit(limit);

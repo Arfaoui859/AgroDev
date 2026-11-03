@@ -271,6 +271,8 @@ import {
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
+import { adminSetPassword } from "./routes/admin-set-password";
+import { adminCreateUser } from "./routes/admin-create-user";
 import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
 import {
   setupDemoUsers,
@@ -632,20 +634,12 @@ export function createServer() {
 
   // Admin: set a user's password (requires x-admin-token header with service role key)
   app.post("/api/admin/set-password", (req, res, next) => {
-    return (require("./routes/admin-set-password") as any).adminSetPassword(
-      req,
-      res,
-      next,
-    );
+    return adminSetPassword(req, res, next as any);
   });
 
   // Admin: create a confirmed admin user (requires x-admin-token header with service role key)
   app.post("/api/admin/create-user", (req, res, next) => {
-    return (require("./routes/admin-create-user") as any).adminCreateUser(
-      req,
-      res,
-      next,
-    );
+    return adminCreateUser(req, res, next as any);
   });
 
   // Auth Test Endpoints

@@ -116,7 +116,22 @@ export const getFieldById: RequestHandler = async (req, res) => {
 
 export const createField: RequestHandler = async (req, res) => {
   try {
-    const fieldData = req.body;
+    const fieldData = req.body ?? {};
+    const missing: string[] = [];
+    if (!fieldData.farm_id) missing.push('farm_id');
+    if (!fieldData.name) missing.push('name');
+    if (fieldData.size_hectares === undefined || fieldData.size_hectares === null)
+      missing.push('size_hectares');
+    if (!fieldData.soil_type) missing.push('soil_type');
+    if (missing.length) {
+      return res.status(400).json({
+        status: 'error',
+        code: 'INVALID_INPUT',
+        message: 'بيانات الحقل غير مكتملة',
+        missing,
+      });
+    }
+
     const newField = await FarmService.createField(fieldData);
 
     res.status(201).json({
@@ -137,7 +152,7 @@ export const createField: RequestHandler = async (req, res) => {
 export const updateField: RequestHandler = async (req, res) => {
   try {
     const { fieldId } = req.params;
-    const updates = req.body;
+    const updates = req.body ?? {};
     
     const updatedField = await FarmService.updateField(fieldId, updates);
 
