@@ -212,6 +212,56 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
       expect(response.status).toBe(200);
     });
 
+    describe("Synthetic data is never presented as real", () => {
+      test("market-analysis prices keep the array contract but flag provenance", async () => {
+        const response = await request(app)
+          .get("/api/market-analysis/prices/current")
+          .expect(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.headers["x-data-provenance"]).toBe("simulated");
+        expect(response.headers["x-is-real-data"]).toBe("false");
+      });
+
+      test("market-analysis alerts keep the array contract but flag provenance", async () => {
+        const response = await request(app)
+          .get("/api/market-analysis/alerts")
+          .expect(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.headers["x-data-provenance"]).toBe("simulated");
+      });
+
+      test("market-analysis predictions carry simulated provenance", async () => {
+        const response = await request(app)
+          .get("/api/market-analysis/predictions/olive")
+          .expect(200);
+        expect(response.body.dataSource).toBe("simulated");
+        expect(response.body.isRealData).toBe(false);
+      });
+
+      test("public market prices are labelled simulated, not real", async () => {
+        const response = await request(app)
+          .get("/api/public/market-prices?limit=2")
+          .set("x-api-key", "public_demo_key_12345")
+          .expect(200);
+        expect(response.body.meta.dataSource).toBe("simulated");
+        expect(response.body.meta.isRealData).toBe(false);
+      });
+
+      test("weather responses declare a real provider source", async () => {
+        const response = await request(app)
+          .get("/api/weather/coordinates?lat=36.8&lon=10.2");
+        // Live provider may be unreachable in CI; when it succeeds it must
+        // declare provenance, and when it fails it must NOT fabricate data.
+        if (response.status === 200) {
+          expect(response.body.source).toBeDefined();
+          expect(response.body.source.isRealData).toBe(true);
+        } else {
+          expect([502, 503]).toContain(response.status);
+          expect(response.body.dataAvailable).toBe(false);
+        }
+      });
+    });
+
     describe("Privileged maintenance endpoints are not anonymous", () => {
       const privileged: Array<[string, string]> = [
         ["post", "/api/setup-admin"],

@@ -94,6 +94,10 @@ export interface AIRecommendationResponse {
     analysisDate: string;
     dataVersion: string;
     algorithmVersion: string;
+    /** Weather/market inputs for this recommendation are model-generated, not
+     * live feeds. Surfaced so clients never treat them as observed data. */
+    dataSource: "rule-based";
+    isRealData: false;
     confidence: number;
   };
 }
@@ -163,6 +167,8 @@ async function generateAIRecommendations(input: CropRecommendationInput): Promis
       analysisDate: new Date().toISOString(),
       dataVersion: "1.0",
       algorithmVersion: "2.1",
+      dataSource: "rule-based",
+      isRealData: false,
       confidence: calculateOverallConfidence(topRecommendations)
     }
   };
@@ -647,7 +653,7 @@ function generateAnalysis(
 }
 
 async function simulateWeatherData(location: any) {
-  // Simulate weather API call
+  // Model-generated weather proxy (no live provider wired into this route).
   return {
     temperature: 25 + Math.random() * 10,
     humidity: 60 + Math.random() * 20,
@@ -656,7 +662,7 @@ async function simulateWeatherData(location: any) {
 }
 
 async function simulateMarketData() {
-  // Simulate market API call
+  // Model-generated market proxy (no live market feed wired into this route).
   return {
     wheat: { pricing: { currentPrice: 850 }, demand: { local: { percentage: 95 } } },
     tomato: { pricing: { currentPrice: 4.5 }, demand: { local: { percentage: 90 } } },

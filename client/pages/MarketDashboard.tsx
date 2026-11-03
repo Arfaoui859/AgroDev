@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -109,7 +110,7 @@ export default function MarketDashboard() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">السوق الذكي</h1>
           <p className="text-muted-foreground">
-            مراقبة مباشرة لأسعار المحاصيل والمنتجات الزراعية
+            مراقبة أسعار المحاصيل والمنتجات الزراعية
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -126,7 +127,18 @@ export default function MarketDashboard() {
             تحديث
           </Button>
         </div>
+
       </div>
+      {/* Data provenance: no live market feed is configured, so the numbers
+          below are model-generated. Stated plainly so they are not mistaken
+          for real market prices. */}
+      <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          الأسعار والتنبؤات المعروضة هنا بيانات محاكاة توضيحية وليست أسعاراً
+          حقيقية من السوق. لا تعتمد عليها لاتخاذ قرارات تجارية.
+        </AlertDescription>
+      </Alert>
 
       {/* Market Summary Cards */}
       {dashboardData && (

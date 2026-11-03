@@ -74,6 +74,8 @@ export interface DiseaseDetectionResponse {
     processedAt: string;
     model: string;
     version: string;
+    dataSource?: "simulated" | "microservice" | "model";
+    isRealData?: boolean;
     processingTime: number;
   };
 }
@@ -247,12 +249,10 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
       });
     }
 
-    // Simulate AI processing time
     const processingStart = Date.now();
-    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1000));
     const processingTime = Date.now() - processingStart;
 
-    // Mock AI analysis
+    // Heuristic analysis (no trained vision model is configured for this route).
     const analysisResult = await performMockAIAnalysis(files, requestData);
     
     const response: DiseaseDetectionResponse = {
@@ -280,8 +280,13 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
       economicImpact: calculateEconomicImpact(analysisResult.diagnosis, requestData.cropType),
       metadata: {
         processedAt: new Date().toISOString(),
-        model: "TunisianCropAI-v2.1",
-        version: "2.1.0",
+        // No vision model is wired into this legacy endpoint: results are
+        // heuristic simulations. Flagged explicitly so clients do not present
+        // them as model inferences.
+        model: "heuristic-simulated",
+        version: "0.0.0",
+        dataSource: "simulated",
+        isRealData: false,
         processingTime
       }
     };
