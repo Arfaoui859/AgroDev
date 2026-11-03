@@ -1,4 +1,5 @@
 import express from "express";
+import { safeErrorMessage } from "../lib/errors";
 
 const router = express.Router();
 
@@ -729,7 +730,7 @@ router.get("/alerts/user/:userId", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في جلب التنبيهات",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -758,7 +759,7 @@ router.post("/alerts/resolve/:alertId", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في تحديث التنبيه",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -789,7 +790,7 @@ router.patch("/alerts/:alertId/status", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في تحديث التنبيه",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -822,7 +823,7 @@ router.post("/alerts/generate", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في إنشاء التنبيه",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -846,7 +847,7 @@ router.get("/tasks/user/:userId/today", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في جلب مهام اليوم",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -897,7 +898,7 @@ router.get("/tasks/user/:userId/:timeframe", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في جلب المهام",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -928,7 +929,7 @@ router.post("/tasks/schedule", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في إنشاء المهمة",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -963,7 +964,7 @@ router.patch("/tasks/:taskId/status", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في تحديث المهمة",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -1004,7 +1005,7 @@ router.get("/alerts/user/:userId/stats", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في جلب إحصائيات التنبيهات",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -1046,7 +1047,7 @@ router.post("/alerts/treatment/generate", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في إنشاء تنبيه العلاج",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -1075,7 +1076,7 @@ router.get("/alerts/treatment/:treatmentId", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل ��ي جلب تنبيهات العلاج",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });
@@ -1156,7 +1157,7 @@ router.post("/alerts/treatment/schedule-reminders", (req, res) => {
     res.status(500).json({
       success: false,
       message: "فشل في جدولة التذكيرات",
-      error: error.message,
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية"),
     });
   }
 });

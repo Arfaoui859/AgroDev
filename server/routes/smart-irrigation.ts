@@ -1,4 +1,5 @@
 import express from 'express';
+import { safeErrorMessage } from '../lib/errors';
 import {
   getWeatherFromOpenMeteo,
   type WeatherData as ProviderWeatherData,
@@ -663,7 +664,7 @@ router.get('/soil-moisture/:fieldId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب بيانات رطوبة التربة',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -776,7 +777,7 @@ router.post('/recommend', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في إنتاج توصية الري',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -877,7 +878,7 @@ router.get('/schedules/:userId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب جداول الري',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -911,7 +912,7 @@ router.patch('/schedules/:scheduleId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في تحديث جدول الري',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -947,7 +948,7 @@ router.get('/events/:fieldId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب تاريخ الري',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -1009,7 +1010,7 @@ router.post('/start', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في بدء الري',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -1081,7 +1082,7 @@ router.get('/analytics/:userId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب تحليلات الري',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });

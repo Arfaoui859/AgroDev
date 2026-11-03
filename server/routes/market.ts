@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { safeErrorMessage } from "../lib/errors";
 import { CropService } from "../services/cropService";
 
 export const getMarketData: RequestHandler = async (req, res) => {
@@ -79,7 +80,7 @@ export const getMarketData: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "فشل في استرجاع بيانات السوق",
-      error: error.message,
+      error: safeErrorMessage(error, "فشل في استرجاع بيانات السوق"),
     });
   }
 };
@@ -152,7 +153,7 @@ export const getAllMarketData: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "فشل في استرجاع بيانات السوق",
-      error: error.message,
+      error: safeErrorMessage(error, "فشل في استرجاع بيانات السوق"),
     });
   }
 };
@@ -207,7 +208,7 @@ export const getMarketTrends: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "فشل في استرجاع اتجاهات السوق",
-      error: error.message,
+      error: safeErrorMessage(error, "فشل في استرجاع بيانات السوق"),
     });
   }
 };
@@ -299,7 +300,7 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "فشل في استرجاع الأسعار الإقليمية",
-      error: error.message,
+      error: safeErrorMessage(error, "فشل في استرجاع بيانات السوق"),
     });
   }
 };

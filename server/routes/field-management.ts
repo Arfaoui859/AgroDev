@@ -2,6 +2,8 @@ import { RequestHandler } from 'express';
 import { FarmService } from '../services/farmService';
 import { CropService } from '../services/cropService';
 import { sendCaughtError } from '../lib/errors';
+import { recommendCrops } from '../services/ai/knowledgeEngine';
+import { SIMULATED_DISCLAIMER_AR } from '../lib/provenance';
 
 // ============ API HANDLERS ============
 
@@ -15,11 +17,7 @@ export const getFarms: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching farms:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع المزارع',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع المزارع');
   }
 };
 
@@ -42,11 +40,7 @@ export const getFarmById: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching farm:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع المزرعة',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع المزرعة');
   }
 };
 
@@ -72,11 +66,7 @@ export const getFields: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching fields:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع الحقول',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع الحقول');
   }
 };
 
@@ -107,11 +97,7 @@ export const getFieldById: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching field:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع الحقل',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع الحقل');
   }
 };
 
@@ -206,11 +192,7 @@ export const getCropHistory: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching crop history:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع تاريخ المحاصيل',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع تاريخ المحاصيل');
   }
 };
 
@@ -241,11 +223,7 @@ export const getFieldAlerts: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching field alerts:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع التنبيهات',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع التنبيهات');
   }
 };
 
@@ -280,11 +258,7 @@ export const getActivityLogs: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching activity logs:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع سجل الأنشطة',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع سجل الأنشطة');
   }
 };
 
@@ -338,11 +312,7 @@ export const getFieldPerformance: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching field performance:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في استرجاع أداء الحقل',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في استرجاع أداء الحقل');
   }
 };
 
@@ -354,6 +324,15 @@ export const generateAIRecommendations: RequestHandler = async (req, res) => {
       return res.status(400).json({
         status: 'error',
         message: 'معرف الحقل مطلوب'
+      });
+    }
+    // Field ids are UUIDs. Reject anything else before it reaches the database,
+    // so a malformed id is a clean 404 instead of a 500 from a Postgres cast
+    // error (whose message used to be echoed to the client).
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(fieldId))) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'الحقل غير موجود'
       });
     }
 
@@ -373,22 +352,32 @@ export const generateAIRecommendations: RequestHandler = async (req, res) => {
       currentSoilData = latestSoil;
     }
 
-    // Get suitable crops
-    const allCrops = await CropService.getAllCrops();
-    
-    // Generate recommendations based on soil data and field characteristics
-    const recommendations = allCrops.slice(0, 5).map(crop => ({
-      cropId: crop.id,
-      cropName: crop.name,
-      cropNameAr: crop.name_ar,
-      suitabilityScore: Math.random() * 100, // This would be calculated by AI service
-      expectedYield: Math.random() * 10 + 2,
-      estimatedProfit: Math.random() * 5000 + 1000,
-      plantingDate: new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
-      harvestDate: new Date(Date.now() + (90 + crop.days_to_maturity) * 24 * 60 * 60 * 1000).toISOString(),
-      riskFactors: [],
-      recommendations: `يُنصح بزراعة ${crop.name_ar} في هذا الحقل`
-    }));
+    // Score crops with the deterministic agronomic engine. This previously
+    // returned Math.random() scores and invented yield/profit figures, which
+    // presented fabricated numbers to the farmer as AI output.
+    const engine = recommendCrops({
+      ph: currentSoilData?.ph,
+      temperature: currentSoilData?.temperature,
+    });
+
+    // Attach the reference-table metadata (crop id, maturity) the client needs,
+    // without inventing yield or profit.
+    const allCrops = await CropService.getAllCrops().catch(() => []);
+    const byName = new Map(allCrops.map((c) => [c.name, c]));
+    const recommendations = engine.recommendations.slice(0, 5).map((rec) => {
+      const crop = byName.get(rec.crop);
+      return {
+        cropId: crop?.id ?? rec.crop,
+        cropName: rec.crop,
+        cropNameAr: rec.nameAr,
+        suitabilityScore: rec.suitabilityScore,
+        reasons: rec.reasonsAr,
+        waterNeed: rec.waterNeedAr,
+        plantingSeason: rec.seasonAr,
+        daysToMaturity: crop?.days_to_maturity ?? null,
+        recommendations: `يُنصح بزراعة ${rec.nameAr} في هذا الحقل`,
+      };
+    });
 
     res.json({
       status: 'success',
@@ -396,17 +385,16 @@ export const generateAIRecommendations: RequestHandler = async (req, res) => {
         fieldId,
         recommendations,
         soilAnalysis: currentSoilData,
+        dataSource: 'rule-based',
+        isRealData: false,
+        disclaimer: `${SIMULATED_DISCLAIMER_AR} درجات الملاءمة محسوبة بقواعد زراعية، والأرقام الفلاحية المتوقعة (المردود/الربح) غير مُدرجة لعدم توفر بيانات محلية موثوقة.`,
         generatedAt: new Date().toISOString()
       },
       message: 'تم إنتاج التوصيات بنجاح'
     });
   } catch (error) {
     console.error('Error generating AI recommendations:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في إنتاج التوصيات',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في إنتاج التوصيات');
   }
 };
 

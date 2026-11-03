@@ -44,7 +44,6 @@ describeLive("🔴 LIVE text provider smoke test", () => {
       { maxTokens: 120, temperature: 0 },
     );
 
-    // eslint-disable-next-line no-console
     console.log(
       `[live] provider=${result.provider} model=${result.model} latencyMs=${result.latencyMs} tokens=${result.usage.totalTokens}`,
     );
@@ -70,7 +69,6 @@ describeVision("🔴 LIVE vision provider smoke test", () => {
       language: "ar",
     });
 
-    // eslint-disable-next-line no-console
     console.log(
       `[live-vision] model=${result.modelSource} latencyMs=${result.latencyMs} confidence=${result.diagnosis.confidence}`,
     );

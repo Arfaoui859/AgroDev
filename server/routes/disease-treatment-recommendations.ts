@@ -1,4 +1,5 @@
 import express from 'express';
+import { safeErrorMessage } from '../lib/errors';
 
 const router = express.Router();
 
@@ -713,7 +714,7 @@ router.post('/recommend', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في توليد خطة العلاج',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -748,7 +749,7 @@ router.get('/products', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب منتجات العلاج',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -785,7 +786,7 @@ router.get('/history/:userId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب تاريخ العلاجات',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -830,7 +831,7 @@ router.post('/start', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في بدء خطة العلاج',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -878,7 +879,7 @@ router.patch('/progress/:historyId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في تحديث تقدم العلاج',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -915,7 +916,7 @@ router.post('/complete/:historyId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في إنهاء العلاج',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
@@ -951,7 +952,7 @@ router.get('/stats/:userId', (req, res) => {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب إحصائيات العلاج',
-      error: error.message
+      error: safeErrorMessage(error, "تعذّر تنفيذ العملية")
     });
   }
 });
