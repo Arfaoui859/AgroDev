@@ -3,6 +3,7 @@ Main API for Pest Control Recommendation Service
 FastAPI service for intelligent pest and disease management
 """
 
+import os
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional, Union
@@ -11,7 +12,7 @@ from datetime import datetime
 import uvicorn
 import base64
 
-from .pest_control_recommender import create_pest_control_recommender
+from pest_control.pest_control_recommender import create_pest_control_recommender
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

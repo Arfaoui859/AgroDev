@@ -3,6 +3,8 @@ Main API for Weather and Yield Intelligence Services
 Combined FastAPI service for SmartWeatherCropPlanner and YieldPredictorAI
 """
 
+import os
+import threading
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional, Union
@@ -24,9 +26,41 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Initialize services
-weather_planner = create_smart_weather_crop_planner()
-yield_predictor = create_yield_predictor_ai()
+# Both components train sklearn models on synthetic data at construction time
+# (~45s and ~60s). Doing that at import blocked the event loop for over a minute,
+# so the platform's health check timed out and the service looked down. They are
+# now built on first use; /health reports readiness without forcing the training.
+_service_lock = threading.Lock()
+_weather_planner = None
+_yield_predictor = None
+
+
+def get_weather_planner():
+    global _weather_planner
+    if _weather_planner is None:
+        with _service_lock:
+            if _weather_planner is None:
+                _weather_planner = create_smart_weather_crop_planner()
+    return _weather_planner
+
+
+def get_yield_predictor():
+    global _yield_predictor
+    if _yield_predictor is None:
+        with _service_lock:
+            if _yield_predictor is None:
+                _yield_predictor = create_yield_predictor_ai()
+    return _yield_predictor
+
+
+def _model_status():
+    """Readiness without triggering the (slow) training if it has not run yet."""
+    with _service_lock:
+        planner, predictor = _weather_planner, _yield_predictor
+    return {
+        "weather_planner": planner.is_trained if planner else False,
+        "yield_predictor": predictor.is_trained if predictor else False,
+    }
 
 # Pydantic models for API
 class LocationData(BaseModel):
@@ -100,7 +134,7 @@ async def create_weather_based_plan(request: WeatherPlanningRequest):
         logger.info(f"Creating weather-based plan for location: {request.location.region}")
         
         input_data = request.dict()
-        result = weather_planner.create_weather_based_plan(input_data)
+        result = get_weather_planner().create_weather_based_plan(input_data)
         
         return {
             'success': True,
@@ -121,7 +155,7 @@ async def predict_crop_yield(request: YieldPredictionRequest):
         logger.info(f"Predicting yield for crop: {request.crop_type}")
         
         input_data = request.dict()
-        result = yield_predictor.predict_crop_yield(input_data)
+        result = get_yield_predictor().predict_crop_yield(input_data)
         
         return {
             'success': True,
@@ -143,11 +177,11 @@ async def comprehensive_analysis(request: CombinedAnalysisRequest):
         
         # تحليل التخطيط المناخي
         weather_input = request.weather_planning.dict()
-        weather_analysis = weather_planner.create_weather_based_plan(weather_input)
+        weather_analysis = get_weather_planner().create_weather_based_plan(weather_input)
         
         # تحليل توقع المردودية
         yield_input = request.yield_prediction.dict()
-        yield_analysis = yield_predictor.predict_crop_yield(yield_input)
+        yield_analysis = get_yield_predictor().predict_crop_yield(yield_input)
         
         # دمج النتائج
         combined_insights = _generate_combined_insights(
@@ -187,7 +221,7 @@ async def analyze_field_image(file: UploadFile = File(...)):
         image_data = await file.read()
         
         # تحليل الصورة
-        analysis = yield_predictor._analyze_field_image(image_data)
+        analysis = get_yield_predictor()._analyze_field_image(image_data)
         
         return {
             'success': True,
@@ -207,7 +241,7 @@ async def get_climate_zones():
     try:
         return {
             'success': True,
-            'data': weather_planner.climate_zones,
+            'data': get_weather_planner().climate_zones,
             'message': 'تم جلب معلومات المناطق المناخية'
         }
         
@@ -223,7 +257,7 @@ async def get_crop_yield_database():
     try:
         return {
             'success': True,
-            'data': yield_predictor.crop_yield_database,
+            'data': get_yield_predictor().crop_yield_database,
             'message': 'تم جلب قاعدة بيانات العوائد'
         }
         
@@ -253,7 +287,7 @@ async def assess_crop_climate_suitability(
             'climate_trends': {'warming_rate': 0.2}
         }
         
-        suitability = weather_planner._assess_crop_climate_suitability(
+        suitability = get_weather_planner()._assess_crop_climate_suitability(
             input_data, climate_analysis
         )
         
@@ -289,7 +323,7 @@ async def optimize_planting_schedule(
             'seasonal_outlook': {'favorable_months': [3, 4, 5, 10, 11]}
         }
         
-        optimal_timing = weather_planner._determine_optimal_planting_times(
+        optimal_timing = get_weather_planner()._determine_optimal_planting_times(
             input_data, climate_analysis
         )
         
@@ -313,11 +347,11 @@ async def health_check():
         'services': {
             'weather_planner': {
                 'status': 'active',
-                'model_trained': weather_planner.is_trained
+                'model_trained': _model_status()['weather_planner']
             },
             'yield_predictor': {
                 'status': 'active', 
-                'model_trained': yield_predictor.is_trained
+                'model_trained': _model_status()['yield_predictor']
             }
         },
         'timestamp': datetime.now().isoformat()

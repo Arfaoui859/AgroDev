@@ -3,6 +3,7 @@ Main API for Smart Irrigation Optimization Service
 FastAPI service for intelligent irrigation scheduling and water management
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional
@@ -10,7 +11,7 @@ import logging
 from datetime import datetime
 import uvicorn
 
-from .smart_irrigation_optimizer import create_smart_irrigation_optimizer
+from irrigation_optimization.smart_irrigation_optimizer import create_smart_irrigation_optimizer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
