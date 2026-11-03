@@ -1,6 +1,107 @@
 import express from 'express';
+import {
+  getWeatherFromOpenMeteo,
+  type WeatherData as ProviderWeatherData,
+} from '../services/providers/weatherProvider';
+import { ProviderError } from '../services/providers/http';
 
 const router = express.Router();
+
+/**
+ * Tunisian governorate coordinates, used to fetch real weather for the
+ * irrigation engine. Mirrors the table in routes/weather.ts.
+ */
+const GOVERNORATE_COORDINATES: Record<string, { lat: number; lon: number }> = {
+  tunis: { lat: 36.8065, lon: 10.1815 },
+  ariana: { lat: 36.8625, lon: 10.1647 },
+  'ben-arous': { lat: 36.7167, lon: 10.2167 },
+  manouba: { lat: 36.8089, lon: 10.0969 },
+  nabeul: { lat: 36.456, lon: 10.7376 },
+  zaghouan: { lat: 36.4028, lon: 10.1425 },
+  bizerte: { lat: 37.2746, lon: 9.8739 },
+  beja: { lat: 36.7256, lon: 9.1817 },
+  jendouba: { lat: 36.5011, lon: 8.7803 },
+  kef: { lat: 36.1743, lon: 8.704 },
+  siliana: { lat: 36.0853, lon: 9.3703 },
+  sousse: { lat: 35.8256, lon: 10.6369 },
+  monastir: { lat: 35.7781, lon: 10.8264 },
+  mahdia: { lat: 35.5047, lon: 11.0624 },
+  sfax: { lat: 34.7406, lon: 10.7603 },
+  kairouan: { lat: 35.6781, lon: 10.0963 },
+  kasserine: { lat: 35.1674, lon: 8.8366 },
+  'sidi-bouzid': { lat: 35.0381, lon: 9.4858 },
+  gabes: { lat: 33.8815, lon: 10.0982 },
+  medenine: { lat: 33.3548, lon: 10.5055 },
+  tataouine: { lat: 32.9297, lon: 10.4518 },
+  gafsa: { lat: 34.425, lon: 8.7842 },
+  tozeur: { lat: 33.9197, lon: 8.1335 },
+  kebili: { lat: 33.7047, lon: 8.9694 },
+};
+
+const SIMULATED_PROVENANCE = {
+  dataSource: 'simulated' as const,
+  isRealData: false,
+  disclaimer:
+    'بيانات توضيحية (محاكاة) لأن أجهزة استشعار رطوبة التربة غير متصلة بهذه المنصة. لا تعتمد عليها لاتخاذ قرار ري فعلي.',
+};
+
+/**
+ * Adapt the real provider payload (Open-Meteo) to the irrigation engine's
+ * WeatherData contract. No value is invented: every number comes from the
+ * provider response.
+ */
+function toEngineWeather(w: ProviderWeatherData): WeatherData {
+  const daily = w.forecast?.daily ?? [];
+  const toForecast = (d: (typeof daily)[number]): WeatherForecast => ({
+    date: new Date(d.date),
+    temperature: { min: d.minTemp, max: d.maxTemp },
+    humidity: d.humidity,
+    rainfall: d.rainfall,
+    windSpeed: w.current?.windSpeed ?? 0,
+    evapotranspiration: w.agriculturalIndices?.evapotranspiration ?? 0,
+  });
+  return {
+    location: w.location?.name ?? 'Tunis',
+    temperature: w.current?.temperature ?? 0,
+    humidity: w.current?.humidity ?? 0,
+    rainfall: daily[0]?.rainfall ?? 0,
+    windSpeed: w.current?.windSpeed ?? 0,
+    solarRadiation: 0,
+    evapotranspiration: w.agriculturalIndices?.evapotranspiration ?? 0,
+    timestamp: new Date(),
+    forecast: {
+      nextHours: [],
+      next7Days: daily.slice(0, 7).map(toForecast),
+    },
+  };
+}
+
+function resolveLocation(location: string): { lat: number; lon: number; name: string } {
+  const key = location.trim().toLowerCase().replace(/\s+/g, '-');
+  const coords = GOVERNORATE_COORDINATES[key];
+  if (coords) return { ...coords, name: location };
+  return { ...GOVERNORATE_COORDINATES.tunis, name: location };
+}
+
+/**
+ * Fetch real weather for the irrigation engine. Returns null when the provider
+ * is unreachable so callers can report unavailability instead of inventing
+ * numbers.
+ */
+async function fetchIrrigationWeather(
+  location: string,
+): Promise<ProviderWeatherData | null> {
+  const { lat, lon, name } = resolveLocation(location);
+  try {
+    return await getWeatherFromOpenMeteo({ lat, lon, locationName: name });
+  } catch (error) {
+    console.warn(
+      'Irrigation weather unavailable:',
+      error instanceof ProviderError ? error.message : error,
+    );
+    return null;
+  }
+}
 
 // Types and interfaces for smart irrigation system
 interface SoilMoistureData {
@@ -412,22 +513,33 @@ class SmartIrrigationEngine {
     fieldId: string,
     cropType: string,
     stage: string,
-    soilData: SoilMoistureData[],
+    soilData: SoilMoistureData[] | undefined,
     weather: WeatherData,
     userPreferences: {
       preferredTimes: string[];
       maxDuration: number;
       waterBudget: number;
       conservationMode: boolean;
-    }
+    },
+    latestSoilDataOverride?: SoilMoistureData,
   ): IrrigationSchedule {
     const cropRequirement = cropWaterRequirements.find(
       req => req.cropType === cropType && req.stage === stage
     ) || cropWaterRequirements[0];
 
-    const latestSoilData = soilData
-      .filter(data => data.fieldId === fieldId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+    // Prefer an explicit latest reading; otherwise pick it from the series.
+    // Never call .filter on an undefined series — that was the crash here.
+    const latestSoilData =
+      latestSoilDataOverride ??
+      (soilData ?? [])
+        .filter(data => data.fieldId === fieldId)
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+
+    if (!latestSoilData) {
+      throw new Error(
+        'No soil moisture measurement available for this field; cannot compute an irrigation schedule.',
+      );
+    }
 
     const recommendation = this.shouldIrrigate(
       latestSoilData,
@@ -544,7 +656,8 @@ router.get('/soil-moisture/:fieldId', (req, res) => {
       success: true,
       data: moistureData,
       latest: moistureData[0],
-      total: moistureData.length
+      total: moistureData.length,
+      ...SIMULATED_PROVENANCE
     });
   } catch (error) {
     res.status(500).json({
@@ -555,56 +668,39 @@ router.get('/soil-moisture/:fieldId', (req, res) => {
   }
 });
 
-// Get weather data with forecast
-router.get('/weather/:location', (req, res) => {
+// Get weather data with forecast (real provider; no fabricated values)
+router.get('/weather/:location', async (req, res) => {
   try {
     const { location } = req.params;
-    
-    // Mock weather data for Tunisia locations
-    const weatherData: WeatherData = {
-      location,
-      temperature: 22 + Math.random() * 15,
-      humidity: 60 + Math.random() * 30,
-      rainfall: Math.random() * 5,
-      windSpeed: 8 + Math.random() * 10,
-      solarRadiation: 15 + Math.random() * 10,
-      evapotranspiration: SmartIrrigationEngine.calculateET0({} as WeatherData),
-      timestamp: new Date(),
-      forecast: {
-        nextHours: Array.from({ length: 24 }, (_, i) => ({
-          date: new Date(Date.now() + i * 60 * 60 * 1000),
-          temperature: { min: 18 + Math.random() * 5, max: 25 + Math.random() * 10 },
-          humidity: 50 + Math.random() * 40,
-          rainfall: Math.random() * 3,
-          windSpeed: 5 + Math.random() * 15,
-          evapotranspiration: 3 + Math.random() * 4
-        })),
-        next7Days: Array.from({ length: 7 }, (_, i) => ({
-          date: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
-          temperature: { min: 15 + Math.random() * 8, max: 28 + Math.random() * 12 },
-          humidity: 45 + Math.random() * 35,
-          rainfall: Math.random() * 8,
-          windSpeed: 8 + Math.random() * 12,
-          evapotranspiration: 4 + Math.random() * 5
-        }))
-      }
-    };
+    const weather = await fetchIrrigationWeather(location);
+
+    if (!weather) {
+      return res.status(503).json({
+        success: false,
+        dataAvailable: false,
+        message: 'تعذّر جلب بيانات الطقس من المزوّد (Open-Meteo) حالياً.',
+        code: 'PROVIDER_UNAVAILABLE',
+      });
+    }
 
     res.json({
       success: true,
-      data: weatherData
+      data: toEngineWeather(weather),
+      dataSource: 'open-meteo',
+      isRealData: true,
+      source: weather.source,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'فشل في جلب بيانات الطقس',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
 // Get irrigation recommendation
-router.post('/recommend', (req, res) => {
+router.post('/recommend', async (req, res) => {
   try {
     const { fieldId, cropType, stage, location } = req.body;
 
@@ -626,28 +722,16 @@ router.post('/recommend', (req, res) => {
       });
     }
 
-    // Mock weather data
-    const weatherData: WeatherData = {
-      location: location || 'Tunis',
-      temperature: 25,
-      humidity: 65,
-      rainfall: 0,
-      windSpeed: 12,
-      solarRadiation: 20,
-      evapotranspiration: 0,
-      timestamp: new Date(),
-      forecast: {
-        nextHours: [],
-        next7Days: Array.from({ length: 7 }, (_, i) => ({
-          date: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
-          temperature: { min: 18, max: 30 },
-          humidity: 60,
-          rainfall: Math.random() * 3,
-          windSpeed: 10,
-          evapotranspiration: 5
-        }))
-      }
-    };
+    const weather = await fetchIrrigationWeather(location || 'Tunis');
+    if (!weather) {
+      return res.status(503).json({
+        success: false,
+        dataAvailable: false,
+        message: 'تعذّر جلب بيانات الطقس من المزوّد (Open-Meteo)، لا يمكن إنتاج توصية ري دقيقة.',
+        code: 'PROVIDER_UNAVAILABLE',
+      });
+    }
+    const weatherData = toEngineWeather(weather);
 
     const cropRequirement = cropWaterRequirements.find(
       req => req.cropType === cropType && req.stage === stage
@@ -698,32 +782,37 @@ router.post('/recommend', (req, res) => {
 });
 
 // Create irrigation schedule
-router.post('/schedule', (req, res) => {
+router.post('/schedule', async (req, res) => {
   try {
-    const { fieldId, cropType, stage, userPreferences } = req.body;
+    const { fieldId, cropType, stage, userPreferences, location } = req.body ?? {};
+
+    if (!fieldId || !cropType || !stage) {
+      return res.status(400).json({
+        success: false,
+        message: 'fieldId و cropType و stage مطلوبة',
+        code: 'INVALID_INPUT',
+      });
+    }
 
     const soilData = soilMoistureDB.filter(data => data.fieldId === fieldId);
-    const weatherData: WeatherData = {
-      location: 'Tunis',
-      temperature: 25,
-      humidity: 65,
-      rainfall: 0,
-      windSpeed: 12,
-      solarRadiation: 20,
-      evapotranspiration: 5,
-      timestamp: new Date(),
-      forecast: {
-        nextHours: [],
-        next7Days: Array.from({ length: 7 }, () => ({
-          date: new Date(),
-          temperature: { min: 18, max: 30 },
-          humidity: 60,
-          rainfall: 2,
-          windSpeed: 10,
-          evapotranspiration: 5
-        }))
-      }
-    };
+    const weather = await fetchIrrigationWeather(location || 'Tunis');
+
+    if (soilData.length === 0 || !weather) {
+      return res.status(409).json({
+        success: false,
+        message:
+          'لا يمكن إنشاء جدول ري: لا تتوفر قياسات رطوبة حقيقية لهذا الحقل أو تعذّر جلب بيانات الطقس.',
+        code: 'DATA_UNAVAILABLE',
+        dataAvailable: false,
+        hasSoilData: soilData.length > 0,
+        hasWeather: Boolean(weather),
+      });
+    }
+
+    const weatherData = toEngineWeather(weather);
+    const latestSoilData = [...soilData].sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
+    )[0];
 
     const schedule = SmartIrrigationEngine.generateSmartSchedule(
       fieldId,
@@ -735,8 +824,9 @@ router.post('/schedule', (req, res) => {
         preferredTimes: ['06:00', '09:00'],
         maxDuration: 60,
         waterBudget: 500,
-        conservationMode: false
-      }
+        conservationMode: false,
+      },
+      latestSoilData,
     );
 
     irrigationSchedulesDB.push(schedule);
@@ -744,13 +834,18 @@ router.post('/schedule', (req, res) => {
     res.json({
       success: true,
       data: schedule,
-      message: 'تم إنشاء جدول الري الذكي بنجاح'
+      message: 'تم إنشاء جدول الري الذكي بنجاح',
+      dataSource: 'simulated',
+      isRealData: false,
+      weatherSource: weather.source,
+      disclaimer:
+        'الطقس حقيقي من Open-Meteo، أما رطوبة التربة فهي بيانات محاكاة لأن المستشعرات غير متصلة.',
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'فشل في إنشاء جدول الري',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

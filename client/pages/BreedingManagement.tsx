@@ -22,6 +22,7 @@ import {
 import { format, addDays, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { SimulatedDataNotice } from '@/components/SimulatedDataNotice';
 
 interface BreedingRecord {
   matingDate: string;
@@ -44,6 +45,7 @@ interface Animal {
   breedingHistory: BreedingRecord[];
   geneticScore: number;
   productivityScore: number;
+  currentValue?: number;
 }
 
 interface BreedingPlan {
@@ -92,6 +94,8 @@ export default function BreedingManagement() {
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [breedingPlans, setBreedingPlans] = useState<BreedingPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [isSimulated, setIsSimulated] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedAnimal, setSelectedAnimal] = useState<string>('all');
 
@@ -101,111 +105,78 @@ export default function BreedingManagement() {
 
   const fetchBreedingData = async () => {
     try {
-      const response = await fetch('/api/livestock-management/breeding-schedule');
+      const response = await fetch('/api/livestock-management/animals');
       const data = await response.json();
-      
+
       if (data.success) {
-        // Generate enhanced breeding data
-        const enhancedAnimals = generateEnhancedBreedingData();
-        setAnimals(enhancedAnimals);
-        setBreedingPlans(generateBreedingPlans(enhancedAnimals));
+        // The herd comes from the backend (a simulated demo dataset); scores are
+        // derived from each animal's real breeding history rather than invented
+        // per render, so the same animal always shows the same score.
+        const herd: Animal[] = (data.data ?? []).map(withDerivedScores);
+        setAnimals(herd);
+        setBreedingPlans(generateBreedingPlans(herd));
+        setIsSimulated(data.isRealData === false);
       }
     } catch (error) {
       console.error('Error fetching breeding data:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateEnhancedBreedingData = (): Animal[] => {
-    const breeds = {
-      cattle: ['هولشتاين', 'فريزيان', 'جيرسي', 'سيمينتال'],
-      sheep: ['أواسي', 'ماريشان', 'مريني', 'دورسيت'],
-      goat: ['شامي', 'مالطي', 'بوير', 'سانين']
+  const withDerivedScores = (animal: Animal): Animal => {
+    const history = animal.breedingHistory ?? [];
+    const total = history.length;
+    const successes = history.filter((r) => r.success).length;
+    const successRate = total > 0 ? successes / total : 0.5;
+    return {
+      ...animal,
+      geneticScore:
+        Math.round((70 + successRate * 25 + Math.min(total, 3) * 1.5) * 10) / 10,
+      productivityScore:
+        Math.round((60 + successRate * 30 + (total > 0 ? 5 : 0)) * 10) / 10,
     };
-
-    return Array.from({ length: 20 }, (_, i) => {
-      const species = ['cattle', 'sheep', 'goat'][i % 3] as keyof typeof breeds;
-      const breed = breeds[species][Math.floor(Math.random() * breeds[species].length)];
-      const gender = Math.random() > 0.7 ? 'male' : 'female';
-      const birthDate = new Date(2019 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28));
-      
-      return {
-        id: `animal_${i + 1}`,
-        earTag: `TN${String(i + 1).padStart(4, '0')}`,
-        species,
-        breed,
-        gender,
-        birthDate: birthDate.toISOString().split('T')[0],
-        breedingStatus: gender === 'female' ? 
-          ['active', 'pregnant', 'nursing', 'inactive'][Math.floor(Math.random() * 4)] as any :
-          Math.random() > 0.8 ? 'inactive' : 'active',
-        breedingHistory: generateBreedingHistory(),
-        geneticScore: Math.round((70 + Math.random() * 30) * 10) / 10,
-        productivityScore: Math.round((60 + Math.random() * 40) * 10) / 10
-      };
-    });
   };
 
-  const generateBreedingHistory = (): BreedingRecord[] => {
-    const historyCount = Math.floor(Math.random() * 4);
-    return Array.from({ length: historyCount }, (_, i) => {
-      const matingDate = new Date(Date.now() - (i + 1) * 300 * 24 * 60 * 60 * 1000);
-      const gestationPeriod = 280; // days for cattle
-      const expectedDelivery = addDays(matingDate, gestationPeriod);
-      const success = Math.random() > 0.2;
-      
-      return {
-        matingDate: matingDate.toISOString().split('T')[0],
-        partner: `animal_${Math.floor(Math.random() * 10) + 1}`,
-        expectedDelivery: expectedDelivery.toISOString().split('T')[0],
-        actualDelivery: success ? addDays(expectedDelivery, Math.floor(Math.random() * 14) - 7).toISOString().split('T')[0] : undefined,
-        offspring: success ? [`offspring_${Math.random().toString(36).substr(2, 5)}`] : undefined,
-        complications: !success || Math.random() > 0.8 ? getRandomComplication() : undefined,
-        success
-      };
-    });
-  };
-
-  const getRandomComplication = (): string => {
-    const complications = [
-      'تأخر في الولادة',
-      'صعوبة في الولادة',
-      'مشاكل في الرضاعة',
-      'ضعف المولود',
-      'التهابات بعد الولادة',
-      'نقص في الحليب'
-    ];
-    return complications[Math.floor(Math.random() * complications.length)];
-  };
-
+  /**
+   * Pairing proposals are a deterministic function of the herd: active females
+   * are matched with active males in order, and expected outcomes are computed
+   * from the animals' derived scores. Nothing here is random, so the plans are
+   * reproducible and traceable to real animals.
+   */
   const generateBreedingPlans = (animalsList: Animal[]): BreedingPlan[] => {
-    const plans: BreedingPlan[] = [];
-    const females = animalsList.filter(a => a.gender === 'female' && a.breedingStatus === 'active');
-    const males = animalsList.filter(a => a.gender === 'male' && a.breedingStatus === 'active');
-    
-    females.slice(0, 6).forEach((female, index) => {
+    const females = animalsList.filter(
+      (a) => a.gender === 'female' && a.breedingStatus === 'active',
+    );
+    const males = animalsList.filter(
+      (a) => a.gender === 'male' && a.breedingStatus === 'active',
+    );
+    if (males.length === 0) return [];
+
+    return females.slice(0, 6).map((female, index) => {
       const male = males[index % males.length];
-      if (male) {
-        const plannedDate = addDays(new Date(), Math.floor(Math.random() * 60));
-        
-        plans.push({
-          id: `plan_${index + 1}`,
-          femaleId: female.id,
-          maleId: male.id,
-          plannedDate: plannedDate.toISOString().split('T')[0],
-          breedingGoal: ['milk_production', 'meat_quality', 'disease_resistance', 'fertility'][Math.floor(Math.random() * 4)] as any,
-          expectedOutcome: {
-            geneticImprovement: Math.round((5 + Math.random() * 15) * 10) / 10,
-            productivityIncrease: Math.round((3 + Math.random() * 12) * 10) / 10,
-            marketValue: Math.round((female.geneticScore + male.geneticScore) * 50)
-          },
-          status: ['planned', 'in_progress', 'completed'][Math.floor(Math.random() * 3)] as any
-        });
-      }
+      const plannedDate = addDays(new Date(), 7 + index * 7);
+      const avgScore = (female.geneticScore + male.geneticScore) / 2;
+      return {
+        id: `plan_${female.id}_${male.id}`,
+        femaleId: female.id,
+        maleId: male.id,
+        plannedDate: plannedDate.toISOString().split('T')[0],
+        breedingGoal: (['milk_production', 'meat_quality', 'disease_resistance', 'fertility'][
+          index % 4
+        ]) as BreedingPlan['breedingGoal'],
+        expectedOutcome: {
+          geneticImprovement:
+            Math.round(Math.max(0, (male.geneticScore - female.geneticScore) / 10) * 10) / 10,
+          productivityIncrease:
+            Math.round(((female.productivityScore + male.productivityScore) / 2 - 60) / 10 * 10) /
+            10,
+          marketValue: Math.round(avgScore * 100),
+        },
+        status: 'planned' as const,
+      };
     });
-    
-    return plans;
   };
 
   const getBreedingStatistics = () => {
@@ -260,18 +231,21 @@ export default function BreedingManagement() {
     );
   };
 
+  /**
+   * The herd carries no dated genetic measurements, so a month-by-month
+   * "genetic improvement" curve cannot be computed. Show the current score
+   * distribution across the real herd instead, which the data supports.
+   */
   const getGeneticTrends = () => {
-    return Array.from({ length: 12 }, (_, i) => {
-      const month = new Date();
-      month.setMonth(month.getMonth() - (11 - i));
-      
-      return {
-        month: month.toLocaleDateString('ar-TN', { month: 'short' }),
-        geneticScore: 75 + Math.random() * 10,
-        productivity: 70 + Math.random() * 15,
-        marketValue: 8000 + Math.random() * 2000
-      };
-    });
+    return animals
+      .filter((a) => a.gender === 'female')
+      .slice(0, 12)
+      .map((animal) => ({
+        month: animal.earTag,
+        geneticScore: animal.geneticScore,
+        productivity: animal.productivityScore,
+        marketValue: animal.currentValue ?? 0,
+      }));
   };
 
   const getTopPerformers = () => {
@@ -302,6 +276,24 @@ export default function BreedingManagement() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
+        <div className="text-center">
+          <p className="text-lg font-medium text-destructive">
+            تعذّر تحميل بيانات التناسل
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            تحقّق من اتصال الخادم ثم أعد المحاولة.
+          </p>
+          <Button className="mt-4" onClick={fetchBreedingData}>
+            إعادة المحاولة
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
@@ -315,6 +307,8 @@ export default function BreedingManagement() {
           خطة تن��سل جديدة
         </Button>
       </div>
+
+      {isSimulated && <SimulatedDataNotice />}
 
       {/* Breeding Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

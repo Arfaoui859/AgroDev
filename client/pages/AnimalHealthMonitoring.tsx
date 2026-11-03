@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { SimulatedDataNotice } from '@/components/SimulatedDataNotice';
 
 interface VaccinationRecord {
   vaccineType: string;
@@ -43,7 +44,7 @@ interface HealthRecord {
   medications?: string[];
   notes?: string;
   followUpDate?: string;
-  cost: number;
+  cost?: number;
 }
 
 interface Animal {
@@ -54,6 +55,10 @@ interface Animal {
   healthStatus: string;
   lastHealthCheck: string;
   vaccinationStatus: VaccinationRecord[];
+  breedingHistory?: {
+    matingDate: string;
+    success: boolean;
+  }[];
 }
 
 interface HealthAlert {
@@ -86,6 +91,8 @@ export default function AnimalHealthMonitoring() {
   const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
   const [alerts, setAlerts] = useState<HealthAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [isSimulated, setIsSimulated] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedAnimal, setSelectedAnimal] = useState<string>('all');
 
@@ -105,130 +112,61 @@ export default function AnimalHealthMonitoring() {
       
       if (animalsData.success) setAnimals(animalsData.data);
       if (alertsData.success) setAlerts(alertsData.data);
-      
-      // Generate sample health records
-      setHealthRecords(generateHealthRecords(animalsData.data || []));
-      
+      setIsSimulated(animalsData.isRealData === false);
+
+      // Records are built from the herd's own fields (vaccinations, last health
+      // check, breeding events). Nothing is invented, so an animal with no
+      // recorded illness simply shows no illness record.
+      setHealthRecords(buildHealthRecords(animalsData.data || []));
     } catch (error) {
       console.error('Error fetching health data:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateHealthRecords = (animalsList: Animal[]): HealthRecord[] => {
+  const buildHealthRecords = (animalsList: Animal[]): HealthRecord[] => {
     const records: HealthRecord[] = [];
-    const checkTypes = ['routine', 'illness', 'vaccination', 'breeding'] as const;
-    const veterinarians = [
-      'د. أحمد محمد الطبيب البيطري',
-      'د. فاطمة علي البيطرية',
-      'د. محمود حسن الاختصاصي',
-      'د. سارة يوسف البيطرية'
-    ];
-    
-    animalsList.forEach((animal, animalIndex) => {
-      // Generate 3-8 health records per animal
-      const recordCount = 3 + Math.floor(Math.random() * 6);
-      
-      for (let i = 0; i < recordCount; i++) {
-        const checkType = checkTypes[Math.floor(Math.random() * checkTypes.length)];
-        const date = new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000);
-        
+
+    animalsList.forEach((animal) => {
+      animal.vaccinationStatus?.forEach((vax, i) => {
         records.push({
-          id: `health_${animalIndex}_${i}`,
+          id: `health_${animal.id}_vax_${i}`,
           animalId: animal.id,
-          date: date.toISOString().split('T')[0],
-          checkType,
-          veterinarian: veterinarians[Math.floor(Math.random() * veterinarians.length)],
-          symptoms: checkType === 'illness' ? getRandomSymptoms() : undefined,
-          diagnosis: checkType === 'illness' ? getRandomDiagnosis() : undefined,
-          treatment: getRandomTreatment(checkType),
-          medications: checkType !== 'routine' ? getRandomMedications() : undefined,
-          notes: getRandomNotes(checkType),
-          followUpDate: Math.random() > 0.7 ? 
-            new Date(date.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
-            undefined,
-          cost: Math.round((50 + Math.random() * 200) * 10) / 10
+          date: vax.dateAdministered,
+          checkType: 'vaccination',
+          veterinarian: vax.veterinarian,
+          notes: `${vax.vaccineType} (دفعة ${vax.batchNumber})`,
+        });
+      });
+
+      if (animal.lastHealthCheck) {
+        records.push({
+          id: `health_${animal.id}_check`,
+          animalId: animal.id,
+          date: animal.lastHealthCheck,
+          checkType: 'routine',
+          veterinarian: '—',
+          notes: 'آخر فحص صحي مسجّل',
         });
       }
+
+      animal.breedingHistory?.forEach((rec, i) => {
+        records.push({
+          id: `health_${animal.id}_breed_${i}`,
+          animalId: animal.id,
+          date: rec.matingDate,
+          checkType: 'breeding',
+          veterinarian: '—',
+          notes: rec.success ? 'تناسل ناجح' : 'تناسل غير ناجح',
+        });
+      });
     });
-    
-    return records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  };
 
-  const getRandomSymptoms = (): string[] => {
-    const symptoms = [
-      'انخفاض الشهية',
-      'ارتفاع درجة الحرارة',
-      'إفرازات أنفية',
-      'سعال',
-      'إسهال',
-      'عرج',
-      'خمول',
-      'فقدان الوزن',
-      'صعوبة التنفس',
-      'تورم'
-    ];
-    
-    const count = 1 + Math.floor(Math.random() * 3);
-    return symptoms.sort(() => 0.5 - Math.random()).slice(0, count);
-  };
-
-  const getRandomDiagnosis = (): string => {
-    const diagnoses = [
-      'التهاب الجهاز التنفسي',
-      'اضطرابات هضمية',
-      'التهاب المفاصل',
-      'عدوى بكتيرية',
-      'نقص فيتامينات',
-      'طفيليات داخلية',
-      'التهاب الضرع',
-      'حمى الحليب',
-      'التهاب الحوافر',
-      'اضطرابات تناسلية'
-    ];
-    
-    return diagnoses[Math.floor(Math.random() * diagnoses.length)];
-  };
-
-  const getRandomTreatment = (checkType: string): string => {
-    const treatments = {
-      routine: 'ف��ص شامل وقائي',
-      illness: 'علاج دوائي مع المتابعة',
-      injury: 'تنظيف الجرح وتضميده',
-      vaccination: 'إعطاء اللقاح المقرر',
-      breeding: 'فحص الجهاز التناسلي'
-    };
-    
-    return treatments[checkType as keyof typeof treatments] || 'علاج عام';
-  };
-
-  const getRandomMedications = (): string[] => {
-    const medications = [
-      'مضاد حيوي - أموكسيسيلين',
-      'مضاد التهاب - ديكلوفيناك',
-      'مسكن ألم - ميتاميزول',
-      'فيتامينات متعددة',
-      'مضاد طفيليات',
-      'مقوي عام',
-      'مكمل معدني',
-      'دواء مضاد للحمى'
-    ];
-    
-    const count = 1 + Math.floor(Math.random() * 2);
-    return medications.sort(() => 0.5 - Math.random()).slice(0, count);
-  };
-
-  const getRandomNotes = (checkType: string): string => {
-    const notes = {
-      routine: 'الحيوان في حالة صحية جيدة، يُنصح بالمتابعة الدورية',
-      illness: 'تم وصف العلاج المناسب، يتطلب متابعة خلال أسبوع',
-      injury: 'إصابة طفيفة، الشفاء متوقع خلال أسبوعين',
-      vaccination: 'تم إعطاء الل��اح بنجاح، مراقبة أي أعراض جانبية',
-      breeding: 'الفحص إيجابي، متابعة الحمل ضرورية'
-    };
-    
-    return notes[checkType as keyof typeof notes] || 'لا توجد ملاحظات إضافية';
+    return records.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
   };
 
   const getUpcomingVaccinations = () => {
@@ -265,7 +203,8 @@ export default function AnimalHealthMonitoring() {
       totalAnimals,
       healthyAnimals,
       sickAnimals,
-      healthyPercentage: Math.round((healthyAnimals / totalAnimals) * 100),
+      healthyPercentage:
+        totalAnimals > 0 ? Math.round((healthyAnimals / totalAnimals) * 100) : 0,
       recentCheckups
     };
   };
@@ -289,6 +228,18 @@ export default function AnimalHealthMonitoring() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
+        <div className="text-center">
+          <p className="text-lg font-medium text-destructive">تعذّر تحميل بيانات المراقبة الصحية</p>
+          <p className="mt-2 text-sm text-muted-foreground">تحقّق من اتصال الخادم ثم أعد المحاولة.</p>
+          <Button className="mt-4" onClick={fetchHealthData}>إعادة المحاولة</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
@@ -302,6 +253,8 @@ export default function AnimalHealthMonitoring() {
           إضافة فحص جديد
         </Button>
       </div>
+
+      {isSimulated && <SimulatedDataNotice />}
 
       {/* Health Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -430,9 +383,9 @@ export default function AnimalHealthMonitoring() {
                           {format(new Date(record.date), 'PPP', { locale: ar })} - {record.veterinarian}
                         </p>
                       </div>
-                      <Badge variant="outline">
-                        {record.cost} د.ت
-                      </Badge>
+                      {record.cost !== undefined && (
+                        <Badge variant="outline">{record.cost} د.ت</Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent>

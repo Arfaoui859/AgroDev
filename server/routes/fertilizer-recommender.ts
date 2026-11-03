@@ -383,31 +383,47 @@ router.post('/schedule/comprehensive', (req, res) => {
 
 // Track application effectiveness
 router.post('/track/effectiveness', (req, res) => {
-  const { 
-    applicationId, 
-    productUsed, 
-    applicationDate, 
-    weatherConditions,
-    beforeCondition,
-    afterCondition,
-    userRating
-  } = req.body;
-
-  // Simulate effectiveness analysis
-  const effectiveness = analyzeApplicationEffectiveness(
+  const {
+    applicationId,
     productUsed,
+    productName,
     weatherConditions,
     beforeCondition,
     afterCondition,
     userRating
+  } = req.body ?? {};
+
+  // The two health scores are the only inputs we cannot invent: without them
+  // there is no before/after to compare, so ask for them instead of guessing.
+  const beforeScore = num(beforeCondition?.healthScore);
+  const afterScore = num(afterCondition?.healthScore);
+  if (beforeScore === null || afterScore === null) {
+    return res.status(400).json({
+      error:
+        'beforeCondition.healthScore and afterCondition.healthScore are required numbers',
+      code: 'INVALID_INPUT',
+    });
+  }
+
+  const effectiveness = analyzeApplicationEffectiveness(
+    productUsed || productName,
+    weatherConditions,
+    beforeCondition,
+    afterCondition,
+    userRating,
   );
 
   res.json({
-    applicationId,
+    applicationId: applicationId ?? null,
     effectivenessScore: effectiveness.score,
     improvements: effectiveness.improvements,
     recommendations: effectiveness.futureRecommendations,
     learningData: effectiveness.learningData,
+    dataSource: 'rule-based',
+    isRealData: false,
+    modelSource: 'rule-based-engine',
+    disclaimer:
+      'درجة الفعالية محسوبة بقواعد زراعية من القيم المُدخلة (الطقس، قبل/بعد، تقييم المستخدم) وليست ناتجة عن نموذج تعلّم آلي.',
     lastUpdated: new Date().toISOString()
   });
 });
@@ -422,7 +438,7 @@ router.get('/inventory', (req, res) => {
       cost_per_kg: f.cost_per_kg,
       supplier: f.supplier,
       organic: f.organic,
-      availability: Math.random() > 0.2 ? 'متوفر' : 'نفدت الكمية'
+      availability: 'غير معروف'
     })),
     pesticides: pesticideDatabase.map(p => ({
       id: p.id,
@@ -431,19 +447,24 @@ router.get('/inventory', (req, res) => {
       cost_per_liter: p.cost_per_liter,
       supplier: p.supplier,
       organic_approved: p.organic_approved,
-      availability: Math.random() > 0.15 ? 'متوفر' : 'نفدت الكمية'
-    }))
+      availability: 'غير معروف'
+    })),
+    dataSource: 'reference-catalogue',
+    isRealData: false,
+    note:
+      'قائمة مرجعية ثابتة للمنتجات. حالة التوفّر غير مربوطة بمخزون حقيقي ولا تُخمَّن.'
   });
 });
 
 // Helper functions
-function analyzeSoilDeficiencies(soilData) {
+function analyzeSoilDeficiencies(soilData: Record<string, unknown> = {}) {
+  const ph = num(soilData.ph as number);
   return {
-    needsNitrogen: (soilData.nitrogen || 0) < 20,
-    needsPhosphorus: (soilData.phosphorus || 0) < 15,
-    needsPotassium: (soilData.potassium || 0) < 25,
-    needsOrganic: (soilData.organicMatter || 0) < 3,
-    phStatus: soilData.ph < 6.0 ? 'acidic' : soilData.ph > 7.5 ? 'alkaline' : 'neutral'
+    needsNitrogen: (num(soilData.nitrogen as number) ?? 0) < 20,
+    needsPhosphorus: (num(soilData.phosphorus as number) ?? 0) < 15,
+    needsPotassium: (num(soilData.potassium as number) ?? 0) < 25,
+    needsOrganic: (num(soilData.organicMatter as number) ?? 0) < 3,
+    phStatus: ph === null ? 'unknown' : ph < 6.0 ? 'acidic' : ph > 7.5 ? 'alkaline' : 'neutral',
   };
 }
 
@@ -618,31 +639,64 @@ function generateNotificationSettings(schedule) {
 }
 
 function analyzeApplicationEffectiveness(productUsed, weatherConditions, beforeCondition, afterCondition, userRating) {
-  // Simulate AI analysis
-  const weatherScore = weatherConditions.temperature < 30 && weatherConditions.wind < 15 ? 0.9 : 0.6;
-  const improvementScore = (afterCondition.healthScore - beforeCondition.healthScore) / 100;
-  const userScore = userRating / 5;
-  
-  const overallScore = (weatherScore + improvementScore + userScore) / 3;
-  
+  // Every input is optional: fall back to neutral values instead of throwing on
+  // a partial payload.
+  const temp = num(weatherConditions?.temperature);
+  const wind = num(weatherConditions?.wind);
+  const weatherScore =
+    temp === null && wind === null
+      ? null
+      : temp !== null && temp < 30 && (wind === null || wind < 15)
+        ? 0.9
+        : 0.6;
+
+  const beforeScore = num(beforeCondition?.healthScore) ?? 0;
+  const afterScore = num(afterCondition?.healthScore) ?? 0;
+  const improvementScore = (afterScore - beforeScore) / 100;
+
+  const rating = num(userRating);
+  const userScore = rating === null ? null : Math.max(0, Math.min(1, rating / 5));
+
+  const components = [weatherScore, improvementScore, userScore].filter(
+    (v): v is number => v !== null,
+  );
+  const overallScore = components.length
+    ? components.reduce((a, b) => a + b, 0) / components.length
+    : 0;
+
+  // Derived from the measured change, so a regression is not reported as an
+  // improvement.
+  const delta = afterScore - beforeScore;
+  const improvements: string[] = [];
+  if (delta > 0) improvements.push(`تحسّن صحة النبات بمقدار ${delta} نقطة`);
+  else if (delta === 0) improvements.push('لم يتغيّر مؤشر صحة النبات بعد التطبيق');
+  else improvements.push(`تراجع صحة النبات بمقدار ${Math.abs(delta)} نقطة`);
+
+  const futureRecommendations: string[] = [];
+  if (delta > 5) futureRecommendations.push('الاستمرار بنفس المنتج والجرعة');
+  else if (delta < 0) futureRecommendations.push('مراجعة الجرعة أو تغيير المنتج قبل التطبيق القادم');
+  else futureRecommendations.push('إعادة التقييم بعد 7-14 يوماً');
+  if (weatherScore !== null && weatherScore < 0.7) {
+    futureRecommendations.push('اختيار طقس أهدأ (حرارة أقل، رياح خفيفة) في التطبيق القادم');
+  }
+
   return {
     score: Math.round(overallScore * 100),
-    improvements: [
-      'تحسن ملحوظ في صحة النبات',
-      'انخفاض في أعراض المرض',
-      'زيادة في النمو الخضري'
-    ],
-    futureRecommendations: [
-      'المتابعة مع نفس المنتج',
-      'تقليل الجرعة في التطبيق القادم',
-      'مراقبة مقاومة الآفات'
-    ],
+    improvements,
+    futureRecommendations,
     learningData: {
-      productEffectiveness: overallScore,
+      productUsed: productUsed ?? null,
+      productEffectiveness: Math.round(improvementScore * 100) / 100,
       weatherImpact: weatherScore,
-      userSatisfaction: userScore
-    }
+      userSatisfaction: userScore,
+    },
   };
+}
+
+/** Parse a finite number, or null when the value is absent or invalid. */
+function num(value: unknown): number | null {
+  const n = typeof value === 'string' ? Number(value) : (value as number);
+  return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
 
 export default router;
