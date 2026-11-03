@@ -668,7 +668,7 @@ export const quickPlantHealthCheck = [
   },
 ];
 
-// 📈 MARKET FORECAST ENDPOINTS (Placeholder for future implementation)
+// 📈 MARKET FORECAST ENDPOINTS
 export const forecastMarketPrices = async (req: Request, res: Response) => {
   const b = req.body ?? {};
   // PriceForecastRequest requires crop_type and a positive current_price.
@@ -695,6 +695,7 @@ export const forecastMarketPrices = async (req: Request, res: Response) => {
         current_price: currentPrice,
         forecast_days: toNumber(b.forecast_days ?? b.days) ?? 30,
         market_conditions: b.market_conditions,
+        language: b.language,
       },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.MARKET_FORECAST);
