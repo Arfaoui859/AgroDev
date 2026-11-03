@@ -16,6 +16,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
+/**
+ * Thrown by services when a write needs the database but no Supabase client is
+ * configured. It carries status/expose so the global error handler answers 503
+ * with a clear message instead of a leaked "Cannot read properties of null".
+ */
+export class DatabaseUnavailableError extends Error {
+  status = 503;
+  expose = true;
+  constructor() {
+    super(
+      "Database is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY to enable persistence.",
+    );
+    this.name = "DatabaseUnavailableError";
+  }
+}
+
+/** Throw DatabaseUnavailableError unless a Supabase client is available. */
+export function assertDbAvailable(): void {
+  if (!supabase) throw new DatabaseUnavailableError();
+}
+
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(supabaseUrl as string, supabaseAnonKey as string)
   : null;

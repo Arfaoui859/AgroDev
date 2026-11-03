@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, assertDbAvailable } from '../lib/supabase';
 import { CROP_REFERENCE } from './ai/cropAdvisor';
 
 /**
@@ -79,6 +79,7 @@ export interface MarketPrice {
 export class CropService {
   // Crop operations
   static async getAllCrops() {
+    if (!supabase) return CROP_REFERENCE.map((c) => referenceCrop(c.crop));
     const { data, error } = await supabase
       .from('crops')
       .select('*')
@@ -94,6 +95,7 @@ export class CropService {
   }
 
   static async getCropById(cropId: string) {
+    if (!supabase) return referenceCrop(cropId);
     const { data, error } = await supabase
       .from('crops')
       .select('*')
@@ -108,6 +110,11 @@ export class CropService {
   }
 
   static async getCropsByCategory(category: string) {
+    if (!supabase) {
+      return CROP_REFERENCE.filter((c) => c.category === category).map((c) =>
+        referenceCrop(c.crop),
+      );
+    }
     const { data, error } = await supabase
       .from('crops')
       .select('*')
@@ -126,6 +133,12 @@ export class CropService {
   }
 
   static async searchCrops(searchTerm: string) {
+    if (!supabase) {
+      const term = searchTerm.toLowerCase();
+      return CROP_REFERENCE.filter(
+        (c) => c.crop.toLowerCase().includes(term) || c.nameAr.includes(searchTerm),
+      ).map((c) => referenceCrop(c.crop));
+    }
     const { data, error } = await supabase
       .from('crops')
       .select('*')
@@ -146,6 +159,7 @@ export class CropService {
 
   // Crop Recommendation operations
   static async createCropRecommendation(recommendation: Omit<CropRecommendation, 'id' | 'created_at'>) {
+    assertDbAvailable();
     const { data, error } = await supabase
       .from('crop_recommendations')
       .insert(recommendation)
@@ -157,6 +171,7 @@ export class CropService {
   }
 
   static async getCropRecommendationsByFieldId(fieldId: string) {
+    if (!supabase) return [];
     const { data, error } = await supabase
       .from('crop_recommendations')
       .select(`
@@ -171,6 +186,7 @@ export class CropService {
   }
 
   static async getLatestCropRecommendation(fieldId: string) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('crop_recommendations')
       .select(`
@@ -188,6 +204,7 @@ export class CropService {
 
   // Market Price operations
   static async getMarketPricesByCropId(cropId: string, limit: number = 30) {
+    if (!supabase) return [];
     const { data, error } = await supabase
       .from('market_prices')
       .select('*')
@@ -200,6 +217,7 @@ export class CropService {
   }
 
   static async getLatestMarketPrices() {
+    if (!supabase) return [];
     // No embedded `crops(...)` join: the deployed schema has no foreign key
     // from market_prices.crop_id to crops.id, so PostgREST rejects the
     // relationship (PGRST200). Callers attach crop names via a separate lookup.
@@ -214,6 +232,7 @@ export class CropService {
   }
 
   static async createMarketPrice(marketPrice: Omit<MarketPrice, 'id' | 'created_at'>) {
+    assertDbAvailable();
     const { data, error } = await supabase
       .from('market_prices')
       .insert(marketPrice)
@@ -225,6 +244,7 @@ export class CropService {
   }
 
   static async getMarketPricesByLocation(location: string, limit: number = 50) {
+    if (!supabase) return [];
     const { data, error } = await supabase
       .from('market_prices')
       .select('*')
@@ -237,6 +257,7 @@ export class CropService {
   }
 
   static async getAverageMarketPrice(cropId: string, days: number = 30) {
+    if (!supabase) return null;
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - days);
     

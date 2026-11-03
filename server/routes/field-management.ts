@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import { FarmService } from '../services/farmService';
 import { CropService } from '../services/cropService';
+import { sendCaughtError } from '../lib/errors';
 
 // ============ API HANDLERS ============
 
@@ -141,11 +142,7 @@ export const createField: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating field:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في إنشاء الحقل',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في إنشاء الحقل');
   }
 };
 
@@ -170,11 +167,7 @@ export const updateField: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating field:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في تحديث الحقل',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في تحديث الحقل');
   }
 };
 
@@ -189,11 +182,7 @@ export const deleteField: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting field:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'فشل في حذف الحقل',
-      error: error.message
-    });
+    sendCaughtError(res, error, 'فشل في حذف الحقل');
   }
 };
 

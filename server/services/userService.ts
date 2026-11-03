@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, assertDbAvailable } from '../lib/supabase';
 
 export interface User {
   id: string;
@@ -45,6 +45,7 @@ export interface UserActivity {
 export class UserService {
   // User operations
   static async getUserById(userId: string) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -56,6 +57,7 @@ export class UserService {
   }
 
   static async getUserByEmail(email: string) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -67,6 +69,7 @@ export class UserService {
   }
 
   static async createUser(user: Omit<User, 'id' | 'created_at' | 'updated_at'>) {
+    assertDbAvailable();
     const { data, error } = await supabase
       .from('users')
       .insert(user)
@@ -78,6 +81,7 @@ export class UserService {
   }
 
   static async updateUser(userId: string, updates: Partial<User>) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('users')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -90,6 +94,7 @@ export class UserService {
   }
 
   static async getUsersByRole(role: User['role']) {
+    if (!supabase) return [];
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -103,6 +108,7 @@ export class UserService {
 
   // User Profile operations
   static async getUserProfile(userId: string) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -114,6 +120,7 @@ export class UserService {
   }
 
   static async createUserProfile(profile: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>) {
+    assertDbAvailable();
     const { data, error } = await supabase
       .from('user_profiles')
       .insert(profile)
@@ -125,6 +132,7 @@ export class UserService {
   }
 
   static async updateUserProfile(userId: string, updates: Partial<UserProfile>) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('user_profiles')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -138,6 +146,7 @@ export class UserService {
 
   // User Activity operations
   static async logUserActivity(activity: Omit<UserActivity, 'id'>) {
+    if (!supabase) return null;
     const { data, error } = await supabase
       .from('user_activities')
       .insert(activity)
@@ -149,6 +158,7 @@ export class UserService {
   }
 
   static async getUserActivities(userId: string, limit: number = 50) {
+    if (!supabase) return [];
     const { data, error } = await supabase
       .from('user_activities')
       .select('*')
@@ -162,6 +172,7 @@ export class UserService {
 
   // Authentication helpers
   static async signUp(email: string, password: string, userData: Partial<User>) {
+    assertDbAvailable();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -175,6 +186,7 @@ export class UserService {
   }
 
   static async signIn(email: string, password: string) {
+    assertDbAvailable();
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -185,17 +197,20 @@ export class UserService {
   }
 
   static async signOut() {
+    assertDbAvailable();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
 
   static async getCurrentUser() {
+    assertDbAvailable();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
     return user;
   }
 
   static async resetPassword(email: string) {
+    assertDbAvailable();
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) throw error;
   }
