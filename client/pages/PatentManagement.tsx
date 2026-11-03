@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -158,6 +160,7 @@ export default function PatentManagement() {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [selectedIP, setSelectedIP] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
   const [filters, setFilters] = useState({
     status: '',
     category: '',
@@ -177,6 +180,7 @@ export default function PatentManagement() {
       const response = await fetch('/api/ip-management/patents');
       const data = await response.json();
       setPatents(data);
+      setProvenance(readProvenance(response.headers, data));
     } catch (error) {
       console.error('Error loading patents:', error);
     }
@@ -342,6 +346,14 @@ export default function PatentManagement() {
             نظام شامل لإدارة وحماية حقوق الملكية الفكرية والابتكارات الزراعية
           </p>
         </div>
+
+        {provenance.simulated && (
+          <SimulatedDataNotice
+            title={SIMULATED_RECORDS_TITLE_AR}
+            description={SIMULATED_RECORDS_DESCRIPTION_AR}
+            className="mb-6"
+          />
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-7">

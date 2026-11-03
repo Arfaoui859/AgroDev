@@ -54,6 +54,23 @@ describe("🗂  Simulated-data provenance headers", () => {
     "/api/marketplace/listings",
     "/api/marketplace/inquiries",
     "/api/marketplace/analytics",
+    // Fixture-backed routers with no database or licensed feed behind them:
+    // emergency response, IP management, emerging technology and the trader
+    // dashboard all build their records from fixed in-memory arrays.
+    "/api/emergency-response/scenarios",
+    "/api/emergency-response/plans",
+    "/api/emergency-response/contacts",
+    "/api/ip-management/patents",
+    "/api/ip-management/trademarks",
+    "/api/ip-management/licenses",
+    "/api/emerging-tech/technologies",
+    "/api/emerging-tech/investments",
+    "/api/emerging-tech/market-trends",
+    "/api/trader-dashboard/overview",
+    "/api/trader-dashboard/inventory",
+    "/api/trader-dashboard/orders",
+    "/api/livestock-management/animals",
+    "/api/livestock-management/feed-inventory",
   ];
 
   test.each(simulatedPaths)(

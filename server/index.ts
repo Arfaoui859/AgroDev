@@ -345,6 +345,14 @@ export function createServer() {
       "/api/supply-chain",
       "/api/logistics",
       "/api/marketplace",
+      // Further fixture-backed modules: the routers below build their records
+      // from fixed in-memory arrays (see the "Mock data for demonstration"
+      // block at the top of each). They have no database or licensed feed
+      // behind them, so they are stamped as simulated too.
+      "/api/emergency-response",
+      "/api/ip-management",
+      "/api/emerging-tech",
+      "/api/trader-dashboard",
     ],
     withSimulatedProvenance("simulated"),
   );

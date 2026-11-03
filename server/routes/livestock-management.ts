@@ -3,6 +3,15 @@ import express from "express";
 
 const router = express.Router();
 
+// Every endpoint below serves the same seeded demonstration herd, so stamp the
+// provenance headers at the router level as well as embedding them in each
+// body. The SPA reads either shape (see client/lib/dataProvenance.ts).
+router.use((_req, res, next) => {
+  res.set("X-Data-Provenance", "simulated");
+  res.set("X-Is-Real-Data", "false");
+  next();
+});
+
 /**
  * AgroGrowth has no livestock database wired yet, so this router serves a
  * seeded demonstration herd. Two properties matter for the UI to work:

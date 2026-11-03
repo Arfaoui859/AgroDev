@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -176,6 +178,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
   const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
   const [financialSummary, setFinancialSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -222,6 +225,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
       setMarketOpportunities(opportunitiesData.data);
       setAlerts(alertsData.data);
       setFinancialSummary(financialData.data);
+      setProvenance(readProvenance(overviewResponse.headers, overview));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -385,6 +389,13 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
           </Button>
         </div>
       </div>
+
+      {provenance.simulated && (
+        <SimulatedDataNotice
+          title={SIMULATED_RECORDS_TITLE_AR}
+          description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        />
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

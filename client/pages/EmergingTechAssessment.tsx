@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -110,6 +112,7 @@ export default function EmergingTechAssessment() {
   const [marketTrends, setMarketTrends] = useState<MarketTrend[]>([]);
   const [selectedTech, setSelectedTech] = useState<Technology | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
   const [filters, setFilters] = useState({
     category: '',
     maturityLevel: '',
@@ -128,6 +131,7 @@ export default function EmergingTechAssessment() {
       const response = await fetch('/api/emerging-tech/technologies');
       const data = await response.json();
       setTechnologies(data);
+      setProvenance(readProvenance(response.headers, data));
     } catch (error) {
       console.error('Error loading technologies:', error);
     }
@@ -244,6 +248,14 @@ export default function EmergingTechAssessment() {
             منصة شاملة لتقييم وتتبع التقنيات الزراعية الناشئة وإدارة الاستثمارات التقنية
           </p>
         </div>
+
+        {provenance.simulated && (
+          <SimulatedDataNotice
+            title={SIMULATED_RECORDS_TITLE_AR}
+            description={SIMULATED_RECORDS_DESCRIPTION_AR}
+            className="mb-6"
+          />
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-6">
