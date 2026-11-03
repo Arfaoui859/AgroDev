@@ -16,16 +16,43 @@ import {
 import { getLLMInfo } from "../services/providers/llmProvider";
 import { probeService } from "../services/providers/serviceProbe";
 
+/**
+ * Normalize a service base URL. Render's `fromService` `hostport` property yields
+ * "host:port" with no scheme, and Docker/Render sometimes supply a trailing slash.
+ * Axios needs an absolute URL, so we prepend http:// when the scheme is missing.
+ */
+export function normalizeServiceUrl(raw: string | undefined, fallback: string): string {
+  const value = (raw && raw.trim()) || fallback;
+  const withScheme = /^https?:\/\//i.test(value) ? value : `http://${value}`;
+  return withScheme.replace(/\/+$/, "");
+}
+
 // AI Services Configuration
 const AI_SERVICES = {
-  SOIL_ANALYSIS: process.env.SOIL_ANALYSIS_URL || "http://localhost:8001",
-  CROP_RECOMMENDATION:
-    process.env.CROP_RECOMMENDATION_URL || "http://localhost:8002",
-  IMAGE_DIAGNOSIS: process.env.IMAGE_DIAGNOSIS_URL || "http://localhost:8003",
-  MARKET_FORECAST: process.env.MARKET_FORECAST_URL || "http://localhost:8004",
-  SMART_ASSISTANT: process.env.SMART_ASSISTANT_URL || "http://localhost:8005",
-  SMART_MARKETPLACE:
-    process.env.SMART_MARKETPLACE_URL || "http://localhost:8006",
+  SOIL_ANALYSIS: normalizeServiceUrl(
+    process.env.SOIL_ANALYSIS_URL,
+    "http://localhost:8001",
+  ),
+  CROP_RECOMMENDATION: normalizeServiceUrl(
+    process.env.CROP_RECOMMENDATION_URL,
+    "http://localhost:8002",
+  ),
+  IMAGE_DIAGNOSIS: normalizeServiceUrl(
+    process.env.IMAGE_DIAGNOSIS_URL,
+    "http://localhost:8003",
+  ),
+  MARKET_FORECAST: normalizeServiceUrl(
+    process.env.MARKET_FORECAST_URL,
+    "http://localhost:8004",
+  ),
+  SMART_ASSISTANT: normalizeServiceUrl(
+    process.env.SMART_ASSISTANT_URL,
+    "http://localhost:8005",
+  ),
+  SMART_MARKETPLACE: normalizeServiceUrl(
+    process.env.SMART_MARKETPLACE_URL,
+    "http://localhost:8006",
+  ),
 };
 
 // Configure multer for file uploads

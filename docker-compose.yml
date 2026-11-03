@@ -42,11 +42,11 @@ services:
       - SOIL_ANALYSIS_URL=http://soil-analysis:8001
       - CROP_RECOMMENDATION_URL=http://crop-recommendation:8002
       - IMAGE_DIAGNOSIS_URL=http://image-diagnosis:8003
-      - MARKET_PREDICTION_URL=http://market-prediction:8004
+      - MARKET_FORECAST_URL=http://market-prediction:8004
       - IRRIGATION_OPTIMIZATION_URL=http://irrigation-optimization:8008
-      - INTELLIGENT_AGENT_URL=http://intelligent-agent:8005
+      - SMART_ASSISTANT_URL=http://intelligent-agent:8005
       - PEST_CONTROL_URL=http://pest-control:8007
-      - WEATHER_YIELD_INTELLIGENCE_URL=http://weather-yield-intelligence:8006
+      - SMART_MARKETPLACE_URL=http://weather-yield-intelligence:8006
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/agrogrowth
       - SUPABASE_URL=${VITE_SUPABASE_URL}
       - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
