@@ -1,7 +1,13 @@
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
 import { handleDemo } from "./routes/demo";
+import {
+  securityHeaders,
+  corsMiddleware,
+  apiRateLimiter,
+  aiRateLimiter,
+  jsonBodyErrorHandler,
+} from "./middleware/security";
 import {
   getWeatherByCoordinates,
   getWeatherByLocation,
@@ -268,15 +274,25 @@ import {
 export function createServer() {
   const app = express();
 
+  // Security middleware
+  app.use(securityHeaders());
+  app.use(corsMiddleware());
+
   // Middleware
-  app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+
+  // Global API rate limiting (health checks are exempt)
+  app.use("/api", apiRateLimiter());
 
   // Health check routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
+  });
+
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   app.get("/api/demo", handleDemo);
@@ -536,6 +552,9 @@ export function createServer() {
 
   // 🤖 AI SERVICES INTEGRATION ROUTES
 
+  // Stricter rate limiting for AI inference endpoints (may trigger paid calls)
+  app.use("/api/ai", aiRateLimiter());
+
   // 🌱 Soil Analysis AI Service
   app.post("/api/ai/soil/analyze", analyzeSoilData);
   app.post("/api/ai/soil/match-crops", matchCropToClimate);
@@ -665,6 +684,16 @@ export function createServer() {
   app.get("/api/segmentation/all", getAllFarmersSegmentation);
   app.get("/api/segmentation/analytics", getSegmentationAnalytics);
   app.put("/api/segmentation/farmer/:farmerId", updateFarmerProfile);
+
+  // JSON body parsing errors (oversized / malformed) must not crash the server
+  app.use(jsonBodyErrorHandler());
+
+  // Final error handler: never leak stack traces or internal details
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error("Unhandled API error:", err?.message || err);
+    const status = typeof err?.status === "number" ? err.status : 500;
+    res.status(status).json({ error: "Internal server error" });
+  });
 
   return app;
 }

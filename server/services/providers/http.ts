@@ -10,18 +10,22 @@ export class ProviderError extends Error {
   readonly provider: string;
   readonly status?: number;
   readonly kind: "timeout" | "network" | "http" | "parse" | "unconfigured";
+  /** Whether the caller should retry. Only transient failures are retryable. */
+  readonly retryable: boolean;
 
   constructor(
     provider: string,
     kind: ProviderError["kind"],
     message: string,
     status?: number,
+    retryable = kind === "timeout" || kind === "network",
   ) {
     super(message);
     this.name = "ProviderError";
     this.provider = provider;
     this.kind = kind;
     this.status = status;
+    this.retryable = retryable;
   }
 }
 
@@ -67,29 +71,32 @@ export async function fetchJson<T = unknown>(
       if (!response.ok) {
         const body = await response.text().catch(() => "");
         const isTransient = response.status === 429 || response.status >= 500;
-        const error = new ProviderError(
+        throw new ProviderError(
           provider,
           "http",
           `${provider} responded with HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`,
           response.status,
+          isTransient,
         );
-        if (!isTransient || attempt === retries) throw error;
-        lastError = error;
-      } else {
-        try {
-          return (await response.json()) as T;
-        } catch (parseError) {
-          throw new ProviderError(
-            provider,
-            "parse",
-            `${provider} returned a non-JSON response`,
-          );
-        }
+      }
+
+      try {
+        return (await response.json()) as T;
+      } catch {
+        throw new ProviderError(
+          provider,
+          "parse",
+          `${provider} returned a non-JSON response`,
+        );
       }
     } catch (error) {
       clearTimeout(timer);
+
       if (error instanceof ProviderError) {
-        if (error.kind === "parse") throw error;
+        // Parse and unconfigured errors are terminal; non-transient HTTP too.
+        if (error.kind === "parse" || error.kind === "unconfigured" || !error.retryable) {
+          throw error;
+        }
         lastError = error;
       } else if ((error as Error)?.name === "AbortError") {
         lastError = new ProviderError(
@@ -104,6 +111,7 @@ export async function fetchJson<T = unknown>(
           `${provider} request failed: ${(error as Error)?.message ?? "unknown error"}`,
         );
       }
+
       if (attempt === retries) throw lastError;
     }
 

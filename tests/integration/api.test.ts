@@ -175,4 +175,41 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
       expect(responses).toHaveLength(5);
     });
   });
+
+  describe("🔐 Security", () => {
+    test("sets security headers via helmet", async () => {
+      const response = await request(app).get("/api/ping").expect(200);
+      expect(response.headers["x-content-type-options"]).toBe("nosniff");
+      expect(response.headers["x-frame-options"]).toBeDefined();
+    });
+
+    test("rejects oversized JSON bodies with 413", async () => {
+      const big = "x".repeat(3 * 1024 * 1024);
+      await request(app)
+        .post("/api/ai/soil/analyze")
+        .set("Content-Type", "application/json")
+        .send(JSON.stringify({ sensor_data: { note: big } }))
+        .expect(413);
+    });
+
+    test("returns 400 (not a crash) for malformed JSON", async () => {
+      const response = await request(app)
+        .post("/api/ai/soil/analyze")
+        .set("Content-Type", "application/json")
+        .send("{ not valid json ");
+      expect([400, 413]).toContain(response.status);
+    });
+
+    test("does not leak stack traces on unknown routes", async () => {
+      const response = await request(app)
+        .get("/api/definitely-not-a-route")
+        .expect(404);
+      expect(JSON.stringify(response.body)).not.toMatch(/at Object\./);
+    });
+
+    test("CORS allows requests without an Origin header", async () => {
+      const response = await request(app).get("/api/ping").expect(200);
+      expect(response.status).toBe(200);
+    });
+  });
 });
