@@ -390,5 +390,5 @@ def _generate_executive_summary(weather_analysis: Dict, yield_analysis: Dict) ->
         'confidence_level': 'متوسط إلى عالي'
     }
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8004))  # Render يعطي PORT
-    uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8006))  # Render يعطي PORT
+    uvicorn.run("weather_yield_intelligence.main:app", host="0.0.0.0", port=port)

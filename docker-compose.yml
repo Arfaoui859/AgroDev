@@ -43,9 +43,9 @@ services:
       - CROP_RECOMMENDATION_URL=http://crop-recommendation:8002
       - IMAGE_DIAGNOSIS_URL=http://image-diagnosis:8003
       - MARKET_PREDICTION_URL=http://market-prediction:8004
-      - IRRIGATION_OPTIMIZATION_URL=http://irrigation-optimization:8004
+      - IRRIGATION_OPTIMIZATION_URL=http://irrigation-optimization:8008
       - INTELLIGENT_AGENT_URL=http://intelligent-agent:8005
-      - PEST_CONTROL_URL=http://pest-control:8005
+      - PEST_CONTROL_URL=http://pest-control:8007
       - WEATHER_YIELD_INTELLIGENCE_URL=http://weather-yield-intelligence:8006
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/agrogrowth
       - SUPABASE_URL=${VITE_SUPABASE_URL}
@@ -120,9 +120,9 @@ services:
       context: ./agrogrowth-ai
       dockerfile: market_prediction/Dockerfile
     ports:
-      - "8004:8003"
+      - "8004:8004"
     environment:
-      - SERVICE_PORT=8003
+      - SERVICE_PORT=8004
       - MODEL_PATH=/app/models
       - SUPABASE_URL=${VITE_SUPABASE_URL}
       - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
@@ -138,9 +138,9 @@ services:
       context: ./agrogrowth-ai
       dockerfile: irrigation_optimization/Dockerfile
     ports:
-      - "8005:8004"
+      - "8008:8008"
     environment:
-      - SERVICE_PORT=8004
+      - SERVICE_PORT=8008
       - SUPABASE_URL=${VITE_SUPABASE_URL}
       - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
@@ -153,7 +153,7 @@ services:
       context: ./agrogrowth-ai
       dockerfile: intelligent_agent/Dockerfile
     ports:
-      - "8006:8005"
+      - "8005:8005"
     environment:
       - SERVICE_PORT=8005
       - SUPABASE_URL=${VITE_SUPABASE_URL}
@@ -168,9 +168,9 @@ services:
       context: ./agrogrowth-ai
       dockerfile: pest_control/Dockerfile
     ports:
-      - "8007:8005"
+      - "8007:8007"
     environment:
-      - SERVICE_PORT=8005
+      - SERVICE_PORT=8007
       - SUPABASE_URL=${VITE_SUPABASE_URL}
       - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
@@ -183,7 +183,7 @@ services:
       context: ./agrogrowth-ai
       dockerfile: weather_yield_intelligence/Dockerfile
     ports:
-      - "8008:8006"
+      - "8006:8006"
     environment:
       - SERVICE_PORT=8006
       - SUPABASE_URL=${VITE_SUPABASE_URL}

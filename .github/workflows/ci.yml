@@ -137,6 +137,11 @@ jobs:
       - name: 🧹 Byte-compile all AI services
         run: python -m compileall -q agrogrowth-ai
 
+      - name: 🧪 Bootstrap regression tests (launch target / import / ports)
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest agrogrowth-ai/tests -q
+
   # =====================================
   # DOCKER BUILD (production target)
   # =====================================

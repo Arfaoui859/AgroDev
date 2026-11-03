@@ -6,9 +6,6 @@ Analyzes soil images to classify soil type, texture, and detect issues
 import numpy as np
 import cv2
 from PIL import Image
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 import logging
 from typing import Dict, List, Tuple, Any, Union
 import base64
@@ -17,12 +14,31 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+
+def _load_keras():
+    """Import TensorFlow lazily so the service's numeric analysis endpoints keep
+    working when the (heavy) deep-learning stack is not installed. Returns
+    (keras, layers) or (None, None) when TensorFlow is unavailable."""
+    try:
+        import tensorflow as tf  # noqa: F401
+        from tensorflow import keras
+        from tensorflow.keras import layers
+        return keras, layers
+    except Exception as exc:  # pragma: no cover - depends on environment
+        logger.warning(
+            "TensorFlow unavailable (%s); soil image CNN features disabled, "
+            "numeric analysis unaffected",
+            exc,
+        )
+        return None, None
+
 class SoilImageDiagnosisAI:
     """CNN-based AI model for soil image analysis and diagnosis"""
     
     def __init__(self):
         self.model = None
         self.is_trained = False
+        self.model_unavailable_reason = None
         self.input_shape = (224, 224, 3)
         
         # Soil classification categories
@@ -60,16 +76,25 @@ class SoilImageDiagnosisAI:
         self._initialize_model()
     
     def _initialize_model(self):
-        """Initialize the CNN model architecture"""
+        """Initialize the CNN model architecture (no-op if TensorFlow is absent)."""
+        keras, _ = _load_keras()
+        if keras is None:
+            self.model_unavailable_reason = "tensorflow-not-installed"
+            logger.info(
+                "SoilImageDiagnosisAI running without CNN: TensorFlow not installed"
+            )
+            return
         try:
             self._build_cnn_model()
             self._simulate_training()
             logger.info("SoilImageDiagnosisAI initialized successfully")
         except Exception as e:
+            self.model_unavailable_reason = "model-init-failed"
             logger.error(f"Error initializing SoilImageDiagnosisAI: {e}")
     
     def _build_cnn_model(self):
         """Build the CNN architecture for soil image classification"""
+        keras, layers = _load_keras()
         # Main classification model
         self.classification_model = keras.Sequential([
             # Input layer
@@ -141,6 +166,9 @@ class SoilImageDiagnosisAI:
     
     def _simulate_training(self):
         """Simulate model training with synthetic data for demonstration"""
+        keras, _ = _load_keras()
+        if keras is None:
+            return
         # Generate synthetic training data
         X_train = np.random.random((100, *self.input_shape))
         y_train_type = keras.utils.to_categorical(

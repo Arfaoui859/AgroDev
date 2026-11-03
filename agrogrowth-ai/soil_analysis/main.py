@@ -10,6 +10,7 @@ from typing import Dict, List, Any, Optional
 import logging
 import sys
 import os
+import uvicorn
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -264,5 +265,5 @@ async def general_exception_handler(request, exc):
     logger.error(f"Unhandled exception: {exc}")
     return {"status": "error", "message": "Internal server error"}
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))  # Render يعطي PORT
+    port = int(os.environ.get("PORT", 8001))  # Render يعطي PORT
     uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)

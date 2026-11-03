@@ -215,5 +215,5 @@ async def quick_health_check(file: UploadFile = File(...)):
 # 🚀 RENDER PORT FIX (VERY IMPORTANT)
 # =========================================================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))  # Render uses PORT env
+    port = int(os.environ.get("PORT", 8003))  # Render uses PORT env
     uvicorn.run(app, host="0.0.0.0", port=port)

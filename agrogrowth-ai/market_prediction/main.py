@@ -5,6 +5,7 @@ from datetime import datetime
 import logging
 import sys
 import os
+import uvicorn
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -450,5 +451,5 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8006))  # Render يعطي PORT
-    uvicorn.run("soil_analysis.main:app", host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8004))  # Render يعطي PORT
+    uvicorn.run("market_prediction.main:app", host="0.0.0.0", port=port)
