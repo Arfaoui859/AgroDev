@@ -137,36 +137,81 @@ export default function Location() {
     );
   };
 
+  /**
+   * Resolve a governorate through the weather service and return its current
+   * conditions, or null when the provider is unavailable.
+   */
+  const fetchWeatherForGovernorate = async (
+    governorate: string,
+  ): Promise<WeatherData | null> => {
+    try {
+      const response = await fetch(
+        `/api/weather/location?governorate=${encodeURIComponent(governorate)}`,
+      );
+      if (!response.ok) return null;
+      const data = await response.json();
+      const current = data?.current;
+      if (!current) return null;
+      return {
+        temperature: Number(current.temperature),
+        humidity: Number(current.humidity),
+        windSpeed: Number(current.windSpeed),
+        description: String(current.description ?? ""),
+        icon: String(current.icon ?? "partly-cloudy"),
+      };
+    } catch (error) {
+      console.error("Governorate weather error:", error);
+      return null;
+    }
+  };
+
+  /**
+   * Fetch current weather for a coordinate pair from the backend, which proxies
+   * a real weather provider. The previous version invented a temperature and
+   * humidity locally on every call.
+   */
   const fetchWeatherData = async (lat: number, lon: number) => {
     setIsLoadingWeather(true);
     try {
-      // Mock weather data for Tunisia - Mediterranean climate
-      const mockWeather: WeatherData = {
-        temperature: 22 + Math.random() * 8, // Tunis typical temperature range
-        humidity: 65 + Math.random() * 15, // Higher humidity due to coast
-        windSpeed: 8 + Math.random() * 12, // Mediterranean winds
-        description: "مشمس مع نسيم البحر الأبيض المتوسط",
-        icon: "partly-cloudy"
-      };
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setWeatherData(mockWeather);
+      const response = await fetch(`/api/weather/coordinates?lat=${lat}&lon=${lon}`);
+      if (!response.ok) {
+        throw new Error(`Weather request failed: ${response.status}`);
+      }
+      const data = await response.json();
+      const current = data?.current;
+      if (!current) {
+        throw new Error("لم تُرجع خدمة الطقس أي بيانات حالية");
+      }
+      setWeatherData({
+        temperature: Number(current.temperature),
+        humidity: Number(current.humidity),
+        windSpeed: Number(current.windSpeed),
+        description: String(current.description ?? ""),
+        icon: String(current.icon ?? "partly-cloudy"),
+      });
       toast.success("تم جلب بيانات الطقس بنجاح");
     } catch (error) {
+      console.error("Weather fetch error:", error);
+      setWeatherData(null);
       toast.error("فشل في جلب بيانات الطقس");
     } finally {
       setIsLoadingWeather(false);
     }
   };
 
-  const onSubmit = (data: LocationForm) => {
-    // Store location data for crop recommendations
+  const onSubmit = async (data: LocationForm) => {
+    let resolvedWeather = weatherData;
+
+    // Region/manual selections carry a governorate but no weather yet; fetch it
+    // now so crop recommendations run against the real local conditions.
+    if (!resolvedWeather && data.governorate) {
+      resolvedWeather = await fetchWeatherForGovernorate(data.governorate);
+    }
+
     const locationData = {
       ...data,
       timestamp: new Date().toISOString(),
-      weatherData,
+      weatherData: resolvedWeather,
     };
     
     localStorage.setItem('selectedLocation', JSON.stringify(locationData));
@@ -174,24 +219,54 @@ export default function Location() {
     navigate('/recommendations');
   };
 
+  /**
+   * Resolve the selected governorate to coordinates through the weather
+   * service, which knows the coordinates of Tunisian governorates. Free-text
+   * address geocoding needs a geocoding provider that is not configured, so we
+   * ask the farmer to pick a governorate or use GPS instead of guessing.
+   */
   const handleAddressSearch = async () => {
-    const address = form.getValues("address");
-    if (!address) {
-      toast.error("يرجى إدخال العنوان أولاً");
+    const governorate = form.getValues("governorate");
+    if (!governorate) {
+      toast.error("يرجى اختيار الولاية أولاً");
       return;
     }
 
-    // Mock geocoding for Tunisia - in real implementation, use geocoding API
-    const mockCoords = {
-      latitude: 36.8065 + (Math.random() - 0.5) * 0.1, // Tunis latitude
-      longitude: 10.1815 + (Math.random() - 0.5) * 0.1, // Tunis longitude
-    };
+    setIsLoadingWeather(true);
+    try {
+      const response = await fetch(
+        `/api/weather/location?governorate=${encodeURIComponent(governorate)}`,
+      );
+      if (!response.ok) {
+        throw new Error(`Location lookup failed: ${response.status}`);
+      }
+      const data = await response.json();
+      const loc = data?.location;
+      if (!loc || typeof loc.lat !== "number" || typeof loc.lon !== "number") {
+        throw new Error("تعذّر تحديد إحداثيات الولاية");
+      }
 
-    form.setValue("latitude", mockCoords.latitude.toString());
-    form.setValue("longitude", mockCoords.longitude.toString());
-    setLocationSet(true);
-    toast.success("تم العثور على الموقع");
-    fetchWeatherData(mockCoords.latitude, mockCoords.longitude);
+      form.setValue("latitude", String(loc.lat));
+      form.setValue("longitude", String(loc.lon));
+      setLocationSet(true);
+      toast.success("تم تحديد موقع الولاية");
+
+      const current = data?.current;
+      if (current) {
+        setWeatherData({
+          temperature: Number(current.temperature),
+          humidity: Number(current.humidity),
+          windSpeed: Number(current.windSpeed),
+          description: String(current.description ?? ""),
+          icon: String(current.icon ?? "partly-cloudy"),
+        });
+      }
+    } catch (error) {
+      console.error("Governorate lookup error:", error);
+      toast.error("فشل في تحديد الموقع. استخدم GPS أو أدخل الإحداثيات يدوياً.");
+    } finally {
+      setIsLoadingWeather(false);
+    }
   };
 
   return (
@@ -305,32 +380,41 @@ export default function Location() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse">
                   <Search className="w-5 h-5" />
-                  <span>البحث بالعنوان</span>
+                  <span>تحديد الموقع بالولاية</span>
                 </CardTitle>
                 <CardDescription>
-                  أدخل عنوان المزرعة أو المنطقة للبحث عن الموقع
+                  اختر الولاية لتحديد إحداثيات المزرعة وجلب الطقس الفعلي
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="address"
+                  name="governorate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>العنوان</FormLabel>
+                      <FormLabel>الولاية</FormLabel>
                       <div className="flex space-x-2 rtl:space-x-reverse">
-                        <FormControl>
-                          <Input 
-                            placeholder="مثال: قرية الخصوص، محافظة القليوبية"
-                            {...field} 
-                          />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="اختر الولاية" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-48">
+                            {tunisianGovernorates.map((gov) => (
+                              <SelectItem key={gov.value} value={gov.value}>
+                                {gov.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Button type="button" onClick={handleAddressSearch}>
                           <Search className="w-4 h-4" />
                         </Button>
                       </div>
                       <FormDescription>
-                        اكتب العنوان بأكبر قدر من التفاصيل
+                        البحث بالعنوان الحر غير مدعوم حالياً لعدم توفر خدمة
+                        جغرافية؛ اختر الولاية أو استخدم GPS.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

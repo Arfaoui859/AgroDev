@@ -66,11 +66,23 @@ interface CropRecommendation {
   growthDuration: number;
 }
 
+interface RecommendationResponse {
+  dataSource?: string;
+  isRealData?: boolean;
+  disclaimer?: string;
+  recommendations?: Array<Record<string, unknown>>;
+}
+
 export default function Recommendations() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [provenance, setProvenance] = useState<{
+    dataSource: string;
+    isRealData: boolean;
+    disclaimer?: string;
+  } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,135 +95,108 @@ export default function Recommendations() {
     }
   }, [navigate]);
 
+  /**
+   * Ask the crop-recommendation engine for this location's conditions. The
+   * engine returns a suitability ranking with the reasoning behind each score;
+   * this maps that response into the view model. The engine reports its own
+   * dataSource, so a rule-based ranking is never presented as a trained model.
+   */
   const generateRecommendations = async (location: LocationData) => {
     setIsLoading(true);
-    
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock AI recommendations based on Tunisian location and Mediterranean weather
-    const mockRecommendations: CropRecommendation[] = [
-      {
-        id: "olive",
-        name: "الزيتون",
-        nameEn: "Olive",
-        category: "أشجار مثمرة",
-        suitabilityScore: 98,
-        profitability: 92,
-        riskLevel: 'low',
-        plantingSeason: "مارس - أبريل، أكتوبر - نوفمبر",
-        harvestTime: "أكتوبر - ديسمبر",
-        estimatedProfit: 12000,
-        marketDemand: 'high',
-        waterRequirement: 'low',
-        description: "محصول تقليدي تونسي ممتاز للمناخ المتوسطي مع جودة زيت عالمية",
-        advantages: ["جودة زيت عالمية", "تصدير قوي", "مقاوم للجفاف", "عائد طو��ل المدى"],
-        challenges: ["استثمار أولي عالي", "يحتاج سنوات لبداية الإنتاج"],
-        marketPrice: 8.5,
-        estimatedYield: 25,
-        growthDuration: 2190 // 6 years to full production
-      },
-      {
-        id: "citrus",
-        name: "الحمضيات",
-        nameEn: "Citrus",
-        category: "أشجار مثمرة",
-        suitabilityScore: 94,
-        profitability: 88,
-        riskLevel: 'low',
-        plantingSeason: "مارس - أبريل",
-        harvestTime: "نوفمبر - فبراير",
-        estimatedProfit: 9500,
-        marketDemand: 'high',
-        waterRequirement: 'medium',
-        description: "الحمضيات التونسية عالية الجودة مع إمكانيات تصدير ممتازة لأوروبا",
-        advantages: ["جودة عالية معترف بها عالمياً", "تصدير لأوروبا", "طلب محلي قوي"],
-        challenges: ["حساسية للصقيع", "يحتاج رعاية مستمرة"],
-        marketPrice: 3.2,
-        estimatedYield: 35,
-        growthDuration: 1095 // 3 years to production
-      },
-      {
-        id: "wheat",
-        name: "القمح الصلب",
-        nameEn: "Durum Wheat",
-        category: "حبوب",
-        suitabilityScore: 90,
-        profitability: 82,
-        riskLevel: 'low',
-        plantingSeason: "نوفمبر - ديسمبر",
-        harvestTime: "مايو - يونيو",
-        estimatedProfit: 5500,
-        marketDemand: 'high',
-        waterRequirement: 'medium',
-        description: "القمح الصلب التونسي عالي الجودة مناسب للمناخ المتوسطي",
-        advantages: ["جودة عالية للمكرونة", "مقاوم للجفاف", "طلب محلي وتصديري"],
-        challenges: ["تقلبات أسعار الأسمدة", "منافسة الواردات"],
-        marketPrice: 1.2,
-        estimatedYield: 35,
-        growthDuration: 180
-      },
-      {
-        id: "tomato",
-        name: "الطماطم",
-        nameEn: "Tomato",
-        category: "خضروات",
-        suitabilityScore: 88,
-        profitability: 90,
-        riskLevel: 'medium',
-        plantingSeason: "سبتمبر - فبراير",
-        harvestTime: "ديسمبر - يونيو",
-        estimatedProfit: 8500,
-        marketDemand: 'high',
-        waterRequirement: 'high',
-        description: "الطماطم التونسية عالية الجودة مع تصدير قوي لأوروبا وليبيا",
-        advantages: ["تصدير لأوروبا", "جودة ممتازة", "سوق محلي قوي"],
-        challenges: ["استهلاك مياه عالي", "حساس للأمراض", "تقلبات سعرية"],
-        marketPrice: 2.8,
-        estimatedYield: 45,
-        growthDuration: 120
-      },
-      {
-        id: "artichoke",
-        name: "الخرشوف",
-        nameEn: "Artichoke",
-        category: "خضروات",
-        suitabilityScore: 92,
-        profitability: 88,
-        riskLevel: 'medium',
-        plantingSeason: "أغسطس - سبتمبر",
-        harvestTime: "فبراير - أبريل",
-        estimatedProfit: 11000,
-        marketDemand: 'high',
-        waterRequirement: 'medium',
-        description: "الخرشوف التونسي مطلوب بقوة في الأسواق الأوروبية وا��محلية",
-        advantages: ["تصدير لأوروبا", "سعر عالي", "مناخ مثالي", "طلب متزايد"],
-        challenges: ["يحتاج خبرة زراعية", "حساس للحرارة العالية"],
-        marketPrice: 6.5,
-        estimatedYield: 12,
-        growthDuration: 180
-      }
-    ];
 
-    // Sort by suitability score
-    mockRecommendations.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
-    
-    setRecommendations(mockRecommendations);
-    setIsLoading(false);
-    
-    // Save to history
-    const historyData = {
-      locationData: location,
-      recommendations: mockRecommendations,
-      timestamp: new Date().toISOString(),
-      id: Date.now().toString()
-    };
-    
-    const history = JSON.parse(localStorage.getItem('cropRecommendationHistory') || '[]');
-    history.unshift(historyData);
-    localStorage.setItem('cropRecommendationHistory', JSON.stringify(history));
-    
-    toast.success("تم تحليل البيانات وإنتاج التوصيات بنجاح");
+    try {
+      const weather = location.weatherData;
+      const payload: Record<string, unknown> = {
+        location: {
+          governorate: location.governorate,
+          city: location.city,
+          region: location.region,
+        },
+        temperature: weather?.temperature,
+        humidity: weather?.humidity,
+        rainfall: (location as { rainfall?: number }).rainfall,
+      };
+
+      const response = await fetch('/api/ai/crops/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Crop recommendation failed: ${response.status}`);
+      }
+
+      const data = (await response.json()) as RecommendationResponse;
+      const items = data.recommendations ?? [];
+      if (items.length === 0) {
+        throw new Error('لم تُرجع خدمة التوصيات أي نتائج');
+      }
+
+      const mapped: CropRecommendation[] = items.map((raw, index) => {
+        const r = raw as Record<string, any>;
+        const profit = r.profit_analysis ?? {};
+        const risk = r.risk_assessment ?? {};
+        const riskLevel: 'low' | 'medium' | 'high' =
+          risk.overall_risk_level === 'منخفض'
+            ? 'low'
+            : risk.overall_risk_level === 'عالٍ' || risk.overall_risk_level === 'مرتفع'
+              ? 'high'
+              : 'medium';
+        const water: 'low' | 'medium' | 'high' =
+          r.water_need === 'منخفض' ? 'low' : r.water_need === 'مرتفع' ? 'high' : 'medium';
+        const netProfit = Number(profit.net_profit ?? 0);
+        return {
+          id: String(r.crop ?? `crop-${index}`),
+          name: String(r.name_ar ?? r.crop ?? ''),
+          nameEn: String(r.crop ?? ''),
+          category: String(r.category ?? ''),
+          suitabilityScore: Math.round(Number(r.suitability_score ?? 0) * 100),
+          profitability: Math.round(Number(profit.profit_margin_percent ?? 0)),
+          riskLevel,
+          plantingSeason: String(r.season ?? ''),
+          harvestTime: String(r.season ?? ''),
+          estimatedProfit: netProfit,
+          marketDemand:
+            Number(profit.roi_percent ?? 0) >= 100 ? 'high' : 'medium',
+          waterRequirement: water,
+          description: (r.reasoning as string[] | undefined)?.join(' ') ?? '',
+          advantages: (r.reasoning as string[] | undefined) ?? [],
+          challenges: [],
+          marketPrice: 0,
+          estimatedYield: Number(r.predicted_yield_per_hectare ?? 0),
+          growthDuration: 0,
+        };
+      });
+
+      mapped.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
+      setRecommendations(mapped);
+      setProvenance({
+        dataSource: data.dataSource ?? 'rule-based',
+        isRealData: Boolean(data.isRealData),
+        disclaimer: data.disclaimer,
+      });
+
+      const historyData = {
+        locationData: location,
+        recommendations: mapped,
+        timestamp: new Date().toISOString(),
+        id: Date.now().toString(),
+      };
+      const history = JSON.parse(
+        localStorage.getItem('cropRecommendationHistory') || '[]',
+      );
+      history.unshift(historyData);
+      localStorage.setItem('cropRecommendationHistory', JSON.stringify(history));
+
+      toast.success('تم تحليل البيانات وإنتاج التوصيات بنجاح');
+    } catch (error) {
+      console.error('Crop recommendation error:', error);
+      setRecommendations([]);
+      toast.error('تعذّر الحصول على توصيات المحاصيل. حاول مرة أخرى.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getRiskBadge = (risk: string) => {
@@ -366,13 +351,17 @@ export default function Recommendations() {
         </CardContent>
       </Card>
 
-      {/* AI Analysis Summary */}
+      {/* Analysis Summary */}
       <Alert>
         <Star className="h-4 w-4" />
         <AlertDescription>
-          <strong>تحليل الذكاء الاصطناعي:</strong> تم تحليل {recommendations.length} محصول محتمل بناءً على
-          بيانات المناخ المحلي، أسعار السوق الحالية، وظروف التربة. أعلى توصية لك هي <strong>{recommendations[0]?.name}</strong>
-          بدرجة ملاءمة {recommendations[0]?.suitabilityScore}%.
+          <strong>
+            {provenance?.isRealData ? 'تحليل نموذج مدرّب:' : 'ترتيب بمحرك قواعد:'}
+          </strong>{' '}
+          تم ترتيب {recommendations.length} محصول محتمل بناءً على مطابقة معايير التربة
+          والمناخ مع جدول مرجعي للمحاصيل التونسية. أعلى توصية لك هي{' '}
+          <strong>{recommendations[0]?.name}</strong> بدرجة ملاءمة{' '}
+          {recommendations[0]?.suitabilityScore}%.
         </AlertDescription>
       </Alert>
 
@@ -458,7 +447,7 @@ export default function Recommendations() {
                     
                     <div className="text-center p-2 border rounded-lg">
                       <div className="text-2xl font-bold text-green-600">{crop.estimatedProfit.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">ربح متوقع (جنيه/فدان)</div>
+                      <div className="text-xs text-muted-foreground">صافي الربح المتوقع (دينار/هكتار)</div>
                     </div>
                     
                     <div className="text-center p-2 border rounded-lg">
@@ -476,8 +465,8 @@ export default function Recommendations() {
                     </div>
                     
                     <div className="text-center p-2 border rounded-lg">
-                      <div className="text-lg font-bold">{crop.growthDuration}</div>
-                      <div className="text-xs text-muted-foreground">يوم للحصاد</div>
+                      <div className="text-lg font-bold">{crop.estimatedYield}</div>
+                      <div className="text-xs text-muted-foreground">المردود المتوقع (طن/هكتار)</div>
                     </div>
                   </div>
 
@@ -493,13 +482,13 @@ export default function Recommendations() {
                     </div>
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">
                       <DollarSign className="w-4 h-4 text-blue-600" />
-                      <span><strong>سعر السوق:</strong> {crop.marketPrice} جنيه/{crop.category === "خضروات" ? "كيلو" : "كيلة"}</span>
+                      <span><strong>الفئة:</strong> {crop.category}</span>
                     </div>
                   </div>
 
-                  {/* Advantages */}
+                  {/* Reasoning */}
                   <div>
-                    <h4 className="font-medium mb-2 text-green-700">المزايا:</h4>
+                    <h4 className="font-medium mb-2 text-green-700">أسباب الترشيح:</h4>
                     <div className="flex flex-wrap gap-1">
                       {crop.advantages.map((advantage, i) => (
                         <Badge key={i} variant="secondary" className="text-xs bg-green-100 text-green-800">
@@ -511,6 +500,7 @@ export default function Recommendations() {
                   </div>
 
                   {/* Challenges */}
+                  {crop.challenges.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-2 text-orange-700">التحديات:</h4>
                     <div className="flex flex-wrap gap-1">
@@ -522,6 +512,7 @@ export default function Recommendations() {
                       ))}
                     </div>
                   </div>
+                  )}
                 </div>
 
                 {/* Action Button */}
