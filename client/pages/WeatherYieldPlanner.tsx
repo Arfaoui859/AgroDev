@@ -16,6 +16,8 @@ import { Progress } from "@/components/ui/progress";
 import { CloudSun, Loader2, AlertTriangle, TrendingUp, Sprout } from "lucide-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { AIProvenanceNotice } from "@/components/ai/AIProvenanceNotice";
+import { AdvisoryPanel } from "@/components/ai/AdvisoryPanel";
+import type { Advisory } from "@/lib/advisory";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
@@ -51,6 +53,7 @@ interface WeatherPlan {
   crop_suitability?: CropSuitability[];
   weather_risks?: { overall_risk_level?: string };
   recommendations_summary?: string[];
+  advisory?: Advisory;
   dataSource?: string;
   isRealData?: boolean;
   modelSource?: string;
@@ -67,6 +70,7 @@ interface YieldPrediction {
     profitability?: { net_profit?: number; roi_percent?: number };
   };
   confidence_metrics?: { confidence_score?: number; level?: string };
+  advisory?: Advisory;
   dataSource?: string;
   isRealData?: boolean;
   modelSource?: string;
@@ -110,6 +114,7 @@ export default function WeatherYieldPlanner() {
             location: { latitude, longitude, region: "تونس" },
             crop_options: crops,
             planning_horizon_months: 12,
+            language: isArabic ? "ar" : "en",
           }),
         },
       );
@@ -143,6 +148,7 @@ export default function WeatherYieldPlanner() {
             farm_size: farmSize,
             weather_data: { temperature: 22, humidity: 60, annual_rainfall: 450 },
             soil_data: { ph: 6.8, fertility_score: 0.75, moisture_percentage: 45 },
+            language: isArabic ? "ar" : "en",
           }),
         },
       );
@@ -275,7 +281,12 @@ export default function WeatherYieldPlanner() {
         </TabsList>
 
         <TabsContent value="plan" className="space-y-4">
-          {plan && <AIProvenanceNotice result={plan} />}
+          {plan && (
+            <>
+              <AIProvenanceNotice result={plan} />
+              <AdvisoryPanel advisory={plan.advisory} />
+            </>
+          )}
           {plan ? (
             <>
               <div className="grid gap-4 md:grid-cols-3">
@@ -367,7 +378,12 @@ export default function WeatherYieldPlanner() {
         </TabsContent>
 
         <TabsContent value="yield" className="space-y-4">
-          {yieldResult && <AIProvenanceNotice result={yieldResult} />}
+          {yieldResult && (
+            <>
+              <AIProvenanceNotice result={yieldResult} />
+              <AdvisoryPanel advisory={yieldResult.advisory} />
+            </>
+          )}
           {yieldResult && prediction ? (
             <div className="grid gap-4 md:grid-cols-2">
               <Card>

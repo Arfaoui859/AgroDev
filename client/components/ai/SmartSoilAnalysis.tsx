@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { AdvisoryPanel } from "@/components/ai/AdvisoryPanel";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { serviceStatusManager } from "@/lib/serviceStatus";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +51,7 @@ interface CropInput {
 }
 
 const SmartSoilAnalysis: React.FC = () => {
+  const { isArabic } = useLanguage();
   const { toast } = useToast();
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
@@ -184,6 +187,7 @@ const SmartSoilAnalysis: React.FC = () => {
       const data = await postJson("/api/ai/soil/analyze", {
         sensor_data: soilData,
         location: cropInput.location,
+        language: isArabic ? "ar" : "en",
       });
       setAnalysisResult(data);
       saveAnalysisToHistory(data, "sensor");
@@ -608,6 +612,8 @@ const SmartSoilAnalysis: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <AdvisoryPanel advisory={analysisResult.advisory} />
+
                   {provenance && !provenance.isRealData && (
                     <Alert className="border-amber-300 bg-amber-50 text-amber-900">
                       <AlertTriangle className="h-4 w-4" />

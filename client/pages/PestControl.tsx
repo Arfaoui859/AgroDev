@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { AIProvenanceNotice } from "@/components/ai/AIProvenanceNotice";
+import { AdvisoryPanel } from "@/components/ai/AdvisoryPanel";
+import type { Advisory } from "@/lib/advisory";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
@@ -82,6 +84,7 @@ interface PestAnalysis {
     application_instructions?: string;
   }>;
   treatment_schedule?: { total_applications?: number; schedule?: unknown[] };
+  advisory?: Advisory;
   dataSource?: string;
   isRealData?: boolean;
   modelSource?: string;
@@ -122,6 +125,7 @@ export default function PestControl() {
           symptoms,
           affected_area_percentage: affectedArea,
           plant_health_score: plantHealth,
+          language: isArabic ? "ar" : "en",
         }),
       });
       const body = await response.json();
@@ -270,6 +274,8 @@ export default function PestControl() {
           {result && (
             <>
               <AIProvenanceNotice result={result} />
+
+              <AdvisoryPanel advisory={result.advisory} />
 
               <Card>
                 <CardHeader>

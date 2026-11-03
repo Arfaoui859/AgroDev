@@ -21,6 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { AdvisoryPanel } from "@/components/ai/AdvisoryPanel";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { serviceStatusManager } from "@/lib/serviceStatus";
 import ServiceUnavailable from "@/components/ServiceUnavailable";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +64,7 @@ interface ProfitEstimationData {
 
 const SmartCropRecommendations: React.FC = () => {
   const { toast } = useToast();
+  const { isArabic } = useLanguage();
   const [activeTab, setActiveTab] = useState("recommendations");
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
@@ -172,6 +175,7 @@ const SmartCropRecommendations: React.FC = () => {
         soil_quality_score: inputData.soil_quality_score,
         water_availability: inputData.water_availability,
         area_hectares: inputData.farm_size,
+        language: isArabic ? "ar" : "en",
       });
       setRecommendations(result);
       toast({
@@ -540,6 +544,8 @@ const SmartCropRecommendations: React.FC = () => {
           {/* Recommendations Results */}
           {recommendations && (
             <div className="space-y-6">
+              <AdvisoryPanel advisory={recommendations.advisory} />
+
               {/* Best Recommendation */}
               {recommendations.best_recommendation && (
                 <Card className="border-green-200 bg-green-50">

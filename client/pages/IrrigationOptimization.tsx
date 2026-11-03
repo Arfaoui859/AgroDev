@@ -21,6 +21,8 @@ import {
 import { Droplets, Loader2, AlertTriangle, Gauge, Calendar } from "lucide-react";
 import { apiFetch } from "@/lib/apiFetch";
 import { AIProvenanceNotice } from "@/components/ai/AIProvenanceNotice";
+import { AdvisoryPanel } from "@/components/ai/AdvisoryPanel";
+import type { Advisory } from "@/lib/advisory";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
@@ -59,6 +61,7 @@ interface IrrigationResult {
     notes?: string;
   }>;
   recommendations?: string[];
+  advisory?: Advisory;
   dataSource?: string;
   isRealData?: boolean;
   modelSource?: string;
@@ -93,6 +96,7 @@ export default function IrrigationOptimization() {
           days_ahead: 7,
           weather_data: { temperature, humidity },
           soil_data: { moisture_percentage: soilMoisture },
+          language: isArabic ? "ar" : "en",
         }),
       });
       const body = await response.json();
@@ -253,6 +257,8 @@ export default function IrrigationOptimization() {
           {result && (
             <>
               <AIProvenanceNotice result={result} />
+
+              <AdvisoryPanel advisory={result.advisory} />
 
               {requirements && (
                 <Card>
