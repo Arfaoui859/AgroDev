@@ -111,6 +111,35 @@ async def root():
         }
     }
 
+@app.get("/supported-diseases")
+async def supported_diseases():
+    """Disease catalogue with Arabic names and treatments.
+
+    The Node gateway exposes this list so the UI can render the set of diseases
+    the diagnosis engine can report.
+    """
+    detector = get_disease_detector()
+    db = getattr(detector, "disease_database", {}) or {}
+    diseases = [
+        {
+            "id": key,
+            "disease": key,
+            "name_ar": info.get("name_ar"),
+            "description": info.get("description"),
+            "severity": info.get("severity"),
+            "treatment": info.get("treatment", []),
+            "prevention": info.get("prevention", []),
+        }
+        for key, info in db.items()
+    ]
+    return {
+        "status": "success",
+        "supported_diseases": diseases,
+        "total_count": len(diseases),
+        "model_source": "heuristic-demo",
+    }
+
+
 @app.get("/health")
 async def health():
     return {
