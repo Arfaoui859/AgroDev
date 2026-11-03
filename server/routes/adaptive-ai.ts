@@ -1,4 +1,7 @@
 import { RequestHandler } from "express";
+import { markSimulated, SIMULATED_DISCLAIMER_AR, SIMULATED_DISCLAIMER_EN } from "../lib/provenance";
+
+const DISCLAIMER = `${SIMULATED_DISCLAIMER_AR} ${SIMULATED_DISCLAIMER_EN}`;
 
 const mockAIModels = [
   {
@@ -216,9 +219,13 @@ const mockFeedbackData = [
 ];
 
 export const getAIModels: RequestHandler = (req, res) => {
+  markSimulated(res);
   try {
     res.json({
       success: true,
+      dataSource: "simulated",
+      isRealData: false,
+      disclaimer: DISCLAIMER,
       data: mockAIModels
     });
   } catch (error) {
@@ -230,12 +237,16 @@ export const getAIModels: RequestHandler = (req, res) => {
 };
 
 export const getAIInsights: RequestHandler = (req, res) => {
+  markSimulated(res);
   try {
     const { period = '7d' } = req.query;
     
     // In production, insights would be calculated based on the period
     res.json({
       success: true,
+      dataSource: "simulated",
+      isRealData: false,
+      disclaimer: DISCLAIMER,
       data: mockAIInsights
     });
   } catch (error) {
@@ -247,11 +258,15 @@ export const getAIInsights: RequestHandler = (req, res) => {
 };
 
 export const getUserBehaviorData: RequestHandler = (req, res) => {
+  markSimulated(res);
   try {
     const { period = '7d' } = req.query;
     
     res.json({
       success: true,
+      dataSource: "simulated",
+      isRealData: false,
+      disclaimer: DISCLAIMER,
       data: mockUserBehaviorData
     });
   } catch (error) {
@@ -263,6 +278,7 @@ export const getUserBehaviorData: RequestHandler = (req, res) => {
 };
 
 export const getPersonalizedRecommendations: RequestHandler = (req, res) => {
+  markSimulated(res);
   try {
     const { model = 'all', period = '7d' } = req.query;
     
@@ -277,6 +293,9 @@ export const getPersonalizedRecommendations: RequestHandler = (req, res) => {
     
     res.json({
       success: true,
+      dataSource: "simulated",
+      isRealData: false,
+      disclaimer: DISCLAIMER,
       data: filteredRecommendations
     });
   } catch (error) {
@@ -288,11 +307,15 @@ export const getPersonalizedRecommendations: RequestHandler = (req, res) => {
 };
 
 export const getFeedbackData: RequestHandler = (req, res) => {
+  markSimulated(res);
   try {
     const { period = '7d' } = req.query;
     
     res.json({
       success: true,
+      dataSource: "simulated",
+      isRealData: false,
+      disclaimer: DISCLAIMER,
       data: mockFeedbackData
     });
   } catch (error) {
@@ -315,10 +338,15 @@ export const submitFeedback: RequestHandler = (req, res) => {
       isProcessed: false
     };
     
+    // No feedback store is configured; report acceptance without implying the
+    // feedback was persisted or fed back into a model.
+    res.set('X-Data-Provenance', 'session');
+    res.set('X-Is-Real-Data', 'false');
     res.json({
       success: true,
+      persisted: false,
       data: newFeedback,
-      message: 'Feedback submitted successfully'
+      message: 'Feedback received (not persisted: no feedback store configured)'
     });
   } catch (error) {
     res.status(500).json({
@@ -334,10 +362,13 @@ export const updateRecommendationFeedback: RequestHandler = (req, res) => {
     const feedbackData = req.body;
     
     // In production, update recommendation feedback in database
+    res.set('X-Data-Provenance', 'session');
+    res.set('X-Is-Real-Data', 'false');
     res.json({
       success: true,
+      persisted: false,
       data: { id: recommendationId, feedback: feedbackData },
-      message: 'Recommendation feedback updated successfully'
+      message: 'Feedback received (not persisted: no feedback store configured)'
     });
   } catch (error) {
     res.status(500).json({
@@ -352,11 +383,15 @@ export const triggerModelTraining: RequestHandler = (req, res) => {
     const { modelId } = req.params;
     const { trainingConfig } = req.body;
     
-    // In production, trigger actual model training process
-    res.json({
-      success: true,
-      message: 'Model training initiated successfully',
-      trainingJobId: `job_${Date.now()}`
+    // There is no training pipeline wired up. Report honestly instead of
+    // returning a fabricated job id that implies training actually started.
+    res.status(501).json({
+      success: false,
+      dataSource: "unavailable",
+      isRealData: false,
+      error: 'Model training is not implemented in this deployment',
+      message: 'لا تتوفر إمكانية تدريب النماذج في هذه النسخة.',
+      modelId,
     });
   } catch (error) {
     res.status(500).json({

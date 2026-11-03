@@ -1,3 +1,4 @@
+import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -238,6 +239,7 @@ const AdaptiveAI: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      <DataProvenanceBanner className="mb-2" />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
