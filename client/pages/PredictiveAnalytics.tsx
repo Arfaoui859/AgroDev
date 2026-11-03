@@ -1,3 +1,4 @@
+import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -352,6 +353,7 @@ export default function PredictiveAnalytics() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 p-4" dir="rtl">
+      <DataProvenanceBanner className="mb-4" />
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">

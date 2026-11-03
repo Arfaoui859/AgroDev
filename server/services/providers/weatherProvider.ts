@@ -31,6 +31,10 @@ export interface WeatherData {
       rainfall: number;
       description: string;
       icon: string;
+      /** Daily shortwave radiation (kWh/m2/day) from the provider, when available. */
+      solarRadiation?: number;
+      /** Daily maximum UV index from the provider, when available. */
+      uvIndex?: number;
     }>;
     weekly: {
       averageTemp: number;
@@ -80,6 +84,8 @@ interface OpenMeteoResponse {
     relative_humidity_2m_mean?: number[];
     et0_fao_evapotranspiration?: number[];
     wind_speed_10m_max?: number[];
+    shortwave_radiation_sum?: number[];
+    uv_index_max?: number[];
   };
   hourly?: {
     time?: string[];
@@ -170,7 +176,7 @@ export async function getWeatherFromOpenMeteo(
       "temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl,weather_code,visibility,precipitation",
     hourly: "soil_moisture_0_to_7cm",
     daily:
-      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,et0_fao_evapotranspiration,wind_speed_10m_max",
+      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,et0_fao_evapotranspiration,wind_speed_10m_max,shortwave_radiation_sum,uv_index_max",
     timezone: "Africa/Tunis",
     forecast_days: "7",
   });
@@ -195,6 +201,14 @@ export async function getWeatherFromOpenMeteo(
       rainfall: round(daily.precipitation_sum?.[index], 1),
       description: weather.description,
       icon: weather.icon,
+      solarRadiation:
+        typeof daily.shortwave_radiation_sum?.[index] === "number"
+          ? round(daily.shortwave_radiation_sum[index] / 3.6, 1)
+          : undefined,
+      uvIndex:
+        typeof daily.uv_index_max?.[index] === "number"
+          ? round(daily.uv_index_max[index])
+          : undefined,
     };
   });
 

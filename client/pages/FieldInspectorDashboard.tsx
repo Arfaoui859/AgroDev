@@ -1,3 +1,4 @@
+import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -250,6 +251,7 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
 
   return (
     <div className={`container mx-auto p-4 space-y-6 ${isArabic ? 'rtl' : 'ltr'}`}>
+      <DataProvenanceBanner className="mb-4" />
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

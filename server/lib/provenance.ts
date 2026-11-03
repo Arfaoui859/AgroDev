@@ -1,0 +1,63 @@
+/**
+ * Data-provenance helpers for API responses.
+ *
+ * Several platform modules (government/investor/admin dashboards, segmentation,
+ * field inspection, ...) synthesise their figures because AgroGrowth has no
+ * licensed feed for that data. Those numbers are useful for demos and UI
+ * development, but they must never be presented to a farmer or an investor as
+ * real observations.
+ *
+ * `withSimulatedProvenance` stamps every response from such a router with
+ * machine-readable provenance headers, so the SPA can render a disclosure
+ * banner without each endpoint having to change its response body shape:
+ *
+ *   X-Data-Provenance: simulated
+ *   X-Is-Real-Data:    false
+ *
+ * Endpoints that return a JSON object may additionally call
+ * `simulatedPayload()` to embed `dataSource` / `isRealData` / `disclaimer`
+ * in the body, which the client provenance reader also understands.
+ */
+import type { NextFunction, Request, RequestHandler, Response } from "express";
+
+export const SIMULATED_DISCLAIMER_AR =
+  "هذه البيانات محاكاة توضيحية وليست قياسات حقيقية. لا تُستخدم لاتخاذ قرارات حرجة.";
+export const SIMULATED_DISCLAIMER_EN =
+  "Illustrative simulated data, not real measurements. Do not use for critical decisions.";
+
+/** Stamp a response with simulated-data provenance headers. */
+export function markSimulated(res: Response, source = "simulated"): void {
+  res.set("X-Data-Provenance", source);
+  res.set("X-Is-Real-Data", "false");
+}
+
+/** Stamp a response with real-data provenance headers. */
+export function markReal(res: Response, source = "live"): void {
+  res.set("X-Data-Provenance", source);
+  res.set("X-Is-Real-Data", "true");
+}
+
+/**
+ * Express middleware that labels every response from a router as simulated.
+ * Applied at mount time, so a fully-synthesised module is honestly tagged
+ * without touching each handler.
+ */
+export function withSimulatedProvenance(source = "simulated"): RequestHandler {
+  return (_req: Request, res: Response, next: NextFunction) => {
+    markSimulated(res, source);
+    next();
+  };
+}
+
+/** Attach in-body provenance fields to a JSON object payload. */
+export function simulatedPayload<T extends Record<string, unknown>>(
+  payload: T,
+  source = "simulated",
+): T & { dataSource: string; isRealData: false; disclaimer: string } {
+  return {
+    ...payload,
+    dataSource: source,
+    isRealData: false,
+    disclaimer: `${SIMULATED_DISCLAIMER_AR} ${SIMULATED_DISCLAIMER_EN}`,
+  };
+}

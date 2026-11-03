@@ -1,3 +1,4 @@
+import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -235,6 +236,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
 
   return (
     <div className={`container mx-auto p-6 space-y-6 ${isArabic ? 'rtl' : 'ltr'}`}>
+      <DataProvenanceBanner className="mb-4" />
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>

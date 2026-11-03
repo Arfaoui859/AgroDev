@@ -11,6 +11,7 @@ import {
   keyMintRateLimiter,
 } from "./middleware/security";
 import { requireAuth } from "./middleware/auth";
+import { withSimulatedProvenance } from "./lib/provenance";
 import { handleUploadError } from "./middleware/upload";
 import {
   getWeatherByCoordinates,
@@ -311,6 +312,29 @@ export function createServer() {
   app.use(
     ["/api/ai", "/api/disease", "/api/soil-analysis", "/api/ai-recommendations"],
     aiRateLimiter(),
+  );
+
+  // Provenance labelling for modules that synthesise their figures (no licensed
+  // data feed). Responses are stamped X-Data-Provenance: simulated so the SPA
+  // can disclose them instead of presenting synthetic numbers as observations.
+  app.use(
+    [
+      "/api/admin",
+      "/api/government-dashboard",
+      "/api/investor-dashboard",
+      "/api/veterinarian-dashboard",
+      "/api/field-inspector",
+      "/api/segmentation",
+      "/api/farm-management",
+      "/api/weather-crop-planner",
+      "/api/weather-yield-intelligence",
+      "/api/soil-ai-detector",
+      "/api/predictive-analytics",
+      "/api/risk-detection",
+      "/api/farmer-dashboard",
+      "/api/farmer-segmentation",
+    ],
+    withSimulatedProvenance("simulated"),
   );
 
   // Health check routes

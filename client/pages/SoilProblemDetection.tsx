@@ -1,3 +1,4 @@
+import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -263,6 +264,7 @@ export default function SoilProblemDetection() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <DataProvenanceBanner className="mb-4" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

@@ -1,4 +1,8 @@
 import express from 'express';
+import {
+  getWeatherFromOpenMeteo,
+  calculateEvapotranspiration as calculateEt0FromWeather,
+} from '../services/providers/weatherProvider';
 
 const router = express.Router();
 
@@ -54,74 +58,55 @@ const cropWaterRequirements = {
   }
 };
 
-// Generate realistic weather data with Tunisian climate patterns
-function generateWeatherForecast(stationId: string, days: number = 14) {
-  const station = tunisianWeatherStations.find(s => s.id === stationId);
-  if (!station) return [];
+// Fetch a real forecast from the configured weather provider (Open-Meteo) and
+// map it to the irrigation planner's shape. Returns null for an unknown station.
+// Throws when the provider is unreachable so callers can answer 503 instead of
+// inventing weather.
+async function fetchWeatherForecast(stationId: string, days: number = 14) {
+  const station = tunisianWeatherStations.find((s) => s.id === stationId);
+  if (!station) return null;
 
-  const forecast = [];
-  const today = new Date();
-  
-  // Base climate data for Tunisia (Mediterranean)
-  const baseTemp = 20; // Average temperature
-  const tempVariation = 15; // Temperature variation range
-  
-  for (let i = 0; i < days; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
-    
-    // Seasonal temperature adjustment
-    const monthFactor = Math.sin((date.getMonth() + 1) * Math.PI / 6) * 0.6 + 0.4;
-    const temperature = baseTemp + (tempVariation * monthFactor) + (Math.random() - 0.5) * 8;
-    
-    // Humidity calculation (higher in winter, lower in summer)
-    const humidity = 70 - (monthFactor * 30) + (Math.random() - 0.5) * 20;
-    
-    // Wind speed (typically higher in coastal areas)
-    const windSpeed = station.elevation < 50 ? 12 + Math.random() * 8 : 8 + Math.random() * 6;
-    
-    // Precipitation (seasonal patterns)
-    const rainProbability = monthFactor < 0.5 ? 0.4 : 0.1; // More rain in winter
-    const precipitation = Math.random() < rainProbability ? Math.random() * 25 : 0;
-    
-    // Solar radiation (kWh/m²/day)
-    const solarRadiation = 3 + monthFactor * 4 + (Math.random() - 0.5) * 1;
-    
-    // Evapotranspiration calculation (Penman-Monteith simplified)
-    const et0 = calculateEvapotranspiration(temperature, humidity, windSpeed, solarRadiation);
-    
-    forecast.push({
-      date: date.toISOString().split('T')[0],
+  const weather = await getWeatherFromOpenMeteo({
+    lat: station.lat,
+    lon: station.lng,
+    locationName: station.name,
+  });
+
+  const windSpeed = weather.current.windSpeed;
+
+  return weather.forecast.daily.slice(0, days).map((day) => {
+    const avgTemp = (day.maxTemp + day.minTemp) / 2;
+    const et0 = calculateEt0FromWeather(avgTemp, day.humidity, windSpeed);
+    // Prefer the provider's measured radiation/UV; fall back to a Hargreaves
+    // estimate only when the provider omits them.
+    const solarRadiation =
+      day.solarRadiation ??
+      Math.round(
+        Math.max(
+          1,
+          (avgTemp + 17.8) * Math.sqrt(Math.max(0.1, day.maxTemp - day.minTemp)) * 0.0864,
+        ) * 10,
+      ) / 10;
+
+    return {
+      date: day.date,
       station: station.name,
       temperature: {
-        max: Math.round(temperature + 5),
-        min: Math.round(temperature - 5),
-        avg: Math.round(temperature)
+        max: Math.round(day.maxTemp),
+        min: Math.round(day.minTemp),
+        avg: Math.round(avgTemp),
       },
-      humidity: Math.round(Math.max(30, Math.min(95, humidity))),
+      humidity: Math.round(day.humidity),
       windSpeed: Math.round(windSpeed),
-      precipitation: Math.round(precipitation * 10) / 10,
-      solarRadiation: Math.round(solarRadiation * 10) / 10,
+      precipitation: Math.round(day.rainfall * 10) / 10,
+      solarRadiation,
       evapotranspiration: Math.round(et0 * 10) / 10,
-      uvIndex: Math.round(solarRadiation * 2),
-      soilMoisture: calculateSoilMoisture(precipitation, et0),
-      irrigationNeed: calculateIrrigationNeed(precipitation, et0)
-    });
-  }
-  
-  return forecast;
-}
-
-// Calculate reference evapotranspiration (ET0) using simplified Penman-Monteith
-function calculateEvapotranspiration(temp: number, humidity: number, windSpeed: number, solarRad: number): number {
-  // Simplified ET0 calculation for demonstration
-  const delta = 4098 * (0.6108 * Math.exp(17.27 * temp / (temp + 237.3))) / Math.pow(temp + 237.3, 2);
-  const gamma = 0.665 * 1.013; // Psychrometric constant
-  const windFactor = 0.34 * windSpeed;
-  const satVaporPressure = 0.6108 * Math.exp(17.27 * temp / (temp + 237.3));
-  const actualVaporPressure = satVaporPressure * humidity / 100;
-  
-  return Math.max(0, (delta * solarRad + gamma * windFactor * (satVaporPressure - actualVaporPressure)) / (delta + gamma));
+      // Real provider UV when available; otherwise a bounded derived index.
+      uvIndex: day.uvIndex ?? Math.min(11, Math.round(solarRadiation * 0.8)),
+      soilMoisture: Math.round(calculateSoilMoisture(day.rainfall, et0)),
+      irrigationNeed: Math.round(calculateIrrigationNeed(day.rainfall, et0) * 10) / 10,
+    };
+  });
 }
 
 function calculateSoilMoisture(precipitation: number, et0: number): number {
@@ -136,13 +121,22 @@ function calculateIrrigationNeed(precipitation: number, et0: number): number {
 }
 
 // Get detailed weather forecast with irrigation recommendations
-router.get('/forecast/:stationId', (req, res) => {
+router.get('/forecast/:stationId', async (req, res) => {
   const { stationId } = req.params;
   const days = parseInt(req.query.days as string) || 14;
   
-  const forecast = generateWeatherForecast(stationId, days);
+  let forecast;
+  try {
+    forecast = await fetchWeatherForecast(stationId, days);
+  } catch (error) {
+    console.error('Weather provider error (forecast):', (error as Error).message);
+    return res.status(503).json({
+      error: 'Weather data is currently unavailable',
+      dataAvailable: false,
+    });
+  }
   
-  if (forecast.length === 0) {
+  if (!forecast || forecast.length === 0) {
     return res.status(404).json({ error: 'Weather station not found' });
   }
   
@@ -156,12 +150,14 @@ router.get('/forecast/:stationId', (req, res) => {
       totalET0: Math.round(forecast.reduce((sum, day) => sum + day.evapotranspiration, 0) * 10) / 10,
       irrigationDays: forecast.filter(day => day.irrigationNeed > 3).length
     },
+    dataSource: 'open-meteo',
+    isRealData: true,
     lastUpdated: new Date().toISOString()
   });
 });
 
 // Generate intelligent irrigation schedule for specific crop
-router.post('/irrigation/schedule', (req, res) => {
+router.post('/irrigation/schedule', async (req, res) => {
   const { 
     cropType, 
     growthStage, 
@@ -172,7 +168,21 @@ router.post('/irrigation/schedule', (req, res) => {
     plantingDate 
   } = req.body;
 
-  const forecast = generateWeatherForecast(stationId, 14);
+  let forecast;
+  try {
+    forecast = await fetchWeatherForecast(stationId, 14);
+  } catch (error) {
+    console.error('Weather provider error (schedule):', (error as Error).message);
+    return res.status(503).json({
+      error: 'Weather data is currently unavailable',
+      dataAvailable: false,
+    });
+  }
+
+  if (!forecast || forecast.length === 0) {
+    return res.status(404).json({ error: 'Weather station not found' });
+  }
+
   const waterReq = cropWaterRequirements[cropType as keyof typeof cropWaterRequirements];
   
   if (!waterReq) {
@@ -223,6 +233,8 @@ router.post('/irrigation/schedule', (req, res) => {
       efficiencyScore: Math.round((recommendedDays / 14) * 100)
     },
     recommendations: generateIrrigationRecommendations(schedule, cropType),
+    dataSource: 'open-meteo',
+    isRealData: true,
     lastUpdated: new Date().toISOString()
   });
 });
@@ -250,9 +262,18 @@ router.get('/planting-calendar/:governorate', (req, res) => {
 });
 
 // Weather alerts and notifications
-router.get('/alerts/:stationId', (req, res) => {
+router.get('/alerts/:stationId', async (req, res) => {
   const { stationId } = req.params;
-  const forecast = generateWeatherForecast(stationId, 7);
+  let forecast;
+  try {
+    forecast = await fetchWeatherForecast(stationId, 7);
+  } catch (error) {
+    console.error('Weather provider error (alerts):', (error as Error).message);
+    return res.status(503).json({
+      error: 'Weather data is currently unavailable',
+      dataAvailable: false,
+    });
+  }
   
   const alerts = generateWeatherAlerts(forecast);
   
@@ -260,6 +281,8 @@ router.get('/alerts/:stationId', (req, res) => {
     station: tunisianWeatherStations.find(s => s.id === stationId),
     alerts,
     activeAlerts: alerts.filter(alert => alert.severity !== 'info'),
+    dataSource: 'open-meteo',
+    isRealData: true,
     lastUpdated: new Date().toISOString()
   });
 });

@@ -1,3 +1,4 @@
+import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import { useEffect, useState } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,6 +167,7 @@ export default function GovernmentDashboard() {
 
   return (
     <div className="space-y-6" style={{ fontFamily: 'Cairo, sans-serif' }}>
+      <DataProvenanceBanner className="mb-4" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
