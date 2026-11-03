@@ -328,6 +328,16 @@ const TreatmentProgress: React.FC = () => {
         </h1>
       </div>
 
+      {/* Progress is read from the in-process treatment store, not the database;
+          it does not survive a service restart. Disclose that. */}
+      <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          بيانات هذا التقدم محفوظة في ذاكرة الخدمة الحالية فقط (المصدر: session) وغير
+          مُخزّنة في قاعدة البيانات، لذا تختفي عند إعادة تشغيل الخدمة.
+        </AlertDescription>
+      </Alert>
+
       {/* Treatment Overview */}
       <Card>
         <CardHeader>

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -294,6 +295,16 @@ const TreatmentHistory: React.FC = () => {
           تاريخ العلاجات والتحليلات
         </h1>
       </div>
+
+      {/* The history endpoint reads an in-process store, not the database, so
+          entries vanish on restart. Say so rather than implying persistence. */}
+      <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          هذا السجل محفوظ في ذاكرة الخدمة الحالية فقط (المصدر: session) وغير مُخزّن
+          في قاعدة البيانات، لذا يختفي عند إعادة تشغيل الخدمة.
+        </AlertDescription>
+      </Alert>
 
       {/* Statistics Cards */}
       {stats && (
