@@ -42,6 +42,10 @@ interface DiagnosisData {
   additionalInfo?: string;
   timestamp: string;
   confidence: number;
+  /** Provenance carried from the diagnosis gateway. */
+  dataSource?: string;
+  isRealData?: boolean;
+  modelSource?: string;
   diagnosis: {
     disease: string;
     confidence: number;
@@ -175,9 +179,27 @@ export default function DiseaseDiagnosis() {
         </div>
         <h1 className="text-3xl font-bold">نتائج التشخيص الذكي</h1>
         <p className="text-muted-foreground">
-          تشخيص دقيق بالذكاء الاصطناعي مع توصيات العلاج المناسبة
+          {diagnosisData.isRealData === false
+            ? "تحليل إرشادي لسمات الصورة مع توصيات العلاج المقترحة"
+            : "تشخيص بالذكاء الاصطناعي مع توصيات العلاج المناسبة"}
         </p>
       </div>
+
+      {/* Provenance: the diagnosis gateway reports isRealData=false when no
+          trained vision model is configured and the result comes from heuristic
+          image features. Disclose that instead of labelling heuristic output as
+          a trained-model diagnosis. */}
+      {diagnosisData.isRealData === false && (
+        <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            هذا التشخيص صادر عن تحليل سمات الصورة (استدلال إرشادي، المصدر:{" "}
+            {diagnosisData.modelSource ?? diagnosisData.dataSource ?? "heuristic"})
+            وليس عن نموذج رؤية مدرّب. النتيجة إرشادية ويجب تأكيدها مع مهندس زراعي
+            قبل أي معالجة.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Results */}
       <Card className="bg-gradient-to-r from-primary/5 to-accent/5">
