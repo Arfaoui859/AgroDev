@@ -765,6 +765,18 @@ export function createServer() {
   app.get("/api/segmentation/analytics", getSegmentationAnalytics);
   app.put("/api/segmentation/farmer/:farmerId", updateFarmerProfile);
 
+  // Any unmatched /api/* route must answer a JSON 404. Without this the dev
+  // Vite server falls through to the SPA and answers 200 text/html, so a
+  // frontend calling a route that no longer exists looks like a success and
+  // the mistake goes unnoticed.
+  app.use("/api", (req: express.Request, res: express.Response) => {
+    res.status(404).json({
+      error: "API endpoint not found",
+      method: req.method,
+      path: `/api${req.path}`,
+    });
+  });
+
   // JSON body parsing errors (oversized / malformed) must not crash the server
   app.use(jsonBodyErrorHandler());
 
