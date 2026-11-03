@@ -19,7 +19,11 @@ describe("🧠 AI capability discovery", () => {
   const savedEnv: Record<string, string | undefined> = {};
 
   beforeAll(() => {
-    for (const key of ["IMAGE_DIAGNOSIS_URL", "SOIL_ANALYSIS_URL"]) {
+    for (const key of [
+      "IMAGE_DIAGNOSIS_URL",
+      "SOIL_ANALYSIS_URL",
+      "MARKET_FORECAST_URL",
+    ]) {
       savedEnv[key] = process.env[key];
       process.env[key] = "http://127.0.0.1:1";
     }

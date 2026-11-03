@@ -59,7 +59,20 @@ const AI_SERVICES = {
     return normalizeServiceUrl(process.env.SMART_ASSISTANT_URL, "http://localhost:8005");
   },
   get SMART_MARKETPLACE() {
-    return normalizeServiceUrl(process.env.SMART_MARKETPLACE_URL, "http://localhost:8006");
+    return normalizeServiceUrl(
+      process.env.WEATHER_YIELD_INTELLIGENCE_URL ??
+        process.env.SMART_MARKETPLACE_URL,
+      "http://localhost:8006",
+    );
+  },
+  get PEST_CONTROL() {
+    return normalizeServiceUrl(process.env.PEST_CONTROL_URL, "http://localhost:8007");
+  },
+  get IRRIGATION_OPTIMIZATION() {
+    return normalizeServiceUrl(
+      process.env.IRRIGATION_OPTIMIZATION_URL,
+      "http://localhost:8008",
+    );
   },
 };
 
@@ -713,10 +726,25 @@ export const generateFarmingTasks = async (req: Request, res: Response) => {
 };
 
 export const getSmartAlerts = async (req: Request, res: Response) => {
+  // The assistant service exposes alerts per farmer (/alerts/{farmer_id}); there
+  // is no fleet-wide endpoint, so require the id instead of requesting a path
+  // the service does not serve (which returned a 404).
+  const farmerId = (req.query.farmer_id ?? req.query.farmerId ?? "")
+    .toString()
+    .trim();
+  if (!farmerId) {
+    return res.status(400).json({
+      error: "farmer_id is required",
+      message: "Pass ?farmer_id=... to fetch that farmer's active alerts.",
+    });
+  }
+  const severity = req.query.severity
+    ? encodeURIComponent(String(req.query.severity))
+    : undefined;
   try {
     const response = await callAIService(
       AI_SERVICES.SMART_ASSISTANT,
-      "/smart-alerts",
+      `/alerts/${encodeURIComponent(farmerId)}${severity ? `?severity_filter=${severity}` : ""}`,
       "GET",
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.SMART_ASSISTANT);
@@ -855,6 +883,24 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
         nameAr: "المساعد الذكي",
         url: AI_SERVICES.SMART_ASSISTANT,
         key: "smart_assistant"
+      },
+      {
+        name: "Weather & Yield Intelligence",
+        nameAr: "الطقس والمردودية",
+        url: AI_SERVICES.SMART_MARKETPLACE,
+        key: "weather_yield"
+      },
+      {
+        name: "Pest Control",
+        nameAr: "مكافحة الآفات",
+        url: AI_SERVICES.PEST_CONTROL,
+        key: "pest_control"
+      },
+      {
+        name: "Irrigation Optimization",
+        nameAr: "تحسين الري",
+        url: AI_SERVICES.IRRIGATION_OPTIMIZATION,
+        key: "irrigation_optimization"
       }
     ];
 

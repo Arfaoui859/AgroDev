@@ -83,6 +83,7 @@ async function capabilities(): Promise<Capability[]> {
   const weatherYieldUrl =
     process.env.WEATHER_YIELD_INTELLIGENCE_URL ??
     process.env.SMART_MARKETPLACE_URL;
+  const marketForecastUrl = process.env.MARKET_FORECAST_URL;
 
   return [
     {
@@ -228,21 +229,35 @@ async function capabilities(): Promise<Capability[]> {
       id: "market-forecast",
       name: "Market Forecast AI",
       nameAr: "توقّع السوق",
-      engine: "unavailable",
-      provenance:
-        "No licensed live market data feed is configured; forecasts are not generated.",
-      provenanceAr:
-        "لا يوجد مصدر أسعار حقيقي مُرخّص ومتصل؛ لا يتم توليد توقعات.",
-      requiresConfiguration: "A licensed market-data provider URL",
+      // Served by the market_prediction microservice. It models on synthetic
+      // samples, not a licensed live price feed — its provenance says so.
+      engine: "microservice",
+      microserviceUrl: marketForecastUrl,
+      microserviceConfigured: Boolean(marketForecastUrl),
+      fallbackEngine: "unavailable",
+      provenance: marketForecastUrl
+        ? "Answered by the market_prediction microservice (forecast model trained on synthetic price history, not a licensed live feed)."
+        : "No market-forecast microservice is configured (set MARKET_FORECAST_URL).",
+      provenanceAr: marketForecastUrl
+        ? "يُجاب بواسطة خدمة توقّع السوق (نموذج مدرّب على تاريخ أسعار اصطناعي، وليس مصدراً حقيقياً مُرخّصاً)."
+        : "لا توجد خدمة توقّع سوق مُهيّأة (اضبط MARKET_FORECAST_URL).",
+      requiresConfiguration: marketForecastUrl ? undefined : "MARKET_FORECAST_URL",
     },
     {
       id: "supply-demand",
       name: "Supply Demand AI",
       nameAr: "العرض والطلب",
-      engine: "unavailable",
-      provenance: "Requires a live market-data feed, which is not configured.",
-      provenanceAr: "يتطلب مصدر بيانات سوق حقيقي غير مُهيّأ.",
-      requiresConfiguration: "A licensed market-data provider URL",
+      engine: "microservice",
+      microserviceUrl: marketForecastUrl,
+      microserviceConfigured: Boolean(marketForecastUrl),
+      fallbackEngine: "unavailable",
+      provenance: marketForecastUrl
+        ? "Answered by the market_prediction microservice (supply/demand model trained on synthetic data)."
+        : "No market microservice is configured (set MARKET_FORECAST_URL).",
+      provenanceAr: marketForecastUrl
+        ? "يُجاب بواسطة خدمة توقّع السوق (نموذج عرض/طلب مدرّب على بيانات اصطناعية)."
+        : "لا توجد خدمة سوق مُهيّأة (اضبط MARKET_FORECAST_URL).",
+      requiresConfiguration: marketForecastUrl ? undefined : "MARKET_FORECAST_URL",
     },
     {
       id: "smart-match",
