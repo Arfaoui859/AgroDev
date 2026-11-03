@@ -1,4 +1,5 @@
 import { safeErrorMessage } from '../lib/errors';
+import { seededRandom } from '../lib/seededRandom';
 import { Request, Response, NextFunction } from "express";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
@@ -172,11 +173,16 @@ function generateMockMarketPrices(): MarketPrice[] {
     "low",
   ];
 
+  const dayBucket = new Date().toISOString().slice(0, 10);
+
   return crops.flatMap((crop, cropIndex) =>
     regions.map((region, regionIndex) => {
-      const basePrice = 200 + Math.random() * 800; // $200-1000 per ton
-      const priceChange = (Math.random() - 0.5) * 20; // -10% to +10%
-      const volume = 1000 + Math.random() * 49000; // 1000-50000 tons
+      // Seeded per crop/region/day: a consumer polling the endpoint sees a
+      // stable figure instead of a value that jitters on every request.
+      const rnd = seededRandom(`price:${dayBucket}:${crop.en}:${region.en}`);
+      const basePrice = 200 + rnd() * 800; // $200-1000 per ton
+      const priceChange = (rnd() - 0.5) * 20; // -10% to +10%
+      const volume = 1000 + rnd() * 49000; // 1000-50000 tons
 
       return {
         id: `price_${cropIndex}_${regionIndex}`,
@@ -191,11 +197,11 @@ function generateMockMarketPrices(): MarketPrice[] {
         volume24h: Math.round(volume),
         marketCap: Math.round(basePrice * volume),
         lastUpdated: new Date(
-          Date.now() - Math.random() * 2 * 60 * 60 * 1000,
+          Date.now() - rnd() * 2 * 60 * 60 * 1000,
         ).toISOString(),
         region: region.en,
         regionArabic: region.ar,
-        quality: qualities[Math.floor(Math.random() * qualities.length)],
+        quality: qualities[Math.floor(rnd() * qualities.length)],
       };
     }),
   );
@@ -232,11 +238,12 @@ function generateMockProductionData(): ProductionData[] {
   return crops.flatMap((crop, cropIndex) =>
     regions.flatMap((region, regionIndex) =>
       seasons.slice(0, 2).map((season, seasonIndex) => {
+        const rnd = seededRandom(`prod:${crop.en}:${region.en}:${season.en}`);
         // Last 2 seasons
-        const area = 1000 + Math.random() * 9000; // 1000-10000 hectares
-        const yieldPerHectare = 2 + Math.random() * 8; // 2-10 tons per hectare
+        const area = 1000 + rnd() * 9000; // 1000-10000 hectares
+        const yieldPerHectare = 2 + rnd() * 8; // 2-10 tons per hectare
         const totalProduction = area * yieldPerHectare;
-        const growthRate = (Math.random() - 0.5) * 30; // -15% to +15%
+        const growthRate = (rnd() - 0.5) * 30; // -15% to +15%
 
         return {
           id: `prod_${cropIndex}_${regionIndex}_${seasonIndex}`,
@@ -252,8 +259,8 @@ function generateMockProductionData(): ProductionData[] {
           year: 2024,
           month: seasonIndex * 3 + 3, // Roughly seasonal
           growthRate: Math.round(growthRate * 100) / 100,
-          productionTrend: trends[Math.floor(Math.random() * trends.length)],
-          weatherImpact: Math.round((Math.random() - 0.5) * 100), // -50 to +50
+          productionTrend: trends[Math.floor(rnd() * trends.length)],
+          weatherImpact: Math.round((rnd() - 0.5) * 100), // -50 to +50
         };
       }),
     ),
@@ -279,10 +286,11 @@ function generateMockExportData(): ExportData[] {
 
   return crops.flatMap((crop, cropIndex) =>
     countries.slice(0, 3).map((country, countryIndex) => {
-      const quantity = 500 + Math.random() * 4500; // 500-5000 tons
-      const pricePerTon = 300 + Math.random() * 700; // $300-1000 per ton
+      const rnd = seededRandom(`export:${crop.en}:${country.en}`);
+      const quantity = 500 + rnd() * 4500; // 500-5000 tons
+      const pricePerTon = 300 + rnd() * 700; // $300-1000 per ton
       const value = quantity * pricePerTon;
-      const growthRate = (Math.random() - 0.5) * 40; // -20% to +20%
+      const growthRate = (rnd() - 0.5) * 40; // -20% to +20%
 
       return {
         id: `export_${cropIndex}_${countryIndex}`,
@@ -294,10 +302,10 @@ function generateMockExportData(): ExportData[] {
         value: Math.round(value),
         averagePrice: Math.round(pricePerTon),
         exportDate: new Date(
-          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+          Date.now() - rnd() * 30 * 24 * 60 * 60 * 1000,
         ).toISOString(),
         growthRate: Math.round(growthRate * 100) / 100,
-        marketShare: Math.round(Math.random() * 25 * 100) / 100, // 0-25%
+        marketShare: Math.round(rnd() * 25 * 100) / 100, // 0-25%
       };
     }),
   );
@@ -311,16 +319,19 @@ function generateMockWeatherData(): WeatherData[] {
     { en: "Coastal Plains", ar: "السهول الساحلية" },
   ];
 
+  const dayBucket = new Date().toISOString().slice(0, 10);
+
   return regions.map((region, index) => {
-    const temperature = 15 + Math.random() * 20; // 15-35°C
-    const humidity = 30 + Math.random() * 50; // 30-80%
-    const rainfall = Math.random() * 20; // 0-20mm
+    const rnd = seededRandom(`weather:${dayBucket}:${region.en}`);
+    const temperature = 15 + rnd() * 20; // 15-35°C
+    const humidity = 30 + rnd() * 50; // 30-80%
+    const rainfall = rnd() * 20; // 0-20mm
 
     // Generate 7-day forecast
     const forecast = Array.from({ length: 7 }, (_, i) => ({
-      temperature: temperature + (Math.random() - 0.5) * 10,
-      humidity: humidity + (Math.random() - 0.5) * 20,
-      rainfall: Math.random() * 15,
+      temperature: temperature + (rnd() - 0.5) * 10,
+      humidity: humidity + (rnd() - 0.5) * 20,
+      rainfall: rnd() * 15,
       date: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000).toISOString(),
     }));
 
@@ -350,8 +361,8 @@ function generateMockWeatherData(): WeatherData[] {
       temperature: Math.round(temperature * 10) / 10,
       humidity: Math.round(humidity),
       rainfall: Math.round(rainfall * 10) / 10,
-      windSpeed: Math.round(Math.random() * 25), // 0-25 km/h
-      soilMoisture: Math.round(30 + Math.random() * 40), // 30-70%
+      windSpeed: Math.round(rnd() * 25), // 0-25 km/h
+      soilMoisture: Math.round(30 + rnd() * 40), // 30-70%
       date: new Date().toISOString(),
       forecast,
       alerts,

@@ -1,30 +1,9 @@
 import { safeErrorMessage } from '../lib/errors';
 import express from 'express';
 import { markSimulated } from '../lib/provenance';
+import { seededFractions } from '../lib/seededRandom';
 
 const router = express.Router();
-
-/**
- * Deterministic PRNG seeded by a string. The demo history/alerts endpoints are
- * explicitly labelled simulated; using a seed keeps their shape stable across
- * requests instead of reshuffling on every refresh.
- */
-function seededFractions(key: string, count: number): number[] {
-  let h = 2166136261;
-  for (let i = 0; i < key.length; i++) {
-    h ^= key.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  const out: number[] = [];
-  for (let i = 0; i < count; i++) {
-    h = Math.imul(h ^ (h >>> 15), 2246822519);
-    h = Math.imul(h ^ (h >>> 13), 3266489917);
-    h ^= h >>> 16;
-    out.push((h >>> 0) / 4294967296);
-  }
-  return out;
-}
-
 
 // Types and interfaces for AI soil problem detection
 interface SoilData {

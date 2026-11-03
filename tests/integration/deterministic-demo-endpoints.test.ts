@@ -79,3 +79,40 @@ describe("🎲 Deterministic simulated demo endpoints", () => {
     expect(first.body.isRealData).toBe(false);
   });
 });
+
+describe("🌐 Public data API is stable across requests", () => {
+  let app: express.Application;
+  beforeAll(() => {
+    app = createServer();
+  });
+
+  const DEMO_KEY = "public_demo_key_12345";
+
+  test("market prices are byte-identical on two consecutive calls", async () => {
+    const a = await request(app)
+      .get("/api/public/market-prices")
+      .set("X-API-Key", DEMO_KEY);
+    const b = await request(app)
+      .get("/api/public/market-prices")
+      .set("X-API-Key", DEMO_KEY);
+    expect(a.status).toBe(200);
+    expect(b.status).toBe(200);
+    // Strip the volatile lastUpdated field before comparing.
+    const strip = (body: any) =>
+      JSON.stringify(
+        (body.data ?? body.prices ?? []).map?.(
+          ({ lastUpdated, ...rest }: any) => rest,
+        ) ?? body,
+      );
+    expect(strip(a.body)).toBe(strip(b.body));
+  });
+
+  test("public market data is labelled simulated, not presented as live", async () => {
+    const res = await request(app)
+      .get("/api/public/market-prices")
+      .set("X-API-Key", DEMO_KEY);
+    expect(res.status).toBe(200);
+    expect(res.body.meta.isRealData).toBe(false);
+    expect(res.body.meta.dataSource).toBe("simulated");
+  });
+});
