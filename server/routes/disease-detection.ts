@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import multer from "multer";
-import { uploadError } from "../middleware/upload";
+import { uploadError, assertRealImages, ALLOWED_IMAGE_MIME_TYPES } from "../middleware/upload";
 import { isLLMConfigured } from "../services/providers/llmProvider";
 import { recordFailure, recordSuccess } from "../services/providers/aiTelemetry";
 import { diagnosePlantImage } from "../services/providers/visionProvider";
@@ -16,8 +16,7 @@ const upload = multer({
     files: 10 // max 10 files
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
+    if ((ALLOWED_IMAGE_MIME_TYPES as readonly string[]).includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(uploadError({ message: 'نوع الملف غير مدعوم. يرجى رفع صور بصيغة JPEG, PNG, أو WebP فقط' }));
@@ -246,6 +245,15 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
       return res.status(400).json({
         error: "يجب رفع صورة واحدة على الأقل"
       });
+    }
+
+    // The multer fileFilter trusts the client-supplied Content-Type. Re-check
+    // the actual bytes so a renamed non-image file cannot reach the vision
+    // model or the heuristic fallback and be "diagnosed".
+    try {
+      assertRealImages(files);
+    } catch (err) {
+      return res.status(400).json({ error: (err as Error).message });
     }
 
     if (!requestData.cropType || !requestData.plantPart) {

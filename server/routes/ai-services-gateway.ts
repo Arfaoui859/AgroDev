@@ -4,7 +4,7 @@ import crypto from "crypto";
 import axios, { AxiosError } from "axios";
 import FormData from "form-data";
 import multer from "multer";
-import { uploadError } from "../middleware/upload";
+import { uploadError, requireRealImages } from "../middleware/upload";
 import {
   analyzeSoilForUI,
   recommendCropsForUI,
@@ -245,6 +245,7 @@ export const matchCropToClimate = async (req: Request, res: Response) => {
 
 export const diagnoseSoilFromImage = [
   upload.single("file"),
+  requireRealImages(),
   async (req: Request, res: Response) => {
     try {
       if (!req.file) {
@@ -469,6 +470,7 @@ function visionDiagnosisToPayload(
 
 export const detectPlantDisease = [
   upload.single("file"),
+  requireRealImages(),
   async (req: Request, res: Response) => {
     if (!req.file) {
       return res.status(400).json({ error: "No image file provided" });
@@ -532,6 +534,7 @@ export const detectPlantDisease = [
 
 export const analyzeLeafHealth = [
   upload.single("file"),
+  requireRealImages(),
   async (req: Request, res: Response) => {
     try {
       if (!req.file) {
@@ -572,6 +575,7 @@ export const analyzeLeafHealth = [
 
 export const comprehensivePlantAnalysis = [
   upload.single("file"),
+  requireRealImages(),
   async (req: Request, res: Response) => {
     try {
       if (!req.file) {
@@ -620,6 +624,7 @@ export const comprehensivePlantAnalysis = [
 
 export const quickPlantHealthCheck = [
   upload.single("file"),
+  requireRealImages(),
   async (req: Request, res: Response) => {
     try {
       if (!req.file) {
