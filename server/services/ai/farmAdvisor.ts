@@ -16,6 +16,7 @@ import {
   type ChatMessage,
 } from "../providers/llmProvider";
 import { recordFailure, recordSuccess } from "../providers/aiTelemetry";
+import { UNTRUSTED_DATA_GUARD, wrapUntrusted } from "../../lib/promptSafety";
 import { ProviderError } from "../providers/http";
 import {
   analyzeSoil,
@@ -232,7 +233,7 @@ export async function answerAgriculturalQuestion(
   if (isLLMConfigured()) {
     try {
       const messages: ChatMessage[] = [
-        { role: "system", content: SYSTEM_PROMPTS[language] },
+        { role: "system", content: `${SYSTEM_PROMPTS[language]}\n\n${UNTRUSTED_DATA_GUARD}` },
       ];
       if (contextSummary.length) {
         messages.push({
@@ -248,10 +249,18 @@ export async function answerAgriculturalQuestion(
           content: `Soil analysis (rule-based, use as grounded facts): score=${soil.healthScore}, fertility=${soil.fertilityLevelAr}, problems=${soil.problems.join("; ") || "none"}`,
         });
       }
+      // Conversation history is also untrusted: wrap it so a prior turn cannot
+      // smuggle instructions into the current request.
       for (const turn of request.history ?? []) {
-        messages.push({ role: turn.role, content: turn.content });
+        messages.push({
+          role: turn.role,
+          content: wrapUntrusted(turn.content, "history").content,
+        });
       }
-      messages.push({ role: "user", content: request.question });
+      messages.push({
+        role: "user",
+        content: wrapUntrusted(request.question, "user_message").content,
+      });
 
       const result = await chatCompleteDetailed(messages, {
         temperature: 0.3,

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import crypto from "crypto";
 import axios, { AxiosError } from "axios";
 import FormData from "form-data";
 import multer from "multer";
@@ -20,6 +21,7 @@ import {
 import { isLLMConfigured } from "../services/providers/llmProvider";
 import { getLLMInfo } from "../services/providers/llmProvider";
 import { probeService } from "../services/providers/serviceProbe";
+import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
 
 /**
  * Normalize a service base URL. Render's `fromService` `hostport` property yields
@@ -647,24 +649,41 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
 export const chatWithAIAssistant = async (req: Request, res: Response) => {
   const { message, question, context, history, language } = req.body ?? {};
   const userMessage: string = (message || question || "").toString();
+  // Correlation id lets a user quote a request in a support report without the
+  // server logging the prompt itself.
+  const correlationId = crypto.randomUUID();
+  res.set("X-Correlation-Id", correlationId);
 
   if (!userMessage.trim()) {
-    return res.status(400).json({ error: "message is required" });
+    return res.status(400).json({ error: "message is required", correlationId });
   }
+  if (userMessage.length > MAX_USER_MESSAGE_CHARS) {
+    return res.status(413).json({
+      error: `الرسالة طويلة جداً (الحد ${MAX_USER_MESSAGE_CHARS} حرفاً)`,
+      correlationId,
+    });
+  }
+  // Cap history so a caller cannot inflate the provider bill or context window.
+  const safeHistory = Array.isArray(history) ? history.slice(-12) : undefined;
 
   try {
     const result = await answerAgriculturalQuestion({
       question: userMessage,
       language: language || detectLanguage(userMessage),
       context,
-      history,
+      history: safeHistory,
     });
-    res.json(result);
+    res.json({ ...result, correlationId });
   } catch (error) {
-    console.error("Assistant error:", error);
+    // Log the correlation id and error category only — never the prompt.
+    console.error(
+      `Assistant error [${correlationId}]:`,
+      error instanceof Error ? error.name : "unknown",
+    );
     res.status(500).json({
       error: "تعذّر معالجة السؤال",
       dataAvailable: false,
+      correlationId,
     });
   }
 };
