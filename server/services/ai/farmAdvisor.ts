@@ -242,8 +242,8 @@ export async function answerAgriculturalQuestion(
       const answer = await chatComplete(messages, {
         temperature: 0.3,
         maxTokens: 900,
-        timeoutMs: 30_000,
-        retries: 1,
+        timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 30_000,
+        retries: Number(process.env.AI_MAX_RETRIES) || 1,
       });
 
       const info = getLLMInfo();

@@ -45,6 +45,7 @@ import smartAdvisorRoutes from "./routes/smart-advisor";
 import digitalTrainingRoutes from "./routes/digital-training";
 import predictiveAnalyticsRoutes from "./routes/predictive-analytics";
 import riskDetectionRoutes from "./routes/risk-detection";
+import aiCapabilitiesRoutes from "./routes/ai-capabilities";
 import smartIrrigationRoutes from "./routes/smart-irrigation";
 import { irrigationOptimizationRouter } from "./routes/irrigation-optimization";
 import { pestControlRouter } from "./routes/pest-control";
@@ -602,6 +603,9 @@ export function createServer() {
 
   // AI Services Health Check
   app.get("/api/ai/health", getAIServicesHealth);
+
+  // AI capability discovery + honest provenance for every client AI feature
+  app.use("/api/ai", aiCapabilitiesRoutes);
 
   // Supabase Connection Test
   app.get("/api/test/supabase", requireAdminToken(), testSupabaseConnection);

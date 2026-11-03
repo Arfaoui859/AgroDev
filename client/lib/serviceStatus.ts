@@ -223,12 +223,35 @@ export class ServiceStatusManager {
           headers: { 'Content-Type': 'application/json' }
         });
 
-        if (response.ok) {
-          updatedService.status = 'available';
-          updatedService.errorMessage = undefined;
-        } else {
-          updatedService.status = 'unavailable'; 
+        if (!response.ok) {
+          updatedService.status = 'unavailable';
           updatedService.errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        } else {
+          // Capability probes answer 200 even when the underlying engine is not
+          // configured; honour the explicit `available` flag so the UI does not
+          // enable a feature that would then fail.
+          let declaredAvailable = true;
+          let declaredReason: string | undefined;
+          try {
+            const body = await response.clone().json();
+            if (typeof body?.available === 'boolean') {
+              declaredAvailable = body.available;
+              if (!declaredAvailable) {
+                declaredReason =
+                  body.requiresConfiguration || body.provenance || 'Not configured';
+              }
+            }
+          } catch {
+            // Non-JSON body: treat a 2xx as available.
+          }
+
+          if (declaredAvailable) {
+            updatedService.status = 'available';
+            updatedService.errorMessage = undefined;
+          } else {
+            updatedService.status = 'unavailable';
+            updatedService.errorMessage = declaredReason;
+          }
         }
       } else if (service.requiresLocal) {
         updatedService.status = 'unavailable';
