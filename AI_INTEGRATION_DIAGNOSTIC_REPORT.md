@@ -1,5 +1,25 @@
 # 🔍 AgroGrowth AI Integration Diagnostic Report
 
+> [!WARNING]
+> **SUPERSEDED — historical audit, do not treat as current state.**
+> This report was generated on **February 13, 2025**, before the AI microservices
+> were brought up. Its central claims ("no real AI connected", "100% mock data")
+> are **no longer accurate**. Current verified state:
+>
+> - All **eight** FastAPI microservices under `agrogrowth-ai/` are operational
+>   (ports 8001–8008) — see [AI_SERVICES_STATUS.md](./AI_SERVICES_STATUS.md).
+> - Weather is **real** (Open-Meteo, no key required), labelled `isRealData: true`.
+> - LLM/vision providers are wired through `server/services/providers/` and fall
+>   back to **labelled** rule-based reasoning when unconfigured — never to a
+>   fabricated success.
+> - Every synthetic payload now carries provenance (`X-Data-Provenance`,
+>   `dataSource`, `isRealData`) and the SPA discloses it in the UI.
+>
+> What remains true from this report: the platform still has **no licensed live
+> market-price feed**, so market prices are synthesised and disclosed as such.
+> Keep this file for the historical reasoning; rely on the code and
+> AI_SERVICES_STATUS.md for current behaviour.
+
 **Status**: ⚠️ **DEVELOPMENT MODE - NOT PRODUCTION READY**  
 **Generated**: February 13, 2025  
 **Assessment**: Comprehensive analysis of AI service connectivity

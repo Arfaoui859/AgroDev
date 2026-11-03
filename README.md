@@ -48,6 +48,24 @@ AgroGrowth is a comprehensive, AI-powered agricultural management platform speci
   - Plant disease detection
   - Market price forecasting
 
+> [!IMPORTANT]
+> **Honest AI provenance.** A microservice answering `/health` does not mean a
+> trained model produced its output. Every AI response carries the origin of its
+> result, and the UI discloses it:
+>
+> - **Real data**: weather comes from Open-Meteo (no key required) and is
+>   labelled `isRealData: true`.
+> - **Heuristic / reference-table output**: soil and disease analysis may be
+>   produced by deterministic rules when no model or provider credential is
+>   configured. Such results are labelled `dataSource: "heuristic"` /
+>   `isRealData: false` and shown with a disclosure banner.
+> - **Simulated**: market prices have no licensed live feed, so they are
+>   synthesised and stamped `X-Data-Provenance: simulated`.
+>
+> Nothing in the platform presents heuristic or synthetic output as a real
+> measurement. See [AI_SERVICES_STATUS.md](./AI_SERVICES_STATUS.md) for the
+> current service list and provenance rules.
+
 ### Infrastructure
 
 - **Docker** containerization for consistent deployment
