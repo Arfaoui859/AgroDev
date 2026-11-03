@@ -12,6 +12,7 @@ import {
 } from "./middleware/security";
 import { requireAuth } from "./middleware/auth";
 import { withSimulatedProvenance } from "./lib/provenance";
+import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import { handleUploadError } from "./middleware/upload";
 import {
   getWeatherByCoordinates,
@@ -347,6 +348,10 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Public, secret-free capability probes used by the SPA service-status panel.
+  app.use("/api/system", systemCapabilitiesRoutes);
+  app.use("/api/test/db", systemCapabilitiesRoutes);
 
   // Weather API routes
   app.get("/api/weather/coordinates", getWeatherByCoordinates);

@@ -169,14 +169,17 @@ export const CORE_SERVICES: ServiceStatus[] = [
     id: "supabase-db",
     name: "Supabase Database",
     status: "available",
-    endpoint: "/api/test/supabase",
+    // Public, secret-free probe. The old /api/test/supabase endpoint is
+    // admin-gated, so a correctly secured deployment reported the database as
+    // unavailable even when it was healthy.
+    endpoint: "/api/system/database",
     description: "PostgreSQL database with authentication"
   },
   {
     id: "supabase-auth", 
     name: "Supabase Authentication",
     status: "available",
-    endpoint: "/api/test/auth",
+    endpoint: "/api/system/auth",
     description: "User authentication and authorization"
   },
   {
