@@ -15,6 +15,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAIServices } from "@/hooks/useAIServices";
 import {
+  AIProvenanceNotice,
+  classifyProvenance,
+} from "@/components/ai/AIProvenanceNotice";
+import {
   BarChart3,
   TrendingUp,
   TrendingDown,
@@ -124,8 +128,11 @@ export default function Analysis() {
       localStorage.setItem("currentAnalysis", JSON.stringify(updatedData));
       
       toast({
-        title: "تم التحليل بنجاح",
-        description: "تم إكمال التحليل الذكي للتربة والحصول على التوصيات",
+        title: "تم إكمال التحليل",
+        description:
+          classifyProvenance(analysisResult) === "real"
+            ? "تم إكمال التحليل باستخدام نموذج ذكاء اصطناعي."
+            : "تم إكمال التحليل باستخدام المحرّك الزراعي المحلي (نتيجة تقديرية).",
       });
       
     } catch (error) {
@@ -354,14 +361,9 @@ export default function Analysis() {
         </Alert>
       )}
 
-      {/* AI Analysis Success */}
+      {/* AI Analysis result provenance (real model vs. engine vs. estimate) */}
       {aiAnalysisResult && (
-        <Alert className="border-green-500 bg-green-50">
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            تم التحليل بنجاح باستخدام الذكاء الاصطناعي المتطور
-          </AlertDescription>
-        </Alert>
+        <AIProvenanceNotice result={aiAnalysisResult} />
       )}
 
       {/* Overall Score */}
