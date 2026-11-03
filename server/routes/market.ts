@@ -123,10 +123,10 @@ export const getAllMarketData: RequestHandler = async (req, res) => {
           ...Object.values(marketData).map((d: any) => d.currentPrice),
         ),
         averagePrice:
-          Object.values(marketData).reduce(
-            (sum: number, d: any) => sum + d.currentPrice,
+          (Object.values(marketData) as any[]).reduce(
+            (sum, d) => sum + Number(d.currentPrice ?? 0),
             0,
-          ) / Object.keys(marketData).length,
+          ) / Math.max(Object.keys(marketData).length, 1),
       },
     };
 
@@ -265,10 +265,10 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
         ...Object.values(regionalData).map((d: any) => d.currentPrice),
       ),
       averageNationalPrice:
-        Object.values(regionalData).reduce(
-          (sum: number, d: any) => sum + d.currentPrice,
+        (Object.values(regionalData) as any[]).reduce(
+          (sum, d) => sum + Number(d.currentPrice ?? 0),
           0,
-        ) / Object.keys(regionalData).length,
+        ) / Math.max(Object.keys(regionalData).length, 1),
       lastUpdated: new Date().toISOString(),
     };
 

@@ -20,7 +20,7 @@ export const debugAuth: RequestHandler = async (req, res) => {
       password: 'test123' // Common test password
     });
 
-    let result = {
+    let result: any = {
       email,
       signInTest: {
         success: !signInError,

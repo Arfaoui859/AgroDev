@@ -34,6 +34,8 @@ export default function UserSettings() {
   const [localProfile, setLocalProfile] = useState(profile);
   const [localPreferences, setLocalPreferences] = useState(preferences);
   const [show2FADialog, setShow2FADialog] = useState(false);
+  // 2FA status is not yet backed by the auth provider; keep it false until it is.
+  const is2FAEnabled = false;
 
   const handleSaveProfile = async () => {
     setIsLoading(true);
@@ -836,9 +838,9 @@ export default function UserSettings() {
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         "p-2 rounded-lg",
-                        user?.is2FAEnabled ? "bg-green-100" : "bg-gray-100"
+                        is2FAEnabled ? "bg-green-100" : "bg-gray-100"
                       )}>
-                        {user?.is2FAEnabled ? (
+                        {is2FAEnabled ? (
                           <Lock className="h-5 w-5 text-green-600" />
                         ) : (
                           <Shield className="h-5 w-5 text-gray-400" />
@@ -847,7 +849,7 @@ export default function UserSettings() {
                       <div>
                         <Label className="text-base">{isArabic ? 'المصادقة الثنائية' : 'Two-Factor Authentication'}</Label>
                         <p className="text-sm text-gray-500">
-                          {user?.is2FAEnabled
+                          {is2FAEnabled
                             ? (isArabic ? 'مفعلة - حسابك محمي بطبقة أمان إضافية' : 'Enabled - Your account is protected with an extra security layer')
                             : (isArabic ? 'غير مفعلة - أضف طبقة حماية إضافية لحسابك' : 'Disabled - Add an extra layer of security to your account')
                           }
@@ -855,18 +857,18 @@ export default function UserSettings() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {user?.is2FAEnabled && (
+                      {is2FAEnabled && (
                         <Badge variant="secondary" className="text-green-700 bg-green-100">
                           {isArabic ? 'مفعل' : 'Active'}
                         </Badge>
                       )}
                       <Button
-                        variant={user?.is2FAEnabled ? "outline" : "default"}
+                        variant={is2FAEnabled ? "outline" : "default"}
                         size="sm"
                         onClick={() => setShow2FADialog(true)}
                         className="gap-2"
                       >
-                        {user?.is2FAEnabled ? (
+                        {is2FAEnabled ? (
                           <>
                             <Settings className="h-4 w-4" />
                             {isArabic ? 'إدارة' : 'Manage'}
@@ -881,7 +883,7 @@ export default function UserSettings() {
                     </div>
                   </div>
 
-                  {user?.is2FAEnabled && (
+                  {is2FAEnabled && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center p-3 bg-blue-50 rounded-lg">
                         <QrCode className="h-6 w-6 text-blue-600 mx-auto mb-2" />

@@ -2,11 +2,11 @@ import { RequestHandler } from "express";
 import axios from "axios";
 import fs from "fs/promises";
 import path from "path";
-import { fileURLToPath } from "url";
 import { RawSoilData, SoilAnalysisResponse } from "@shared/api";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Resolve the project root from the current working directory. Using import.meta
+// here breaks CommonJS consumers (e.g. Jest) that load this module.
+const projectRoot = process.cwd();
 
 // AI Service configuration
 const AI_SERVICE_URL = process.env.AI_SOIL_ANALYSIS_SERVICE || process.env.OPENAI_API_URL || "";
@@ -17,8 +17,8 @@ const AI_MODEL = process.env.AI_MODEL || "gpt-4-turbo";
 async function loadSoilAnalysisPrompt(): Promise<string> {
   try {
     const promptPath = path.join(
-      __dirname,
-      "../../prompts/analysis/soil_analysis_detailed_report.txt"
+      projectRoot,
+      "prompts/analysis/soil_analysis_detailed_report.txt"
     );
     const prompt = await fs.readFile(promptPath, "utf-8");
     return prompt;

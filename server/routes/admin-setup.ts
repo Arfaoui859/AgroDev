@@ -32,7 +32,7 @@ export const setupAdminUser: RequestHandler = async (req, res) => {
       // If user already exists, find them
       if (authError.message?.includes('already registered')) {
         const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = listData?.users?.find((u) => u.email === email);
+        const existingUser = (listData?.users as any[])?.find((u) => u.email === email);
 
         if (!existingUser) {
           return res.status(400).json({

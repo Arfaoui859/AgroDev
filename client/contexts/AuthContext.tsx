@@ -31,17 +31,19 @@ interface AuthContextType {
     password: string,
     userData: Partial<AppUser>,
   ) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<unknown>;
   signOut: () => Promise<void>;
   logout?: () => Promise<void>; // Alias for signOut
   updateProfile: (updates: Partial<AppUserProfile>) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
-  // Add 2FA methods for compatibility
-  enable2FA?: () => Promise<void>;
-  disable2FA?: () => Promise<void>;
-  verify2FA?: (code: string) => Promise<boolean>;
-  generateBackupCodes?: () => Promise<string[]>;
+  // 2FA. Returns structured results so callers can distinguish success from failure.
+  enable2FA?: (
+    method?: "sms" | "email" | "authenticator",
+  ) => Promise<{ success: boolean; qrCode?: string; backupCodes?: string[]; error?: string }>;
+  disable2FA?: (code?: string) => Promise<{ success: boolean; error?: string }>;
+  verify2FA?: (code: string) => Promise<{ success: boolean; error?: string }>;
+  generateBackupCodes?: () => Promise<{ success: boolean; codes?: string[]; error?: string }>;
 }
 
 // =============== CONTEXT CREATION ===============
@@ -591,20 +593,23 @@ Row Level Security (RLS) policies are blocking access.
     updateProfile,
     resetPassword,
     refreshUser,
-    // Stub 2FA methods for compatibility
+    // 2FA is not backed by the auth provider yet. Return explicit failures so
+    // the UI never reports a successful enable/verify that did not happen.
     enable2FA: async () => {
-      console.warn("2FA not implemented");
+      console.warn("2FA is not configured");
+      return { success: false, error: "2FA is not configured" };
     },
     disable2FA: async () => {
-      console.warn("2FA not implemented");
+      console.warn("2FA is not configured");
+      return { success: false, error: "2FA is not configured" };
     },
     verify2FA: async () => {
-      console.warn("2FA not implemented");
-      return false;
+      console.warn("2FA is not configured");
+      return { success: false, error: "2FA is not configured" };
     },
     generateBackupCodes: async () => {
-      console.warn("2FA not implemented");
-      return [];
+      console.warn("2FA is not configured");
+      return { success: false, error: "2FA is not configured" };
     },
   };
 

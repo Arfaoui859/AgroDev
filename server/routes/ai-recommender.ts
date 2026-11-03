@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { WeatherData } from "./weather";
-import { MarketData } from "./market";
+
 
 export interface CropRecommendationInput {
   location: {
@@ -302,13 +302,13 @@ function analyzeCrop(
   const economics = calculateEconomics(cropInfo, market, input.farmerPreferences);
   
   // Determine suitability levels
-  const suitability = determineSuitability(cropInfo, overallScore);
+  const suitability = determineSuitability(cropInfo, overallScore) as CropRecommendation['suitability'];
   
   // Generate timing advice
   const timing = generateTimingAdvice(cropInfo, weather, input.season);
   
   // Generate requirements
-  const requirements = generateRequirements(cropInfo);
+  const requirements = generateRequirements(cropInfo) as CropRecommendation['requirements'];
   
   // Generate advantages and challenges
   const { advantages, challenges } = generateAdvantagesAndChallenges(

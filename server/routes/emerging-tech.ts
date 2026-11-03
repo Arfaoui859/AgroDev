@@ -389,7 +389,7 @@ router.post('/technologies', (req, res) => {
       sources: []
     };
     
-    technologies.push(newTechnology);
+    technologies.push(newTechnology as any);
     res.status(201).json(newTechnology);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -470,7 +470,7 @@ router.post('/investments', (req, res) => {
       kpis: []
     };
     
-    investments.push(newInvestment);
+    investments.push(newInvestment as any);
     res.status(201).json(newInvestment);
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -171,7 +171,8 @@ class OfflineStorage {
       );
       const store = transaction.objectStore(this.config.stores.actions);
       const index = store.index("synced");
-      const request = index.getAll(false);
+      // 0 = false in IndexedDB key ordering, used to query unsynced actions.
+      const request = index.getAll(0);
 
       request.onsuccess = () => {
         const actions = request.result.sort(

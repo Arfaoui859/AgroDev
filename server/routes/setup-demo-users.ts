@@ -141,7 +141,7 @@ async function createDemoUser(userInfo: any) {
     if (!userId) {
       // Try to get existing user
       const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-      const existingUser = users.users.find((u) => u.email === userInfo.email);
+      const existingUser = (users.users as any[]).find((u) => u.email === userInfo.email);
       userId = existingUser?.id;
     }
 
@@ -347,7 +347,7 @@ export const deleteDemoUsers: RequestHandler = async (req, res) => {
     }
 
     const emailsToDelete = demoUsers.map((u) => u.email);
-    const usersToDelete = listData.users.filter((u) => emailsToDelete.includes(u.email || ""));
+    const usersToDelete = (listData.users as any[]).filter((u) => emailsToDelete.includes(u.email || ""));
 
     const results: any[] = [];
 

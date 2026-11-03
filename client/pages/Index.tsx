@@ -535,7 +535,7 @@ export default function Index() {
             xhr.timeout = 30000;
 
             if (options.body) {
-              xhr.send(options.body as BodyInit);
+              xhr.send(options.body as XMLHttpRequestBodyInit);
             } else {
               xhr.send();
             }
@@ -1283,9 +1283,8 @@ function SoilDataInputForm() {
 
     setIsSubmitting(true);
 
-    try {
-      // Prepare soil sensor data for AI analysis
-      const sensorData = {
+    // Prepare soil sensor data for AI analysis
+    const sensorData = {
         ph: parseFloat(formData.ph) || 7.0,
         nitrogen: parseFloat(formData.nitrogen) || 0,
         phosphorus: parseFloat(formData.phosphorus) || 0,
@@ -1293,9 +1292,10 @@ function SoilDataInputForm() {
         organic_matter: parseFloat(formData.organicMatter) || 0,
         moisture: parseFloat(formData.moisture) || 0,
         salinity: parseFloat(formData.conductivity) || 0,
-        temperature: parseFloat(formData.temperature) || 25,
-      };
+      temperature: parseFloat(formData.temperature) || 25,
+    };
 
+    try {
       // Check if soil analysis service is available
       if (!isServiceAvailable("soil-analysis")) {
         throw new Error(

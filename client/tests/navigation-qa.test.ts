@@ -5,7 +5,7 @@
  * ensuring proper routing, no unwanted redirects to "/", and complete route coverage.
  */
 
-import { expect, test, describe, beforeAll, afterAll } from "vitest";
+import { expect, test, describe, beforeAll, afterAll } from "@jest/globals";
 
 interface NavigationTestResult {
   route: string;

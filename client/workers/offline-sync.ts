@@ -357,11 +357,11 @@ self.addEventListener("message", (event: MessageEvent) => {
       break;
 
     case "CACHE_URLS":
-      event.waitUntil(cacheUrls(data.urls));
+      (event as any).waitUntil(cacheUrls(data.urls));
       break;
 
     case "CLEAR_CACHE":
-      event.waitUntil(clearCache(data.cacheName));
+      (event as any).waitUntil(clearCache(data.cacheName));
       break;
 
     case "GET_CACHE_STATUS":

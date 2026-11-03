@@ -52,7 +52,7 @@ export const setupInspectorUser: RequestHandler = async (req, res) => {
       // If user already exists, try to get existing user
       if (authError.message?.includes('already registered')) {
         const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = listData?.users?.find(u => u.email === email);
+        const existingUser = (listData?.users as any[])?.find(u => u.email === email);
         
         if (!existingUser) {
           return res.status(400).json({ 
@@ -177,7 +177,7 @@ export const setupMultipleUsers: RequestHandler = async (req, res) => {
       if (authError) {
         if (authError.message?.includes('already registered')) {
           const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-          const existingUser = listData?.users?.find(u => u.email === userConfig.email);
+          const existingUser = (listData?.users as any[])?.find(u => u.email === userConfig.email);
           
           if (!existingUser) {
             results.failed.push({

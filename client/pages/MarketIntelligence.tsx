@@ -48,6 +48,7 @@ import {
   Scatter,
   ComposedChart,
   Bar,
+  BarChart,
 } from "recharts";
 
 interface MarketIntelligenceData {

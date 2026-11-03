@@ -589,11 +589,12 @@ export const RBACProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user.role === "admin") return true;
 
     // Check user's permissions
-    const hasPermission = user.permissions.some((p) => {
+    const hasPermission = (user.permissions ?? []).some((p: any) => {
+      const name = typeof p === "string" ? p : p?.name;
       if (resource) {
-        return p.name === permission && p.resource === resource;
+        return name === permission && (typeof p === "string" ? false : p?.resource === resource);
       }
-      return p.name === permission;
+      return name === permission;
     });
 
     // Check conditions if specified

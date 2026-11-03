@@ -432,7 +432,7 @@ router.post('/patents', (req, res) => {
       attachment: []
     };
     
-    patents.push(newPatent);
+    patents.push(newPatent as any);
     res.status(201).json(newPatent);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -582,7 +582,7 @@ router.post('/licenses', (req, res) => {
       milestones: []
     };
     
-    licenses.push(newLicense);
+    licenses.push(newLicense as any);
     res.status(201).json(newLicense);
   } catch (error) {
     if (error instanceof z.ZodError) {

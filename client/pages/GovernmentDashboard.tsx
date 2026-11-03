@@ -54,6 +54,8 @@ interface Policy {
   typeArabic: string;
   status: string;
   statusArabic: string;
+  description?: string;
+  descriptionArabic?: string;
   budgetAllocated: number;
   budgetSpent: number;
   beneficiaries: number;
@@ -448,7 +450,7 @@ export default function GovernmentDashboard() {
                         }`} />
                         <span>{isArabic ? `الدرجة ${grade}` : `Grade ${grade}`}</span>
                       </div>
-                      <span className="font-semibold">{count}</span>
+                      <span className="font-semibold">{String(count)}</span>
                     </div>
                   ))}
                 </div>

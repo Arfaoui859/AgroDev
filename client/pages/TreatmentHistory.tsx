@@ -43,7 +43,7 @@ import {
   BarChart2,
   LineChart
 } from 'lucide-react';
-import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart as RechartsLineChart, Line, Area, AreaChart } from 'recharts';
+import { Pie, PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart as RechartsLineChart, Line, Area, AreaChart } from 'recharts';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 

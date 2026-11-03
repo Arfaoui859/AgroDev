@@ -29,7 +29,8 @@ import {
   Leaf,
   Target,
   Waves,
-  Zap
+  Zap,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

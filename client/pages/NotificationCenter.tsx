@@ -142,8 +142,7 @@ import {
   Diamond,
   Heart,
   Spade,
-  Club,
-  Clubs
+  Club
 } from 'lucide-react';
 
 // ============ TYPES & INTERFACES ============

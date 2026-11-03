@@ -259,14 +259,14 @@ export const UserPreferencesProvider: React.FC<{
   const updatePreferences = (updates: Partial<UserPreferences>) => {
     setPreferences((prev) => {
       // Handle nested object updates
-      const merged = { ...prev };
+      const merged: any = { ...prev };
       Object.keys(updates).forEach((key) => {
         const value = updates[key as keyof UserPreferences];
         if (value && typeof value === "object" && !Array.isArray(value)) {
-          merged[key as keyof UserPreferences] = {
-            ...prev[key as keyof UserPreferences],
-            ...value,
-          } as any;
+          merged[key] = {
+            ...(prev[key as keyof UserPreferences] as any),
+            ...(value as any),
+          };
         } else {
           (merged as any)[key] = value;
         }

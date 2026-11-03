@@ -251,9 +251,6 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     setIsLoading(true);
 
     try {
-      // Simulate AI processing delay
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2000));
-
       const aiResponse = await generateAIResponse(messageContent);
       setMessages(prev => [...prev, aiResponse]);
 
@@ -276,7 +273,66 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
+  /**
+   * Ask the AgroGrowth Farm Advisor backend. The backend uses the configured LLM
+   * when available and otherwise answers from its rule-based engine, always
+   * reporting which source produced the answer.
+   */
+  const callAdvisorApi = async (
+    messageContent: string
+  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string }> => {
+    const history = messages.slice(-6).map(m => ({
+      role: m.type === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+    const response = await fetch('/api/ai/assistant/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: messageContent, language, history })
+    });
+    if (!response.ok) {
+      throw new Error(`Advisor API error: ${response.status}`);
+    }
+    return response.json();
+  };
+
   const generateAIResponse = async (userInput: string): Promise<ChatMessage> => {
+    try {
+      const result = await callAdvisorApi(userInput);
+      const source = result.dataSource === 'llm' ? 'llm' : 'rule-based';
+      return {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: result.answer,
+        timestamp: new Date().toISOString(),
+        language: (result.language as 'ar' | 'en' | 'fr') || language,
+        metadata: {
+          confidence: source === 'llm' ? 90 : 70,
+          sources:
+            source === 'llm'
+              ? ['نموذج لغوي (LLM)']
+              : ['محرك قواعد زراعية'],
+          suggestions: quickActions.slice(0, 4),
+          relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
+        },
+        category: 'general'
+      };
+    } catch (error) {
+      console.warn('Advisor API unavailable, using local guidance:', error);
+      const fallback = await generateLocalFallbackResponse(userInput);
+      const suffix =
+        language === 'ar'
+          ? '\n\n⚠️ هذه إرشادات عامة محلية (تعذّر الاتصال بخدمة المستشار). للحصول على تحليل حقيقي استخدم صفحات تحليل التربة والمحاصيل.'
+          : language === 'fr'
+            ? "\n\n⚠️ Ce sont des conseils généraux locaux (service indisponible). Utilisez les pages d'analyse pour des données réelles."
+            : '\n\n⚠️ These are general local guidelines (advisor service unreachable). Use the analysis pages for real data.';
+      fallback.content = `${fallback.content}${suffix}`;
+      fallback.metadata = { ...fallback.metadata, sources: ['إرشادات عامة محلية'] };
+      return fallback;
+    }
+  };
+
+  const generateLocalFallbackResponse = async (userInput: string): Promise<ChatMessage> => {
     const input = userInput.toLowerCase();
     
     // Agricultural advice responses

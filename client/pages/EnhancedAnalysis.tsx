@@ -216,6 +216,7 @@ const EnhancedAnalysis: React.FC = () => {
   const [detailedAnalysis, setDetailedAnalysis] =
     useState<DetailedSoilAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState(false);
   const [rawAIOutput, setRawAIOutput] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("summary");

@@ -59,11 +59,14 @@ interface SyncQueueItem {
 const OfflineManager: React.FC = () => {
   const {
     isOnline,
-    isOfflineMode,
-    enableOfflineMode,
-    disableOfflineMode,
-    syncData,
+    isOfflineReady,
+    syncInProgress,
+    lastSync,
+    pendingActions,
+    forceSync,
+    refreshStorageStats,
   } = useOffline();
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
   const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([]);
   const [isClearing, setIsClearing] = useState(false);
@@ -77,6 +80,7 @@ const OfflineManager: React.FC = () => {
   });
 
   useEffect(() => {
+    setIsOfflineMode(localStorage.getItem("offline-mode") === "true");
     loadStorageStats();
     loadSyncQueue();
     loadSettings();
@@ -85,7 +89,22 @@ const OfflineManager: React.FC = () => {
   const loadStorageStats = async () => {
     try {
       const stats = await offlineStorage.getStorageStats();
-      setStorageStats(stats);
+      // Use the browser storage quota when available so the usage bar is real.
+      let quota = 50 * 1024 * 1024;
+      try {
+        const estimate = await navigator.storage?.estimate?.();
+        if (estimate?.quota) quota = estimate.quota;
+      } catch {
+        // navigator.storage unavailable; fall back to the default budget
+      }
+      setStorageStats({
+        totalSize: quota,
+        usedSize: stats.totalSize,
+        remainingSize: Math.max(0, quota - stats.totalSize),
+        itemCount: stats.cachedItems + stats.pendingActions,
+        oldestItem: null,
+        newestItem: null,
+      });
     } catch (error) {
       console.error("خطأ في تحميل إحصائيات التخزين:", error);
     }
@@ -93,11 +112,15 @@ const OfflineManager: React.FC = () => {
 
   const loadSyncQueue = async () => {
     try {
-      const queue = await offlineStorage.getSyncQueue();
+      const queue = await offlineStorage.getPendingActions();
       setSyncQueue(
         queue.map((item) => ({
-          ...item,
+          id: item.id,
+          endpoint: item.url,
+          method: item.method,
+          data: item.body,
           timestamp: new Date(item.timestamp),
+          attempts: item.retryCount,
           status: item.synced ? "success" : "pending",
         })),
       );
@@ -121,7 +144,7 @@ const OfflineManager: React.FC = () => {
   const handleClearCache = async () => {
     setIsClearing(true);
     try {
-      await offlineStorage.clearStorage();
+      await offlineStorage.clearAllData();
       await loadStorageStats();
       await loadSyncQueue();
     } catch (error) {
@@ -134,7 +157,7 @@ const OfflineManager: React.FC = () => {
   const handleSyncNow = async () => {
     setIsSyncing(true);
     try {
-      await syncData();
+      await forceSync();
       await loadSyncQueue();
     } catch (error) {
       console.error("خطأ في المزامنة:", error);
@@ -294,9 +317,10 @@ const OfflineManager: React.FC = () => {
                   <span>تفعيل الوضع بدون إنترنت</span>
                   <Switch
                     checked={isOfflineMode}
-                    onCheckedChange={
-                      isOfflineMode ? disableOfflineMode : enableOfflineMode
-                    }
+                    onCheckedChange={(checked) => {
+                      setIsOfflineMode(checked);
+                      localStorage.setItem("offline-mode", String(checked));
+                    }}
                   />
                 </div>
                 {storageStats && (

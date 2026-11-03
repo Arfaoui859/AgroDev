@@ -194,7 +194,7 @@ const robustFetch = async (
           xhr.timeout = 30000;
 
           if (options.body) {
-            xhr.send(options.body as BodyInit);
+            xhr.send(options.body as XMLHttpRequestBodyInit);
           } else {
             xhr.send();
           }

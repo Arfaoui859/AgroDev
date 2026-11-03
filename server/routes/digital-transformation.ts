@@ -281,7 +281,7 @@ router.post('/projects', (req, res) => {
       kpis: []
     };
     
-    transformationProjects.push(newProject);
+    transformationProjects.push(newProject as any);
     res.status(201).json(newProject);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -382,7 +382,7 @@ router.post('/innovations', (req, res) => {
       comments: 0
     };
     
-    innovations.push(newInnovation);
+    innovations.push(newInnovation as any);
     res.status(201).json(newInnovation);
   } catch (error) {
     if (error instanceof z.ZodError) {

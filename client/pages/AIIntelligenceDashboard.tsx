@@ -72,6 +72,7 @@ import {
   Minus,
   X,
   Check,
+  CloudRain,
 } from "lucide-react";
 
 // ============ TYPES & INTERFACES ============

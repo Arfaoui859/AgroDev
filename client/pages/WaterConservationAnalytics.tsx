@@ -57,7 +57,8 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
+  Pie,
 } from 'recharts';
 import { toast } from 'sonner';
 

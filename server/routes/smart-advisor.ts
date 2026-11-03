@@ -1,5 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
+import { answerAgriculturalQuestion } from '../services/ai/farmAdvisor';
 
 const router = express.Router();
 
@@ -378,47 +379,33 @@ router.get('/chat-history', (req, res) => {
   }
 });
 
-// POST /api/smart-advisor/chat - Send chat message and get AI response
-router.post('/chat', (req, res) => {
+// POST /api/smart-advisor/chat - Send chat message and get an advisory response
+router.post('/chat', async (req, res) => {
   try {
     const validatedData = ChatMessageSchema.parse(req.body);
     const { message, context } = validatedData;
-    
-    // Simple AI response logic based on keywords
-    let response = 'شكراً لسؤالك. يمكنني مساعدتك في تحليل هذا الموضوع بناءً على البيانات المتاحة.';
-    let recommendationId = null;
-    
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes('محصول') || lowerMessage.includes('زراعة') || lowerMessage.includes('أفضل')) {
-      const crop = 'البطاطا الحلوة';
-      response = `بناءً على تحليل التربة والمناخ وبيانات السوق الحالية، أنصح بزراعة ${crop} لأنه يحقق ربحية عالية (35%) ويناسب ظروف مزرعتك. السوق يشهد طلباً متزايداً على هذا المحصول مع ارتفاع في الأسعار بنسبة 40%.`;
-      recommendationId = '1';
-    } else if (lowerMessage.includes('ري') || lowerMessage.includes('مياه')) {
-      response = 'تشير أجهزة الاستشعار إلى أن مستوى الرطوبة في التربة أعلى من المطلوب بنسبة 15%. أنصح بتقليل الري بنسبة 25% مما يوفر لك حوالي 15,000 ريال مع الحفاظ على جودة المحصول. كما أن هناك توقعات بأمطار خلال الأسبوع القادم.';
-      recommendationId = '2';
-    } else if (lowerMessage.includes('بيع') || lowerMessage.includes('سعر') || lowerMessage.includes('سوق')) {
-      response = 'أسعار الذرة حالياً في أعلى مستوياتها خلال 6 أشهر. أنصح ببيع محصول الذرة المخزن خلال أسبوعين لتحقيق ربح إضافي قدره 25,000 ريال، حيث تتوقع التقارير انخفاضاً في الأسعار بنسبة 15% خلال الشهر القادم بسبب زيادة الواردات.';
-      recommendationId = '3';
-    } else if (lowerMessage.includes('استثمار') || lowerMessage.includes('تطوير') || lowerMessage.includes('تحديث')) {
-      response = 'أنصح بالاستثمار في نظام الري الذكي الذي سيوفر 40% من تكاليف المياه ويزيد الإنتاجية بنسبة 25%. التكلفة 85,000 ريال مع إمكانية الحصول على دعم حكومي 30%. العائد المتوقع 42.3% خلال 6-9 أشهر.';
-      recommendationId = '4';
-    } else if (lowerMessage.includes('طقس') || lowerMessage.includes('مناخ') || lowerMessage.includes('حرارة')) {
-      response = 'الظروف المناخية حالياً مثالية للزراعة. درجة الحرارة 28°م والرطوبة 45%. هناك تنبيه لموجة حارة الأسبوع القادم قد تصل لـ 38°م، وأمطار خفيفة متوقعة يومي الخميس والجمعة. أنصح بتجنب عمليات الرش يوم السبت بسبب الرياح القوية المتوق��ة.';
-    } else if (lowerMessage.includes('تربة') || lowerMessage.includes('سماد') || lowerMessage.includes('تسميد')) {
-      response = 'تحليل التربة يظهر: pH = 6.8 (مثالي)، نيتروجين 85، فوسفور 65، بوتاسيوم 78. أنصح بإضافة السماد العضوي لزيادة المادة العضوية من 3.2% إلى 4%، وتطبيق الجبس الزراعي لتحسين بنية التربة. مستوى الملوحة مقبول (0.8) لكن يحتاج مراقبة دورية.';
-    }
-    
+
+    // Delegate to the central Farm Advisor: it uses the configured LLM when
+    // available and otherwise answers from the rule-based engine, reporting
+    // which source produced the answer (no fabricated figures).
+    const result = await answerAgriculturalQuestion({
+      question: message,
+      context: context as any,
+    });
+
     res.json({
-      response,
-      recommendation_id: recommendationId,
-      confidence: Math.floor(Math.random() * 20) + 80, // 80-99%
-      generated_at: new Date().toISOString()
+      response: result.answer,
+      recommendation_id: null,
+      confidence: result.dataSource === 'llm' ? 90 : 70,
+      dataSource: result.dataSource,
+      disclaimer: result.disclaimer,
+      generated_at: new Date().toISOString(),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: 'بيانات غير صحيحة', details: error.errors });
     } else {
+      console.error('Smart advisor chat error:', error);
       res.status(500).json({ error: 'حدث خطأ في معالجة الرسالة' });
     }
   }

@@ -60,7 +60,6 @@ import {
   Bug,
   Shield,
   DollarSign,
-  TrendingUpDown,
   ArrowUpRight,
   ArrowDownRight,
   Maximize,

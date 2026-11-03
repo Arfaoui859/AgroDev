@@ -277,8 +277,10 @@ export default function PatentManagement() {
     const registeredTrademarks = trademarks.filter(t => t.status === 'registered').length;
     const totalLicenses = licenses.length;
     const activeLicenses = licenses.filter(l => l.status === 'active').length;
-    const totalIPValue = [...patents, ...trademarks, ...copyrights].reduce((sum, ip) => 
-      sum + (ip.commercialValue || 0), 0);
+    const totalIPValue = [...patents, ...trademarks, ...copyrights].reduce(
+      (sum, ip) => sum + ((ip as any).commercialValue || 0),
+      0,
+    );
     const totalLicenseRevenue = licenses.reduce((sum, l) => sum + l.totalRevenue, 0);
 
     return { 

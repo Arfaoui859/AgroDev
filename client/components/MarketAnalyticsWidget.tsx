@@ -333,7 +333,7 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
                       return (
                         <div className="bg-white p-2 border rounded shadow">
                           <p className="text-sm">{`الوقت: ${label}`}</p>
-                          <p className="text-sm font-bold">{`القيمة: ${payload[0].value?.toFixed(1)}`}</p>
+                          <p className="text-sm font-bold">{`القيمة: ${Number(payload[0].value ?? 0).toFixed(1)}`}</p>
                         </div>
                       );
                     }

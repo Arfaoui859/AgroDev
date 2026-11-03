@@ -210,7 +210,11 @@ export class ServiceStatusManager {
       return this.statusCache.get(cacheKey) || service;
     }
 
-    const updatedService = { ...service, status: 'checking' as const, lastChecked: now };
+    const updatedService: ServiceStatus = {
+      ...service,
+      status: 'checking',
+      lastChecked: now,
+    };
 
     try {
       if (service.endpoint) {

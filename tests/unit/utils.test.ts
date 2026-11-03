@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { cn } from "./utils";
+import { describe, it, expect } from "@jest/globals";
+import { cn } from "../../client/lib/utils";
 
 describe("cn function", () => {
   it("should merge classes correctly", () => {

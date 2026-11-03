@@ -23,6 +23,7 @@ import {
   Star,
   Calendar as CalendarIcon
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 interface MonthlyActivity {

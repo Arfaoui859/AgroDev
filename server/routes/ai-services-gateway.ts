@@ -2,6 +2,17 @@ import { Request, Response } from "express";
 import axios, { AxiosError } from "axios";
 import FormData from "form-data";
 import multer from "multer";
+import {
+  analyzeSoilForUI,
+  recommendCropsForUI,
+  CROP_REFERENCE,
+} from "../services/ai/cropAdvisor";
+import { analyzeSoil, recommendCrops } from "../services/ai/knowledgeEngine";
+import {
+  answerAgriculturalQuestion,
+  detectLanguage,
+} from "../services/ai/farmAdvisor";
+import { getLLMInfo } from "../services/providers/llmProvider";
 
 // AI Services Configuration
 const AI_SERVICES = {
@@ -25,7 +36,7 @@ const upload = multer({
     if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed"), false);
+      cb(new Error("Only image files are allowed"));
     }
   },
 });
@@ -84,16 +95,28 @@ const callAIService = async (
 
 // 🌱 SOIL ANALYSIS ENDPOINTS
 export const analyzeSoilData = async (req: Request, res: Response) => {
+  const sensorData = req.body?.sensor_data ?? req.body ?? {};
   try {
     const response = await callAIService(
       AI_SERVICES.SOIL_ANALYSIS,
       "/analyze-soil",
       "POST",
-      req.body,
+      { sensor_data: sensorData, location: req.body?.location, farm_id: req.body?.farm_id },
     );
     res.json(response.data);
   } catch (error) {
-    handleAIServiceError(error as AxiosError, "Soil Analysis", res);
+    // Microservice unavailable: fall back to the transparent rule-based engine
+    // rather than fabricating an ML result.
+    console.warn(
+      "Soil microservice unavailable, using rule-based analysis:",
+      (error as AxiosError).message,
+    );
+    try {
+      const fallback = analyzeSoilForUI(normaliseSoilInput(sensorData));
+      res.json(fallback);
+    } catch (fallbackError) {
+      handleAIServiceError(error as AxiosError, "Soil Analysis", res);
+    }
   }
 };
 
@@ -107,7 +130,27 @@ export const matchCropToClimate = async (req: Request, res: Response) => {
     );
     res.json(response.data);
   } catch (error) {
-    handleAIServiceError(error as AxiosError, "Climate Crop Matcher", res);
+    const climate = req.body?.climate_data ?? {};
+    const soil = req.body?.soil_data ?? {};
+    const fallback = recommendCrops({
+      ph: soil.ph,
+      temperature: climate.temperature,
+      rainfall: climate.rainfall,
+      salinity: soil.salinity,
+      season: climate.season,
+    });
+    res.json({
+      dataSource: "rule-based",
+      suitable_crops: fallback.recommendations.map((c, i) => ({
+        rank: i + 1,
+        crop: c.crop,
+        name_ar: c.nameAr,
+        suitability_score: c.suitabilityScore,
+        reasons: c.reasonsAr,
+      })),
+      best_crop: fallback.recommendations[0] ?? null,
+      disclaimer: fallback.disclaimer,
+    });
   }
 };
 
@@ -157,7 +200,59 @@ export const getSmartCropRecommendations = async (
     );
     res.json(response.data);
   } catch (error) {
-    handleAIServiceError(error as AxiosError, "Crop Recommender", res);
+    console.warn(
+      "Crop microservice unavailable, using rule-based recommendations:",
+      (error as AxiosError).message,
+    );
+    const body = req.body ?? {};
+    res.json(recommendCropsForUI(normaliseCropInput(body)));
+  }
+};
+
+export const getQuickCropRecommendation = async (
+  req: Request,
+  res: Response,
+) => {
+  const temperature = parseFloat(req.query.temperature as string);
+  const rainfall = parseFloat(req.query.rainfall as string);
+  const soil_ph = parseFloat(req.query.soil_ph as string);
+  const farm_size = parseFloat(req.query.farm_size as string) || 2.0;
+
+  try {
+    const response = await callAIService(
+      AI_SERVICES.CROP_RECOMMENDATION,
+      "/quick-recommendation",
+      "POST",
+      { temperature, rainfall, soil_ph, farm_size },
+    );
+    res.json(response.data);
+  } catch (error) {
+    const fallback = recommendCropsForUI({
+      ph: soil_ph,
+      temperature,
+      rainfall,
+      area_hectares: farm_size,
+    });
+    const top = fallback.recommendations.slice(0, 3);
+    res.json({
+      dataSource: "rule-based",
+      quick_recommendations: top.map((c) => ({
+        crop_name: c.crop,
+        crop_name_ar: c.name_ar,
+        suitability_score: c.suitability_score,
+        expected_profit_per_hectare: c.profit_analysis.net_profit,
+        risk_level: c.risk_assessment.overall_risk_level,
+        growing_season: c.growing_season,
+      })),
+      best_crop: top[0]
+        ? {
+            crop_name: top[0].crop,
+            crop_name_ar: top[0].name_ar,
+            suitability_score: top[0].suitability_score,
+          }
+        : null,
+      disclaimer: fallback.disclaimer,
+    });
   }
 };
 
@@ -189,30 +284,6 @@ export const compareCropProfitability = async (req: Request, res: Response) => {
     res.json(response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Crop Comparison", res);
-  }
-};
-
-export const getQuickCropRecommendation = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    const { temperature, rainfall, soil_ph, farm_size } = req.query;
-
-    const response = await callAIService(
-      AI_SERVICES.CROP_RECOMMENDATION,
-      "/quick-recommendation",
-      "POST",
-      {
-        temperature: parseFloat(temperature as string),
-        rainfall: parseFloat(rainfall as string),
-        soil_ph: parseFloat(soil_ph as string),
-        farm_size: parseFloat(farm_size as string) || 2.0,
-      },
-    );
-    res.json(response.data);
-  } catch (error) {
-    handleAIServiceError(error as AxiosError, "Quick Crop Recommendation", res);
   }
 };
 
@@ -402,18 +473,29 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
   }
 };
 
-// 🧠 SMART ASSISTANT ENDPOINTS (Placeholder for future implementation)
+// 🧠 SMART ASSISTANT ENDPOINTS
 export const chatWithAIAssistant = async (req: Request, res: Response) => {
+  const { message, question, context, history, language } = req.body ?? {};
+  const userMessage: string = (message || question || "").toString();
+
+  if (!userMessage.trim()) {
+    return res.status(400).json({ error: "message is required" });
+  }
+
   try {
-    const response = await callAIService(
-      AI_SERVICES.SMART_ASSISTANT,
-      "/chat",
-      "POST",
-      req.body,
-    );
-    res.json(response.data);
+    const result = await answerAgriculturalQuestion({
+      question: userMessage,
+      language: language || detectLanguage(userMessage),
+      context,
+      history,
+    });
+    res.json(result);
   } catch (error) {
-    handleAIServiceError(error as AxiosError, "AI Chat Assistant", res);
+    console.error("Assistant error:", error);
+    res.status(500).json({
+      error: "تعذّر معالجة السؤال",
+      dataAvailable: false,
+    });
   }
 };
 
@@ -445,6 +527,44 @@ export const getSmartAlerts = async (req: Request, res: Response) => {
 };
 
 // HELPER ENDPOINTS
+function toNumber(value: unknown): number | undefined {
+  const n = typeof value === "number" ? value : parseFloat(value as string);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Normalise varied soil payloads into the rule-based engine input shape. */
+function normaliseSoilInput(data: Record<string, any>) {
+  const d = data ?? {};
+  return {
+    ph: toNumber(d.ph),
+    nitrogen: toNumber(d.nitrogen),
+    phosphorus: toNumber(d.phosphorus),
+    potassium: toNumber(d.potassium),
+    organic_matter: toNumber(d.organic_matter ?? d.organicMatter),
+    moisture: toNumber(d.moisture),
+    salinity: toNumber(d.salinity ?? d.conductivity),
+    temperature: toNumber(d.temperature),
+  };
+}
+
+/** Normalise varied crop request payloads into the crop advisor input shape. */
+function normaliseCropInput(data: Record<string, any>) {
+  const d = data ?? {};
+  return {
+    ph: toNumber(d.ph ?? d.soil_ph ?? d.soil_data?.ph),
+    nitrogen: toNumber(d.nitrogen ?? d.soil_data?.nitrogen),
+    phosphorus: toNumber(d.phosphorus ?? d.soil_data?.phosphorus),
+    potassium: toNumber(d.potassium ?? d.soil_data?.potassium),
+    temperature: toNumber(d.temperature ?? d.climate_data?.temperature),
+    humidity: toNumber(d.humidity ?? d.climate_data?.humidity),
+    rainfall: toNumber(d.rainfall ?? d.climate_data?.rainfall ?? d.annual_rainfall),
+    area_hectares: toNumber(d.area_hectares ?? d.farm_size),
+    soil_type: d.soil_type,
+    salinity: toNumber(d.salinity ?? d.soil_data?.salinity),
+    season: d.season,
+  };
+}
+
 export const getSupportedCrops = async (req: Request, res: Response) => {
   try {
     const response = await callAIService(
@@ -454,7 +574,19 @@ export const getSupportedCrops = async (req: Request, res: Response) => {
     );
     res.json(response.data);
   } catch (error) {
-    handleAIServiceError(error as AxiosError, "Supported Crops", res);
+    // Serve the reference dataset so the UI always has a crop list.
+    res.json({
+      dataSource: "reference-dataset",
+      supported_crops: CROP_REFERENCE.map((c) => ({
+        name: c.crop,
+        name_ar: c.nameAr,
+        category: c.category,
+        growing_season: c.seasons.join("، "),
+        suitable_soil_types: [],
+      })),
+      total_count: CROP_REFERENCE.length,
+      note: "قائمة مرجعية محلية (خدمة التوصيات غير متاحة).",
+    });
   }
 };
 
@@ -556,10 +688,20 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
         availableServices: availableCount,
         unavailableServices: unavailableCount,
         lastUpdated: new Date().toISOString(),
-        checkDuration: Date.now() - startTime
+        checkDuration: Date.now() - startTime,
       },
       services: serviceResults,
-      note: unavailableCount > 0 ? "بعض خدمات الذكاء الاصطناعي غير متاحة حاليا. هذا طبيعي في بيئة التطوير." : "جميع خدمات الذكاء الاصطناعي تعمل بشكل طبيعي"
+      llm: getLLMInfo(),
+      fallbackEngine: {
+        available: true,
+        type: "rule-based",
+        description:
+          "محرك قواعد زراعية محلي يوفر تحليلاً بديلاً عند تعذّر الخدمات (بدون تقديم نتائج كنموذج ذكاء اصطناعي).",
+      },
+      note:
+        unavailableCount > 0
+          ? "بعض خدمات الذكاء الاصطناعي غير متاحة؛ يتم استخدام محرك القواعد الزراعية كبديل شفاف."
+          : "جميع خدمات الذكاء الاصطناعي تعمل بشكل طبيعي",
     };
 
     // Always return 200 status since unavailable services are expected in development

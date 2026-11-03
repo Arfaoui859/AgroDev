@@ -47,7 +47,6 @@ import {
   Headphones,
   Video,
   FileText,
-  Certificate,
   Cpu
 } from 'lucide-react';
 
@@ -352,7 +351,7 @@ export default function DigitalTraining() {
               التحليلات
             </TabsTrigger>
             <TabsTrigger value="certificates" className="flex items-center gap-2">
-              <Certificate className="h-4 w-4" />
+              <Award className="h-4 w-4" />
               الشهادات
             </TabsTrigger>
           </TabsList>
@@ -1036,7 +1035,7 @@ export default function DigitalTraining() {
                       <CardHeader>
                         <div className="flex justify-between items-start">
                           <CardTitle className="text-lg">{course?.title || 'مقرر غير معروف'}</CardTitle>
-                          <Certificate className="h-6 w-6 text-yellow-600" />
+                          <Award className="h-6 w-6 text-yellow-600" />
                         </div>
                         <CardDescription>شهادة إتمام معتمدة</CardDescription>
                       </CardHeader>

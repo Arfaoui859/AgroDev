@@ -563,7 +563,7 @@ router.post('/scenarios/:id/simulate', (req, res) => {
       notes: 'محاكاة تلقائية بناءً على المعايير المحددة'
     };
     
-    simulations.unshift(simulationResult);
+    simulations.unshift(simulationResult as any);
     
     res.json({
       message: 'تم تشغيل المحاكاة بنجاح',
@@ -605,12 +605,8 @@ router.patch('/plans/:planId/steps/:stepId/status', (req, res) => {
             if (step.id === req.params.stepId) {
               stepFound = true;
               step.completion_status = validatedData.status;
-              if (validatedData.notes) {
-                step.notes = validatedData.notes;
-              }
-              if (validatedData.status === 'completed') {
-                step.completion_time = new Date().toISOString();
-              }
+              (step as any).notes = validatedData.notes;
+              (step as any).completion_time = new Date().toISOString();
               break;
             }
           }
@@ -708,9 +704,16 @@ router.get('/analytics', (req, res) => {
     const avgSimulationSuccessRate = simulations.reduce((sum, sim) => sum + sim.results.success_rate, 0) / 
       Math.max(simulations.length, 1);
     
-    const totalPlans = emergencyScenarios.reduce((sum, scenario) => sum + scenario.response_plans.length, 0);
-    const totalSteps = emergencyScenarios.reduce((sum, scenario) => 
-      sum + scenario.response_plans.reduce((planSum, plan) => planSum + plan.steps.length, 0), 0);
+    const totalPlans = emergencyScenarios.reduce((sum, scenario) => sum + (scenario.response_plans?.length ?? 0), 0);
+    const totalSteps = emergencyScenarios.reduce(
+      (sum, scenario) =>
+        sum +
+        (scenario.response_plans ?? []).reduce(
+          (planSum, plan) => planSum + (plan.steps?.length ?? 0),
+          0,
+        ),
+      0,
+    );
     
     const analytics = {
       overview: {

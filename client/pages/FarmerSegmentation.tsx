@@ -50,6 +50,7 @@ import {
   Info,
   DollarSign,
   Gauge,
+  Lightbulb,
 } from "lucide-react";
 
 interface FarmerSegment {
