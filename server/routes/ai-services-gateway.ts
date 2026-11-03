@@ -671,11 +671,21 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
 
 export const generateFarmingTasks = async (req: Request, res: Response) => {
   try {
+    const b = req.body ?? {};
+    // The service (TaskPlanRequest) requires crop_type, field_id, planting_date
+    // and field_area (>0). Accept the camelCase aliases the UI uses so a valid
+    // request is not rejected as 422.
     const response = await callAIService(
       AI_SERVICES.SMART_ASSISTANT,
       "/plan-season",
       "POST",
-      req.body,
+      {
+        crop_type: b.crop_type ?? b.crop ?? b.cropId,
+        field_id: b.field_id ?? b.fieldId,
+        planting_date: b.planting_date ?? b.plantingDate ?? b.sowing_date,
+        field_area: toNumber(b.field_area ?? b.fieldArea ?? b.area),
+        available_resources: b.available_resources ?? b.resources,
+      },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.SMART_ASSISTANT);
   } catch (error) {

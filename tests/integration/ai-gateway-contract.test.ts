@@ -92,9 +92,46 @@ describe("🔌 AI gateway → microservice request contracts", () => {
   });
 
   test("farming task planning uses the real /plan-season endpoint", async () => {
-    await request(app).post("/api/ai/assistant/generate-tasks").send({});
+    await request(app)
+      .post("/api/ai/assistant/generate-tasks")
+      .send({ crop_type: "wheat", field_id: "f1", planting_date: "2026-11-01", field_area: 2 });
 
-    expect(lastRequest().url).toContain("/plan-season");
-    expect(lastRequest().url).not.toContain("/generate-tasks");
+    const req = lastRequest();
+    expect(req.url).toContain("/plan-season");
+    expect(req.url).not.toContain("/generate-tasks");
+    expect(req.data).toMatchObject({
+      crop_type: "wheat",
+      field_id: "f1",
+      planting_date: "2026-11-01",
+      field_area: 2,
+    });
+  });
+
+  test("task planning accepts the camelCase aliases the UI uses", async () => {
+    await request(app)
+      .post("/api/ai/assistant/generate-tasks")
+      .send({ crop: "olive", fieldId: "f2", plantingDate: "2026-12-01", area: 3.5 });
+
+    expect(lastRequest().data).toMatchObject({
+      crop_type: "olive",
+      field_id: "f2",
+      planting_date: "2026-12-01",
+      field_area: 3.5,
+    });
+  });
+
+  test("supply-demand forwards the fields the service requires", async () => {
+    await request(app)
+      .post("/api/ai/market/supply-demand")
+      .send({ crop: "tomato", production: 1200 });
+
+    const req = lastRequest();
+    expect(req.url).toContain("/analyze-supply-demand");
+    expect(req.data).toMatchObject({
+      crop_type: "tomato",
+      current_production: 1200,
+      region: "tunisia",
+      analysis_period: 30,
+    });
   });
 });
