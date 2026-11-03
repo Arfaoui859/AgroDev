@@ -16,8 +16,8 @@ on:
           - production
 
 env:
-  NODE_VERSION: "18"
-  PYTHON_VERSION: "3.9"
+  NODE_VERSION: "22"
+  PYTHON_VERSION: "3.11"
 
 jobs:
   # =====================================

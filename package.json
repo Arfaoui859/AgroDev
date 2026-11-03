@@ -5,7 +5,7 @@
   "description": "AI-powered agricultural management platform",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:client && npm run build:server",
     "preview": "vite preview",
     "server": "tsx server/index.ts",
     "server:dev": "tsx watch server/index.ts",
@@ -17,7 +17,10 @@
     "test:e2e:open": "cypress open",
     "test:all": "npm run test && npm run test:e2e",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext ts,tsx --fix"
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "build:client": "vite build",
+    "build:server": "vite build --config vite.config.server.ts",
+    "start": "node dist/server/node-build.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -93,6 +96,7 @@
     "@typescript-eslint/parser": "^6.10.0",
     "@vitejs/plugin-react": "^4.1.1",
     "autoprefixer": "^10.4.16",
+    "axe-core": "^4.14.0",
     "cypress": "^13.6.0",
     "cypress-axe": "^1.5.0",
     "eslint": "^8.53.0",

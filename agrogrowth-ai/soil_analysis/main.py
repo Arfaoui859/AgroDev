@@ -120,7 +120,11 @@ async def health_check():
             "soil_analyzer": soil_analyzer.is_trained,
             "climate_matcher": climate_matcher.is_trained,
             "image_diagnosis": image_diagnosis.is_trained
-        }
+        },
+        # These models are trained on synthetic data at startup for demonstration.
+        # They must NOT be presented to end users as field-validated predictions.
+        "model_source": "synthetic-demo",
+        "disclaimer": "Models are trained on synthetic demo data and are not field-validated."
     }
 
 @app.post("/analyze-soil", response_model=SoilAnalysisResponse)

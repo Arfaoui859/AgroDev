@@ -119,7 +119,10 @@ async def health():
             "disease_detector": disease_detector is not None,
             "leaf_scanner": leaf_scanner is not None
         },
-        "note": "Models load only on first request (RAM optimized)"
+        "note": "Models load only on first request (RAM optimized)",
+        # No pretrained weights are bundled; inference is heuristic/demo-grade.
+        "model_source": "heuristic-demo",
+        "disclaimer": "Diagnosis is heuristic and demo-grade; not a substitute for expert diagnosis."
     }
 
 # =========================================================

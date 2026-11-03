@@ -1,120 +1,73 @@
-# Multi-stage Dockerfile for AgroGrowth Platform
-# Optimized for production deployment
+# Multi-stage Dockerfile for the AgroGrowth platform (Vite SPA + Express API).
+# The AI microservices under agrogrowth-ai/ are deployed separately; this image
+# serves the SPA and the Node API, which falls back to the rule-based engine
+# when those microservices are not reachable.
 
 # =====================================
-# Stage 1: Frontend Build
+# Stage 1: Build (client + server bundle)
 # =====================================
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files for better caching
+# Install ALL dependencies (build needs devDependencies such as vite/typescript)
 COPY package*.json ./
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
-# Copy source code and build frontend
+# Copy source and build the SPA + the server bundle (dist/ and dist/server/)
 COPY . .
 RUN npm run build
 
 # =====================================
-# Stage 2: Python AI Services Base
+# Stage 2: Development (optional, not the default target)
 # =====================================
-FROM python:3.9-slim AS ai-base
+FROM node:22-alpine AS development
 
-WORKDIR /app/ai
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy AI services requirements and install
-COPY agrogrowth-ai/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy AI services code
-COPY agrogrowth-ai/ .
+ENV NODE_ENV=development
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+COPY . .
+EXPOSE 8080
+CMD ["npm", "run", "dev"]
 
 # =====================================
-# Stage 3: Production Runtime
+# Stage 3: Production runtime (default build target)
 # =====================================
-FROM node:18-alpine AS runtime
+FROM node:22-alpine AS runtime
 
-# Set production environment
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Create app user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Run as a non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 -G nodejs
 
 WORKDIR /app
 
-# Install production dependencies
+# Production dependencies only
 COPY package*.json ./
-RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
+RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
-# Copy built frontend from builder stage
-COPY --from=frontend-builder /app/dist ./dist
+# Built artifacts (SPA + server bundle)
+COPY --from=builder /app/dist ./dist
 
-# Copy server code
-COPY server/ ./server/
-COPY shared/ ./shared/
-
-# Copy AI services from ai-base stage
-COPY --from=ai-base /app/ai ./agrogrowth-ai/
-
-# Copy models directory structure (without actual model files)
-COPY models/ ./models/
-
-# Copy prompt templates
+# Prompt templates used by AI routes at runtime
 COPY prompts/ ./prompts/
 
-# Create necessary directories and set permissions
 RUN mkdir -p /app/logs /app/uploads /app/cache && \
     chown -R nodejs:nodejs /app
 
-# Switch to non-root user
 USER nodejs
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "http.get('http://localhost:$PORT/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD node -e "fetch('http://localhost:'+(process.env.PORT||8080)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# Expose port
 EXPOSE 8080
 
-# Start the application
-CMD ["node", "server/index.js"]
+# Start the bundled Express server (serves /api/* and the SPA)
+CMD ["node", "dist/server/node-build.mjs"]
 
-# =====================================
-# Development Stage (Optional)
-# =====================================
-FROM runtime AS development
-
-ENV NODE_ENV=development
-
-# Install development dependencies
-RUN npm install
-
-# Install development tools
-RUN npm install -g nodemon tsx
-
-# Expose additional ports for development
-EXPOSE 5173 3000
-
-# Development command
-CMD ["npm", "run", "server:dev"]
-
-# =====================================
-# Labels and Metadata
-# =====================================
 LABEL maintainer="AgroGrowth Team <dev@agrogrowth.tn>"
 LABEL description="AI-powered agricultural management platform for Tunisia"
-LABEL version="1.0.0"
 LABEL org.opencontainers.image.title="AgroGrowth Platform"
-LABEL org.opencontainers.image.description="Full-stack agricultural platform with AI integration"
-LABEL org.opencontainers.image.vendor="AgroGrowth"
 LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/agrogrowth/platform"

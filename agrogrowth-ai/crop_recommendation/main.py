@@ -134,7 +134,10 @@ async def health_check():
         "models_loaded": {
             "crop_recommender": crop_recommender.is_trained,
             "profit_estimator": profit_estimator.is_trained
-        }
+        },
+        # Trained on synthetic data at startup for demonstration; not field-validated.
+        "model_source": "synthetic-demo",
+        "disclaimer": "Models are trained on synthetic demo data and are not field-validated."
     }
 
 @app.post("/recommend-crops", response_model=CropRecommendationResponse)

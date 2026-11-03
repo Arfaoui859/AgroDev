@@ -93,6 +93,20 @@ const callAIService = async (
   return axios(config);
 };
 
+/**
+ * Forward a self-hosted AI microservice response to the client while tagging
+ * its provenance. The bundled microservices train on synthetic/demo data, so
+ * the result must be labelled honestly instead of being presented as a
+ * field-validated prediction.
+ */
+const respondFromMicroservice = (res: Response, data: any) => {
+  const payload =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? { dataSource: "microservice", ...data }
+      : { dataSource: "microservice", result: data };
+  res.json(payload);
+};
+
 // 🌱 SOIL ANALYSIS ENDPOINTS
 export const analyzeSoilData = async (req: Request, res: Response) => {
   const sensorData = req.body?.sensor_data ?? req.body ?? {};
@@ -103,7 +117,7 @@ export const analyzeSoilData = async (req: Request, res: Response) => {
       "POST",
       { sensor_data: sensorData, location: req.body?.location, farm_id: req.body?.farm_id },
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     // Microservice unavailable: fall back to the transparent rule-based engine
     // rather than fabricating an ML result.
@@ -128,7 +142,7 @@ export const matchCropToClimate = async (req: Request, res: Response) => {
       "POST",
       req.body,
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     const climate = req.body?.climate_data ?? {};
     const soil = req.body?.soil_data ?? {};
@@ -179,7 +193,7 @@ export const diagnoseSoilFromImage = [
         },
       );
 
-      res.json(response.data);
+      respondFromMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Soil Image Diagnosis", res);
     }
@@ -198,7 +212,7 @@ export const getSmartCropRecommendations = async (
       "POST",
       req.body,
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     console.warn(
       "Crop microservice unavailable, using rule-based recommendations:",
@@ -225,7 +239,7 @@ export const getQuickCropRecommendation = async (
       "POST",
       { temperature, rainfall, soil_ph, farm_size },
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     const fallback = recommendCropsForUI({
       ph: soil_ph,
@@ -267,7 +281,7 @@ export const estimateCropProfitability = async (
       "POST",
       req.body,
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Profit Estimator", res);
   }
@@ -281,7 +295,7 @@ export const compareCropProfitability = async (req: Request, res: Response) => {
       "POST",
       req.body,
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Crop Comparison", res);
   }
@@ -317,7 +331,7 @@ export const detectPlantDisease = [
         },
       );
 
-      res.json(response.data);
+      respondFromMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Plant Disease Detection", res);
     }
@@ -357,7 +371,7 @@ export const analyzeLeafHealth = [
         },
       );
 
-      res.json(response.data);
+      respondFromMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Leaf Analysis", res);
     }
@@ -401,7 +415,7 @@ export const comprehensivePlantAnalysis = [
         },
       );
 
-      res.json(response.data);
+      respondFromMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(
         error as AxiosError,
@@ -437,7 +451,7 @@ export const quickPlantHealthCheck = [
         },
       );
 
-      res.json(response.data);
+      respondFromMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Quick Health Check", res);
     }
@@ -453,7 +467,7 @@ export const forecastMarketPrices = async (req: Request, res: Response) => {
       "POST",
       req.body,
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Market Forecast", res);
   }
@@ -467,7 +481,7 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
       "POST",
       req.body,
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Supply Demand Analysis", res);
   }
@@ -507,7 +521,7 @@ export const generateFarmingTasks = async (req: Request, res: Response) => {
       "POST",
       req.body,
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Farming Tasks Planner", res);
   }
@@ -520,7 +534,7 @@ export const getSmartAlerts = async (req: Request, res: Response) => {
       "/smart-alerts",
       "GET",
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Smart Alerts", res);
   }
@@ -572,7 +586,7 @@ export const getSupportedCrops = async (req: Request, res: Response) => {
       "/supported-crops",
       "GET",
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     // Serve the reference dataset so the UI always has a crop list.
     res.json({
@@ -597,7 +611,7 @@ export const getSupportedDiseases = async (req: Request, res: Response) => {
       "/supported-diseases",
       "GET",
     );
-    res.json(response.data);
+    respondFromMicroservice(res, response.data);
   } catch (error) {
     handleAIServiceError(error as AxiosError, "Supported Diseases", res);
   }

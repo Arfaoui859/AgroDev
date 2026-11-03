@@ -8,6 +8,13 @@ import {
 
 // Types for AI Service responses
 interface SoilAnalysisResult {
+  /**
+   * Provenance of the result:
+   *  - "microservice": produced by a self-hosted AI microservice (demo-grade models)
+   *  - "rule-based": produced by the server's deterministic agronomy engine
+   *  - "estimate": produced locally from the farmer's own inputs (no model)
+   */
+  dataSource?: "microservice" | "rule-based" | "estimate";
   soil_type: {
     classification: string;
     confidence: number;
@@ -414,9 +421,11 @@ export const useAIServices = () => {
             : "ضعيف";
 
     return {
+      dataSource: "estimate",
       soil_type: {
-        classification: "تربة طينية مختلطة",
-        confidence: 0.85,
+        classification: "تقدير محلي بناءً على المدخلات",
+        // No model was run, so confidence is unknown rather than invented.
+        confidence: 0,
       },
       properties: {
         ph: ph,
