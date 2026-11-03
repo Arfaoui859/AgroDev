@@ -276,6 +276,11 @@ router.get('/alerts/:stationId', async (req, res) => {
     });
   }
   
+  // An unknown station yields a null forecast; without this guard the alerts
+  // generator crashed the process (forecast.forEach on null).
+  if (!forecast || forecast.length === 0) {
+    return res.status(404).json({ error: 'Weather station not found' });
+  }
   const alerts = generateWeatherAlerts(forecast);
   
   res.json({
@@ -491,7 +496,8 @@ function getClimateInfo(governorate: string) {
   };
 }
 
-function generateWeatherAlerts(forecast: any[]) {
+function generateWeatherAlerts(forecast: any[] | null | undefined) {
+  if (!Array.isArray(forecast)) return [];
   const alerts = [];
   
   forecast.forEach((day, index) => {

@@ -89,4 +89,13 @@ describe("💧 Weather-irrigation serves real data or an explicit 503", () => {
     );
     expect(res.status).toBe(404);
   });
+
+  test("alerts for an unknown station is a 404, not a crash", async () => {
+    // Regression: /alerts/:stationId passed a null forecast into the alerts
+    // generator, which threw on forecast.forEach and killed the process.
+    const res = await request(app).get(
+      "/api/weather-irrigation/alerts/does-not-exist",
+    );
+    expect(res.status).toBe(404);
+  });
 });
