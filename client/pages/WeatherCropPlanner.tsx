@@ -142,6 +142,7 @@ export default function WeatherCropPlanner() {
     strategic: []
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
   const [autoOptimization, setAutoOptimization] = useState(true);
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -151,6 +152,7 @@ export default function WeatherCropPlanner() {
 
   const generateOptimizedSchedule = async () => {
     setIsLoading(true);
+    setWeatherError(null);
     try {
       const response = await fetch('/api/weather-crop-planner/smart-schedule', {
         method: 'POST',
@@ -164,6 +166,11 @@ export default function WeatherCropPlanner() {
         }),
       });
 
+      if (!response.ok) {
+        const problem = await response.json().catch(() => ({}));
+        throw new Error(problem.error || `HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       setOptimizedSchedule(data.optimizedSchedule || []);
       setWeatherForecast(data.weatherForecast || []);
@@ -175,7 +182,15 @@ export default function WeatherCropPlanner() {
       setWeatherAlerts(alertsData.activeAlerts || []);
 
     } catch (error) {
+      // Surface provider outages / unknown locations instead of rendering an
+      // empty schedule that looks like a successful (but empty) analysis.
       console.error('Error generating optimized schedule:', error);
+      setOptimizedSchedule([]);
+      setWeatherForecast([]);
+      setWeatherAlerts([]);
+      setWeatherError(
+        error instanceof Error ? error.message : 'تعذّر جلب بيانات الطقس'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -263,6 +278,15 @@ export default function WeatherCropPlanner() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      {weatherError && (
+        <div
+          role="alert"
+          className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800"
+        >
+          <p className="font-semibold">تعذّر جلب بيانات الطقس الحقيقية</p>
+          <p className="text-sm">{weatherError}</p>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">تخطيط المهام الزراعية بناءً على الطقس</h1>

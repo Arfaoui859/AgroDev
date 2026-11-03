@@ -1,6 +1,123 @@
 import express from "express";
+import {
+  getWeatherFromOpenMeteo,
+  getHistoricalWeatherFromOpenMeteo,
+  type WeatherData,
+} from "../services/providers/weatherProvider";
+import { ProviderError } from "../services/providers/http";
+import { resolveTunisiaLocation } from "../lib/tunisiaLocations";
 
 const router = express.Router();
+
+/**
+ * 16-point compass labels (Arabic) used to describe a real wind bearing.
+ */
+const COMPASS_AR = [
+  "شمال", "شمال-شمال شرق", "شمال شرق", "شرق-شمال شرق",
+  "شرق", "شرق-جنوب شرق", "جنوب شرق", "جنوب-جنوب شرق",
+  "جنوب", "جنوب-جنوب غرب", "جنوب غرب", "غرب-جنوب غرب",
+  "غرب", "غرب-شمال غرب", "شمال غرب", "شمال-شمال غرب",
+];
+
+function bearingToArabic(degrees: number | undefined): string {
+  if (typeof degrees !== "number" || !Number.isFinite(degrees)) return "غير متاح";
+  const index = Math.round((((degrees % 360) + 360) % 360) / 22.5) % 16;
+  return COMPASS_AR[index];
+}
+
+/** Adapt a real provider daily forecast to the shape this module's analysers expect. */
+function adaptForecastDay(
+  day: WeatherData["forecast"]["daily"][number],
+  current: WeatherData["current"],
+) {
+  return {
+    date: day.date,
+    temperature: { max: day.maxTemp, min: day.minTemp, avg: Math.round((day.maxTemp + day.minTemp) / 2) },
+    humidity: day.humidity,
+    precipitation: day.rainfall,
+    windSpeed: day.windSpeed ?? current.windSpeed,
+    windDirection: bearingToArabic(day.windDirection),
+    solarRadiation: day.solarRadiation ?? 0,
+    uvIndex: day.uvIndex ?? 0,
+    atmosphericPressure: day.pressure ?? current.pressure,
+    visibility: day.visibility ?? current.visibility,
+  };
+}
+
+function adaptCurrent(weather: WeatherData) {
+  return {
+    temperature: weather.current.temperature,
+    humidity: weather.current.humidity,
+    windSpeed: weather.current.windSpeed,
+    windDirection: bearingToArabic(weather.forecast.daily[0]?.windDirection),
+    precipitation: weather.forecast.daily[0]?.rainfall ?? 0,
+    solarRadiation: weather.forecast.daily[0]?.solarRadiation ?? 0,
+    uvIndex: weather.forecast.daily[0]?.uvIndex ?? 0,
+    atmosphericPressure: weather.current.pressure,
+    visibility: weather.current.visibility,
+  };
+}
+
+/** Real 14-day forecast (provider caps at 16); errors surface to the caller. */
+async function fetchAdaptedForecast(locationId: string, days: number) {
+  const loc = resolveTunisiaLocation(locationId);
+  if (!loc) return { error: "unknown_location" as const };
+  const weather = await getWeatherFromOpenMeteo({
+    lat: loc.lat,
+    lon: loc.lng,
+    locationName: loc.name,
+    governorate: loc.id,
+  });
+  const max = Math.min(days, weather.forecast.daily.length);
+  return {
+    location: loc,
+    weather,
+    forecast: weather.forecast.daily.slice(0, max).map((d) => adaptForecastDay(d, weather.current)),
+  };
+}
+
+/**
+ * Derive a simple period-over-period trend description from real monthly
+ * averages. Compares the most recent 12 months against the preceding 12 when
+ * enough history is available, otherwise reports insufficient data.
+ */
+function describeTrend(monthly: Array<{ avgTemp: number; totalRainfall: number }>) {
+  if (monthly.length < 2) {
+    return {
+      temperature: { average: monthly[0]?.avgTemp ?? 0, trend: "بيانات غير كافية" },
+      precipitation: { average: monthly[0]?.totalRainfall ?? 0, trend: "بيانات غير كافية" },
+    };
+  }
+  const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+  const recent = monthly.slice(-12);
+  const prior = monthly.slice(-24, -12);
+  const recentTemp = avg(recent.map((m) => m.avgTemp));
+  const recentRain = avg(recent.map((m) => m.totalRainfall));
+  const tempDelta = prior.length ? recentTemp - avg(prior.map((m) => m.avgTemp)) : null;
+  const rainDelta = prior.length ? recentRain - avg(prior.map((m) => m.totalRainfall)) : null;
+  return {
+    temperature: {
+      average: Math.round(recentTemp * 10) / 10,
+      trend: tempDelta === null ? "بيانات غير كافية" : `${tempDelta >= 0 ? "+" : ""}${tempDelta.toFixed(1)}°م`,
+    },
+    precipitation: {
+      average: Math.round(recentRain),
+      trend: rainDelta === null ? "بيانات غير كافية" : `${rainDelta >= 0 ? "+" : ""}${rainDelta.toFixed(0)}مم`,
+    },
+  };
+}
+
+/** Shared error responder: unknown places are 404, provider failures are 503. */
+function respondWeatherError(res: express.Response, locationId: string, error: unknown) {
+  if (error instanceof ProviderError) {
+    return res.status(503).json({
+      error: "خدمة الطقس غير متاحة حالياً",
+      detail: "Weather provider is currently unavailable. Please retry shortly.",
+      isRealData: false,
+    });
+  }
+  return res.status(500).json({ error: "فشل في تحليل البيانات الجوية" });
+}
 
 // Advanced weather data integration with agricultural tasks
 interface WeatherTaskIntegration {
@@ -18,48 +135,8 @@ interface WeatherTaskIntegration {
   alternativeDate?: string;
 }
 
-// Comprehensive weather analysis for agricultural planning
-const generateWeatherAnalysis = (
-  weatherData: any,
-  cropType: string,
-  farmLocation: string,
-) => {
-  return {
-    temperature: {
-      current: weatherData.temperature,
-      trend: "stable",
-      agricultural_impact: "favorable",
-      recommendations: ["مناسب للأنشطة الزراعية العادية"],
-    },
-    humidity: {
-      current: weatherData.humidity,
-      evaporation_rate: calculateEvaporationRate(weatherData),
-      irrigation_impact: "normal",
-    },
-    precipitation: {
-      current: weatherData.precipitation,
-      forecast_7days: generateRainForecast(),
-      irrigation_adjustment: calculateIrrigationAdjustment(
-        weatherData.precipitation,
-      ),
-    },
-    wind: {
-      speed: weatherData.windSpeed,
-      direction: "northwest",
-      spraying_suitability:
-        weatherData.windSpeed < 15 ? "suitable" : "unsuitable",
-      recommendations: getWindRecommendations(weatherData.windSpeed),
-    },
-    solar_radiation: {
-      current: weatherData.solarRadiation,
-      uv_index: weatherData.uvIndex,
-      plant_stress_level: calculatePlantStress(weatherData),
-    },
-  };
-};
-
 // Smart task scheduling based on weather conditions
-router.post("/smart-schedule", (req, res) => {
+router.post("/smart-schedule", async (req, res) => {
   const {
     cropType,
     farmLocation,
@@ -69,14 +146,20 @@ router.post("/smart-schedule", (req, res) => {
   } = req.body;
 
   try {
-    // Generate weather forecast for the specified period
-    const weatherForecast = generateExtendedWeatherForecast(
-      farmLocation,
-      weatherPeriod,
-    );
+    // Real forecast from the weather provider; unknown locations and provider
+    // outages are reported, never replaced with synthetic weather.
+    const adapted = await fetchAdaptedForecast(farmLocation, weatherPeriod);
+    if ("error" in adapted) {
+      return res.status(404).json({
+        error: "موقع غير معروف",
+        detail: `Unknown location '${farmLocation}'. Use a supported Tunisian location id.`,
+      });
+    }
+    const weatherForecast = adapted.forecast;
+    const tasks = Array.isArray(plannedTasks) ? plannedTasks : [];
 
     // Analyze each planned task against weather conditions
-    const optimizedSchedule = plannedTasks.map((task: any) => {
+    const optimizedSchedule = tasks.map((task: any) => {
       const taskDate = new Date(task.scheduledDate);
       const weatherForDate = weatherForecast.find(
         (day) => new Date(day.date).toDateString() === taskDate.toDateString(),
@@ -125,66 +208,106 @@ router.post("/smart-schedule", (req, res) => {
       weatherForecast: weatherForecast.slice(0, 7), // Next 7 days summary
       riskAssessment: assessWeatherRisks(weatherForecast),
       waterManagement: optimizeWaterUsage(optimizedSchedule, weatherForecast),
+      dataSource: adapted.weather.source.provider,
+      isRealData: true,
+      observationTime: adapted.weather.source.observationTime,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "فشل في تحليل البيانات الجوية", details: error.message });
+    return respondWeatherError(res, farmLocation, error);
   }
 });
 
 // Real-time weather alerts for agricultural activities
-router.get("/alerts/:farmLocation", (req, res) => {
+router.get("/alerts/:farmLocation", async (req, res) => {
   const { farmLocation } = req.params;
   const alertTypes = req.query.types
     ? (req.query.types as string).split(",")
     : ["all"];
 
-  const currentWeather = getCurrentWeatherData(farmLocation);
-  const alerts = generateAgriculturalAlerts(currentWeather, alertTypes);
+  try {
+    const adapted = await fetchAdaptedForecast(farmLocation, 7);
+    if ("error" in adapted) {
+      return res.status(404).json({
+        error: "موقع غير معروف",
+        detail: `Unknown location '${farmLocation}'.`,
+      });
+    }
+    const currentWeather = adaptCurrent(adapted.weather);
+    const alerts = generateAgriculturalAlerts(currentWeather, alertTypes);
+    // Upcoming alerts are derived from the real multi-day forecast rather than
+    // only today's observations.
+    const upcoming = adapted.forecast
+      .slice(1)
+      .flatMap((day) => generateAgriculturalAlerts(day, alertTypes))
+      .map((alert) => ({ ...alert, isActive: false, isUpcoming: true }));
 
-  res.json({
-    location: farmLocation,
-    timestamp: new Date().toISOString(),
-    currentConditions: currentWeather,
-    activeAlerts: alerts.filter((alert) => alert.isActive),
-    upcomingAlerts: alerts.filter(
-      (alert) => !alert.isActive && alert.isUpcoming,
-    ),
-    recommendations: generateImmediateRecommendations(currentWeather, alerts),
-  });
+    res.json({
+      location: farmLocation,
+      timestamp: new Date().toISOString(),
+      currentConditions: currentWeather,
+      activeAlerts: alerts.filter((alert) => alert.isActive),
+      upcomingAlerts: upcoming,
+      recommendations: generateImmediateRecommendations(currentWeather, alerts),
+      dataSource: adapted.weather.source.provider,
+      isRealData: true,
+      observationTime: adapted.weather.source.observationTime,
+    });
+  } catch (error) {
+    return respondWeatherError(res, farmLocation, error);
+  }
 });
 
 // Historical weather analysis for crop performance correlation
-router.get("/historical-analysis/:farmLocation/:cropType", (req, res) => {
+router.get("/historical-analysis/:farmLocation/:cropType", async (req, res) => {
   const { farmLocation, cropType } = req.params;
   const period = req.query.period || "12"; // months
   const periodValue = Array.isArray(period) ? period[0] : period;
+  const months = Math.max(1, Math.min(60, parseInt(periodValue as string, 10) || 12));
 
-  const historicalData = generateHistoricalWeatherData(
-    farmLocation,
-    parseInt(periodValue as string),
-  );
-  const correlationAnalysis = analyzeCropWeatherCorrelation(
-    historicalData,
-    cropType,
-  );
+  try {
+    const loc = resolveTunisiaLocation(farmLocation);
+    if (!loc) {
+      return res.status(404).json({
+        error: "موقع غير معروف",
+        detail: `Unknown location '${farmLocation}'.`,
+      });
+    }
+    // Real monthly aggregates from the Open-Meteo archive API.
+    const historical = await getHistoricalWeatherFromOpenMeteo(loc.lat, loc.lng, months);
+    const trend = describeTrend(historical.monthly);
+    const historicalData = {
+      monthly: historical.monthly,
+      trends: {
+        temperature: trend.temperature,
+        precipitation: trend.precipitation,
+      },
+    };
+    const correlationAnalysis = analyzeCropWeatherCorrelation(
+      historicalData,
+      cropType,
+    );
 
-  res.json({
-    location: farmLocation,
-    cropType,
-    analysisPeriod: `${period} شهر`,
-    historicalTrends: historicalData.trends,
-    cropPerformanceCorrelation: correlationAnalysis,
-    seasonalPatterns: identifySeasonalPatterns(historicalData),
-    futureProjections: projectFutureTrends(historicalData),
-    optimizationSuggestions:
-      generateOptimizationSuggestions(correlationAnalysis),
-  });
+    res.json({
+      location: farmLocation,
+      cropType,
+      analysisPeriod: `${months} شهر`,
+      monthlyAverages: historical.monthly,
+      historicalTrends: historicalData.trends,
+      cropPerformanceCorrelation: correlationAnalysis,
+      seasonalPatterns: identifySeasonalPatterns(historicalData),
+      futureProjections: projectFutureTrends(historicalData),
+      optimizationSuggestions:
+        generateOptimizationSuggestions(correlationAnalysis),
+      dataSource: historical.source.provider,
+      isRealData: true,
+    });
+  } catch (error) {
+    return respondWeatherError(res, farmLocation, error);
+  }
 });
 
 // Weather-based irrigation optimization
-router.post("/irrigation-optimization", (req, res) => {
+router.post("/irrigation-optimization", async (req, res) => {
   const {
     cropType,
     farmSize,
@@ -193,76 +316,47 @@ router.post("/irrigation-optimization", (req, res) => {
     farmLocation,
   } = req.body;
 
-  const weatherForecast = generateExtendedWeatherForecast(farmLocation, 10);
-  const irrigationPlan = optimizeIrrigationSchedule(
-    weatherForecast,
-    cropType,
-    farmSize,
-    currentSoilMoisture,
-    irrigationSystem,
-  );
+  try {
+    const adapted = await fetchAdaptedForecast(farmLocation, 10);
+    if ("error" in adapted) {
+      return res.status(404).json({
+        error: "موقع غير معروف",
+        detail: `Unknown location '${farmLocation}'.`,
+      });
+    }
+    const weatherForecast = adapted.forecast;
+    const irrigationPlan = optimizeIrrigationSchedule(
+      weatherForecast,
+      cropType,
+      farmSize,
+      currentSoilMoisture,
+      irrigationSystem,
+    );
 
-  res.json({
-    farmLocation,
-    cropType,
-    optimizedPlan: irrigationPlan,
-    waterSavings: calculateWaterSavings(irrigationPlan),
-    costOptimization: calculateCostOptimization(irrigationPlan),
-    environmentalImpact: assessEnvironmentalImpact(irrigationPlan),
-    weatherIntegration: {
-      rainExpected: weatherForecast.filter((day) => day.precipitation > 5)
-        .length,
-      hotDays: weatherForecast.filter((day) => day.temperature.max > 35).length,
-      optimalDays: weatherForecast.filter((day) => isOptimalIrrigationDay(day))
-        .length,
-    },
-  });
+    res.json({
+      farmLocation,
+      cropType,
+      optimizedPlan: irrigationPlan,
+      waterSavings: calculateWaterSavings(irrigationPlan),
+      costOptimization: calculateCostOptimization(irrigationPlan),
+      environmentalImpact: assessEnvironmentalImpact(irrigationPlan),
+      weatherIntegration: {
+        rainExpected: weatherForecast.filter((day) => day.precipitation > 5)
+          .length,
+        hotDays: weatherForecast.filter((day) => day.temperature.max > 35).length,
+        optimalDays: weatherForecast.filter((day) => isOptimalIrrigationDay(day))
+          .length,
+      },
+      dataSource: adapted.weather.source.provider,
+      isRealData: true,
+      observationTime: adapted.weather.source.observationTime,
+    });
+  } catch (error) {
+    return respondWeatherError(res, farmLocation, error);
+  }
 });
 
 // Helper functions
-function generateExtendedWeatherForecast(location: string, days: number) {
-  const forecast = [];
-  const today = new Date();
-
-  for (let i = 0; i < days; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
-
-    const seasonalFactor = Math.sin(((date.getMonth() + 1) * Math.PI) / 6);
-    const baseTemp = 22 + seasonalFactor * 12;
-
-    forecast.push({
-      date: date.toISOString().split("T")[0],
-      temperature: {
-        max: Math.round(baseTemp + 8 + (Math.random() - 0.5) * 6),
-        min: Math.round(baseTemp - 8 + (Math.random() - 0.5) * 4),
-        avg: Math.round(baseTemp + (Math.random() - 0.5) * 3),
-      },
-      humidity: Math.round(65 + (Math.random() - 0.5) * 30),
-      precipitation:
-        Math.random() < 0.3 ? Math.round(Math.random() * 25 * 10) / 10 : 0,
-      windSpeed: Math.round(8 + Math.random() * 12),
-      windDirection: [
-        "شمال",
-        "شمال شرق",
-        "شرق",
-        "جنوب شرق",
-        "جنوب",
-        "جنوب غرب",
-        "غرب",
-        "شمال غرب",
-      ][Math.floor(Math.random() * 8)],
-      solarRadiation: Math.round((4 + Math.random() * 6) * 10) / 10,
-      uvIndex: Math.round(3 + Math.random() * 8),
-      atmosphericPressure: Math.round(1013 + (Math.random() - 0.5) * 20),
-      visibility: Math.round(8 + Math.random() * 12),
-      dewPoint: Math.round(baseTemp - 10 + (Math.random() - 0.5) * 8),
-    });
-  }
-
-  return forecast;
-}
-
 function analyzeTaskSuitability(task: any, weather: any, cropType: string) {
   let score = 100;
   const recommendations = [];
@@ -402,63 +496,6 @@ function generateComprehensiveRecommendations(
   return recommendations;
 }
 
-function calculateEvaporationRate(weather: any) {
-  // Simplified Penman-Monteith calculation
-  const temp = weather.temperature;
-  const humidity = weather.humidity;
-  const wind = weather.windSpeed;
-
-  return (
-    Math.round((temp * 0.1 + (100 - humidity) * 0.02 + wind * 0.05) * 10) / 10
-  );
-}
-
-function generateRainForecast() {
-  return Array.from({ length: 7 }, (_, i) => ({
-    day: i + 1,
-    probability: Math.round(Math.random() * 100),
-    amount: Math.round(Math.random() * 20 * 10) / 10,
-  }));
-}
-
-function calculateIrrigationAdjustment(precipitation: number) {
-  if (precipitation > 20) return "suspend";
-  if (precipitation > 10) return "reduce_75";
-  if (precipitation > 5) return "reduce_50";
-  return "normal";
-}
-
-function getWindRecommendations(windSpeed: number) {
-  if (windSpeed > 25) return ["تجنب جميع أنشطة الرش", "أمّن المعدات الزراعية"];
-  if (windSpeed > 15) return ["تجنب الرش الدقيق", "قل�� من ضغط الرش"];
-  if (windSpeed > 10) return ["راقب اتجاه الرياح أثناء الرش"];
-  return ["ظروف مثالية للرش"];
-}
-
-function calculatePlantStress(weather: any) {
-  const temp = weather.temperature;
-  const humidity = weather.humidity;
-  const radiation = weather.solarRadiation;
-
-  let stress = 0;
-  if (temp > 35) stress += (temp - 35) * 2;
-  if (humidity < 30) stress += 30 - humidity;
-  if (radiation > 8) stress += (radiation - 8) * 5;
-
-  return Math.min(100, stress);
-}
-
-function getCurrentWeatherData(location: string) {
-  return {
-    temperature: 25 + Math.random() * 15,
-    humidity: 60 + Math.random() * 30,
-    windSpeed: 5 + Math.random() * 15,
-    precipitation: Math.random() < 0.2 ? Math.random() * 10 : 0,
-    solarRadiation: 5 + Math.random() * 5,
-    atmosphericPressure: 1013 + (Math.random() - 0.5) * 20,
-  };
-}
-
 function generateAgriculturalAlerts(weather: any, alertTypes: string[]) {
   const alerts = [];
 
@@ -533,17 +570,6 @@ function generateImmediateRecommendations(weather: any, alerts: any[]) {
   }
 
   return recommendations;
-}
-
-function generateHistoricalWeatherData(location: string, months: number) {
-  // Mock historical data generation
-  return {
-    trends: {
-      temperature: { average: 24.5, trend: "+0.2°م/سنة" },
-      precipitation: { average: 245, trend: "-5مم/سنة" },
-      extremeEvents: { heatWaves: 3, droughts: 1, floods: 0 },
-    },
-  };
 }
 
 function analyzeCropWeatherCorrelation(historicalData: any, cropType: string) {

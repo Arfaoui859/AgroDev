@@ -35,6 +35,14 @@ export interface WeatherData {
       solarRadiation?: number;
       /** Daily maximum UV index from the provider, when available. */
       uvIndex?: number;
+      /** Daily mean sea-level pressure (hPa) from the provider, when available. */
+      pressure?: number;
+      /** Daily mean horizontal visibility (km) from the provider, when available. */
+      visibility?: number;
+      /** Dominant daily wind direction (degrees) from the provider, when available. */
+      windDirection?: number;
+      /** Daily maximum wind speed (km/h) from the provider, when available. */
+      windSpeed?: number;
     }>;
     weekly: {
       averageTemp: number;
@@ -86,6 +94,9 @@ interface OpenMeteoResponse {
     wind_speed_10m_max?: number[];
     shortwave_radiation_sum?: number[];
     uv_index_max?: number[];
+    pressure_msl_mean?: number[];
+    visibility_mean?: number[];
+    wind_direction_10m_dominant?: number[];
   };
   hourly?: {
     time?: string[];
@@ -176,7 +187,7 @@ export async function getWeatherFromOpenMeteo(
       "temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl,weather_code,visibility,precipitation",
     hourly: "soil_moisture_0_to_7cm",
     daily:
-      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,et0_fao_evapotranspiration,wind_speed_10m_max,shortwave_radiation_sum,uv_index_max",
+      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,et0_fao_evapotranspiration,wind_speed_10m_max,shortwave_radiation_sum,uv_index_max,pressure_msl_mean,visibility_mean,wind_direction_10m_dominant",
     timezone: "Africa/Tunis",
     forecast_days: "7",
   });
@@ -208,6 +219,22 @@ export async function getWeatherFromOpenMeteo(
       uvIndex:
         typeof daily.uv_index_max?.[index] === "number"
           ? round(daily.uv_index_max[index])
+          : undefined,
+      pressure:
+        typeof daily.pressure_msl_mean?.[index] === "number"
+          ? round(daily.pressure_msl_mean[index])
+          : undefined,
+      visibility:
+        typeof daily.visibility_mean?.[index] === "number"
+          ? round(daily.visibility_mean[index] / 1000, 1)
+          : undefined,
+      windDirection:
+        typeof daily.wind_direction_10m_dominant?.[index] === "number"
+          ? round(daily.wind_direction_10m_dominant[index])
+          : undefined,
+      windSpeed:
+        typeof daily.wind_speed_10m_max?.[index] === "number"
+          ? round(daily.wind_speed_10m_max[index])
           : undefined,
     };
   });
@@ -356,4 +383,97 @@ export function calculateEvapotranspiration(
 
 function estimateSoilMoisturePercent(et0: number, todayRainfall: number): number {
   return round(Math.max(0, Math.min(100, 60 - et0 * 3 + todayRainfall * 10)));
+}
+
+export interface HistoricalMonthlyAverage {
+  /** Calendar month as YYYY-MM. */
+  month: string;
+  avgTemp: number;
+  totalRainfall: number;
+  avgHumidity: number;
+}
+
+export interface HistoricalWeather {
+  monthly: HistoricalMonthlyAverage[];
+  source: { provider: string; isRealData: true };
+}
+
+interface OpenMeteoArchiveResponse {
+  daily?: {
+    time?: string[];
+    temperature_2m_mean?: number[];
+    relative_humidity_2m_mean?: number[];
+    precipitation_sum?: number[];
+  };
+}
+
+/**
+ * Fetch real historical daily observations from the Open-Meteo archive API and
+ * aggregate them into monthly averages. Used by the crop/weather correlation
+ * view, which previously fabricated "historical" figures.
+ *
+ * @throws ProviderError when the archive API is unreachable or errors.
+ */
+export async function getHistoricalWeatherFromOpenMeteo(
+  lat: number,
+  lon: number,
+  months: number,
+): Promise<HistoricalWeather> {
+  const end = new Date();
+  const start = new Date(end);
+  start.setMonth(start.getMonth() - Math.max(1, months));
+
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lon),
+    start_date: start.toISOString().slice(0, 10),
+    end_date: end.toISOString().slice(0, 10),
+    daily: "temperature_2m_mean,relative_humidity_2m_mean,precipitation_sum",
+    timezone: "Africa/Tunis",
+  });
+
+  const data = await fetchJson<OpenMeteoArchiveResponse>(
+    `https://archive-api.open-meteo.com/v1/archive?${params.toString()}`,
+    { provider: "Open-Meteo Archive", timeoutMs: 15_000, retries: 2 },
+  );
+
+  const times = data.daily?.time ?? [];
+  const buckets = new Map<
+    string,
+    { tempSum: number; tempCount: number; rainSum: number; humSum: number; humCount: number }
+  >();
+
+  times.forEach((iso, index) => {
+    const key = iso.slice(0, 7); // YYYY-MM
+    const bucket =
+      buckets.get(key) ??
+      { tempSum: 0, tempCount: 0, rainSum: 0, humSum: 0, humCount: 0 };
+    const temp = data.daily?.temperature_2m_mean?.[index];
+    const hum = data.daily?.relative_humidity_2m_mean?.[index];
+    const rain = data.daily?.precipitation_sum?.[index];
+    if (typeof temp === "number") {
+      bucket.tempSum += temp;
+      bucket.tempCount += 1;
+    }
+    if (typeof hum === "number") {
+      bucket.humSum += hum;
+      bucket.humCount += 1;
+    }
+    if (typeof rain === "number") bucket.rainSum += rain;
+    buckets.set(key, bucket);
+  });
+
+  const monthly: HistoricalMonthlyAverage[] = [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, b]) => ({
+      month,
+      avgTemp: b.tempCount ? round(b.tempSum / b.tempCount, 1) : 0,
+      totalRainfall: round(b.rainSum, 1),
+      avgHumidity: b.humCount ? round(b.humSum / b.humCount) : 0,
+    }));
+
+  return {
+    monthly,
+    source: { provider: "Open-Meteo Archive", isRealData: true },
+  };
 }
