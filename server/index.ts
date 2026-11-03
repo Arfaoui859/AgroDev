@@ -333,6 +333,10 @@ export function createServer() {
       "/api/risk-detection",
       "/api/farmer-dashboard",
       "/api/farmer-segmentation",
+      // In-memory demo stores with no database backing: label them so the SPA
+      // discloses that the community/transformation content is not persisted.
+      "/api/collaboration",
+      "/api/digital-transformation",
     ],
     withSimulatedProvenance("simulated"),
   );

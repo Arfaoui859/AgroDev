@@ -4,6 +4,28 @@ import { markSimulated } from '../lib/provenance';
 
 const router = express.Router();
 
+/**
+ * Deterministic PRNG seeded by a string. The demo history/alerts endpoints are
+ * explicitly labelled simulated; using a seed keeps their shape stable across
+ * requests instead of reshuffling on every refresh.
+ */
+function seededFractions(key: string, count: number): number[] {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    h = Math.imul(h ^ (h >>> 15), 2246822519);
+    h = Math.imul(h ^ (h >>> 13), 3266489917);
+    h ^= h >>> 16;
+    out.push((h >>> 0) / 4294967296);
+  }
+  return out;
+}
+
+
 // Types and interfaces for AI soil problem detection
 interface SoilData {
   id: string;
@@ -948,16 +970,17 @@ router.get('/history/:fieldId', (req, res) => {
   try {
     const { fieldId } = req.params;
     
-    // Generate mock historical data
+    // Deterministic demo history (labelled simulated via markSimulated).
+    const r = seededFractions(`history:${fieldId}`, 24);
     const history = Array.from({ length: 12 }, (_, i) => {
       const date = new Date();
       date.setMonth(date.getMonth() - (11 - i));
-      
+
       return {
         date: date.toISOString().split('T')[0],
-        healthScore: 60 + Math.random() * 30,
-        problemsCount: Math.floor(Math.random() * 5),
-        mainProblems: ['salinity', 'nutrient_deficiency', 'acidity'][Math.floor(Math.random() * 3)],
+        healthScore: 60 + r[i * 2] * 30,
+        problemsCount: Math.floor(r[i * 2 + 1] * 5),
+        mainProblems: ['salinity', 'nutrient_deficiency', 'acidity'][Math.floor(r[i * 2] * 3)],
         status: 'analyzed'
       };
     });
@@ -970,12 +993,12 @@ router.get('/history/:fieldId', (req, res) => {
         trends: {
           healthScoreTrend: history.map(h => h.healthScore),
           problemFrequency: {
-            salinity: Math.floor(Math.random() * 5),
-            nutrient_deficiency: Math.floor(Math.random() * 8),
-            acidity: Math.floor(Math.random() * 3),
-            alkalinity: Math.floor(Math.random() * 2)
+            salinity: Math.floor(r[0] * 5),
+            nutrient_deficiency: Math.floor(r[1] * 8),
+            acidity: Math.floor(r[2] * 3),
+            alkalinity: Math.floor(r[3] * 2)
           },
-          improvementRate: 15 + Math.random() * 20
+          improvementRate: 15 + r[4] * 20
         }
       }
     });
@@ -994,21 +1017,22 @@ router.get('/alerts', (req, res) => {
   try {
     const { severity, resolved } = req.query;
     
-    // Generate mock alerts
+    // Deterministic demo alerts (labelled simulated via markSimulated).
+    const a = seededFractions('soil-alerts', 48);
     const alerts = Array.from({ length: 8 }, (_, i) => ({
       id: `alert_${i + 1}`,
-      fieldId: `field_${Math.floor(Math.random() * 5) + 1}`,
-      problemType: ['salinity', 'acidity', 'nutrient_deficiency', 'waterlogging'][Math.floor(Math.random() * 4)],
-      severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)] as any,
+      fieldId: `field_${Math.floor(a[i * 6] * 5) + 1}`,
+      problemType: ['salinity', 'acidity', 'nutrient_deficiency', 'waterlogging'][Math.floor(a[i * 6 + 1] * 4)],
+      severity: ['low', 'medium', 'high', 'critical'][Math.floor(a[i * 6 + 2] * 4)] as any,
       message: [
         'مستوى الملوحة مرتفع في الحقل الشمالي',
         'نقص النيتروجين في القطاع الشرقي',
         'حموضة التربة تتطلب معالجة فورية',
         'تشبع التربة بالماء في المنطقة المنخفضة'
-      ][Math.floor(Math.random() * 4)],
+      ][Math.floor(a[i * 6 + 3] * 4)],
       actionRequired: 'تدخل خلال أسبوع',
-      dateCreated: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      resolved: Math.random() > 0.7,
+      dateCreated: new Date(Date.now() - a[i * 6 + 4] * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      resolved: a[i * 6 + 5] > 0.7,
       notificationSent: true
     }));
     

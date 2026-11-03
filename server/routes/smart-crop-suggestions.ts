@@ -594,10 +594,14 @@ class SmartCropRecommendationEngine {
     const climateFactor = this.calculateClimateCompatibility(cropData, climate) / 100;
     
     const adjustedYield = baseYield * soilFactor * climateFactor;
-    const adjustedPrice = basePrice * (0.9 + Math.random() * 0.2); // Market variability
+    // Planning estimate: use the reference price/cost table as-is. The previous
+    // implementation applied a random +/-10% 'market variability' that looked
+    // like live market data but was invented; a rule-based engine must not
+    // fabricate price movement.
+    const adjustedPrice = basePrice;
     
     const revenue = adjustedYield * adjustedPrice;
-    const costs = baseCost * (0.9 + Math.random() * 0.2); // Cost variability
+    const costs = baseCost;
     const profit = revenue - costs;
     const roi = (profit / costs) * 100;
     const paybackPeriod = Math.ceil(costs / (profit / 12));
@@ -757,7 +761,9 @@ class SmartCropRecommendationEngine {
 
   private calculateSustainabilityScore(cropData: any, soil: SoilProfile) {
     const sustainability = {
-      soilHealth: 70 + Math.random() * 20,
+      // Deterministic baseline from the reference model; adjusted below by the
+      // measured organic matter rather than randomised.
+      soilHealth: 75,
       waterEfficiency: 80 - (cropData.economics.waterRequirement / 1000) * 50,
       biodiversity: ['olive', 'citrus'].includes(cropData.name) ? 85 : 65,
       carbonFootprint: cropData.economics.growthPeriod > 12 ? 90 : 70
@@ -916,6 +922,9 @@ router.post('/recommendations', (req, res) => {
 
     res.json({
       success: true,
+      engine: 'rule-based',
+      isRealData: false,
+      disclaimer: `${SIMULATED_DISCLAIMER_AR} ${SIMULATED_DISCLAIMER_EN}`,
       data: {
         recommendations,
         analysisDate: new Date().toISOString(),
@@ -956,6 +965,9 @@ router.post('/rotation-plans', (req, res) => {
 
     res.json({
       success: true,
+      engine: 'rule-based',
+      isRealData: false,
+      disclaimer: `${SIMULATED_DISCLAIMER_AR} ${SIMULATED_DISCLAIMER_EN}`,
       data: {
         plans: rotationPlans,
         analysisDate: new Date().toISOString(),
@@ -1032,34 +1044,59 @@ router.get('/crop-database', (req, res) => {
   }
 });
 
+/**
+ * Deterministic pseudo-random fractions in [0,1) derived from a crop id.
+ * Used only to keep the synthesised (clearly-labelled) market preview stable
+ * across requests; it is not a market model.
+ */
+function marketSeed(key: string): number[] {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const out: number[] = [];
+  for (let i = 0; i < 16; i++) {
+    h = Math.imul(h ^ (h >>> 15), 2246822519);
+    h = Math.imul(h ^ (h >>> 13), 3266489917);
+    h ^= h >>> 16;
+    out.push((h >>> 0) / 4294967296);
+  }
+  return out;
+}
+
 // Get market analysis for specific crop
 router.get('/market-analysis/:cropId', (req, res) => {
   try {
     const { cropId } = req.params;
 
     // No licensed market feed is configured; the figures below are synthesised
-    // and labelled as such in the response body.
+    // and labelled as such in the response body. They are derived deterministically
+    // from the crop id (not Math.random) so repeated requests for the same crop
+    // are stable and reviewable.
+    const seed = marketSeed(cropId);
+    const jitter = (offset: number, span: number) => seed[offset % seed.length] * span;
     const analysis = {
       cropId,
-      currentPrice: 800 + Math.random() * 1000,
+      currentPrice: 800 + jitter(0, 1000),
       priceHistory: Array.from({ length: 12 }, (_, i) => ({
         month: new Date(Date.now() - (11 - i) * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        price: 800 + Math.random() * 400
+        price: 800 + jitter(i + 1, 400)
       })),
       demand: {
-        local: 70 + Math.random() * 30,
-        national: 60 + Math.random() * 40,
-        export: 50 + Math.random() * 50
+        local: 70 + jitter(2, 30),
+        national: 60 + jitter(3, 40),
+        export: 50 + jitter(4, 50)
       },
       competition: {
         level: 'medium',
         mainCompetitors: ['المغرب', 'الجزائر', 'مصر'],
-        marketShare: 15 + Math.random() * 20
+        marketShare: 15 + jitter(5, 20)
       },
       forecast: {
         nextSeason: 'positive',
         priceDirection: 'stable',
-        confidenceLevel: 75 + Math.random() * 20
+        confidenceLevel: 75 + jitter(6, 20)
       }
     };
 

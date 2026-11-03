@@ -4,6 +4,8 @@ import { uploadError } from "../middleware/upload";
 import { isLLMConfigured } from "../services/providers/llmProvider";
 import { recordFailure, recordSuccess } from "../services/providers/aiTelemetry";
 import { diagnosePlantImage } from "../services/providers/visionProvider";
+import { serviceBaseUrl } from "../services/providers/microserviceProxy";
+import { probeService } from "../services/providers/serviceProbe";
 
 // Configure multer for image upload
 const storage = multer.memoryStorage();
@@ -324,7 +326,38 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
       }
     }
 
-    // Heuristic analysis (no trained vision model is configured/reachable).
+    // No multimodal LLM is configured: prefer the self-hosted image-diagnosis
+    // microservice when one is reachable, so this endpoint runs the same
+    // detection engine the /api/ai gateway uses instead of a route-local
+    // heuristic. Its own provenance (heuristic-demo vs a trained model) is
+    // carried through rather than being flattened to a generic result.
+    const imageDiagnosisUrl = process.env.IMAGE_DIAGNOSIS_URL;
+    if (imageDiagnosisUrl) {
+      try {
+        const micro = await analyzeWithImageDiagnosisService(files[0], requestData);
+        const microProcessingTime = Date.now() - processingStart;
+        recordSuccess(
+          "plant-disease-detection",
+          micro.modelSource ?? "image-diagnosis-service",
+          !micro.heuristic,
+          microProcessingTime,
+        );
+        return res.json(micro.response);
+      } catch (error) {
+        console.error(
+          "Image diagnosis microservice error (disease/analyze):",
+          (error as Error).message,
+        );
+        recordFailure(
+          "plant-disease-detection",
+          "microservice",
+          error,
+          Date.now() - processingStart,
+        );
+      }
+    }
+
+    // Heuristic analysis (no trained vision model and no reachable service).
     const analysisResult = await performMockAIAnalysis(files, requestData);
     const processingTime = Date.now() - processingStart;
     
@@ -344,10 +377,10 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
       economicImpact: calculateEconomicImpact(analysisResult.diagnosis, requestData.cropType),
       metadata: {
         processedAt: new Date().toISOString(),
-        // No vision model is wired into this legacy endpoint: results are
-        // heuristic simulations. Flagged explicitly so clients do not present
-        // them as model inferences.
-        model: "heuristic-simulated",
+        // No vision model and no reachable service: results come from the
+        // route-local reference table. Flagged explicitly so clients do not
+        // present them as model inferences.
+        model: "heuristic-reference-table",
         version: "0.0.0",
         dataSource: "simulated",
         isRealData: false,
@@ -363,6 +396,155 @@ export const analyzePlantImages: RequestHandler = async (req, res) => {
     });
   }
 };
+
+/** Severity vocabularies differ between the service and this response type. */
+function normaliseSeverity(value: unknown): "low" | "medium" | "high" {
+  const v = String(value ?? "").toLowerCase();
+  if (v === "very_high" || v === "critical" || v === "high") return "high";
+  if (v === "none" || v === "low" || v === "mild") return "low";
+  return "medium";
+}
+
+/**
+ * Map the image-diagnosis microservice payload onto this route's response
+ * shape. Everything the service reports (its own detection method and the
+ * feature-derived scores) is carried through; nothing is invented to fill a
+ * gap.
+ */
+function mapImageDiagnosisResponse(
+  raw: any,
+  requestData: DiseaseDetectionRequest,
+  modelSource: string | null,
+  heuristic: boolean,
+  processingTime: number,
+): DiseaseDetectionResponse {
+  const detection = raw?.disease_detection ?? {};
+  const primary = detection.primary_disease ?? {};
+  const diseaseId: string = primary.disease ?? "unknown-disease";
+  const confidence = Math.round(
+    Number(detection.confidence_score ?? primary.probability ?? 0) * 100,
+  );
+  const severity = normaliseSeverity(raw?.severity_assessment?.severity_level);
+  const treatmentPlan = raw?.treatment_plan ?? {};
+  const monitoring: string[] = Array.isArray(raw?.monitoring_recommendations)
+    ? raw.monitoring_recommendations
+    : [];
+  const predictions = Array.isArray(detection.top_predictions)
+    ? detection.top_predictions
+    : [];
+
+  const diagnosis: DiseaseDetectionResponse["diagnosis"] = {
+    disease: primary.disease_name_ar ?? primary.disease ?? diseaseId,
+    diseaseId,
+    confidence,
+    severity,
+    description:
+      predictions.find((p: any) => p.disease === diseaseId)?.description ??
+      primary.description ??
+      "",
+    symptoms: Array.isArray(raw?.risk_assessment?.stress_indicators)
+      ? raw.risk_assessment.stress_indicators
+      : [],
+    causes: [],
+    treatment: Array.isArray(treatmentPlan.immediate_treatment)
+      ? treatmentPlan.immediate_treatment
+      : [],
+    prevention: Array.isArray(treatmentPlan.prevention_measures)
+      ? treatmentPlan.prevention_measures
+      : [],
+    urgency:
+      severity === "high" ? "high" : severity === "low" ? "low" : "medium",
+  };
+
+  return {
+    id: `diag-${Date.now()}`,
+    confidence,
+    diagnosis,
+    imageAnalysis: {
+      // The service does not expose calibrated quality/clarity scores; report
+      // zeros rather than inventing a second, unbacked score.
+      quality: 0,
+      clarity: 0,
+      relevantSymptoms: diagnosis.symptoms.slice(0, 3),
+      detectedAreas: [],
+    },
+    recommendations: {
+      immediate: diagnosis.treatment,
+      shortTerm: Array.isArray(treatmentPlan.general_care)
+        ? treatmentPlan.general_care
+        : [],
+      longTerm: diagnosis.prevention,
+      monitoring,
+    },
+    economicImpact: calculateEconomicImpact(diagnosis, requestData.cropType),
+    metadata: {
+      processedAt: new Date().toISOString(),
+      model: modelSource ?? "image-diagnosis-service",
+      version: "1.0.0",
+      dataSource: "microservice",
+      // A heuristic-demo service is not a trained model: keep isRealData false
+      // so the UI labels it honestly.
+      isRealData: !heuristic,
+      processingTime,
+    },
+  };
+}
+
+/** POST one image to the image-diagnosis service and map its response. */
+async function analyzeWithImageDiagnosisService(
+  file: Express.Multer.File,
+  requestData: DiseaseDetectionRequest,
+): Promise<{
+  response: DiseaseDetectionResponse;
+  modelSource: string | null;
+  heuristic: boolean;
+}> {
+  const baseUrl = serviceBaseUrl(process.env.IMAGE_DIAGNOSIS_URL, "");
+  const form = new FormData();
+  // Copy into a fresh view so the Blob type matches (a raw Buffer is backed by
+  // ArrayBufferLike, which BlobPart rejects).
+  const bytes = new Uint8Array(file.buffer);
+  form.append(
+    "file",
+    new Blob([bytes], { type: file.mimetype }),
+    file.originalname || "leaf.jpg",
+  );
+  if (requestData.cropType) form.append("plant_type", requestData.cropType);
+
+  const startedAt = Date.now();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  let raw: any;
+  try {
+    const response = await fetch(`${baseUrl}/detect-disease`, {
+      method: "POST",
+      body: form,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(
+        `image-diagnosis service responded with HTTP ${response.status}`,
+      );
+    }
+    raw = await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const probe = await probeService(baseUrl);
+  return {
+    response: mapImageDiagnosisResponse(
+      raw,
+      requestData,
+      probe.modelSource,
+      probe.heuristic,
+      Date.now() - startedAt,
+    ),
+    modelSource: probe.modelSource,
+    heuristic: probe.heuristic,
+  };
+}
+
 
 async function performMockAIAnalysis(
   files: Express.Multer.File[], 

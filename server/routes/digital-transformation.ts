@@ -454,7 +454,11 @@ router.patch('/maturity/:area', (req, res) => {
     }
     
     // Recalculate score based on current level and initiatives progress
-    digitalMaturity[areaIndex].score = digitalMaturity[areaIndex].currentLevel + (Math.random() * 0.5);
+    // Deterministic score derived from the levels just set (no randomised drift).
+    digitalMaturity[areaIndex].score = Math.min(
+      digitalMaturity[areaIndex].targetLevel,
+      digitalMaturity[areaIndex].currentLevel + 0.5,
+    );
     
     res.json(digitalMaturity[areaIndex]);
   } catch (error) {

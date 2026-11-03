@@ -33,6 +33,8 @@ describe("🗂  Simulated-data provenance headers", () => {
     "/api/predictive-analytics/overview",
     "/api/risk-detection/overview",
     "/api/farmer-dashboard/overview",
+    "/api/digital-transformation/projects",
+    "/api/collaboration/chat-rooms",
   ];
 
   test.each(simulatedPaths)(
