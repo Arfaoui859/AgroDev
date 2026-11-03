@@ -22,6 +22,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from image_diagnosis.plant_disease_detector import create_plant_disease_detector
 from image_diagnosis.leaf_scan_ai import create_leaf_scan_ai
+from ai_common.llm_provider import get_provider, LLMError
+from ai_common.vision_bridge import diagnose_with_vision, merge_into_detection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -63,6 +65,11 @@ class PlantDiseaseResponse(BaseModel):
     environmental_analysis: Dict[str, Any]
     monitoring_recommendations: List[str]
     analysis_timestamp: str
+    # Provenance: "vision-model" when a multimodal provider produced the
+    # diagnosis, "heuristic" when only the built-in detector ran.
+    data_source: Optional[str] = None
+    is_real_data: Optional[bool] = None
+    model_source: Optional[str] = None
 
 class LeafAnalysisResponse(BaseModel):
     leaf_nutrition: Dict[str, Any]
@@ -142,6 +149,8 @@ async def supported_diseases():
 
 @app.get("/health")
 async def health():
+    provider = get_provider()
+    configured = provider.is_configured()
     return {
         "status": "healthy",
         "models_loaded": {
@@ -149,9 +158,16 @@ async def health():
             "leaf_scanner": leaf_scanner is not None
         },
         "note": "Models load only on first request (RAM optimized)",
-        # No pretrained weights are bundled; inference is heuristic/demo-grade.
-        "model_source": "heuristic-demo",
-        "disclaimer": "Diagnosis is heuristic and demo-grade; not a substitute for expert diagnosis."
+        # When a vision provider is configured the diagnosis comes from it; the
+        # heuristic detector remains the fallback. The declared source tells the
+        # gateway probe which of the two produced a given result.
+        "model_source": provider.model_source() if configured else "heuristic-demo",
+        "vision_configured": configured,
+        "disclaimer": (
+            "Diagnosis is model-assisted and not a substitute for expert diagnosis."
+            if configured
+            else "Diagnosis is heuristic and demo-grade; not a substitute for expert diagnosis."
+        ),
     }
 
 # =========================================================
@@ -174,6 +190,27 @@ async def detect_plant_disease(
         detector = get_disease_detector()
 
         result = detector.detect_plant_disease(image_data, plant_type)
+
+        # Prefer a real multimodal model when one is configured. If it is not, or
+        # it fails, keep the heuristic detection and label it as such.
+        vision = diagnose_with_vision(
+            image_data,
+            file.content_type,
+            plant_type,
+            getattr(detector, "disease_database", {}) or {},
+        )
+        if vision:
+            result["disease_detection"] = merge_into_detection(
+                result.get("disease_detection", {}), vision
+            )
+            result["data_source"] = "vision-model"
+            result["is_real_data"] = True
+            result["model_source"] = vision.get("model_source")
+        else:
+            result["data_source"] = "heuristic"
+            result["is_real_data"] = False
+            result["model_source"] = "heuristic-demo"
+
         return PlantDiseaseResponse(**result)
 
     except Exception as e:

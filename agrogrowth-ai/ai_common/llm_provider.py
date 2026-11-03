@@ -278,6 +278,104 @@ class LLMProvider:
         text = self.chat(messages, temperature=temperature, max_tokens=max_tokens, json_mode=True)
         return extract_json(text)
 
+    def vision_model(self) -> str:
+        """Model used for image inference (AI_VISION_MODEL, else AI_MODEL)."""
+        return _first_env("AI_VISION_MODEL") or self.config.model
+
+    def chat_with_image(
+        self,
+        image_b64: str,
+        mime_type: str,
+        prompt: str,
+        *,
+        system: Optional[str] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 1200,
+    ) -> str:
+        """Send an image + prompt to a multimodal model and return the text.
+
+        Raises LLMError("unconfigured") when no provider is set so the caller
+        can fall back explicitly rather than invent a diagnosis.
+        """
+        cfg = self.config
+        if cfg.kind == "none":
+            raise LLMError("unconfigured", "No vision provider is configured")
+
+        messages: List[Dict[str, Any]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+
+        if cfg.kind == "gemini":
+            url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{self.vision_model()}:generateContent?key={cfg.api_key}"
+            )
+            parts: List[Dict[str, Any]] = [{"text": prompt}]
+            parts.append({"inlineData": {"mimeType": mime_type, "data": image_b64}})
+            payload: Dict[str, Any] = {
+                "contents": [{"role": "user", "parts": parts}],
+                "generationConfig": {
+                    "temperature": temperature,
+                    "maxOutputTokens": max_tokens,
+                    "responseMimeType": "application/json",
+                },
+            }
+            data = self._post(url, {"Content-Type": "application/json"}, payload)
+            try:
+                return data["candidates"][0]["content"]["parts"][0]["text"] or ""
+            except (KeyError, IndexError, TypeError) as exc:
+                raise LLMError("protocol", f"Unexpected Gemini response shape: {exc}") from exc
+
+        url = f"{cfg.base_url}/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        if cfg.api_key:
+            headers["Authorization"] = f"Bearer {cfg.api_key}"
+        messages.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{mime_type};base64,{image_b64}"},
+                    },
+                ],
+            }
+        )
+        payload = {
+            "model": self.vision_model(),
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "response_format": {"type": "json_object"},
+        }
+        data = self._post(url, headers, payload)
+        try:
+            return data["choices"][0]["message"]["content"] or ""
+        except (KeyError, IndexError, TypeError) as exc:
+            raise LLMError("protocol", f"Unexpected provider response shape: {exc}") from exc
+
+    def chat_image_json(
+        self,
+        image_b64: str,
+        mime_type: str,
+        prompt: str,
+        *,
+        system: Optional[str] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 1200,
+    ) -> Optional[Any]:
+        """Vision call parsed as JSON, or None when the reply is not JSON."""
+        text = self.chat_with_image(
+            image_b64,
+            mime_type,
+            prompt,
+            system=system,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return extract_json(text)
+
     # -- protocol implementations -------------------------------------------
 
     def _chat_openai(
