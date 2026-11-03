@@ -23,7 +23,6 @@ jest.mock("axios", () => {
   return callable;
 });
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { createServer } = require("../../server/index");
 
 let app: express.Application;

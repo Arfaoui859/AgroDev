@@ -139,7 +139,11 @@ jobs:
 
       - name: 🧪 Bootstrap regression tests (launch target / import / ports)
         run: |
-          python -m pip install --quiet pytest
+          # The tests import the real service modules, which need fastapi,
+          # pydantic, numpy, sklearn, pandas, Pillow and opencv. The heavy ML
+          # wheels in requirements.txt (tensorflow/torch) are intentionally not
+          # installed: inference falls back to the heuristic engine without them.
+          python -m pip install --quiet -r agrogrowth-ai/requirements-test.txt
           python -m pytest agrogrowth-ai/tests -q
 
   # =====================================
