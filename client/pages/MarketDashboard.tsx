@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, AlertTriangle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { readProvenance, type DataProvenance } from "@/lib/dataProvenance";
+import { MarketProvenanceNotice } from "@/components/market/MarketProvenanceNotice";
 
 interface MarketPrice {
   id: string;
@@ -54,6 +55,7 @@ export default function MarketDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
 
   const fetchMarketData = async () => {
     setIsLoading(true);
@@ -62,6 +64,9 @@ export default function MarketDashboard() {
       const pricesResponse = await fetch('/api/market-analysis/prices/current');
       const prices = await pricesResponse.json();
       setMarketPrices(prices);
+      // Prices are synthetic: surface the server's provenance header so the UI
+      // never presents simulated TND figures as a live market feed.
+      setProvenance(readProvenance(pricesResponse.headers, prices));
 
       // Fetch dashboard data
       const dashboardResponse = await fetch('/api/market-analysis/dashboard');
@@ -129,16 +134,12 @@ export default function MarketDashboard() {
         </div>
 
       </div>
-      {/* Data provenance: no live market feed is configured, so the numbers
-          below are model-generated. Stated plainly so they are not mistaken
-          for real market prices. */}
-      <Alert className="border-amber-300 bg-amber-50 text-amber-900">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          الأسعار والتنبؤات المعروضة هنا بيانات محاكاة توضيحية وليست أسعاراً
-          حقيقية من السوق. لا تعتمد عليها لاتخاذ قرارات تجارية.
-        </AlertDescription>
-      </Alert>
+      {/* Data provenance: driven by the server's X-Data-Provenance header
+          rather than a hardcoded assumption, so this stays truthful if a
+          licensed live feed is ever configured. */}
+      {!isLoading && (
+        <MarketProvenanceNotice provenance={provenance} />
+      )}
 
       {/* Market Summary Cards */}
       {dashboardData && (

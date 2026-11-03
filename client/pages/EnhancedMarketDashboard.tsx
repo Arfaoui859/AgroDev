@@ -36,6 +36,8 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { readProvenance, type DataProvenance } from "@/lib/dataProvenance";
+import { MarketProvenanceNotice } from "@/components/market/MarketProvenanceNotice";
 import {
   LineChart,
   Line,
@@ -140,6 +142,7 @@ export default function EnhancedMarketDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRealTime, setIsRealTime] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
 
   const fetchMarketData = async () => {
     setIsLoading(true);
@@ -161,6 +164,8 @@ export default function EnhancedMarketDashboard() {
       setLastUpdate(new Date());
       // Real-time only if the feed is not the simulated demonstration dataset.
       setIsRealTime(dashboard?.isRealData === true);
+      // Surface the server's provenance so synthetic prices are labelled.
+      setProvenance(readProvenance(pricesRes.headers, dashboard ?? prices));
 
       // Set default selected crop if not set
       if (!selectedCrop && prices.length > 0) {
@@ -356,6 +361,9 @@ export default function EnhancedMarketDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Provenance: prices come from a synthetic model, not a live feed. */}
+      {!isLoading && <MarketProvenanceNotice provenance={provenance} />}
 
       {/* Enhanced Market Summary Cards */}
       {dashboardData && (
