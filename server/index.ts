@@ -60,6 +60,10 @@ import {
   createBudgetPlan,
   getBudgetPlans,
   updateBudgetPlan,
+  updateExpense,
+  deleteExpense,
+  updateRevenue,
+  deleteRevenue,
 } from "./routes/financial-management";
 import {
   getAnimals,
@@ -382,8 +386,12 @@ export function createServer() {
   // Financial Management routes
   app.post("/api/expenses", createExpense);
   app.get("/api/expenses", getExpenses);
+  app.put("/api/expenses/:id", updateExpense);
+  app.delete("/api/expenses/:id", deleteExpense);
   app.post("/api/revenues", createRevenue);
   app.get("/api/revenues", getRevenues);
+  app.put("/api/revenues/:id", updateRevenue);
+  app.delete("/api/revenues/:id", deleteRevenue);
   app.get("/api/profitability-analysis", getProfitabilityAnalysis);
   app.get("/api/financial-summary", getFinancialSummary);
   app.post("/api/budget-plans", createBudgetPlan);
@@ -648,15 +656,6 @@ export function createServer() {
 
   // Admin User Setup
   app.post("/api/setup-admin", requireAdminToken(), setupAdminUser);
-
-  // Test endpoint for development
-  app.get("/api/ping", (req, res) => {
-    res.json({
-      message: "Server is running",
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || "development",
-    });
-  });
 
   // Auth Helper Endpoints (bypass RLS)
   app.post("/api/auth/create-user-profile", requireAdminToken(), createUserWithProfile);

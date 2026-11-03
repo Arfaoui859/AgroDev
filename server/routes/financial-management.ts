@@ -506,6 +506,106 @@ export async function getExpenses(req: Request, res: Response) {
   }
 }
 
+export async function updateExpense(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const index = expenses.findIndex(exp => exp.id === id);
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'المصروف غير موجود'
+      });
+    }
+    expenses[index] = { ...expenses[index], ...req.body, id };
+    res.json({
+      success: true,
+      data: expenses[index],
+      message: 'تم تحديث المصروف بنجاح'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'حدث خطأ في تحديث المصروف',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+export async function deleteExpense(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const index = expenses.findIndex(exp => exp.id === id);
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'المصروف غير موجود'
+      });
+    }
+    const [removed] = expenses.splice(index, 1);
+    res.json({
+      success: true,
+      data: removed,
+      message: 'تم حذف المصروف بنجاح'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'حدث خطأ في حذف المصروف',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+export async function updateRevenue(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const index = revenues.findIndex(rev => rev.id === id);
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'سجل الإيراد غير موجود'
+      });
+    }
+    revenues[index] = { ...revenues[index], ...req.body, id };
+    res.json({
+      success: true,
+      data: revenues[index],
+      message: 'تم تحديث الإيراد بنجاح'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'حدث خطأ في تحديث الإيراد',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+export async function deleteRevenue(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const index = revenues.findIndex(rev => rev.id === id);
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'سجل الإيراد غير موجود'
+      });
+    }
+    const [removed] = revenues.splice(index, 1);
+    res.json({
+      success: true,
+      data: removed,
+      message: 'تم حذف الإيراد بنجاح'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'حدث خطأ في حذف الإيراد',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
 export async function createRevenue(req: Request, res: Response) {
   try {
     const revenueData: Omit<RevenueRecord, 'id'> = req.body;
