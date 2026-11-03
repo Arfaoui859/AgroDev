@@ -5,7 +5,6 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { Progress } from '../components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import {
@@ -58,7 +57,15 @@ interface ChatMessage {
   timestamp: string;
   language: 'ar' | 'en' | 'fr';
   metadata?: {
-    confidence?: number;
+    /**
+     * Where the answer actually came from. "llm" only when a configured model
+     * produced it; "rule-based" when the backend's agronomic engine did;
+     * "local-fallback" when the browser answered from its own static text
+     * because the advisor service was unreachable.
+     */
+    dataSource?: 'llm' | 'rule-based' | 'local-fallback';
+    /** Model that wrote the answer, e.g. "openai:gpt-4o-mini". */
+    modelSource?: string;
     sources?: string[];
     suggestions?: string[];
     actionItems?: string[];
@@ -146,7 +153,6 @@ const AIAssistantChatbot: React.FC = () => {
       timestamp: new Date().toISOString(),
       language: language,
       metadata: {
-        confidence: 100,
         suggestions: [
           'ما هو أفضل محصول للزراعة في موسمي؟',
           'كيف يمكنني تحسين إنتاجية مزرعتي؟',
@@ -307,10 +313,11 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         timestamp: new Date().toISOString(),
         language: (result.language as 'ar' | 'en' | 'fr') || language,
         metadata: {
-          confidence: source === 'llm' ? 90 : 70,
+          dataSource: source,
+          modelSource: (result as { modelSource?: string }).modelSource,
           sources:
             source === 'llm'
-              ? ['نموذج لغوي (LLM)']
+              ? [`نموذج لغوي (LLM): ${(result as { modelSource?: string }).modelSource ?? ''}`.trim()]
               : ['محرك قواعد زراعية'],
           suggestions: quickActions.slice(0, 4),
           relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
@@ -344,8 +351,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         timestamp: new Date().toISOString(),
         language: language,
         metadata: {
-          confidence: 92,
-          sources: ['بيانات المناخ', 'أسعار السوق', 'خبرة المزارعين'],
+          dataSource: 'local-fallback',
+          sources: ['إرشادات عامة محلية'],
           suggestions: [
             'تفاصيل زراعة الطماطم',
             'أفضل أوقات الزراعة',
@@ -372,8 +379,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         timestamp: new Date().toISOString(),
         language: language,
         metadata: {
-          confidence: 88,
-          sources: ['بيانات البورصة', 'تقارير السوق', 'التحليل الفني'],
+          dataSource: 'local-fallback',
+          sources: ['إرشادات عامة محلية'],
           suggestions: [
             'توقعات الأسعار لـ30 يوم',
             'أفضل منافذ ال��يع',
@@ -394,8 +401,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         timestamp: new Date().toISOString(),
         language: language,
         metadata: {
-          confidence: 85,
-          sources: ['الأرصاد الجوية', 'النماذج المناخية', 'البيانات التاريخية'],
+          dataSource: 'local-fallback',
+          sources: ['إرشادات عامة محلية'],
           suggestions: [
             'تحضيرات للموجة الحارة',
             'خطة الحماية من الأمطار',
@@ -416,8 +423,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         timestamp: new Date().toISOString(),
         language: language,
         metadata: {
-          confidence: 90,
-          sources: ['هندسة الري', 'كفاءة المياه', 'التقنيات الحديثة'],
+          dataSource: 'local-fallback',
+          sources: ['إرشادات عامة محلية'],
           suggestions: [
             'حساب احتياجات المياه',
             'أنظمة الري الذكية',
@@ -438,8 +445,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         timestamp: new Date().toISOString(),
         language: language,
         metadata: {
-          confidence: 87,
-          sources: ['التحليل المالي', 'دراسات الجدوى', 'الخبرة العملية'],
+          dataSource: 'local-fallback',
+          sources: ['إرشادات عامة محلية'],
           suggestions: [
             'حساب ��لعائد على الاستثمار',
             'تقليل التكاليف',
@@ -459,7 +466,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       timestamp: new Date().toISOString(),
       language: language,
       metadata: {
-        confidence: 75,
+        dataSource: 'local-fallback',
         suggestions: quickActions.slice(0, 4),
         relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
       },
@@ -1369,15 +1376,20 @@ Comment puis-je vous aider aujourd'hui?`
                         {/* Metadata for AI messages */}
                         {message.type === 'assistant' && message.metadata && (
                           <div className="space-y-2 pt-2 border-t border-gray-100">
-                            {/* Confidence Score */}
-                            {message.metadata.confidence && (
+                            {/* Answer provenance */}
+                            {message.metadata.dataSource && (
                               <div className="flex items-center gap-2 text-xs text-gray-600">
                                 <Star className="h-3 w-3" />
                                 <span>
-                                  {language === 'ar' ? 'الثقة' : language === 'en' ? 'Confidence' : 'Confiance'}: 
-                                  {message.metadata.confidence}%
+                                  {message.metadata.dataSource === 'llm'
+                                    ? (language === 'ar' ? 'إجابة نموذج لغوي' : language === 'fr' ? 'Réponse du modèle' : 'Model answer')
+                                    : message.metadata.dataSource === 'rule-based'
+                                      ? (language === 'ar' ? 'إجابة محرك القواعد' : language === 'fr' ? 'Moteur de règles' : 'Rule engine answer')
+                                      : (language === 'ar' ? 'إرشادات محلية (الخدمة غير متاحة)' : language === 'fr' ? 'Conseils locaux (service indisponible)' : 'Local guidance (service unavailable)')}
                                 </span>
-                                <Progress value={message.metadata.confidence} className="flex-1 h-1" />
+                                {message.metadata.modelSource && (
+                                  <span className="text-gray-400">· {message.metadata.modelSource}</span>
+                                )}
                               </div>
                             )}
 

@@ -16,6 +16,7 @@ import SmartSoilAnalysis from "@/components/ai/SmartSoilAnalysis";
 import SmartCropRecommendations from "@/components/ai/SmartCropRecommendations";
 import PlantDiseaseDetection from "@/components/ai/PlantDiseaseDetection";
 import { useServiceHealthChecker } from "@/hooks/useServiceHealthChecker";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Brain,
@@ -723,6 +724,22 @@ export default function AIIntelligenceDashboard() {
           </div>
         </div>
       </div>
+
+      {/* The overview metrics, agent cards and recommendation feed on this page
+          are fixed in-memory fixtures; only the Analysis tabs call live AI
+          services. Say so rather than presenting fixtures as live intelligence. */}
+      <SimulatedDataNotice
+        title={
+          isArabic
+            ? "لوحة توضيحية: الأرقام والتوصيات أدناه نماذج ثابتة"
+            : "Illustrative dashboard: the figures and recommendations below are fixed fixtures"
+        }
+        description={
+          isArabic
+            ? "مؤشرات النظرة العامة وعملاء الذكاء الاصطناعي والتوصيات المعروضة هنا بيانات توضيحية ثابتة في الذاكرة وليست تحليلاً حياً. للحصول على تحليل حقيقي استخدم تبويبات التحليل (التربة، المحاصيل، الأمراض)."
+            : "The overview metrics, AI agent cards and recommendation feed here are fixed in-memory fixtures, not live analysis. For real analysis use the Analysis tabs (soil, crops, disease)."
+        }
+      />
 
       {/* AI Agents Status Bar */}
       <Card className="bg-gradient-to-r from-purple-500 to-blue-600 text-white">
