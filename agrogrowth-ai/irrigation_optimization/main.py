@@ -12,6 +12,8 @@ from datetime import datetime
 import uvicorn
 
 from irrigation_optimization.smart_irrigation_optimizer import create_smart_irrigation_optimizer
+from ai_common.llm_provider import get_provider
+from ai_common.advisory import narrate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +51,7 @@ class IrrigationOptimizationRequest(BaseModel):
     soil_data: SoilData = SoilData()
     farm_size: float = 1.0
     days_ahead: int = 7
+    language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
 
 class IrrigationScheduleRequest(BaseModel):
     crop_type: str
@@ -74,17 +77,31 @@ async def optimize_irrigation_schedule(request: IrrigationOptimizationRequest):
         input_data = {
             'crop_type': request.crop_type,
             'growth_stage': request.growth_stage,
-            'weather_data': request.weather_data.dict(),
-            'soil_data': request.soil_data.dict(),
+            'weather_data': request.weather_data.model_dump(),
+            'soil_data': request.soil_data.model_dump(),
             'farm_size': request.farm_size,
             'days_ahead': request.days_ahead
         }
         
         result = irrigation_optimizer.optimize_irrigation_schedule(input_data)
         
+        # The numeric schedule is synthetic; a configured LLM adds a labelled
+        # advisory explaining the plan and the water savings to the farmer.
+        advisory = narrate(
+            result,
+            task="Explain this irrigation schedule and how to follow it.",
+            language=request.language,
+            context={"crop_type": request.crop_type, "growth_stage": request.growth_stage},
+        )
+        if advisory:
+            result['advisory'] = advisory
+
         return {
             'success': True,
             'data': result,
+            'data_source': 'synthetic-model',
+            'is_real_data': False,
+            'model_source': 'synthetic-demo',
             'message': 'تم تحسين جدولة الري بنجاح'
         }
         
@@ -260,6 +277,10 @@ async def health_check():
         'service': 'Smart Irrigation Optimizer',
         # Trained on synthetic samples generated in-process.
         'model_source': 'synthetic-demo',
+        'advisory_model_source': get_provider().model_source()
+        if get_provider().is_configured()
+        else None,
+        'advisory_configured': get_provider().is_configured(),
         'timestamp': datetime.now().isoformat(),
         'model_trained': irrigation_optimizer.is_trained
     }

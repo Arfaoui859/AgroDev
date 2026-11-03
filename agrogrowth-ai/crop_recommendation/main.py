@@ -166,7 +166,7 @@ async def recommend_crops(request: CropRecommendationRequest):
         logger.info(f"Processing crop recommendation request for conditions: temp={request.temperature}°C, rainfall={request.annual_rainfall}mm")
         
         # Convert request to dict for processing
-        input_data = request.dict()
+        input_data = request.model_dump()
         
         # Get recommendations
         result = crop_recommender.recommend_crops(input_data)
@@ -208,7 +208,7 @@ async def estimate_profit(request: ProfitEstimationRequest):
         logger.info(f"Processing profit estimation for crop: {request.crop_name}, farm size: {request.farm_size}ha")
         
         # Convert request to dict for processing
-        crop_data = request.dict()
+        crop_data = request.model_dump()
         
         # Get profit estimation
         result = profit_estimator.estimate_crop_profitability(crop_data)
@@ -232,7 +232,7 @@ async def compare_crops(request: CropComparisonRequest):
         logger.info(f"Processing crop comparison for {len(request.crops_data)} crops")
         
         # Convert request data
-        crops_data = [crop.dict() for crop in request.crops_data]
+        crops_data = [crop.model_dump() for crop in request.crops_data]
         
         # Perform comparison
         result = profit_estimator.compare_crop_profitability(crops_data)

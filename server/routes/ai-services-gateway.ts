@@ -198,6 +198,10 @@ export const analyzeSoilData = async (req: Request, res: Response) => {
         sensor_data: sensorData,
         location: normaliseLocation(req.body?.location),
         farm_id: req.body?.farm_id,
+        // Forwarded so a configured LLM produces the advisory in the farmer's
+        // language and can tailor it to the crop.
+        language: req.body?.language,
+        crop: req.body?.crop ?? req.body?.crop_type,
       },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.SOIL_ANALYSIS);
@@ -312,6 +316,7 @@ export const getSmartCropRecommendations = async (
         farm_size: toNumber(b.farm_size ?? b.area_hectares),
         risk_tolerance: toNumber(b.risk_tolerance),
         location: normaliseLocation(b.location),
+        language: b.language,
       },
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.CROP_RECOMMENDATION);

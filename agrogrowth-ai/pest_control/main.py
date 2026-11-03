@@ -14,6 +14,8 @@ import base64
 
 from pest_control.pest_control_recommender import create_pest_control_recommender
 from ai_common.utils import to_json_safe
+from ai_common.llm_provider import get_provider
+from ai_common.advisory import narrate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +52,7 @@ class PestAnalysisRequest(BaseModel):
     previous_treatment: bool = False
     treatment_history: List[str] = []
     image_data: Optional[str] = None  # base64 encoded image
+    language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
 
 class PestIdentificationRequest(BaseModel):
     symptoms: List[str]
@@ -72,12 +75,27 @@ async def analyze_pest_problem(request: PestAnalysisRequest):
     try:
         logger.info(f"Analyzing pest problem for crop: {request.crop_type}")
         
-        input_data = request.dict()
+        input_data = request.model_dump()
         result = pest_recommender.analyze_pest_problem(input_data)
+        payload = to_json_safe(result)
+
+        # The numeric analysis is synthetic; a configured LLM adds a labelled
+        # advisory explaining the treatment plan to the farmer.
+        advisory = narrate(
+            payload,
+            task="Explain this pest/disease analysis and the treatment plan.",
+            language=request.language,
+            context={"crop_type": request.crop_type, "symptoms": request.symptoms},
+        )
+        if advisory:
+            payload['advisory'] = advisory
         
         return {
             'success': True,
-            'data': to_json_safe(result),
+            'data': payload,
+            'data_source': 'synthetic-model',
+            'is_real_data': False,
+            'model_source': 'synthetic-demo',
             'message': 'تم تحليل مشكلة الآفات بنجاح'
         }
         
@@ -304,6 +322,10 @@ async def health_check():
         'service': 'Pest Control Recommender',
         # Trained on synthetic samples generated in-process.
         'model_source': 'synthetic-demo',
+        'advisory_model_source': get_provider().model_source()
+        if get_provider().is_configured()
+        else None,
+        'advisory_configured': get_provider().is_configured(),
         'timestamp': datetime.now().isoformat(),
         'model_trained': pest_recommender.is_trained
     }

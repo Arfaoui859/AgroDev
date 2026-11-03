@@ -16,6 +16,8 @@ import base64
 from weather_yield_intelligence.smart_weather_crop_planner import create_smart_weather_crop_planner
 from weather_yield_intelligence.yield_predictor_ai import create_yield_predictor_ai
 from ai_common.utils import to_json_safe
+from ai_common.llm_provider import get_provider
+from ai_common.advisory import narrate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -109,6 +111,7 @@ class WeatherPlanningRequest(BaseModel):
     crop_options: List[str] = ["wheat", "corn", "tomato", "potato", "olive"]
     farm_profile: FarmProfile = FarmProfile()
     planning_horizon_months: int = 12
+    language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
 
 class YieldPredictionRequest(BaseModel):
     crop_type: str = "wheat"
@@ -117,6 +120,7 @@ class YieldPredictionRequest(BaseModel):
     soil_data: SoilData = SoilData()
     management_practices: ManagementPractices = ManagementPractices()
     farm_size: float = 1.0
+    language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
     planting_date: Optional[str] = None
     variety_info: Dict[str, Any] = {}
     field_image: Optional[str] = None  # base64 encoded
@@ -134,12 +138,25 @@ async def create_weather_based_plan(request: WeatherPlanningRequest):
     try:
         logger.info(f"Creating weather-based plan for location: {request.location.region}")
         
-        input_data = request.dict()
+        input_data = request.model_dump()
         result = get_weather_planner().create_weather_based_plan(input_data)
+        payload = to_json_safe(result)
+
+        advisory = narrate(
+            payload,
+            task="Explain this weather-based crop plan and the reasoning behind it.",
+            language=request.language,
+            context={"region": request.location.region, "crop_options": request.crop_options},
+        )
+        if advisory:
+            payload['advisory'] = advisory
         
         return {
             'success': True,
-            'data': to_json_safe(result),
+            'data': payload,
+            'data_source': 'synthetic-model',
+            'is_real_data': False,
+            'model_source': 'synthetic-demo',
             'message': 'تم إنشاء الخطة المناخية بنجاح'
         }
         
@@ -155,12 +172,25 @@ async def predict_crop_yield(request: YieldPredictionRequest):
     try:
         logger.info(f"Predicting yield for crop: {request.crop_type}")
         
-        input_data = request.dict()
+        input_data = request.model_dump()
         result = get_yield_predictor().predict_crop_yield(input_data)
+        payload = to_json_safe(result)
+
+        advisory = narrate(
+            payload,
+            task="Explain this yield prediction and how the farmer can improve it.",
+            language=request.language,
+            context={"crop_type": request.crop_type, "farm_size": request.farm_size},
+        )
+        if advisory:
+            payload['advisory'] = advisory
         
         return {
             'success': True,
-            'data': to_json_safe(result),
+            'data': payload,
+            'data_source': 'synthetic-model',
+            'is_real_data': False,
+            'model_source': 'synthetic-demo',
             'message': 'تم التنبؤ بالمردودية بنجاح'
         }
         
@@ -177,11 +207,11 @@ async def comprehensive_analysis(request: CombinedAnalysisRequest):
         logger.info("Performing comprehensive weather and yield analysis")
         
         # تحليل التخطيط المناخي
-        weather_input = request.weather_planning.dict()
+        weather_input = request.weather_planning.model_dump()
         weather_analysis = get_weather_planner().create_weather_based_plan(weather_input)
         
         # تحليل توقع المردودية
-        yield_input = request.yield_prediction.dict()
+        yield_input = request.yield_prediction.model_dump()
         yield_analysis = get_yield_predictor().predict_crop_yield(yield_input)
         
         # دمج النتائج
@@ -278,8 +308,8 @@ async def assess_crop_climate_suitability(
     try:
         input_data = {
             'crop_options': [crop_type],
-            'location': location.dict(),
-            'current_conditions': current_weather.dict()
+            'location': location.model_dump(),
+            'current_conditions': current_weather.model_dump()
         }
         
         # محاكاة تحلي�� مناخي مبسط
@@ -314,7 +344,7 @@ async def optimize_planting_schedule(
     try:
         input_data = {
             'crop_options': crop_types,
-            'location': location.dict(),
+            'location': location.model_dump(),
             'planning_horizon_months': planning_months
         }
         
@@ -348,6 +378,10 @@ async def health_check():
         # Models are trained on synthetic data generated in-process; there is no
         # field-observation dataset behind these predictions.
         'model_source': 'synthetic-demo',
+        'advisory_model_source': get_provider().model_source()
+        if get_provider().is_configured()
+        else None,
+        'advisory_configured': get_provider().is_configured(),
         'services': {
             'weather_planner': {
                 'status': 'active',

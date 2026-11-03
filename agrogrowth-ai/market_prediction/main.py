@@ -13,6 +13,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ai_common.base_service import BaseAIService
 from market_prediction.market_forecast_ai import MarketForecastAI
 from market_prediction.supply_demand_ai import SupplyDemandAI
+from ai_common.llm_provider import get_provider
+from ai_common.advisory import narrate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +40,7 @@ class PriceForecastRequest(BaseModel):
     current_price: float = Field(..., description="Current market price", gt=0)
     forecast_days: int = Field(30, description="Number of days to forecast", ge=1, le=365)
     market_conditions: Optional[Dict[str, Any]] = Field(None, description="Optional market condition overrides")
+    language: Optional[str] = Field(None, description="Advisory language: ar, ar-tn, fr or en")
 
 class SupplyDemandRequest(BaseModel):
     crop_type: str = Field(..., description="Type of crop to analyze")
@@ -116,14 +119,27 @@ async def forecast_price(request: PriceForecastRequest):
         if not result.get('success'):
             raise HTTPException(status_code=500, detail=result.get('error', 'Forecast generation failed'))
         
+        advisory = narrate(
+            result,
+            task="Explain this price forecast and its uncertainty to the farmer.",
+            language=request.language,
+            context={"crop_type": request.crop_type, "current_price": request.current_price},
+        )
+        payload = dict(result)
+        if advisory:
+            payload["advisory"] = advisory
+
         return {
             "success": True,
-            "data": result,
+            "data": payload,
             "metadata": {
-                "processing_time_ms": 250,
                 "model_version": "MarketForecastAI v1.0",
-                "confidence_level": "68%",
-                "data_sources": ["historical_prices", "weather_data", "economic_indicators", "seasonal_patterns"]
+                # Honest provenance: no licensed market feed is configured, so
+                # this forecast is model output, not live quotes.
+                "data_source": "synthetic-model",
+                "is_real_data": False,
+                "model_source": "synthetic-demo",
+                "note": "Forecast is derived from a synthetic model, not live market quotes."
             }
         }
         
@@ -171,10 +187,12 @@ async def analyze_supply_demand(request: SupplyDemandRequest):
             "success": True,
             "data": result,
             "metadata": {
-                "processing_time_ms": 300,
                 "model_version": "SupplyDemandAI v1.0",
-                "reliability_score": 85,
-                "analysis_scope": request.region
+                "analysis_scope": request.region,
+                "data_source": "synthetic-model",
+                "is_real_data": False,
+                "model_source": "synthetic-demo",
+                "note": "Analysis is model output from synthetic data, not live market statistics."
             }
         }
         
@@ -441,6 +459,10 @@ async def health_check():
         # No licensed market feed is configured; forecasts come from a synthetic
         # model seeded on representative base prices, never from live quotes.
         "model_source": "synthetic-demo",
+        "advisory_model_source": get_provider().model_source()
+        if get_provider().is_configured()
+        else None,
+        "advisory_configured": get_provider().is_configured(),
         "timestamp": datetime.now().isoformat(),
         "models": {
             "market_forecast_ai": "loaded",
