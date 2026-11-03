@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -834,6 +835,7 @@ export default function NotificationCenter() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 space-y-8">
+      <DataProvenanceBanner />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4 rtl:space-x-reverse">

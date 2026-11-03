@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -180,6 +181,7 @@ export default function LivestockDashboard() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <DataProvenanceBanner />
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

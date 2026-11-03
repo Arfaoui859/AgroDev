@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -249,6 +250,7 @@ const IntelligentBreedingManager: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      <DataProvenanceBanner />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
