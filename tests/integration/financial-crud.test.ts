@@ -98,6 +98,23 @@ describe("💰 Expense / revenue CRUD lifecycle", () => {
     expect(response.body.success).toBe(false);
   });
 
+  test("budget plan update -> delete lifecycle", async () => {
+    const created = await request(app)
+      .post("/api/budget-plans")
+      .send({ farmerId: "test-farmer", seasonYear: 2026, totalBudget: 5000, crops: [] })
+      .expect(200);
+    const id = created.body.data.id;
+
+    const updated = await request(app)
+      .put(`/api/budget-plans/${id}`)
+      .send({ status: "active" })
+      .expect(200);
+    expect(updated.body.data.status).toBe("active");
+
+    await request(app).delete(`/api/budget-plans/${id}`).expect(200);
+    await request(app).delete(`/api/budget-plans/${id}`).expect(404);
+  });
+
   test("list endpoints still work", async () => {
     await request(app).get("/api/expenses").expect(200);
     await request(app).get("/api/revenues").expect(200);

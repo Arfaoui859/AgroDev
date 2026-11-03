@@ -60,6 +60,7 @@ import {
   createBudgetPlan,
   getBudgetPlans,
   updateBudgetPlan,
+  deleteBudgetPlan,
   updateExpense,
   deleteExpense,
   updateRevenue,
@@ -397,6 +398,7 @@ export function createServer() {
   app.post("/api/budget-plans", createBudgetPlan);
   app.get("/api/budget-plans", getBudgetPlans);
   app.put("/api/budget-plans/:id", updateBudgetPlan);
+  app.delete("/api/budget-plans/:id", deleteBudgetPlan);
 
   // Advanced Livestock Management routes
   app.get("/api/animals", getAnimals);

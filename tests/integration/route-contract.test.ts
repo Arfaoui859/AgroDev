@@ -79,10 +79,19 @@ function patternToRegex(pattern: string): RegExp {
   return new RegExp(`^${escaped}/?$`);
 }
 
-/** Extract every literal /api path the client fetches. */
-function clientPaths(): string[] {
+interface ClientCall {
+  method: string;
+  path: string;
+}
+
+/**
+ * Extract every /api call the client makes, together with its HTTP method.
+ * fetch() defaults to GET; an explicit method is read from the options object
+ * that follows the call (within a short window).
+ */
+function clientCalls(): ClientCall[] {
   const root = path.resolve(__dirname, "../../client");
-  const found = new Set<string>();
+  const found = new Map<string, ClientCall>();
   const files: string[] = [];
   const walkDir = (dir: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -100,19 +109,21 @@ function clientPaths(): string[] {
     while ((m = re.exec(content))) {
       let p = m[1];
       if (!p.startsWith("/api")) continue;
-      p = p.split("?")[0];
-      // Replace template interpolations with a concrete segment.
-      p = p.replace(/\$\{[^}]*\}/g, "1");
-      found.add(p);
+      p = p.split("?")[0].replace(/\$\{[^}]*\}/g, "1");
+      // Look ahead for an explicit method in the fetch options.
+      const window = content.slice(m.index, m.index + 200);
+      const methodMatch = window.match(/method\s*:\s*['"]([A-Za-z]+)['"]/);
+      const method = (methodMatch ? methodMatch[1] : "GET").toUpperCase();
+      found.set(`${method} ${p}`, { method, path: p });
     }
   }
-  return [...found];
+  return [...found.values()];
 }
 
 describe("🔌 Client/backend route contract", () => {
   let routes: RouteEntry[];
   let matchers: { method: string; regex: RegExp; pattern: string }[];
-  let paths: string[];
+  let calls: ClientCall[];
 
   beforeAll(() => {
     const app = createServer();
@@ -122,7 +133,7 @@ describe("🔌 Client/backend route contract", () => {
       regex: patternToRegex(r.pattern),
       pattern: r.pattern,
     }));
-    paths = clientPaths();
+    calls = clientCalls();
   });
 
   test("the route table is non-trivial", () => {
@@ -130,9 +141,19 @@ describe("🔌 Client/backend route contract", () => {
   });
 
   test("every client /api path matches a mounted route", () => {
-    const unmatched = paths.filter(
-      (p) => !matchers.some((m) => m.regex.test(p)),
-    );
+    const unmatched = calls
+      .filter((c) => !matchers.some((m) => m.regex.test(c.path)))
+      .map((c) => c.path);
+    expect(unmatched).toEqual([]);
+  });
+
+  test("every client call matches a route with the same HTTP method", () => {
+    const unmatched = calls
+      .filter(
+        (c) =>
+          !matchers.some((m) => m.method === c.method && m.regex.test(c.path)),
+      )
+      .map((c) => `${c.method} ${c.path}`);
     expect(unmatched).toEqual([]);
   });
 

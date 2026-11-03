@@ -684,6 +684,31 @@ export async function getRevenues(req: Request, res: Response) {
   }
 }
 
+export async function deleteBudgetPlan(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const index = budgetPlans.findIndex(plan => plan.id === id);
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'خطة الميزانية غير موجودة'
+      });
+    }
+    const [removed] = budgetPlans.splice(index, 1);
+    res.json({
+      success: true,
+      data: removed,
+      message: 'تم حذف خطة الميزانية بنجاح'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'حدث خطأ في حذف خطة الميزانية',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
 export async function getProfitabilityAnalysis(req: Request, res: Response) {
   try {
     const { farmerId, cropType, seasonYear } = req.query;
