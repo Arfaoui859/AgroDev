@@ -156,6 +156,13 @@ export const updateField: RequestHandler = async (req, res) => {
     
     const updatedField = await FarmService.updateField(fieldId, updates);
 
+    if (!updatedField) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'الحقل غير موجود'
+      });
+    }
+
     res.json({
       status: 'success',
       data: updatedField,

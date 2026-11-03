@@ -1,4 +1,37 @@
 import { supabase } from '../lib/supabase';
+import { CROP_REFERENCE } from './ai/cropAdvisor';
+
+/**
+ * The deployed schema has no `crops` table (PGRST205). Crop *metadata* is
+ * static reference data for Tunisian agriculture, so serve it from the bundled
+ * dataset instead of failing every request that needs a crop name.
+ */
+const MISSING_TABLE = /PGRST205|Could not find the table/i;
+
+function referenceCrop(id: string) {
+  const ref = CROP_REFERENCE.find(
+    (c) => c.crop === id || c.nameAr === id || c.crop.toLowerCase() === id.toLowerCase(),
+  );
+  if (!ref) return null;
+  return {
+    id: ref.crop,
+    name: ref.crop,
+    name_ar: ref.nameAr,
+    category: ref.category,
+    growing_season: ref.seasons.join('، '),
+    water_requirements: ref.waterNeed,
+    soil_requirements: `pH ${ref.phRange[0]}–${ref.phRange[1]}`,
+    climate_requirements: `${ref.tempRange[0]}–${ref.tempRange[1]}°C`,
+    planting_depth_cm: 0,
+    spacing_cm: 0,
+    days_to_maturity: 0,
+    optimal_ph_min: ref.phRange[0],
+    optimal_ph_max: ref.phRange[1],
+    created_at: new Date(0).toISOString(),
+    updated_at: new Date(0).toISOString(),
+    dataSource: 'reference-dataset',
+  };
+}
 
 export interface Crop {
   id: string;
@@ -51,7 +84,12 @@ export class CropService {
       .select('*')
       .order('name');
     
-    if (error) throw error;
+    if (error) {
+      if (MISSING_TABLE.test(error.message ?? '')) {
+        return CROP_REFERENCE.map((c) => referenceCrop(c.crop));
+      }
+      throw error;
+    }
     return data;
   }
 
@@ -60,10 +98,13 @@ export class CropService {
       .from('crops')
       .select('*')
       .eq('id', cropId)
-      .single();
+      .maybeSingle();
     
-    if (error) throw error;
-    return data;
+    if (error) {
+      if (MISSING_TABLE.test(error.message ?? '')) return referenceCrop(cropId);
+      throw error;
+    }
+    return data ?? referenceCrop(cropId);
   }
 
   static async getCropsByCategory(category: string) {
@@ -73,7 +114,14 @@ export class CropService {
       .eq('category', category)
       .order('name');
     
-    if (error) throw error;
+    if (error) {
+      if (MISSING_TABLE.test(error.message ?? '')) {
+        return CROP_REFERENCE.filter((c) => c.category === category).map((c) =>
+          referenceCrop(c.crop),
+        );
+      }
+      throw error;
+    }
     return data;
   }
 
@@ -84,7 +132,15 @@ export class CropService {
       .or(`name.ilike.%${searchTerm}%,name_ar.ilike.%${searchTerm}%`)
       .order('name');
     
-    if (error) throw error;
+    if (error) {
+      if (MISSING_TABLE.test(error.message ?? '')) {
+        const term = searchTerm.toLowerCase();
+        return CROP_REFERENCE.filter(
+          (c) => c.crop.toLowerCase().includes(term) || c.nameAr.includes(searchTerm),
+        ).map((c) => referenceCrop(c.crop));
+      }
+      throw error;
+    }
     return data;
   }
 

@@ -91,7 +91,7 @@ export class FarmService {
       .from('farms')
       .select('*')
       .eq('id', farmId)
-      .single();
+      .maybeSingle();
     
     if (error) throw error;
     return data;
@@ -169,10 +169,10 @@ export class FarmService {
       .update({ ...fieldToSection(updates), updated_at: new Date().toISOString() })
       .eq('id', fieldId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-    return sectionToField(data);
+    return data ? sectionToField(data) : null;
   }
 
   static async deleteField(fieldId: string) {
