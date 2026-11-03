@@ -700,8 +700,12 @@ router.post('/recommend', (req, res) => {
       }
     );
 
+    res.set('X-Data-Provenance', 'rule-based');
+    res.set('X-Is-Real-Data', 'false');
     res.json({
       success: true,
+      dataSource: 'rule-based',
+      isRealData: false,
       data: treatmentPlan,
       message: 'تم توليد خطة العلاج بنجاح'
     });
@@ -751,6 +755,10 @@ router.get('/products', (req, res) => {
 
 // Get treatment history
 router.get('/history/:userId', (req, res) => {
+  // History lives in an in-memory store for this process only; it is not
+  // persisted to the database, so label it accordingly.
+  res.set('X-Data-Provenance', 'session');
+  res.set('X-Is-Real-Data', 'false');
   try {
     const { userId } = req.params;
     const { status, cropId } = req.query;
