@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 
 // Types for public data API
 interface MarketPrice {
@@ -111,7 +112,12 @@ const RATE_LIMITS = {
  */
 const SIMULATED_DISCLAIMER =
   "بيانات محاكاة توضيحية وليست بيانات حقيقية من السوق أو الطقس. لا تعتمد عليها لاتخاذ قرارات.";
-// Mock data storage (in production, use Redis/database)
+// In-memory stores. Bounded so an anonymous flood cannot grow them without
+// limit (see MAX_API_KEYS / MAX_REQUEST_LOGS); a real deployment should back
+// these with Redis or the database.
+const MAX_API_KEYS = Number(process.env.PUBLIC_API_MAX_KEYS || 1000);
+const MAX_REQUEST_LOGS = Number(process.env.PUBLIC_API_MAX_LOGS || 5000);
+
 let apiKeys: APIKey[] = [
   {
     key: "public_demo_key_12345",
@@ -352,6 +358,14 @@ function generateMockWeatherData(): WeatherData[] {
   });
 }
 
+/** Constant-time string equality that tolerates differing lengths. */
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 // Rate limiting middleware
 function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
   const apiKey =
@@ -365,7 +379,10 @@ function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
     });
   }
 
-  const keyData = apiKeys.find((k) => k.key === apiKey && k.active);
+  // Constant-time compare so a caller cannot recover a key byte-by-byte.
+  const keyData = apiKeys.find(
+    (k) => k.active && safeEqual(k.key, apiKey),
+  );
 
   if (!keyData) {
     return res.status(401).json({
@@ -405,7 +422,7 @@ function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
     });
   }
 
-  // Log request
+  // Log request (bounded ring buffer -- never grows without limit)
   requestLogs.push({
     apiKey,
     endpoint: req.path,
@@ -415,6 +432,9 @@ function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
     responseTime: 0, // Will be updated later
     statusCode: 200,
   });
+  if (requestLogs.length > MAX_REQUEST_LOGS) {
+    requestLogs.splice(0, requestLogs.length - MAX_REQUEST_LOGS);
+  }
 
   // Add rate limit info to response headers
   res.set({
@@ -797,7 +817,7 @@ export const createAPIKey = async (req: Request, res: Response) => {
 
     // Generate new API key
     const newKey: APIKey = {
-      key: `agro_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      key: `agro_${randomBytes(24).toString("base64url")}`,
       name,
       email,
       tier: tier as APIKey["tier"],
@@ -810,6 +830,11 @@ export const createAPIKey = async (req: Request, res: Response) => {
       expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
     };
 
+    // Evict the oldest key once the cap is reached so an anonymous caller
+    // cannot exhaust memory. Production should persist keys instead.
+    if (apiKeys.length >= MAX_API_KEYS) {
+      apiKeys.splice(0, apiKeys.length - MAX_API_KEYS + 1);
+    }
     apiKeys.push(newKey);
 
     res.json({

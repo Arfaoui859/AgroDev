@@ -75,6 +75,24 @@ export function aiRateLimiter(): RequestHandler {
   });
 }
 
+/**
+ * Very strict limiter for anonymous key-minting. A public API key endpoint is
+ * an attractive target for resource exhaustion, so cap it at a handful per hour
+ * per IP instead of relying on the general API limit.
+ */
+export function keyMintRateLimiter(): RequestHandler {
+  return rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: Number(process.env.PUBLIC_API_KEY_MINT_MAX || 5),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error:
+        "Too many API key requests. Please try again later or contact support.",
+    },
+  });
+}
+
 /** Reject oversized JSON bodies early with a clear 413 instead of a crash. */
 export function jsonBodyErrorHandler(): (
   err: any,

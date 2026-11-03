@@ -8,6 +8,7 @@ import {
   aiRateLimiter,
   jsonBodyErrorHandler,
   requireAdminToken,
+  keyMintRateLimiter,
 } from "./middleware/security";
 import { handleUploadError } from "./middleware/upload";
 import {
@@ -686,7 +687,7 @@ export function createServer() {
   app.get("/api/public/weather", getWeatherData);
   app.get("/api/public/key-info", getAPIKeyInfo);
   app.get("/api/public/stats", getPublicStats);
-  app.post("/api/public/create-key", createAPIKey);
+  app.post("/api/public/create-key", keyMintRateLimiter(), createAPIKey);
 
   // 👥 FARMER COLLABORATION ROUTES
   app.get("/api/collaboration/chat-rooms", getChatRooms);
