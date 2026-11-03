@@ -176,3 +176,28 @@ describe("🔌 AI gateway → microservice request contracts", () => {
     });
   });
 });
+
+describe("📈 Market gateway validates before proxying", () => {
+  let app: express.Application;
+  beforeAll(() => {
+    app = createServer();
+  });
+
+  test("forecast-prices rejects a missing current_price with a clear 400", async () => {
+    const res = await request(app)
+      .post("/api/ai/market/forecast-prices")
+      .send({ crop: "olive" });
+    expect(res.status).toBe(400);
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.message).toMatch(/current_price/);
+  });
+
+  test("supply-demand rejects a missing production with a clear 400", async () => {
+    const res = await request(app)
+      .post("/api/ai/market/supply-demand")
+      .send({ crop: "olive" });
+    expect(res.status).toBe(400);
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.message).toMatch(/current_production/);
+  });
+});

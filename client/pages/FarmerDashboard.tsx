@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
 import {
@@ -350,6 +351,7 @@ const FarmerDashboard: React.FC = () => {
     <div
       className={`container mx-auto p-6 space-y-6 ${isArabic ? "rtl" : "ltr"}`}
     >
+      <DataProvenanceBanner />
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -498,6 +499,7 @@ const FarmerCollaboration = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8" dir="rtl">
+      <DataProvenanceBanner />
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">

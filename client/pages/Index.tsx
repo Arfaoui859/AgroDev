@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -901,6 +902,7 @@ export default function Index() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+          <DataProvenanceBanner />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Farm Overview Card */}
             {farmOverview && (

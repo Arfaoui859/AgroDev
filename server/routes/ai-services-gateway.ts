@@ -652,15 +652,29 @@ export const quickPlantHealthCheck = [
 
 // 📈 MARKET FORECAST ENDPOINTS (Placeholder for future implementation)
 export const forecastMarketPrices = async (req: Request, res: Response) => {
+  const b = req.body ?? {};
+  // PriceForecastRequest requires crop_type and a positive current_price.
+  // Validate here so a caller that omits either gets a clear 400 naming the
+  // missing field, instead of an opaque 422 proxied from the microservice.
+  const cropType = b.crop_type ?? b.crop ?? b.cropId;
+  const currentPrice = toNumber(b.current_price ?? b.price);
+  if (!cropType || currentPrice === undefined || currentPrice <= 0) {
+    return res.status(400).json({
+      error: "Invalid market forecast request",
+      message:
+        "crop_type (or crop) and a positive current_price (or price) are required.",
+      dataSource: "none",
+      isRealData: false,
+    });
+  }
   try {
-    const b = req.body ?? {};
     const response = await callAIService(
       AI_SERVICES.MARKET_FORECAST,
       "/forecast-price",
       "POST",
       {
-        crop_type: b.crop_type ?? b.crop ?? b.cropId,
-        current_price: toNumber(b.current_price ?? b.price),
+        crop_type: cropType,
+        current_price: currentPrice,
         forecast_days: toNumber(b.forecast_days ?? b.days) ?? 30,
         market_conditions: b.market_conditions,
       },
@@ -672,17 +686,29 @@ export const forecastMarketPrices = async (req: Request, res: Response) => {
 };
 
 export const analyzeSupplyDemand = async (req: Request, res: Response) => {
+  const b = req.body ?? {};
+  // SupplyDemandRequest requires crop_type and a positive current_production.
+  const cropType = b.crop_type ?? b.crop ?? b.cropId;
+  const production = toNumber(
+    b.current_production ?? b.production ?? b.production_tons,
+  );
+  if (!cropType || production === undefined || production <= 0) {
+    return res.status(400).json({
+      error: "Invalid supply/demand request",
+      message:
+        "crop_type (or crop) and a positive current_production (or production) are required.",
+      dataSource: "none",
+      isRealData: false,
+    });
+  }
   try {
-    const b = req.body ?? {};
     const response = await callAIService(
       AI_SERVICES.MARKET_FORECAST,
       "/analyze-supply-demand",
       "POST",
       {
-        crop_type: b.crop_type ?? b.crop ?? b.cropId,
-        current_production: toNumber(
-          b.current_production ?? b.production ?? b.production_tons,
-        ),
+        crop_type: cropType,
+        current_production: production,
         region: b.region ?? "tunisia",
         analysis_period: toNumber(b.analysis_period ?? b.period) ?? 30,
       },
