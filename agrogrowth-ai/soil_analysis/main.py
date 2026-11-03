@@ -19,6 +19,8 @@ from ai_common.base_service import BaseAIService, PredictionResponse
 from soil_analysis.soil_analyzer import create_soil_analyzer
 from soil_analysis.climate_crop_matcher import create_climate_crop_matcher
 from soil_analysis.soil_image_diagnosis import create_soil_image_diagnosis
+from ai_common.llm_provider import get_provider
+from ai_common.advisory import narrate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +36,14 @@ class SoilAnalysisRequest(BaseModel):
         description="GPS coordinates (latitude, longitude)"
     )
     farm_id: Optional[str] = Field(default=None)
+    language: Optional[str] = Field(
+        default=None,
+        description="Preferred advisory language: ar, ar-tn, fr or en"
+    )
+    crop: Optional[str] = Field(
+        default=None,
+        description="Crop being grown, for a more specific advisory"
+    )
 
 class ClimateMatchingRequest(BaseModel):
     climate_data: Dict[str, Any] = Field(
@@ -55,6 +65,12 @@ class SoilAnalysisResponse(BaseModel):
     fertility_level: str
     overall_recommendations: List[str]
     analysis_timestamp: str
+    # Provenance of the numeric analysis (synthetic model) and of the advisory
+    # narrative when an LLM provider produced one.
+    data_source: Optional[str] = None
+    is_real_data: Optional[bool] = None
+    model_source: Optional[str] = None
+    advisory: Optional[Dict[str, Any]] = None
 
 class CropMatchingResponse(BaseModel):
     suitable_crops: List[Dict[str, Any]]
@@ -122,10 +138,16 @@ async def health_check():
             "climate_matcher": climate_matcher.is_trained,
             "image_diagnosis": image_diagnosis.is_trained
         },
-        # These models are trained on synthetic data at startup for demonstration.
-        # They must NOT be presented to end users as field-validated predictions.
+        # The numeric models are trained on synthetic data at startup for
+        # demonstration and must NOT be presented as field-validated. When an
+        # LLM provider is configured it adds a natural-language advisory on top
+        # of the numbers; the numbers themselves remain synthetic.
         "model_source": "synthetic-demo",
-        "disclaimer": "Models are trained on synthetic demo data and are not field-validated."
+        "advisory_model_source": get_provider().model_source()
+        if get_provider().is_configured()
+        else None,
+        "advisory_configured": get_provider().is_configured(),
+        "disclaimer": "Numeric models are trained on synthetic demo data and are not field-validated."
     }
 
 @app.post("/analyze-soil", response_model=SoilAnalysisResponse)
@@ -144,6 +166,26 @@ async def analyze_soil(request: SoilAnalysisRequest):
         
         result = soil_analyzer.analyze_soil_properties(request.sensor_data)
         
+        result["data_source"] = "synthetic-model"
+        result["is_real_data"] = False
+        result["model_source"] = "synthetic-demo"
+
+        # A configured LLM adds a farmer-facing advisory that explains these
+        # numbers. The numbers themselves are unchanged and stay labelled
+        # synthetic; the advisory is labelled separately.
+        advisory = narrate(
+            result,
+            task="Explain this soil analysis and recommend concrete next steps.",
+            language=request.language,
+            context={
+                "farm_id": request.farm_id,
+                "location": request.location,
+                "crop": request.crop,
+            },
+        )
+        if advisory:
+            result["advisory"] = advisory
+
         return SoilAnalysisResponse(**result)
         
     except Exception as e:

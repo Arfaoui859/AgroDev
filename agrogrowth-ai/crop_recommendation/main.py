@@ -17,6 +17,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from crop_recommendation.crop_recommender import create_crop_recommender
 from crop_recommendation.profit_estimator import create_profit_estimator
+from ai_common.llm_provider import get_provider
+from ai_common.advisory import narrate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +37,7 @@ class CropRecommendationRequest(BaseModel):
     farm_size: Optional[float] = Field(default=2.0, description="Farm size in hectares")
     risk_tolerance: Optional[float] = Field(default=0.5, description="Risk tolerance (0-1)")
     location: Optional[Dict[str, float]] = Field(default=None, description="GPS coordinates")
+    language: Optional[str] = Field(default=None, description="Advisory language: ar, ar-tn, fr or en")
 
 class ProfitEstimationRequest(BaseModel):
     crop_name: str = Field(description="Name of the crop to analyze")
@@ -64,6 +67,12 @@ class CropRecommendationResponse(BaseModel):
     seasonal_advice: Dict[str, Any]
     input_analysis: Dict[str, Any]
     analysis_timestamp: str
+    # Provenance: the numeric ranking is synthetic-model based; the advisory
+    # narrative is LLM-produced when a provider is configured.
+    data_source: Optional[str] = None
+    is_real_data: Optional[bool] = None
+    model_source: Optional[str] = None
+    advisory: Optional[Dict[str, Any]] = None
 
 class ProfitEstimationResponse(BaseModel):
     crop_name: str
@@ -138,6 +147,10 @@ async def health_check():
         },
         # Trained on synthetic data at startup for demonstration; not field-validated.
         "model_source": "synthetic-demo",
+        "advisory_model_source": get_provider().model_source()
+        if get_provider().is_configured()
+        else None,
+        "advisory_configured": get_provider().is_configured(),
         "disclaimer": "Models are trained on synthetic demo data and are not field-validated."
     }
 
@@ -158,6 +171,25 @@ async def recommend_crops(request: CropRecommendationRequest):
         # Get recommendations
         result = crop_recommender.recommend_crops(input_data)
         
+        result["data_source"] = "synthetic-model"
+        result["is_real_data"] = False
+        result["model_source"] = "synthetic-demo"
+
+        advisory = narrate(
+            result,
+            task="Explain these crop recommendations and the reasoning behind them.",
+            language=request.language,
+            context={
+                "temperature": request.temperature,
+                "annual_rainfall": request.annual_rainfall,
+                "soil_ph": request.soil_ph,
+                "farm_size": request.farm_size,
+                "location": request.location,
+            },
+        )
+        if advisory:
+            result["advisory"] = advisory
+
         return CropRecommendationResponse(**result)
         
     except Exception as e:
