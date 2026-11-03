@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 import { createServer } from "./index";
 import * as express from "express";
@@ -5,9 +6,21 @@ import * as express from "express";
 const app = createServer();
 const port = process.env.PORT || 3000;
 
-// In production, serve the built SPA files
+// In production, serve the built SPA files. Different build targets place the
+// output in different folders (Vite -> dist/, some hosts -> dist/spa/), so pick
+// the first candidate that actually contains an index.html.
 const __dirname = import.meta.dirname;
-const distPath = path.join(__dirname, "../spa");
+const distCandidates = [
+  path.join(__dirname, "../dist"),
+  path.join(__dirname, "../spa"),
+  path.join(__dirname, "../dist/spa"),
+  path.join(process.cwd(), "dist"),
+  path.join(process.cwd(), "dist/spa"),
+];
+const distPath =
+  distCandidates.find((candidate) =>
+    fs.existsSync(path.join(candidate, "index.html")),
+  ) || path.join(__dirname, "../dist");
 
 // Serve static files
 app.use(express.static(distPath));

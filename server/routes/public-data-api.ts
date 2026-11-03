@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 // Types for public data API
 interface MarketPrice {
@@ -345,7 +345,7 @@ function generateMockWeatherData(): WeatherData[] {
 }
 
 // Rate limiting middleware
-function rateLimitMiddleware(req: Request, res: Response, next: Function) {
+function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
   const apiKey =
     (req.headers["x-api-key"] as string) || (req.query.api_key as string);
 

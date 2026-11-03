@@ -261,7 +261,7 @@ class AIHealthAnalysisEngine {
         }
         break;
 
-      case 'chicken':
+      case 'chicken': {
         // Poultry-specific analysis
         const ageInWeeks = this.calculateAgeInMonths(animal.birthDate) * 4;
         if (ageInWeeks > 20 && animal.gender === 'female') {
@@ -269,6 +269,7 @@ class AIHealthAnalysisEngine {
           recommendations.push('تسجيل إنتاج البيض اليومي ومراقبة التغذية');
         }
         break;
+      }
 
       case 'sheep':
       case 'goat':

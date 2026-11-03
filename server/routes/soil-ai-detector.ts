@@ -670,7 +670,7 @@ class SoilProblemDetector {
         });
         break;
 
-      case 'nutrient_deficiency':
+      case 'nutrient_deficiency': {
         const nutrientName = problem.affectedParameter;
         recommendations.push({
           id: `rec_nutrient_${nutrientName.replace(/\s+/g, '_')}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -692,6 +692,7 @@ class SoilProblemDetector {
           success_rate: 95
         });
         break;
+      }
 
       case 'drought_stress':
         recommendations.push({

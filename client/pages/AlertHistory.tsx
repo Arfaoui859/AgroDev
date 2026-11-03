@@ -191,11 +191,12 @@ const AlertHistory: React.FC = () => {
       let aValue, bValue;
 
       switch (sortBy) {
-        case "priority":
+        case "priority": {
           const priorityOrder = { High: 3, Medium: 2, Low: 1 };
           aValue = priorityOrder[a.priority];
           bValue = priorityOrder[b.priority];
           break;
+        }
         case "urgency":
           aValue = a.urgencyScore;
           bValue = b.urgencyScore;

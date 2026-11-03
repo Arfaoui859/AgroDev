@@ -1,3 +1,5 @@
-"netlify/functions/api.ts": {
-  "maxDuration": 30
-}
+import serverless from "serverless-http";
+
+import { createServer } from "../server";
+
+export const handler = serverless(createServer());
