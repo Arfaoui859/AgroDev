@@ -13,6 +13,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:integration": "jest --testMatch='**/tests/integration/**/*.test.ts'",
+    "test:live": "jest --testMatch='**/tests/live/**/*.test.ts'",
     "test:e2e": "cypress run",
     "test:e2e:open": "cypress open",
     "test:all": "npm run test && npm run test:e2e",
