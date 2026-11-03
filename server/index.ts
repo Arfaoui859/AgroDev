@@ -300,6 +300,14 @@ export function createServer() {
   // Global API rate limiting (health checks are exempt)
   app.use("/api", apiRateLimiter());
 
+  // Stricter limiter for expensive AI inference paths (may trigger paid model
+  // calls). Registered here, before any /api/ai, /api/disease, /api/soil-analysis
+  // or /api/ai-recommendations route, so every one of them is actually covered.
+  app.use(
+    ["/api/ai", "/api/disease", "/api/soil-analysis", "/api/ai-recommendations"],
+    aiRateLimiter(),
+  );
+
   // Health check routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
@@ -579,9 +587,6 @@ export function createServer() {
   );
 
   // 🤖 AI SERVICES INTEGRATION ROUTES
-
-  // Stricter rate limiting for AI inference endpoints (may trigger paid calls)
-  app.use("/api/ai", aiRateLimiter());
 
   // 🌱 Soil Analysis AI Service
   app.post("/api/ai/soil/analyze", analyzeSoilData);
