@@ -37,6 +37,14 @@ import soilAiDetectorRoutes from "./routes/soil-ai-detector";
 import smartCropSuggestionsRoutes from "./routes/smart-crop-suggestions";
 import smartCropAlertsRoutes from "./routes/smart-crop-alerts";
 import diseaseTreatmentRoutes from "./routes/disease-treatment-recommendations";
+import digitalTransformationRoutes from "./routes/digital-transformation";
+import emergencyResponseRoutes from "./routes/emergency-response";
+import emergingTechRoutes from "./routes/emerging-tech";
+import ipManagementRoutes from "./routes/ip-management";
+import smartAdvisorRoutes from "./routes/smart-advisor";
+import digitalTrainingRoutes from "./routes/digital-training";
+import predictiveAnalyticsRoutes from "./routes/predictive-analytics";
+import riskDetectionRoutes from "./routes/risk-detection";
 import smartIrrigationRoutes from "./routes/smart-irrigation";
 import { irrigationOptimizationRouter } from "./routes/irrigation-optimization";
 import { pestControlRouter } from "./routes/pest-control";
@@ -349,6 +357,14 @@ export function createServer() {
 
   // Disease Treatment routes
   app.use("/api/disease-treatment", diseaseTreatmentRoutes);
+  app.use("/api/digital-transformation", digitalTransformationRoutes);
+  app.use("/api/emergency-response", emergencyResponseRoutes);
+  app.use("/api/emerging-tech", emergingTechRoutes);
+  app.use("/api/ip-management", ipManagementRoutes);
+  app.use("/api/smart-advisor", smartAdvisorRoutes);
+  app.use("/api/digital-training", digitalTrainingRoutes);
+  app.use("/api/predictive-analytics", predictiveAnalyticsRoutes);
+  app.use("/api/risk-detection", riskDetectionRoutes);
 
   // Smart Irrigation routes
   app.use("/api/smart-irrigation", smartIrrigationRoutes);
