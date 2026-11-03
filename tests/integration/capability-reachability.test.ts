@@ -1,0 +1,113 @@
+/**
+ * Microservice reachability reporting.
+ *
+ * A configured service URL is not proof that a model is running behind it.
+ * `resolveEngine()` probes the service's own /health and reports
+ * `microserviceReachable` + the provenance the service declares, so the SPA
+ * never enables a feature on the strength of an env var alone.
+ *
+ * A throwaway HTTP server stands in for the microservice: it is real network
+ * I/O, not a mocked module.
+ */
+import http from "node:http";
+import request from "supertest";
+import express from "express";
+import { createServer } from "../../server/index";
+import { resetServiceProbeCache } from "../../server/services/providers/serviceProbe";
+
+function startFakeService(
+  body: Record<string, unknown>,
+): Promise<{ url: string; close: () => Promise<void> }> {
+  const server = http.createServer((_req, res) => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(body));
+  });
+
+  return new Promise((resolve) => {
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address() as { port: number };
+      resolve({
+        url: `http://127.0.0.1:${address.port}`,
+        close: () =>
+          new Promise<void>((done) => server.close(() => done())),
+      });
+    });
+  });
+}
+
+describe("🔎 AI capability reachability reflects the live service", () => {
+  let app: express.Application;
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeAll(() => {
+    for (const key of ["SOIL_ANALYSIS_URL", "CROP_RECOMMENDATION_URL"]) {
+      savedEnv[key] = process.env[key];
+    }
+  });
+
+  afterAll(() => {
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  afterEach(() => {
+    resetServiceProbeCache();
+  });
+
+  test("a reachable service is reported with the provenance it declares", async () => {
+    const fake = await startFakeService({
+      status: "healthy",
+      model_source: "synthetic-demo",
+    });
+    process.env.SOIL_ANALYSIS_URL = fake.url;
+    resetServiceProbeCache();
+    app = createServer();
+
+    const res = await request(app).get("/api/ai/soil-analysis").expect(200);
+    expect(res.body.microserviceConfigured).toBe(true);
+    expect(res.body.microserviceReachable).toBe(true);
+    expect(res.body.modelSource).toBe("synthetic-demo");
+    // Synthetic provenance must never be presented as a trained model.
+    expect(res.body.isRealData).toBe(false);
+
+    await fake.close();
+  });
+
+  test("an unreachable service is reported as not reachable, with its fallback engine", async () => {
+    process.env.SOIL_ANALYSIS_URL = "http://127.0.0.1:1";
+    resetServiceProbeCache();
+    app = createServer();
+
+    const res = await request(app).get("/api/ai/soil-analysis").expect(200);
+    expect(res.body.microserviceConfigured).toBe(true);
+    expect(res.body.microserviceReachable).toBe(false);
+    // Declared fallback is the in-process rule-based engine, which stays usable.
+    expect(res.body.engine).toBe("rule-based");
+    expect(res.body.available).toBe(true);
+    expect(res.body.isRealData).toBe(false);
+  });
+
+  test("a vision service that self-reports heuristic inference is not called a model", async () => {
+    const fake = await startFakeService({
+      status: "healthy",
+      model_source: "heuristic-demo",
+    });
+    process.env.SOIL_ANALYSIS_URL = "http://127.0.0.1:1";
+    process.env.CROP_RECOMMENDATION_URL = "http://127.0.0.1:1";
+    process.env.IMAGE_DIAGNOSIS_URL = fake.url;
+    resetServiceProbeCache();
+    app = createServer();
+
+    const res = await request(app)
+      .get("/api/ai/plant-disease-detection")
+      .expect(200);
+    expect(res.body.microserviceReachable).toBe(true);
+    expect(res.body.engine).toBe("heuristic");
+    expect(res.body.isRealData).toBe(false);
+
+    delete process.env.IMAGE_DIAGNOSIS_URL;
+    await fake.close();
+  });
+});

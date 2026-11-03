@@ -76,18 +76,21 @@ async function capabilities(): Promise<Capability[]> {
   const visionProvenanceAr = llmReady
     ? "يُحلّل بواسطة نموذج لغوي متعدد الوسائط مُهيّأ (AI_VISION_MODEL)."
     : "يُحوّل إلى خدمة الرؤية المُهيّأة (يُتحقّق من توفرها فعلياً).";
-  const microservices = Boolean(
-    process.env.SOIL_ANALYSIS_URL || process.env.CROP_RECOMMENDATION_URL,
-  );
+  const soilUrl = process.env.SOIL_ANALYSIS_URL;
+  const cropUrl = process.env.CROP_RECOMMENDATION_URL;
 
   return [
     {
       id: "soil-analysis",
       name: "Soil Analysis",
       nameAr: "تحليل التربة",
+      // The in-process agronomic engine answers; the microservice is an
+      // optional accelerator that is probed for reachability and provenance.
       engine: "rule-based",
-      microserviceConfigured: microservices,
-      provenance: microservices
+      microserviceUrl: soilUrl,
+      microserviceConfigured: Boolean(soilUrl),
+      fallbackEngine: "rule-based",
+      provenance: soilUrl
         ? "Answered by the in-process rule-based agronomic engine; a soil-analysis microservice is also configured and used by /api/ai/soil/analyze."
         : "Rule-based agronomic engine (pH, NPK, salinity, organic matter).",
       provenanceAr:
@@ -98,8 +101,10 @@ async function capabilities(): Promise<Capability[]> {
       name: "Smart Crop Recommendations",
       nameAr: "توصيات المحاصيل",
       engine: "rule-based",
-      microserviceConfigured: microservices,
-      provenance: microservices
+      microserviceUrl: cropUrl,
+      microserviceConfigured: Boolean(cropUrl),
+      fallbackEngine: "rule-based",
+      provenance: cropUrl
         ? "Answered by the in-process rule-based crop engine; a crop-recommendation microservice is also configured and used by /api/ai/crops/recommend."
         : "Rule-based crop suitability scoring over the built-in crop reference table.",
       provenanceAr:
@@ -110,7 +115,9 @@ async function capabilities(): Promise<Capability[]> {
       name: "Climate Crop Matcher",
       nameAr: "مطابقة المناخ للمحاصيل",
       engine: "rule-based",
-      microserviceConfigured: microservices,
+      microserviceUrl: soilUrl,
+      microserviceConfigured: Boolean(soilUrl),
+      fallbackEngine: "rule-based",
       provenance: "Climate/soil matching via the rule-based crop engine.",
       provenanceAr: "مطابقة المناخ والتربة عبر محرك القواعد.",
     },
@@ -119,6 +126,7 @@ async function capabilities(): Promise<Capability[]> {
       name: "Plant Disease Detection",
       nameAr: "كشف أمراض النبات",
       engine: visionReady ? visionEngine : "unavailable",
+      microserviceConfigured: Boolean(visionUrl),
       microserviceUrl: visionUrl,
       fallbackEngine: "unavailable",
       provenance: visionReady ? visionProvenance : "No vision back-end is configured.",
@@ -132,6 +140,7 @@ async function capabilities(): Promise<Capability[]> {
       name: "Leaf Scan AI",
       nameAr: "فحص الأوراق",
       engine: visionReady ? visionEngine : "unavailable",
+      microserviceConfigured: Boolean(visionUrl),
       microserviceUrl: visionUrl,
       fallbackEngine: "unavailable",
       provenance: visionReady ? visionProvenance : "No vision back-end is configured.",
