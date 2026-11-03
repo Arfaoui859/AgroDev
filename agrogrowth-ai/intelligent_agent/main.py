@@ -14,6 +14,7 @@ from ai_common.base_service import BaseAIService
 from intelligent_agent.agro_chat_ai import AgroChatAI
 from intelligent_agent.farming_tasks_planner import FarmingTasksPlanner
 from intelligent_agent.alert_notifier_ai import AlertNotifierAI
+from ai_common.llm_provider import get_provider
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -535,12 +536,18 @@ async def get_supported_topics():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    provider = get_provider()
+    configured = provider.is_configured()
     return {
         "status": "healthy",
         "service": "Intelligent Agent AI",
         "version": "1.0.0",
-        # The agent answers from built-in agronomic rules, not a trained LLM.
-        "model_source": "rule-based-demo",
+        # Declared provenance: when a real LLM provider is configured the source
+        # is "<provider>:<model>" and the gateway probe treats it as real model
+        # inference; otherwise the marker below tells the probe this is the
+        # built-in agronomic rule engine, so answers are never over-claimed.
+        "model_source": provider.model_source(),
+        "llm_configured": configured,
         "timestamp": datetime.now().isoformat(),
         "components": {
             "agro_chat_ai": "loaded",
@@ -554,7 +561,7 @@ async def health_check():
             "conversation_management",
             "multilingual_support"
         ],
-        "supported_languages": ["Arabic", "English"],
+        "supported_languages": ["Arabic", "Tunisian Arabic", "French", "English"],
         "active_conversations": len(agro_chat_ai.conversation_history),
         "active_tasks": len(tasks_planner.tasks),
         "active_alerts": len(alert_notifier.active_alerts)

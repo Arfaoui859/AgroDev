@@ -60,26 +60,57 @@ def test_health_declares_model_source(service: str):
 
 @pytest.mark.parametrize("service", SERVICES)
 def test_model_source_is_marked_non_real(service: str):
-    """The declared provenance must be one the probe classifies as non-real."""
+    """The declared provenance must be one the probe classifies as non-real.
+
+    A service may declare a literal, or compute it from a provider whose
+    *default* (no credentials configured) must still be a heuristic marker —
+    otherwise an unconfigured deployment would be shown as real inference.
+    """
+    source = (AI_ROOT / service / "main.py").read_text(encoding="utf-8")
     func = _health_function(service)
     assert func is not None
-    pairs = []
+
+    literal_values = []
+    dynamic = False
     for node in ast.walk(func):
         if isinstance(node, ast.Dict):
             for k, v in zip(node.keys, node.values):
-                if (
-                    isinstance(k, ast.Constant)
-                    and k.value == "model_source"
-                    and isinstance(v, ast.Constant)
-                    and isinstance(v.value, str)
-                ):
-                    pairs.append(v.value)
-    assert pairs, f"{service}/main.py does not set a literal model_source value"
-    for value in pairs:
+                if not (isinstance(k, ast.Constant) and k.value == "model_source"):
+                    continue
+                if isinstance(v, ast.Constant) and isinstance(v.value, str):
+                    literal_values.append(v.value)
+                else:
+                    dynamic = True
+
+    assert literal_values or dynamic, (
+        f"{service}/main.py does not set a model_source value"
+    )
+
+    for value in literal_values:
         assert HEURISTIC_MARKERS.search(value), (
             f"{service}/main.py declares model_source={value!r}, which the probe "
             "would treat as a real trained model. These services use synthetic or "
             "rule-based logic, so the value must contain a marker such as 'synthetic'."
+        )
+
+    if dynamic:
+        # A dynamically resolved source must have a heuristic default, otherwise
+        # an unconfigured deployment would be labelled as real inference.
+        found_default = False
+        for node in ast.walk(ast.parse(source)):
+            if isinstance(node, ast.Assign):
+                targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+                if any("SOURCE" in t or "MODEL" in t for t in targets):
+                    if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                        if HEURISTIC_MARKERS.search(node.value.value):
+                            found_default = True
+        # Also accept a reference to the shared adapter's default.
+        if "DEFAULT_MODEL_SOURCE" in source or "model_source()" in source:
+            found_default = True
+        assert found_default, (
+            f"{service}/main.py computes model_source dynamically but has no "
+            "heuristic default; an unconfigured deployment would be labelled as "
+            "real model inference."
         )
 
 

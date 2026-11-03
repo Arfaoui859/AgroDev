@@ -5,7 +5,21 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 import logging
 
+try:
+    from ai_common.llm_provider import get_provider, LLMError, extract_json
+except ImportError:  # pragma: no cover - direct module import in some test setups
+    from ..ai_common.llm_provider import get_provider, LLMError, extract_json
+
 logger = logging.getLogger(__name__)
+
+# Languages the assistant is expected to answer in. Tunisian Arabic ("ar-TN")
+# and French are treated as first-class, not just MSA Arabic and English.
+LANGUAGE_NAMES = {
+    "ar": "Modern Standard Arabic",
+    "ar-tn": "Tunisian Arabic (Derja)",
+    "fr": "French",
+    "en": "English",
+}
 
 class AgroChatAI:
     """
@@ -183,8 +197,32 @@ class AgroChatAI:
             # Extract entities (crops, diseases, etc.)
             entities = self._extract_entities(user_message)
             
-            # Generate response based on intent and entities
+            # Generate the grounded, rule-based answer first. It is always
+            # available and is what the LLM (when configured) is asked to
+            # rewrite and extend, so the model never answers from nothing.
             response = self._generate_response(intent, entities, user_message)
+
+            # When a real provider is configured, prefer it and label the answer
+            # as model output. If it fails we keep the rule-based answer and say
+            # so — never present rules as model inference or vice versa.
+            data_source = "rule-based"
+            model_source = "rule-based-demo"
+            provider = get_provider()
+            if provider.is_configured():
+                try:
+                    llm_text = self._llm_answer(provider, user_message, intent, response)
+                    if llm_text:
+                        response["rule_based_reference"] = response.get("text", "")
+                        response["text"] = llm_text
+                        response["type"] = f"{intent}_llm"
+                        data_source = "llm"
+                        model_source = provider.model_source()
+                except LLMError as exc:
+                    logger.warning("LLM answer failed, using rules: %s", exc)
+
+            response["data_source"] = data_source
+            response["model_source"] = model_source
+            response["is_real_data"] = data_source == "llm"
             
             # Store conversation history
             self.conversation_history.append({
@@ -203,6 +241,9 @@ class AgroChatAI:
                 'entities': entities,
                 'confidence': response.get('confidence', 0.8),
                 'conversation_id': conversation_id,
+                'data_source': data_source,
+                'model_source': model_source,
+                'is_real_data': data_source == "llm",
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -217,6 +258,63 @@ class AgroChatAI:
                 }
             }
     
+    def _llm_answer(self, provider, user_message: str, intent: str,
+                    rule_response: Dict[str, Any]) -> Optional[str]:
+        """Rewrite the grounded rule-based answer with the configured LLM.
+
+        The rules answer is supplied as reference material so the model stays
+        anchored to AgroGrowth's agronomic content and to any farm context the
+        caller provided, instead of inventing advice from nothing.
+        """
+        language = self.user_context.get("language") or self._detect_language(user_message)
+        language_name = LANGUAGE_NAMES.get(language, LANGUAGE_NAMES["en"])
+
+        context_lines = []
+        for key, value in (self.user_context or {}).items():
+            if key == "language" or value in (None, ""):
+                continue
+            context_lines.append(f"- {key}: {value}")
+        context_block = "\n".join(context_lines) if context_lines else "- (none provided)"
+
+        reference = rule_response.get("text", "")
+        system = (
+            "You are AgroGrowth's agricultural assistant for Tunisia and the wider "
+            "MENA region. Answer as a practical agronomist: specific, actionable and "
+            "honest about uncertainty. Never invent weather observations, market "
+            "prices or laboratory results. If the farmer's question needs data you do "
+            "not have, say which measurement is missing. Reply ONLY in "
+            f"{language_name}."
+        )
+        user = (
+            f"Farmer context:\n{context_block}\n\n"
+            f"Detected topic: {intent}\n\n"
+            f"Farmer question: {user_message}\n\n"
+            "AgroGrowth reference notes (grounded, may be partial):\n"
+            f"{reference}\n\n"
+            "Write the final answer for the farmer now."
+        )
+        text = provider.chat(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.3,
+            max_tokens=900,
+        )
+        return text.strip() or None
+
+    def _detect_language(self, message: str) -> str:
+        """Detect Arabic vs French vs English, defaulting to Arabic."""
+        if not message:
+            return "ar"
+        if re.search(r"[\u0600-\u06FF]", message):
+            return "ar"
+        lowered = message.lower()
+        french_markers = (" le ", " la ", " les ", " des ", " est ", " pour ", " avec ")
+        if any(m in f" {lowered} " for m in french_markers):
+            return "fr"
+        return "en"
+
     def _detect_intent(self, message: str) -> str:
         """Detect user intent from message"""
         message_lower = message.lower()
