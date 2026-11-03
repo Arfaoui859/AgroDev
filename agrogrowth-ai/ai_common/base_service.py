@@ -41,10 +41,16 @@ class ErrorResponse(BaseModel):
 class BaseAIService:
     """Base class for AI microservices"""
     
-    def __init__(self, service_name: str, description: str = ""):
+    def __init__(self, service_name: str, description: str = "",
+                 include_health_route: bool = True):
         self.service_name = service_name
         self.description = description
         self.app = self._create_app()
+        # A service that defines its own /health (with model provenance, model
+        # status, capabilities) must set include_health_route=False. Otherwise
+        # this base route is registered first and, because FastAPI resolves the
+        # first matching route, the richer service handler becomes dead code.
+        self.include_health_route = include_health_route
         self._setup_routes()
     
     def _create_app(self) -> FastAPI:
@@ -70,15 +76,17 @@ class BaseAIService:
     
     def _setup_routes(self):
         """Setup common routes"""
-        
-        @self.app.get("/health", response_model=HealthResponse)
-        async def health_check():
-            """Health check endpoint"""
-            return HealthResponse(
-                status="healthy",
-                service=self.service_name,
-                timestamp=datetime.now().isoformat()
-            )
+
+        if self.include_health_route:
+
+            @self.app.get("/health", response_model=HealthResponse)
+            async def health_check():
+                """Health check endpoint"""
+                return HealthResponse(
+                    status="healthy",
+                    service=self.service_name,
+                    timestamp=datetime.now().isoformat()
+                )
         
         @self.app.get("/")
         async def root():

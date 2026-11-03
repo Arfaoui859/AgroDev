@@ -13,8 +13,24 @@ import { createServer } from "../../server/index";
 describe("🧠 AI capability discovery", () => {
   let app: express.Application;
 
+  // The capability catalogue must reflect configuration, so the test pins the
+  // vision/soil URLs to a dead port: a service URL that happens to be live on
+  // localhost (per .env) would otherwise change what these assertions observe.
+  const savedEnv: Record<string, string | undefined> = {};
+
   beforeAll(() => {
+    for (const key of ["IMAGE_DIAGNOSIS_URL", "SOIL_ANALYSIS_URL"]) {
+      savedEnv[key] = process.env[key];
+      process.env[key] = "http://127.0.0.1:1";
+    }
     app = createServer();
+  });
+
+  afterAll(() => {
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
   });
 
   const probedCapabilities = [

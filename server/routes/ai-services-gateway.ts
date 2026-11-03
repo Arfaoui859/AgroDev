@@ -27,32 +27,33 @@ export function normalizeServiceUrl(raw: string | undefined, fallback: string): 
   return withScheme.replace(/\/+$/, "");
 }
 
-// AI Services Configuration
+/**
+ * AI service base URLs, read from the environment on every access.
+ *
+ * Reading lazily (rather than freezing the values into a module constant at
+ * import time) means a URL can be set after this module loads, which matters
+ * when the gateway is imported before the environment is finalised, e.g. in
+ * tests that point the gateway at an ephemeral service port.
+ */
 const AI_SERVICES = {
-  SOIL_ANALYSIS: normalizeServiceUrl(
-    process.env.SOIL_ANALYSIS_URL,
-    "http://localhost:8001",
-  ),
-  CROP_RECOMMENDATION: normalizeServiceUrl(
-    process.env.CROP_RECOMMENDATION_URL,
-    "http://localhost:8002",
-  ),
-  IMAGE_DIAGNOSIS: normalizeServiceUrl(
-    process.env.IMAGE_DIAGNOSIS_URL,
-    "http://localhost:8003",
-  ),
-  MARKET_FORECAST: normalizeServiceUrl(
-    process.env.MARKET_FORECAST_URL,
-    "http://localhost:8004",
-  ),
-  SMART_ASSISTANT: normalizeServiceUrl(
-    process.env.SMART_ASSISTANT_URL,
-    "http://localhost:8005",
-  ),
-  SMART_MARKETPLACE: normalizeServiceUrl(
-    process.env.SMART_MARKETPLACE_URL,
-    "http://localhost:8006",
-  ),
+  get SOIL_ANALYSIS() {
+    return normalizeServiceUrl(process.env.SOIL_ANALYSIS_URL, "http://localhost:8001");
+  },
+  get CROP_RECOMMENDATION() {
+    return normalizeServiceUrl(process.env.CROP_RECOMMENDATION_URL, "http://localhost:8002");
+  },
+  get IMAGE_DIAGNOSIS() {
+    return normalizeServiceUrl(process.env.IMAGE_DIAGNOSIS_URL, "http://localhost:8003");
+  },
+  get MARKET_FORECAST() {
+    return normalizeServiceUrl(process.env.MARKET_FORECAST_URL, "http://localhost:8004");
+  },
+  get SMART_ASSISTANT() {
+    return normalizeServiceUrl(process.env.SMART_ASSISTANT_URL, "http://localhost:8005");
+  },
+  get SMART_MARKETPLACE() {
+    return normalizeServiceUrl(process.env.SMART_MARKETPLACE_URL, "http://localhost:8006");
+  },
 };
 
 // Configure multer for file uploads

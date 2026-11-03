@@ -42,6 +42,10 @@ export interface AdvisorResponse {
   language: Language;
   /** "llm" only when a real LLM produced the answer; otherwise "rule-based". */
   dataSource: "llm" | "rule-based";
+  /** True only when a real language model generated the answer. */
+  isRealData: boolean;
+  /** Provider:model for LLM answers, or the deterministic engine's name. */
+  modelSource: string;
   usedAgents: string[];
   contextSummary: string[];
   modelInfo?: { provider: string; model: string };
@@ -251,6 +255,8 @@ export async function answerAgriculturalQuestion(
         answer,
         language,
         dataSource: "llm",
+        isRealData: true,
+        modelSource: `${info.provider}:${info.model}`,
         usedAgents: agents,
         contextSummary,
         modelInfo: { provider: info.provider, model: info.model },
@@ -266,6 +272,8 @@ export async function answerAgriculturalQuestion(
         answer: fallback,
         language,
         dataSource: "rule-based",
+        isRealData: false,
+        modelSource: "rule-based-engine",
         usedAgents: agents,
         contextSummary,
         disclaimer:
@@ -279,6 +287,8 @@ export async function answerAgriculturalQuestion(
     answer: buildRuleBasedAnswer(request, agents),
     language,
     dataSource: "rule-based",
+    isRealData: false,
+    modelSource: "rule-based-engine",
     usedAgents: agents,
     contextSummary,
     disclaimer:

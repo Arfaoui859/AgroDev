@@ -9,11 +9,33 @@ import request from "supertest";
 import express from "express";
 import { createServer } from "../../server/index";
 
+/**
+ * These tests assert the in-process rule-based fallback, so the external
+ * microservice URLs must point somewhere nothing is listening. Otherwise a
+ * developer or CI runner that happens to have the AI services up on their
+ * default localhost ports (as .env specifies) would silently exercise the
+ * microservice path instead, and these assertions would fail on the response
+ * shape rather than on any real defect.
+ */
+const UNREACHABLE = "http://127.0.0.1:1";
+const savedEnv: Record<string, string | undefined> = {};
+
 describe("🔌 AgroGrowth API Integration Tests", () => {
   let app: express.Application;
 
   beforeAll(() => {
+    for (const key of ["SOIL_ANALYSIS_URL", "CROP_RECOMMENDATION_URL"]) {
+      savedEnv[key] = process.env[key];
+      process.env[key] = UNREACHABLE;
+    }
     app = createServer();
+  });
+
+  afterAll(() => {
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
   });
 
   describe("Health checks", () => {

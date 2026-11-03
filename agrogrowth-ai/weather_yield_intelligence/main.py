@@ -344,6 +344,9 @@ async def health_check():
     """
     return {
         'status': 'healthy',
+        # Models are trained on synthetic data generated in-process; there is no
+        # field-observation dataset behind these predictions.
+        'model_source': 'synthetic-demo',
         'services': {
             'weather_planner': {
                 'status': 'active',

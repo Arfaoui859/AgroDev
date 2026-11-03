@@ -258,6 +258,8 @@ async def health_check():
     return {
         'status': 'healthy',
         'service': 'Smart Irrigation Optimizer',
+        # Trained on synthetic samples generated in-process.
+        'model_source': 'synthetic-demo',
         'timestamp': datetime.now().isoformat(),
         'model_trained': irrigation_optimizer.is_trained
     }

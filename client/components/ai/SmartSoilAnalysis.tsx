@@ -139,66 +139,54 @@ const SmartSoilAnalysis: React.FC = () => {
     localStorage.setItem("soilAnalysisHistory", JSON.stringify(updatedHistory));
   };
 
+  /**
+   * All three analyses are computed by the backend agronomic engines. The
+   * component previously generated plausible-looking numbers in the browser
+   * (Math.random + setTimeout), which presented fabricated results as real
+   * analysis. It now posts the readings/image and renders what the engine
+   * returns, including its provenance flags.
+   */
+  const [provenance, setProvenance] = useState<{
+    dataSource?: string;
+    isRealData?: boolean;
+    modelSource?: string | null;
+  } | null>(null);
+
+  const postJson = useCallback(
+    async (path: string, body: unknown) => {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          (data && (data.error || data.message)) ||
+            `فشل الطلب (رمز ${response.status})`,
+        );
+      }
+      if (data && typeof data === "object") {
+        setProvenance({
+          dataSource: data.dataSource,
+          isRealData: data.isRealData,
+          modelSource: data.modelSource ?? null,
+        });
+      }
+      return data;
+    },
+    [],
+  );
+
   const handleSensorAnalysis = useCallback(async () => {
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Generate realistic demo analysis result
-      const analysis = {
-        soil_type: {
-          classification: soilData.ph > 7.5 ? "تربة قلوية" : soilData.ph < 6.0 ? "تربة حمضية" : "تربة متعادلة",
-          confidence: 0.85 + Math.random() * 0.1
-        },
-        health_score: Math.min(95, Math.max(45,
-          (soilData.organic_matter * 15) +
-          (soilData.nitrogen * 0.3) +
-          (soilData.phosphorus * 0.6) +
-          (soilData.potassium * 0.2) +
-          (soilData.moisture * 0.5) +
-          (7.0 - Math.abs(soilData.ph - 6.8)) * 8
-        )),
-        fertility_level: soilData.organic_matter > 4 ? "خصبة جداً" :
-                        soilData.organic_matter > 2.5 ? "خصبة" : "متوسطة الخصوبة",
-        properties: {
-          "درجة الحموضة": {
-            current_value: soilData.ph,
-            status: soilData.ph >= 6.0 && soilData.ph <= 7.5 ? "ممتاز" :
-                   soilData.ph >= 5.5 && soilData.ph <= 8.0 ? "جيد" : "يحتاج تحسين"
-          },
-          "النيتروجين": {
-            current_value: soilData.nitrogen,
-            status: soilData.nitrogen >= 40 ? "ممتاز" :
-                   soilData.nitrogen >= 25 ? "جيد" : "يحتاج تحسين"
-          },
-          "الفوسفور": {
-            current_value: soilData.phosphorus,
-            status: soilData.phosphorus >= 20 ? "ممتاز" :
-                   soilData.phosphorus >= 10 ? "جيد" : "يحتاج تحسين"
-          },
-          "البوتاسيوم": {
-            current_value: soilData.potassium,
-            status: soilData.potassium >= 80 ? "ممتاز" :
-                   soilData.potassium >= 50 ? "جيد" : "يحتاج تحسين"
-          },
-          "المادة العضوية": {
-            current_value: soilData.organic_matter,
-            status: soilData.organic_matter >= 4 ? "ممتاز" :
-                   soilData.organic_matter >= 2 ? "جيد" : "يحتاج تحسين"
-          }
-        },
-        overall_recommendations: [
-          soilData.ph < 6.0 ? "إضافة الجير لرفع الحموضة" : soilData.ph > 8.0 ? "إضافة الكبريت لخفض القلوية" : "الحموضة في المس��وى المطلوب",
-          soilData.organic_matter < 3 ? "زيادة المادة العضوية بإضافة الكومبوست" : "مستوى ممتاز من المادة العضوية",
-          soilData.nitrogen < 30 ? "إضافة أسمدة نيتروجينية" : "مستوى جيد من النيتروجين",
-          soilData.moisture < 40 ? "تحسين نظام الري" : soilData.moisture > 80 ? "تحسين التصريف" : "رطوبة مناسبة"
-        ]
-      };
-
-      setAnalysisResult(analysis);
-      saveAnalysisToHistory(analysis, "sensor");
-
+      const data = await postJson("/api/ai/soil/analyze", {
+        sensor_data: soilData,
+        location: cropInput.location,
+      });
+      setAnalysisResult(data);
+      saveAnalysisToHistory(data, "sensor");
       toast({
         title: "تم التحليل بنجاح",
         description: "تم تحليل عينة التربة وإنشاء التوصيات المناسبة",
@@ -206,52 +194,43 @@ const SmartSoilAnalysis: React.FC = () => {
     } catch (error) {
       toast({
         title: "خطأ في التحليل",
-        description: "حدث خطأ أثناء تحليل التربة، يرجى المحاولة مرة أخرى",
+        description:
+          (error as Error).message ||
+          "حدث خطأ أثناء تحليل التربة، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [soilData, toast]);
+  }, [soilData, cropInput.location, postJson, toast]);
 
   const handleImageAnalysis = useCallback(async () => {
     if (!selectedFile) return;
 
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2500));
-
-      // Generate realistic image analysis result
-      const imageResult = {
-        soil_classification: {
-          soil_type_ar: "تربة طينية رملية",
-          classification: "Clay Loam",
-          confidence: 0.88
-        },
-        soil_condition: {
-          condition_ar: "جيدة",
-          condition: "Good"
-        },
-        recommendations: [
-          "التربة تظهر نسيج جيد مناسب للزراعة",
-          "ينصح بإضافة مادة عضوية لتحسين التهوية",
-          "مستوى الرطوبة مناسب",
-          "فحص مستوى العناصر الغذائية ضروري"
-        ],
-        analysis_details: {
-          "نسبة الرطوبة": 42.5,
-          "كثافة التربة": 1.35,
-          "نسبة الطين": 28.0,
-          "نسبة الرمل": 45.0,
-          "نسبة الطمي": 27.0,
-          "مؤشر الصحة": 78.5
-        }
-      };
-
-      setImageAnalysisResult(imageResult);
-      saveAnalysisToHistory(imageResult, "image");
-
+      const form = new FormData();
+      form.append("file", selectedFile);
+      const response = await fetch("/api/ai/soil/diagnose-image", {
+        method: "POST",
+        body: form,
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          (data && (data.error || data.message)) ||
+            `فشل تحليل الصورة (رمز ${response.status})`,
+        );
+      }
+      if (data && typeof data === "object") {
+        setProvenance({
+          dataSource: data.dataSource,
+          isRealData: data.isRealData,
+          modelSource: data.modelSource ?? null,
+        });
+      }
+      setImageAnalysisResult(data);
+      saveAnalysisToHistory(data, "image");
       toast({
         title: "تم تحليل الصورة بنجاح",
         description: "تم تحليل صورة التربة وتحديد نوعها وحالتها",
@@ -259,13 +238,15 @@ const SmartSoilAnalysis: React.FC = () => {
     } catch (error) {
       toast({
         title: "خطأ في تحليل الصورة",
-        description: "حدث خطأ أثناء تحليل صورة التربة، يرجى المحاولة مرة أخرى",
+        description:
+          (error as Error).message ||
+          "حدث خطأ أثناء تحليل صورة التربة، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [selectedFile, toast]);
+  }, [selectedFile, postJson, toast]);
 
   const handleCropRecommendations = useCallback(async () => {
     if (!analysisResult) {
@@ -279,117 +260,33 @@ const SmartSoilAnalysis: React.FC = () => {
 
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Generate crop recommendations based on soil analysis
-      const healthScore = analysisResult.health_score;
-      const ph = soilData.ph;
-      const organicMatter = soilData.organic_matter;
-
-      const cropList = [
-        {
-          id: "wheat",
-          name: "القمح",
-          name_ar: "القمح",
-          suitability_score: Math.min(0.95, (healthScore / 100) * (ph >= 6.0 && ph <= 7.5 ? 1.0 : 0.7)),
-          predicted_yield_per_hectare: Math.round(3000 + (healthScore * 20) + (organicMatter * 200)),
-          profit_analysis: {
-            net_profit: Math.round(2500 + (healthScore * 30) + (cropInput.area_hectares * 1200)),
-            roi_percent: Math.round(25 + (healthScore * 0.3)),
-          },
-          risk_assessment: {
-            overall_risk_level: healthScore > 75 ? "منخفض" : healthScore > 50 ? "متوسط" : "عالي"
-          },
-          nameArabic: "القمح",
-          fieldNameArabic: cropInput.location,
-          varietyArabic: "قمح شتوي",
-          healthStatus: healthScore > 75 ? "excellent" : healthScore > 50 ? "good" : "fair",
-          healthScore: Math.round(healthScore),
-          soilMoisture: soilData.moisture,
-          growthStageArabic: "نمو خضري",
-          growthStage: "vegetative",
-          plantedDate: "2024-03-15",
-          expectedHarvest: "2024-07-20",
-          expectedYield: Math.round(3.5 + (healthScore * 0.02)),
-          area: cropInput.area_hectares
-        },
-        {
-          id: "tomato",
-          name: "الطماطم",
-          name_ar: "الطماطم",
-          suitability_score: Math.min(0.92, (healthScore / 100) * (ph >= 6.0 && ph <= 7.0 ? 1.0 : 0.8)),
-          predicted_yield_per_hectare: Math.round(45000 + (healthScore * 300) + (organicMatter * 5000)),
-          profit_analysis: {
-            net_profit: Math.round(8500 + (healthScore * 50) + (cropInput.area_hectares * 3500)),
-            roi_percent: Math.round(45 + (healthScore * 0.4)),
-          },
-          risk_assessment: {
-            overall_risk_level: healthScore > 70 ? "منخفض" : healthScore > 45 ? "متوسط" : "عالي"
-          },
-          nameArabic: "الطماطم",
-          fieldNameArabic: cropInput.location,
-          varietyArabic: "طماطم صوبات",
-          healthStatus: healthScore > 70 ? "excellent" : healthScore > 45 ? "good" : "fair",
-          healthScore: Math.round(healthScore * 0.9),
-          soilMoisture: soilData.moisture,
-          growthStageArabic: "إزهار",
-          growthStage: "flowering",
-          plantedDate: "2024-04-01",
-          expectedHarvest: "2024-08-15",
-          expectedYield: Math.round(48 + (healthScore * 0.3)),
-          area: cropInput.area_hectares
-        },
-        {
-          id: "barley",
-          name: "الشعير",
-          name_ar: "الشعير",
-          suitability_score: Math.min(0.89, (healthScore / 100) * (ph >= 6.5 && ph <= 8.0 ? 1.0 : 0.9)),
-          predicted_yield_per_hectare: Math.round(2800 + (healthScore * 15) + (organicMatter * 180)),
-          profit_analysis: {
-            net_profit: Math.round(2100 + (healthScore * 25) + (cropInput.area_hectares * 950)),
-            roi_percent: Math.round(22 + (healthScore * 0.25)),
-          },
-          risk_assessment: {
-            overall_risk_level: healthScore > 60 ? "منخفض" : "متوسط"
-          },
-          nameArabic: "الشعير",
-          fieldNameArabic: cropInput.location,
-          varietyArabic: "شعير علفي",
-          healthStatus: healthScore > 60 ? "excellent" : "good",
-          healthScore: Math.round(healthScore * 0.85),
-          soilMoisture: soilData.moisture,
-          growthStageArabic: "تكوين حبوب",
-          growthStage: "grain_filling",
-          plantedDate: "2024-02-20",
-          expectedHarvest: "2024-06-30",
-          expectedYield: Math.round(2.9 + (healthScore * 0.015)),
-          area: cropInput.area_hectares
-        }
-      ].sort((a, b) => b.suitability_score - a.suitability_score);
-
-      const recommendations = {
-        recommendations: cropList,
-        best_recommendation: cropList[0]
-      };
-
-      setCropRecommendations(recommendations);
-      saveAnalysisToHistory(recommendations, "crops");
-
+      const data = await postJson("/api/ai/crops/recommend", {
+        ph: soilData.ph,
+        temperature: soilData.temperature,
+        rainfall: undefined,
+        salinity: soilData.salinity,
+        organic_matter: soilData.organic_matter,
+        area_hectares: cropInput.area_hectares,
+        season: undefined,
+      });
+      setCropRecommendations(data);
+      saveAnalysisToHistory(data, "crops");
       toast({
         title: "تم إنشاء التوصيات بنجاح",
-        description: `تم اقتراح ${cropList.length} محاصيل مناسبة لظروف تربتك`,
+        description: `تم اقتراح ${data?.recommendations?.length ?? 0} محاصيل مناسبة لظروف تربتك`,
       });
     } catch (error) {
       toast({
         title: "خطأ في إنشاء التوصيات",
-        description: "حدث خطأ أثناء إنشاء توصيات المحاصيل�� يرجى المحاولة مرة أخرى",
+        description:
+          (error as Error).message ||
+          "حدث خطأ أثناء إنشاء توصيات المحاصيل، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [analysisResult, soilData, cropInput, toast]);
+  }, [analysisResult, soilData, cropInput, postJson, toast]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -426,14 +323,33 @@ const SmartSoilAnalysis: React.FC = () => {
       case "acceptable":
       case "جيد":
         return "bg-blue-500";
+      case "low":
       case "needs_attention":
       case "يحتاج تحسين":
         return "bg-yellow-500";
+      case "high":
       case "poor":
       case "ضعيف":
         return "bg-red-500";
+      case "missing":
+        return "bg-gray-400";
       default:
         return "bg-gray-500";
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "optimal":
+        return "مثالي";
+      case "low":
+        return "منخفض";
+      case "high":
+        return "مرتفع";
+      case "missing":
+        return "غير مُقاس";
+      default:
+        return status;
     }
   };
 
@@ -692,6 +608,19 @@ const SmartSoilAnalysis: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {provenance && !provenance.isRealData && (
+                    <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        النتائج محسوبة بمحرك قواعد زراعية
+                        {provenance.modelSource
+                          ? ` (${provenance.modelSource})`
+                          : ""}{" "}
+                        وليست تنبؤاً من نموذج مدرّب. تحقّق مع مهندس زراعي قبل
+                        القرار.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   {/* Soil Type */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">تصنيف التربة</h3>
@@ -701,9 +630,9 @@ const SmartSoilAnalysis: React.FC = () => {
                       </Badge>
                       <span className="text-sm text-gray-600">
                         (
-                        {(analysisResult.soil_type?.confidence * 100).toFixed(
-                          1,
-                        )}
+                        {(
+                          (analysisResult.soil_type?.confidence ?? 0) * 100
+                        ).toFixed(1)}
                         % ثقة)
                       </span>
                     </div>
@@ -720,7 +649,7 @@ const SmartSoilAnalysis: React.FC = () => {
                         <span
                           className={`font-bold ${getHealthScoreColor(analysisResult.health_score)}`}
                         >
-                          {analysisResult.health_score?.toFixed(1)}%
+                          {(analysisResult.health_score ?? 0).toFixed(1)}%
                         </span>
                       </div>
                       <Progress
@@ -748,29 +677,40 @@ const SmartSoilAnalysis: React.FC = () => {
                       <h3 className="text-lg font-semibold">تحليل الخصائص</h3>
                       <div className="grid grid-cols-1 gap-3">
                         {Object.entries(analysisResult.properties).map(
-                          ([property, data]: [string, any]) => (
-                            <div
-                              key={property}
-                              className="flex items-center justify-between p-3 border rounded"
-                            >
-                              <div className="flex items-center space-x-3">
-                                <div
-                                  className={`w-3 h-3 rounded-full ${getStatusColor(data.status)}`}
-                                />
-                                <div>
-                                  <span className="font-medium">
-                                    {property}
-                                  </span>
-                                  <p className="text-sm text-gray-600">
-                                    القيمة: {data.current_value?.toFixed(2)}
-                                  </p>
+                          ([property, data]: [string, any]) => {
+                            // The engine labels each parameter in Arabic and may
+                            // report it as missing when no reading was supplied.
+                            const finding = (
+                              analysisResult.findings as any[] | undefined
+                            )?.find((f) => f.parameter === property);
+                            const value =
+                              data.current_value ?? data.value ?? null;
+                            return (
+                              <div
+                                key={property}
+                                className="flex items-center justify-between p-3 border rounded"
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div
+                                    className={`w-3 h-3 rounded-full ${getStatusColor(data.status)}`}
+                                  />
+                                  <div>
+                                    <span className="font-medium">
+                                      {finding?.labelAr ?? property}
+                                    </span>
+                                    <p className="text-sm text-gray-600">
+                                      {value === null
+                                        ? "غير مُقاس"
+                                        : `القيمة: ${Number(value).toFixed(2)}${data.unit ? ` ${data.unit}` : ""}`}
+                                    </p>
+                                  </div>
                                 </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {statusLabel(data.status)}
+                                </Badge>
                               </div>
-                              <Badge variant="outline" className="text-xs">
-                                {data.status}
-                              </Badge>
-                            </div>
-                          ),
+                            );
+                          },
                         )}
                       </div>
                     </div>

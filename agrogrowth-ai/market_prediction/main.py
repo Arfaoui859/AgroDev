@@ -25,7 +25,9 @@ supply_demand_ai = SupplyDemandAI()
 # Create FastAPI app with common configuration
 service = BaseAIService(
     service_name="Market Prediction",
-    description="AI market prediction service"
+    description="AI market prediction service",
+    # This service defines its own /health with model provenance below.
+    include_health_route=False,
 )
 
 app = service.app
@@ -436,6 +438,9 @@ async def health_check():
         "status": "healthy",
         "service": "Market Prediction AI",
         "version": "1.0.0",
+        # No licensed market feed is configured; forecasts come from a synthetic
+        # model seeded on representative base prices, never from live quotes.
+        "model_source": "synthetic-demo",
         "timestamp": datetime.now().isoformat(),
         "models": {
             "market_forecast_ai": "loaded",

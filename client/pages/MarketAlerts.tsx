@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -173,6 +174,7 @@ export default function MarketAlerts() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <SimulatedDataNotice />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">تنبيهات السوق</h1>

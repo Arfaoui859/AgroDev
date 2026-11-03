@@ -27,7 +27,9 @@ alert_notifier = AlertNotifierAI()
 # Create FastAPI app with common configuration
 service = BaseAIService(
     service_name="Intelligent Agent",
-    description="AgroGrowth Intelligent AI Agent Service"
+    description="AgroGrowth Intelligent AI Agent Service",
+    # This service defines its own /health with model provenance below.
+    include_health_route=False,
 )
 
 # FastAPI app for uvicorn (VERY IMPORTANT)
@@ -537,6 +539,8 @@ async def health_check():
         "status": "healthy",
         "service": "Intelligent Agent AI",
         "version": "1.0.0",
+        # The agent answers from built-in agronomic rules, not a trained LLM.
+        "model_source": "rule-based-demo",
         "timestamp": datetime.now().isoformat(),
         "components": {
             "agro_chat_ai": "loaded",

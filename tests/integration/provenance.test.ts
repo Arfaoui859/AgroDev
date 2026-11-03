@@ -120,3 +120,60 @@ describe("🔬 Microservice provenance probe", () => {
     expect(response.body.summary.available).toBeLessThan(response.body.summary.total);
   });
 });
+
+/**
+ * Every AI endpoint must answer the same provenance questions: where the
+ * result came from (`dataSource`), whether it is real inference
+ * (`isRealData`) and which engine produced it (`modelSource`). The UI relies
+ * on these fields to label results, so a missing flag silently reads as
+ * "real" to any consumer that checks `isRealData !== false`.
+ */
+describe("🏷️ Uniform provenance contract across AI endpoints", () => {
+  let app: express.Application;
+  const saved: Record<string, string | undefined> = {};
+
+  beforeAll(() => {
+    for (const key of ["SOIL_ANALYSIS_URL", "CROP_RECOMMENDATION_URL"]) {
+      saved[key] = process.env[key];
+      process.env[key] = "http://127.0.0.1:1";
+    }
+    app = createServer();
+  });
+
+  afterAll(() => {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  test("soil analysis states it is not real inference", async () => {
+    const res = await request(app)
+      .post("/api/ai/soil/analyze")
+      .send({ sensor_data: { ph: 6.5, nitrogen: 40, phosphorus: 20, potassium: 150 } })
+      .expect(200);
+    expect(res.body.dataSource).toBe("rule-based");
+    expect(res.body.isRealData).toBe(false);
+    expect(typeof res.body.modelSource).toBe("string");
+  });
+
+  test("crop recommendation states it is not real inference", async () => {
+    const res = await request(app)
+      .post("/api/ai/crops/recommend")
+      .send({ ph: 7, temperature: 22, rainfall: 450, season: "winter" })
+      .expect(200);
+    expect(res.body.dataSource).toBe("rule-based");
+    expect(res.body.isRealData).toBe(false);
+    expect(typeof res.body.modelSource).toBe("string");
+  });
+
+  test("assistant states it is not real inference when no LLM is configured", async () => {
+    const res = await request(app)
+      .post("/api/ai/assistant/chat")
+      .send({ message: "كيف أحسن محصول الطماطم؟", language: "ar" })
+      .expect(200);
+    expect(res.body.dataSource).toBe("rule-based");
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.modelSource).toBe("rule-based-engine");
+  });
+});

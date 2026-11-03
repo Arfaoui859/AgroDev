@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -304,6 +305,7 @@ export default function EnhancedMarketDashboard() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <SimulatedDataNotice />
       {/* Enhanced Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

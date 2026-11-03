@@ -76,6 +76,12 @@ const PlantDiseaseDetection: React.FC = () => {
   const [leafResult, setLeafResult] = useState<any>(null);
   const [comprehensiveResult, setComprehensiveResult] = useState<any>(null);
   const [quickResult, setQuickResult] = useState<any>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [provenance, setProvenance] = useState<{
+    dataSource?: string;
+    isRealData?: boolean;
+    modelSource?: string | null;
+  } | null>(null);
 
   const plantTypes = [
     { value: "tomato", label: "طماطم" },
@@ -118,267 +124,106 @@ const PlantDiseaseDetection: React.FC = () => {
     }
   };
 
-  const handleDetectDisease = useCallback(async () => {
-    if (!selectedFile) return;
+  /**
+   * Send the selected image to the backend vision endpoint.
+   *
+   * The bundled image-diagnosis service analyses real pixel features (colour
+   * ratios, lesion edges, uniformity) and returns a heuristic diagnosis. All
+   * four analysis modes go through it; nothing is generated in the browser.
+   */
+  const postImage = useCallback(
+    async (path: string, extra?: Record<string, string>) => {
+      if (!selectedFile) return null;
+      const form = new FormData();
+      form.append("file", selectedFile);
+      if (plantType && plantType !== "unspecified") {
+        form.append("plant_type", plantType);
+      }
+      if (growthStage && growthStage !== "unspecified") {
+        form.append("growth_stage", growthStage);
+      }
+      for (const [key, value] of Object.entries(extra ?? {})) {
+        form.append(key, value);
+      }
 
-    setLoading(true);
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const response = await fetch(path, { method: "POST", body: form });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message =
+          (data && (data.error || data.detail || data.message)) ||
+          `فشل التحليل (رمز ${response.status})`;
+        throw new Error(
+          typeof message === "string" ? message : JSON.stringify(message),
+        );
+      }
+      if (data && typeof data === "object") {
+        setProvenance({
+          dataSource: data.dataSource,
+          isRealData: data.isRealData,
+          modelSource: data.modelSource ?? null,
+        });
+      }
+      return data;
+    },
+    [selectedFile, plantType, growthStage],
+  );
 
-      // Generate realistic disease detection based on plant type and random factors
-      const isHealthy = Math.random() > 0.3; // 70% chance of disease
-      const diseaseTypes = [
-        {
-          disease: "early_blight",
-          disease_name_ar: "اللفحة المبكرة",
-          probability: 0.85 + Math.random() * 0.1,
-          severity_level: "متوسط"
-        },
-        {
-          disease: "bacterial_spot",
-          disease_name_ar: "البقع البكتيرية",
-          probability: 0.78 + Math.random() * 0.15,
-          severity_level: "عالي"
-        },
-        {
-          disease: "powdery_mildew",
-          disease_name_ar: "البياض الدقيقي",
-          probability: 0.72 + Math.random() * 0.2,
-          severity_level: "منخفض"
-        },
-        {
-          disease: "healthy",
-          disease_name_ar: "نبات سليم",
-          probability: 0.92 + Math.random() * 0.08,
-          severity_level: "لا يوجد"
-        }
-      ];
+  const runAnalysis = useCallback(
+    async (task: () => Promise<void>) => {
+      setLoading(true);
+      setAnalysisError(null);
+      try {
+        await task();
+      } catch (error) {
+        console.error("Image analysis failed:", error);
+        setAnalysisError(
+          (error as Error).message ||
+            "تعذّر الاتصال بخدمة تشخيص الصور. حاول مرة أخرى.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
-      const primaryDisease = isHealthy ? diseaseTypes[3] : diseaseTypes[Math.floor(Math.random() * 3)];
-      const healthScore = isHealthy ? 85 + Math.random() * 10 : 30 + Math.random() * 40;
+  const handleDetectDisease = useCallback(
+    () =>
+      runAnalysis(async () => {
+        const data = await postImage("/api/ai/images/detect-disease");
+        if (data) setDiseaseResult(data);
+      }),
+    [postImage, runAnalysis],
+  );
 
-      const result = {
-        disease_detection: {
-          primary_disease: primaryDisease,
-          top_predictions: isHealthy ? [primaryDisease] : [
-            primaryDisease,
-            ...diseaseTypes.filter(d => d !== primaryDisease).slice(0, 2)
-          ]
-        },
-        severity_assessment: {
-          severity_level: primaryDisease.severity_level,
-          severity_score: isHealthy ? 0 : 1 + Math.random() * 3,
-          affected_area_percentage: isHealthy ? 0 : 15 + Math.random() * 45,
-          urgency_level: primaryDisease.severity_level === "عالي" ? "عاجل" :
-                        primaryDisease.severity_level === "متوسط" ? "متوسط" : "منخفض"
-        },
-        health_score: {
-          health_score: healthScore
-        },
-        treatment_plan: isHealthy ? null : {
-          immediate_treatment: [
-            "إزالة الأوراق المصابة فوراً",
-            "تطبيق مبيد فطري مناسب",
-            "تحسين التهوية حول النبات",
-            "تقليل الري على الأوراق",
-            "مراقبة النبات يومياً"
-          ],
-          estimated_recovery_time: primaryDisease.severity_level === "عالي" ? "3-4 أسابيع" :
-                                  primaryDisease.severity_level === "متوسط" ? "2-3 أسابيع" : "1-2 أسبوع"
-        }
-      };
+  const handleAnalyzeLeaf = useCallback(
+    () =>
+      runAnalysis(async () => {
+        const data = await postImage("/api/ai/images/analyze-leaf");
+        if (data) setLeafResult(data);
+      }),
+    [postImage, runAnalysis],
+  );
 
-      setDiseaseResult(result);
-    } catch (error) {
-      console.error("Disease detection error:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFile]);
+  const handleComprehensiveAnalysis = useCallback(
+    () =>
+      runAnalysis(async () => {
+        const data = await postImage("/api/ai/images/analyze-plant", {
+          analysis_focus: "comprehensive",
+        });
+        if (data) setComprehensiveResult(data);
+      }),
+    [postImage, runAnalysis],
+  );
 
-  const handleAnalyzeLeaf = useCallback(async () => {
-    if (!selectedFile) return;
-
-    setLoading(true);
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2800));
-
-      // Generate realistic leaf analysis
-      const leafQuality = Math.random();
-      const healthScore = 50 + leafQuality * 40;
-      const nutritionScore = 45 + leafQuality * 45;
-
-      const deficiencies = [
-        { name_ar: "نقص النيتروجين", severity_stage: "متوسط", probability: 0.75 },
-        { name_ar: "نقص البوتاسيوم", severity_stage: "منخفض", probability: 0.65 },
-        { name_ar: "نقص الفوسفور", severity_stage: "عالي", probability: 0.82 },
-        { name_ar: "نقص المغنيسيوم", severity_stage: "متوسط", probability: 0.58 }
-      ];
-
-      const primaryDeficiency = deficiencies[Math.floor(Math.random() * deficiencies.length)];
-
-      const result = {
-        overall_leaf_score: {
-          quality_grade: healthScore > 80 ? "A" : healthScore > 65 ? "B" : healthScore > 50 ? "C" : "D",
-          overall_score: healthScore
-        },
-        health_evaluation: {
-          overall_health_score: healthScore,
-          health_category: healthScore > 75 ? "ممتاز" : healthScore > 60 ? "جيد" : healthScore > 45 ? "متوسط" : "ضعيف"
-        },
-        leaf_nutrition: {
-          nutritional_health_score: nutritionScore,
-          primary_deficiency: primaryDeficiency,
-          nutrition_recommendations: [
-            "إضافة سماد نيتروجيني متوازن",
-            "تحسين التصريف لامتصاص أفضل للعناصر",
-            "فحص مستوى الحموضة في التربة",
-            "استخدام السماد الورقي كمكمل",
-            "زيادة المادة العضوية في التربة"
-          ]
-        },
-        growth_assessment: {
-          overall_growth_score: healthScore * 0.9,
-          development_indicators: {
-            size_adequacy: leafQuality > 0.7 ? "مناسب" : "أقل من المطلوب",
-            structural_development: leafQuality > 0.6 ? "طبيعي" : "متأخر",
-            maturity_level: leafQuality > 0.8 ? "ناضج" : "في طور النمو"
-          },
-          growth_recommendations: [
-            "تحسين التعرض للضوء",
-            "تنظيم جدول الري",
-            "إزالة الأوراق المتضررة",
-            "مراقبة درجة الحرارة"
-          ]
-        },
-        stress_analysis: leafQuality < 0.6 ? {
-          detected_stress_types: {
-            water_stress: {
-              severity: "متوسط",
-              indicators: ["ذبول طفيف", "تغير لون الأوراق"],
-              recommendations: ["تحسين نظام الري", "فحص رطوبة التربة"]
-            },
-            nutrient_stress: {
-              severity: "عالي",
-              indicators: ["اصفرار الأوراق", "نمو بطيء"],
-              recommendations: ["تطبيق سماد متوازن", "فحص التربة"]
-            }
-          }
-        } : null
-      };
-
-      setLeafResult(result);
-    } catch (error) {
-      console.error("Leaf analysis error:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFile]);
-
-  const handleComprehensiveAnalysis = useCallback(async () => {
-    if (!selectedFile) return;
-
-    setLoading(true);
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 4000));
-
-      // Generate comprehensive analysis combining disease and leaf health
-      const overallHealth = 45 + Math.random() * 40;
-      const diseaseHealth = Math.random() > 0.6 ? 80 + Math.random() * 15 : 30 + Math.random() * 30;
-      const leafHealth = 50 + Math.random() * 35;
-      const nutritionHealth = 40 + Math.random() * 45;
-
-      const actionPriority = overallHealth < 50 ? "عاجل" : overallHealth < 70 ? "متوسط" : "منخفض";
-
-      const result = {
-        overall_plant_health: {
-          score: overallHealth,
-          components: {
-            disease_health: diseaseHealth,
-            leaf_health: leafHealth,
-            nutrition_health: nutritionHealth
-          }
-        },
-        combined_assessment: {
-          action_priority: actionPriority,
-          health_assessment: overallHealth > 75 ? "النبات في حالة ممتازة" :
-                           overallHealth > 60 ? "النبات في حالة جيدة مع بعض التحديات" :
-                           overallHealth > 40 ? "النبات يحتاج عناية فورية" : "النبات في حالة حرجة",
-          primary_concerns: overallHealth < 60 ? [
-            "مستوى الصحة العامة منخفض",
-            "تحديات في التغذية",
-            "احتمالية إصابة بالأمراض",
-            "ضرورة التدخل السريع"
-          ] : [],
-          monitoring_schedule: {
-            immediate: actionPriority === "عاجل" ? "فحص يومي" : "فحص كل 3 أيام",
-            short_term: "مراقبة أسبوعية للتقدم",
-            long_term: "تقييم شهري شامل"
-          }
-        },
-        unified_recommendations: [
-          "تحسين نظام الري لضمان الرطوبة المناسبة",
-          "تطبيق برنامج تسميد متوازن",
-          "مراقبة العلامات المبكرة للأمراض",
-          "تحسين التهوية حول النبات",
-          "فحص التربة لتحديد العناصر الناقصة",
-          "استخدام المبيدات الحيوية الآمنة",
-          "إزالة الأجزاء المتضررة",
-          "توفير الإضاءة المناسبة"
-        ]
-      };
-
-      setComprehensiveResult(result);
-    } catch (error) {
-      console.error("Comprehensive analysis error:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFile]);
-
-  const handleQuickCheck = useCallback(async () => {
-    if (!selectedFile) return;
-
-    setLoading(true);
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Generate quick health assessment
-      const healthScore = 35 + Math.random() * 50;
-      const needsAttention = healthScore < 60;
-
-      const issues = ["مشاكل في التغذية", "علامات مرض محتملة", "إجهاد مائي", "نقص في الإضاءة"];
-      const nutritionStatuses = ["جيدة", "تحتاج تحسين", "ناقصة", "ضعيفة"];
-
-      const result = {
-        overall_health_score: healthScore,
-        overall_status: healthScore > 75 ? "ممتاز" :
-                       healthScore > 60 ? "جيد" :
-                       healthScore > 45 ? "يحتاج عناية" : "حالة حرجة",
-        priority_level: needsAttention ? "عالي" : "متوسط",
-        primary_issue: issues[Math.floor(Math.random() * issues.length)],
-        nutrition_status: nutritionStatuses[Math.floor(Math.random() * nutritionStatuses.length)],
-        needs_immediate_attention: needsAttention,
-        quick_recommendations: [
-          "فحص مستوى الرطوبة في التربة",
-          "تحسين التهوية حول النبات",
-          "مراقبة علامات الأمراض يومياً",
-          "ضبط جدول الري حسب الحاجة",
-          "إضافة سماد ورقي سريع المفعول"
-        ]
-      };
-
-      setQuickResult(result);
-    } catch (error) {
-      console.error("Quick check error:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedFile]);
+  const handleQuickCheck = useCallback(
+    () =>
+      runAnalysis(async () => {
+        const data = await postImage("/api/ai/images/quick-health-check");
+        if (data) setQuickResult(data);
+      }),
+    [postImage, runAnalysis],
+  );
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -416,6 +261,8 @@ const PlantDiseaseDetection: React.FC = () => {
     setLeafResult(null);
     setComprehensiveResult(null);
     setQuickResult(null);
+    setAnalysisError(null);
+    setProvenance(null);
     setPlantType("unspecified");
     setGrowthStage("unspecified");
   };
@@ -574,6 +421,23 @@ const PlantDiseaseDetection: React.FC = () => {
       {/* Analysis Tabs */}
       {selectedFile && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {analysisError && (
+            <Alert variant="destructive" role="alert">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{analysisError}</AlertDescription>
+            </Alert>
+          )}
+          {provenance && !provenance.isRealData && (
+            <Alert className="border-amber-300 bg-amber-50 text-amber-900">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                النتيجة مبنية على تحليل خصائص الصورة بقواعد استدلالية
+                {provenance.modelSource ? ` (${provenance.modelSource})` : ""} وليست
+                تشخيصاً من نموذج مدرّب على بيانات ميدانية. استشر مهندساً زراعياً قبل
+                اتخاذ إجراء.
+              </AlertDescription>
+            </Alert>
+          )}
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="disease">
               <Bug className="w-4 h-4 ml-2" />

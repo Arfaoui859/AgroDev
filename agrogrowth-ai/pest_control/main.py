@@ -301,6 +301,8 @@ async def health_check():
     return {
         'status': 'healthy',
         'service': 'Pest Control Recommender',
+        # Trained on synthetic samples generated in-process.
+        'model_source': 'synthetic-demo',
         'timestamp': datetime.now().isoformat(),
         'model_trained': pest_recommender.is_trained
     }

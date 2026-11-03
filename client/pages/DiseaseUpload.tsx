@@ -116,115 +116,118 @@ export default function DiseaseUpload() {
     });
   };
 
-  const simulateAIAnalysis = async () => {
+  const SEVERITY_AR: Record<string, string> = {
+    none: "منخفض",
+    low: "منخفض",
+    medium: "متوسط",
+    moderate: "متوسط",
+    high: "عالي",
+    very_high: "عالي",
+  };
+
+  /**
+   * Sends the uploaded image to the vision service and maps its structured
+   * response onto the shape the diagnosis page reads. Results come from the
+   * backend engine; the previous implementation fabricated a diagnosis in the
+   * browser, which made every upload "succeed" with invented data.
+   */
+  const analyzeImages = async (data: DiseaseUploadForm) => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + Math.random() * 15;
+    try {
+      const file = uploadedImages[0].file;
+      const form = new FormData();
+      form.append("file", file);
+      if (data.cropType) form.append("plant_type", data.cropType);
+
+      setUploadProgress(30);
+      const response = await fetch("/api/ai/images/detect-disease", {
+        method: "POST",
+        body: form,
       });
-    }, 200);
-
-    // Simulate AI processing time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    clearInterval(progressInterval);
-    setUploadProgress(100);
-    
-    // Create diagnosis result
-    const diagnosisResult = {
-      id: Date.now().toString(),
-      images: uploadedImages.map(img => img.file.name),
-      cropType: form.getValues("cropType"),
-      plantPart: form.getValues("plantPart"),
-      symptoms: form.getValues("symptoms"),
-      additionalInfo: form.getValues("additionalInfo"),
-      timestamp: new Date().toISOString(),
-      confidence: 85 + Math.random() * 10,
-      diagnosis: generateMockDiagnosis(form.getValues("cropType"), form.getValues("plantPart")),
-    };
-
-    // Save to localStorage
-    const history = JSON.parse(localStorage.getItem('diseaseHistory') || '[]');
-    history.unshift(diagnosisResult);
-    localStorage.setItem('diseaseHistory', JSON.stringify(history));
-    localStorage.setItem('currentDiagnosis', JSON.stringify(diagnosisResult));
-
-    setIsUploading(false);
-    toast.success("تم تحليل الصور بنجاح!");
-
-    // Store diagnosis data for treatment recommendation
-    const diseaseData = diagnosisResult.diagnosis;
-    const treatmentParams = new URLSearchParams({
-      diseaseId: `${diagnosisResult.cropType}_${diseaseData.disease.replace(/\s+/g, '_')}`,
-      diseaseName: diseaseData.disease,
-      cropType: diagnosisResult.cropType,
-      severity: diseaseData.severity === 'عالي' ? 'Severe' : diseaseData.severity === 'متوسط' ? 'Moderate' : 'Mild'
-    });
-
-    // Show diagnosis results with option to get treatment
-    localStorage.setItem('treatmentRedirectData', JSON.stringify({
-      diagnosisId: diagnosisResult.id,
-      diseaseId: `${diagnosisResult.cropType}_${diseaseData.disease.replace(/\s+/g, '_')}`,
-      diseaseName: diseaseData.disease,
-      cropType: diagnosisResult.cropType,
-      severity: diseaseData.severity === 'عالي' ? 'Severe' : diseaseData.severity === 'متوسط' ? 'Moderate' : 'Mild',
-      confidence: diseaseData.confidence
-    }));
-
-    navigate(`/disease-diagnosis/${diagnosisResult.id}`);
-  };
-
-  const generateMockDiagnosis = (cropType: string, plantPart: string) => {
-    const diagnoses = {
-      olive: {
-        leaves: {
-          disease: "عين الطاووس",
-          confidence: 88,
-          severity: "متوسط",
-          description: "مرض فطري شائع في أشجار الزيتون يظهر على شكل بقع دائرية على الأوراق",
-          treatment: ["رش بمبيد فطري نحاسي", "تحسين التهوية", "إزالة الأوراق المصابة"],
-          prevention: ["تجنب الري العلوي", "تقليم منتظم", "رش وقائي"]
-        }
-      },
-      tomato: {
-        leaves: {
-          disease: "اللفحة المتأخرة",
-          confidence: 92,
-          severity: "عالي",
-          description: "مرض فطري خطير يصيب الطماطم ويمكن أن يدمر المحصول بالكامل",
-          treatment: ["مبيد فطري جهازي", "تحسين الصرف", "تجنب الرطوبة العالية"],
-          prevention: ["اختيار أصناف مقاومة", "تجنب الري العلوي", "تهوية جيدة"]
-        }
-      },
-      citrus: {
-        leaves: {
-          disease: "تجعد أوراق الحمضيات",
-          confidence: 85,
-          severity: "متوسط",
-          description: "مرض فيروسي يصيب أشجار الحمضيات ويسبب تشوه الأوراق",
-          treatment: ["لا يوجد علاج مباشر", "تحسين التغذية", "مكافحة الحشرات الناقلة"],
-          prevention: ["استخدام شتلات خالية من الفيروس", "مكافحة المن", "تطهير الأدوات"]
-        }
+      setUploadProgress(90);
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          (payload && (payload.error || payload.message)) ||
+            `فشل التحليل (رمز ${response.status})`,
+        );
       }
-    };
 
-    const defaultDiagnosis = {
-      disease: "مرض نباتي غير محدد",
-      confidence: 75,
-      severity: "متوسط",
-      description: "يحتاج فحص إضافي من خبير زراعي",
-      treatment: ["استشارة خبير زراعي", "مراقبة النبات", "تحسين الرعاية العامة"],
-      prevention: ["رعاية منتظمة", "تغذية متوازنة", "مراقبة مستمرة"]
-    };
+      const detection = payload.disease_detection ?? {};
+      const primary = detection.primary_disease ?? {};
+      const plan = payload.treatment_plan ?? {};
+      const severityLevel =
+        primary.severity_level ??
+        payload.severity_assessment?.severity_level ??
+        "medium";
 
-    return diagnoses[cropType as keyof typeof diagnoses]?.[plantPart as keyof typeof diagnoses.olive] || defaultDiagnosis;
+      const diagnosis = {
+        disease: primary.disease_name_ar || primary.disease || "غير محدد",
+        confidence: Math.round((primary.probability ?? 0) * 100),
+        severity: SEVERITY_AR[severityLevel] ?? "متوسط",
+        description:
+          primary.description ||
+          "تشخيص مبني على تحليل صورة النبات. راجع النتائج مع مهندس زراعي.",
+        treatment: [
+          ...(plan.immediate_treatment ?? []),
+          ...(plan.general_care ?? []),
+        ],
+        prevention: [
+          ...(plan.prevention_measures ?? []),
+          ...(plan.follow_up_schedule ?? []),
+        ],
+      };
+
+      const diagnosisResult = {
+        id: Date.now().toString(),
+        images: uploadedImages.map((img) => img.file.name),
+        cropType: data.cropType,
+        plantPart: data.plantPart,
+        symptoms: data.symptoms,
+        additionalInfo: data.additionalInfo,
+        timestamp: new Date().toISOString(),
+        confidence: diagnosis.confidence,
+        diagnosis,
+        // Provenance is surfaced so the UI can label heuristic output honestly.
+        dataSource: payload.dataSource,
+        isRealData: payload.isRealData,
+        modelSource: payload.modelSource,
+      };
+
+      const history = JSON.parse(localStorage.getItem("diseaseHistory") || "[]");
+      history.unshift(diagnosisResult);
+      localStorage.setItem("diseaseHistory", JSON.stringify(history));
+      localStorage.setItem("currentDiagnosis", JSON.stringify(diagnosisResult));
+
+      localStorage.setItem(
+        "treatmentRedirectData",
+        JSON.stringify({
+          diagnosisId: diagnosisResult.id,
+          diseaseId: `${diagnosisResult.cropType}_${diagnosis.disease.replace(/\s+/g, "_")}`,
+          diseaseName: diagnosis.disease,
+          cropType: diagnosisResult.cropType,
+          severity:
+            diagnosis.severity === "عالي"
+              ? "Severe"
+              : diagnosis.severity === "متوسط"
+                ? "Moderate"
+                : "Mild",
+          confidence: diagnosis.confidence,
+        }),
+      );
+
+      setUploadProgress(100);
+      toast.success("تم تحليل الصور بنجاح!");
+      navigate(`/disease-diagnosis/${diagnosisResult.id}`);
+    } catch (error) {
+      toast.error(
+        (error as Error).message || "تعذّر تحليل الصور، يرجى المحاولة مرة أخرى",
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const onSubmit = (data: DiseaseUploadForm) => {
@@ -232,7 +235,7 @@ export default function DiseaseUpload() {
       toast.error("يجب رفع صورة واحدة على الأقل");
       return;
     }
-    simulateAIAnalysis();
+    analyzeImages(data);
   };
 
   return (

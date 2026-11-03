@@ -84,6 +84,9 @@ export interface UICropRecommendation {
 
 export interface CropAdvisorResult {
   dataSource: "rule-based";
+  /** Rule-based output is never model inference; stated explicitly for the client. */
+  isRealData: false;
+  modelSource: "rule-based-engine";
   recommendations: UICropRecommendation[];
   best_recommendation: UICropRecommendation | null;
   overall_analysis: {
@@ -208,6 +211,8 @@ export function recommendCropsForUI(input: CropAdvisorInput): CropAdvisorResult 
 
   return {
     dataSource: "rule-based",
+    isRealData: false,
+    modelSource: "rule-based-engine",
     recommendations: top,
     best_recommendation: top[0] ?? null,
     overall_analysis: {
@@ -230,6 +235,9 @@ export function recommendCropsForUI(input: CropAdvisorInput): CropAdvisorResult 
  */
 export interface UISoilAnalysis {
   dataSource: "rule-based";
+  /** Rule-based output is never model inference; stated explicitly for the client. */
+  isRealData: false;
+  modelSource: "rule-based-engine";
   soil_type: { classification: string; confidence: number };
   properties: Record<string, { value: number | null; unit: string; status: string }>;
   health_score: number;
@@ -277,6 +285,8 @@ export function analyzeSoilForUI(input: CropAdvisorInput): UISoilAnalysis {
 
   return {
     dataSource: "rule-based",
+    isRealData: false,
+    modelSource: "rule-based-engine",
     soil_type: soilType,
     properties,
     health_score: result.healthScore,

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Brain, 
   Sparkles, 
@@ -141,6 +142,7 @@ const demandColors = {
 };
 
 export default function SmartCropSuggestions() {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -216,25 +218,51 @@ export default function SmartCropSuggestions() {
     }
   };
 
+  /**
+   * Reads the latest readings from the platform's sensor endpoint. The
+   * previous implementation invented random values and presented them as
+   * sensor data; now only parameters a sensor actually reports are updated
+   * and the rest keep their manual values.
+   */
   const loadIoTData = async () => {
     setLoading(true);
     try {
-      // Simulate IoT data loading
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Update with simulated IoT data
-      setSoilProfile({
-        ...soilProfile,
-        ph: 6.8 + Math.random() * 0.8,
-        nitrogen: 50 + Math.random() * 40,
-        phosphorus: 20 + Math.random() * 20,
-        potassium: 150 + Math.random() * 100,
-        moisture: 15 + Math.random() * 10
+      const response = await fetch('/api/sensors');
+      if (!response.ok) {
+        throw new Error(`فشل تحميل بيانات المستشعرات (رمز ${response.status})`);
+      }
+      const payload = await response.json();
+      const sensors = (payload?.data ?? []) as Array<{
+        type: string;
+        lastReading?: { value?: number };
+      }>;
+      const readingFor = (type: string) =>
+        sensors.find(s => s.type === type && s.lastReading?.value !== undefined)
+          ?.lastReading?.value;
+      const ph = readingFor('soil_ph');
+      const moisture = readingFor('soil_moisture');
+
+      setSoilProfile(prev => ({
+        ...prev,
+        ph: ph ?? prev.ph,
+        moisture: moisture ?? prev.moisture,
+      }));
+
+      toast({
+        title: 'تم تحميل بيانات المستشعرات',
+        description:
+          ph === undefined && moisture === undefined
+            ? 'لم تُرجع المستشعرات أي قراءات؛ تم الاحتفاظ بالقيم اليدوية.'
+            : 'تم تحديث القيم المتاحة من المستشعرات.',
       });
 
       await generateRecommendations();
     } catch (error) {
-      console.error('Error loading IoT data:', error);
+      toast({
+        title: 'تعذّر تحميل بيانات المستشعرات',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }

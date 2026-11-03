@@ -909,6 +909,61 @@ class ProfitEstimatorAI:
             'best_case_scenario': float(best_case_profit)
         }
 
+    def _generate_investment_recommendations(self, financial_analysis: Dict[str, Any],
+                                            risk_analysis: Dict[str, Any],
+                                            market_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Derive investment guidance from the financial, risk and market analyses.
+
+        Previously this method was called but never defined, so every profit
+        estimation request raised AttributeError and the endpoint returned 500.
+        """
+        roi = financial_analysis.get('roi_percent', 0.0)
+        net_profit = financial_analysis.get('net_profit', 0.0)
+        profitability_level = financial_analysis.get('profitability_level', 'ضعيف')
+        overall_risk = risk_analysis.get('overall_risk_score', 0.5)
+        market_potential = market_analysis.get('market_potential_score', 0.5)
+
+        # Investment attractiveness blends return, risk and demand.
+        attractiveness_score = round(
+            max(0.0, min(1.0, (roi / 100.0) * 0.5 + (1.0 - overall_risk) * 0.3 + market_potential * 0.2)),
+            3,
+        )
+
+        if attractiveness_score >= 0.7:
+            recommendation = 'استثمار موصى به'
+            confidence = 'عالية'
+        elif attractiveness_score >= 0.45:
+            recommendation = 'استثمار مشروط بتحسين الممارسات الزراعية'
+            confidence = 'متوسطة'
+        else:
+            recommendation = 'يُنصح بإعادة تقييم الجدوى قبل الاستثمار'
+            confidence = 'منخفضة'
+
+        payback_months = financial_analysis.get('payback_period_months', 12) or 12
+        horizon_years = 3 if payback_months > 24 else 2 if payback_months > 12 else 1
+        risk_budget = 'منخفض' if overall_risk <= 0.3 else 'متوسط' if overall_risk <= 0.6 else 'مرتفع'
+
+        return {
+            'recommendation': recommendation,
+            'confidence_level': confidence,
+            'investment_attractiveness_score': attractiveness_score,
+            'profitability_level': profitability_level,
+            'suggested_investment_horizon_years': horizon_years,
+            'risk_budget': risk_budget,
+            'expected_net_profit': float(net_profit),
+            'expected_roi_percent': float(roi),
+            'key_considerations': [
+                f'مستوى الربحية المتوقع: {profitability_level}',
+                f'مستوى المخاطر الإجمالي: {risk_analysis.get("overall_risk_level", "متوسط")}',
+                f'جاذبية السوق: {round(market_potential * 100, 1)}%',
+            ],
+            'next_steps': [
+                'التحقق من تقديرات المردود والأسعار مع مهندس زراعي',
+                'تأمين قنوات التسويق قبل بداية الموسم',
+                'مراجعة خطة الاستثمار بعد أول موسم',
+            ],
+        }
+
 # Factory function
 def create_profit_estimator() -> ProfitEstimatorAI:
     """Create and return a ProfitEstimatorAI instance"""

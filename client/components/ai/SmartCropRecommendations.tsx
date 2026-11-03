@@ -139,255 +139,119 @@ const SmartCropRecommendations: React.FC = () => {
     }));
   };
 
+  /**
+   * All four analyses are served by the crop-recommendation engine. The
+   * previous implementation computed plausible-looking numbers in the browser
+   * (Math.random / fixed formulas behind an artificial delay), so results were
+   * fabricated but presented as AI output. Each handler now calls the real
+   * endpoint and renders the engine's response.
+   */
+  const postJson = useCallback(async (path: string, body: unknown) => {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(
+        (data && (data.error || data.message)) ||
+          `فشل الطلب (رمز ${response.status})`,
+      );
+    }
+    return data;
+  }, []);
+
   const handleGetRecommendations = useCallback(async () => {
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Generate realistic crop recommendations based on input data
-      const climateScore = inputData.temperature >= 20 && inputData.temperature <= 30 ? 1.0 : 0.7;
-      const rainfallScore = inputData.annual_rainfall >= 400 && inputData.annual_rainfall <= 800 ? 1.0 : 0.8;
-      const soilScore = inputData.soil_quality_score;
-      const baseScore = (climateScore + rainfallScore + soilScore) / 3;
-
-      const cropList = [
-        {
-          rank: 1,
-          name: "wheat",
-          name_ar: "القمح",
-          category: "حبوب",
-          suitability_score: Math.min(0.95, baseScore * (inputData.soil_ph >= 6.0 && inputData.soil_ph <= 7.5 ? 1.0 : 0.8)),
-          predicted_yield_per_hectare: Math.round(3200 + (baseScore * 800) + (inputData.farmer_experience_years * 50)),
-          profit_analysis: {
-            net_profit: Math.round(3500 + (baseScore * 2000) + (inputData.available_capital * 0.15)),
-            roi_percent: Math.round(28 + (baseScore * 20) + (inputData.farmer_experience_years * 2)),
-            profit_margin_percent: Math.round(35 + (baseScore * 15))
-          },
-          risk_assessment: {
-            overall_risk_level: baseScore > 0.8 ? "منخفض" : baseScore > 0.6 ? "متوسط" : "عالي",
-            overall_risk_score: 1 - baseScore
-          }
-        },
-        {
-          rank: 2,
-          name: "tomato",
-          name_ar: "الطماطم",
-          category: "خضروات",
-          suitability_score: Math.min(0.92, baseScore * (inputData.water_availability >= 0.7 ? 1.0 : 0.7)),
-          predicted_yield_per_hectare: Math.round(48000 + (baseScore * 12000) + (inputData.farmer_experience_years * 800)),
-          profit_analysis: {
-            net_profit: Math.round(12500 + (baseScore * 5000) + (inputData.available_capital * 0.25)),
-            roi_percent: Math.round(52 + (baseScore * 25) + (inputData.farmer_experience_years * 1.5)),
-            profit_margin_percent: Math.round(42 + (baseScore * 18))
-          },
-          risk_assessment: {
-            overall_risk_level: baseScore > 0.7 ? "منخفض" : baseScore > 0.5 ? "متوسط" : "عالي",
-            overall_risk_score: 1 - (baseScore * 0.9)
-          }
-        },
-        {
-          rank: 3,
-          name: "olive",
-          name_ar: "الزيتون",
-          category: "أشجار مثمرة",
-          suitability_score: Math.min(0.88, baseScore * (inputData.temperature >= 15 && inputData.temperature <= 35 ? 1.0 : 0.6)),
-          predicted_yield_per_hectare: Math.round(8500 + (baseScore * 2000) + (inputData.farmer_experience_years * 150)),
-          profit_analysis: {
-            net_profit: Math.round(8500 + (baseScore * 3500) + (inputData.available_capital * 0.2)),
-            roi_percent: Math.round(35 + (baseScore * 18) + (inputData.farmer_experience_years * 1.2)),
-            profit_margin_percent: Math.round(38 + (baseScore * 12))
-          },
-          risk_assessment: {
-            overall_risk_level: "منخفض",
-            overall_risk_score: 0.3
-          }
-        },
-        {
-          rank: 4,
-          name: "barley",
-          name_ar: "الشعير",
-          category: "حبوب",
-          suitability_score: Math.min(0.85, baseScore * (inputData.soil_ph >= 6.5 ? 1.0 : 0.9)),
-          predicted_yield_per_hectare: Math.round(2800 + (baseScore * 600) + (inputData.farmer_experience_years * 40)),
-          profit_analysis: {
-            net_profit: Math.round(2800 + (baseScore * 1200) + (inputData.available_capital * 0.12)),
-            roi_percent: Math.round(25 + (baseScore * 15) + (inputData.farmer_experience_years * 1.8)),
-            profit_margin_percent: Math.round(32 + (baseScore * 10))
-          },
-          risk_assessment: {
-            overall_risk_level: "منخفض",
-            overall_risk_score: 0.25
-          }
-        }
-      ];
-
-      const bestRecommendation = cropList[0];
-
-      const result = {
-        recommendations: cropList,
-        best_recommendation: bestRecommendation,
-        seasonal_advice: {
-          current_month_crops: [
-            { crop: "القمح", timing: "موسم الزراعة المثالي" },
-            { crop: "الشعير", timing: "بداية الموسم" }
-          ],
-          upcoming_crops: [
-            { crop: "الطماطم", timing: "الشهر القادم" },
-            { crop: "الخيار", timing: "بعد شهرين" },
-            { crop: "الفلفل", timing: "بعد ثلاثة أشهر" }
-          ]
-        }
-      };
-
+      const result = await postJson("/api/ai/crops/recommend", {
+        ph: inputData.soil_ph,
+        temperature: inputData.temperature,
+        rainfall: inputData.annual_rainfall,
+        soil_quality_score: inputData.soil_quality_score,
+        water_availability: inputData.water_availability,
+        area_hectares: inputData.farm_size,
+      });
       setRecommendations(result);
-
       toast({
         title: "تم إنشاء التوصيات بنجاح",
-        description: `تم اقتراح ${cropList.length} محاصيل مناسبة لظروف مزرعتك`,
+        description: `تم اقتراح ${result?.recommendations?.length ?? 0} محاصيل مناسبة لظروف مزرعتك`,
       });
     } catch (error) {
-      console.error("Error getting recommendations:", error);
       toast({
         title: "خطأ في التوصيات",
-        description: "حدث خطأ أثناء إنشاء التوصيات، يرجى المحاولة مرة أخرى",
+        description:
+          (error as Error).message ||
+          "حدث خطأ أثناء إنشاء التوصيات، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [inputData, toast]);
+  }, [inputData, postJson, toast]);
 
   const handleEstimateProfit = useCallback(async () => {
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2500));
-
-      // Generate realistic profit estimation based on input data
-      const baseYield = profitData.crop_name === "wheat" ? 3500 :
-                       profitData.crop_name === "tomato" ? 45000 :
-                       profitData.crop_name === "olive" ? 8000 : 3000;
-
-      const yieldAdjustment = (profitData.soil_quality_score * profitData.climate_suitability_score *
-                              (1 + profitData.farmer_experience_years * 0.02) *
-                              (1 + profitData.technology_level * 0.15));
-
-      const adjustedYield = Math.round(baseYield * yieldAdjustment);
-      const pricePerKg = profitData.crop_name === "wheat" ? 0.45 :
-                        profitData.crop_name === "tomato" ? 1.2 :
-                        profitData.crop_name === "olive" ? 3.5 : 0.4;
-
-      const grossRevenue = adjustedYield * pricePerKg * profitData.farm_size;
-      const totalCosts = Math.round((grossRevenue * 0.6) + (profitData.market_distance_km * 15 * profitData.farm_size));
-      const netProfit = grossRevenue - totalCosts;
-      const roiPercent = (netProfit / totalCosts) * 100;
-
-      const result = {
-        financial_analysis: {
-          gross_revenue: grossRevenue,
-          total_costs: totalCosts,
-          net_profit: netProfit,
-          roi_percent: Math.max(0, roiPercent),
-          profit_margin_percent: (netProfit / grossRevenue) * 100,
-          payback_period_months: Math.max(1, 12 / (roiPercent / 100)),
-          profitability_level: roiPercent > 50 ? "ممتاز" : roiPercent > 30 ? "جيد" : roiPercent > 15 ? "متوسط" : "ضعيف"
-        },
-        risk_analysis: {
-          price_risk: {
-            level: profitData.crop_name === "tomato" ? "عالي" : "متوسط"
-          },
-          yield_risk: {
-            level: profitData.soil_quality_score > 0.8 ? "منخفض" : "متوسط"
-          },
-          market_risk: {
-            level: profitData.market_distance_km > 50 ? "عالي" : "منخفض"
-          },
-          overall_risk: {
-            level: (profitData.soil_quality_score > 0.8 && profitData.market_distance_km < 30) ? "منخفض" : "متوسط"
-          },
-          risk_mitigation_strategies: [
-            "التنويع في المحاصيل لتقليل المخاطر",
-            "استخدام التأمين الزراعي",
-            "البحث عن أسواق متعددة للبيع",
-            "تطوير شبكة توزيع قوية",
-            "مراقبة أسعار السوق باستمرار"
-          ]
-        }
-      };
-
+      const result = await postJson("/api/ai/crops/estimate-profit", {
+        crop_name: profitData.crop_name,
+        farm_size: profitData.farm_size,
+        planning_horizon_years: profitData.planning_horizon_years,
+        soil_quality_score: profitData.soil_quality_score,
+        climate_suitability_score: profitData.climate_suitability_score,
+        farmer_experience_years: profitData.farmer_experience_years,
+        technology_level: profitData.technology_level,
+        market_distance_km: profitData.market_distance_km,
+      });
       setProfitEstimation(result);
-
       toast({
         title: "تم تقدير الربحية بنجاح",
-        description: `العائد على الاستثمار المتوقع: ${roiPercent.toFixed(1)}%`,
+        description: `العائد على الاستثمار المتوقع: ${(
+          result?.financial_analysis?.roi_percent ?? 0
+        ).toFixed(1)}%`,
       });
     } catch (error) {
-      console.error("Error estimating profit:", error);
       toast({
         title: "خطأ في تقدير الربحية",
-        description: "حدث خطأ أثناء تقدير الربحية، يرجى المحاولة مرة أخرى",
+        description:
+          (error as Error).message ||
+          "حدث خطأ أثناء تقدير الربحية، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [profitData, toast]);
+  }, [profitData, postJson, toast]);
 
   const handleQuickRecommendation = useCallback(async () => {
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Generate quick recommendation based on basic inputs
-      const tempScore = inputData.temperature >= 18 && inputData.temperature <= 28 ? 1.0 : 0.7;
-      const rainfallScore = inputData.annual_rainfall >= 300 ? 1.0 : 0.6;
-      const phScore = inputData.soil_ph >= 6.0 && inputData.soil_ph <= 7.5 ? 1.0 : 0.8;
-      const sizeScore = inputData.farm_size >= 1.0 ? 1.0 : 0.9;
-
-      const overallScore = (tempScore + rainfallScore + phScore + sizeScore) / 4;
-
-      const quickCrops = [
-        {
-          crop_name_ar: "القمح",
-          suitability_score: overallScore * (inputData.soil_ph >= 6.5 ? 1.0 : 0.8),
-          expected_profit_per_hectare: Math.round(2800 + (overallScore * 1200)),
-          risk_level: overallScore > 0.8 ? "منخفض" : "متوسط",
-          growing_season: "شتوي"
-        },
-        {
-          crop_name_ar: "الشعير",
-          suitability_score: overallScore * 0.9,
-          expected_profit_per_hectare: Math.round(2200 + (overallScore * 800)),
-          risk_level: "منخفض",
-          growing_season: "شتوي"
-        },
-        {
-          crop_name_ar: "البقوليات",
-          suitability_score: overallScore * (inputData.annual_rainfall >= 400 ? 0.95 : 0.7),
-          expected_profit_per_hectare: Math.round(3200 + (overallScore * 1500)),
-          risk_level: overallScore > 0.7 ? "منخفض" : "متوسط",
-          growing_season: "ربيعي"
-        }
-      ].sort((a, b) => b.suitability_score - a.suitability_score);
-
-      const result = {
-        best_crop: quickCrops[0],
-        quick_recommendations: quickCrops
-      };
-
+      const query = new URLSearchParams({
+        temperature: String(inputData.temperature),
+        rainfall: String(inputData.annual_rainfall),
+        soil_ph: String(inputData.soil_ph),
+        farm_size: String(inputData.farm_size),
+      });
+      const response = await fetch(`/api/ai/crops/quick-recommend?${query}`);
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          (result && (result.error || result.message)) ||
+            `فشل الطلب (رمز ${response.status})`,
+        );
+      }
       setQuickRecommendation(result);
-
       toast({
         title: "تم إنشاء التوصية السريعة",
-        description: `أفضل محصول: ${quickCrops[0].crop_name_ar}`,
+        description: `أفضل محصول: ${result?.best_crop?.crop_name_ar ?? "غير محدد"}`,
       });
     } catch (error) {
-      console.error("Error getting quick recommendation:", error);
       toast({
         title: "خطأ في التوصية السريعة",
-        description: "حدث خطأ أثناء إنشاء التوصية، يرجى المحاولة مرة أخرى",
+        description:
+          (error as Error).message ||
+          "حدث خطأ أثناء إنشاء التوصية، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
     } finally {
@@ -407,55 +271,39 @@ const SmartCropRecommendations: React.FC = () => {
 
     setLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Use top 3 crops from recommendations for comparison
-      const topCrops = recommendations.recommendations.slice(0, 3);
-
-      const result = {
-        rankings: {
-          by_roi: topCrops
-            .map(crop => ({
-              crop_name: crop.name,
-              crop_name_ar: crop.name_ar,
-              roi_percent: crop.profit_analysis?.roi_percent || 0
-            }))
-            .sort((a, b) => b.roi_percent - a.roi_percent),
-          by_net_profit: topCrops
-            .map(crop => ({
-              crop_name: crop.name,
-              crop_name_ar: crop.name_ar,
-              net_profit: crop.profit_analysis?.net_profit || 0
-            }))
-            .sort((a, b) => b.net_profit - a.net_profit)
-        },
-        best_overall_crop: {
-          crop_name: topCrops[0].name,
-          crop_name_ar: topCrops[0].name_ar,
-          roi_percent: topCrops[0].profit_analysis?.roi_percent || 0,
-          net_profit: topCrops[0].profit_analysis?.net_profit || 0,
-          overall_score: topCrops[0].suitability_score * 100
-        }
-      };
-
+      const topCrops = (recommendations.recommendations ?? []).slice(0, 3);
+      const crops_data = topCrops.map((crop: any) => ({
+        crop_name: crop.crop ?? crop.name,
+        farm_size: inputData.farm_size,
+        soil_quality_score: inputData.soil_quality_score,
+        farmer_experience_years: inputData.farmer_experience_years,
+        water_availability_score: inputData.water_availability,
+      }));
+      if (crops_data.length === 0) {
+        throw new Error("لا توجد محاصيل كافية للمقارنة");
+      }
+      const result = await postJson("/api/ai/crops/compare", { crops_data });
       setComparison(result);
-
       toast({
         title: "تمت المقارنة بنجاح",
-        description: `أفضل محصول إجمالياً: ${topCrops[0].name_ar}`,
+        description: `أفضل محصول إجمالياً: ${
+          result?.best_overall_crop?.crop_name_ar ??
+          result?.best_overall_crop?.crop_name ??
+          "غير محدد"
+        }`,
       });
     } catch (error) {
-      console.error("Error comparing crops:", error);
       toast({
         title: "خطأ في المقارنة",
-        description: "حدث خطأ أثناء مقارنة المحاصيل، يرجى المحاولة مرة أخرى",
+        description:
+          (error as Error).message ||
+          "حدث خطأ أثناء مقارنة المحاصيل، يرجى المحاولة مرة أخرى",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [recommendations, toast]);
+  }, [recommendations, inputData, postJson, toast]);
 
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
