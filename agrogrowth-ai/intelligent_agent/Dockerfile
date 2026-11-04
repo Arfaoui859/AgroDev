@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install NumPy first
-RUN pip install --no-cache-dir numpy==1.24.3
+RUN pip install --no-cache-dir numpy==1.24.3 pandas==2.1.3
 
 # Install API and AI dependencies
 RUN pip install --no-cache-dir \
