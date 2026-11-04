@@ -51,6 +51,7 @@ import {
   Settings,
   Circle,
 } from "lucide-react";
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from "@/components/SimulatedDataNotice";
 
 // Enhanced interfaces for detailed analysis
 interface DetailedSoilAnalysis {
@@ -856,6 +857,11 @@ const EnhancedAnalysis: React.FC = () => {
       className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50 p-6"
       dir="rtl"
     >
+      <SimulatedDataNotice
+        title={SIMULATED_RECORDS_TITLE_AR}
+        description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        className="mb-2"
+      />
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">

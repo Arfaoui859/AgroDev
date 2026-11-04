@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from "@/components/SimulatedDataNotice";
 
 interface SoilAlert {
   id: string;
@@ -355,6 +356,11 @@ export default function SoilAlertSystem() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <SimulatedDataNotice
+        title={SIMULATED_RECORDS_TITLE_AR}
+        description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        className="mb-2"
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

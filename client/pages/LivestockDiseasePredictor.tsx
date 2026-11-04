@@ -35,6 +35,7 @@ import {
   Plus,
   Download
 } from 'lucide-react';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from "@/components/SimulatedDataNotice";
 
 interface Animal {
   id: string;
@@ -354,6 +355,11 @@ const LivestockDiseasePredictor: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      <SimulatedDataNotice
+        title={SIMULATED_RECORDS_TITLE_AR}
+        description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        className="mb-2"
+      />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

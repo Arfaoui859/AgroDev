@@ -30,6 +30,7 @@ import {
   BookOpen,
   Star
 } from "lucide-react";
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from "@/components/SimulatedDataNotice";
 
 interface CropDetail {
   id: string;
@@ -361,6 +362,11 @@ export default function CropDetails() {
 
   return (
     <div className="space-y-8">
+      <SimulatedDataNotice
+        title={SIMULATED_RECORDS_TITLE_AR}
+        description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        className="mb-2"
+      />
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button onClick={() => navigate('/recommendations')} variant="outline">

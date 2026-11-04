@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 import {
   TrendingUp,
   TrendingDown,
@@ -371,6 +372,8 @@ const MarketIntelligence: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      <SimulatedDataNotice className="mb-2" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">

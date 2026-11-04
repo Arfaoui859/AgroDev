@@ -54,6 +54,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 
 interface RevenueRecord {
   id: string;
@@ -429,6 +430,7 @@ const RevenueAnalysis: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      <SimulatedDataNotice className="mb-2" />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
