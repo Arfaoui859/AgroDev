@@ -123,3 +123,45 @@ describe("answerAgriculturalQuestion", () => {
     expect(result.answer).not.toMatch(/\d+(\.\d+)?\s*(د\.ت|TND|USD)/);
   });
 });
+
+describe("answerAgriculturalQuestion — localisation", () => {
+  const ARABIC_SCRIPT = /[\u0600-\u06FF]/;
+
+  test("answers a French crop question entirely in French", async () => {
+    const result = await answerAgriculturalQuestion({
+      question: "Quelle culture convient à un sol argileux avec peu de pluie ?",
+      language: "fr",
+      context: { temperature: 22, rainfall: 300 },
+    });
+    expect(result.language).toBe("fr");
+    expect(result.answer).toMatch(/Cultures les mieux adaptées/);
+    expect(result.answer).toMatch(/adéquation/);
+    expect(result.answer).toMatch(/besoin en eau/);
+    // The rule-based body must not leak untranslated Arabic for a French caller.
+    expect(result.answer).not.toMatch(ARABIC_SCRIPT);
+    expect(result.disclaimer).not.toMatch(ARABIC_SCRIPT);
+  });
+
+  test("answers an English crop question entirely in English", async () => {
+    const result = await answerAgriculturalQuestion({
+      question: "Which crop suits clay soil with low rainfall?",
+      language: "en",
+      context: { temperature: 22, rainfall: 300 },
+    });
+    expect(result.language).toBe("en");
+    expect(result.answer).toMatch(/Crops best suited/);
+    expect(result.answer).toMatch(/suitability/);
+    expect(result.answer).not.toMatch(ARABIC_SCRIPT);
+    expect(result.disclaimer).not.toMatch(ARABIC_SCRIPT);
+  });
+
+  test("still answers Arabic questions in Arabic", async () => {
+    const result = await answerAgriculturalQuestion({
+      question: "ما أفضل محصول لتربة طينية؟",
+      language: "ar",
+      context: { temperature: 22, rainfall: 300 },
+    });
+    expect(result.language).toBe("ar");
+    expect(result.answer).toMatch(/المحاصيل الأنسب/);
+  });
+});
