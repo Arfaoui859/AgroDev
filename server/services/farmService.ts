@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase, assertDbAvailable } from '../lib/supabase';
 
 export interface Farm {
@@ -76,68 +77,75 @@ export interface SoilData {
 
 export class FarmService {
   // Farm operations
-  static async getAllFarms() {
-    if (!supabase) return [];
-    const { data, error } = await supabase
+  static async getAllFarms(db: SupabaseClient | null = supabase) {
+    if (!db) return [];
+    const { data, error } = await db
       .from('farms')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data;
   }
 
-  static async getFarmById(farmId: string) {
-    if (!supabase) return null;
-    const { data, error } = await supabase
+  static async getFarmById(farmId: string, db: SupabaseClient | null = supabase) {
+    if (!db) return null;
+    const { data, error } = await db
       .from('farms')
       .select('*')
       .eq('id', farmId)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data;
   }
 
-  static async createFarm(farm: Omit<Farm, 'id' | 'created_at' | 'updated_at'>) {
-    assertDbAvailable();
-    const { data, error } = await supabase
+  static async createFarm(
+    farm: Omit<Farm, 'id' | 'created_at' | 'updated_at'>,
+    db: SupabaseClient | null = supabase,
+  ) {
+    assertDbAvailable(db);
+    const { data, error } = await (db as SupabaseClient)
       .from('farms')
       .insert(farm)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
 
-  static async updateFarm(farmId: string, updates: Partial<Farm>) {
-    if (!supabase) return null;
-    const { data, error } = await supabase
+  static async updateFarm(
+    farmId: string,
+    updates: Partial<Farm>,
+    db: SupabaseClient | null = supabase,
+  ) {
+    if (!db) return null;
+    const { data, error } = await db
       .from('farms')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', farmId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
 
-  static async deleteFarm(farmId: string) {
-    assertDbAvailable();
-    const { error } = await supabase
+  static async deleteFarm(farmId: string, db: SupabaseClient | null = supabase) {
+    assertDbAvailable(db);
+    const { error } = await (db as SupabaseClient)
       .from('farms')
       .delete()
       .eq('id', farmId);
-    
+
     if (error) throw error;
   }
 
   // Field operations. A "field" is a `farm_sections` row (see helpers above).
-  static async getFieldsByFarmId(farmId: string) {
-    if (!supabase) return [];
-    const { data, error } = await supabase
+  static async getFieldsByFarmId(farmId: string, db: SupabaseClient | null = supabase) {
+    if (!db) return [];
+    const { data, error } = await db
       .from('farm_sections')
       .select('*')
       .eq('farm_id', farmId)
@@ -147,9 +155,9 @@ export class FarmService {
     return (data ?? []).map(sectionToField);
   }
 
-  static async getFieldById(fieldId: string) {
-    if (!supabase) return null;
-    const { data, error } = await supabase
+  static async getFieldById(fieldId: string, db: SupabaseClient | null = supabase) {
+    if (!db) return null;
+    const { data, error } = await db
       .from('farm_sections')
       .select('*')
       .eq('id', fieldId)
@@ -159,9 +167,12 @@ export class FarmService {
     return data ? sectionToField(data) : null;
   }
 
-  static async createField(field: Omit<Field, 'id' | 'created_at' | 'updated_at'>) {
-    assertDbAvailable();
-    const { data, error } = await supabase
+  static async createField(
+    field: Omit<Field, 'id' | 'created_at' | 'updated_at'>,
+    db: SupabaseClient | null = supabase,
+  ) {
+    assertDbAvailable(db);
+    const { data, error } = await (db as SupabaseClient)
       .from('farm_sections')
       .insert(fieldToSection(field))
       .select()
@@ -171,9 +182,13 @@ export class FarmService {
     return sectionToField(data);
   }
 
-  static async updateField(fieldId: string, updates: Partial<Field>) {
-    if (!supabase) return null;
-    const { data, error } = await supabase
+  static async updateField(
+    fieldId: string,
+    updates: Partial<Field>,
+    db: SupabaseClient | null = supabase,
+  ) {
+    if (!db) return null;
+    const { data, error } = await db
       .from('farm_sections')
       .update({ ...fieldToSection(updates), updated_at: new Date().toISOString() })
       .eq('id', fieldId)
@@ -184,9 +199,9 @@ export class FarmService {
     return data ? sectionToField(data) : null;
   }
 
-  static async deleteField(fieldId: string) {
-    assertDbAvailable();
-    const { error } = await supabase
+  static async deleteField(fieldId: string, db: SupabaseClient | null = supabase) {
+    assertDbAvailable(db);
+    const { error } = await (db as SupabaseClient)
       .from('farm_sections')
       .delete()
       .eq('id', fieldId);
@@ -212,9 +227,13 @@ export class FarmService {
     };
   }
 
-  static async getSoilDataByFieldId(fieldId: string, limit: number = 10) {
-    if (!supabase) return [];
-    const { data, error } = await supabase
+  static async getSoilDataByFieldId(
+    fieldId: string,
+    limit: number = 10,
+    db: SupabaseClient | null = supabase,
+  ) {
+    if (!db) return [];
+    const { data, error } = await db
       .from('soil_analyses')
       .select('*')
       .eq('section_id', fieldId)
@@ -225,9 +244,12 @@ export class FarmService {
     return (data ?? []).map(FarmService.analysisToSoilData);
   }
 
-  static async createSoilData(soilData: Omit<SoilData, 'id' | 'created_at'>) {
-    assertDbAvailable();
-    const { data, error } = await supabase
+  static async createSoilData(
+    soilData: Omit<SoilData, 'id' | 'created_at'>,
+    db: SupabaseClient | null = supabase,
+  ) {
+    assertDbAvailable(db);
+    const { data, error } = await (db as SupabaseClient)
       .from('soil_analyses')
       .insert({
         section_id: soilData.field_id,
@@ -257,8 +279,8 @@ export class FarmService {
     return FarmService.analysisToSoilData(data);
   }
 
-  static async getLatestSoilData(fieldId: string) {
-    const rows = await FarmService.getSoilDataByFieldId(fieldId, 1);
+  static async getLatestSoilData(fieldId: string, db: SupabaseClient | null = supabase) {
+    const rows = await FarmService.getSoilDataByFieldId(fieldId, 1, db);
     return rows.length > 0 ? rows[0] : null;
   }
 }

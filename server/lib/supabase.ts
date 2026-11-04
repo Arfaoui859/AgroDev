@@ -33,13 +33,49 @@ export class DatabaseUnavailableError extends Error {
 }
 
 /** Throw DatabaseUnavailableError unless a Supabase client is available. */
-export function assertDbAvailable(): void {
-  if (!supabase) throw new DatabaseUnavailableError();
+export function assertDbAvailable(client: SupabaseClient | null = supabase): void {
+  if (!client) throw new DatabaseUnavailableError();
 }
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(supabaseUrl as string, supabaseAnonKey as string)
   : null;
+
+/**
+ * A Supabase client that acts *as the calling user*.
+ *
+ * The module-level `supabase` client carries only the anon key, so PostgREST
+ * evaluates RLS with `auth.uid()` = NULL: the per-user policies on farms,
+ * farm_sections, soil_analyses and crop_recommendations then deny every row
+ * (reads return 0 rows, writes raise a policy violation). Attaching the caller's
+ * verified access token makes PostgREST evaluate those same policies as that
+ * user, which is what the ownership rules were written for.
+ *
+ * Returns null when the project is unconfigured or no token was supplied, so
+ * callers fall back to the anon client (demo/dev) rather than silently acting as
+ * an arbitrary user.
+ */
+export function createScopedClient(
+  accessToken: string | undefined | null,
+): SupabaseClient | null {
+  if (!supabaseUrl || !supabaseAnonKey || !accessToken) return null;
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+/**
+ * Build a caller-scoped client from a raw `Authorization` header value.
+ * Returns null when the header is absent or malformed, so callers fall back to
+ * the anon client instead of treating an unparsable header as an identity.
+ */
+export function scopedClientFromAuthHeader(
+  authorization: string | undefined | null,
+): SupabaseClient | null {
+  const match = /^Bearer\s+(.+)$/i.exec(authorization || "");
+  return createScopedClient(match ? match[1].trim() : null);
+}
 
 // For server-side operations that need elevated permissions
 export const supabaseAdmin: SupabaseClient | null = isSupabaseConfigured

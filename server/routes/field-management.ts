@@ -1,15 +1,30 @@
 import { RequestHandler } from 'express';
 import { FarmService } from '../services/farmService';
 import { CropService } from '../services/cropService';
+import { scopedClientFromAuthHeader } from '../lib/supabase';
 import { sendCaughtError } from '../lib/errors';
 import { recommendCrops } from '../services/ai/knowledgeEngine';
 import { SIMULATED_DISCLAIMER_AR } from '../lib/provenance';
 
 // ============ API HANDLERS ============
 
+/**
+ * Resolve the caller-scoped Supabase client for this request.
+ *
+ * The per-user tables (farms, farm_sections, soil_analyses, crop_recommendations)
+ * are protected by RLS policies keyed on auth.uid(). A client built with only the
+ * anon key evaluates those policies with auth.uid() = NULL, so reads return zero
+ * rows and writes are denied. Forwarding the caller's verified JWT makes PostgREST
+ * evaluate the policies as that user. Falls back to null (anon client) when no
+ * token is present, which is the demo/dev path.
+ */
+function requestDb(req: Parameters<RequestHandler>[0]) {
+  return scopedClientFromAuthHeader(req.header('authorization'));
+}
+
 export const getFarms: RequestHandler = async (req, res) => {
   try {
-    const farms = await FarmService.getAllFarms();
+    const farms = await FarmService.getAllFarms(requestDb(req));
     res.json({
       status: 'success',
       data: farms,
@@ -24,7 +39,7 @@ export const getFarms: RequestHandler = async (req, res) => {
 export const getFarmById: RequestHandler = async (req, res) => {
   try {
     const { farmId } = req.params;
-    const farm = await FarmService.getFarmById(farmId);
+    const farm = await FarmService.getFarmById(farmId, requestDb(req));
     
     if (!farm) {
       return res.status(404).json({
@@ -50,11 +65,11 @@ export const getFields: RequestHandler = async (req, res) => {
     
     let fields;
     if (farmId) {
-      fields = await FarmService.getFieldsByFarmId(farmId as string);
+      fields = await FarmService.getFieldsByFarmId(farmId as string, requestDb(req));
     } else {
       // Get all fields for all farms
-      const farms = await FarmService.getAllFarms();
-      const fieldPromises = farms.map(farm => FarmService.getFieldsByFarmId(farm.id));
+      const farms = await FarmService.getAllFarms(requestDb(req));
+      const fieldPromises = farms.map(farm => FarmService.getFieldsByFarmId(farm.id, requestDb(req)));
       const fieldsArrays = await Promise.all(fieldPromises);
       fields = fieldsArrays.flat();
     }
@@ -73,7 +88,7 @@ export const getFields: RequestHandler = async (req, res) => {
 export const getFieldById: RequestHandler = async (req, res) => {
   try {
     const { fieldId } = req.params;
-    const field = await FarmService.getFieldById(fieldId);
+    const field = await FarmService.getFieldById(fieldId, requestDb(req));
     
     if (!field) {
       return res.status(404).json({
@@ -83,7 +98,7 @@ export const getFieldById: RequestHandler = async (req, res) => {
     }
 
     // Get soil data for this field
-    const soilData = await FarmService.getSoilDataByFieldId(fieldId, 5);
+    const soilData = await FarmService.getSoilDataByFieldId(fieldId, 5, requestDb(req));
     const latestSoilData = soilData.length > 0 ? soilData[0] : null;
 
     res.json({
@@ -119,7 +134,7 @@ export const createField: RequestHandler = async (req, res) => {
       });
     }
 
-    const newField = await FarmService.createField(fieldData);
+    const newField = await FarmService.createField(fieldData, requestDb(req));
 
     res.status(201).json({
       status: 'success',
@@ -137,7 +152,7 @@ export const updateField: RequestHandler = async (req, res) => {
     const { fieldId } = req.params;
     const updates = req.body ?? {};
     
-    const updatedField = await FarmService.updateField(fieldId, updates);
+    const updatedField = await FarmService.updateField(fieldId, updates, requestDb(req));
 
     if (!updatedField) {
       return res.status(404).json({
@@ -160,7 +175,7 @@ export const updateField: RequestHandler = async (req, res) => {
 export const deleteField: RequestHandler = async (req, res) => {
   try {
     const { fieldId } = req.params;
-    await FarmService.deleteField(fieldId);
+    await FarmService.deleteField(fieldId, requestDb(req));
 
     res.json({
       status: 'success',
@@ -183,7 +198,7 @@ export const getCropHistory: RequestHandler = async (req, res) => {
       });
     }
 
-    const recommendations = await CropService.getCropRecommendationsByFieldId(fieldId as string);
+    const recommendations = await CropService.getCropRecommendationsByFieldId(fieldId as string, requestDb(req));
 
     res.json({
       status: 'success',
@@ -266,7 +281,7 @@ export const getFieldPerformance: RequestHandler = async (req, res) => {
   try {
     const { fieldId } = req.params;
     
-    const field = await FarmService.getFieldById(fieldId);
+    const field = await FarmService.getFieldById(fieldId, requestDb(req));
     if (!field) {
       return res.status(404).json({
         status: 'error',
@@ -275,10 +290,10 @@ export const getFieldPerformance: RequestHandler = async (req, res) => {
     }
 
     // Get recent soil data
-    const soilData = await FarmService.getSoilDataByFieldId(fieldId, 10);
+    const soilData = await FarmService.getSoilDataByFieldId(fieldId, 10, requestDb(req));
     
     // Get crop recommendations
-    const cropRecommendations = await CropService.getCropRecommendationsByFieldId(fieldId);
+    const cropRecommendations = await CropService.getCropRecommendationsByFieldId(fieldId, requestDb(req));
 
     // Calculate performance metrics
     const performance = {
@@ -337,7 +352,7 @@ export const generateAIRecommendations: RequestHandler = async (req, res) => {
     }
 
     // Get field information
-    const field = await FarmService.getFieldById(fieldId);
+    const field = await FarmService.getFieldById(fieldId, requestDb(req));
     if (!field) {
       return res.status(404).json({
         status: 'error',
@@ -348,7 +363,7 @@ export const generateAIRecommendations: RequestHandler = async (req, res) => {
     // Get latest soil data if not provided
     let currentSoilData = soilData;
     if (!currentSoilData) {
-      const latestSoil = await FarmService.getLatestSoilData(fieldId);
+      const latestSoil = await FarmService.getLatestSoilData(fieldId, requestDb(req));
       currentSoilData = latestSoil;
     }
 

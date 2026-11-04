@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase, assertDbAvailable } from '../lib/supabase';
 import { CROP_REFERENCE } from './ai/cropAdvisor';
 
@@ -158,9 +159,12 @@ export class CropService {
   }
 
   // Crop Recommendation operations
-  static async createCropRecommendation(recommendation: Omit<CropRecommendation, 'id' | 'created_at'>) {
-    assertDbAvailable();
-    const { data, error } = await supabase
+  static async createCropRecommendation(
+    recommendation: Omit<CropRecommendation, 'id' | 'created_at'>,
+    db: SupabaseClient | null = supabase,
+  ) {
+    assertDbAvailable(db);
+    const { data, error } = await (db as SupabaseClient)
       .from('crop_recommendations')
       .insert(recommendation)
       .select()
@@ -170,9 +174,12 @@ export class CropService {
     return data;
   }
 
-  static async getCropRecommendationsByFieldId(fieldId: string) {
-    if (!supabase) return [];
-    const { data, error } = await supabase
+  static async getCropRecommendationsByFieldId(
+    fieldId: string,
+    db: SupabaseClient | null = supabase,
+  ) {
+    if (!db) return [];
+    const { data, error } = await db
       .from('crop_recommendations')
       .select(`
         *,
@@ -185,9 +192,12 @@ export class CropService {
     return data;
   }
 
-  static async getLatestCropRecommendation(fieldId: string) {
-    if (!supabase) return null;
-    const { data, error } = await supabase
+  static async getLatestCropRecommendation(
+    fieldId: string,
+    db: SupabaseClient | null = supabase,
+  ) {
+    if (!db) return null;
+    const { data, error } = await db
       .from('crop_recommendations')
       .select(`
         *,
