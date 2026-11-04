@@ -98,8 +98,13 @@ database is listed under "Remaining work" or "Known limitations".
 
 ## Remaining external dependencies
 
-- An LLM provider key (`AI_BASE_URL`/`AI_API_KEY`) to enable model-backed
-  answers instead of the rule-based engine.
+- An LLM provider key (`AI_BASE_URL`/`AI_API_KEY`, or `GEMINI_API_KEY` /
+  `GOOGLE_API_KEY`) to enable model-backed answers instead of the rule-based
+  engine. The Gemini path is fully wired (`AI_PROVIDER=gemini`, default model
+  `gemini-flash-latest`, vision via `AI_VISION_MODEL`); it only needs a valid
+  key. A credential supplied for verification was rejected by the Gemini API
+  (`INVALID_ARGUMENT: API key not valid`) — it was an OAuth client id, not an
+  API key — so the honest rule-based fallback remains active.
 - A vision provider (`AI_VISION_MODEL`) or the image-diagnosis microservice
   running, to enable real plant-disease detection.
 - The Python AI microservices (ports 8001–8005) deployed/running for the
