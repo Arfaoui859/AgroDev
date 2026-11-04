@@ -25,6 +25,8 @@ deterministic rules and label the answer as such):
   AI_MODEL        model used unless overridden
   AI_TIMEOUT_MS   request timeout (default 30000)
   AI_MAX_RETRIES  bounded retries (default 1)
+  AI_RETRY_BASE_MS  exponential-backoff base delay (default 400)
+  AI_RETRY_MAX_MS   backoff / Retry-After cap (default 30000)
 
 Provider-specific keys are accepted so an existing deployment does not have to
 be renamed: OPENAI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, TOGETHER_API_KEY,
@@ -36,13 +38,56 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
 import re
+import time
 from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Optional
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_MAX_RETRY_DELAY_S = 30.0
+
+
+def parse_retry_after(value: Optional[str]) -> Optional[float]:
+    """Parse an HTTP Retry-After header into seconds (delta or HTTP-date)."""
+    if not value:
+        return None
+    trimmed = value.strip()
+    if not trimmed:
+        return None
+    try:
+        return max(0.0, float(trimmed))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(trimmed)
+    except (TypeError, ValueError):
+        return None
+    if when is None:
+        return None
+    from datetime import datetime, timezone
+
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
+
+
+def backoff_delay_s(
+    attempt: int,
+    base_s: float,
+    max_s: float = DEFAULT_MAX_RETRY_DELAY_S,
+    retry_after_s: Optional[float] = None,
+) -> float:
+    """Bounded exponential backoff with full jitter (Retry-After wins)."""
+    cap = max(0.0, max_s)
+    if retry_after_s is not None:
+        return min(retry_after_s, cap)
+    ceiling = min(base_s * (2 ** attempt), cap)
+    return random.uniform(0.0, ceiling)
 
 # The provenance string reported when no provider is configured. It contains
 # the word "demo" so the Node gateway probe classifies it as non-real.
@@ -62,17 +107,21 @@ DEFAULT_MODELS: Dict[str, str] = {
     "groq": "llama-3.1-8b-instant",
     "together": "meta-llama/Llama-3.2-3B-Instruct-Turbo",
     "ollama": "llama3.1",
-    "gemini": "gemini-1.5-flash",
+    # gemini-2.0-flash is shut down and gemini-1.5-flash is discontinued; the
+    # rolling alias tracks the current multimodal Flash release.
+    "gemini": "gemini-flash-latest",
 }
 
 
 class LLMError(RuntimeError):
     """Raised when a configured provider cannot produce a result."""
 
-    def __init__(self, kind: str, message: str, retryable: bool = False):
+    def __init__(self, kind: str, message: str, retryable: bool = False,
+                 retry_after_s: Optional[float] = None):
         super().__init__(message)
         self.kind = kind
         self.retryable = retryable
+        self.retry_after_s = retry_after_s
 
 
 @dataclass
@@ -84,6 +133,8 @@ class LLMConfig:
     model: str
     timeout_s: float
     max_retries: int
+    retry_base_s: float = 0.4
+    retry_max_s: float = DEFAULT_MAX_RETRY_DELAY_S
 
 
 def _env(*names: str) -> Optional[str]:
@@ -103,6 +154,8 @@ def resolve_config() -> LLMConfig:
     label = (_first_env("AI_PROVIDER") or "").lower()
     timeout_ms = int(_first_env("AI_TIMEOUT_MS") or "30000")
     max_retries = int(_first_env("AI_MAX_RETRIES") or "1")
+    retry_base_s = float(_first_env("AI_RETRY_BASE_MS") or "400") / 1000.0
+    retry_max_s = float(_first_env("AI_RETRY_MAX_MS") or "30000") / 1000.0
 
     api_key = _first_env("AI_API_KEY")
     base_url = _first_env("AI_BASE_URL")
@@ -152,6 +205,8 @@ def resolve_config() -> LLMConfig:
             model="",
             timeout_s=timeout_ms / 1000,
             max_retries=max_retries,
+            retry_base_s=retry_base_s,
+            retry_max_s=retry_max_s,
         )
 
     if kind == "gemini":
@@ -164,6 +219,8 @@ def resolve_config() -> LLMConfig:
             model=model,
             timeout_s=timeout_ms / 1000,
             max_retries=max_retries,
+            retry_base_s=retry_base_s,
+            retry_max_s=retry_max_s,
         )
 
     resolved_base = base_url or DEFAULT_BASE_URLS.get(provider, DEFAULT_BASE_URLS["openai"])
@@ -176,6 +233,8 @@ def resolve_config() -> LLMConfig:
         model=model,
         timeout_s=timeout_ms / 1000,
         max_retries=max_retries,
+        retry_base_s=retry_base_s,
+        retry_max_s=retry_max_s,
     )
 
 
@@ -259,12 +318,20 @@ class LLMProvider:
                 last_error = exc
                 if not exc.retryable or attempt == cfg.max_retries:
                     raise
+                delay = backoff_delay_s(
+                    attempt,
+                    cfg.retry_base_s,
+                    cfg.retry_max_s,
+                    exc.retry_after_s,
+                )
                 logger.warning(
-                    "LLM call failed (attempt %d/%d): %s",
+                    "LLM call failed (attempt %d/%d): %s — retrying in %.2fs",
                     attempt + 1,
                     cfg.max_retries + 1,
                     exc,
+                    delay,
                 )
+                time.sleep(delay)
         raise last_error or LLMError("unknown", "LLM call failed")
 
     def chat_json(
@@ -308,7 +375,7 @@ class LLMProvider:
         if cfg.kind == "gemini":
             url = (
                 f"https://generativelanguage.googleapis.com/v1beta/models/"
-                f"{self.vision_model()}:generateContent?key={cfg.api_key}"
+                f"{self.vision_model()}:generateContent"
             )
             parts: List[Dict[str, Any]] = [{"text": prompt}]
             parts.append({"inlineData": {"mimeType": mime_type, "data": image_b64}})
@@ -320,7 +387,11 @@ class LLMProvider:
                     "responseMimeType": "application/json",
                 },
             }
-            data = self._post(url, {"Content-Type": "application/json"}, payload)
+            data = self._post(
+                url,
+                {"Content-Type": "application/json", "x-goog-api-key": cfg.api_key or ""},
+                payload,
+            )
             try:
                 return data["candidates"][0]["content"]["parts"][0]["text"] or ""
             except (KeyError, IndexError, TypeError) as exc:
@@ -415,7 +486,7 @@ class LLMProvider:
         cfg = self.config
         url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{cfg.model}:generateContent?key={cfg.api_key}"
+            f"{cfg.model}:generateContent"
         )
         # Gemini takes system text separately and a flat contents list.
         system_text = "\n\n".join(m["content"] for m in messages if m.get("role") == "system")
@@ -434,7 +505,11 @@ class LLMProvider:
         if json_mode:
             payload["generationConfig"]["responseMimeType"] = "application/json"
 
-        data = self._post(url, {"Content-Type": "application/json"}, payload)
+        data = self._post(
+            url,
+            {"Content-Type": "application/json", "x-goog-api-key": cfg.api_key or ""},
+            payload,
+        )
         try:
             return data["candidates"][0]["content"]["parts"][0]["text"] or ""
         except (KeyError, IndexError, TypeError) as exc:
@@ -455,6 +530,7 @@ class LLMProvider:
                 "http",
                 f"Provider responded with HTTP {response.status_code}: {response.text[:200]}",
                 True,
+                parse_retry_after(response.headers.get("retry-after")),
             )
         if response.status_code >= 400:
             raise LLMError(

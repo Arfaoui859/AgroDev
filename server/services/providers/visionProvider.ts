@@ -197,6 +197,8 @@ export async function diagnosePlantImage(request: VisionRequest): Promise<Vision
       model: visionModel(),
       timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 45_000,
       retries: Number(process.env.AI_MAX_RETRIES) || 1,
+      retryDelayMs: Number(process.env.AI_RETRY_BASE_MS) || 400,
+      maxRetryDelayMs: Number(process.env.AI_RETRY_MAX_MS) || 30_000,
     },
   );
 

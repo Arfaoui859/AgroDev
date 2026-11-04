@@ -144,7 +144,10 @@ def test_gemini_uses_native_format(monkeypatch):
     )
     assert text == "ok"
     assert "generateContent" in rec.calls[0]["url"]
-    assert "key=k" in rec.calls[0]["url"]
+    # The API key must travel in the header, never in the URL query string,
+    # so it cannot leak into proxy/access logs.
+    assert "key=" not in rec.calls[0]["url"]
+    assert rec.calls[0]["headers"]["x-goog-api-key"] == "k"
     assert rec.calls[0]["json"]["systemInstruction"]["parts"][0]["text"] == "sys"
 
 
@@ -210,3 +213,79 @@ def test_extract_json_handles_fences_and_raw():
     assert lp.extract_json('```json\n{"a": 1}\n```') == {"a": 1}
     assert lp.extract_json('prefix {"b": 2} suffix') == {"b": 2}
     assert lp.extract_json("no json here") is None
+
+
+# --- exponential backoff + Retry-After -------------------------------------
+
+def test_parse_retry_after_accepts_seconds_and_http_date():
+    assert lp.parse_retry_after("2") == 2.0
+    assert lp.parse_retry_after("0.5") == 0.5
+    assert lp.parse_retry_after(None) is None
+    assert lp.parse_retry_after("") is None
+    assert lp.parse_retry_after("not-a-value") is None
+    # An HTTP-date in the past clamps to zero, never negative.
+    assert lp.parse_retry_after("Wed, 21 Oct 2015 07:28:00 GMT") == 0.0
+
+
+def test_backoff_is_bounded_exponential_with_full_jitter(monkeypatch):
+    # Retry-After wins and is capped by max_s.
+    assert lp.backoff_delay_s(3, 0.4, max_s=5.0, retry_after_s=2.0) == 2.0
+    assert lp.backoff_delay_s(0, 0.4, max_s=5.0, retry_after_s=99.0) == 5.0
+    # Without Retry-After the delay never exceeds the capped exponential ceiling.
+    for attempt in range(6):
+        ceiling = min(0.4 * (2 ** attempt), 5.0)
+        for _ in range(20):
+            delay = lp.backoff_delay_s(attempt, 0.4, max_s=5.0)
+            assert 0.0 <= delay <= ceiling
+
+
+def test_retry_after_header_shortens_sleep(monkeypatch):
+    monkeypatch.setenv("AI_API_KEY", "k")
+    monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
+    monkeypatch.setenv("AI_MAX_RETRIES", "1")
+    slept: list = []
+    monkeypatch.setattr(lp.time, "sleep", lambda s: slept.append(s))
+
+    throttled = httpx.Response(
+        status_code=429,
+        content=b"slow down",
+        headers={"Content-Type": "application/json", "Retry-After": "0"},
+    )
+    rec = _Recorder([throttled, _response(200, {"choices": [{"message": {"content": "ok"}}]})])
+    _patch_client(monkeypatch, rec)
+
+    assert lp.get_provider().chat([{"role": "user", "content": "hi"}]) == "ok"
+    # Retry-After: 0 must be honoured exactly, not replaced by the backoff curve.
+    assert slept == [0.0]
+
+
+def test_gemini_default_model_is_not_a_retired_identifier():
+    # gemini-1.5-flash is discontinued and gemini-2.0-flash is shut down.
+    assert lp.DEFAULT_MODELS["gemini"] not in {"gemini-1.5-flash", "gemini-2.0-flash"}
+
+
+def test_backoff_full_jitter_is_non_deterministic():
+    samples = {lp.backoff_delay_s(4, 0.4, max_s=100.0) for _ in range(200)}
+    # A fixed backoff would collapse to a single value.
+    assert len(samples) > 1
+    assert all(0.0 <= value <= 0.4 * (2 ** 4) for value in samples)
+
+
+def test_retries_are_bounded_to_max_retries(monkeypatch):
+    monkeypatch.setenv("AI_API_KEY", "k")
+    monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
+    monkeypatch.setenv("AI_MAX_RETRIES", "2")
+    monkeypatch.setattr(lp.time, "sleep", lambda _s: None)
+
+    throttled = httpx.Response(
+        status_code=429,
+        content=b"throttled",
+        headers={"Content-Type": "application/json"},
+    )
+    rec = _Recorder([throttled, throttled, throttled, throttled, throttled])
+    _patch_client(monkeypatch, rec)
+
+    with pytest.raises(lp.LLMError):
+        lp.get_provider().chat([{"role": "user", "content": "hi"}])
+    # 1 initial attempt + 2 retries, then give up — never unbounded.
+    assert len(rec.calls) == 3

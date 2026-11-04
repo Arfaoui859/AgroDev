@@ -47,6 +47,10 @@ export interface ChatOptions {
   maxTokens?: number;
   timeoutMs?: number;
   retries?: number;
+  /** Base delay for exponential backoff; defaults to AI_RETRY_BASE_MS. */
+  retryDelayMs?: number;
+  /** Cap applied to backoff and Retry-After delays; defaults to AI_RETRY_MAX_MS. */
+  maxRetryDelayMs?: number;
   /** Override the configured model (e.g. a dedicated vision model). */
   model?: string;
   /** When true, request a JSON object response. */
@@ -148,6 +152,25 @@ function isLocalBaseUrl(baseUrl: string | null): boolean {
 }
 
 /**
+ * Default model identifiers.
+ *
+ * These are only used when neither AI_MODEL nor a per-modality override is set.
+ * They must be models the provider still serves:
+ *  - Gemini: `gemini-2.0-flash` was shut down and `gemini-1.5-flash` is
+ *    discontinued. Google recommends the rolling `-latest` alias, which always
+ *    points at the current Flash release and is multimodal (text + vision).
+ *  - OpenAI-compatible: `gpt-4o-mini` is the low-cost multimodal default.
+ * A retired identifier would make every call 404, so operators should still pin
+ * AI_TEXT_MODEL / AI_VISION_MODEL explicitly in production.
+ */
+const DEFAULT_GEMINI_MODEL = "gemini-flash-latest";
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+
+export function defaultModelFor(kind: ProviderKind): string {
+  return kind === "gemini" ? DEFAULT_GEMINI_MODEL : DEFAULT_OPENAI_MODEL;
+}
+
+/**
  * Resolve the effective configuration. Model identifiers are never substituted:
  * the text model and vision model each come from their own variable, with
  * AI_MODEL as the shared default.
@@ -157,7 +180,7 @@ export function resolveLLMConfig(): LLMConfig {
   const kind = providerKind(label);
   const baseUrl = kind === "gemini" ? null : (resolveBaseUrl(label) ?? null);
   const sharedModel = process.env.AI_MODEL || process.env.OPENAI_MODEL || "";
-  const fallbackModel = kind === "gemini" ? "gemini-2.0-flash" : "gpt-4o-mini";
+  const fallbackModel = defaultModelFor(kind);
   return {
     kind,
     provider: label,
@@ -214,6 +237,15 @@ function resolveRetries(options: ChatOptions): number {
   return options.retries ?? (Number(process.env.AI_MAX_RETRIES) || 1);
 }
 
+/** Shared with the Python adapter so both runtimes honour the same policy. */
+export function resolveRetryDelayMs(): number {
+  return Number(process.env.AI_RETRY_BASE_MS) || 400;
+}
+
+export function resolveMaxRetryDelayMs(): number {
+  return Number(process.env.AI_RETRY_MAX_MS) || 30_000;
+}
+
 /**
  * Call the configured provider and return the assistant text plus usage,
  * latency and the model that actually answered.
@@ -233,6 +265,8 @@ export async function chatCompleteDetailed(
       model,
       timeoutMs: resolveTimeout(options),
       retries: resolveRetries(options),
+      retryDelayMs: resolveRetryDelayMs(),
+      maxRetryDelayMs: resolveMaxRetryDelayMs(),
     });
     return {
       text: result.text,
@@ -272,6 +306,8 @@ export async function chatCompleteDetailed(
       provider: cfg.provider,
       timeoutMs: resolveTimeout(options),
       retries: resolveRetries(options),
+      retryDelayMs: resolveRetryDelayMs(),
+      maxRetryDelayMs: resolveMaxRetryDelayMs(),
     },
   );
 

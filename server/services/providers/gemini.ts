@@ -167,6 +167,8 @@ export async function geminiGenerateContent(
       provider: "gemini",
       timeoutMs: options.timeoutMs ?? 30_000,
       retries: options.retries ?? 1,
+      retryDelayMs: options.retryDelayMs ?? (Number(process.env.AI_RETRY_BASE_MS) || 400),
+      maxRetryDelayMs: options.maxRetryDelayMs ?? (Number(process.env.AI_RETRY_MAX_MS) || 30_000),
     },
   );
 
