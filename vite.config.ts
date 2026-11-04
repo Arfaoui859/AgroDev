@@ -9,7 +9,7 @@ export default defineConfig(({ command }) => {
 
   return {
     // 🔥 IMPORTANT for Vercel static hosting (fix blank page)
-    base: "./",
+    base: "/",
 
     plugins: [
       react(),
