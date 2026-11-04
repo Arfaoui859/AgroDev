@@ -1,5 +1,5 @@
 # Use the base AI image
-FROM agrogrowth-ai-base:latest
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
