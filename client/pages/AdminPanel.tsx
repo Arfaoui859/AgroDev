@@ -1,6 +1,7 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { apiFetch } from '../lib/apiFetch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -123,13 +124,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         activityResponse,
         subscriptionsResponse
       ] = await Promise.all([
-        fetch('/api/admin/overview'),
-        fetch('/api/admin/users'),
-        fetch('/api/admin/system-metrics'),
-        fetch('/api/admin/usage-analytics'),
-        fetch('/api/admin/security-events'),
-        fetch('/api/admin/activity-logs'),
-        fetch('/api/admin/subscriptions')
+        apiFetch('/api/admin/overview'),
+        apiFetch('/api/admin/users'),
+        apiFetch('/api/admin/system-metrics'),
+        apiFetch('/api/admin/usage-analytics'),
+        apiFetch('/api/admin/security-events'),
+        apiFetch('/api/admin/activity-logs'),
+        apiFetch('/api/admin/subscriptions')
       ]);
 
       const [

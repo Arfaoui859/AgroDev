@@ -10,7 +10,7 @@ import {
   requireAdminToken,
   keyMintRateLimiter,
 } from "./middleware/security";
-import { requireAuth } from "./middleware/auth";
+import { requireAuth, requireAdminAccess } from "./middleware/auth";
 import { withSimulatedProvenance } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import { handleUploadError } from "./middleware/upload";
@@ -528,14 +528,18 @@ export function createServer() {
   );
   app.get("/api/field-inspector/profile", getFieldInspectorProfile);
 
-  // Admin Panel routes
-  app.get("/api/admin/overview", getAdminDashboard);
-  app.get("/api/admin/users", getAdminUsers);
-  app.get("/api/admin/system-metrics", getAdminSystemMetrics);
-  app.get("/api/admin/usage-analytics", getAdminUsageAnalytics);
-  app.get("/api/admin/security-events", getAdminSecurityEvents);
-  app.get("/api/admin/activity-logs", getAdminActivityLogs);
-  app.get("/api/admin/subscriptions", getAdminSubscriptions);
+  // Admin Panel routes. These expose platform-wide figures (all users, system
+  // metrics, security events, activity logs), so they are gated with
+  // requireAdminAccess(): an x-admin-token, or a verified JWT whose role is
+  // admin/administrator. Anonymous callers get 401; non-admin JWTs get 403.
+  // (The non-production demo fallback still applies for local development.)
+  app.get("/api/admin/overview", requireAdminAccess, getAdminDashboard);
+  app.get("/api/admin/users", requireAdminAccess, getAdminUsers);
+  app.get("/api/admin/system-metrics", requireAdminAccess, getAdminSystemMetrics);
+  app.get("/api/admin/usage-analytics", requireAdminAccess, getAdminUsageAnalytics);
+  app.get("/api/admin/security-events", requireAdminAccess, getAdminSecurityEvents);
+  app.get("/api/admin/activity-logs", requireAdminAccess, getAdminActivityLogs);
+  app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
 
   // Government Dashboard routes
   app.use("/api/government-dashboard", governmentDashboardRoutes);

@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { supabase } from "../lib/supabase";
+import { supabase, supabaseAdmin } from "../lib/supabase";
+import { verifyAdminToken } from "../lib/adminAuth";
+
+/** Roles treated as platform administrators. */
+const ADMIN_ROLES = new Set(["admin", "administrator"]);
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -114,5 +118,117 @@ export async function requireAuth(
     success: false,
     error: "Unauthorized",
     message: "Sign in to access this resource.",
+  });
+}
+
+/**
+ * Resolve the caller's role from `public.users`, using the elevated client so
+ * RLS cannot hide the caller's own row. Returns null when the user has no
+ * profile row or the database is unavailable.
+ */
+async function resolveRole(userId: string): Promise<string | null> {
+  const client = supabaseAdmin || supabase;
+  if (!client) return null;
+  try {
+    const { data, error } = await client
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const role = (data as { role?: string }).role;
+    return typeof role === "string" ? role.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Guard for platform-administrator endpoints.
+ *
+ * Access is granted when either:
+ *  1. A valid admin token is presented (`x-admin-token`), i.e. the operator /
+ *     service credential used by provisioning tooling — checked in constant
+ *     time, or
+ *  2. The caller presents a verified Supabase JWT whose `public.users` role is
+ *     `admin` / `administrator` — this is how a signed-in administrator uses
+ *     the admin dashboard, or
+ *  3. The non-production demo fallback applies (so local dev keeps working).
+ *
+ * Everything else gets 401 (anonymous / invalid token) or 403 (authenticated
+ * but not an administrator). It never falls back to trusting a client-supplied
+ * userId. In production with no admin token configured the token path fails
+ * closed, so only a real admin JWT can pass.
+ */
+export async function requireAdminAccess(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  // 1. Operator/service credential.
+  if (verifyAdminToken(req)) {
+    req.identitySource = "jwt";
+    return next();
+  }
+
+  // 2. Verified administrator JWT.
+  let userId: string | null = null;
+  let tokenPresent = false;
+  try {
+    tokenPresent = Boolean(bearerToken(req));
+    userId = await resolveUserIdFromJwt(req);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : "";
+    if (reason === "AUTH_UNAVAILABLE" && !demoIdentityAllowed()) {
+      res.status(503).json({
+        success: false,
+        error: "Authentication is unavailable",
+        message:
+          "The authentication service is not configured. Admin access cannot be verified.",
+      });
+      return;
+    }
+    // Invalid/expired token: fall through to the demo check (dev) or 401.
+    userId = null;
+  }
+
+  if (userId) {
+    const role = await resolveRole(userId);
+    if (role && ADMIN_ROLES.has(role)) {
+      req.userId = userId;
+      req.identitySource = "jwt";
+      return next();
+    }
+    res.status(403).json({
+      success: false,
+      error: "Forbidden",
+      message: "Administrator privileges are required.",
+    });
+    return;
+  }
+
+  if (tokenPresent) {
+    res.status(401).json({
+      success: false,
+      error: "Unauthorized",
+      message: "The provided access token is invalid or expired.",
+    });
+    return;
+  }
+
+  // 3. Non-production demo fallback (unchanged dev ergonomics).
+  if (demoIdentityAllowed()) {
+    req.userId =
+      (req.header("x-demo-user") as string) ||
+      (req.query.userId as string) ||
+      "demo-admin";
+    req.identitySource = "demo";
+    return next();
+  }
+
+  res.status(401).json({
+    success: false,
+    error: "Unauthorized",
+    message: "Administrator sign-in is required.",
   });
 }
