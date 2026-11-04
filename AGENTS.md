@@ -151,6 +151,11 @@ for future work; re-verify before relying on them.
   surfaces as `isRealModel: false` / `modelTrainedOnSyntheticData: true`.
 - `GET /api/ai/capabilities` reports the true engine per capability. Use it
   to see what is really available before promising a feature.
+- `GET /api/system/ai` reports whether an LLM provider is *configured*;
+  `GET /api/system/ai/health` performs a real one-token round-trip and reports
+  whether the provider actually *answers* (`reachable`, `latencyMs`, a coarse
+  `errorKind`). It is cached 60s and never returns a credential. A configured
+  key is not evidence the provider works — check the health endpoint.
 - The rule-based farm advisor is fully localised (ar/fr/en). Per-parameter
   soil recommendation sentences are Arabic-only by design and are labelled
   as such for fr/en callers.

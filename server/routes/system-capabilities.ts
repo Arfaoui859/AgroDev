@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { isSupabaseConfigured } from "../lib/supabase";
-import { getLLMInfo } from "../services/providers/llmProvider";
+import { getLLMInfo, probeLLMHealth } from "../services/providers/llmProvider";
 
 /**
  * Public, secret-free capability endpoints.
@@ -46,7 +46,25 @@ router.get("/ai", (_req, res) => {
       : ["AI_BASE_URL + AI_API_KEY", "or OPENAI_API_KEY", "or GEMINI_API_KEY"],
     // Per-capability detail (engine + provenance) lives in /api/ai/capabilities.
     capabilitiesEndpoint: "/api/ai/capabilities",
+    // Live round-trip health check (cached 60s). Never returns a credential.
+    healthEndpoint: "/api/system/ai/health",
   });
+});
+
+/**
+ * Live LLM provider health check.
+ *
+ * Unlike /api/system/ai (which only reports whether a provider is *configured*),
+ * this performs a one-token round-trip and reports whether the provider actually
+ * answers. It is cached for 60s server-side. The response never contains the
+ * credential, and failures are reported as a coarse error class only.
+ */
+router.get("/ai/health", async (_req, res) => {
+  const health = await probeLLMHealth();
+  // 200 when reachable; 503 when configured but unreachable; 200 with
+  // configured:false when simply not configured (a valid, honest state).
+  const status = health.configured && !health.reachable ? 503 : 200;
+  res.status(status).json(health);
 });
 
 router.get("/", (_req, res) => {

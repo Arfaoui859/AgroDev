@@ -374,3 +374,115 @@ export function extractJson(text: string): unknown | undefined {
     return undefined;
   }
 }
+
+/** Result of a live provider health probe. Never contains a credential value. */
+export interface LLMHealth {
+  configured: boolean;
+  /** True only when a real round-trip to the provider succeeded. */
+  reachable: boolean;
+  provider: string;
+  kind: ProviderKind;
+  model: string;
+  /** Round-trip latency in ms, or null when the probe did not complete. */
+  latencyMs: number | null;
+  checkedAt: string;
+  /** Present on failure: a coarse error class, never a raw provider body. */
+  errorKind?: ProviderError["kind"];
+  message?: string;
+  /** True when the value came from the short-lived cache. */
+  cached: boolean;
+}
+
+const HEALTH_TTL_MS = 60_000;
+let healthCache: { value: LLMHealth; at: number } | null = null;
+
+/** Clear the cached provider health (used by tests and after config changes). */
+export function resetLLMHealthCache(): void {
+  healthCache = null;
+}
+
+/** Timeout for the health probe: AI_TIMEOUT_MS, capped at 10s for a fast check. */
+function probeTimeoutMs(): number {
+  const configured = Number(process.env.AI_TIMEOUT_MS);
+  if (Number.isFinite(configured) && configured > 0) return configured;
+  return 10_000;
+}
+
+/**
+ * Perform a minimal live round-trip to the configured provider to prove it is
+ * actually reachable — a configured key is not evidence the provider answers.
+ *
+ * The probe sends a one-token request, is cached for 60s so it cannot be used
+ * to hammer a provider, and reports only a coarse error class (never a raw
+ * provider body or the credential). When no provider is configured it returns
+ * immediately with `configured: false` and performs no network call.
+ */
+export async function probeLLMHealth(
+  options: { force?: boolean; timeoutMs?: number } = {},
+): Promise<LLMHealth> {
+  const now = Date.now();
+  if (!options.force && healthCache && now - healthCache.at < HEALTH_TTL_MS) {
+    return { ...healthCache.value, cached: true };
+  }
+
+  const cfg = resolveLLMConfig();
+  const checkedAt = new Date(now).toISOString();
+  const base: Omit<LLMHealth, "reachable" | "latencyMs" | "cached"> = {
+    configured: isLLMConfigured(),
+    provider: cfg.provider,
+    kind: cfg.kind,
+    model: cfg.textModel,
+    checkedAt,
+  };
+
+  if (!base.configured) {
+    const value: LLMHealth = {
+      ...base,
+      reachable: false,
+      latencyMs: null,
+      cached: false,
+      errorKind: "unconfigured",
+      message:
+        "No LLM provider configured. Set AI_BASE_URL + AI_API_KEY, a provider key, or GEMINI_API_KEY.",
+    };
+    healthCache = { value, at: now };
+    return value;
+  }
+
+  const started = Date.now();
+  try {
+    await chatCompleteDetailed(
+      [
+        { role: "system", content: "You are a health probe. Reply with a single word." },
+        { role: "user", content: "ping" },
+      ],
+      { maxTokens: 1, temperature: 0, timeoutMs: options.timeoutMs ?? probeTimeoutMs(), retries: 0 },
+    );
+    const value: LLMHealth = {
+      ...base,
+      reachable: true,
+      latencyMs: Date.now() - started,
+      cached: false,
+    };
+    healthCache = { value, at: Date.now() };
+    return value;
+  } catch (error) {
+    const kind = error instanceof ProviderError ? error.kind : "network";
+    const value: LLMHealth = {
+      ...base,
+      reachable: false,
+      latencyMs: Date.now() - started,
+      cached: false,
+      errorKind: kind,
+      // Deliberately generic: never surface the provider's raw error body.
+      message:
+        kind === "timeout"
+          ? "The provider did not respond within the timeout."
+          : kind === "http"
+            ? "The provider rejected the request (check the credential and model)."
+            : "The provider could not be reached.",
+    };
+    healthCache = { value, at: Date.now() };
+    return value;
+  }
+}
