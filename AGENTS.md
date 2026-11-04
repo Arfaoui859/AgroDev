@@ -233,3 +233,28 @@ const data: MyRouteResponse = await response.json();
 - Production-ready with multiple deployment options
 - Comprehensive UI component library included
 - Type-safe API communication via shared interfaces
+
+## AgroGrowth project conventions (verified)
+
+- **Ports**: dev/prod server on `5000` (health: `GET /api/ping`). The 8 Python
+  AI microservices run on `8001`–`8008` and answer `GET /health`.
+- **Verification commands**: `npx tsc --noEmit` (there is **no** `npm run
+  typecheck` script), `npm run lint`, `npm run build`, `npx jest`. The AI
+  microservice tests need `agrogrowth-ai/requirements-test.txt` in a venv
+  (system Python lacks pytest/PIL).
+- **Data provenance is mandatory**: any endpoint returning synthetic,
+  heuristic or rule-based data must advertise it via `X-Data-Provenance` /
+  `X-Is-Real-Data` headers (`markSimulated` / `markReal` in
+  `server/lib/provenance.ts`) or embed `dataSource`/`isRealData` in the body.
+  Never present synthetic output as observed data.
+- **AI provider**: the unified adapter is `server/services/providers/llmProvider.ts`.
+  It is configured via `AI_BASE_URL`/`AI_API_KEY`/`AI_MODEL` (or provider keys
+  such as `GEMINI_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
+  `GROQ_API_KEY`). With no provider set, answers fall back to the deterministic
+  rule-based engine and are labelled as such.
+- **Auth**: the SPA signs up/in directly against Supabase (`supabase.auth`),
+  not through an Express route. Server-side admin endpoints are guarded by
+  `requireAdminAccess` (GETs) / `requireAdminToken()` (POSTs) and fail closed
+  in production.
+- **Feature matrix**: regenerate with the live-probe script referenced in
+  `FEATURE_MATRIX.md` rather than hand-editing claims.

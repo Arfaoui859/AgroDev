@@ -168,3 +168,59 @@ database is listed under "Remaining work" or "Known limitations".
 3. Expand API integration and end-to-end coverage for the remaining modules.
 4. Deploy the Python microservices alongside the Node gateway (single-host
    compose) so the specialised engines are always reachable.
+
+---
+
+## Session report — honest-data & provenance hardening
+
+**Date:** 2026-11-04 · **Branch:** `feat/ai-integration-production-hardening`
+**Commit:** `4d59cb4`
+
+### Completed
+
+- **Full-suite verification**: `tsc --noEmit` exit 0, `eslint` exit 0,
+  `npm run build` exit 0, `jest` 539 passed / 2 skipped / 0 failed.
+- **AI microservices**: all 8 `/health` endpoints (8001–8008) return 200.
+- **Security**: `/api/admin/*` GETs return 401 and POSTs return 403 without a
+  token (verified live); CORS is env-gated, rate limiters and the body-size
+  guard are in place; `npm audit --omit=dev` → 0 vulnerabilities.
+- **Honesty fix (notification feed)**: the mounted `NotificationProvider`
+  fabricated farm-specific alerts client-side. It now loads the real
+  `/api/notifications` feed, surfaces the server provenance and discloses
+  simulated content in `NotificationCenter`.
+- **Weather provenance**: `/api/weather/*` now advertises
+  `X-Data-Provenance: open-meteo` / `X-Is-Real-Data: true`, matching the body.
+- **Dead demo code labelled**: `SecurityMonitoringContext` and `RBACContext`
+  (never mounted) are marked as demo scaffolding that must not be shown as real.
+- **Deliverable**: `FEATURE_MATRIX.md` generated programmatically from live
+  probes of the running server.
+
+### Bugs discovered and fixed
+
+1. `NotificationContext` invented notifications with `Math.random()` and
+   persisted them to `localStorage`, presenting them as real farm alerts.
+2. `/api/weather/*` returned real Open-Meteo data without the provenance header
+   the client banner reads, so the UI could not tell real from synthetic.
+
+### Tests executed
+
+| Command | Result |
+|---|---|
+| `npx tsc --noEmit` | exit 0 |
+| `npm run lint` | exit 0 |
+| `npm run build` | exit 0 |
+| `npx jest` | 539 passed, 2 skipped, 0 failed |
+| AI suite (`.venv`) | 183 passed |
+| microservice `/health` ×8 | 200 each |
+
+### Remaining external dependencies
+
+- A real LLM/vision provider (`AI_BASE_URL` + `AI_API_KEY` or `GEMINI_API_KEY`)
+  is still unconfigured, so AI answers remain honestly labelled
+  rule-based/heuristic. Configure a provider to upgrade quality.
+- A licensed market-price feed is not available; market data stays `simulated`.
+
+### Known limitations
+
+- Market, marketplace and notification feeds are demo content, now clearly
+  labelled as simulated rather than real.
