@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ../ai_common ./ai_common
 
 # Copy service-specific files
-COPY . ./soil_analysis
+COPY ../soil_analysis ./soil_analysis
 
 # Set Python path
 ENV PYTHONPATH=/app
