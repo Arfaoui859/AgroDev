@@ -1,4 +1,3 @@
-```dockerfile
 # Dockerfile for Image Diagnosis AI Service
 FROM python:3.11-slim
 
