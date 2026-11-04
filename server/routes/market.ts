@@ -30,11 +30,16 @@ export const getMarketData: RequestHandler = async (req, res) => {
       7,
     );
 
-    // Calculate trend
-    const priceChange =
-      averagePrice7Days && averagePrice30Days
-        ? ((averagePrice7Days - averagePrice30Days) / averagePrice30Days) * 100
-        : 0;
+    // Calculate trend. When either window has no data we must not imply
+    // stability (a 0% change would read as "استقرار"): report the trend as
+    // unknown instead.
+    const hasTrendData =
+      averagePrice7Days != null &&
+      averagePrice30Days != null &&
+      averagePrice30Days !== 0;
+    const priceChange = hasTrendData
+      ? ((averagePrice7Days - averagePrice30Days) / averagePrice30Days) * 100
+      : null;
 
     const response = {
       crop: {
@@ -62,8 +67,13 @@ export const getMarketData: RequestHandler = async (req, res) => {
         averagePrice30Days: averagePrice30Days || 0,
         averagePrice7Days: averagePrice7Days || 0,
         priceChange: priceChange,
-        trend:
-          priceChange > 2 ? "ارتفاع" : priceChange < -2 ? "انخفاض" : "استقرار",
+        trend: !hasTrendData
+          ? "غير معروف"
+          : priceChange! > 2
+            ? "ارتفاع"
+            : priceChange! < -2
+              ? "انخفاض"
+              : "استقرار",
         volatility: calculateVolatility(marketPrices),
       },
       forecast: generatePriceForecast(marketPrices),
@@ -382,7 +392,7 @@ function createCompletePriceData(currentPrice: number, prices: any[] = []) {
   };
 }
 
-function analyzeTrends(prices: any[]): any {
+export function analyzeTrends(prices: any[]): any {
   const pricesByDate = {};
 
   prices.forEach((price) => {
@@ -393,16 +403,34 @@ function analyzeTrends(prices: any[]): any {
     pricesByDate[date].push(price.price_per_kg);
   });
 
+  // calculateTrend/calculateVolatility read `price_per_kg`, so carry the daily
+  // average under that key. (They previously received `{date, averagePrice}`
+  // objects, yielding NaN and a permanent "مستقر"/stable verdict.)
   const dailyAverages = Object.keys(pricesByDate)
     .map((date) => ({
       date,
       averagePrice:
         pricesByDate[date].reduce((sum, price) => sum + price, 0) /
         pricesByDate[date].length,
+      price_per_kg:
+        pricesByDate[date].reduce((sum, price) => sum + price, 0) /
+        pricesByDate[date].length,
     }))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const trend = calculateTrend(dailyAverages);
+
+  // With fewer than two days of history a direction cannot be inferred; say so
+  // rather than defaulting to "stable".
+  if (dailyAverages.length < 2) {
+    return {
+      overallTrend: "غير معروف",
+      trendStrength: 0,
+      dailyAverages,
+      volatility: 0,
+      insufficientData: true,
+    };
+  }
 
   return {
     overallTrend: trend > 0.01 ? "صاعد" : trend < -0.01 ? "هابط" : "مستقر",
@@ -414,6 +442,10 @@ function analyzeTrends(prices: any[]): any {
 
 function generateMarketInsights(trends: any): string[] {
   const insights = [];
+
+  if (trends.insufficientData || trends.overallTrend === "غير معروف") {
+    return ["لا تتوفر بيانات تاريخية كافية لاستنتاج اتجاه السوق"];
+  }
 
   if (trends.overallTrend === "صاعد") {
     insights.push("الأسعار في ارتفاع مستمر خلال الفترة المحددة");
@@ -436,6 +468,10 @@ function generateMarketInsights(trends: any): string[] {
 
 function generateMarketRecommendations(trends: any): string[] {
   const recommendations = [];
+
+  if (trends.insufficientData || trends.overallTrend === "غير معروف") {
+    return ["لا تتوفر بيانات تاريخية كافية لتقديم توصيات"];
+  }
 
   if (trends.overallTrend === "صاعد") {
     recommendations.push("فكر في بيع المخزون قبل انعكاس الاتجاه");
