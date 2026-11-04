@@ -120,6 +120,279 @@ export const translations: Record<string, Entry> = {
     fr: "Données réelles provenant d'une source en direct.",
     en: "Real data from a live source.",
   },
+
+  // ── Crops (shared by the farmer workflow screens) ─────────────────────────
+  "crop.wheat": { ar: "القمح", fr: "Blé", en: "Wheat" },
+  "crop.barley": { ar: "الشعير", fr: "Orge", en: "Barley" },
+  "crop.tomato": { ar: "الطماطم", fr: "Tomate", en: "Tomato" },
+  "crop.olive": { ar: "الزيتون", fr: "Olivier", en: "Olive" },
+  "crop.potato": { ar: "البطاطس", fr: "Pomme de terre", en: "Potato" },
+  "crop.corn": { ar: "الذرة", fr: "Maïs", en: "Corn" },
+  "crop.citrus": { ar: "الحمضيات", fr: "Agrumes", en: "Citrus" },
+
+  // ── Growth stages (irrigation) ────────────────────────────────────────────
+  "growth.germination": { ar: "الإنبات", fr: "Germination", en: "Germination" },
+  "growth.vegetative": { ar: "النمو الخضري", fr: "Croissance végétative", en: "Vegetative" },
+  "growth.flowering": { ar: "الإزهار", fr: "Floraison", en: "Flowering" },
+  "growth.maturity": { ar: "النضج", fr: "Maturité", en: "Maturity" },
+
+  // ── Pest control advisor ──────────────────────────────────────────────────
+  "pest.title": {
+    ar: "مستشار مكافحة الآفات",
+    fr: "Conseiller de lutte antiparasitaire",
+    en: "Pest Control Advisor",
+  },
+  "pest.subtitle": {
+    ar: "تحديد الآفات وتوصيات العلاج بناءً على الأعراض وظروف المزرعة",
+    fr: "Identification des ravageurs et conseils de traitement à partir des symptômes et des conditions de la ferme",
+    en: "Pest identification and treatment guidance from symptoms and farm conditions",
+  },
+  "pest.infestationDetails": {
+    ar: "بيانات الإصابة",
+    fr: "Détails de l'infestation",
+    en: "Infestation details",
+  },
+  "pest.infestationHint": {
+    ar: "أدخل المحصول والأعراض الملاحظة",
+    fr: "Saisissez la culture et les symptômes observés",
+    en: "Enter the crop and observed symptoms",
+  },
+  "pest.crop": { ar: "المحصول", fr: "Culture", en: "Crop" },
+  "pest.symptoms": {
+    ar: "الأعراض الملاحظة",
+    fr: "Symptômes observés",
+    en: "Observed symptoms",
+  },
+  "pest.affectedArea": {
+    ar: "نسبة المساحة المصابة",
+    fr: "Surface affectée",
+    en: "Affected area",
+  },
+  "pest.plantHealth": {
+    ar: "مؤشر صحة النبات",
+    fr: "Indice de santé de la plante",
+    en: "Plant health score",
+  },
+  "pest.analyze": {
+    ar: "تحليل مشكلة الآفات",
+    fr: "Analyser le problème",
+    en: "Analyze pest problem",
+  },
+  "pest.analyzing": { ar: "جارٍ التحليل...", fr: "Analyse en cours…", en: "Analyzing..." },
+  "pest.selectSymptom": {
+    ar: "الرجاء اختيار عرض واحد على الأقل",
+    fr: "Sélectionnez au moins un symptôme",
+    en: "Select at least one symptom",
+  },
+  "pest.analysisFailed": {
+    ar: "تعذّر إجراء التحليل: ",
+    fr: "Échec de l'analyse : ",
+    en: "Analysis failed: ",
+  },
+  "pest.emptyHint": {
+    ar: "أدخل الأعراض ثم اضغط تحليل للحصول على التشخيص والتوصيات.",
+    fr: "Saisissez les symptômes puis lancez l'analyse pour obtenir le diagnostic et les recommandations.",
+    en: "Enter symptoms and press analyze to get a diagnosis and recommendations.",
+  },
+  "pest.diagnosis": { ar: "التشخيص", fr: "Diagnostic", en: "Diagnosis" },
+  "pest.confidence": { ar: "درجة الثقة", fr: "Confiance", en: "Confidence" },
+  "pest.severity": { ar: "شدة الإصابة", fr: "Gravité", en: "Severity" },
+  "pest.treatments": {
+    ar: "توصيات العلاج",
+    fr: "Recommandations de traitement",
+    en: "Treatment recommendations",
+  },
+  "pest.plannedApplications": {
+    ar: "عدد التطبيقات المخططة: {count}",
+    fr: "Applications prévues : {count}",
+    en: "Planned applications: {count}",
+  },
+  "pest.noRecommendations": {
+    ar: "لا توجد توصيات متاحة.",
+    fr: "Aucune recommandation disponible.",
+    en: "No recommendations available.",
+  },
+  "symptom.curledLeaves": { ar: "أوراق مجعدة", fr: "Feuilles frisées", en: "Curled leaves" },
+  "symptom.honeydew": { ar: "إفرازات لزجة", fr: "Miellat collant", en: "Sticky honeydew" },
+  "symptom.yellowSpots": {
+    ar: "نقط صفراء صغيرة",
+    fr: "Petites taches jaunes",
+    en: "Small yellow spots",
+  },
+  "symptom.webbing": { ar: "خيوط عنكبوتية", fr: "Toiles d'araignée", en: "Webbing" },
+  "symptom.powdery": { ar: "طبقة بيضاء", fr: "Couche blanche poudreuse", en: "White powdery layer" },
+  "symptom.brownSpots": { ar: "بقع بنية", fr: "Taches brunes", en: "Brown spots" },
+  "symptom.rotting": { ar: "تعفن", fr: "Pourriture", en: "Rotting" },
+  "symptom.wilting": { ar: "ذبول مفاجئ", fr: "Flétrissement soudain", en: "Sudden wilting" },
+
+  // ── Smart irrigation optimizer ────────────────────────────────────────────
+  "irrigation.title": {
+    ar: "محسّن الري الذكي",
+    fr: "Optimiseur d'irrigation intelligent",
+    en: "Smart Irrigation Optimizer",
+  },
+  "irrigation.subtitle": {
+    ar: "جدولة الري بناءً على الطقس والتربة ومرحلة نمو المحصول",
+    fr: "Planification de l'irrigation selon la météo, le sol et le stade de croissance",
+    en: "Irrigation scheduling from weather, soil and crop growth stage",
+  },
+  "irrigation.farmParams": {
+    ar: "معطيات المزرعة",
+    fr: "Paramètres de la ferme",
+    en: "Farm parameters",
+  },
+  "irrigation.farmParamsHint": {
+    ar: "أدخل ظروف الحقل لحساب احتياجات الري",
+    fr: "Saisissez les conditions du champ pour calculer les besoins en eau",
+    en: "Enter field conditions to compute water needs",
+  },
+  "irrigation.crop": { ar: "المحصول", fr: "Culture", en: "Crop" },
+  "irrigation.growthStage": {
+    ar: "مرحلة النمو",
+    fr: "Stade de croissance",
+    en: "Growth stage",
+  },
+  "irrigation.temperature": {
+    ar: "درجة الحرارة (°م)",
+    fr: "Température (°C)",
+    en: "Temperature (°C)",
+  },
+  "irrigation.humidity": { ar: "الرطوبة (%)", fr: "Humidité (%)", en: "Humidity (%)" },
+  "irrigation.soilMoisture": {
+    ar: "رطوبة التربة (%)",
+    fr: "Humidité du sol (%)",
+    en: "Soil moisture (%)",
+  },
+  "irrigation.farmSize": {
+    ar: "مساحة المزرعة (هكتار)",
+    fr: "Surface de la ferme (ha)",
+    en: "Farm size (ha)",
+  },
+  "irrigation.computing": { ar: "جارٍ الحساب...", fr: "Calcul en cours…", en: "Computing..." },
+  "irrigation.optimize": {
+    ar: "تحسين جدولة الري",
+    fr: "Optimiser l'irrigation",
+    en: "Optimize irrigation",
+  },
+  "irrigation.failed": {
+    ar: "تعذّر تحسين جدولة الري: ",
+    fr: "Échec de l'optimisation de l'irrigation : ",
+    en: "Irrigation optimization failed: ",
+  },
+  "irrigation.emptyHint": {
+    ar: "أدخل معطيات الحقل ثم اضغط تحسين للحصول على جدول الري.",
+    fr: "Saisissez les paramètres du champ puis lancez l'optimisation pour obtenir le calendrier d'irrigation.",
+    en: "Enter field parameters and press optimize to get an irrigation schedule.",
+  },
+  "irrigation.waterRequirements": {
+    ar: "الاحتياجات المائية",
+    fr: "Besoins en eau",
+    en: "Water requirements",
+  },
+  "irrigation.mmPerDay": { ar: "مم/يوم", fr: "mm/jour", en: "mm/day" },
+  "irrigation.mmPerWeek": { ar: "مم/أسبوع", fr: "mm/semaine", en: "mm/week" },
+  "irrigation.mmPerSeason": { ar: "مم/موسم", fr: "mm/saison", en: "mm/season" },
+  "irrigation.schedule": {
+    ar: "جدول الري",
+    fr: "Calendrier d'irrigation",
+    en: "Irrigation schedule",
+  },
+  "irrigation.recommendations": {
+    ar: "توصيات",
+    fr: "Recommandations",
+    en: "Recommendations",
+  },
+
+  // ── Weather & yield planner ───────────────────────────────────────────────
+  "weather.title": {
+    ar: "مخطط الطقس والمردودية",
+    fr: "Planificateur météo et rendement",
+    en: "Weather & Yield Planner",
+  },
+  "weather.subtitle": {
+    ar: "تخطيط زراعي حسب المناخ وتوقّع مردودية المحاصيل",
+    fr: "Planification agricole selon le climat et prévision des rendements",
+    en: "Climate-based crop planning and yield prediction",
+  },
+  "weather.inputs": { ar: "المعطيات", fr: "Données", en: "Inputs" },
+  "weather.inputsHint": {
+    ar: "حدّد الموقع والمحاصيل",
+    fr: "Définissez le lieu et les cultures",
+    en: "Set location and crops",
+  },
+  "weather.latitude": { ar: "خط العرض", fr: "Latitude", en: "Latitude" },
+  "weather.longitude": { ar: "خط الطول", fr: "Longitude", en: "Longitude" },
+  "weather.farmSize": {
+    ar: "مساحة المزرعة (هكتار)",
+    fr: "Surface de la ferme (ha)",
+    en: "Farm size (ha)",
+  },
+  "weather.crops": { ar: "المحاصيل", fr: "Cultures", en: "Crops" },
+  "weather.climatePlan": { ar: "خطة المناخ", fr: "Plan climatique", en: "Climate plan" },
+  "weather.predictYield": {
+    ar: "توقّع المردودية",
+    fr: "Prévoir le rendement",
+    en: "Predict yield",
+  },
+  "weather.selectCrop": {
+    ar: "اختر محصولاً واحداً على الأقل",
+    fr: "Sélectionnez au moins une culture",
+    en: "Select at least one crop",
+  },
+  "weather.planFailed": {
+    ar: "تعذّر إنشاء الخطة: ",
+    fr: "Échec de la génération du plan : ",
+    en: "Plan generation failed: ",
+  },
+  "weather.yieldFailed": {
+    ar: "تعذّر توقّع المردودية: ",
+    fr: "Échec de la prévision du rendement : ",
+    en: "Yield prediction failed: ",
+  },
+  "weather.climateTab": { ar: "الخطة المناخية", fr: "Plan climatique", en: "Climate plan" },
+  "weather.yieldTab": { ar: "المردودية", fr: "Rendement", en: "Yield" },
+  "weather.climateZone": { ar: "المنطقة المناخية", fr: "Zone climatique", en: "Climate zone" },
+  "weather.season": { ar: "الموسم", fr: "Saison", en: "Season" },
+  "weather.riskLevel": { ar: "مستوى المخاطر", fr: "Niveau de risque", en: "Risk level" },
+  "weather.cropSuitability": {
+    ar: "ملاءمة المحاصيل",
+    fr: "Adéquation des cultures",
+    en: "Crop suitability",
+  },
+  "weather.recommendationsSummary": {
+    ar: "ملخص التوصيات",
+    fr: "Résumé des recommandations",
+    en: "Recommendations",
+  },
+  "weather.emptyPlanHint": {
+    ar: "شغّل خطة المناخ لعرض ملاءمة المحاصيل.",
+    fr: "Lancez le plan climatique pour voir l'adéquation des cultures.",
+    en: "Run the climate plan to see crop suitability.",
+  },
+  "weather.predictedYield": {
+    ar: "المردودية المتوقعة",
+    fr: "Rendement prévu",
+    en: "Predicted yield",
+  },
+  "weather.range": { ar: "المجال: ", fr: "Plage : ", en: "Range: " },
+  "weather.confidence": { ar: "الثقة", fr: "Confiance", en: "Confidence" },
+  "weather.economicAnalysis": {
+    ar: "الجدوى الاقتصادية",
+    fr: "Analyse économique",
+    en: "Economic analysis",
+  },
+  "weather.netProfit": { ar: "صافي الربح", fr: "Bénéfice net", en: "Net profit" },
+  "weather.roi": {
+    ar: "معدل العائد",
+    fr: "Retour sur investissement",
+    en: "ROI",
+  },
+  "weather.tnd": { ar: "د.ت", fr: "DT", en: "TND" },
+  "weather.emptyYieldHint": {
+    ar: "شغّل توقّع المردودية لعرض النتائج.",
+    fr: "Lancez la prévision du rendement pour voir les résultats.",
+    en: "Run the yield prediction to see results.",
+  },
 };
 
 /**

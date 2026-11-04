@@ -44,23 +44,25 @@ import { useLanguage } from "@/contexts/LanguageContext";
  */
 
 const CROPS = [
-  { value: "tomato", ar: "الطماطم", en: "Tomato" },
-  { value: "wheat", ar: "القمح", en: "Wheat" },
-  { value: "olive", ar: "الزيتون", en: "Olive" },
-  { value: "potato", ar: "البطاطس", en: "Potato" },
-  { value: "corn", ar: "الذرة", en: "Corn" },
-  { value: "citrus", ar: "الحمضيات", en: "Citrus" },
+  { value: "tomato", key: "crop.tomato" },
+  { value: "wheat", key: "crop.wheat" },
+  { value: "olive", key: "crop.olive" },
+  { value: "potato", key: "crop.potato" },
+  { value: "corn", key: "crop.corn" },
+  { value: "citrus", key: "crop.citrus" },
 ];
 
+// `ar` is the canonical value sent to the pest microservice, which matches on
+// Arabic symptom keywords; only the display string is localised via t(key).
 const COMMON_SYMPTOMS = [
-  { ar: "أوراق مجعدة", en: "Curled leaves" },
-  { ar: "إفرازات لزجة", en: "Sticky honeydew" },
-  { ar: "نقط صفراء صغيرة", en: "Small yellow spots" },
-  { ar: "خيوط عنكبوتية", en: "Webbing" },
-  { ar: "طبقة بيضاء", en: "White powdery layer" },
-  { ar: "بقع بنية", en: "Brown spots" },
-  { ar: "تعفن", en: "Rotting" },
-  { ar: "ذبول مفاجئ", en: "Sudden wilting" },
+  { key: "symptom.curledLeaves", ar: "أوراق مجعدة" },
+  { key: "symptom.honeydew", ar: "إفرازات لزجة" },
+  { key: "symptom.yellowSpots", ar: "نقط صفراء صغيرة" },
+  { key: "symptom.webbing", ar: "خيوط عنكبوتية" },
+  { key: "symptom.powdery", ar: "طبقة بيضاء" },
+  { key: "symptom.brownSpots", ar: "بقع بنية" },
+  { key: "symptom.rotting", ar: "تعفن" },
+  { key: "symptom.wilting", ar: "ذبول مفاجئ" },
 ];
 
 interface PestAnalysis {
@@ -91,8 +93,7 @@ interface PestAnalysis {
 }
 
 export default function PestControl() {
-  const { isArabic } = useLanguage();
-  const t = (ar: string, en: string) => (isArabic ? ar : en);
+  const { language, dir, t } = useLanguage();
 
   const [cropType, setCropType] = useState("tomato");
   const [symptoms, setSymptoms] = useState<string[]>([]);
@@ -110,7 +111,7 @@ export default function PestControl() {
 
   const analyze = async () => {
     if (symptoms.length === 0) {
-      setError(t("الرجاء اختيار عرض واحد على الأقل", "Select at least one symptom"));
+      setError(t("pest.selectSymptom"));
       return;
     }
     setLoading(true);
@@ -125,7 +126,7 @@ export default function PestControl() {
           symptoms,
           affected_area_percentage: affectedArea,
           plant_health_score: plantHealth,
-          language: isArabic ? "ar" : "en",
+          language,
         }),
       });
       const body = await response.json();
@@ -137,7 +138,7 @@ export default function PestControl() {
       setResult(body);
     } catch (err) {
       setError(
-        t("تعذّر إجراء التحليل: ", "Analysis failed: ") +
+        t("pest.analysisFailed") +
           (err instanceof Error ? err.message : String(err)),
       );
     } finally {
@@ -150,18 +151,15 @@ export default function PestControl() {
   const treatments = result?.treatment_recommendations ?? [];
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir={isArabic ? "rtl" : "ltr"}>
+    <div className="container mx-auto p-6 space-y-6" dir={dir}>
       <div className="flex items-center gap-3">
         <Bug className="h-8 w-8 text-red-600" />
         <div>
           <h1 className="text-3xl font-bold">
-            {t("مستشار مكافحة الآفات", "Pest Control Advisor")}
+            {t("pest.title")}
           </h1>
           <p className="text-muted-foreground">
-            {t(
-              "تحديد الآفات وتوصيات العلاج بناءً على الأعراض وظروف المزرعة",
-              "Pest identification and treatment guidance from symptoms and farm conditions",
-            )}
+            {t("pest.subtitle")}
           </p>
         </div>
       </div>
@@ -169,14 +167,14 @@ export default function PestControl() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>{t("بيانات الإصابة", "Infestation details")}</CardTitle>
+            <CardTitle>{t("pest.infestationDetails")}</CardTitle>
             <CardDescription>
-              {t("أدخل المحصول والأعراض الملاحظة", "Enter the crop and observed symptoms")}
+              {t("pest.infestationHint")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("المحصول", "Crop")}</Label>
+              <Label>{t("pest.crop")}</Label>
               <Select value={cropType} onValueChange={setCropType}>
                 <SelectTrigger>
                   <SelectValue />
@@ -184,7 +182,7 @@ export default function PestControl() {
                 <SelectContent>
                   {CROPS.map((crop) => (
                     <SelectItem key={crop.value} value={crop.value}>
-                      {isArabic ? crop.ar : crop.en}
+                      {t(crop.key)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -192,7 +190,7 @@ export default function PestControl() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t("الأعراض الملاحظة", "Observed symptoms")}</Label>
+              <Label>{t("pest.symptoms")}</Label>
               <div className="flex flex-wrap gap-2">
                 {COMMON_SYMPTOMS.map((symptom) => (
                   <Badge
@@ -201,7 +199,7 @@ export default function PestControl() {
                     className="cursor-pointer"
                     onClick={() => toggleSymptom(symptom.ar)}
                   >
-                    {isArabic ? symptom.ar : symptom.en}
+                    {t(symptom.key)}
                   </Badge>
                 ))}
               </div>
@@ -209,7 +207,7 @@ export default function PestControl() {
 
             <div className="space-y-2">
               <Label>
-                {t("نسبة المساحة المصابة", "Affected area")}: {affectedArea}%
+                {t("pest.affectedArea")}: {affectedArea}%
               </Label>
               <Input
                 type="range"
@@ -222,7 +220,7 @@ export default function PestControl() {
 
             <div className="space-y-2">
               <Label>
-                {t("مؤشر صحة النبات", "Plant health score")}:{" "}
+                {t("pest.plantHealth")}:{" "}
                 {plantHealth.toFixed(2)}
               </Label>
               <Input
@@ -239,12 +237,12 @@ export default function PestControl() {
               {loading ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  {t("جارٍ التحليل...", "Analyzing...")}
+                  {t("pest.analyzing")}
                 </>
               ) : (
                 <>
                   <Bug className="me-2 h-4 w-4" />
-                  {t("تحليل مشكلة الآفات", "Analyze pest problem")}
+                  {t("pest.analyze")}
                 </>
               )}
             </Button>
@@ -263,10 +261,7 @@ export default function PestControl() {
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <ShieldCheck className="mx-auto mb-3 h-10 w-10 opacity-40" />
-                {t(
-                  "أدخل الأعراض ثم اضغط تحليل للحصول على التشخيص والتوصيات.",
-                  "Enter symptoms and press analyze to get a diagnosis and recommendations.",
-                )}
+                {t("pest.emptyHint")}
               </CardContent>
             </Card>
           )}
@@ -281,7 +276,7 @@ export default function PestControl() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Leaf className="h-5 w-5 text-green-600" />
-                    {t("التشخيص", "Diagnosis")}
+                    {t("pest.diagnosis")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -294,7 +289,7 @@ export default function PestControl() {
                   {typeof identification?.confidence_score === "number" && (
                     <div>
                       <div className="mb-1 flex justify-between text-sm">
-                        <span>{t("درجة الثقة", "Confidence")}</span>
+                        <span>{t("pest.confidence")}</span>
                         <span>{(identification.confidence_score * 100).toFixed(0)}%</span>
                       </div>
                       <Progress value={identification.confidence_score * 100} />
@@ -302,7 +297,7 @@ export default function PestControl() {
                   )}
                   {severity?.severity_level && (
                     <div className="flex items-center justify-between rounded border p-2">
-                      <span>{t("شدة الإصابة", "Severity")}</span>
+                      <span>{t("pest.severity")}</span>
                       <Badge
                         variant={severity.above_threshold ? "destructive" : "secondary"}
                       >
@@ -317,19 +312,16 @@ export default function PestControl() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ClipboardList className="h-5 w-5 text-blue-600" />
-                    {t("توصيات العلاج", "Treatment recommendations")}
+                    {t("pest.treatments")}
                   </CardTitle>
                   <CardDescription>
-                    {t(
-                      `عدد التطبيقات المخططة: ${result.treatment_schedule?.total_applications ?? 0}`,
-                      `Planned applications: ${result.treatment_schedule?.total_applications ?? 0}`,
-                    )}
+                    {t("pest.plannedApplications", { count: result.treatment_schedule?.total_applications ?? 0 })}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {treatments.length === 0 ? (
                     <p className="text-muted-foreground">
-                      {t("لا توجد توصيات متاحة.", "No recommendations available.")}
+                      {t("pest.noRecommendations")}
                     </p>
                   ) : (
                     treatments.map((treatment, index) => (

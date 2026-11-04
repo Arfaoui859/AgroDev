@@ -34,18 +34,18 @@ import { useLanguage } from "@/contexts/LanguageContext";
  */
 
 const CROPS = [
-  { value: "wheat", ar: "القمح", en: "Wheat" },
-  { value: "tomato", ar: "الطماطم", en: "Tomato" },
-  { value: "olive", ar: "الزيتون", en: "Olive" },
-  { value: "potato", ar: "البطاطس", en: "Potato" },
-  { value: "corn", ar: "الذرة", en: "Corn" },
+  { value: "wheat", key: "crop.wheat" },
+  { value: "tomato", key: "crop.tomato" },
+  { value: "olive", key: "crop.olive" },
+  { value: "potato", key: "crop.potato" },
+  { value: "corn", key: "crop.corn" },
 ];
 
 const GROWTH_STAGES = [
-  { value: "germination", ar: "الإنبات", en: "Germination" },
-  { value: "vegetative", ar: "النمو الخضري", en: "Vegetative" },
-  { value: "flowering", ar: "الإزهار", en: "Flowering" },
-  { value: "maturity", ar: "النضج", en: "Maturity" },
+  { value: "germination", key: "growth.germination" },
+  { value: "vegetative", key: "growth.vegetative" },
+  { value: "flowering", key: "growth.flowering" },
+  { value: "maturity", key: "growth.maturity" },
 ];
 
 interface IrrigationResult {
@@ -68,8 +68,7 @@ interface IrrigationResult {
 }
 
 export default function IrrigationOptimization() {
-  const { isArabic } = useLanguage();
-  const t = (ar: string, en: string) => (isArabic ? ar : en);
+  const { language, dir, t } = useLanguage();
 
   const [cropType, setCropType] = useState("wheat");
   const [growthStage, setGrowthStage] = useState("vegetative");
@@ -96,7 +95,7 @@ export default function IrrigationOptimization() {
           days_ahead: 7,
           weather_data: { temperature, humidity },
           soil_data: { moisture_percentage: soilMoisture },
-          language: isArabic ? "ar" : "en",
+          language,
         }),
       });
       const body = await response.json();
@@ -106,7 +105,7 @@ export default function IrrigationOptimization() {
       setResult(body);
     } catch (err) {
       setError(
-        t("تعذّر تحسين جدولة الري: ", "Irrigation optimization failed: ") +
+        t("irrigation.failed") +
           (err instanceof Error ? err.message : String(err)),
       );
     } finally {
@@ -118,18 +117,15 @@ export default function IrrigationOptimization() {
   const schedule = result?.irrigation_schedule ?? [];
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir={isArabic ? "rtl" : "ltr"}>
+    <div className="container mx-auto p-6 space-y-6" dir={dir}>
       <div className="flex items-center gap-3">
         <Droplets className="h-8 w-8 text-blue-600" />
         <div>
           <h1 className="text-3xl font-bold">
-            {t("محسّن الري الذكي", "Smart Irrigation Optimizer")}
+            {t("irrigation.title")}
           </h1>
           <p className="text-muted-foreground">
-            {t(
-              "جدولة الري بناءً على الطقس والتربة ومرحلة نمو المحصول",
-              "Irrigation scheduling from weather, soil and crop growth stage",
-            )}
+            {t("irrigation.subtitle")}
           </p>
         </div>
       </div>
@@ -137,15 +133,15 @@ export default function IrrigationOptimization() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>{t("معطيات المزرعة", "Farm parameters")}</CardTitle>
+            <CardTitle>{t("irrigation.farmParams")}</CardTitle>
             <CardDescription>
-              {t("أدخل ظروف الحقل لحساب احتياجات الري", "Enter field conditions to compute water needs")}
+              {t("irrigation.farmParamsHint")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t("المحصول", "Crop")}</Label>
+                <Label>{t("irrigation.crop")}</Label>
                 <Select value={cropType} onValueChange={setCropType}>
                   <SelectTrigger>
                     <SelectValue />
@@ -153,14 +149,14 @@ export default function IrrigationOptimization() {
                   <SelectContent>
                     {CROPS.map((crop) => (
                       <SelectItem key={crop.value} value={crop.value}>
-                        {isArabic ? crop.ar : crop.en}
+                        {t(crop.key)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>{t("مرحلة النمو", "Growth stage")}</Label>
+                <Label>{t("irrigation.growthStage")}</Label>
                 <Select value={growthStage} onValueChange={setGrowthStage}>
                   <SelectTrigger>
                     <SelectValue />
@@ -168,7 +164,7 @@ export default function IrrigationOptimization() {
                   <SelectContent>
                     {GROWTH_STAGES.map((stage) => (
                       <SelectItem key={stage.value} value={stage.value}>
-                        {isArabic ? stage.ar : stage.en}
+                        {t(stage.key)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -178,7 +174,7 @@ export default function IrrigationOptimization() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{t("درجة الحرارة (°م)", "Temperature (°C)")}</Label>
+                <Label>{t("irrigation.temperature")}</Label>
                 <Input
                   type="number"
                   value={temperature}
@@ -186,7 +182,7 @@ export default function IrrigationOptimization() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t("الرطوبة (%)", "Humidity (%)")}</Label>
+                <Label>{t("irrigation.humidity")}</Label>
                 <Input
                   type="number"
                   value={humidity}
@@ -197,7 +193,7 @@ export default function IrrigationOptimization() {
 
             <div className="space-y-2">
               <Label>
-                {t("رطوبة التربة (%)", "Soil moisture (%)")}: {soilMoisture}
+                {t("irrigation.soilMoisture")}: {soilMoisture}
               </Label>
               <Input
                 type="range"
@@ -209,7 +205,7 @@ export default function IrrigationOptimization() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t("مساحة المزرعة (هكتار)", "Farm size (ha)")}</Label>
+              <Label>{t("irrigation.farmSize")}</Label>
               <Input
                 type="number"
                 step={0.1}
@@ -222,12 +218,12 @@ export default function IrrigationOptimization() {
               {loading ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  {t("جارٍ الحساب...", "Computing...")}
+                  {t("irrigation.computing")}
                 </>
               ) : (
                 <>
                   <Gauge className="me-2 h-4 w-4" />
-                  {t("تحسين جدولة الري", "Optimize irrigation")}
+                  {t("irrigation.optimize")}
                 </>
               )}
             </Button>
@@ -246,10 +242,7 @@ export default function IrrigationOptimization() {
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <Droplets className="mx-auto mb-3 h-10 w-10 opacity-40" />
-                {t(
-                  "أدخل معطيات الحقل ثم اضغط تحسين للحصول على جدول الري.",
-                  "Enter field parameters and press optimize to get an irrigation schedule.",
-                )}
+                {t("irrigation.emptyHint")}
               </CardContent>
             </Card>
           )}
@@ -263,7 +256,7 @@ export default function IrrigationOptimization() {
               {requirements && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t("الاحتياجات المائية", "Water requirements")}</CardTitle>
+                    <CardTitle>{t("irrigation.waterRequirements")}</CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-3 gap-4 text-center">
                     <div>
@@ -271,7 +264,7 @@ export default function IrrigationOptimization() {
                         {requirements.daily_requirement_mm?.toFixed(1) ?? "—"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {t("مم/يوم", "mm/day")}
+                        {t("irrigation.mmPerDay")}
                       </div>
                     </div>
                     <div>
@@ -279,7 +272,7 @@ export default function IrrigationOptimization() {
                         {requirements.weekly_requirement_mm?.toFixed(1) ?? "—"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {t("مم/أسبوع", "mm/week")}
+                        {t("irrigation.mmPerWeek")}
                       </div>
                     </div>
                     <div>
@@ -287,7 +280,7 @@ export default function IrrigationOptimization() {
                         {requirements.seasonal_requirement_mm?.toFixed(0) ?? "—"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {t("مم/موسم", "mm/season")}
+                        {t("irrigation.mmPerSeason")}
                       </div>
                     </div>
                   </CardContent>
@@ -299,7 +292,7 @@ export default function IrrigationOptimization() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Calendar className="h-5 w-5 text-blue-600" />
-                      {t("جدول الري", "Irrigation schedule")}
+                      {t("irrigation.schedule")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -324,7 +317,7 @@ export default function IrrigationOptimization() {
               {result.recommendations && result.recommendations.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t("توصيات", "Recommendations")}</CardTitle>
+                    <CardTitle>{t("irrigation.recommendations")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="list-inside list-disc space-y-1 text-sm">

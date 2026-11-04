@@ -10,7 +10,12 @@ export default defineConfig({
       fileName: "production",
       formats: ["es"],
     },
-    outDir: "dist/server",
+    // The server bundle must NOT live under the statically-served client
+    // output (`dist`). When it did, the whole `dist/server` tree — including the
+    // bundle and its source map (which embeds the backend TypeScript via
+    // `sourcesContent`) — was publicly downloadable. `build/server` is outside
+    // the static root, so those paths can never be served.
+    outDir: "build/server",
     target: "node22",
     ssr: true,
     rollupOptions: {
@@ -38,8 +43,10 @@ export default defineConfig({
         entryFileNames: "[name].mjs",
       },
     },
-    minify: false, // Keep readable for debugging
-    sourcemap: true,
+    // The server bundle is never served to clients, so readability is not worth
+    // shipping a source map: `sourcesContent` embeds the backend TypeScript.
+    minify: true,
+    sourcemap: false,
   },
   resolve: {
     alias: {

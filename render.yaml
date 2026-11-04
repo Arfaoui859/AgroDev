@@ -8,7 +8,7 @@ services:
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: .
     buildCommand: npm ci --no-audit --no-fund && npm run build
-    startCommand: node dist/server/node-build.mjs
+    startCommand: node build/server/node-build.mjs
     healthCheckPath: /api/health
     plan: starter
     region: frankfurt
@@ -28,6 +28,10 @@ services:
         fromService: { type: web, name: agrogrowth-intelligent-agent, property: hostport }
       - key: SMART_MARKETPLACE_URL
         fromService: { type: web, name: agrogrowth-weather-yield, property: hostport }
+      - key: PEST_CONTROL_URL
+        fromService: { type: web, name: agrogrowth-pest-control, property: hostport }
+      - key: IRRIGATION_OPTIMIZATION_URL
+        fromService: { type: web, name: agrogrowth-irrigation-optimization, property: hostport }
       - key: DATABASE_URL
         fromDatabase:
           name: agrogrowth-postgres
@@ -44,7 +48,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn soil_analysis.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt
@@ -72,7 +76,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn crop_recommendation.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt
@@ -91,7 +95,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn image_diagnosis.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt
@@ -110,7 +114,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn market_prediction.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt
@@ -129,7 +133,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn intelligent_agent.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt
@@ -148,7 +152,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn weather_yield_intelligence.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt
@@ -167,7 +171,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn pest_control.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt
@@ -186,7 +190,7 @@ services:
     env: python
     repo: https://github.com/Arfaoui859/AgroDev
     rootDir: ./agrogrowth-ai
-    buildCommand: pip install -r agrogrowth-ai/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn irrigation_optimization.main:app --host 0.0.0.0 --port $PORT
     plan: starter
     region: frankfurt

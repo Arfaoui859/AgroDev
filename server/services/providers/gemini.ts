@@ -183,11 +183,16 @@ export async function geminiGenerateContent(
     );
   }
 
+  const finishReason = data.candidates?.[0]?.finishReason;
   const text = (data.candidates?.[0]?.content?.parts ?? [])
     .map((p) => p.text ?? "")
     .join("")
     .trim();
-  if (!text) {
+  // An empty completion is only a failure when the model did not say why. A
+  // MAX_TOKENS finish means the caller's token budget was simply too small to
+  // emit any text (e.g. a liveness probe asking for a single token); that is a
+  // valid, answered response, not a parse error.
+  if (!text && finishReason !== "MAX_TOKENS") {
     throw new ProviderError("gemini", "parse", "Gemini returned an empty response.");
   }
 

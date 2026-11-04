@@ -19,7 +19,11 @@ import {
   extractJson,
   isLLMConfigured,
   defaultModelFor,
+  resolveLLMConfig,
+  probeTimeoutMs,
+  PROBE_TIMEOUT_FLOOR_MS,
 } from "../../server/services/providers/llmProvider";
+import { geminiGenerateContent } from "../../server/services/providers/gemini";
 
 const originalFetch = global.fetch;
 
@@ -28,7 +32,40 @@ afterEach(() => {
   delete process.env.AI_BASE_URL;
   delete process.env.AI_API_KEY;
   delete process.env.AI_MODEL;
+  delete process.env.AI_PROVIDER;
+  delete process.env.AI_TEXT_MODEL;
+  delete process.env.AI_VISION_MODEL;
   delete process.env.OPENAI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.GOOGLE_API_KEY;
+  delete process.env.AI_TIMEOUT_MS;
+  delete process.env.AI_HEALTH_TIMEOUT_MS;
+});
+
+describe("health-probe timeout resolution", () => {
+  test("defaults to the generous probe floor, independent of AI_TIMEOUT_MS", () => {
+    expect(probeTimeoutMs()).toBe(PROBE_TIMEOUT_FLOOR_MS);
+    // A short inference timeout must NOT shrink the probe budget.
+    process.env.AI_TIMEOUT_MS = "20000";
+    expect(probeTimeoutMs()).toBe(PROBE_TIMEOUT_FLOOR_MS);
+    // Even an extreme value has no effect.
+    process.env.AI_TIMEOUT_MS = "1000";
+    expect(probeTimeoutMs()).toBe(PROBE_TIMEOUT_FLOOR_MS);
+  });
+
+  test("AI_HEALTH_TIMEOUT_MS overrides the probe budget", () => {
+    process.env.AI_HEALTH_TIMEOUT_MS = "6000";
+    expect(probeTimeoutMs()).toBe(6000);
+  });
+
+  test("ignores non-numeric and non-positive probe overrides", () => {
+    process.env.AI_HEALTH_TIMEOUT_MS = "not-a-number";
+    expect(probeTimeoutMs()).toBe(PROBE_TIMEOUT_FLOOR_MS);
+    process.env.AI_HEALTH_TIMEOUT_MS = "0";
+    expect(probeTimeoutMs()).toBe(PROBE_TIMEOUT_FLOOR_MS);
+    process.env.AI_HEALTH_TIMEOUT_MS = "-5";
+    expect(probeTimeoutMs()).toBe(PROBE_TIMEOUT_FLOOR_MS);
+  });
 });
 
 function mockFetch(impl: typeof fetch) {
@@ -228,5 +265,57 @@ describe("default model identifiers", () => {
     expect(model).not.toBe("gemini-2.0-flash");
     expect(model).not.toBe("gemini-1.5-flash");
     expect(model.length).toBeGreaterThan(0);
+    // A rolling alias so a shutdown of a dated model cannot 404 every call.
+    expect(model).toMatch(/-latest$/);
+  });
+
+  test("a configured model is never silently substituted", () => {
+    process.env.AI_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "k";
+    process.env.AI_TEXT_MODEL = "my-text-model";
+    process.env.AI_VISION_MODEL = "my-vision-model";
+    const cfg = resolveLLMConfig();
+    expect(cfg.textModel).toBe("my-text-model");
+    expect(cfg.visionModel).toBe("my-vision-model");
+    delete process.env.AI_TEXT_MODEL;
+    delete process.env.AI_VISION_MODEL;
+  });
+});
+
+describe("gemini adapter", () => {
+  const geminiResponse = (body: unknown) =>
+    new Response(JSON.stringify(body), { status: 200 });
+
+  test("an empty MAX_TOKENS answer is returned, not raised as a parse error", async () => {
+    process.env.GEMINI_API_KEY = "k";
+    mockFetch(async () =>
+      geminiResponse({
+        candidates: [
+          { content: { parts: [{ text: "" }], role: "model" }, finishReason: "MAX_TOKENS" },
+        ],
+        usageMetadata: { promptTokenCount: 2, totalTokenCount: 2 },
+      }),
+    );
+    const result = await geminiGenerateContent(
+      [{ role: "user", content: "ping" }],
+      { model: "gemini-flash-lite-latest", maxTokens: 1, retries: 0 },
+    );
+    expect(result.text).toBe("");
+    expect(result.usage.totalTokens).toBe(2);
+  });
+
+  test("an empty STOP answer is still a parse error", async () => {
+    process.env.GEMINI_API_KEY = "k";
+    mockFetch(async () =>
+      geminiResponse({
+        candidates: [{ content: { parts: [{ text: "" }] }, finishReason: "STOP" }],
+      }),
+    );
+    await expect(
+      geminiGenerateContent([{ role: "user", content: "ping" }], {
+        model: "m",
+        retries: 0,
+      }),
+    ).rejects.toMatchObject({ kind: "parse" });
   });
 });

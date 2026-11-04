@@ -81,4 +81,38 @@ describe("🌍 i18n core", () => {
     // @ts-expect-error — exercise the fallback for an out-of-range code
     expect(metaFor("xx").code).toBe("ar");
   });
+
+  test("farmer workflow keys resolve in all three languages", () => {
+    // The irrigation / pest / weather screens previously carried a local
+    // two-argument t() helper that could only ever render Arabic or English,
+    // so French users silently saw English. These keys back the migrated
+    // screens; each must have a real French string, not an English fallback.
+    const keys = [
+      "pest.title",
+      "pest.diagnosis",
+      "pest.treatments",
+      "irrigation.title",
+      "irrigation.waterRequirements",
+      "weather.title",
+      "weather.cropSuitability",
+      "crop.wheat",
+      "crop.tomato",
+      "growth.flowering",
+      "symptom.curledLeaves",
+    ];
+    for (const key of keys) {
+      expect(translations[key]).toBeDefined();
+      expect(t("ar", key)).not.toBe(key);
+      expect(t("fr", key)).not.toBe(key);
+      expect(t("en", key)).not.toBe(key);
+      // French must differ from English, otherwise it is an untranslated copy.
+      expect(t("fr", key)).not.toBe(t("en", key));
+    }
+  });
+
+  test("t() interpolates {count} in the pest application-count string", () => {
+    expect(t("en", "pest.plannedApplications", { count: 3 })).toContain("3");
+    expect(t("fr", "pest.plannedApplications", { count: 3 })).toContain("3");
+    expect(t("ar", "pest.plannedApplications", { count: 3 })).toContain("3");
+  });
 });

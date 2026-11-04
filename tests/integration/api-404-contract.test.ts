@@ -32,6 +32,7 @@ describe("🧭 API 404 contract", () => {
 
   test("a real route still responds normally", async () => {
     const res = await request(app).get("/api/ping").expect(200);
-    expect(res.body.message).toBe("pong");
+    // The ping route echoes PING_MESSAGE, defaulting to "ping".
+    expect(res.body.message).toBe(process.env.PING_MESSAGE ?? "ping");
   });
 });

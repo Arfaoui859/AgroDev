@@ -31,11 +31,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
  */
 
 const CROP_OPTIONS = [
-  { value: "wheat", ar: "القمح", en: "Wheat" },
-  { value: "barley", ar: "الشعير", en: "Barley" },
-  { value: "tomato", ar: "الطماطم", en: "Tomato" },
-  { value: "olive", ar: "الزيتون", en: "Olive" },
-  { value: "potato", ar: "البطاطس", en: "Potato" },
+  { value: "wheat", key: "crop.wheat" },
+  { value: "barley", key: "crop.barley" },
+  { value: "tomato", key: "crop.tomato" },
+  { value: "olive", key: "crop.olive" },
+  { value: "potato", key: "crop.potato" },
 ];
 
 interface CropSuitability {
@@ -77,8 +77,7 @@ interface YieldPrediction {
 }
 
 export default function WeatherYieldPlanner() {
-  const { isArabic } = useLanguage();
-  const t = (ar: string, en: string) => (isArabic ? ar : en);
+  const { language, dir, t } = useLanguage();
 
   const [latitude, setLatitude] = useState(35.0);
   const [longitude, setLongitude] = useState(10.0);
@@ -98,7 +97,7 @@ export default function WeatherYieldPlanner() {
 
   const runPlan = async () => {
     if (crops.length === 0) {
-      setError(t("اختر محصولاً واحداً على الأقل", "Select at least one crop"));
+      setError(t("weather.selectCrop"));
       return;
     }
     setLoadingPlan(true);
@@ -114,7 +113,7 @@ export default function WeatherYieldPlanner() {
             location: { latitude, longitude, region: "تونس" },
             crop_options: crops,
             planning_horizon_months: 12,
-            language: isArabic ? "ar" : "en",
+            language,
           }),
         },
       );
@@ -125,7 +124,7 @@ export default function WeatherYieldPlanner() {
       setPlan(body);
     } catch (err) {
       setError(
-        t("تعذّر إنشاء الخطة: ", "Plan generation failed: ") +
+        t("weather.planFailed") +
           (err instanceof Error ? err.message : String(err)),
       );
     } finally {
@@ -148,7 +147,7 @@ export default function WeatherYieldPlanner() {
             farm_size: farmSize,
             weather_data: { temperature: 22, humidity: 60, annual_rainfall: 450 },
             soil_data: { ph: 6.8, fertility_score: 0.75, moisture_percentage: 45 },
-            language: isArabic ? "ar" : "en",
+            language,
           }),
         },
       );
@@ -159,7 +158,7 @@ export default function WeatherYieldPlanner() {
       setYieldResult(body);
     } catch (err) {
       setError(
-        t("تعذّر توقّع المردودية: ", "Yield prediction failed: ") +
+        t("weather.yieldFailed") +
           (err instanceof Error ? err.message : String(err)),
       );
     } finally {
@@ -171,33 +170,30 @@ export default function WeatherYieldPlanner() {
   const prediction = yieldResult?.yield_prediction;
 
   return (
-    <div className="container mx-auto p-6 space-y-6" dir={isArabic ? "rtl" : "ltr"}>
+    <div className="container mx-auto p-6 space-y-6" dir={dir}>
       <div className="flex items-center gap-3">
         <CloudSun className="h-8 w-8 text-purple-600" />
         <div>
           <h1 className="text-3xl font-bold">
-            {t("مخطط الطقس والمردودية", "Weather & Yield Planner")}
+            {t("weather.title")}
           </h1>
           <p className="text-muted-foreground">
-            {t(
-              "تخطيط زراعي حسب المناخ وتوقّع مردودية المحاصيل",
-              "Climate-based crop planning and yield prediction",
-            )}
+            {t("weather.subtitle")}
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("المعطيات", "Inputs")}</CardTitle>
+          <CardTitle>{t("weather.inputs")}</CardTitle>
           <CardDescription>
-            {t("حدّد الموقع والمحاصيل", "Set location and crops")}
+            {t("weather.inputsHint")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>{t("خط العرض", "Latitude")}</Label>
+              <Label>{t("weather.latitude")}</Label>
               <Input
                 type="number"
                 step={0.1}
@@ -206,7 +202,7 @@ export default function WeatherYieldPlanner() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("خط الطول", "Longitude")}</Label>
+              <Label>{t("weather.longitude")}</Label>
               <Input
                 type="number"
                 step={0.1}
@@ -215,7 +211,7 @@ export default function WeatherYieldPlanner() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("مساحة المزرعة (هكتار)", "Farm size (ha)")}</Label>
+              <Label>{t("weather.farmSize")}</Label>
               <Input
                 type="number"
                 step={0.1}
@@ -226,7 +222,7 @@ export default function WeatherYieldPlanner() {
           </div>
 
           <div className="space-y-2">
-            <Label>{t("المحاصيل", "Crops")}</Label>
+            <Label>{t("weather.crops")}</Label>
             <div className="flex flex-wrap gap-2">
               {CROP_OPTIONS.map((crop) => (
                 <Badge
@@ -235,7 +231,7 @@ export default function WeatherYieldPlanner() {
                   className="cursor-pointer"
                   onClick={() => toggleCrop(crop.value)}
                 >
-                  {isArabic ? crop.ar : crop.en}
+                  {t(crop.key)}
                 </Badge>
               ))}
             </div>
@@ -248,7 +244,7 @@ export default function WeatherYieldPlanner() {
               ) : (
                 <CloudSun className="me-2 h-4 w-4" />
               )}
-              {t("خطة المناخ", "Climate plan")}
+              {t("weather.climatePlan")}
             </Button>
             <Button
               onClick={runYield}
@@ -261,7 +257,7 @@ export default function WeatherYieldPlanner() {
               ) : (
                 <TrendingUp className="me-2 h-4 w-4" />
               )}
-              {t("توقّع المردودية", "Predict yield")}
+              {t("weather.predictYield")}
             </Button>
           </div>
 
@@ -276,8 +272,8 @@ export default function WeatherYieldPlanner() {
 
       <Tabs defaultValue="plan">
         <TabsList>
-          <TabsTrigger value="plan">{t("الخطة المناخية", "Climate plan")}</TabsTrigger>
-          <TabsTrigger value="yield">{t("المردودية", "Yield")}</TabsTrigger>
+          <TabsTrigger value="plan">{t("weather.climateTab")}</TabsTrigger>
+          <TabsTrigger value="yield">{t("weather.yieldTab")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="plan" className="space-y-4">
@@ -292,7 +288,7 @@ export default function WeatherYieldPlanner() {
               <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>{t("المنطقة المناخية", "Climate zone")}</CardDescription>
+                    <CardDescription>{t("weather.climateZone")}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="text-lg font-semibold">
@@ -304,7 +300,7 @@ export default function WeatherYieldPlanner() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>{t("الموسم", "Season")}</CardDescription>
+                    <CardDescription>{t("weather.season")}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="text-lg font-semibold">
@@ -314,7 +310,7 @@ export default function WeatherYieldPlanner() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardDescription>{t("مستوى المخاطر", "Risk level")}</CardDescription>
+                    <CardDescription>{t("weather.riskLevel")}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Badge
@@ -334,7 +330,7 @@ export default function WeatherYieldPlanner() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Sprout className="h-5 w-5 text-green-600" />
-                    {t("ملاءمة المحاصيل", "Crop suitability")}
+                    {t("weather.cropSuitability")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -353,7 +349,7 @@ export default function WeatherYieldPlanner() {
               {plan.recommendations_summary && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t("ملخص التوصيات", "Recommendations")}</CardTitle>
+                    <CardTitle>{t("weather.recommendationsSummary")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="list-inside list-disc space-y-1 text-sm">
@@ -368,10 +364,7 @@ export default function WeatherYieldPlanner() {
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                {t(
-                  "شغّل خطة المناخ لعرض ملاءمة المحاصيل.",
-                  "Run the climate plan to see crop suitability.",
-                )}
+                {t("weather.emptyPlanHint")}
               </CardContent>
             </Card>
           )}
@@ -388,7 +381,7 @@ export default function WeatherYieldPlanner() {
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("المردودية المتوقعة", "Predicted yield")}</CardTitle>
+                  <CardTitle>{t("weather.predictedYield")}</CardTitle>
                   <CardDescription>
                     {yieldResult.crop_info?.crop_name_ar} ·{" "}
                     {yieldResult.crop_info?.unit}
@@ -401,7 +394,7 @@ export default function WeatherYieldPlanner() {
                   <Badge>{prediction.yield_category}</Badge>
                   {prediction.yield_range_kg_ha && (
                     <div className="text-sm text-muted-foreground">
-                      {t("المجال: ", "Range: ")}
+                      {t("weather.range")}
                       {prediction.yield_range_kg_ha.minimum.toFixed(0)} –{" "}
                       {prediction.yield_range_kg_ha.maximum.toFixed(0)}
                     </div>
@@ -409,7 +402,7 @@ export default function WeatherYieldPlanner() {
                   {yieldResult.confidence_metrics && (
                     <div>
                       <div className="mb-1 flex justify-between text-sm">
-                        <span>{t("الثقة", "Confidence")}</span>
+                        <span>{t("weather.confidence")}</span>
                         <span>{yieldResult.confidence_metrics.level}</span>
                       </div>
                       <Progress
@@ -424,18 +417,18 @@ export default function WeatherYieldPlanner() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("الجدوى الاقتصادية", "Economic analysis")}</CardTitle>
+                  <CardTitle>{t("weather.economicAnalysis")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>{t("صافي الربح", "Net profit")}</span>
+                    <span>{t("weather.netProfit")}</span>
                     <span className="font-semibold">
                       {yieldResult.economic_analysis?.profitability?.net_profit?.toFixed(0)}{" "}
-                      {t("د.ت", "TND")}
+                      {t("weather.tnd")}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>{t("معدل العائد", "ROI")}</span>
+                    <span>{t("weather.roi")}</span>
                     <span className="font-semibold">
                       {yieldResult.economic_analysis?.profitability?.roi_percent?.toFixed(1)}%
                     </span>
@@ -446,10 +439,7 @@ export default function WeatherYieldPlanner() {
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                {t(
-                  "شغّل توقّع المردودية لعرض النتائج.",
-                  "Run the yield prediction to see results.",
-                )}
+                {t("weather.emptyYieldHint")}
               </CardContent>
             </Card>
           )}

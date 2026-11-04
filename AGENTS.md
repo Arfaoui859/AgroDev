@@ -107,9 +107,12 @@ for future work; re-verify before relying on them.
   with `tests/setup.ts`. Suites live in `tests/unit`, `tests/integration`,
   `tests/live`, `tests/e2e`.
 - There is no `npm run typecheck` script. Use `npx tsc --noEmit`.
-- Production build output is `dist/server/node-build.mjs`; run it with
-  `PORT=<port> node dist/server/node-build.mjs` (it loads `.env` via
-  `dotenv/config`). Dev runs on 8080; the built server honours `PORT`.
+- Production build output is `build/server/node-build.mjs` — deliberately
+  **outside** the static root (`dist/`) so the backend bundle and its source map
+  can never be downloaded. Run it with `PORT=<port> node build/server/node-build.mjs`
+  (it loads `.env` via `dotenv/config`). Dev runs on 8080; the built server
+  honours `PORT`. The client SPA stays in `dist/`; the server serves it and
+  hard-404s `/server/*` and `/build/*`.
 
 ### Data layer (Supabase Postgres)
 - `.env` (gitignored) holds `SUPABASE_URL`, `SUPABASE_ANON_KEY`,

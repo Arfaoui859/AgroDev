@@ -31,6 +31,8 @@ const GATEWAY_URL_KEYS = [
   "MARKET_FORECAST_URL",
   "SMART_ASSISTANT_URL",
   "SMART_MARKETPLACE_URL",
+  "PEST_CONTROL_URL",
+  "IRRIGATION_OPTIMIZATION_URL",
 ];
 
 describe("🚀 Deployment manifest alignment", () => {
@@ -73,6 +75,19 @@ describe("🚀 Deployment manifest alignment", () => {
       }
     });
 
+    test("each python buildCommand resolves to a real requirements file under its rootDir", () => {
+      // Render runs buildCommand relative to rootDir. A path like
+      // `agrogrowth-ai/requirements.txt` with `rootDir: ./agrogrowth-ai` would
+      // resolve to `agrogrowth-ai/agrogrowth-ai/requirements.txt`, which does
+      // not exist, so the build fails. Assert the referenced file exists.
+      for (const svc of services.filter((s) => s.env === "python")) {
+        const match = /-r\s+(\S+)/.exec(String(svc.buildCommand));
+        expect(match).not.toBeNull();
+        const reqPath = path.resolve(root, svc.rootDir, match![1]);
+        expect(fs.existsSync(reqPath)).toBe(true);
+      }
+    });
+
     test("the platform service wires every gateway URL key", () => {
       const platform = services.find((s) => s.name === "agrogrowth-platform");
       const keys = (platform.envVars ?? []).map((e: any) => e.key);
@@ -83,6 +98,14 @@ describe("🚀 Deployment manifest alignment", () => {
       for (const svc of services) {
         expect(String(svc.repo ?? "")).not.toContain("your-repo");
       }
+    });
+
+    test("the platform starts the server bundle from outside the static root", () => {
+      const platform = services.find((s) => s.name === "agrogrowth-platform");
+      // The server bundle must not live under dist/ (the public static root),
+      // otherwise it and its source map become downloadable.
+      expect(platform.startCommand).toBe("node build/server/node-build.mjs");
+      expect(platform.startCommand).not.toContain("dist/server");
     });
   });
 

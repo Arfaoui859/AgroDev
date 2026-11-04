@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Server bundle (kept outside the static root; never committed)
+/build/
+build
 *.local
 
 # Editor directories and files

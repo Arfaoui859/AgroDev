@@ -18,26 +18,91 @@ export function securityHeaders(): RequestHandler {
 }
 
 /**
- * CORS configuration. In production the allowed origins must be listed in
- * CORS_ORIGINS (comma separated). In development all origins are allowed.
+ * Normalise a candidate origin into a canonical `scheme://host[:port]` string,
+ * or return null when it is not a usable absolute origin.
+ *
+ * Only the origin is kept (any path/query/fragment is dropped), so a value like
+ * `https://app.example.com/` and `https://app.example.com` match identically.
+ * A bare value with no scheme (e.g. `app.example.com`) is rejected rather than
+ * guessed, so a malformed setting can never silently widen the allow-list.
+ */
+function normalizeOrigin(value: string | undefined | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Origins trusted for CORS, in addition to any listed in `CORS_ORIGINS`.
+ *
+ * The app's own public origin is required because the production bundle requests
+ * its assets with a `crossorigin` attribute, so the browser sends an `Origin`
+ * header even for same-origin fetches.
+ *
+ * The origin is taken ONLY from configuration that the platform operator
+ * controls — `APP_ORIGIN` and `RENDER_EXTERNAL_URL` — never from the request's
+ * `Host` header. Reflecting `Host` would let an attacker present
+ * `Host: attacker.example` and receive a matching
+ * `Access-Control-Allow-Origin` (with `credentials: true`), so it is not a
+ * trust boundary we accept. When neither variable is set the app simply has no
+ * implicit self-origin; operators must set `APP_ORIGIN` (or list the domain in
+ * `CORS_ORIGINS`).
+ */
+function trustedOrigins(): Set<string> {
+  const set = new Set<string>();
+  for (const raw of [process.env.APP_ORIGIN, process.env.RENDER_EXTERNAL_URL]) {
+    const origin = normalizeOrigin(raw);
+    if (origin) set.add(origin);
+  }
+  for (const raw of (process.env.CORS_ORIGINS || "").split(",")) {
+    const origin = normalizeOrigin(raw);
+    if (origin) set.add(origin);
+  }
+  return set;
+}
+
+/**
+ * CORS configuration.
+ *
+ * Allowed origins are:
+ *  - requests with no `Origin` header (same-origin navigation, server-to-server)
+ *  - the app's own origin(s) from `APP_ORIGIN` / `RENDER_EXTERNAL_URL`
+ *  - every origin in `CORS_ORIGINS` (comma separated)
+ *  - in non-production, any origin (convenient for local tooling)
+ *
+ * Matching is exact and case-sensitive on the normalised origin. There is no
+ * wildcard and no `origin: true`. The request `Host` header is never trusted.
+ *
+ * An origin that is not allowed is rejected by returning `callback(null, false)`
+ * — the request still completes normally but carries no CORS headers, so the
+ * browser blocks it. It must NOT `callback(new Error(...))`: the `cors`
+ * middleware forwards that error, and the final error handler turns it into an
+ * opaque HTTP 500 (which is what previously broke asset loading and produced the
+ * blank page).
  */
 export function corsMiddleware(): RequestHandler {
-  const configured = (process.env.CORS_ORIGINS || "")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean);
-
   const isProd = process.env.NODE_ENV === "production";
 
-  return cors({
-    origin: (origin, callback) => {
-      // Allow same-origin / server-to-server requests (no Origin header).
-      if (!origin) return callback(null, true);
-      if (!isProd || configured.includes(origin)) return callback(null, true);
-      return callback(new Error(`Origin ${origin} is not allowed by CORS`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  return cors((_req, callback) => {
+    // Computed per request so a configuration change (or test) is honoured
+    // without a restart; the sources are all process env, not the request.
+    const allowed = trustedOrigins();
+    callback(null, {
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (!isProd || allowed.has(origin)) return cb(null, true);
+        return cb(null, false);
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    });
   });
 }
 

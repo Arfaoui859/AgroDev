@@ -14,7 +14,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
 
-# Copy source and build the SPA + the server bundle (dist/ and dist/server/)
+# Copy source and build the SPA (dist/) + the server bundle (build/server/)
 COPY . .
 RUN npm run build
 
@@ -48,8 +48,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
-# Built artifacts (SPA + server bundle)
+# Built artifacts: the SPA (public static root) and the server bundle, which is
+# kept OUTSIDE dist/ so it can never be served by express.static.
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/build ./build
 
 # Prompt templates used by AI routes at runtime
 COPY prompts/ ./prompts/
@@ -65,7 +67,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 EXPOSE 8080
 
 # Start the bundled Express server (serves /api/* and the SPA)
-CMD ["node", "dist/server/node-build.mjs"]
+CMD ["node", "build/server/node-build.mjs"]
 
 LABEL maintainer="AgroGrowth Team <dev@agrogrowth.tn>"
 LABEL description="AI-powered agricultural management platform for Tunisia"

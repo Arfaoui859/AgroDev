@@ -101,7 +101,7 @@ jobs:
 
       - name: 🚀 Smoke test production server
         run: |
-          node dist/server/node-build.mjs &
+          node build/server/node-build.mjs &
           SERVER_PID=$!
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/api/health > /dev/null; then break; fi

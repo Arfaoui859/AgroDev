@@ -20,7 +20,10 @@
  *   AI_MODEL        model used for text AND vision unless overridden
  *   AI_TEXT_MODEL   text model override
  *   AI_VISION_MODEL vision model override (must be a vision-capable model)
- *   AI_TIMEOUT_MS   request timeout (default 30000)
+ *   AI_TIMEOUT_MS   request timeout for inference (default 30000)
+ *   AI_HEALTH_TIMEOUT_MS  health-probe timeout (default 45000; NOT capped by
+ *                   AI_TIMEOUT_MS, so a low inference timeout never makes a
+ *                   healthy-but-slow provider look unreachable)
  *   AI_MAX_RETRIES  bounded retries (default 1)
  *
  * Provider-specific keys are accepted so an existing deployment does not have
@@ -157,13 +160,17 @@ function isLocalBaseUrl(baseUrl: string | null): boolean {
  * These are only used when neither AI_MODEL nor a per-modality override is set.
  * They must be models the provider still serves:
  *  - Gemini: `gemini-2.0-flash` was shut down and `gemini-1.5-flash` is
- *    discontinued. Google recommends the rolling `-latest` alias, which always
- *    points at the current Flash release and is multimodal (text + vision).
+ *    discontinued. The rolling `-latest` aliases track the current release and
+ *    are multimodal (text + vision). The `flash-lite` alias is used as the
+ *    built-in default because the plain `gemini-flash-latest` alias is
+ *    frequently capacity-limited (HTTP 503) — verified 2026-11-04. Operators
+ *    should still pin AI_TEXT_MODEL / AI_VISION_MODEL explicitly in production.
  *  - OpenAI-compatible: `gpt-4o-mini` is the low-cost multimodal default.
- * A retired identifier would make every call 404, so operators should still pin
- * AI_TEXT_MODEL / AI_VISION_MODEL explicitly in production.
+ * A retired identifier would make every call 404, so the startup check logs a
+ * loud warning when the configured model does not answer (it is never
+ * silently substituted).
  */
-const DEFAULT_GEMINI_MODEL = "gemini-flash-latest";
+const DEFAULT_GEMINI_MODEL = "gemini-flash-lite-latest";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 
 export function defaultModelFor(kind: ProviderKind): string {
@@ -401,21 +408,62 @@ export function resetLLMHealthCache(): void {
   healthCache = null;
 }
 
-/** Timeout for the health probe: AI_TIMEOUT_MS, capped at 10s for a fast check. */
-function probeTimeoutMs(): number {
-  const configured = Number(process.env.AI_TIMEOUT_MS);
-  if (Number.isFinite(configured) && configured > 0) return configured;
-  return 10_000;
+/**
+ * Log a loud, non-fatal warning at startup when a provider is configured but
+ * the configured model does not answer. The model is never silently swapped:
+ * the operator must fix the identifier. Safe to call in production only —
+ * it performs a real round-trip, so tests never invoke it.
+ */
+export async function warnIfModelUnavailable(
+  log: (message: string) => void = console.warn,
+): Promise<void> {
+  if (!isLLMConfigured()) return;
+  const health = await probeLLMHealth({ force: true });
+  if (!health.reachable) {
+    log(
+      `⚠️  AI provider "${health.provider}" is configured but model ` +
+        `"${health.model}" did not answer (${health.errorKind ?? "unknown"}). ` +
+        `Pin a working model via AI_TEXT_MODEL / AI_VISION_MODEL — no model is ` +
+        `substituted automatically.`,
+    );
+  }
 }
+
+/**
+ * Default timeout for the health probe.
+ *
+ * The probe is deliberately decoupled from `AI_TIMEOUT_MS`. That variable caps
+ * *inference* calls (and may be set low on a host to bound user-facing latency),
+ * so letting it also cap the probe made a healthy-but-slow provider report
+ * `errorKind:"timeout"` — a false negative. A cold provider round-trip was
+ * measured at 11–40+s, and the probe is cached for 60s and is not user-facing,
+ * so the default is generous. `AI_HEALTH_TIMEOUT_MS` overrides it; the legacy
+ * `AI_TIMEOUT_MS` is intentionally NOT consulted.
+ */
+const PROBE_DEFAULT_TIMEOUT_MS = 45_000;
+
+/** Resolved health-probe timeout in ms (AI_HEALTH_TIMEOUT_MS override, else default). */
+export function probeTimeoutMs(): number {
+  const configured = Number(process.env.AI_HEALTH_TIMEOUT_MS);
+  if (Number.isFinite(configured) && configured > 0) return configured;
+  return PROBE_DEFAULT_TIMEOUT_MS;
+}
+
+/** Exposed for regression tests: the built-in probe timeout floor. */
+export const PROBE_TIMEOUT_FLOOR_MS = PROBE_DEFAULT_TIMEOUT_MS;
 
 /**
  * Perform a minimal live round-trip to the configured provider to prove it is
  * actually reachable — a configured key is not evidence the provider answers.
  *
- * The probe sends a one-token request, is cached for 60s so it cannot be used
- * to hammer a provider, and reports only a coarse error class (never a raw
- * provider body or the credential). When no provider is configured it returns
- * immediately with `configured: false` and performs no network call.
+ * The probe sends a tiny request (a small token budget so the model actually
+ * emits text, avoiding a reliance on the MAX_TOKENS path), is cached for 60s so
+ * it cannot be used to hammer a provider, and reports only a coarse error class
+ * (never a raw provider body or the credential). A provider that answers "no
+ * text because the token budget was exhausted" (finishReason=MAX_TOKENS) still
+ * counts as reachable — see geminiGenerateContent. When no provider is
+ * configured it returns immediately with `configured: false` and performs no
+ * network call.
  */
 export async function probeLLMHealth(
   options: { force?: boolean; timeoutMs?: number } = {},
@@ -456,7 +504,7 @@ export async function probeLLMHealth(
         { role: "system", content: "You are a health probe. Reply with a single word." },
         { role: "user", content: "ping" },
       ],
-      { maxTokens: 1, temperature: 0, timeoutMs: options.timeoutMs ?? probeTimeoutMs(), retries: 0 },
+      { maxTokens: 8, temperature: 0, timeoutMs: options.timeoutMs ?? probeTimeoutMs(), retries: 0 },
     );
     const value: LLMHealth = {
       ...base,
