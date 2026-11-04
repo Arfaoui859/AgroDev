@@ -3,6 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  SimulatedDataNotice,
+  SIMULATED_RECORDS_TITLE_AR,
+} from '@/components/SimulatedDataNotice';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -397,6 +401,14 @@ const UnifiedAlertSystem: React.FC<UnifiedAlertSystemProps> = ({
 
   return (
     <div className={`space-y-6 ${isArabic ? 'rtl' : 'ltr'}`}>
+      <SimulatedDataNotice
+        title={isArabic ? SIMULATED_RECORDS_TITLE_AR : 'Illustrative alerts (not live)'}
+        description={
+          isArabic
+            ? 'التنبيهات المعروضة هنا نماذج توضيحية ثابتة في الذاكرة، وليست تنبيهات حقيقية من الميدان.'
+            : 'The alerts shown here are fixed in-memory examples, not real field alerts.'
+        }
+      />
       {/* Alert Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-red-200 bg-red-50">

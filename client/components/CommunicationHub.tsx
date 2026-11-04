@@ -30,6 +30,10 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  SimulatedDataNotice,
+  SIMULATED_RECORDS_TITLE_AR,
+} from "@/components/SimulatedDataNotice";
+import {
   MessageCircle,
   Phone,
   Video,
@@ -566,6 +570,14 @@ const CommunicationHub: React.FC<CommunicationHubProps> = ({
 
   return (
     <div className={`space-y-6 ${isArabic ? "rtl" : "ltr"}`}>
+      <SimulatedDataNotice
+        title={isArabic ? SIMULATED_RECORDS_TITLE_AR : "Illustrative directory (not live)"}
+        description={
+          isArabic
+            ? "قوائم الخبراء والتجار والمحادثات المعروضة هنا نماذج توضيحية ثابتة في الذاكرة، وليست سجلات حقيقية."
+            : "The experts, traders and conversations listed here are fixed in-memory examples, not real records."
+        }
+      />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
