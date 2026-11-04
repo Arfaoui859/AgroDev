@@ -4,6 +4,7 @@ import {
   type WeatherData,
 } from "../services/providers/weatherProvider";
 import { ProviderError } from "../services/providers/http";
+import { markReal } from "../lib/provenance";
 
 export type { WeatherData };
 
@@ -90,6 +91,7 @@ export const getWeatherByCoordinates: RequestHandler = async (req, res) => {
 
   try {
     const weatherData = await getWeatherFromOpenMeteo({ lat, lon });
+    markReal(res, "open-meteo");
     res.json(weatherData);
   } catch (error) {
     providerErrorResponse(error, res, "خطأ في جلب بيانات الطقس");
@@ -121,6 +123,7 @@ export const getWeatherByLocation: RequestHandler = async (req, res) => {
       locationName: city ? `${city}, ${governorate}` : governorate,
       governorate: key,
     });
+    markReal(res, "open-meteo");
     res.json(weatherData);
   } catch (error) {
     providerErrorResponse(error, res, "خطأ في جلب بيانات الطقس");
@@ -144,6 +147,7 @@ export const getCropSpecificWeather: RequestHandler = async (req, res) => {
       cropType,
       baseWeather,
     );
+    markReal(res, "open-meteo");
     res.json({ ...baseWeather, cropSpecific: cropRecommendations });
   } catch (error) {
     providerErrorResponse(error, res, "خطأ في جلب بيانات الطقس للمحصول");

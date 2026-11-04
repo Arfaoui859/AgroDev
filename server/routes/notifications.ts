@@ -266,6 +266,11 @@ export const getNotifications: RequestHandler = async (req, res) => {
       userId 
     } = req.query;
 
+    // The catalogue below is demo content, not data observed from the caller's
+    // farm. Stamp provenance so the SPA can disclose that instead of showing it
+    // as if it were a real alert.
+    markSimulated(res);
+
     let filteredNotifications = mockNotifications;
 
     // Apply filters

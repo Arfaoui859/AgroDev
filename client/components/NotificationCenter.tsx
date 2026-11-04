@@ -26,7 +26,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className }) =>
     removeNotification,
     clearAllNotifications,
     getNotificationsByCategory,
-    getNotificationsByPriority
+    getNotificationsByPriority,
+    provenance
   } = useNotifications();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -211,6 +212,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className }) =>
             {/* Notifications List */}
             <ScrollArea className="flex-1 max-h-96">
               <div className="p-2">
+                {provenance.simulated ? (
+                  <div className="mb-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    {isArabic
+                      ? 'هذه الإشعارات بيانات تجريبية توضيحية وليست تنبيهات حقيقية من مزرعتك.'
+                      : 'These notifications are illustrative demo data, not real alerts from your farm.'}
+                  </div>
+                ) : null}
                 {filteredNotifications().length === 0 ? (
                   <div className="text-center py-8">
                     <Bell className="h-8 w-8 text-gray-300 mx-auto mb-2" />

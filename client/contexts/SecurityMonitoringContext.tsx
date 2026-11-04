@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
+/**
+ * DEMO SCAFFOLDING — NOT WIRED INTO THE APP.
+ *
+ * This provider is not mounted anywhere in the SPA (see App.tsx), so none of the
+ * values below reach a real screen. Its threat feed is generated client-side
+ * with Math.random() and must never be presented as observed security telemetry.
+ * If a security console is wired up later, back it with the real
+ * /api/security/* endpoints and disclose provenance instead of enabling this.
+ */
+
 // =============== SECURITY MONITORING TYPES ===============
 
 export interface SecurityThreat {

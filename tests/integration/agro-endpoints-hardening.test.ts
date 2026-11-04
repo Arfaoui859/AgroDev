@@ -262,3 +262,15 @@ describe("📦 Trader order creation validation", () => {
     expect(res.body.data.totalAmount).toBe(30);
   });
 });
+
+describe("🔔 Notification feed provenance", () => {
+  const URL = "/api/notifications";
+
+  test("labels the demo notification feed as simulated, not real", async () => {
+    const res = await request(app).get(URL).expect(200);
+    // The feed is demo content; it must never be presented as a real alert.
+    expect(res.headers["x-data-provenance"]).toBe("simulated");
+    expect(res.headers["x-is-real-data"]).toBe("false");
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+});

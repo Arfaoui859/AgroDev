@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth, UserRole } from "./AuthContext";
 
+/**
+ * DEMO SCAFFOLDING — NOT WIRED INTO THE APP.
+ *
+ * This provider is not mounted anywhere in the SPA (see App.tsx). Its role
+ * catalogue, audit log and usage statistics are synthetic (Math.random()),
+ * so they must never be presented as real access-control records. Wire it to
+ * the real role/permission endpoints and disclose provenance before enabling.
+ */
+
 // =============== RBAC TYPES & INTERFACES ===============
 
 export interface Permission {

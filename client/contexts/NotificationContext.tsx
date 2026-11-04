@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
 
 export interface Notification {
   id: string;
@@ -29,6 +30,10 @@ export interface Notification {
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
+  /** Provenance of the current list, so the UI can disclose demo content. */
+  provenance: DataProvenance;
+  isLoading: boolean;
+  refreshNotifications: () => void;
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
@@ -50,120 +55,100 @@ export const useNotifications = () => {
   return context;
 };
 
-// Mock real-time notifications generator
-const generateMockNotification = (): Omit<Notification, 'id' | 'timestamp' | 'isRead'> => {
-  const mockNotifications = [
-    {
-      title: 'Weather Alert',
-      titleArabic: 'تنبيه طقس',
-      message: 'Heavy rain expected in your area. Ensure proper drainage for your crops.',
-      messageArabic: 'متوقع هطول أمطار غزيرة في منطقتك. تأكد من الصرف المناسب لمحاصيلك.',
-      type: 'warning' as const,
-      category: 'weather' as const,
-      categoryArabic: 'طقس',
-      priority: 'high' as const,
-      action: { label: 'View Weather', labelArabic: 'عرض الطقس', url: '/weather-alerts' }
-    },
-    {
-      title: 'Disease Detection',
-      titleArabic: 'كشف مرض',
-      message: 'Possible fungal infection detected in tomato crops. Immediate action recommended.',
-      messageArabic: 'تم كشف عدوى فطرية محتملة في محاصيل الطماطم. يُنصح باتخاذ إجراء فوري.',
-      type: 'error' as const,
-      category: 'disease' as const,
-      categoryArabic: 'مرض',
-      priority: 'critical' as const,
-      action: { label: 'View Details', labelArabic: 'عرض التفاصيل', url: '/disease-diagnosis/123' }
-    },
-    {
-      title: 'Market Price Update',
-      titleArabic: 'تحديث أسعار السوق',
-      message: 'Wheat prices increased by 8% this week. Good time to sell your harvest.',
-      messageArabic: 'ارتفعت أسعار القمح بنسبة 8% هذا الأسبوع. وقت جيد لبيع محصولك.',
-      type: 'success' as const,
-      category: 'market' as const,
-      categoryArabic: 'سوق',
-      priority: 'medium' as const,
-      action: { label: 'Check Prices', labelArabic: 'تحقق من الأسعار', url: '/market-dashboard' }
-    },
-    {
-      title: 'Irrigation Reminder',
-      titleArabic: 'تذكير الري',
-      message: 'Your scheduled irrigation for Field A is due in 30 minutes.',
-      messageArabic: 'موعد الري المجدول للحقل A خلال 30 دقيقة.',
-      type: 'info' as const,
-      category: 'irrigation' as const,
-      categoryArabic: 'ري',
-      priority: 'medium' as const,
-      action: { label: 'Manage Irrigation', labelArabic: 'إدارة الري', url: '/smart-irrigation' }
-    },
-    {
-      title: 'Soil Analysis Complete',
-      titleArabic: 'اكتمل تحليل التربة',
-      message: 'Your soil analysis results are ready. Review recommendations for optimal growth.',
-      messageArabic: 'نتائج تحليل التربة جاهزة. راجع التوصيات للنمو الأمثل.',
-      type: 'success' as const,
-      category: 'system' as const,
-      categoryArabic: 'نظام',
-      priority: 'low' as const,
-      action: { label: 'View Results', labelArabic: 'عرض النتائج', url: '/analysis' }
-    },
-    {
-      title: 'Fertilizer Application Due',
-      titleArabic: 'موعد تطبيق السماد',
-      message: 'Time to apply nitrogen fertilizer to your corn crops for optimal yield.',
-      messageArabic: 'حان وقت تطبيق السماد النيتروجيني على محاصيل الذرة للحصول على أفضل إنتاجية.',
-      type: 'info' as const,
-      category: 'reminder' as const,
-      categoryArabic: 'تذكير',
-      priority: 'medium' as const,
-      action: { label: 'View Schedule', labelArabic: 'عرض الجدول', url: '/treatment-schedule' }
-    }
-  ];
+// The backend exposes demo notifications until a per-user feed exists. They are
+// mapped to this context's shape and disclosed via the server's provenance
+// header; the client never invents farm-specific alerts of its own.
 
-  return mockNotifications[Math.floor(Math.random() * mockNotifications.length)];
+const CLIENT_TYPE: Record<string, Notification['type']> = {
+  critical: 'urgent',
+  warning: 'warning',
+  error: 'error',
+  info: 'info',
+  success: 'success',
 };
+
+const CATEGORY_ARABIC: Record<string, string> = {
+  weather: 'طقس',
+  crop: 'محاصيل',
+  market: 'سوق',
+  sensor: 'استشعار',
+  security: 'أمان',
+  admin: 'إداري',
+  system: 'نظام',
+  ai_prediction: 'توقع ذكي',
+};
+
+interface ServerNotification {
+  id: string;
+  type?: string;
+  category?: string;
+  categoryArabic?: string;
+  priority?: Notification['priority'];
+  title?: string;
+  titleArabic?: string;
+  message?: string;
+  messageArabic?: string;
+  timestamp?: string;
+  isRead?: boolean;
+  actionRequired?: boolean;
+  actions?: Array<{ label?: string; labelArabic?: string; action?: string }>;
+  data?: Record<string, unknown>;
+}
+
+function mapServerNotification(raw: ServerNotification): Notification {
+  const firstAction = raw.actions?.[0];
+  const category = raw.category ?? 'system';
+  return {
+    id: String(raw.id),
+    title: raw.title ?? '',
+    titleArabic: raw.titleArabic ?? raw.title ?? '',
+    message: raw.message ?? '',
+    messageArabic: raw.messageArabic ?? raw.message ?? '',
+    type: CLIENT_TYPE[raw.type ?? 'info'] ?? 'info',
+    category: (category as Notification['category']) ?? 'system',
+    categoryArabic: raw.categoryArabic ?? CATEGORY_ARABIC[category] ?? 'نظام',
+    priority: raw.priority ?? 'medium',
+    isRead: Boolean(raw.isRead),
+    timestamp: raw.timestamp ?? new Date().toISOString(),
+    action: firstAction
+      ? {
+          label: firstAction.label ?? '',
+          labelArabic: firstAction.labelArabic ?? firstAction.label ?? '',
+          url: firstAction.action ?? '#',
+        }
+      : undefined,
+    metadata: raw.data,
+  };
+}
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
+  const [isLoading, setIsLoading] = useState(false);
   const [realtimeSubscription, setRealtimeSubscription] = useState<NodeJS.Timeout | null>(null);
 
-  // Load notifications from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('agroGrowthNotifications');
-    if (saved) {
-      try {
-        const parsedNotifications = JSON.parse(saved);
-        setNotifications(parsedNotifications);
-      } catch (error) {
-        console.error('Error loading notifications:', error);
-      }
-    } else {
-      // Initialize with some sample notifications
-      const initialNotifications: Notification[] = [
-        {
-          id: '1',
-          title: 'Welcome to AgroGrowth',
-          titleArabic: 'مرحباً بك في أجرو جروث',
-          message: 'Your smart farming journey begins here. Explore all the features and boost your productivity.',
-          messageArabic: 'رحلتك الزراعية الذكية تبدأ هنا. استكشف جميع الميزات وعزز إنتاجيتك.',
-          type: 'info',
-          category: 'system',
-          categoryArabic: 'نظام',
-          priority: 'low',
-          isRead: false,
-          timestamp: new Date().toISOString(),
-          action: { label: 'Get Started', labelArabic: 'ابدأ الآن', url: '/farmer-dashboard' }
-        }
-      ];
-      setNotifications(initialNotifications);
+  const refreshNotifications = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/notifications');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const body = await response.json();
+      const list: ServerNotification[] = Array.isArray(body?.data) ? body.data : [];
+      setNotifications(list.map(mapServerNotification));
+      setProvenance(readProvenance(response.headers, body));
+    } catch (error) {
+      // Never fabricate a feed on failure: surface an empty, honest state.
+      console.error('Error loading notifications:', error);
+      setNotifications([]);
+      setProvenance({ simulated: false });
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // Save notifications to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('agroGrowthNotifications', JSON.stringify(notifications));
-  }, [notifications]);
+    void refreshNotifications();
+  }, [refreshNotifications]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -193,6 +178,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         notification.id === id ? { ...notification, isRead: true } : notification
       )
     );
+    void fetch(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'PATCH' }).catch(() => {});
   };
 
   const markAllAsRead = () => {
@@ -203,6 +189,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
+    void fetch(`/api/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
   };
 
   const clearAllNotifications = () => {
@@ -223,14 +210,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       Notification.requestPermission();
     }
 
-    // Simulate real-time notifications
+    // Poll the real endpoint. The previous implementation fabricated farm
+    // alerts with Math.random(), presenting invented data as real.
     const interval = setInterval(() => {
-      // Randomly generate notifications (in a real app, this would be WebSocket/SSE)
-      if (Math.random() < 0.3) { // 30% chance every interval
-        const mockNotification = generateMockNotification();
-        addNotification(mockNotification);
-      }
-    }, 30000); // Every 30 seconds
+      void refreshNotifications();
+    }, 60000); // Refresh every minute
 
     setRealtimeSubscription(interval);
   };
@@ -251,6 +235,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const value: NotificationContextType = {
     notifications,
     unreadCount,
+    provenance,
+    isLoading,
+    refreshNotifications,
     addNotification,
     markAsRead,
     markAllAsRead,
