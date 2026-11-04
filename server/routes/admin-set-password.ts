@@ -1,9 +1,9 @@
 import { RequestHandler } from 'express';
 import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
+import { verifyAdminToken } from '../lib/adminAuth';
 
 export const adminSetPassword: RequestHandler = async (req, res) => {
-  const adminToken = req.header('x-admin-token');
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || adminToken !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!verifyAdminToken(req)) {
     return res.status(403).json({ success: false, error: 'Forbidden: invalid admin token' });
   }
 

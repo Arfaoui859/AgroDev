@@ -2,7 +2,7 @@ import { RequestHandler, Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
-import crypto from "crypto";
+import { verifyAdminToken } from "../lib/adminAuth";
 
 /**
  * Security headers. The API is consumed by the SPA and by external clients, so
@@ -128,10 +128,7 @@ export function requireAdminToken(): RequestHandler {
   const isProd = process.env.NODE_ENV === "production";
 
   return (req, res, next) => {
-    const expected = process.env.ADMIN_API_TOKEN;
-    const provided = req.header("x-admin-token") || "";
-
-    if (expected && timingSafeEqualStr(provided, expected)) {
+    if (verifyAdminToken(req)) {
       return next();
     }
 
@@ -141,7 +138,7 @@ export function requireAdminToken(): RequestHandler {
       return next();
     }
 
-    if (!expected && isProd) {
+    if (!process.env.ADMIN_API_TOKEN && isProd) {
       return res.status(403).json({
         error: "This endpoint is disabled.",
       });
@@ -149,16 +146,4 @@ export function requireAdminToken(): RequestHandler {
 
     return res.status(401).json({ error: "Unauthorized" });
   };
-}
-
-/** Constant-time string comparison to avoid leaking the token via timing. */
-function timingSafeEqualStr(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) {
-    // Still compare against itself to keep timing roughly constant.
-    crypto.timingSafeEqual(bufA, bufA);
-    return false;
-  }
-  return crypto.timingSafeEqual(bufA, bufB);
 }
