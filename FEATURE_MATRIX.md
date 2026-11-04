@@ -92,3 +92,19 @@ Legend: `200` = working; `400` = request validation (expected without a real bod
   module currently advertises `simulated`/`heuristic`/`rule-based` and
   `isRealData=false`, i.e. the platform labels synthetic output honestly rather
   than presenting it as observed data.
+
+## Platform modules (extended live probe)
+
+| Module | Endpoint | Status |
+|---|---|---|
+| Gamification: leaderboard | `GET /api/gamification/leaderboard` | 200 |
+| Gamification: stats | `GET /api/gamification/stats` | 200 |
+| Community: experts online | `GET /api/collaboration/experts/online` | 200 |
+| Notifications: stats | `GET /api/notification-stats` | 200 |
+| Analytics: SaaS | `GET /api/saas/analytics` | 200 |
+| Analytics: marketplace | `GET /api/marketplace/analytics` | 200 |
+| Analytics: segmentation | `GET /api/segmentation/analytics` | 200 |
+| Training: courses | `GET /api/digital-training/courses` | 200 |
+| Market: all crops | `GET /api/market/all` | 200 |
+| Market: trends | `GET /api/market/trends` | 200 |
+| AI: smart alerts | `GET /api/ai/assistant/alerts` | 400 (`farmer_id` required — validation, not a failure) |
