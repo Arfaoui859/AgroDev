@@ -21,6 +21,7 @@ from soil_analysis.climate_crop_matcher import create_climate_crop_matcher
 from soil_analysis.soil_image_diagnosis import create_soil_image_diagnosis
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
+from ai_common.offload import offload
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -234,8 +235,8 @@ async def diagnose_soil_image(file: UploadFile = File(...)):
         # Read image data
         image_data = await file.read()
         
-        # Analyze image
-        result = image_diagnosis.analyze_soil_image(image_data)
+        # Analyze image (blocking model work runs in the threadpool)
+        result = await offload(image_diagnosis.analyze_soil_image, image_data)
         
         return ImageDiagnosisResponse(**result)
         

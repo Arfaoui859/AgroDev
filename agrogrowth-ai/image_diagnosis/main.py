@@ -24,6 +24,7 @@ from image_diagnosis.plant_disease_detector import create_plant_disease_detector
 from image_diagnosis.leaf_scan_ai import create_leaf_scan_ai
 from ai_common.llm_provider import get_provider, LLMError
 from ai_common.vision_bridge import diagnose_with_vision, merge_into_detection
+from ai_common.offload import offload
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -125,7 +126,7 @@ async def supported_diseases():
     The Node gateway exposes this list so the UI can render the set of diseases
     the diagnosis engine can report.
     """
-    detector = get_disease_detector()
+    detector = await offload(get_disease_detector)
     db = getattr(detector, "disease_database", {}) or {}
     diseases = [
         {
@@ -171,6 +172,57 @@ async def health():
     }
 
 # =========================================================
+# BLOCKING WORK HELPERS
+# =========================================================
+# Model loading/inference and the vision HTTP call are synchronous and slow.
+# The upload handlers must stay `async` (they await the upload read), so the
+# blocking part is extracted here and run via `offload()` in the threadpool,
+# keeping the event loop free to answer /health while a diagnosis is running.
+def _run_disease_detection(image_data: bytes, content_type: str, plant_type: Optional[str]) -> Dict[str, Any]:
+    detector = get_disease_detector()
+    result = detector.detect_plant_disease(image_data, plant_type)
+
+    vision = diagnose_with_vision(
+        image_data,
+        content_type,
+        plant_type,
+        getattr(detector, "disease_database", {}) or {},
+    )
+    if vision:
+        result["disease_detection"] = merge_into_detection(
+            result.get("disease_detection", {}), vision
+        )
+        result["data_source"] = "vision-model"
+        result["is_real_data"] = True
+        result["model_source"] = vision.get("model_source")
+    else:
+        result["data_source"] = "heuristic"
+        result["is_real_data"] = False
+        result["model_source"] = "heuristic-demo"
+    return result
+
+
+def _run_leaf_analysis(image_data: bytes, plant_type: Optional[str], growth_stage: Optional[str]) -> Dict[str, Any]:
+    scanner = get_leaf_scanner()
+    return scanner.analyze_leaf_comprehensive(image_data, plant_type, growth_stage)
+
+
+def _run_quick_health_check(image_data: bytes) -> Dict[str, Any]:
+    detector = get_disease_detector()
+    scanner = get_leaf_scanner()
+
+    disease_result = detector.detect_plant_disease(image_data)
+    leaf_result = scanner.analyze_leaf_comprehensive(image_data)
+
+    health_score = disease_result["health_score"]["health_score"]
+    return {
+        "status": "success",
+        "health_score": float(health_score),
+        "primary_disease": disease_result["disease_detection"]["primary_disease"]["disease_name_ar"],
+        "nutrition_status": leaf_result["leaf_nutrition"]["primary_deficiency"]["name_ar"],
+    }
+
+# =========================================================
 # AI ENDPOINTS (MEMORY SAFE)
 # =========================================================
 @app.post("/detect-disease", response_model=PlantDiseaseResponse)
@@ -186,30 +238,10 @@ async def detect_plant_disease(
 
         image_data = await file.read()
 
-        # 🔥 Lazy load model (CRITICAL FIX)
-        detector = get_disease_detector()
-
-        result = detector.detect_plant_disease(image_data, plant_type)
-
-        # Prefer a real multimodal model when one is configured. If it is not, or
-        # it fails, keep the heuristic detection and label it as such.
-        vision = diagnose_with_vision(
-            image_data,
-            file.content_type,
-            plant_type,
-            getattr(detector, "disease_database", {}) or {},
+        # Model load/inference and the vision call run in the threadpool.
+        result = await offload(
+            _run_disease_detection, image_data, file.content_type, plant_type
         )
-        if vision:
-            result["disease_detection"] = merge_into_detection(
-                result.get("disease_detection", {}), vision
-            )
-            result["data_source"] = "vision-model"
-            result["is_real_data"] = True
-            result["model_source"] = vision.get("model_source")
-        else:
-            result["data_source"] = "heuristic"
-            result["is_real_data"] = False
-            result["model_source"] = "heuristic-demo"
 
         return PlantDiseaseResponse(**result)
 
@@ -232,13 +264,8 @@ async def analyze_leaf(
 
         image_data = await file.read()
 
-        # 🔥 Lazy load model (CRITICAL FIX)
-        scanner = get_leaf_scanner()
-
-        result = scanner.analyze_leaf_comprehensive(
-            image_data,
-            plant_type,
-            growth_stage
+        result = await offload(
+            _run_leaf_analysis, image_data, plant_type, growth_stage
         )
 
         return LeafAnalysisResponse(**result)
@@ -256,21 +283,8 @@ async def quick_health_check(file: UploadFile = File(...)):
 
         image_data = await file.read()
 
-        # Lazy loading both models only when needed
-        detector = get_disease_detector()
-        scanner = get_leaf_scanner()
-
-        disease_result = detector.detect_plant_disease(image_data)
-        leaf_result = scanner.analyze_leaf_comprehensive(image_data)
-
-        health_score = disease_result["health_score"]["health_score"]
-
-        return {
-            "status": "success",
-            "health_score": float(health_score),
-            "primary_disease": disease_result["disease_detection"]["primary_disease"]["disease_name_ar"],
-            "nutrition_status": leaf_result["leaf_nutrition"]["primary_deficiency"]["name_ar"]
-        }
+        # Lazy loading and both inferences happen in the threadpool.
+        return await offload(_run_quick_health_check, image_data)
 
     except Exception as e:
         logger.error(f"Quick check error: {e}")

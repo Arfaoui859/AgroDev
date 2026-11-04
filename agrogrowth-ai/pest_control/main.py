@@ -14,6 +14,7 @@ import base64
 
 from pest_control.pest_control_recommender import create_pest_control_recommender
 from ai_common.utils import to_json_safe
+from ai_common.offload import offload
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
 
@@ -191,8 +192,8 @@ async def upload_pest_image(file: UploadFile = File(...)):
         # قراءة الصورة
         image_data = await file.read()
         
-        # تحليل الصورة
-        analysis = pest_recommender._analyze_pest_image(image_data)
+        # تحليل الصورة (يعمل في threadpool حتى لا يعطّل حلقة الأحداث)
+        analysis = await offload(pest_recommender._analyze_pest_image, image_data)
         
         return {
             'success': True,

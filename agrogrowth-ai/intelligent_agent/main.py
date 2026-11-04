@@ -14,6 +14,7 @@ from ai_common.base_service import BaseAIService
 from intelligent_agent.agro_chat_ai import AgroChatAI
 from intelligent_agent.farming_tasks_planner import FarmingTasksPlanner
 from intelligent_agent.alert_notifier_ai import AlertNotifierAI
+from ai_common.offload import offload
 from ai_common.llm_provider import get_provider
 
 # Configure logging
@@ -113,7 +114,8 @@ async def chat_with_assistant(request: ChatQueryRequest):
         logger.info(f"Processing chat query: {request.message[:50]}...")
         
         # Process the query with AgroChatAI
-        response = agro_chat_ai.process_query(
+        response = await offload(
+            agro_chat_ai.process_query,
             user_message=request.message,
             user_context=request.user_context,
             conversation_id=request.conversation_id
@@ -157,7 +159,8 @@ async def generate_seasonal_plan(request: TaskPlanRequest):
         planting_date = datetime.fromisoformat(request.planting_date)
         
         # Generate the plan
-        plan = tasks_planner.generate_seasonal_plan(
+        plan = await offload(
+            tasks_planner.generate_seasonal_plan,
             crop_type=request.crop_type,
             field_id=request.field_id,
             planting_date=planting_date,
@@ -210,7 +213,8 @@ async def get_daily_tasks(
         field_id_list = field_ids.split(',') if field_ids else None
         
         # Get daily tasks
-        daily_schedule = tasks_planner.get_daily_tasks(
+        daily_schedule = await offload(
+            tasks_planner.get_daily_tasks,
             date=target_date,
             field_ids=field_id_list,
             include_upcoming=include_upcoming
@@ -267,7 +271,9 @@ async def add_custom_task(request: CustomTaskRequest):
         }
         
         # Add the task
-        result = tasks_planner.add_custom_task(task_data, auto_schedule=True)
+        result = await offload(
+            tasks_planner.add_custom_task, task_data, auto_schedule=True
+        )
         
         if not result.get('success'):
             raise HTTPException(status_code=500, detail=result.get('error', 'Task addition failed'))
@@ -303,7 +309,8 @@ async def update_task_status(request: TaskStatusUpdateRequest):
         logger.info(f"Updating task status: {request.task_id} -> {request.new_status}")
         
         # Update task status
-        result = tasks_planner.update_task_status(
+        result = await offload(
+            tasks_planner.update_task_status,
             task_id=request.task_id,
             new_status=request.new_status,
             completion_notes=request.completion_notes
@@ -343,7 +350,8 @@ async def generate_alerts(request: AlertGenerationRequest):
         logger.info(f"Generating alerts for farmer: {request.farmer_id}")
         
         # Generate alerts
-        alerts = alert_notifier.generate_alerts(
+        alerts = await offload(
+            alert_notifier.generate_alerts,
             farm_data=request.farm_data,
             farmer_id=request.farmer_id
         )
@@ -386,7 +394,8 @@ async def get_active_alerts(
         logger.info(f"Getting active alerts for farmer: {farmer_id}")
         
         # Get active alerts
-        alerts = alert_notifier.get_active_alerts(
+        alerts = await offload(
+            alert_notifier.get_active_alerts,
             farmer_id=farmer_id,
             severity_filter=severity_filter
         )
@@ -428,7 +437,8 @@ async def acknowledge_alert(
         logger.info(f"Acknowledging alert: {alert_id}")
         
         # Acknowledge the alert
-        result = alert_notifier.acknowledge_alert(
+        result = await offload(
+            alert_notifier.acknowledge_alert,
             alert_id=alert_id,
             farmer_id=farmer_id,
             notes=notes
@@ -459,7 +469,9 @@ async def get_conversation_history(
 ):
     """Get conversation history for a specific conversation"""
     try:
-        history = agro_chat_ai.get_conversation_history(conversation_id, limit)
+        history = await offload(
+            agro_chat_ai.get_conversation_history, conversation_id, limit
+        )
         
         return {
             "success": True,
@@ -476,7 +488,7 @@ async def get_conversation_history(
 async def get_task_statistics():
     """Get comprehensive task statistics"""
     try:
-        stats = tasks_planner.get_task_statistics()
+        stats = await offload(tasks_planner.get_task_statistics)
         
         return {
             "success": True,
@@ -495,7 +507,9 @@ async def get_alert_statistics(
 ):
     """Get alert statistics for performance analysis"""
     try:
-        stats = alert_notifier.get_alert_statistics(farmer_id, days_back)
+        stats = await offload(
+            alert_notifier.get_alert_statistics, farmer_id, days_back
+        )
         
         if not stats.get('success'):
             raise HTTPException(status_code=500, detail=stats.get('error', 'Statistics calculation failed'))
@@ -519,7 +533,7 @@ async def get_alert_statistics(
 async def get_supported_topics():
     """Get list of supported topics and capabilities"""
     try:
-        topics = agro_chat_ai.get_supported_topics()
+        topics = await offload(agro_chat_ai.get_supported_topics)
         
         return {
             "success": True,

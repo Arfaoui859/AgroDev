@@ -18,6 +18,7 @@ from weather_yield_intelligence.yield_predictor_ai import create_yield_predictor
 from ai_common.utils import to_json_safe
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
+from ai_common.offload import offload
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -57,9 +58,13 @@ def get_yield_predictor():
 
 
 def _model_status():
-    """Readiness without triggering the (slow) training if it has not run yet."""
-    with _service_lock:
-        planner, predictor = _weather_planner, _yield_predictor
+    """Readiness without triggering the (slow) training if it has not run yet.
+
+    Deliberately lock-free: the getters hold `_service_lock` for the whole model
+    build (~45s), so acquiring it here would make /health hang exactly when the
+    service is busiest. Reading the module globals is atomic under the GIL.
+    """
+    planner, predictor = _weather_planner, _yield_predictor
     return {
         "weather_planner": planner.is_trained if planner else False,
         "yield_predictor": predictor.is_trained if predictor else False,
@@ -131,7 +136,7 @@ class CombinedAnalysisRequest(BaseModel):
     analysis_scope: str = "comprehensive"  # basic, detailed, comprehensive
 
 @app.post("/create-weather-plan")
-async def create_weather_based_plan(request: WeatherPlanningRequest):
+def create_weather_based_plan(request: WeatherPlanningRequest):
     """
     إنشاء خطة زراعة ذكية حسب الطقس والمناخ
     """
@@ -165,7 +170,7 @@ async def create_weather_based_plan(request: WeatherPlanningRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/predict-crop-yield")
-async def predict_crop_yield(request: YieldPredictionRequest):
+def predict_crop_yield(request: YieldPredictionRequest):
     """
     التنبؤ بمردودية المحصول بناءً على الظروف الحالية
     """
@@ -199,7 +204,7 @@ async def predict_crop_yield(request: YieldPredictionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/combined-analysis")
-async def comprehensive_analysis(request: CombinedAnalysisRequest):
+def comprehensive_analysis(request: CombinedAnalysisRequest):
     """
     تحليل شامل يدمج التخطيط المناخي والتنبؤ بالمردودية
     """
@@ -252,7 +257,9 @@ async def analyze_field_image(file: UploadFile = File(...)):
         image_data = await file.read()
         
         # تحليل الصورة
-        analysis = get_yield_predictor()._analyze_field_image(image_data)
+        analysis = await offload(
+            get_yield_predictor()._analyze_field_image, image_data
+        )
         
         return {
             'success': True,
@@ -265,7 +272,7 @@ async def analyze_field_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/climate-zones")
-async def get_climate_zones():
+def get_climate_zones():
     """
     الحصول على معلومات المناطق المناخية
     """
@@ -281,7 +288,7 @@ async def get_climate_zones():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/crop-yield-database")
-async def get_crop_yield_database():
+def get_crop_yield_database():
     """
     الحصول على قاعدة بيانات عوائد المحاصيل
     """
@@ -297,7 +304,7 @@ async def get_crop_yield_database():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/assess-climate-suitability")
-async def assess_crop_climate_suitability(
+def assess_crop_climate_suitability(
     crop_type: str,
     location: LocationData = LocationData(),
     current_weather: WeatherData = WeatherData()
@@ -333,7 +340,7 @@ async def assess_crop_climate_suitability(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/optimize-planting-schedule")
-async def optimize_planting_schedule(
+def optimize_planting_schedule(
     crop_types: List[str],
     location: LocationData = LocationData(),
     planning_months: int = 12
