@@ -41,7 +41,16 @@ jest.mock("@supabase/supabase-js", () => {
   return {
     createClient: jest.fn((...args: CreateClientArgs[]) => {
       (globalThis as any).__createClientCalls.push(args[2]);
-      return { from: () => fakeBuilder() };
+      return {
+        from: () => fakeBuilder(),
+        // requireAuth verifies the bearer token through the module-level client.
+        auth: {
+          getUser: async () => ({
+            data: { user: { id: "farmer-1" } },
+            error: null,
+          }),
+        },
+      };
     }),
   };
 });
@@ -95,5 +104,17 @@ describe("🏡 Farm/field routes forward the caller's JWT to Supabase", () => {
   test("an unauthenticated request never fabricates a user identity", async () => {
     await request(app).get("/api/farms");
     expect(createClientCalls().every((opts) => !authHeaderOf(opts))).toBe(true);
+  });
+
+  test("in production an anonymous caller is rejected before any query runs", async () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      const res = await request(app).get("/api/farms");
+      expect(res.status).toBe(401);
+      expect(createClientCalls().length).toBe(0);
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
   });
 });

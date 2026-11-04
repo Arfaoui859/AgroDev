@@ -540,19 +540,22 @@ export function createServer() {
   // Government Dashboard routes
   app.use("/api/government-dashboard", governmentDashboardRoutes);
 
-  // Field Management routes
-  app.get("/api/farms", getFarms);
-  app.get("/api/farms/:farmId", getFarmById);
-  app.get("/api/fields", getFields);
-  app.get("/api/fields/:fieldId", getFieldById);
-  app.post("/api/fields", createField);
-  app.put("/api/fields/:fieldId", updateField);
-  app.delete("/api/fields/:fieldId", deleteField);
-  app.get("/api/crop-history", getCropHistory);
-  app.get("/api/field-alerts", getFieldAlerts);
-  app.get("/api/activity-logs", getActivityLogs);
-  app.get("/api/fields/:fieldId/performance", getFieldPerformance);
-  app.post("/api/ai-recommendations", generateAIRecommendations);
+  // Field Management routes. These act on the caller's own farms/fields, so
+  // identity must be established (verified JWT, or the non-production demo
+  // identity) before the handler runs. The scoped Supabase client then enforces
+  // ownership through RLS as a second layer.
+  app.get("/api/farms", requireAuth, getFarms);
+  app.get("/api/farms/:farmId", requireAuth, getFarmById);
+  app.get("/api/fields", requireAuth, getFields);
+  app.get("/api/fields/:fieldId", requireAuth, getFieldById);
+  app.post("/api/fields", requireAuth, createField);
+  app.put("/api/fields/:fieldId", requireAuth, updateField);
+  app.delete("/api/fields/:fieldId", requireAuth, deleteField);
+  app.get("/api/crop-history", requireAuth, getCropHistory);
+  app.get("/api/field-alerts", requireAuth, getFieldAlerts);
+  app.get("/api/activity-logs", requireAuth, getActivityLogs);
+  app.get("/api/fields/:fieldId/performance", requireAuth, getFieldPerformance);
+  app.post("/api/ai-recommendations", requireAuth, generateAIRecommendations);
 
   // Notification System routes
   app.get("/api/notifications", getNotifications);
