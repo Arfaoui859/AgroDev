@@ -1,217 +1,198 @@
+# AgroGrowth - Render Blueprint (corrected)
+# Secrets use `sync: false`: Render asks for them in the dashboard, they are never stored in git.
+# Database = Supabase (existing project), NOT a new Render Postgres.
+
 services:
-  # =====================================
-  # Main platform: React SPA + Express API
-  # =====================================
+  # ============================================================
+  # Main platform: React SPA + Express API (public)
+  # ============================================================
   - type: web
     name: agrogrowth-platform
-    env: node
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: .
-    buildCommand: npm ci --no-audit --no-fund && npm run build
+    runtime: node
+    branch: feat/ai-integration-production-hardening   # change to main after merge
+    region: frankfurt
+    plan: starter
+    # --include=dev: NODE_ENV=production would otherwise skip devDependencies needed by the build
+    buildCommand: npm ci --include=dev --no-audit --no-fund && npm run build
     startCommand: node build/server/node-build.mjs
     healthCheckPath: /api/health
-    plan: starter
-    region: frankfurt
     envVars:
       - key: NODE_ENV
         value: production
-      # Render injects PORT; the server reads it (defaults to 8080 locally).
-      - key: SOIL_ANALYSIS_URL
-        fromService: { type: web, name: agrogrowth-soil-analysis, property: hostport }
-      - key: CROP_RECOMMENDATION_URL
-        fromService: { type: web, name: agrogrowth-crop-recommendation, property: hostport }
-      - key: IMAGE_DIAGNOSIS_URL
-        fromService: { type: web, name: agrogrowth-image-diagnosis, property: hostport }
-      - key: MARKET_FORECAST_URL
-        fromService: { type: web, name: agrogrowth-market-prediction, property: hostport }
-      - key: SMART_ASSISTANT_URL
-        fromService: { type: web, name: agrogrowth-intelligent-agent, property: hostport }
-      - key: SMART_MARKETPLACE_URL
-        fromService: { type: web, name: agrogrowth-weather-yield, property: hostport }
-      - key: PEST_CONTROL_URL
-        fromService: { type: web, name: agrogrowth-pest-control, property: hostport }
-      - key: IRRIGATION_OPTIMIZATION_URL
-        fromService: { type: web, name: agrogrowth-irrigation-optimization, property: hostport }
-      - key: DATABASE_URL
-        fromDatabase:
-          name: agrogrowth-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: agrogrowth-redis
-          property: connectionString
+      - key: NODE_VERSION
+        value: "20"                # verify against package.json "engines"
 
-  # Soil Analysis Service
-  - type: web
+      # --- Supabase (server) ---
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+      # --- Supabase (client, baked at build time) ---
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+
+      # --- Database (Supabase pooler; see .env.example) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+
+      # --- AI provider ---
+      - key: GEMINI_API_KEY
+        sync: false
+
+      - key: SESSION_SECRET
+        generateValue: true
+
+      # --- Internal Python services (private network, value = host:port) ---
+      - key: SOIL_ANALYSIS_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-soil-analysis
+          property: hostport
+      - key: CROP_RECOMMENDATION_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-crop-recommendation
+          property: hostport
+      - key: IMAGE_DIAGNOSIS_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-image-diagnosis
+          property: hostport
+      - key: MARKET_FORECAST_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-market-prediction
+          property: hostport
+      - key: SMART_ASSISTANT_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-intelligent-agent
+          property: hostport
+      # TODO: confirm the real variable name the server reads for the weather/yield service
+      # (the old file mapped it to SMART_MARKETPLACE_URL, which looks wrong).
+      - key: SMART_MARKETPLACE_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-weather-yield
+          property: hostport
+      - key: PEST_CONTROL_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-pest-control
+          property: hostport
+      - key: IRRIGATION_OPTIMIZATION_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-irrigation-optimization
+          property: hostport
+
+  # ============================================================
+  # Python AI services = PRIVATE services (not exposed to internet)
+  # Private services do not support healthCheckPath.
+  # ============================================================
+  - type: pserv
     name: agrogrowth-soil-analysis
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn soil_analysis.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8001
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
-      - key: DATABASE_URL
-        fromDatabase:
-          name: agrogrowth-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: agrogrowth-redis
-          property: connectionString
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
-  # Crop Recommendation Service
-  - type: web
+  - type: pserv
     name: agrogrowth-crop-recommendation
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn crop_recommendation.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8002
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
-  # Image Diagnosis Service
-  - type: web
+  - type: pserv
     name: agrogrowth-image-diagnosis
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: standard            # TensorFlow/vision does not fit in 512 MB (starter)
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn image_diagnosis.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8003
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
-  # Market Prediction Service
-  - type: web
+  - type: pserv
     name: agrogrowth-market-prediction
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn market_prediction.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8004
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
-  # Intelligent Agent Service
-  - type: web
+  - type: pserv
     name: agrogrowth-intelligent-agent
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn intelligent_agent.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8005
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: GEMINI_API_KEY
+        sync: false
 
-  # Weather & Yield Intelligence Service
-  - type: web
+  - type: pserv
     name: agrogrowth-weather-yield
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: standard            # trains sklearn models on first request (~100 s, memory heavy)
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn weather_yield_intelligence.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8006
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
-  # Pest Control Service
-  - type: web
+  - type: pserv
     name: agrogrowth-pest-control
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn pest_control.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8007
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
-  # Irrigation Optimization Service
-  - type: web
+  - type: pserv
     name: agrogrowth-irrigation-optimization
-    env: python
-    repo: https://github.com/Arfaoui859/AgroDev
-    rootDir: ./agrogrowth-ai
+    runtime: python
+    region: frankfurt
+    plan: starter
+    rootDir: agrogrowth-ai
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn irrigation_optimization.main:app --host 0.0.0.0 --port $PORT
-    plan: starter
-    region: frankfurt
-    healthCheckPath: /health
     envVars:
-      - key: SERVICE_PORT
-        value: 8008
-      - key: MODEL_PATH
-        value: /app/models
-      - key: PYTHONPATH
-        value: /opt/render/project/src
-
-databases:
-  - name: agrogrowth-postgres
-    databaseName: agrogrowth
-    user: postgres
-    plan: starter
-    region: frankfurt
-    ipAllowList: []
-
-  - name: agrogrowth-redis
-    plan: starter
-    region: frankfurt
-    ipAllowList: []
+      - key: PYTHON_VERSION
+        value: "3.11.9"
