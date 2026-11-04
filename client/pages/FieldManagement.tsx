@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -599,6 +600,11 @@ export default function FieldManagement() {
       </div>
 
       {/* Farm Overview Cards */}
+      <SimulatedDataNotice
+        title={SIMULATED_RECORDS_TITLE_AR}
+        description={SIMULATED_RECORDS_DESCRIPTION_AR}
+        className="mb-2"
+      />
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
