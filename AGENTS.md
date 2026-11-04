@@ -132,11 +132,23 @@ for future work; re-verify before relying on them.
   engine** and label the result honestly (`dataSource: "rule-based"`,
   `isRealData: false`, plus a disclaimer). Do not present rule-based output
   as model inference.
-- Specialised Python FastAPI microservices live in `agrogrowth-ai/`
-  (ports 8001–8005 via `SOIL_ANALYSIS_URL`, `CROP_RECOMMENDATION_URL`,
-  `IMAGE_DIAGNOSIS_URL`, `MARKET_PREDICTION_URL`, `INTELLIGENT_AGENT_URL`).
-  When they are not running, endpoints return an honest 503 rather than
+- Specialised Python FastAPI microservices live in `agrogrowth-ai/` — eight
+  of them: `soil_analysis` (8001), `crop_recommendation` (8002),
+  `image_diagnosis` (8003), `market_prediction` (8004), `intelligent_agent`
+  (8005), `weather_yield_intelligence` (8006), `pest_control` (8007),
+  `irrigation_optimization` (8008). The backend resolves each via its env var
+  (`SOIL_ANALYSIS_URL`, `CROP_RECOMMENDATION_URL`, `IMAGE_DIAGNOSIS_URL`,
+  `MARKET_FORECAST_URL`/`MARKET_PREDICTION_URL`,
+  `SMART_ASSISTANT_URL`/`INTELLIGENT_AGENT_URL`, `WEATHER_YIELD_INTELLIGENCE_URL`
+  /`SMART_MARKETPLACE_URL`, `PEST_CONTROL_URL`, `IRRIGATION_OPTIMIZATION_URL`).
+  When a service is not running, endpoints return an honest 503 rather than
   fabricating a result.
+- Start/verify them locally with `bash scripts/start-ai-services.sh`
+  (`--check` health-checks all eight, `--stop` stops them). Each service is a
+  FastAPI app with a `/health` endpoint that declares its `model_source`; the
+  bundled models are trained on synthetic data and report
+  `model_source: "synthetic-demo"` (or `rule-based-demo`), which the Node layer
+  surfaces as `isRealModel: false` / `modelTrainedOnSyntheticData: true`.
 - `GET /api/ai/capabilities` reports the true engine per capability. Use it
   to see what is really available before promising a feature.
 - The rule-based farm advisor is fully localised (ar/fr/en). Per-parameter
