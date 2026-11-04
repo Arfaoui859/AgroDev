@@ -8,7 +8,7 @@ While the starter comes with a express server, only create endpoint when strictl
 
 - **Frontend**: React 18 + React Router 6 (spa) + TypeScript + Vite + TailwindCSS 3
 - **Backend**: Express server integrated with Vite dev server
-- **Testing**: Vitest
+- **Testing**: Jest
 - **UI**: Radix UI + TailwindCSS 3 + Lucide React icons
 
 ## Project Structure
@@ -90,11 +90,66 @@ Path aliases:
 
 ```bash
 npm run dev        # Start dev server (client + server)
-npm run build      # Production build
+npm run build      # Production build (client + SSR server -> dist/)
 npm run start      # Start production server
-npm run typecheck  # TypeScript validation
-npm test          # Run Vitest tests
+npm test           # Run the test suite (Jest)
+npx tsc --noEmit   # TypeScript validation
 ```
+
+## AgroGrowth — verified engineering notes
+
+Facts below were confirmed against the running code and the live database,
+not copied from the template or the README. Treat them as the starting point
+for future work; re-verify before relying on them.
+
+### Test runner and typecheck
+- Tests run on **Jest** (`npm test`), not Vitest. Config is `jest.config.*`
+  with `tests/setup.ts`. Suites live in `tests/unit`, `tests/integration`,
+  `tests/live`, `tests/e2e`.
+- There is no `npm run typecheck` script. Use `npx tsc --noEmit`.
+- Production build output is `dist/server/node-build.mjs`; run it with
+  `PORT=<port> node dist/server/node-build.mjs` (it loads `.env` via
+  `dotenv/config`). Dev runs on 8080; the built server honours `PORT`.
+
+### Data layer (Supabase Postgres)
+- `.env` (gitignored) holds `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+  `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DIRECT_URL`,
+  `DATABASE_URL`. Never print or commit their values.
+- RLS is enabled on every table except the PostGIS system table
+  `spatial_ref_sys`. Hardening lives in `database/rls-hardening.sql`
+  (idempotent; re-runnable).
+- `public.users` has **no** FK to `auth.users`. Account deletion is kept
+  consistent by the `on_auth_user_deleted` trigger in
+  `database/user-lifecycle.sql`, which deletes the profile row and lets the
+  existing `ON DELETE CASCADE` rules clean up farms and children.
+- `anon`/`authenticated` hold broad table grants; isolation relies entirely
+  on RLS, so any new table must have RLS enabled **and** policies added.
+
+### AI layer
+- AI provider config is env-driven (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`,
+  `AI_VISION_MODEL`, timeouts/retries). When no provider is configured the
+  advisor and knowledge engine answer from a **deterministic rule-based
+  engine** and label the result honestly (`dataSource: "rule-based"`,
+  `isRealData: false`, plus a disclaimer). Do not present rule-based output
+  as model inference.
+- Specialised Python FastAPI microservices live in `agrogrowth-ai/`
+  (ports 8001–8005 via `SOIL_ANALYSIS_URL`, `CROP_RECOMMENDATION_URL`,
+  `IMAGE_DIAGNOSIS_URL`, `MARKET_PREDICTION_URL`, `INTELLIGENT_AGENT_URL`).
+  When they are not running, endpoints return an honest 503 rather than
+  fabricating a result.
+- `GET /api/ai/capabilities` reports the true engine per capability. Use it
+  to see what is really available before promising a feature.
+- The rule-based farm advisor is fully localised (ar/fr/en). Per-parameter
+  soil recommendation sentences are Arabic-only by design and are labelled
+  as such for fr/en callers.
+
+### Honesty conventions
+- Never invent weather, market prices, diagnoses or confidence values.
+- Weather comes from Open-Meteo (`/api/weather/coordinates` returns
+  `source.isRealData: true`). Market data is read from `market_prices` and
+  reports `dataSource: "database"`.
+- Mock/fixture-driven pages must render the shared `SimulatedDataNotice`
+  from `client/components/SimulatedDataNotice.tsx`.
 
 ## Adding Features
 
