@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,6 @@ import {
   User,
   Moon,
   Sun,
-  Globe,
   Wifi,
   WifiOff,
   Leaf,
@@ -66,7 +66,7 @@ interface EnhancedLayoutProps {
 }
 
 const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
-  const { isArabic, toggleLanguage } = useLanguage();
+  const { isArabic } = useLanguage();
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -534,10 +534,7 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
                 </Button>
 
                 {/* Language Toggle */}
-                <Button variant="ghost" size="sm" onClick={toggleLanguage}>
-                  <Globe className="h-4 w-4 mr-1" />
-                  {isArabic ? "EN" : "ع"}
-                </Button>
+                <LanguageSwitcher variant="ghost" />
 
                 {/* User Menu */}
                 <DropdownMenu>

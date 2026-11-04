@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   Card,
   CardContent,
@@ -368,13 +369,7 @@ const FarmerDashboard: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={toggleLanguage}
-            className="text-sm"
-          >
-            {isArabic ? "English" : "العربية"}
-          </Button>
+          <LanguageSwitcher />
           <Button onClick={fetchDashboardData} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             {isArabic ? "تحديث" : "Refresh"}

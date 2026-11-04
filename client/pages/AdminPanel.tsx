@@ -1,6 +1,7 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { apiFetch } from '../lib/apiFetch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -272,13 +273,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </p>
         </div>
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <Button
-            variant="outline"
-            onClick={toggleLanguage}
-            className="text-sm"
-          >
-            {isArabic ? 'English' : 'العربية'}
-          </Button>
+          <LanguageSwitcher />
           <Button onClick={fetchDashboardData} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {isArabic ? 'تحديث' : 'Refresh'}

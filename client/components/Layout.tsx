@@ -1,6 +1,7 @@
 import React, { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "../contexts/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -722,7 +723,7 @@ const navigationCategories: NavigationCategory[] = [
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const { isArabic, toggleLanguage } = useLanguage();
+  const { isArabic } = useLanguage();
   const { user, isAuthenticated, logout } = useAuth(); // Get user info from auth context
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([
@@ -950,14 +951,7 @@ export default function Layout({ children }: LayoutProps) {
           {/* Footer */}
           <div className="p-2 sm:p-4 border-t bg-gray-50">
             <div className="flex items-center justify-between gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleLanguage}
-                className="text-xs sm:text-sm p-2 h-8 sm:h-9"
-              >
-                {isArabic ? "🇺🇸 EN" : "🇹🇳 العربية"}
-              </Button>
+              <LanguageSwitcher variant="ghost" className="text-xs sm:text-sm p-2 h-8 sm:h-9" />
               <Button
                 variant="ghost"
                 size="sm"

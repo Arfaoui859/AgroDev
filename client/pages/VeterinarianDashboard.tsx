@@ -1,6 +1,7 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -248,13 +249,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={toggleLanguage}
-            className="text-sm"
-          >
-            {isArabic ? 'English' : 'العربية'}
-          </Button>
+          <LanguageSwitcher />
           <Button onClick={fetchDashboardData} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             {isArabic ? 'تحديث' : 'Refresh'}

@@ -1,6 +1,7 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   Card,
   CardContent,
@@ -290,13 +291,7 @@ const ComprehensiveFarmManagement: React.FC<
           </p>
         </div>
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <Button
-            variant="outline"
-            onClick={toggleLanguage}
-            className="text-sm"
-          >
-            {isArabic ? "English" : "العربية"}
-          </Button>
+          <LanguageSwitcher />
           <Button
             variant="outline"
             size="sm"
