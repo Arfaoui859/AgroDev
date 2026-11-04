@@ -77,6 +77,7 @@ ALTER TABLE public.sensor_readings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.soil_images            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_analytics         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.weather_data           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weather_forecasts      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weather_records        ENABLE ROW LEVEL SECURITY;
 
@@ -322,3 +323,13 @@ CREATE POLICY "Anyone can read system_settings" ON public.system_settings
 DROP POLICY IF EXISTS "Admins manage system_settings" ON public.system_settings;
 CREATE POLICY "Admins manage system_settings" ON public.system_settings
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+-- weather_data is farm-scoped (farm_id), so it is owner-managed like the other
+-- agronomic records rather than public-read.
+DROP POLICY IF EXISTS "Owners manage own weather_data" ON public.weather_data;
+CREATE POLICY "Owners manage own weather_data" ON public.weather_data
+  FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
+
+DROP POLICY IF EXISTS "Experts can view weather_data" ON public.weather_data;
+CREATE POLICY "Experts can view weather_data" ON public.weather_data
+  FOR SELECT USING (public.is_expert());
