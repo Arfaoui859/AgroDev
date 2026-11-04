@@ -121,3 +121,108 @@ describe("🧴 Fertilizer inventory", () => {
     expect(a.body.isRealData).toBe(false);
   });
 });
+
+describe("🌱 Fertilizer recommendation input validation", () => {
+  const URL = "/api/fertilizer/recommendations/fertilizer";
+
+  test("returns ranked recommendations for a full payload", async () => {
+    const res = await request(app)
+      .post(URL)
+      .send({
+        cropType: "tomato",
+        soilData: { ph: 6.8, nitrogen: 18, phosphorus: 12, potassium: 22, organicMatter: 2.1 },
+        farmSize: 2,
+        budget: 500,
+        organicPreference: true,
+        growthStage: "growth",
+        season: "spring",
+      })
+      .expect(200);
+    expect(Array.isArray(res.body.recommendations)).toBe(true);
+    expect(res.body.recommendations.length).toBeGreaterThan(0);
+    expect(res.body.soilAnalysis).toBeTruthy();
+  });
+
+  test("rejects an empty body with 400 instead of a 500", async () => {
+    const res = await request(app).post(URL).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeTruthy();
+  });
+
+  test("rejects a body missing cropType with 400", async () => {
+    const res = await request(app).post(URL).send({ soilData: { ph: 7 } });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Missing cropType");
+  });
+
+  test("rejects a non-object body with 400", async () => {
+    const res = await request(app)
+      .post(URL)
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify([1, 2, 3]));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("🧴 Pesticide recommendation input validation", () => {
+  const URL = "/api/fertilizer/recommendations/pesticide";
+
+  test("an empty object does not crash (no fabricated pesticides)", async () => {
+    const res = await request(app).post(URL).send({}).expect(200);
+    expect(Array.isArray(res.body.recommendations)).toBe(true);
+    expect(res.body.recommendations).toHaveLength(0);
+  });
+
+  test("rejects a non-object body with 400", async () => {
+    const res = await request(app)
+      .post(URL)
+      .set("Content-Type", "application/json")
+      .send(JSON.stringify([1, 2, 3]));
+    expect(res.status).toBe(400);
+  });
+
+  test("accepts a full payload", async () => {
+    const res = await request(app)
+      .post(URL)
+      .send({
+        cropType: "tomato",
+        detectedDiseases: [],
+        detectedPests: [],
+        farmSize: 1,
+        organicPreference: false,
+        environmentalConcern: true,
+      })
+      .expect(200);
+    expect(Array.isArray(res.body.recommendations)).toBe(true);
+  });
+});
+
+describe("💧 Irrigation water-usage analytics hardening", () => {
+  const URL = "/api/weather-irrigation/analytics/water-usage";
+
+  test("does not crash (500) on an empty body", async () => {
+    const res = await request(app).post(URL).send({}).expect(200);
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.dataSource).toBe("simulated");
+    expect(Array.isArray(res.body.breakdown)).toBe(true);
+  });
+
+  test("returns a labelled breakdown for a full payload", async () => {
+    const res = await request(app)
+      .post(URL)
+      .send({ farmId: "farm-001", period: "month", cropTypes: ["olive", "tomato"] })
+      .expect(200);
+    expect(res.body.breakdown).toHaveLength(2);
+    expect(res.body.disclaimer).toBeTruthy();
+  });
+});
+
+describe("🌦️ Irrigation schedule station validation", () => {
+  const URL = "/api/weather-irrigation/irrigation/schedule";
+
+  test("rejects a missing stationId with 400 (not a misleading 404)", async () => {
+    const res = await request(app).post(URL).send({ cropType: "olive" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Missing stationId");
+  });
+});

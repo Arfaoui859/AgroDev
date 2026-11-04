@@ -167,7 +167,14 @@ router.post('/irrigation/schedule', async (req, res) => {
     irrigationSystem,
     stationId,
     plantingDate 
-  } = req.body;
+  } = req.body ?? {};
+
+  if (!stationId || typeof stationId !== 'string') {
+    return res.status(400).json({
+      error: 'Missing stationId',
+      message: 'A valid "stationId" is required to fetch a weather-based schedule.',
+    });
+  }
 
   let forecast;
   try {
@@ -301,7 +308,7 @@ router.get('/alerts/:stationId', async (req, res) => {
 // instead of showing them as measured usage.
 router.post('/analytics/water-usage', (req, res) => {
   markSimulated(res, 'simulated');
-  const { farmId, period, cropTypes } = req.body;
+  const { farmId, period, cropTypes } = req.body ?? {};
   const analytics = generateWaterUsageAnalytics(farmId, period, cropTypes);
   res.json({
     ...analytics,
@@ -573,7 +580,12 @@ function generateWeatherAlerts(forecast: any[] | null | undefined) {
   return alerts;
 }
 
-function generateWaterUsageAnalytics(farmId: string, period: string, cropTypes: string[]) {
+function generateWaterUsageAnalytics(
+  farmId: string,
+  period: string = 'month',
+  cropTypes: string[] = [],
+) {
+  const safeCropTypes = Array.isArray(cropTypes) ? cropTypes : [];
   // Illustrative baseline: no metered irrigation telemetry is available, so the
   // breakdown uses fixed per-crop reference values rather than random noise.
   const baselineWaterPerCrop = 4000; // litres per crop block, reference value
@@ -590,7 +602,7 @@ function generateWaterUsageAnalytics(farmId: string, period: string, cropTypes: 
       benchmark: 78,
       improvement: '+12%'
     },
-    breakdown: cropTypes.map(crop => ({
+    breakdown: safeCropTypes.map(crop => ({
       crop,
       waterUsed: baselineWaterPerCrop,
       efficiency: 85,

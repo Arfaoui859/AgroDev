@@ -192,6 +192,13 @@ const diseaseToTreatment = {
 
 // Generate personalized fertilizer recommendations
 router.post('/recommendations/fertilizer', (req, res) => {
+  if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+    return res.status(400).json({
+      error: "Invalid request body",
+      message: 'A JSON object with at least "cropType" is required.',
+    });
+  }
+
   const { 
     cropType, 
     soilData, 
@@ -201,6 +208,13 @@ router.post('/recommendations/fertilizer', (req, res) => {
     growthStage,
     season
   } = req.body;
+
+  if (typeof cropType !== "string" || cropType.trim() === "") {
+    return res.status(400).json({
+      error: "Missing cropType",
+      message: '"cropType" is required and must be a non-empty string.',
+    });
+  }
 
   // Analyze soil deficiencies
   const soilAnalysis = analyzeSoilDeficiencies(soilData);
@@ -261,6 +275,13 @@ router.post('/recommendations/fertilizer', (req, res) => {
 
 // Generate pesticide recommendations based on disease/pest detection
 router.post('/recommendations/pesticide', (req, res) => {
+  if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+    return res.status(400).json({
+      error: "Invalid request body",
+      message: 'A JSON object with at least "cropType" is required.',
+    });
+  }
+
   const { 
     cropType, 
     detectedDiseases, 
