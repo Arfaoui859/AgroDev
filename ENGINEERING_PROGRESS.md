@@ -10,9 +10,26 @@ database is listed under "Remaining work" or "Known limitations".
 - Working branch: `feat/ai-integration-production-hardening`
 - Runtime: Node + Express (SSR build in `dist/server/node-build.mjs`),
   React 18 SPA, Supabase Postgres (PostgreSQL 17.4).
-- Python AI microservices in `agrogrowth-ai/` (FastAPI, ports 8001–8005).
+- Python AI microservices in `agrogrowth-ai/` (FastAPI, ports 8001–8008, eight services).
 
 ## Completed work
+
+### Phase 0 — Microservice reliability (event-loop blocking)
+- Every microservice was probed on `/health` while a heavy request ran. The
+  weather/yield service trained its two scikit-learn models **inside** `async`
+  handlers, blocking the event loop for ~100 s: a concurrent `/health` timed
+  out and the platform marked a live service as down. `/health` also took the
+  training lock, so it hung until training finished.
+- Added `ai_common/offload.py` (`offload()` → `anyio.to_thread.run_sync`) and
+  moved every blocking call (model load/predict, vision HTTP, chat/planner/
+  notifier) out of the event loop: fully-synchronous handlers became plain
+  `def` (threadpool); the async upload handlers keep `async def` and offload
+  their blocking body. `_model_status()` is now lock-free.
+- Verified: `/health` returns 200 in ~1 ms even during a cold
+  `/create-weather-plan`; the plan request still succeeds. Regression tests
+  (`tests/test_event_loop_non_blocking.py`) enforce the contract at the AST
+  level for the weather and image services.
+
 
 ### Phase 1 — Repository understanding and audit
 - Audited frontend pages, backend routes, AI services, DB schema, auth,
@@ -41,6 +58,15 @@ database is listed under "Remaining work" or "Known limitations".
 ### Phase 4 — Frontend functionality and API integration
 - Labeled the mock-driven `FieldManagement` page with the shared
   `SimulatedDataNotice` so its fixture data is not mistaken for live records.
+- Completed the mock-data audit: every page that synthesises records now shows a
+  disclosure banner. 14 pages generate mock data; all 14 render either
+  `SimulatedDataNotice` or `DataProvenanceBanner`, so no synthetic figure is
+  presented as a live measurement.
+- Verified every client API path resolves. Of the seven routes that returned a
+  non-200 probe, six are intentional business-logic 404s/400s (e.g. an
+  unknown weather station, a missing irrigation schedule, a validation error);
+  the only `/api/auth` reference is a mock string in
+  `SecurityMonitoringContext`, not a real call. No genuine missing route.
 
 ### Phase 5 — AI agents and real providers
 - Verified the farm advisor answers in the requested language end to end.
@@ -84,8 +110,17 @@ database is listed under "Remaining work" or "Known limitations".
 
 ## Tests executed (actual results)
 
-- Jest full suite: **456 passed, 2 skipped, 56 suites** (was 453 before the
-  localisation work; +3 new localisation tests).
+- Jest full suite: **524 passed, 2 skipped, 62 suites**.
+- Python pytest (in `agrogrowth-ai/`): **183 passed** (was 180; +3 new
+  event-loop regression tests).
+- `npx tsc --noEmit`: clean. `npm run lint`: clean (0 warnings).
+- Client production build (`npm run build:client`): succeeds.
+- Gateway smoke test: `/api/ai/soil/analyze` → `synthetic-model` /
+  `isRealData:false`; `/api/ai/assistant/chat` → `rule-based` /
+  `isRealData:false`; `/api/ai/crops/recommend` → 200 with 6 honest
+  `heuristic` recommendations; `/api/market-analysis/prices/current` → 200
+  with `X-Data-Provenance: simulated`; `/api/market/all` → `database` /
+  `isRealData:true`.
 - `npx tsc --noEmit`: clean.
 - Live RLS isolation: anon sees 0 rows, owner sees their row, another user
   sees 0 rows.
@@ -107,8 +142,8 @@ database is listed under "Remaining work" or "Known limitations".
   API key — so the honest rule-based fallback remains active.
 - A vision provider (`AI_VISION_MODEL`) or the image-diagnosis microservice
   running, to enable real plant-disease detection.
-- The Python AI microservices (ports 8001–8005) deployed/running for the
-  specialised engines.
+- The Python AI microservices (ports 8001–8008) deployed/running for the
+  specialised engines. All eight were started locally and answer `/health`.
 
 ## Known limitations
 
@@ -130,6 +165,6 @@ database is listed under "Remaining work" or "Known limitations".
 1. Configure and verify a real LLM + vision provider; re-run
    `tests/integration/llm-live.test.ts`.
 2. Bring up the Python AI microservices and verify each specialised endpoint.
-3. Continue the frontend audit for any remaining mock-driven pages lacking a
-   `SimulatedDataNotice`.
-4. Expand API integration and end-to-end coverage for the remaining modules.
+3. Expand API integration and end-to-end coverage for the remaining modules.
+4. Deploy the Python microservices alongside the Node gateway (single-host
+   compose) so the specialised engines are always reachable.
