@@ -1,25 +1,33 @@
-# Use the base AI image
+
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy market prediction specific files
-COPY market_prediction/ ./market_prediction/
-COPY ai_common/ ./ai_common/
+# Install system build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    make \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install any additional dependencies specific to market prediction
+# Install Python dependencies
 RUN pip install --no-cache-dir \
+    numpy==1.24.3 \
     ta-lib==0.4.25 \
     yfinance==0.2.18 \
     plotly==5.17.0
 
-# Expose port
+# Copy application files
+COPY ai_common/ ./ai_common/
+COPY market_prediction/ ./market_prediction/
+
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+RUN python -c "import talib, yfinance, plotly; print('Market dependencies OK')"
+
 EXPOSE 8003
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8003/health || exit 1
-
-# Run the application
-CMD ["python", "-m", "market_prediction.main"]
+CMD ["sh", "-c", "python -m market_prediction.main"]
