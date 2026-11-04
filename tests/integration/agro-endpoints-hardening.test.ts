@@ -226,3 +226,39 @@ describe("🌦️ Irrigation schedule station validation", () => {
     expect(res.body.error).toBe("Missing stationId");
   });
 });
+
+describe("🗓️ Fertilizer comprehensive schedule validation", () => {
+  const URL = "/api/fertilizer/schedule/comprehensive";
+
+  test("rejects a missing plantingDate with 400 instead of a 500", async () => {
+    const res = await request(app).post(URL).send({ cropType: "olive" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Invalid plantingDate");
+  });
+
+  test("builds a 12-week schedule for a valid plantingDate", async () => {
+    const res = await request(app)
+      .post(URL)
+      .send({ cropType: "olive", farmSize: 2, plantingDate: "2026-03-01" })
+      .expect(200);
+    expect(res.body.schedule).toHaveLength(12);
+  });
+});
+
+describe("📦 Trader order creation validation", () => {
+  const URL = "/api/trader-dashboard/orders";
+
+  test("rejects an order with no products with 400 instead of a 500", async () => {
+    const res = await request(app).post(URL).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Missing products");
+  });
+
+  test("accepts an order with at least one product", async () => {
+    const res = await request(app)
+      .post(URL)
+      .send({ type: "sale", clientName: "Ali", products: [{ name: "seed", totalPrice: 30 }] })
+      .expect(200);
+    expect(res.body.data.totalAmount).toBe(30);
+  });
+});

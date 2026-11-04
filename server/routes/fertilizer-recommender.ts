@@ -382,7 +382,14 @@ router.post('/schedule/comprehensive', (req, res) => {
     fertilizerPlan, 
     pesticidePlan,
     weatherData 
-  } = req.body;
+  } = req.body ?? {};
+
+  if (!plantingDate || Number.isNaN(new Date(plantingDate).getTime())) {
+    return res.status(400).json({
+      error: 'Invalid plantingDate',
+      message: 'A valid ISO "plantingDate" is required to build a schedule.',
+    });
+  }
 
   const schedule = generateComprehensiveSchedule(
     cropType, 

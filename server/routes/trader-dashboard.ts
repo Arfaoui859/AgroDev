@@ -667,7 +667,15 @@ router.post('/orders', (req, res) => {
       notes,
       notesArabic,
       priority
-    } = req.body;
+    } = req.body ?? {};
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one product is required to create an order.',
+        error: 'Missing products',
+      });
+    }
 
     const totalAmount = products.reduce((sum: number, p: any) => sum + p.totalPrice, 0);
 
