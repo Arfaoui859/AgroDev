@@ -5,8 +5,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy intelligent agent specific files
-COPY ..intelligent_agent/ ./intelligent_agent/
-COPY ..ai_common/ ./ai_common/
+COPY ../intelligent_agent/ ./intelligent_agent/
+COPY ../ai_common/ ./ai_common/
 
 # Install any additional dependencies specific to intelligent agent
 RUN pip install --no-cache-dir \
