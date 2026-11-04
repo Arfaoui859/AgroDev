@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ../ai_common ./ai_common
 
 # Copy service-specific files
-COPY . ./crop_recommendation
+COPY ../crop_recommendation ./crop_recommendation
 
 # Set Python path
 ENV PYTHONPATH=/app
