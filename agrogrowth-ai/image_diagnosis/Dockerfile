@@ -50,4 +50,3 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
 
 # Run the service
 CMD ["sh", "-c", "uvicorn image_diagnosis.main:app --host 0.0.0.0 --port ${SERVICE_PORT}"]
-```
