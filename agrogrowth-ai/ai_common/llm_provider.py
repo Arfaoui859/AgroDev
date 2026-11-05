@@ -1,38 +1,8 @@
 """
-Real LLM provider adapter for the AgroGrowth Python AI microservices.
-
-The microservices ship deterministic agronomic rules so they work with no
-credentials at all. When a provider *is* configured, the assistant should use
-it and say so, instead of always answering from the rules while the health
-endpoint claims "healthy".
-
-Two protocol families are supported, matching the Node adapter in
-`server/services/providers/llmProvider.ts` so a single set of environment
-variables configures the whole platform:
-
-  1. "openai-compatible" — POST {base}/chat/completions
-     (OpenAI, OpenRouter, Groq, Together, Ollama, vLLM, ...)
-  2. "gemini"            — POST /v1beta/models/{model}:generateContent
-
-Environment (all optional; when unset the caller must fall back to the
-deterministic rules and label the answer as such):
-
-  AI_PROVIDER     "openai-compatible" | "gemini" | "openai" | "openrouter" |
-                  "groq" | "ollama". Optional label; the effective protocol is
-                  derived from it plus the available credentials.
-  AI_BASE_URL     openai-compatible endpoint (defaults per provider)
-  AI_API_KEY      bearer token (provider-specific keys are also honoured)
-  AI_MODEL        model used unless overridden
-  AI_TIMEOUT_MS   request timeout (default 30000)
-  AI_MAX_RETRIES  bounded retries (default 1)
-  AI_RETRY_BASE_MS  exponential-backoff base delay (default 400)
-  AI_RETRY_MAX_MS   backoff / Retry-After cap (default 30000)
-
-Provider-specific keys are accepted so an existing deployment does not have to
-be renamed: OPENAI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, TOGETHER_API_KEY,
-GEMINI_API_KEY / GOOGLE_API_KEY.
+AgroGrowth LLM provider adapter.
+Supports OpenAI-compatible providers (OpenAI, OpenRouter, Groq, Together,
+Ollama, vLLM) and Gemini native API. No credentials => explicit rule fallback.
 """
-
 from __future__ import annotations
 
 import json
@@ -42,6 +12,7 @@ import random
 import re
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Optional
 
@@ -49,73 +20,27 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_MODEL_SOURCE = "rule-based-demo"
 DEFAULT_MAX_RETRY_DELAY_S = 30.0
 
-
-def parse_retry_after(value: Optional[str]) -> Optional[float]:
-    """Parse an HTTP Retry-After header into seconds (delta or HTTP-date)."""
-    if not value:
-        return None
-    trimmed = value.strip()
-    if not trimmed:
-        return None
-    try:
-        return max(0.0, float(trimmed))
-    except ValueError:
-        pass
-    try:
-        when = parsedate_to_datetime(trimmed)
-    except (TypeError, ValueError):
-        return None
-    if when is None:
-        return None
-    from datetime import datetime, timezone
-
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=timezone.utc)
-    return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
-
-
-def backoff_delay_s(
-    attempt: int,
-    base_s: float,
-    max_s: float = DEFAULT_MAX_RETRY_DELAY_S,
-    retry_after_s: Optional[float] = None,
-) -> float:
-    """Bounded exponential backoff with full jitter (Retry-After wins)."""
-    cap = max(0.0, max_s)
-    if retry_after_s is not None:
-        return min(retry_after_s, cap)
-    ceiling = min(base_s * (2 ** attempt), cap)
-    return random.uniform(0.0, ceiling)
-
-# The provenance string reported when no provider is configured. It contains
-# the word "demo" so the Node gateway probe classifies it as non-real.
-DEFAULT_MODEL_SOURCE = "rule-based-demo"
-
-DEFAULT_BASE_URLS: Dict[str, str] = {
+DEFAULT_BASE_URLS = {
     "openai": "https://api.openai.com/v1",
     "openrouter": "https://openrouter.ai/api/v1",
     "groq": "https://api.groq.com/openai/v1",
     "together": "https://api.together.xyz/v1",
     "ollama": "http://localhost:11434/v1",
 }
-
-DEFAULT_MODELS: Dict[str, str] = {
+DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
     "openrouter": "openai/gpt-4o-mini",
     "groq": "llama-3.1-8b-instant",
     "together": "meta-llama/Llama-3.2-3B-Instruct-Turbo",
     "ollama": "llama3.1",
-    # gemini-2.0-flash is shut down and gemini-1.5-flash is discontinued; the
-    # rolling alias tracks the current multimodal Flash release.
     "gemini": "gemini-flash-latest",
 }
 
 
 class LLMError(RuntimeError):
-    """Raised when a configured provider cannot produce a result."""
-
     def __init__(self, kind: str, message: str, retryable: bool = False,
                  retry_after_s: Optional[float] = None):
         super().__init__(message)
@@ -126,7 +51,7 @@ class LLMError(RuntimeError):
 
 @dataclass
 class LLMConfig:
-    kind: str  # "openai-compatible" | "gemini" | "none"
+    kind: str
     provider: str
     base_url: Optional[str]
     api_key: Optional[str]
@@ -139,48 +64,76 @@ class LLMConfig:
 
 def _env(*names: str) -> Optional[str]:
     for name in names:
-        value = os.environ.get(name)
+        value = os.getenv(name)
         if value and value.strip():
             return value.strip()
     return None
 
 
-def _first_env(*names: str) -> Optional[str]:
-    return _env(*names)
+def parse_retry_after(value: Optional[str]) -> Optional[float]:
+    if not value:
+        return None
+    try:
+        return max(0.0, float(value.strip()))
+    except (TypeError, ValueError):
+        pass
+    try:
+        when = parsedate_to_datetime(value.strip())
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def backoff_delay_s(attempt: int, base_s: float,
+                    max_s: float = DEFAULT_MAX_RETRY_DELAY_S,
+                    retry_after_s: Optional[float] = None) -> float:
+    cap = max(0.0, max_s)
+    if retry_after_s is not None:
+        return min(max(0.0, retry_after_s), cap)
+    ceiling = min(max(0.0, base_s) * (2 ** max(0, attempt)), cap)
+    return random.uniform(0.0, ceiling)
 
 
 def resolve_config() -> LLMConfig:
-    """Resolve the effective provider configuration from the environment."""
-    label = (_first_env("AI_PROVIDER") or "").lower()
-    timeout_ms = int(_first_env("AI_TIMEOUT_MS") or "30000")
-    max_retries = int(_first_env("AI_MAX_RETRIES") or "1")
-    retry_base_s = float(_first_env("AI_RETRY_BASE_MS") or "400") / 1000.0
-    retry_max_s = float(_first_env("AI_RETRY_MAX_MS") or "30000") / 1000.0
+    label = (_env("AI_PROVIDER") or "").lower()
+    timeout_ms = int(_env("AI_TIMEOUT_MS") or "30000")
+    retries = int(_env("AI_MAX_RETRIES") or "1")
+    retry_base_ms = int(_env("AI_RETRY_BASE_MS") or "400")
+    retry_max_ms = int(_env("AI_RETRY_MAX_MS") or "30000")
 
-    api_key = _first_env("AI_API_KEY")
-    base_url = _first_env("AI_BASE_URL")
+    if timeout_ms <= 0:
+        raise ValueError("AI_TIMEOUT_MS must be greater than zero")
+    if retries < 0 or retries > 5:
+        raise ValueError("AI_MAX_RETRIES must be between 0 and 5")
+    if retry_base_ms < 0 or retry_max_ms < 0:
+        raise ValueError("AI retry delays cannot be negative")
+
+    base_url = _env("AI_BASE_URL")
+    api_key = _env("AI_API_KEY")
     provider = label
 
-    # Provider-specific keys auto-select their provider when no explicit label.
-    if not api_key:
-        for candidate, key_env in (
-            ("openai", "OPENAI_API_KEY"),
-            ("openrouter", "OPENROUTER_API_KEY"),
-            ("groq", "GROQ_API_KEY"),
-            ("together", "TOGETHER_API_KEY"),
-        ):
-            key = _env(key_env)
-            if key:
-                api_key = key
-                if not provider:
-                    provider = candidate
-                break
+    specific_keys = {
+        "openai": _env("OPENAI_API_KEY"),
+        "openrouter": _env("OPENROUTER_API_KEY"),
+        "groq": _env("GROQ_API_KEY"),
+        "together": _env("TOGETHER_API_KEY"),
+    }
+    gemini_key = _env("GEMINI_API_KEY", "GOOGLE_API_KEY")
 
-    gemini_key = _first_env("GEMINI_API_KEY", "GOOGLE_API_KEY")
-    if not api_key and gemini_key:
-        api_key = gemini_key
-        if not provider:
-            provider = "gemini"
+    if not api_key:
+        if label == "gemini":
+            api_key = gemini_key
+        elif label in specific_keys:
+            api_key = specific_keys[label]
+        else:
+            for candidate, key in specific_keys.items():
+                if key:
+                    provider, api_key = candidate, key
+                    break
+            if not api_key and gemini_key:
+                provider, api_key = "gemini", gemini_key
 
     if not provider:
         if base_url:
@@ -190,365 +143,264 @@ def resolve_config() -> LLMConfig:
         else:
             provider = "none"
 
-    # Gemini uses the native wire format; everything else is OpenAI-compatible.
-    if provider == "gemini" or label == "gemini":
-        kind = "gemini" if (gemini_key or label == "gemini") else "none"
-    else:
-        kind = "openai-compatible" if (api_key or base_url) else "none"
-
-    if kind == "none":
+    if provider == "gemini":
+        if not api_key:
+            return LLMConfig("none", "none", None, None, "", timeout_ms / 1000,
+                             retries, retry_base_ms / 1000, retry_max_ms / 1000)
         return LLMConfig(
-            kind="none",
-            provider="none",
-            base_url=None,
-            api_key=None,
-            model="",
-            timeout_s=timeout_ms / 1000,
-            max_retries=max_retries,
-            retry_base_s=retry_base_s,
-            retry_max_s=retry_max_s,
+            "gemini", "gemini", None, api_key,
+            _env("AI_MODEL") or DEFAULT_MODELS["gemini"],
+            timeout_ms / 1000, retries,
+            retry_base_ms / 1000, retry_max_ms / 1000,
         )
 
-    if kind == "gemini":
-        model = _first_env("AI_MODEL") or DEFAULT_MODELS["gemini"]
-        return LLMConfig(
-            kind="gemini",
-            provider="gemini",
-            base_url=None,
-            api_key=api_key,
-            model=model,
-            timeout_s=timeout_ms / 1000,
-            max_retries=max_retries,
-            retry_base_s=retry_base_s,
-            retry_max_s=retry_max_s,
-        )
+    supported = {"openai", "openrouter", "groq", "together", "ollama",
+                 "openai-compatible"}
+    if provider not in supported:
+        raise ValueError(f"Unsupported AI_PROVIDER: {provider}")
 
-    resolved_base = base_url or DEFAULT_BASE_URLS.get(provider, DEFAULT_BASE_URLS["openai"])
-    model = _first_env("AI_MODEL") or DEFAULT_MODELS.get(provider, DEFAULT_MODELS["openai"])
+    if not api_key and not base_url:
+        return LLMConfig("none", "none", None, None, "", timeout_ms / 1000,
+                         retries, retry_base_ms / 1000, retry_max_ms / 1000)
+
+    resolved_base = (base_url or DEFAULT_BASE_URLS.get(
+        provider, DEFAULT_BASE_URLS["openai"]
+    )).rstrip("/")
+    model_default = DEFAULT_MODELS.get(provider, DEFAULT_MODELS["openai"])
     return LLMConfig(
-        kind="openai-compatible",
-        provider=provider,
-        base_url=resolved_base.rstrip("/"),
-        api_key=api_key,
-        model=model,
-        timeout_s=timeout_ms / 1000,
-        max_retries=max_retries,
-        retry_base_s=retry_base_s,
-        retry_max_s=retry_max_s,
+        "openai-compatible", provider, resolved_base, api_key,
+        _env("AI_MODEL") or model_default,
+        timeout_ms / 1000, retries,
+        retry_base_ms / 1000, retry_max_ms / 1000,
     )
 
 
 def is_configured() -> bool:
-    return resolve_config().kind != "none"
+    try:
+        return resolve_config().kind != "none"
+    except (ValueError, TypeError):
+        logger.exception("Invalid LLM configuration")
+        return False
 
 
 def model_source() -> str:
-    """Provenance string for /health. Contains a heuristic marker when unset."""
     cfg = resolve_config()
-    if cfg.kind == "none":
-        return DEFAULT_MODEL_SOURCE
-    return f"{cfg.provider}:{cfg.model}"
+    return DEFAULT_MODEL_SOURCE if cfg.kind == "none" else f"{cfg.provider}:{cfg.model}"
 
 
 def extract_json(text: str) -> Optional[Any]:
-    """Best-effort JSON extraction from a model reply (fenced or raw)."""
-    if not text:
+    if not isinstance(text, str) or not text.strip():
         return None
-    fenced = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
-    candidate = fenced.group(1) if fenced else None
-    if candidate is None:
-        brace = re.search(r"\{[\s\S]*\}", text)
-        candidate = brace.group(0) if brace else None
-    if candidate is None:
-        return None
-    try:
-        return json.loads(candidate)
-    except (ValueError, TypeError):
-        return None
+    candidates = []
+    fenced = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.I)
+    if fenced:
+        candidates.append(fenced.group(1).strip())
+    candidates.append(text.strip())
+    match = re.search(r"[\[{][\s\S]*[\]}]", text)
+    if match:
+        candidates.append(match.group(0))
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def _message_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        chunks = []
+        for item in content:
+            if isinstance(item, dict) and isinstance(item.get("text"), str):
+                chunks.append(item["text"])
+        return "\n".join(chunks)
+    return ""
 
 
 class LLMProvider:
-    """Stateless client for the configured text LLM."""
-
     def __init__(self, config: Optional[LLMConfig] = None):
         self._config = config
 
     @property
     def config(self) -> LLMConfig:
-        # Resolved on every access rather than cached: the environment can
-        # change at runtime (and tests reconfigure providers between cases), and
-        # a stale cache would silently route to the wrong protocol or model.
-        if self._config is not None:
-            return self._config
-        return resolve_config()
+        return self._config if self._config is not None else resolve_config()
 
     def is_configured(self) -> bool:
         return self.config.kind != "none"
 
     def model_source(self) -> str:
         cfg = self.config
-        if cfg.kind == "none":
-            return DEFAULT_MODEL_SOURCE
-        return f"{cfg.provider}:{cfg.model}"
+        return DEFAULT_MODEL_SOURCE if cfg.kind == "none" else f"{cfg.provider}:{cfg.model}"
 
-    def chat(
-        self,
-        messages: List[Dict[str, str]],
-        *,
-        temperature: float = 0.3,
-        max_tokens: int = 1024,
-        json_mode: bool = False,
-    ) -> str:
-        """Send a chat completion request, returning the assistant text.
-
-        Raises LLMError on any failure so callers fall back explicitly rather
-        than receiving fabricated text.
-        """
+    def chat(self, messages: List[Dict[str, str]], *, temperature: float = 0.3,
+             max_tokens: int = 1024, json_mode: bool = False) -> str:
         cfg = self.config
         if cfg.kind == "none":
             raise LLMError("unconfigured", "No LLM provider is configured")
-
-        last_error: Optional[LLMError] = None
+        last_error = None
         for attempt in range(cfg.max_retries + 1):
             try:
                 if cfg.kind == "gemini":
-                    return self._chat_gemini(messages, temperature, max_tokens, json_mode)
-                return self._chat_openai(messages, temperature, max_tokens, json_mode)
+                    return self._chat_gemini(messages, temperature, max_tokens, json_mode, cfg)
+                return self._chat_openai(messages, temperature, max_tokens, json_mode, cfg)
             except LLMError as exc:
                 last_error = exc
-                if not exc.retryable or attempt == cfg.max_retries:
+                if not exc.retryable or attempt >= cfg.max_retries:
                     raise
-                delay = backoff_delay_s(
-                    attempt,
-                    cfg.retry_base_s,
-                    cfg.retry_max_s,
-                    exc.retry_after_s,
-                )
-                logger.warning(
-                    "LLM call failed (attempt %d/%d): %s — retrying in %.2fs",
-                    attempt + 1,
-                    cfg.max_retries + 1,
-                    exc,
-                    delay,
-                )
+                delay = backoff_delay_s(attempt, cfg.retry_base_s, cfg.retry_max_s,
+                                         exc.retry_after_s)
+                logger.warning("LLM request failed; retrying in %.2fs (%s)", delay, exc.kind)
                 time.sleep(delay)
-        raise last_error or LLMError("unknown", "LLM call failed")
+        raise last_error or LLMError("unknown", "LLM request failed")
 
-    def chat_json(
-        self,
-        messages: List[Dict[str, str]],
-        *,
-        temperature: float = 0.2,
-        max_tokens: int = 1024,
-    ) -> Optional[Any]:
-        """Chat and parse a JSON object/array from the reply, or None."""
-        text = self.chat(messages, temperature=temperature, max_tokens=max_tokens, json_mode=True)
-        return extract_json(text)
+    def chat_json(self, messages: List[Dict[str, str]], *, temperature: float = 0.2,
+                  max_tokens: int = 1024) -> Optional[Any]:
+        return extract_json(self.chat(messages, temperature=temperature,
+                                      max_tokens=max_tokens, json_mode=True))
 
     def vision_model(self) -> str:
-        """Model used for image inference (AI_VISION_MODEL, else AI_MODEL)."""
-        return _first_env("AI_VISION_MODEL") or self.config.model
+        return _env("AI_VISION_MODEL") or self.config.model
 
-    def chat_with_image(
-        self,
-        image_b64: str,
-        mime_type: str,
-        prompt: str,
-        *,
-        system: Optional[str] = None,
-        temperature: float = 0.2,
-        max_tokens: int = 1200,
-    ) -> str:
-        """Send an image + prompt to a multimodal model and return the text.
-
-        Raises LLMError("unconfigured") when no provider is set so the caller
-        can fall back explicitly rather than invent a diagnosis.
-        """
+    def chat_with_image(self, image_b64: str, mime_type: str, prompt: str, *,
+                        system: Optional[str] = None, temperature: float = 0.2,
+                        max_tokens: int = 1200) -> str:
         cfg = self.config
         if cfg.kind == "none":
             raise LLMError("unconfigured", "No vision provider is configured")
-
-        messages: List[Dict[str, Any]] = []
-        if system:
-            messages.append({"role": "system", "content": system})
+        if mime_type not in {"image/jpeg", "image/png", "image/webp"}:
+            raise LLMError("input", "Unsupported image MIME type")
 
         if cfg.kind == "gemini":
-            url = (
-                f"https://generativelanguage.googleapis.com/v1beta/models/"
-                f"{self.vision_model()}:generateContent"
-            )
-            parts: List[Dict[str, Any]] = [{"text": prompt}]
-            parts.append({"inlineData": {"mimeType": mime_type, "data": image_b64}})
-            payload: Dict[str, Any] = {
+            parts = [{"text": prompt},
+                     {"inlineData": {"mimeType": mime_type, "data": image_b64}}]
+            payload = {
                 "contents": [{"role": "user", "parts": parts}],
-                "generationConfig": {
-                    "temperature": temperature,
-                    "maxOutputTokens": max_tokens,
-                    "responseMimeType": "application/json",
-                },
+                "generationConfig": {"temperature": temperature,
+                                     "maxOutputTokens": max_tokens,
+                                     "responseMimeType": "application/json"},
             }
-            data = self._post(
-                url,
-                {"Content-Type": "application/json", "x-goog-api-key": cfg.api_key or ""},
-                payload,
-            )
-            try:
-                return data["candidates"][0]["content"]["parts"][0]["text"] or ""
-            except (KeyError, IndexError, TypeError) as exc:
-                raise LLMError("protocol", f"Unexpected Gemini response shape: {exc}") from exc
+            if system:
+                payload["systemInstruction"] = {"parts": [{"text": system}]}
+            url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+                   f"{self.vision_model()}:generateContent")
+            data = self._post(url, {"Content-Type": "application/json",
+                                    "x-goog-api-key": cfg.api_key or ""}, payload, cfg)
+            return self._gemini_text(data)
 
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {
+                "url": f"data:{mime_type};base64,{image_b64}"
+            }},
+        ]})
+        payload = {"model": self.vision_model(), "messages": messages,
+                   "temperature": temperature, "max_tokens": max_tokens}
         url = f"{cfg.base_url}/chat/completions"
         headers = {"Content-Type": "application/json"}
         if cfg.api_key:
             headers["Authorization"] = f"Bearer {cfg.api_key}"
-        messages.append(
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:{mime_type};base64,{image_b64}"},
-                    },
-                ],
-            }
-        )
-        payload = {
-            "model": self.vision_model(),
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "response_format": {"type": "json_object"},
-        }
-        data = self._post(url, headers, payload)
+        data = self._post(url, headers, payload, cfg)
         try:
-            return data["choices"][0]["message"]["content"] or ""
+            return _message_text(data["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError) as exc:
-            raise LLMError("protocol", f"Unexpected provider response shape: {exc}") from exc
+            raise LLMError("protocol", "Unexpected vision provider response") from exc
 
-    def chat_image_json(
-        self,
-        image_b64: str,
-        mime_type: str,
-        prompt: str,
-        *,
-        system: Optional[str] = None,
-        temperature: float = 0.2,
-        max_tokens: int = 1200,
-    ) -> Optional[Any]:
-        """Vision call parsed as JSON, or None when the reply is not JSON."""
-        text = self.chat_with_image(
-            image_b64,
-            mime_type,
-            prompt,
-            system=system,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-        return extract_json(text)
+    def chat_image_json(self, image_b64: str, mime_type: str, prompt: str, *,
+                        system: Optional[str] = None, temperature: float = 0.2,
+                        max_tokens: int = 1200) -> Optional[Any]:
+        return extract_json(self.chat_with_image(
+            image_b64, mime_type, prompt, system=system,
+            temperature=temperature, max_tokens=max_tokens
+        ))
 
-    # -- protocol implementations -------------------------------------------
-
-    def _chat_openai(
-        self,
-        messages: List[Dict[str, str]],
-        temperature: float,
-        max_tokens: int,
-        json_mode: bool,
-    ) -> str:
-        cfg = self.config
-        url = f"{cfg.base_url}/chat/completions"
-        headers = {"Content-Type": "application/json"}
-        if cfg.api_key:
-            headers["Authorization"] = f"Bearer {cfg.api_key}"
-        payload: Dict[str, Any] = {
-            "model": cfg.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-        }
+    def _chat_openai(self, messages, temperature, max_tokens, json_mode, cfg):
+        payload = {"model": cfg.model, "messages": messages,
+                   "temperature": temperature, "max_tokens": max_tokens}
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
-
-        data = self._post(url, headers, payload)
+        headers = {"Content-Type": "application/json"}
+        if cfg.api_key:
+            headers["Authorization"] = f"Bearer {cfg.api_key}"
+        data = self._post(f"{cfg.base_url}/chat/completions", headers, payload, cfg)
         try:
-            return data["choices"][0]["message"]["content"] or ""
+            text = _message_text(data["choices"][0]["message"]["content"])
+            if not text:
+                raise LLMError("protocol", "Provider returned an empty assistant message")
+            return text
         except (KeyError, IndexError, TypeError) as exc:
-            raise LLMError("protocol", f"Unexpected provider response shape: {exc}") from exc
+            raise LLMError("protocol", "Unexpected OpenAI-compatible response") from exc
 
-    def _chat_gemini(
-        self,
-        messages: List[Dict[str, str]],
-        temperature: float,
-        max_tokens: int,
-        json_mode: bool,
-    ) -> str:
-        cfg = self.config
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{cfg.model}:generateContent"
+    def _chat_gemini(self, messages, temperature, max_tokens, json_mode, cfg):
+        system_text = "\n\n".join(
+            str(m.get("content", "")) for m in messages if m.get("role") == "system"
         )
-        # Gemini takes system text separately and a flat contents list.
-        system_text = "\n\n".join(m["content"] for m in messages if m.get("role") == "system")
-        contents = [
-            {"role": "user" if m.get("role") != "assistant" else "model",
-             "parts": [{"text": m.get("content", "")}]}
-            for m in messages
-            if m.get("role") != "system"
-        ]
-        payload: Dict[str, Any] = {
-            "contents": contents,
-            "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens},
-        }
+        contents = []
+        for message in messages:
+            role = message.get("role")
+            if role == "system":
+                continue
+            contents.append({
+                "role": "model" if role == "assistant" else "user",
+                "parts": [{"text": str(message.get("content", ""))}],
+            })
+        if not contents:
+            raise LLMError("input", "At least one user message is required")
+        generation = {"temperature": temperature, "maxOutputTokens": max_tokens}
+        if json_mode:
+            generation["responseMimeType"] = "application/json"
+        payload = {"contents": contents, "generationConfig": generation}
         if system_text:
             payload["systemInstruction"] = {"parts": [{"text": system_text}]}
-        if json_mode:
-            payload["generationConfig"]["responseMimeType"] = "application/json"
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+               f"{cfg.model}:generateContent")
+        data = self._post(url, {"Content-Type": "application/json",
+                                "x-goog-api-key": cfg.api_key or ""}, payload, cfg)
+        return self._gemini_text(data)
 
-        data = self._post(
-            url,
-            {"Content-Type": "application/json", "x-goog-api-key": cfg.api_key or ""},
-            payload,
-        )
+    @staticmethod
+    def _gemini_text(data: Any) -> str:
         try:
-            return data["candidates"][0]["content"]["parts"][0]["text"] or ""
+            parts = data["candidates"][0]["content"]["parts"]
+            text = "\n".join(p.get("text", "") for p in parts if isinstance(p, dict))
+            if not text:
+                raise LLMError("protocol", "Gemini returned no text candidate")
+            return text
         except (KeyError, IndexError, TypeError) as exc:
-            raise LLMError("protocol", f"Unexpected Gemini response shape: {exc}") from exc
+            raise LLMError("protocol", "Unexpected Gemini response shape") from exc
 
-    def _post(self, url: str, headers: Dict[str, str], payload: Dict[str, Any]) -> Any:
-        cfg = self.config
+    @staticmethod
+    def _post(url: str, headers: Dict[str, str], payload: Dict[str, Any],
+              cfg: LLMConfig) -> Any:
         try:
             with httpx.Client(timeout=cfg.timeout_s) as client:
                 response = client.post(url, headers=headers, json=payload)
         except httpx.TimeoutException as exc:
-            raise LLMError("timeout", f"Provider request timed out after {cfg.timeout_s}s", True) from exc
+            raise LLMError("timeout", f"Provider timed out after {cfg.timeout_s}s", True) from exc
         except httpx.HTTPError as exc:
-            raise LLMError("network", f"Provider request failed: {exc}", True) from exc
+            raise LLMError("network", "Provider network request failed", True) from exc
 
         if response.status_code == 429 or response.status_code >= 500:
             raise LLMError(
-                "http",
-                f"Provider responded with HTTP {response.status_code}: {response.text[:200]}",
-                True,
-                parse_retry_after(response.headers.get("retry-after")),
+                "http", f"Provider HTTP {response.status_code}: {response.text[:300]}",
+                True, parse_retry_after(response.headers.get("retry-after"))
             )
         if response.status_code >= 400:
-            raise LLMError(
-                "http",
-                f"Provider responded with HTTP {response.status_code}: {response.text[:200]}",
-                False,
-            )
+            raise LLMError("http", f"Provider HTTP {response.status_code}: {response.text[:300]}")
         try:
             return response.json()
         except ValueError as exc:
-            raise LLMError("protocol", f"Provider returned non-JSON body: {exc}") from exc
+            raise LLMError("protocol", "Provider returned a non-JSON response") from exc
 
 
 _default_provider: Optional[LLMProvider] = None
 
 
 def get_provider() -> LLMProvider:
-    """Process-wide provider (configuration is read lazily per call)."""
     global _default_provider
     if _default_provider is None:
         _default_provider = LLMProvider()
