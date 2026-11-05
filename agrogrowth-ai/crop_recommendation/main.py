@@ -866,22 +866,25 @@ async def get_market_data(crop_name: str):
 
 @app.post("/quick-recommendation")
 async def quick_recommendation(
-    temperature: float = Field(
+    temperature: float = Query(
+        ...,
         description="Average temperature in Celsius",
         ge=-30,
         le=60,
     ),
-    rainfall: float = Field(
+    rainfall: float = Query(
+        ...,
         description="Annual rainfall in mm",
         ge=0,
         le=10000,
     ),
-    soil_ph: float = Field(
+    soil_ph: float = Query(
+        ...,
         description="Soil pH level",
         ge=0,
         le=14,
     ),
-    farm_size: float = Field(
+    farm_size: float = Query(
         default=2.0,
         gt=0,
     ),
