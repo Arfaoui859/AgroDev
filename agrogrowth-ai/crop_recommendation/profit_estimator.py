@@ -1,970 +1,1034 @@
+
 """
-ProfitEstimatorAI - Advanced profit estimation and financial analysis for agricultural investments
-Analyzes costs, revenues, market trends, and risk factors to provide detailed financial projections
+AgroGrowth - Transparent Agricultural Profit Estimator
+Deterministic financial calculations; no synthetic ML training.
+
+IMPORTANT:
+- Built-in prices and cost assumptions are indicative references only.
+- They are NOT verified live Tunisian market data.
+- Results are estimates, not guaranteed agricultural or financial outcomes.
 """
 
-import numpy as np
-import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Any, Optional
+from datetime import datetime
 import logging
-from datetime import datetime, timedelta
-import json
+import math
 
 logger = logging.getLogger(__name__)
 
+
 class ProfitEstimatorAI:
-    """AI system for comprehensive agricultural profit estimation and financial analysis"""
-    
+    """Transparent agricultural profitability calculation engine."""
+
+    MODEL_SOURCE = "deterministic-financial-rules"
+    FIELD_VALIDATED = False
+
+    # Indicative reference values only.
+    # Replace these with verified regional data before production use.
+    market_data = {
+        "wheat": {
+            "name_ar": "القمح",
+            "base_price_per_kg": 2.5,
+            "price_volatility": 0.15,
+            "seasonal_factors": {
+                "harvest_months": [5, 6, 7],
+                "price_dip_factor": 0.85,
+                "storage_premium": 0.10,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+        "corn": {
+            "name_ar": "الذرة",
+            "base_price_per_kg": 1.8,
+            "price_volatility": 0.20,
+            "seasonal_factors": {
+                "harvest_months": [8, 9, 10],
+                "price_dip_factor": 0.80,
+                "storage_premium": 0.15,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+        "rice": {
+            "name_ar": "الأرز",
+            "base_price_per_kg": 3.2,
+            "price_volatility": 0.10,
+            "seasonal_factors": {
+                "harvest_months": [9, 10, 11],
+                "price_dip_factor": 0.90,
+                "storage_premium": 0.08,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+        "tomato": {
+            "name_ar": "الطماطم",
+            "base_price_per_kg": 4.5,
+            "price_volatility": 0.35,
+            "seasonal_factors": {
+                "harvest_months": [6, 7, 8, 9],
+                "price_dip_factor": 0.70,
+                "storage_premium": 0.0,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+        "potato": {
+            "name_ar": "البطاطا",
+            "base_price_per_kg": 2.8,
+            "price_volatility": 0.25,
+            "seasonal_factors": {
+                "harvest_months": [5, 6, 10, 11],
+                "price_dip_factor": 0.75,
+                "storage_premium": 0.12,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+        "onion": {
+            "name_ar": "البصل",
+            "base_price_per_kg": 3.5,
+            "price_volatility": 0.30,
+            "seasonal_factors": {
+                "harvest_months": [4, 5, 6],
+                "price_dip_factor": 0.65,
+                "storage_premium": 0.20,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+        "dates": {
+            "name_ar": "التمور",
+            "base_price_per_kg": 15.0,
+            "price_volatility": 0.12,
+            "seasonal_factors": {
+                "harvest_months": [8, 9, 10],
+                "price_dip_factor": 0.85,
+                "storage_premium": 0.05,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+        "olive": {
+            "name_ar": "الزيتون",
+            "base_price_per_kg": 8.0,
+            "price_volatility": 0.18,
+            "seasonal_factors": {
+                "harvest_months": [10, 11, 12],
+                "price_dip_factor": 0.80,
+                "storage_premium": 0.15,
+            },
+            "demand_trend": "unknown",
+            "export_potential": "unknown",
+        },
+    }
+
+    # Indicative reference costs, not verified local quotations.
+    cost_structure = {
+        "land_lease_per_hectare_year": 1500.0,
+        "equipment_depreciation_per_hectare": 200.0,
+        "insurance_per_hectare": 150.0,
+        "certification_per_hectare": 100.0,
+        "unskilled_labor_per_day": 25.0,
+        "fuel_cost_per_liter": 1.5,
+        "electricity_cost_per_kwh": 0.12,
+        "water_cost_per_cubic_meter": 0.8,
+    }
+
     def __init__(self):
-        self.price_prediction_model = None
-        self.yield_prediction_model = None
-        self.cost_estimation_model = None
-        self.risk_assessment_model = None
-        self.scaler = StandardScaler()
+        # No model training and no synthetic data.
         self.is_trained = False
-        
-        # Market price database with historical trends
-        self.market_data = {
-            'wheat': {
-                'name_ar': 'القمح',
-                'base_price_per_kg': 2.5,
-                'price_volatility': 0.15,
-                'seasonal_factors': {
-                    'harvest_months': [5, 6, 7],
-                    'price_dip_factor': 0.85,
-                    'storage_premium': 0.1
-                },
-                'demand_trend': 'stable',
-                'export_potential': 'medium'
-            },
-            'corn': {
-                'name_ar': 'الذرة',
-                'base_price_per_kg': 1.8,
-                'price_volatility': 0.20,
-                'seasonal_factors': {
-                    'harvest_months': [8, 9, 10],
-                    'price_dip_factor': 0.80,
-                    'storage_premium': 0.15
-                },
-                'demand_trend': 'increasing',
-                'export_potential': 'high'
-            },
-            'rice': {
-                'name_ar': 'الأرز',
-                'base_price_per_kg': 3.2,
-                'price_volatility': 0.10,
-                'seasonal_factors': {
-                    'harvest_months': [9, 10, 11],
-                    'price_dip_factor': 0.90,
-                    'storage_premium': 0.08
-                },
-                'demand_trend': 'stable',
-                'export_potential': 'very_high'
-            },
-            'tomato': {
-                'name_ar': 'الطماطم',
-                'base_price_per_kg': 4.5,
-                'price_volatility': 0.35,
-                'seasonal_factors': {
-                    'harvest_months': [6, 7, 8, 9],
-                    'price_dip_factor': 0.70,
-                    'storage_premium': 0.0  # Perishable
-                },
-                'demand_trend': 'stable',
-                'export_potential': 'low'
-            },
-            'potato': {
-                'name_ar': 'البطاطس',
-                'base_price_per_kg': 2.8,
-                'price_volatility': 0.25,
-                'seasonal_factors': {
-                    'harvest_months': [5, 6, 10, 11],
-                    'price_dip_factor': 0.75,
-                    'storage_premium': 0.12
-                },
-                'demand_trend': 'stable',
-                'export_potential': 'medium'
-            },
-            'onion': {
-                'name_ar': 'البصل',
-                'base_price_per_kg': 3.5,
-                'price_volatility': 0.30,
-                'seasonal_factors': {
-                    'harvest_months': [4, 5, 6],
-                    'price_dip_factor': 0.65,
-                    'storage_premium': 0.20
-                },
-                'demand_trend': 'stable',
-                'export_potential': 'high'
-            },
-            'dates': {
-                'name_ar': 'التمور',
-                'base_price_per_kg': 15.0,
-                'price_volatility': 0.12,
-                'seasonal_factors': {
-                    'harvest_months': [8, 9, 10],
-                    'price_dip_factor': 0.85,
-                    'storage_premium': 0.05
-                },
-                'demand_trend': 'increasing',
-                'export_potential': 'very_high'
-            },
-            'olive': {
-                'name_ar': 'الزيتون',
-                'base_price_per_kg': 8.0,
-                'price_volatility': 0.18,
-                'seasonal_factors': {
-                    'harvest_months': [10, 11, 12],
-                    'price_dip_factor': 0.80,
-                    'storage_premium': 0.15
-                },
-                'demand_trend': 'increasing',
-                'export_potential': 'high'
-            }
+        self.model_source = self.MODEL_SOURCE
+        logger.info("ProfitEstimatorAI initialized using deterministic calculations")
+
+    @staticmethod
+    def _number(
+        data: Dict[str, Any],
+        key: str,
+        default: Optional[float] = None,
+        minimum: Optional[float] = None,
+    ) -> Optional[float]:
+        value = data.get(key, default)
+
+        if value is None:
+            return None
+
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"{key} must be a valid number")
+
+        if not math.isfinite(value):
+            raise ValueError(f"{key} must be finite")
+
+        if minimum is not None and value < minimum:
+            raise ValueError(f"{key} must be >= {minimum}")
+
+        return value
+
+    @staticmethod
+    def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
+        return max(low, min(high, value))
+
+    @staticmethod
+    def _safe_float(value: Any) -> float:
+        value = float(value)
+        if not math.isfinite(value):
+            raise ValueError("Calculated result is not finite")
+        return value
+
+    def _get_crop(self, crop_name: str) -> Dict[str, Any]:
+        crop_name = str(crop_name).strip().lower()
+
+        if crop_name not in self.market_data:
+            supported = ", ".join(sorted(self.market_data.keys()))
+            raise ValueError(
+                f"Unsupported crop '{crop_name}'. Supported crops: {supported}"
+            )
+
+        return self.market_data[crop_name]
+
+    def _calculate_detailed_costs(
+        self,
+        crop_name: str,
+        farm_size: float,
+        crop_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+        if farm_size <= 0:
+            raise ValueError("farm_size must be greater than zero")
+
+        reference = self.cost_structure
+
+        def cost_per_hectare(key: str, default: float) -> float:
+            return self._number(
+                crop_data, key, default=default, minimum=0
+            )
+
+        fixed_per_hectare = {
+            "land_lease": cost_per_hectare(
+                "land_lease_per_hectare", 
+                reference["land_lease_per_hectare_year"]
+            ),
+            "equipment_depreciation": cost_per_hectare(
+                "equipment_depreciation_per_hectare",
+                reference["equipment_depreciation_per_hectare"]
+            ),
+            "insurance": cost_per_hectare(
+                "insurance_per_hectare",
+                reference["insurance_per_hectare"]
+            ),
+            "certification": cost_per_hectare(
+                "certification_per_hectare",
+                reference["certification_per_hectare"]
+            ),
         }
-        
-        # Cost structure database
-        self.cost_structure = {
-            'fixed_costs': {
-                'land_lease_per_hectare_year': 1500,
-                'equipment_depreciation_per_hectare': 200,
-                'insurance_per_hectare': 150,
-                'certification_per_hectare': 100
-            },
-            'variable_costs': {
-                'labor_rates': {
-                    'skilled_per_day': 45,
-                    'unskilled_per_day': 25,
-                    'seasonal_multiplier': 1.2
-                },
-                'fuel_cost_per_liter': 1.5,
-                'electricity_cost_per_kwh': 0.12,
-                'water_cost_per_cubic_meter': 0.8
-            },
-            'input_costs': {
-                'fertilizer_cost_multiplier': 1.1,  # Annual increase
-                'seed_cost_multiplier': 1.05,
-                'pesticide_cost_multiplier': 1.08
-            }
+
+        labor_days = cost_per_hectare("labor_days_per_hectare", 30)
+        fuel_liters = cost_per_hectare("fuel_consumption_per_hectare", 100)
+        electricity_kwh = cost_per_hectare(
+            "electricity_consumption_per_hectare", 500
+        )
+        water_m3 = cost_per_hectare(
+            "water_consumption_per_hectare", 3000
+        )
+
+        labor_rate = self._number(
+            crop_data,
+            "labor_cost_per_day",
+            reference["unskilled_labor_per_day"],
+            minimum=0,
+        )
+        fuel_rate = self._number(
+            crop_data,
+            "fuel_price_per_liter",
+            reference["fuel_cost_per_liter"],
+            minimum=0,
+        )
+        electricity_rate = self._number(
+            crop_data,
+            "electricity_price_per_kwh",
+            reference["electricity_cost_per_kwh"],
+            minimum=0,
+        )
+        water_rate = self._number(
+            crop_data,
+            "water_price_per_cubic_meter",
+            reference["water_cost_per_cubic_meter"],
+            minimum=0,
+        )
+
+        variable_per_hectare = {
+            "labor": labor_days * labor_rate,
+            "fuel": fuel_liters * fuel_rate,
+            "electricity": electricity_kwh * electricity_rate,
+            "water": water_m3 * water_rate,
         }
-        
-        self._initialize_models()
-    
-    def _initialize_models(self):
-        """Initialize the profit estimation models"""
-        try:
-            self._create_training_data()
-            logger.info("ProfitEstimatorAI initialized successfully")
-        except Exception as e:
-            logger.error(f"Error initializing ProfitEstimatorAI: {e}")
-    
-    def _create_training_data(self):
-        """Create synthetic training data for profit estimation models"""
-        np.random.seed(42)
-        n_samples = 2000
-        
-        training_data = []
-        price_targets = []
-        yield_targets = []
-        cost_targets = []
-        
-        for _ in range(n_samples):
-            # Generate input features
-            features = {
-                'farm_size': np.random.uniform(0.5, 50.0),
-                'soil_quality': np.random.uniform(0.3, 1.0),
-                'climate_suitability': np.random.uniform(0.2, 1.0),
-                'farmer_experience': np.random.uniform(0.1, 1.0),
-                'technology_level': np.random.uniform(0.2, 1.0),
-                'market_distance': np.random.uniform(1, 200),  # km
-                'water_availability': np.random.uniform(0.3, 1.0),
-                'labor_availability': np.random.uniform(0.4, 1.0),
-                'capital_available': np.random.uniform(0.2, 1.0),
-                'season_factor': np.random.uniform(0.7, 1.3)
-            }
-            
-            feature_vector = list(features.values())
-            training_data.append(feature_vector)
-            
-            # Generate synthetic targets
-            base_price = 3.0 + np.random.normal(0, 1)
-            price_targets.append(max(0.5, base_price))
-            
-            base_yield = 5000 * features['soil_quality'] * features['climate_suitability']
-            yield_targets.append(max(500, base_yield + np.random.normal(0, 1000)))
-            
-            base_cost = 2000 + features['farm_size'] * 100 + np.random.normal(0, 500)
-            cost_targets.append(max(500, base_cost))
-        
-        X = np.array(training_data)
-        X_scaled = self.scaler.fit_transform(X)
-        
-        # Train models
-        self.price_prediction_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
-        self.price_prediction_model.fit(X_scaled, price_targets)
-        
-        self.yield_prediction_model = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.yield_prediction_model.fit(X_scaled, yield_targets)
-        
-        self.cost_estimation_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
-        self.cost_estimation_model.fit(X_scaled, cost_targets)
-        
-        self.is_trained = True
-        logger.info(f"Trained ProfitEstimatorAI models with {n_samples} samples")
-    
-    def estimate_crop_profitability(self, crop_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Comprehensive profitability analysis for a specific crop"""
-        try:
-            if not self.is_trained:
-                raise ValueError("Models not trained")
-            
-            crop_name = crop_data.get('crop_name', 'wheat')
-            farm_size = crop_data.get('farm_size', 2.0)
-            planning_horizon = crop_data.get('planning_horizon_years', 1)
-            
-            # Get market data for the crop
-            if crop_name not in self.market_data:
-                raise ValueError(f"Market data not available for crop: {crop_name}")
-            
-            market_info = self.market_data[crop_name]
-            
-            # Prepare features for ML models
-            features = self._extract_profitability_features(crop_data)
-            features_scaled = self.scaler.transform([features])
-            
-            # Predict key metrics
-            predicted_price = self.price_prediction_model.predict(features_scaled)[0]
-            predicted_yield = self.yield_prediction_model.predict(features_scaled)[0]
-            predicted_costs = self.cost_estimation_model.predict(features_scaled)[0]
-            
-            # Adjust predictions based on crop-specific factors
-            adjusted_price = self._adjust_price_prediction(predicted_price, crop_name, crop_data)
-            adjusted_yield = self._adjust_yield_prediction(predicted_yield, crop_name, crop_data)
-            detailed_costs = self._calculate_detailed_costs(crop_name, farm_size, crop_data)
-            
-            # Financial analysis
-            financial_analysis = self._perform_financial_analysis(
-                adjusted_price, adjusted_yield, detailed_costs, farm_size, planning_horizon
-            )
-            
-            # Risk analysis
-            risk_analysis = self._perform_risk_analysis(crop_name, crop_data, financial_analysis)
-            
-            # Market analysis
-            market_analysis = self._analyze_market_conditions(crop_name, crop_data)
-            
-            # Sensitivity analysis
-            sensitivity_analysis = self._perform_sensitivity_analysis(
-                crop_name, adjusted_price, adjusted_yield, detailed_costs, farm_size
-            )
-            
-            # Investment recommendations
-            investment_recommendations = self._generate_investment_recommendations(
-                financial_analysis, risk_analysis, market_analysis
-            )
-            
-            return {
-                'crop_name': crop_name,
-                'crop_name_ar': market_info['name_ar'],
-                'farm_size_hectares': farm_size,
-                'planning_horizon_years': planning_horizon,
-                'price_analysis': {
-                    'predicted_price_per_kg': float(adjusted_price),
-                    'price_range': self._calculate_price_range(adjusted_price, market_info['price_volatility']),
-                    'seasonal_price_variation': self._calculate_seasonal_variation(crop_name)
-                },
-                'yield_analysis': {
-                    'predicted_yield_per_hectare': float(adjusted_yield),
-                    'total_expected_yield': float(adjusted_yield * farm_size),
-                    'yield_confidence_interval': self._calculate_yield_confidence(adjusted_yield)
-                },
-                'cost_analysis': detailed_costs,
-                'financial_analysis': financial_analysis,
-                'risk_analysis': risk_analysis,
-                'market_analysis': market_analysis,
-                'sensitivity_analysis': sensitivity_analysis,
-                'investment_recommendations': investment_recommendations,
-                'analysis_timestamp': datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in crop profitability estimation: {e}")
-            raise
-    
-    def compare_crop_profitability(self, crops_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Compare profitability of multiple crops"""
-        try:
-            crop_analyses = []
-            
-            for crop_data in crops_data:
-                analysis = self.estimate_crop_profitability(crop_data)
-                crop_analyses.append({
-                    'crop_name': analysis['crop_name'],
-                    'crop_name_ar': analysis['crop_name_ar'],
-                    'net_profit': analysis['financial_analysis']['net_profit'],
-                    'roi_percent': analysis['financial_analysis']['roi_percent'],
-                    'payback_period': analysis['financial_analysis']['payback_period_months'],
-                    'risk_score': analysis['risk_analysis']['overall_risk_score'],
-                    'market_potential': analysis['market_analysis']['market_potential_score']
-                })
-            
-            # Rank crops by different criteria
-            rankings = self._rank_crops(crop_analyses)
-            
-            # Portfolio recommendations
-            portfolio_recommendations = self._generate_portfolio_recommendations(crop_analyses)
-            
-            return {
-                'crop_comparisons': crop_analyses,
-                'rankings': rankings,
-                'portfolio_recommendations': portfolio_recommendations,
-                'best_overall_crop': rankings['by_weighted_score'][0] if rankings['by_weighted_score'] else None,
-                'analysis_timestamp': datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in crop profitability comparison: {e}")
-            raise
-    
-    def _extract_profitability_features(self, crop_data: Dict[str, Any]) -> List[float]:
-        """Extract features for profitability prediction"""
-        return [
-            crop_data.get('farm_size', 2.0),
-            crop_data.get('soil_quality_score', 0.7),
-            crop_data.get('climate_suitability_score', 0.8),
-            crop_data.get('farmer_experience_years', 5) / 20.0,
-            crop_data.get('technology_level', 0.6),
-            crop_data.get('market_distance_km', 50) / 200.0,
-            crop_data.get('water_availability_score', 0.8),
-            crop_data.get('labor_availability_score', 0.7),
-            crop_data.get('available_capital', 10000) / 100000.0,
-            crop_data.get('season_factor', 1.0)
-        ]
-    
-    def _adjust_price_prediction(self, predicted_price: float, crop_name: str, 
-                               crop_data: Dict[str, Any]) -> float:
-        """Adjust price prediction based on crop-specific factors"""
-        market_info = self.market_data[crop_name]
-        base_price = market_info['base_price_per_kg']
-        
-        # Blend ML prediction with market data
-        adjusted_price = (predicted_price * 0.3) + (base_price * 0.7)
-        
-        # Apply market distance factor
-        distance = crop_data.get('market_distance_km', 50)
-        distance_factor = max(0.9, 1.0 - (distance - 50) * 0.001)
-        adjusted_price *= distance_factor
-        
-        # Apply quality premium/discount
-        quality_score = crop_data.get('product_quality_score', 0.8)
-        quality_factor = 0.8 + (quality_score * 0.4)  # Range: 0.8 to 1.2
-        adjusted_price *= quality_factor
-        
-        return adjusted_price
-    
-    def _adjust_yield_prediction(self, predicted_yield: float, crop_name: str, 
-                               crop_data: Dict[str, Any]) -> float:
-        """Adjust yield prediction based on crop-specific factors"""
-        # Apply technology factor
-        tech_level = crop_data.get('technology_level', 0.6)
-        tech_factor = 0.7 + (tech_level * 0.6)  # Range: 0.7 to 1.3
-        
-        # Apply irrigation factor
-        irrigation_quality = crop_data.get('irrigation_quality_score', 0.7)
-        irrigation_factor = 0.8 + (irrigation_quality * 0.4)  # Range: 0.8 to 1.2
-        
-        adjusted_yield = predicted_yield * tech_factor * irrigation_factor
-        
-        return adjusted_yield
-    
-    def _calculate_detailed_costs(self, crop_name: str, farm_size: float, 
-                                crop_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate detailed cost breakdown"""
-        costs = self.cost_structure
-        
-        # Fixed costs
+
+        input_per_hectare = {
+            "seeds": cost_per_hectare("seed_cost_per_hectare", 200),
+            "fertilizers": cost_per_hectare(
+                "fertilizer_cost_per_hectare", 300
+            ),
+            "pesticides": cost_per_hectare(
+                "pesticide_cost_per_hectare", 150
+            ),
+        }
+
         fixed_costs = {
-            'land_lease': costs['fixed_costs']['land_lease_per_hectare_year'] * farm_size,
-            'equipment_depreciation': costs['fixed_costs']['equipment_depreciation_per_hectare'] * farm_size,
-            'insurance': costs['fixed_costs']['insurance_per_hectare'] * farm_size,
-            'certification': costs['fixed_costs']['certification_per_hectare'] * farm_size
+            key: value * farm_size
+            for key, value in fixed_per_hectare.items()
         }
-        
-        # Variable costs
-        labor_days_per_hectare = crop_data.get('labor_days_per_hectare', 30)
-        fuel_consumption = crop_data.get('fuel_consumption_per_hectare', 100)  # liters
-        electricity_consumption = crop_data.get('electricity_consumption_per_hectare', 500)  # kWh
-        water_consumption = crop_data.get('water_consumption_per_hectare', 3000)  # cubic meters
-        
         variable_costs = {
-            'labor': labor_days_per_hectare * costs['variable_costs']['labor_rates']['unskilled_per_day'] * farm_size,
-            'fuel': fuel_consumption * costs['variable_costs']['fuel_cost_per_liter'] * farm_size,
-            'electricity': electricity_consumption * costs['variable_costs']['electricity_cost_per_kwh'] * farm_size,
-            'water': water_consumption * costs['variable_costs']['water_cost_per_cubic_meter'] * farm_size
+            key: value * farm_size
+            for key, value in variable_per_hectare.items()
         }
-        
-        # Input costs
-        seed_cost_per_hectare = crop_data.get('seed_cost_per_hectare', 200)
-        fertilizer_cost_per_hectare = crop_data.get('fertilizer_cost_per_hectare', 300)
-        pesticide_cost_per_hectare = crop_data.get('pesticide_cost_per_hectare', 150)
-        
         input_costs = {
-            'seeds': seed_cost_per_hectare * farm_size,
-            'fertilizers': fertilizer_cost_per_hectare * farm_size,
-            'pesticides': pesticide_cost_per_hectare * farm_size
+            key: value * farm_size
+            for key, value in input_per_hectare.items()
         }
-        
-        # Calculate totals
+
         total_fixed = sum(fixed_costs.values())
         total_variable = sum(variable_costs.values())
         total_input = sum(input_costs.values())
-        total_costs = total_fixed + total_variable + total_input
-        
+        total = total_fixed + total_variable + total_input
+
         return {
-            'fixed_costs': fixed_costs,
-            'variable_costs': variable_costs,
-            'input_costs': input_costs,
-            'total_fixed_costs': float(total_fixed),
-            'total_variable_costs': float(total_variable),
-            'total_input_costs': float(total_input),
-            'total_costs': float(total_costs),
-            'cost_per_hectare': float(total_costs / farm_size) if farm_size > 0 else 0
+            "fixed_costs": fixed_costs,
+            "variable_costs": variable_costs,
+            "input_costs": input_costs,
+            "total_fixed_costs": self._safe_float(total_fixed),
+            "total_variable_costs": self._safe_float(total_variable),
+            "total_input_costs": self._safe_float(total_input),
+            "total_costs": self._safe_float(total),
+            "cost_per_hectare": self._safe_float(total / farm_size),
+            "currency": crop_data.get("currency", "TND"),
+            "cost_data_source": "user_inputs_and_indicative_reference_values",
         }
-    
-    def _perform_financial_analysis(self, price: float, yield_per_hectare: float, 
-                                  costs: Dict[str, Any], farm_size: float, 
-                                  planning_horizon: int) -> Dict[str, Any]:
-        """Perform comprehensive financial analysis"""
+
+    def _perform_financial_analysis(
+        self,
+        price: float,
+        yield_per_hectare: float,
+        costs: Dict[str, Any],
+        farm_size: float,
+        planning_horizon: int,
+    ) -> Dict[str, Any]:
+
+        if price < 0 or yield_per_hectare < 0:
+            raise ValueError("Price and yield cannot be negative")
+
+        if farm_size <= 0:
+            raise ValueError("farm_size must be greater than zero")
+
         total_yield = yield_per_hectare * farm_size
         gross_revenue = total_yield * price
-        total_costs = costs['total_costs']
+        total_costs = costs["total_costs"]
         net_profit = gross_revenue - total_costs
-        
-        # Calculate financial metrics
-        roi = (net_profit / total_costs) * 100 if total_costs > 0 else 0
-        profit_margin = (net_profit / gross_revenue) * 100 if gross_revenue > 0 else 0
-        profit_per_hectare = net_profit / farm_size if farm_size > 0 else 0
-        
-        # Break-even analysis
-        breakeven_price = total_costs / total_yield if total_yield > 0 else 0
-        breakeven_yield = total_costs / price if price > 0 else 0
-        
-        # Payback period (for perennial crops)
-        payback_months = 12  # Annual crops
-        if net_profit > 0 and planning_horizon > 1:
-            payback_months = (total_costs / (net_profit / 12))
-        
-        # Cash flow projection
-        cash_flow = self._calculate_cash_flow(gross_revenue, total_costs, planning_horizon)
-        
-        return {
-            'gross_revenue': float(gross_revenue),
-            'total_costs': float(total_costs),
-            'net_profit': float(net_profit),
-            'roi_percent': float(roi),
-            'profit_margin_percent': float(profit_margin),
-            'profit_per_hectare': float(profit_per_hectare),
-            'breakeven_analysis': {
-                'breakeven_price_per_kg': float(breakeven_price),
-                'breakeven_yield_per_hectare': float(breakeven_yield)
-            },
-            'payback_period_months': float(payback_months),
-            'cash_flow_projection': cash_flow,
-            'profitability_level': self._get_profitability_level(roi)
-        }
-    
-    def _perform_risk_analysis(self, crop_name: str, crop_data: Dict[str, Any], 
-                             financial_analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Perform comprehensive risk analysis"""
-        market_info = self.market_data[crop_name]
-        
-        # Price risk
-        price_volatility = market_info['price_volatility']
-        price_risk_score = min(1.0, price_volatility * 2)
-        
-        # Yield risk
-        climate_suitability = crop_data.get('climate_suitability_score', 0.8)
-        yield_risk_score = 1.0 - climate_suitability
-        
-        # Market risk
-        market_distance = crop_data.get('market_distance_km', 50)
-        market_risk_score = min(1.0, market_distance / 200.0)
-        
-        # Financial risk
-        roi = financial_analysis['roi_percent']
-        financial_risk_score = max(0.0, 1.0 - roi / 50.0)  # Higher ROI = lower financial risk
-        
-        # Weather risk
-        weather_resilience = crop_data.get('weather_resilience_score', 0.7)
-        weather_risk_score = 1.0 - weather_resilience
-        
-        # Overall risk score
-        risk_scores = [price_risk_score, yield_risk_score, market_risk_score, 
-                      financial_risk_score, weather_risk_score]
-        overall_risk_score = np.mean(risk_scores)
-        
-        return {
-            'price_risk': {
-                'score': float(price_risk_score),
-                'level': self._get_risk_level(price_risk_score),
-                'description': 'مخاطر تقلبات الأسعار'
-            },
-            'yield_risk': {
-                'score': float(yield_risk_score),
-                'level': self._get_risk_level(yield_risk_score),
-                'description': 'مخاطر انخفاض الإنتاجية'
-            },
-            'market_risk': {
-                'score': float(market_risk_score),
-                'level': self._get_risk_level(market_risk_score),
-                'description': 'مخاطر الوصول للس��ق'
-            },
-            'financial_risk': {
-                'score': float(financial_risk_score),
-                'level': self._get_risk_level(financial_risk_score),
-                'description': 'مخاطر الربحية المالية'
-            },
-            'weather_risk': {
-                'score': float(weather_risk_score),
-                'level': self._get_risk_level(weather_risk_score),
-                'description': 'مخاطر الطقس والمناخ'
-            },
-            'overall_risk_score': float(overall_risk_score),
-            'overall_risk_level': self._get_risk_level(overall_risk_score),
-            'risk_mitigation_strategies': self._generate_risk_mitigation_strategies(crop_name, risk_scores)
-        }
-    
-    def _analyze_market_conditions(self, crop_name: str, crop_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze market conditions and opportunities"""
-        market_info = self.market_data[crop_name]
-        
-        # Market potential score
-        demand_factors = {
-            'stable': 0.7,
-            'increasing': 0.9,
-            'decreasing': 0.4
-        }
-        demand_score = demand_factors.get(market_info['demand_trend'], 0.7)
-        
-        export_factors = {
-            'very_high': 1.0,
-            'high': 0.8,
-            'medium': 0.6,
-            'low': 0.3
-        }
-        export_score = export_factors.get(market_info['export_potential'], 0.6)
-        
-        market_potential_score = (demand_score + export_score) / 2
-        
-        # Seasonal analysis
-        seasonal_analysis = self._calculate_seasonal_variation(crop_name)
-        
-        # Competition analysis
-        competition_level = crop_data.get('local_competition_level', 'medium')
-        competition_scores = {'low': 0.9, 'medium': 0.7, 'high': 0.4}
-        competition_score = competition_scores.get(competition_level, 0.7)
-        
-        return {
-            'market_potential_score': float(market_potential_score),
-            'demand_trend': market_info['demand_trend'],
-            'export_potential': market_info['export_potential'],
-            'seasonal_analysis': seasonal_analysis,
-            'competition_analysis': {
-                'level': competition_level,
-                'score': float(competition_score),
-                'market_share_potential': self._estimate_market_share_potential(crop_data)
-            },
-            'market_opportunities': self._identify_market_opportunities(crop_name, crop_data)
-        }
-    
-    def _perform_sensitivity_analysis(self, crop_name: str, base_price: float, 
-                                    base_yield: float, costs: Dict[str, Any], 
-                                    farm_size: float) -> Dict[str, Any]:
-        """Perform sensitivity analysis on key variables"""
-        base_profit = (base_price * base_yield * farm_size) - costs['total_costs']
-        
-        # Price sensitivity
-        price_scenarios = {
-            'pessimistic': base_price * 0.8,
-            'realistic': base_price,
-            'optimistic': base_price * 1.2
-        }
-        
-        # Yield sensitivity
-        yield_scenarios = {
-            'pessimistic': base_yield * 0.7,
-            'realistic': base_yield,
-            'optimistic': base_yield * 1.3
-        }
-        
-        # Cost sensitivity
-        cost_scenarios = {
-            'pessimistic': costs['total_costs'] * 1.2,
-            'realistic': costs['total_costs'],
-            'optimistic': costs['total_costs'] * 0.9
-        }
-        
-        sensitivity_results = {}
-        
-        # Calculate profit for each scenario combination
-        for price_scenario, price_val in price_scenarios.items():
-            for yield_scenario, yield_val in yield_scenarios.items():
-                for cost_scenario, cost_val in cost_scenarios.items():
-                    scenario_name = f"{price_scenario}_{yield_scenario}_{cost_scenario}"
-                    scenario_profit = (price_val * yield_val * farm_size) - cost_val
-                    scenario_roi = (scenario_profit / cost_val) * 100 if cost_val > 0 else 0
-                    
-                    sensitivity_results[scenario_name] = {
-                        'profit': float(scenario_profit),
-                        'roi_percent': float(scenario_roi),
-                        'profit_change_percent': ((scenario_profit - base_profit) / abs(base_profit)) * 100 if base_profit != 0 else 0
-                    }
-        
-        return {
-            'base_scenario': {
-                'profit': float(base_profit),
-                'price': float(base_price),
-                'yield': float(base_yield),
-                'costs': float(costs['total_costs'])
-            },
-            'scenarios': sensitivity_results,
-            'worst_case': min(sensitivity_results.values(), key=lambda x: x['profit']),
-            'best_case': max(sensitivity_results.values(), key=lambda x: x['profit']),
-            'risk_tolerance_analysis': self._analyze_risk_tolerance(sensitivity_results)
-        }
-    
-    # Helper methods
-    def _calculate_price_range(self, base_price: float, volatility: float) -> Dict[str, float]:
-        """Calculate price range based on volatility"""
-        return {
-            'min_price': float(base_price * (1 - volatility)),
-            'max_price': float(base_price * (1 + volatility)),
-            'volatility_percent': float(volatility * 100)
-        }
-    
-    def _calculate_seasonal_variation(self, crop_name: str) -> Dict[str, Any]:
-        """Calculate seasonal price variation"""
-        market_info = self.market_data[crop_name]
-        seasonal_factors = market_info['seasonal_factors']
-        
-        return {
-            'harvest_months': seasonal_factors['harvest_months'],
-            'price_dip_factor': seasonal_factors['price_dip_factor'],
-            'storage_premium': seasonal_factors['storage_premium'],
-            'best_selling_months': self._get_best_selling_months(seasonal_factors['harvest_months'])
-        }
-    
-    def _calculate_yield_confidence(self, predicted_yield: float) -> Dict[str, float]:
-        """Calculate confidence interval for yield prediction"""
-        confidence_range = predicted_yield * 0.15  # ±15% confidence range
-        return {
-            'lower_bound': float(predicted_yield - confidence_range),
-            'upper_bound': float(predicted_yield + confidence_range),
-            'confidence_level_percent': 80.0
-        }
-    
-    def _calculate_cash_flow(self, revenue: float, costs: float, horizon: int) -> List[Dict[str, float]]:
-        """Calculate cash flow projection"""
-        cash_flow = []
-        for year in range(1, horizon + 1):
-            annual_revenue = revenue * (1.02 ** (year - 1))  # 2% annual growth
-            annual_costs = costs * (1.03 ** (year - 1))  # 3% annual cost increase
-            net_flow = annual_revenue - annual_costs
-            
-            cash_flow.append({
-                'year': year,
-                'revenue': float(annual_revenue),
-                'costs': float(annual_costs),
-                'net_cash_flow': float(net_flow),
-                'cumulative_cash_flow': float(sum([cf['net_cash_flow'] for cf in cash_flow]))
-            })
-        
-        return cash_flow
-    
-    def _get_profitability_level(self, roi: float) -> str:
-        """Get profitability level description"""
-        if roi >= 50:
-            return 'ممتاز'
-        elif roi >= 30:
-            return 'جيد جداً'
-        elif roi >= 15:
-            return 'جيد'
-        elif roi >= 5:
-            return 'مقبول'
-        else:
-            return 'ضعيف'
-    
-    def _get_risk_level(self, risk_score: float) -> str:
-        """Get risk level description"""
-        if risk_score <= 0.3:
-            return 'منخفض'
-        elif risk_score <= 0.6:
-            return 'متوسط'
-        else:
-            return 'عالي'
-    
-    def _generate_risk_mitigation_strategies(self, crop_name: str, risk_scores: List[float]) -> List[str]:
-        """Generate risk mitigation strategies"""
-        strategies = []
-        
-        if risk_scores[0] > 0.6:  # Price risk
-            strategies.append('استخدام عقود مستقبلية لتثبيت الأسعار')
-            strategies.append('تنويع قنوات التسويق')
-        
-        if risk_scores[1] > 0.6:  # Yield risk
-            strategies.append('تحسين ممارسات الري والتسميد')
-            strategies.append('استخدام أصناف مقاومة للأمراض')
-        
-        if risk_scores[2] > 0.6:  # Market risk
-            strategies.append('تطوير شبكة توزيع محلية')
-            strategies.append('الاستثمار في وسائل النقل والتخزين')
-        
-        if risk_scores[4] > 0.6:  # Weather risk
-            strategies.append('تطبيق تقنيات الزراعة المحمية')
-            strategies.append('التأمين الزراعي ضد الكوارث الطبيعية')
-        
-        return strategies
-    
-    def _identify_market_opportunities(self, crop_name: str, crop_data: Dict[str, Any]) -> List[str]:
-        """Identify market opportunities"""
-        opportunities = []
-        market_info = self.market_data[crop_name]
-        
-        if market_info['export_potential'] in ['high', 'very_high']:
-            opportunities.append('فرص تصدي�� ممتازة للأسواق الخارجية')
-        
-        if market_info['demand_trend'] == 'increasing':
-            opportunities.append('نمو متزايد في الطلب المحلي')
-        
-        quality_score = crop_data.get('product_quality_score', 0.8)
-        if quality_score > 0.8:
-            opportunities.append('إمكانية الحصول على أسعار مميزة للجودة العالية')
-        
-        return opportunities
-    
-    def _estimate_market_share_potential(self, crop_data: Dict[str, Any]) -> float:
-        """Estimate potential market share"""
-        base_share = 0.05  # 5% base market share
-        
-        # Adjust based on farm size
-        farm_size = crop_data.get('farm_size', 2.0)
-        size_factor = min(1.5, farm_size / 10.0)
-        
-        # Adjust based on quality
-        quality_score = crop_data.get('product_quality_score', 0.8)
-        
-        potential_share = base_share * size_factor * quality_score
-        return min(0.2, potential_share)  # Cap at 20%
-    
-    def _get_best_selling_months(self, harvest_months: List[int]) -> List[int]:
-        """Get best months to sell (avoid harvest months)"""
-        all_months = list(range(1, 13))
-        return [m for m in all_months if m not in harvest_months][:3]
-    
-    def _rank_crops(self, crop_analyses: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-        """Rank crops by different criteria"""
-        # Rank by ROI
-        by_roi = sorted(crop_analyses, key=lambda x: x['roi_percent'], reverse=True)
-        
-        # Rank by net profit
-        by_profit = sorted(crop_analyses, key=lambda x: x['net_profit'], reverse=True)
-        
-        # Rank by risk (ascending - lower risk is better)
-        by_risk = sorted(crop_analyses, key=lambda x: x['risk_score'])
-        
-        # Rank by market potential
-        by_market = sorted(crop_analyses, key=lambda x: x['market_potential'], reverse=True)
-        
-        # Weighted score ranking
-        for crop in crop_analyses:
-            weighted_score = (
-                crop['roi_percent'] * 0.3 +
-                crop['market_potential'] * 100 * 0.3 +
-                (1 - crop['risk_score']) * 100 * 0.2 +
-                min(crop['net_profit'] / 10000, 1) * 100 * 0.2
-            )
-            crop['weighted_score'] = weighted_score
-        
-        by_weighted = sorted(crop_analyses, key=lambda x: x['weighted_score'], reverse=True)
-        
-        return {
-            'by_roi': by_roi,
-            'by_net_profit': by_profit,
-            'by_risk': by_risk,
-            'by_market_potential': by_market,
-            'by_weighted_score': by_weighted
-        }
-    
-    def _generate_portfolio_recommendations(self, crop_analyses: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Generate portfolio diversification recommendations"""
-        if len(crop_analyses) < 2:
-            return {'message': 'يحتاج محصولين على الأقل للمقارنة'}
-        
-        # Risk-return analysis
-        high_return_crops = [c for c in crop_analyses if c['roi_percent'] > 25]
-        low_risk_crops = [c for c in crop_analyses if c['risk_score'] < 0.4]
-        
-        recommendations = {
-            'diversification_strategy': self._suggest_diversification_strategy(crop_analyses),
-            'risk_balanced_portfolio': self._create_risk_balanced_portfolio(crop_analyses),
-            'seasonal_diversification': self._suggest_seasonal_diversification(crop_analyses),
-            'investment_allocation': self._suggest_investment_allocation(crop_analyses)
-        }
-        
-        return recommendations
-    
-    def _suggest_diversification_strategy(self, crops: List[Dict[str, Any]]) -> str:
-        """Suggest diversification strategy"""
-        risk_levels = [c['risk_score'] for c in crops]
-        avg_risk = np.mean(risk_levels)
-        
-        if avg_risk > 0.7:
-            return 'استراتيجية محافظة - التركيز على المحاصيل منخفضة المخاطر'
-        elif avg_risk < 0.4:
-            return 'استراتيجية متوازنة - إضافة بعض المحاصيل عالية العائد'
-        else:
-            return 'استراتيجية متوازنة - توزيع مناسب للمخاطر والعوائد'
-    
-    def _create_risk_balanced_portfolio(self, crops: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Create a risk-balanced portfolio"""
-        # Sort by risk-adjusted return
-        for crop in crops:
-            crop['risk_adjusted_return'] = crop['roi_percent'] / (1 + crop['risk_score'])
-        
-        sorted_crops = sorted(crops, key=lambda x: x['risk_adjusted_return'], reverse=True)
-        
-        portfolio = []
-        total_allocation = 100
-        remaining_allocation = total_allocation
-        
-        for i, crop in enumerate(sorted_crops[:4]):  # Top 4 crops
-            if i == 0:
-                allocation = 40  # 40% to best crop
-            elif i == 1:
-                allocation = 30  # 30% to second best
-            elif i == 2:
-                allocation = 20  # 20% to third best
-            else:
-                allocation = remaining_allocation  # Remaining to fourth best
-            
-            portfolio.append({
-                'crop_name_ar': crop['crop_name'],
-                'allocation_percent': allocation,
-                'expected_roi': crop['roi_percent'],
-                'risk_level': crop['risk_score']
-            })
-            
-            remaining_allocation -= allocation
-            if remaining_allocation <= 0:
-                break
-        
-        return portfolio
-    
-    def _suggest_seasonal_diversification(self, crops: List[Dict[str, Any]]) -> List[str]:
-        """Suggest seasonal diversification"""
-        suggestions = [
-            'زراعة محاصيل مختلفة المواسم لضمان دخل مستمر',
-            'التخطيط للمحاصيل قصيرة وطويلة المدى',
-            'استغلال فترات الراحة بالمحاصيل السريعة النمو'
-        ]
-        return suggestions
-    
-    def _suggest_investment_allocation(self, crops: List[Dict[str, Any]]) -> Dict[str, str]:
-        """Suggest investment allocation strategy"""
-        avg_roi = np.mean([c['roi_percent'] for c in crops])
-        
-        if avg_roi > 30:
-            return {
-                'strategy': 'استثمار متقدم',
-                'recommendation': 'توزيع الاستثمار على المحاصي�� عالية العائد مع إدارة المخاطر'
-            }
-        else:
-            return {
-                'strategy': 'استثمار تدريجي',
-                'recommendation': 'البدء بالمحاصيل منخفضة المخاطر وزيادة الاستثمار تدريجياً'
-            }
-    
-    def _analyze_risk_tolerance(self, scenarios: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-        """Analyze risk tolerance based on scenario analysis"""
-        profits = [scenario['profit'] for scenario in scenarios.values()]
-        worst_case_profit = min(profits)
-        best_case_profit = max(profits)
-        
-        profit_range = best_case_profit - worst_case_profit
-        volatility = profit_range / abs(np.mean(profits)) if np.mean(profits) != 0 else 0
-        
-        if volatility > 1.0:
-            risk_tolerance = 'يتطلب تحمل مخاطر عالية'
-        elif volatility > 0.5:
-            risk_tolerance = 'يتطلب تحمل مخاطر متوسطة'
-        else:
-            risk_tolerance = 'مناسب للمستثمرين المحافظين'
-        
-        return {
-            'profit_volatility': float(volatility),
-            'risk_tolerance_requirement': risk_tolerance,
-            'worst_case_scenario': float(worst_case_profit),
-            'best_case_scenario': float(best_case_profit)
-        }
 
-    def _generate_investment_recommendations(self, financial_analysis: Dict[str, Any],
-                                            risk_analysis: Dict[str, Any],
-                                            market_analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Derive investment guidance from the financial, risk and market analyses.
-
-        Previously this method was called but never defined, so every profit
-        estimation request raised AttributeError and the endpoint returned 500.
-        """
-        roi = financial_analysis.get('roi_percent', 0.0)
-        net_profit = financial_analysis.get('net_profit', 0.0)
-        profitability_level = financial_analysis.get('profitability_level', 'ضعيف')
-        overall_risk = risk_analysis.get('overall_risk_score', 0.5)
-        market_potential = market_analysis.get('market_potential_score', 0.5)
-
-        # Investment attractiveness blends return, risk and demand.
-        attractiveness_score = round(
-            max(0.0, min(1.0, (roi / 100.0) * 0.5 + (1.0 - overall_risk) * 0.3 + market_potential * 0.2)),
-            3,
+        roi = (
+            (net_profit / total_costs) * 100
+            if total_costs > 0 else 0.0
+        )
+        profit_margin = (
+            (net_profit / gross_revenue) * 100
+            if gross_revenue > 0 else 0.0
         )
 
-        if attractiveness_score >= 0.7:
-            recommendation = 'استثمار موصى به'
-            confidence = 'عالية'
-        elif attractiveness_score >= 0.45:
-            recommendation = 'استثمار مشروط بتحسين الممارسات الزراعية'
-            confidence = 'متوسطة'
-        else:
-            recommendation = 'يُنصح بإعادة تقييم الجدوى قبل الاستثمار'
-            confidence = 'منخفضة'
+        breakeven_price = (
+            total_costs / total_yield
+            if total_yield > 0 else 0.0
+        )
+        breakeven_yield_total = (
+            total_costs / price
+            if price > 0 else 0.0
+        )
+        breakeven_yield_per_hectare = (
+            breakeven_yield_total / farm_size
+            if farm_size > 0 else 0.0
+        )
 
-        payback_months = financial_analysis.get('payback_period_months', 12) or 12
-        horizon_years = 3 if payback_months > 24 else 2 if payback_months > 12 else 1
-        risk_budget = 'منخفض' if overall_risk <= 0.3 else 'متوسط' if overall_risk <= 0.6 else 'مرتفع'
+        # A simple annual operating estimate.
+        # It is not an investment payback calculation for perennial crops.
+        payback_months = (
+            (total_costs / net_profit) * 12
+            if net_profit > 0 else None
+        )
+
+        cash_flow = self._calculate_cash_flow(
+            gross_revenue,
+            total_costs,
+            planning_horizon,
+            crop_data_growth=0.0,
+            cost_growth=0.0,
+        )
 
         return {
-            'recommendation': recommendation,
-            'confidence_level': confidence,
-            'investment_attractiveness_score': attractiveness_score,
-            'profitability_level': profitability_level,
-            'suggested_investment_horizon_years': horizon_years,
-            'risk_budget': risk_budget,
-            'expected_net_profit': float(net_profit),
-            'expected_roi_percent': float(roi),
-            'key_considerations': [
-                f'مستوى الربحية المتوقع: {profitability_level}',
-                f'مستوى المخاطر الإجمالي: {risk_analysis.get("overall_risk_level", "متوسط")}',
-                f'جاذبية السوق: {round(market_potential * 100, 1)}%',
+            "gross_revenue": self._safe_float(gross_revenue),
+            "total_costs": self._safe_float(total_costs),
+            "net_profit": self._safe_float(net_profit),
+            "roi_percent": self._safe_float(roi),
+            "profit_margin_percent": self._safe_float(profit_margin),
+            "profit_per_hectare": self._safe_float(
+                net_profit / farm_size
+            ),
+            "breakeven_analysis": {
+                "breakeven_price_per_kg": self._safe_float(
+                    breakeven_price
+                ),
+                "breakeven_yield_per_hectare": self._safe_float(
+                    breakeven_yield_per_hectare
+                ),
+            },
+            "payback_period_months": (
+                self._safe_float(payback_months)
+                if payback_months is not None else None
+            ),
+            "cash_flow_projection": cash_flow,
+            "profitability_level": self._get_profitability_level(roi),
+            "currency": costs.get("currency", "TND"),
+        }
+
+    def _calculate_cash_flow(
+        self,
+        revenue: float,
+        costs: float,
+        horizon: int,
+        crop_data_growth: float = 0.0,
+        cost_growth: float = 0.0,
+    ) -> List[Dict[str, Any]]:
+
+        if not isinstance(horizon, int) or horizon < 1 or horizon > 30:
+            raise ValueError("planning_horizon_years must be between 1 and 30")
+
+        if not (-0.5 <= crop_data_growth <= 1.0):
+            raise ValueError("revenue_growth_rate must be between -0.5 and 1")
+
+        if not (-0.5 <= cost_growth <= 1.0):
+            raise ValueError("cost_growth_rate must be between -0.5 and 1")
+
+        results = []
+        cumulative = 0.0
+
+        for year in range(1, horizon + 1):
+            annual_revenue = revenue * (
+                (1 + crop_data_growth) ** (year - 1)
+            )
+            annual_costs = costs * (
+                (1 + cost_growth) ** (year - 1)
+            )
+            net_flow = annual_revenue - annual_costs
+            cumulative += net_flow
+
+            results.append({
+                "year": year,
+                "revenue": self._safe_float(annual_revenue),
+                "costs": self._safe_float(annual_costs),
+                "net_cash_flow": self._safe_float(net_flow),
+                "cumulative_cash_flow": self._safe_float(cumulative),
+            })
+
+        return results
+
+    def _calculate_price_range(
+        self,
+        base_price: float,
+        volatility: float,
+    ) -> Dict[str, float]:
+
+        volatility = self._clamp(volatility, 0.0, 1.0)
+
+        return {
+            "min_price": self._safe_float(
+                base_price * (1 - volatility)
+            ),
+            "max_price": self._safe_float(
+                base_price * (1 + volatility)
+            ),
+            "volatility_percent": self._safe_float(volatility * 100),
+        }
+
+    def _calculate_seasonal_variation(
+        self,
+        crop_name: str,
+    ) -> Dict[str, Any]:
+
+        seasonal = self._get_crop(crop_name)["seasonal_factors"]
+        harvest_months = seasonal["harvest_months"]
+
+        return {
+            "harvest_months": harvest_months,
+            "price_dip_factor": seasonal["price_dip_factor"],
+            "storage_premium": seasonal["storage_premium"],
+            "best_selling_months": self._get_best_selling_months(
+                harvest_months
+            ),
+            "status": "indicative_reference_only",
+        }
+
+    @staticmethod
+    def _get_best_selling_months(
+        harvest_months: List[int],
+    ) -> List[int]:
+
+        return [
+            month for month in range(1, 13)
+            if month not in harvest_months
+        ][:3]
+
+    def _perform_risk_analysis(
+        self,
+        crop_name: str,
+        crop_data: Dict[str, Any],
+        financial_analysis: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+        market_info = self._get_crop(crop_name)
+
+        volatility = self._number(
+            crop_data,
+            "price_volatility",
+            market_info["price_volatility"],
+            minimum=0,
+        )
+        climate = self._number(
+            crop_data, "climate_suitability_score", None
+        )
+        market_distance = self._number(
+            crop_data, "market_distance_km", None, minimum=0
+        )
+        weather_resilience = self._number(
+            crop_data, "weather_resilience_score", None
+        )
+
+        roi = financial_analysis["roi_percent"]
+
+        scores = {
+            "price": self._clamp(volatility),
+            "yield": (
+                1 - self._clamp(climate)
+                if climate is not None else None
+            ),
+            "market": (
+                self._clamp(market_distance / 200)
+                if market_distance is not None else None
+            ),
+            "financial": self._clamp(
+                1 - (roi / 100)
+            ),
+            "weather": (
+                1 - self._clamp(weather_resilience)
+                if weather_resilience is not None else None
+            ),
+        }
+
+        available_scores = [
+            score for score in scores.values()
+            if score is not None
+        ]
+
+        overall = (
+            sum(available_scores) / len(available_scores)
+            if available_scores else None
+        )
+
+        details = {}
+        descriptions = {
+            "price": "مخاطر تقلبات الأسعار",
+            "yield": "مخاطر انخفاض الإنتاجية",
+            "market": "مخاطر الوصول إلى السوق",
+            "financial": "مخاطر الربحية المالية",
+            "weather": "مخاطر الطقس والمناخ",
+        }
+
+        for key, score in scores.items():
+            details[key + "_risk"] = {
+                "score": (
+                    round(score, 4) if score is not None else None
+                ),
+                "level": (
+                    self._get_risk_level(score)
+                    if score is not None else "غير متوفر"
+                ),
+                "description": descriptions[key],
+                "available": score is not None,
+            }
+
+        return {
+            **details,
+            "overall_risk_score": (
+                round(overall, 4) if overall is not None else None
+            ),
+            "overall_risk_level": (
+                self._get_risk_level(overall)
+                if overall is not None else "بيانات غير كافية"
+            ),
+            "risk_mitigation_strategies": (
+                self._generate_risk_mitigation_strategies(scores)
+            ),
+            "risk_data_completeness": (
+                len(available_scores) / len(scores)
+            ),
+        }
+
+    @staticmethod
+    def _get_risk_level(score: float) -> str:
+        if score <= 0.3:
+            return "منخفض"
+        if score <= 0.6:
+            return "متوسط"
+        return "عالي"
+
+    @staticmethod
+    def _generate_risk_mitigation_strategies(
+        scores: Dict[str, Optional[float]],
+    ) -> List[str]:
+
+        strategies = []
+
+        if scores["price"] is not None and scores["price"] > 0.6:
+            strategies.extend([
+                "تنويع قنوات التسويق",
+                "دراسة اتفاقيات بيع مسبقة مع المشترين",
+            ])
+
+        if scores["yield"] is not None and scores["yield"] > 0.6:
+            strategies.extend([
+                "تحسين ممارسات الري والتسميد",
+                "استشارة مهندس زراعي حول الأصناف المناسبة",
+            ])
+
+        if scores["market"] is not None and scores["market"] > 0.6:
+            strategies.extend([
+                "دراسة خيارات النقل والتوزيع المحلي",
+                "مقارنة تكاليف التخزين والتسويق",
+            ])
+
+        if scores["weather"] is not None and scores["weather"] > 0.6:
+            strategies.extend([
+                "دراسة حلول التكيف مع الظروف المناخية",
+                "التحقق من توفر التأمين الزراعي",
+            ])
+
+        if not strategies:
+            strategies.append(
+                "اجمع بيانات محلية إضافية قبل اتخاذ قرار الاستثمار"
+            )
+
+        return strategies
+
+    def _analyze_market_conditions(
+        self,
+        crop_name: str,
+        crop_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+        market_info = self._get_crop(crop_name)
+        seasonal = self._calculate_seasonal_variation(crop_name)
+
+        # Do not fabricate demand or export scores.
+        demand_trend = crop_data.get(
+            "demand_trend", market_info["demand_trend"]
+        )
+        export_potential = crop_data.get(
+            "export_potential", market_info["export_potential"]
+        )
+
+        quality = self._number(
+            crop_data, "product_quality_score", None
+        )
+
+        opportunities = []
+
+        if demand_trend == "increasing":
+            opportunities.append("الطلب المصرح به في البيانات يشير إلى نمو")
+
+        if export_potential in ("high", "very_high"):
+            opportunities.append(
+                "إمكانية دراسة فرص التصدير بعد التحقق من شروط السوق"
+            )
+
+        if quality is not None and quality >= 0.8:
+            opportunities.append(
+                "يمكن دراسة الحصول على سعر أفضل حسب جودة المنتج"
+            )
+
+        return {
+            "market_potential_score": None,
+            "demand_trend": demand_trend,
+            "export_potential": export_potential,
+            "seasonal_analysis": seasonal,
+            "competition_analysis": {
+                "level": crop_data.get(
+                    "local_competition_level", "unknown"
+                ),
+                "score": None,
+                "market_share_potential": None,
+            },
+            "market_opportunities": opportunities,
+            "market_data_status": "not_connected_to_live_market_data",
+        }
+
+    def _perform_sensitivity_analysis(
+        self,
+        crop_name: str,
+        base_price: float,
+        base_yield: float,
+        costs: Dict[str, Any],
+        farm_size: float,
+    ) -> Dict[str, Any]:
+
+        base_cost = costs["total_costs"]
+        base_profit = (
+            base_price * base_yield * farm_size - base_cost
+        )
+
+        price_scenarios = {
+            "pessimistic": base_price * 0.8,
+            "realistic": base_price,
+            "optimistic": base_price * 1.2,
+        }
+
+        yield_scenarios = {
+            "pessimistic": base_yield * 0.7,
+            "realistic": base_yield,
+            "optimistic": base_yield * 1.3,
+        }
+
+        cost_scenarios = {
+            "pessimistic": base_cost * 1.2,
+            "realistic": base_cost,
+            "optimistic": base_cost * 0.9,
+        }
+
+        results = {}
+
+        for price_name, price in price_scenarios.items():
+            for yield_name, crop_yield in yield_scenarios.items():
+                for cost_name, cost in cost_scenarios.items():
+                    profit = (
+                        price * crop_yield * farm_size - cost
+                    )
+                    roi = (
+                        profit / cost * 100 if cost > 0 else 0
+                    )
+
+                    results[
+                        f"{price_name}_{yield_name}_{cost_name}"
+                    ] = {
+                        "profit": self._safe_float(profit),
+                        "roi_percent": self._safe_float(roi),
+                        "profit_change_percent": (
+                            self._safe_float(
+                                (profit - base_profit)
+                                / abs(base_profit) * 100
+                            )
+                            if base_profit != 0 else 0.0
+                        ),
+                    }
+
+        worst = min(results.values(), key=lambda x: x["profit"])
+        best = max(results.values(), key=lambda x: x["profit"])
+
+        return {
+            "base_scenario": {
+                "profit": self._safe_float(base_profit),
+                "price": self._safe_float(base_price),
+                "yield": self._safe_float(base_yield),
+                "costs": self._safe_float(base_cost),
+            },
+            "scenarios": results,
+            "worst_case": worst,
+            "best_case": best,
+            "risk_tolerance_analysis": {
+                "profit_volatility": None,
+                "risk_tolerance_requirement": (
+                    "راجع السيناريوهات قبل تحديد مستوى المخاطر"
+                ),
+                "worst_case_scenario": worst["profit"],
+                "best_case_scenario": best["profit"],
+            },
+            "scenario_status": "illustrative_assumptions_not_forecasts",
+        }
+
+    @staticmethod
+    def _get_profitability_level(roi: float) -> str:
+        if roi >= 50:
+            return "ممتاز"
+        if roi >= 30:
+            return "جيد جداً"
+        if roi >= 15:
+            return "جيد"
+        if roi >= 5:
+            return "مقبول"
+        return "ضعيف"
+
+    def _generate_investment_recommendations(
+        self,
+        financial_analysis: Dict[str, Any],
+        risk_analysis: Dict[str, Any],
+        market_analysis: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+        roi = financial_analysis["roi_percent"]
+        risk = risk_analysis["overall_risk_score"]
+
+        if risk is None:
+            recommendation = "يلزم توفير بيانات إضافية قبل التوصية"
+            confidence = "غير محددة"
+        elif roi > 0 and risk <= 0.3:
+            recommendation = "نتيجة الحسابات إيجابية؛ تحقق من الافتراضات ميدانياً"
+            confidence = "محدودة بالبيانات المدخلة"
+        elif roi > 0:
+            recommendation = "النتيجة الحسابية إيجابية مع ضرورة مراجعة المخاطر"
+            confidence = "محدودة بالبيانات المدخلة"
+        else:
+            recommendation = "الحسابات الحالية لا تشير إلى ربحية إيجابية"
+            confidence = "محدودة بالبيانات المدخلة"
+
+        return {
+            "recommendation": recommendation,
+            "confidence_level": confidence,
+            "investment_attractiveness_score": None,
+            "profitability_level": financial_analysis[
+                "profitability_level"
             ],
-            'next_steps': [
-                'التحقق من تقديرات المردود والأسعار مع مهندس زراعي',
-                'تأمين قنوات التسويق قبل بداية الموسم',
-                'مراجعة خطة الاستثمار بعد أول موسم',
+            "suggested_investment_horizon_years": None,
+            "risk_budget": (
+                risk_analysis["overall_risk_level"]
+            ),
+            "expected_net_profit": financial_analysis["net_profit"],
+            "expected_roi_percent": roi,
+            "key_considerations": [
+                "النتيجة مبنية على الأسعار والتكاليف والمردودية المدخلة أو الافتراضية",
+                "لا توجد بيانات سوقية مباشرة في هذه الخدمة",
+                "يجب التحقق من المردودية والأسعار مع مختص محلي",
+            ],
+            "next_steps": [
+                "تأكيد سعر البيع الفعلي في المنطقة",
+                "تأكيد المردودية المتوقعة حسب الأرض والموسم",
+                "إدخال تكاليف الماء والطاقة واليد العاملة والمدخلات الفعلية",
             ],
         }
 
-# Factory function
+    def estimate_crop_profitability(
+        self,
+        crop_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+
+        if not isinstance(crop_data, dict):
+            raise ValueError("crop_data must be a dictionary")
+
+        crop_name = str(crop_data.get("crop_name", "")).strip().lower()
+
+        if not crop_name:
+            raise ValueError("crop_name is required")
+
+        market_info = self._get_crop(crop_name)
+
+        farm_size = self._number(
+            crop_data, "farm_size", minimum=0
+        )
+        if farm_size is None or farm_size <= 0:
+            raise ValueError("farm_size must be greater than zero")
+
+        planning_horizon = self._number(
+            crop_data, "planning_horizon_years", 1, minimum=1
+        )
+        if planning_horizon != int(planning_horizon) or planning_horizon > 30:
+            raise ValueError(
+                "planning_horizon_years must be an integer between 1 and 30"
+            )
+        planning_horizon = int(planning_horizon)
+
+        # User-supplied values take priority.
+        # Built-in price is only an indicative reference fallback.
+        price = self._number(
+            crop_data,
+            "market_price_per_kg",
+            market_info["base_price_per_kg"],
+            minimum=0,
+        )
+
+        # No invented yield: use explicit user input or the known crop
+        # reference yield if provided by the calling service.
+        yield_per_hectare = self._number(
+            crop_data,
+            "yield_per_hectare",
+            crop_data.get("expected_yield_per_hectare"),
+            minimum=0,
+        )
+
+        if yield_per_hectare is None:
+            raise ValueError(
+                "Missing yield_per_hectare. Provide actual or locally "
+                "validated expected yield in kg per hectare."
+            )
+
+        costs = self._calculate_detailed_costs(
+            crop_name, farm_size, crop_data
+        )
+
+        financial = self._perform_financial_analysis(
+            price,
+            yield_per_hectare,
+            costs,
+            farm_size,
+            planning_horizon,
+        )
+
+        risk = self._perform_risk_analysis(
+            crop_name, crop_data, financial
+        )
+
+        market = self._analyze_market_conditions(
+            crop_name, crop_data
+        )
+
+        sensitivity = self._perform_sensitivity_analysis(
+            crop_name,
+            price,
+            yield_per_hectare,
+            costs,
+            farm_size,
+        )
+
+        recommendations = self._generate_investment_recommendations(
+            financial, risk, market
+        )
+
+        return {
+            "crop_name": crop_name,
+            "crop_name_ar": market_info["name_ar"],
+            "farm_size_hectares": farm_size,
+            "planning_horizon_years": planning_horizon,
+            "price_analysis": {
+                "predicted_price_per_kg": price,
+                "price_range": self._calculate_price_range(
+                    price, market_info["price_volatility"]
+                ),
+                "seasonal_price_variation": (
+                    self._calculate_seasonal_variation(crop_name)
+                ),
+                "price_source": (
+                    "user_input"
+                    if "market_price_per_kg" in crop_data
+                    else "indicative_reference_not_live_market_data"
+                ),
+            },
+            "yield_analysis": {
+                "predicted_yield_per_hectare": yield_per_hectare,
+                "total_expected_yield": (
+                    yield_per_hectare * farm_size
+                ),
+                "yield_confidence_interval": None,
+                "yield_source": (
+                    "user_input"
+                    if (
+                        "yield_per_hectare" in crop_data
+                        or "expected_yield_per_hectare" in crop_data
+                    )
+                    else "unknown"
+                ),
+            },
+            "cost_analysis": costs,
+            "financial_analysis": financial,
+            "risk_analysis": risk,
+            "market_analysis": market,
+            "sensitivity_analysis": sensitivity,
+            "investment_recommendations": recommendations,
+            "model_source": self.MODEL_SOURCE,
+            "field_validated": self.FIELD_VALIDATED,
+            "disclaimer": (
+                "حسابات تقديرية وليست توقعات مضمونة. الأسعار المرجعية "
+                "والتكاليف الافتراضية غير متحقق منها كسوق تونسي مباشر. "
+                "تحقق من جميع المدخلات محلياً قبل اتخاذ قرار استثماري."
+            ),
+            "analysis_timestamp": datetime.now().isoformat(),
+        }
+
+    def compare_crop_profitability(
+        self,
+        crops_data: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+
+        if not isinstance(crops_data, list) or not crops_data:
+            raise ValueError("crops_data must be a non-empty list")
+
+        if len(crops_data) > 20:
+            raise ValueError("Maximum 20 crops can be compared at once")
+
+        analyses = []
+
+        for crop_data in crops_data:
+            analysis = self.estimate_crop_profitability(crop_data)
+            financial = analysis["financial_analysis"]
+            risk = analysis["risk_analysis"]
+
+            analyses.append({
+                "crop_name": analysis["crop_name"],
+                "crop_name_ar": analysis["crop_name_ar"],
+                "net_profit": financial["net_profit"],
+                "roi_percent": financial["roi_percent"],
+                "payback_period": financial["payback_period_months"],
+                "risk_score": risk["overall_risk_score"],
+                "market_potential": None,
+                "field_validated": False,
+            })
+
+        by_roi = sorted(
+            analyses,
+            key=lambda item: item["roi_percent"],
+            reverse=True,
+        )
+        by_profit = sorted(
+            analyses,
+            key=lambda item: item["net_profit"],
+            reverse=True,
+        )
+
+        by_risk = sorted(
+            analyses,
+            key=lambda item: (
+                item["risk_score"]
+                if item["risk_score"] is not None else float("inf")
+            ),
+        )
+
+        # No fabricated weighted score: comparison uses measurable
+        # financial results only.
+        rankings = {
+            "by_roi": by_roi,
+            "by_net_profit": by_profit,
+            "by_risk": by_risk,
+            "by_market_potential": [],
+            "by_weighted_score": [],
+        }
+
+        portfolio = {
+            "message": (
+                "لا يتم اقتراح توزيع استثماري آلي دون بيانات سوقية "
+                "ومخاطر موثوقة لكل محصول."
+            ),
+            "diversification_candidates": [
+                item["crop_name"] for item in by_risk
+            ],
+        }
+
+        return {
+            "crop_comparisons": analyses,
+            "rankings": rankings,
+            "portfolio_recommendations": portfolio,
+            "best_overall_crop": (
+                by_roi[0] if by_roi else None
+            ),
+            "model_source": self.MODEL_SOURCE,
+            "field_validated": False,
+            "analysis_timestamp": datetime.now().isoformat(),
+        }
+
+
 def create_profit_estimator() -> ProfitEstimatorAI:
-    """Create and return a ProfitEstimatorAI instance"""
+    """Factory function used by main.py."""
     return ProfitEstimatorAI()
