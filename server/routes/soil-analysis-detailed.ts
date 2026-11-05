@@ -138,7 +138,7 @@ async function callAIService(
     // If custom AI service is configured
     if (AI_SERVICE_URL && AI_API_KEY) {
       const response = await axios.post(
-        `${AI_SERVICE_URL}/analyze`,
+        `${AI_SERVICE_URL}/analyze-soil`,
         {
           system_prompt: systemPrompt,
           user_message: userMessage,
