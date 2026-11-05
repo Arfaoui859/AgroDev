@@ -1,514 +1,517 @@
+
 """
-SoilImageDiagnosisAI - Convolutional Neural Network for soil classification from images
-Analyzes soil images to classify soil type, texture, and detect issues
+SoilImageDiagnosisAI
+Deterministic visual analysis of soil images.
+
+IMPORTANT:
+- No fake CNN or synthetic training.
+- No random predictions.
+- A normal RGB image cannot reliably establish soil texture,
+  chemical composition, pH, NPK, organic matter or water content.
+- Visual indicators are descriptive only, not laboratory measurements.
 """
 
-import numpy as np
-import cv2
-from PIL import Image
-import logging
-from typing import Dict, List, Tuple, Any, Union
 import base64
+import binascii
 import io
-from datetime import datetime
+import logging
+import math
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Union
+
+import numpy as np
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 logger = logging.getLogger(__name__)
 
 
-def _load_keras():
-    """Import TensorFlow lazily so the service's numeric analysis endpoints keep
-    working when the (heavy) deep-learning stack is not installed. Returns
-    (keras, layers) or (None, None) when TensorFlow is unavailable."""
-    try:
-        import tensorflow as tf  # noqa: F401
-        from tensorflow import keras
-        from tensorflow.keras import layers
-        return keras, layers
-    except Exception as exc:  # pragma: no cover - depends on environment
-        logger.warning(
-            "TensorFlow unavailable (%s); soil image CNN features disabled, "
-            "numeric analysis unaffected",
-            exc,
-        )
-        return None, None
-
 class SoilImageDiagnosisAI:
-    """CNN-based AI model for soil image analysis and diagnosis"""
-    
+    """Perform deterministic visual analysis without claiming false diagnosis."""
+
     def __init__(self):
         self.model = None
+        self.classification_model = None
+        self.condition_model = None
+
+        # The service is available, but no trained CNN exists.
+        self.is_ready = True
+        self.is_loaded = True
         self.is_trained = False
-        self.model_unavailable_reason = None
+
+        self.model_source = "deterministic-visual-analysis"
+        self.field_validated = False
+        self.model_unavailable_reason = (
+            "No validated soil image classification model is configured"
+        )
+
         self.input_shape = (224, 224, 3)
-        
-        # Soil classification categories
+        self.max_image_bytes = 10 * 1024 * 1024
+        self.max_image_pixels = 25_000_000
+
         self.soil_classes = [
-            'Sandy', 'Clay', 'Loamy', 'Silty', 'Peaty', 'Chalky'
+            "Sandy", "Clay", "Loamy", "Silty", "Peaty", "Chalky"
         ]
-        
+
         self.soil_classes_ar = [
-            'رملية', 'طينية', 'طمية', 'غرينية', 'خثية', 'طباشيرية'
+            "رملية", "طينية", "طمية", "غرينية", "خثية", "طباشيرية"
         ]
-        
-        # Soil condition categories
+
         self.condition_classes = [
-            'Healthy', 'Dry', 'Waterlogged', 'Compacted', 'Eroded', 'Contaminated'
+            "Healthy", "Dry", "Waterlogged",
+            "Compacted", "Eroded", "Contaminated"
         ]
-        
+
         self.condition_classes_ar = [
-            'صحية', 'جافة', 'مشبعة بالماء', 'متضاغطة', 'متآكلة', 'ملوثة'
+            "صحية", "جافة", "مشبعة بالماء",
+            "متضاغطة", "متآكلة", "ملوثة"
         ]
-        
-        # Color analysis for soil properties
-        self.color_analysis = {
-            'organic_matter': {
-                'high': [(40, 25, 15), (60, 35, 25)],  # Dark brown
-                'medium': [(80, 50, 30), (120, 80, 50)],  # Medium brown
-                'low': [(150, 120, 90), (200, 170, 140)]  # Light brown/tan
-            },
-            'moisture': {
-                'wet': [(20, 15, 10), (50, 35, 25)],  # Very dark
-                'moist': [(60, 40, 25), (100, 70, 45)],  # Medium dark
-                'dry': [(120, 90, 60), (180, 150, 120)]  # Light
-            }
-        }
-        
-        self._initialize_model()
-    
-    def _initialize_model(self):
-        """Initialize the CNN model architecture (no-op if TensorFlow is absent)."""
-        keras, _ = _load_keras()
-        if keras is None:
-            self.model_unavailable_reason = "tensorflow-not-installed"
-            logger.info(
-                "SoilImageDiagnosisAI running without CNN: TensorFlow not installed"
-            )
-            return
-        try:
-            self._build_cnn_model()
-            self._simulate_training()
-            logger.info("SoilImageDiagnosisAI initialized successfully")
-        except Exception as e:
-            self.model_unavailable_reason = "model-init-failed"
-            logger.error(f"Error initializing SoilImageDiagnosisAI: {e}")
-    
-    def _build_cnn_model(self):
-        """Build the CNN architecture for soil image classification"""
-        keras, layers = _load_keras()
-        # Main classification model
-        self.classification_model = keras.Sequential([
-            # Input layer
-            layers.Input(shape=self.input_shape),
-            
-            # First convolutional block
-            layers.Conv2D(32, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Second convolutional block
-            layers.Conv2D(64, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Third convolutional block
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Fourth convolutional block
-            layers.Conv2D(256, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Global average pooling
-            layers.GlobalAveragePooling2D(),
-            
-            # Dense layers
-            layers.Dense(512, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(256, activation='relu'),
-            layers.Dropout(0.5),
-            
-            # Output layer for soil type classification
-            layers.Dense(len(self.soil_classes), activation='softmax', name='soil_type')
-        ])
-        
-        # Condition classification model
-        self.condition_model = keras.Sequential([
-            layers.Input(shape=self.input_shape),
-            layers.Conv2D(32, (3, 3), activation='relu'),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(64, (3, 3), activation='relu'),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.GlobalAveragePooling2D(),
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(len(self.condition_classes), activation='softmax', name='soil_condition')
-        ])
-        
-        # Compile models
-        self.classification_model.compile(
-            optimizer='adam',
-            loss='categorical_crossentropy',
-            metrics=['accuracy']
+
+        logger.info(
+            "SoilImageDiagnosisAI initialized: deterministic visual analysis"
         )
-        
-        self.condition_model.compile(
-            optimizer='adam',
-            loss='categorical_crossentropy',
-            metrics=['accuracy']
-        )
-    
-    def _simulate_training(self):
-        """Simulate model training with synthetic data for demonstration"""
-        keras, _ = _load_keras()
-        if keras is None:
-            return
-        # Generate synthetic training data
-        X_train = np.random.random((100, *self.input_shape))
-        y_train_type = keras.utils.to_categorical(
-            np.random.randint(0, len(self.soil_classes), 100),
-            len(self.soil_classes)
-        )
-        y_train_condition = keras.utils.to_categorical(
-            np.random.randint(0, len(self.condition_classes), 100),
-            len(self.condition_classes)
-        )
-        
-        # Simulate training (in production, use real data)
-        # self.classification_model.fit(X_train, y_train_type, epochs=1, verbose=0)
-        # self.condition_model.fit(X_train, y_train_condition, epochs=1, verbose=0)
-        
-        self.is_trained = True
-        logger.info("Simulated training completed for soil image diagnosis models")
-    
-    def analyze_soil_image(self, image_data: Union[str, bytes, np.ndarray]) -> Dict[str, Any]:
-        """Analyze soil image and return comprehensive diagnosis"""
-        try:
-            if not self.is_trained:
-                raise ValueError("Models not trained")
-            
-            # Preprocess image
-            processed_image = self._preprocess_image(image_data)
-            
-            # Extract features from image
-            features = self._extract_image_features(processed_image)
-            
-            # Classify soil type
-            soil_type_prediction = self._classify_soil_type(processed_image)
-            
-            # Assess soil condition
-            condition_prediction = self._assess_soil_condition(processed_image)
-            
-            # Analyze color properties
-            color_analysis = self._analyze_color_properties(processed_image)
-            
-            # Texture analysis
-            texture_analysis = self._analyze_texture(processed_image)
-            
-            # Generate recommendations
-            recommendations = self._generate_recommendations(
-                soil_type_prediction, condition_prediction, color_analysis
-            )
-            
-            return {
-                'soil_classification': soil_type_prediction,
-                'soil_condition': condition_prediction,
-                'color_analysis': color_analysis,
-                'texture_analysis': texture_analysis,
-                'image_features': features,
-                'recommendations': recommendations,
-                'confidence_score': float(np.mean([
-                    soil_type_prediction['confidence'],
-                    condition_prediction['confidence']
-                ])),
-                'analysis_timestamp': datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in soil image analysis: {e}")
-            raise
-    
-    def _preprocess_image(self, image_data: Union[str, bytes, np.ndarray]) -> np.ndarray:
-        """Preprocess image for analysis"""
+
+    # ---------------------------------------------------------
+    # Image decoding and validation
+    # ---------------------------------------------------------
+
+    def _preprocess_image(
+        self,
+        image_data: Union[str, bytes, np.ndarray],
+    ) -> np.ndarray:
+        """Decode, validate and normalize an image to RGB float32."""
+
         try:
             if isinstance(image_data, str):
-                # Base64 encoded image
-                image_bytes = base64.b64decode(image_data)
-                image = Image.open(io.BytesIO(image_bytes))
-            elif isinstance(image_data, bytes):
-                image = Image.open(io.BytesIO(image_data))
-            else:
-                image = Image.fromarray(image_data)
-            
-            # Convert to RGB if needed
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
-            
-            # Resize to model input size
-            image = image.resize((self.input_shape[0], self.input_shape[1]))
-            
-            # Convert to numpy array and normalize
-            img_array = np.array(image) / 255.0
-            
-            return img_array.astype(np.float32)
-            
-        except Exception as e:
-            logger.error(f"Error preprocessing image: {e}")
-            raise
-    
-    def _extract_image_features(self, image: np.ndarray) -> Dict[str, float]:
-        """Extract statistical features from soil image"""
-        # Convert to different color spaces for analysis
-        image_bgr = cv2.cvtColor((image * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
-        hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
-        lab = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB)
-        gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
-        
-        features = {}
-        
-        # Color statistics
-        features['mean_red'] = float(np.mean(image[:, :, 0]))
-        features['mean_green'] = float(np.mean(image[:, :, 1]))
-        features['mean_blue'] = float(np.mean(image[:, :, 2]))
-        features['std_red'] = float(np.std(image[:, :, 0]))
-        features['std_green'] = float(np.std(image[:, :, 1]))
-        features['std_blue'] = float(np.std(image[:, :, 2]))
-        
-        # HSV features
-        features['mean_hue'] = float(np.mean(hsv[:, :, 0]))
-        features['mean_saturation'] = float(np.mean(hsv[:, :, 1]))
-        features['mean_value'] = float(np.mean(hsv[:, :, 2]))
-        
-        # LAB features
-        features['mean_lightness'] = float(np.mean(lab[:, :, 0]))
-        features['mean_a'] = float(np.mean(lab[:, :, 1]))
-        features['mean_b'] = float(np.mean(lab[:, :, 2]))
-        
-        # Texture features
-        features['contrast'] = float(np.std(gray))
-        
-        # Edge density
-        edges = cv2.Canny(gray, 50, 150)
-        features['edge_density'] = float(np.sum(edges > 0) / edges.size)
-        
-        # Homogeneity (uniformity of texture)
-        features['homogeneity'] = float(1.0 / (1.0 + features['contrast']))
-        
-        return features
-    
-    def _classify_soil_type(self, image: np.ndarray) -> Dict[str, Any]:
-        """Classify soil type from image using CNN"""
-        # In a real implementation, this would use the trained CNN
-        # For now, we'll use color-based classification
-        features = self._extract_image_features(image)
-        
-        # Simple rule-based classification based on color
-        red = features['mean_red']
-        green = features['mean_green']
-        blue = features['mean_blue']
-        
-        # Calculate soil type probabilities based on color characteristics
-        probabilities = np.random.random(len(self.soil_classes))
-        
-        # Adjust probabilities based on color features
-        if red > 0.6 and green > 0.4:  # Sandy soil (light colored)
-            probabilities[0] *= 2.0
-        if red < 0.3 and green < 0.3:  # Clay soil (dark colored)
-            probabilities[1] *= 2.0
-        if 0.3 <= red <= 0.6:  # Loamy soil (medium colored)
-            probabilities[2] *= 2.0
-        
-        # Normalize probabilities
-        probabilities = probabilities / np.sum(probabilities)
-        
-        # Get top prediction
-        top_idx = np.argmax(probabilities)
-        
-        return {
-            'soil_type': self.soil_classes[top_idx],
-            'soil_type_ar': self.soil_classes_ar[top_idx],
-            'confidence': float(probabilities[top_idx]),
-            'all_probabilities': {
-                self.soil_classes[i]: float(probabilities[i])
-                for i in range(len(self.soil_classes))
-            }
-        }
-    
-    def _assess_soil_condition(self, image: np.ndarray) -> Dict[str, Any]:
-        """Assess soil condition from image"""
-        features = self._extract_image_features(image)
-        
-        # Simple rule-based assessment
-        probabilities = np.random.random(len(self.condition_classes))
-        
-        # Adjust based on features
-        if features['mean_value'] < 0.3:  # Very dark - might be wet
-            probabilities[1] *= 1.5  # Waterlogged
-        elif features['mean_value'] > 0.7:  # Very light - might be dry
-            probabilities[2] *= 1.5  # Dry
-        else:
-            probabilities[0] *= 1.5  # Healthy
-        
-        # Normalize
-        probabilities = probabilities / np.sum(probabilities)
-        
-        top_idx = np.argmax(probabilities)
-        
-        return {
-            'condition': self.condition_classes[top_idx],
-            'condition_ar': self.condition_classes_ar[top_idx],
-            'confidence': float(probabilities[top_idx]),
-            'health_score': float(probabilities[0] * 100),  # Healthy probability as score
-            'all_conditions': {
-                self.condition_classes[i]: float(probabilities[i])
-                for i in range(len(self.condition_classes))
-            }
-        }
-    
-    def _analyze_color_properties(self, image: np.ndarray) -> Dict[str, Any]:
-        """Analyze color properties to estimate soil characteristics"""
-        features = self._extract_image_features(image)
-        
-        # Estimate organic matter content based on darkness
-        lightness = features['mean_lightness'] / 255.0
-        if lightness < 0.3:
-            organic_matter_level = 'عالي'
-            organic_matter_score = 0.8
-        elif lightness < 0.6:
-            organic_matter_level = 'متوسط'
-            organic_matter_score = 0.5
-        else:
-            organic_matter_level = 'منخفض'
-            organic_matter_score = 0.2
-        
-        # Estimate moisture based on color saturation and value
-        saturation = features['mean_saturation'] / 255.0
-        value = features['mean_value'] / 255.0
-        
-        if value < 0.4 and saturation > 0.3:
-            moisture_level = 'رطب'
-            moisture_score = 0.8
-        elif value < 0.7:
-            moisture_level = 'معتدل'
-            moisture_score = 0.5
-        else:
-            moisture_level = 'جاف'
-            moisture_score = 0.2
-        
-        # Estimate iron content based on red/brown coloration
-        red_dominance = features['mean_red'] / (features['mean_green'] + features['mean_blue'] + 0.001)
-        if red_dominance > 1.2:
-            iron_level = 'عالي'
-        elif red_dominance > 0.8:
-            iron_level = 'متوسط'
-        else:
-            iron_level = 'منخفض'
-        
-        return {
-            'organic_matter': {
-                'level': organic_matter_level,
-                'score': organic_matter_score,
-                'estimated_percentage': organic_matter_score * 10
-            },
-            'moisture': {
-                'level': moisture_level,
-                'score': moisture_score,
-                'estimated_percentage': moisture_score * 100
-            },
-            'iron_content': {
-                'level': iron_level,
-                'indicator': red_dominance
-            },
-            'overall_color_health': (organic_matter_score + moisture_score) / 2
-        }
-    
-    def _analyze_texture(self, image: np.ndarray) -> Dict[str, Any]:
-        """Analyze soil texture from image"""
-        features = self._extract_image_features(image)
-        
-        # Texture analysis based on contrast and edge density
-        contrast = features['contrast']
-        edge_density = features['edge_density']
-        homogeneity = features['homogeneity']
-        
-        # Classify texture
-        if edge_density > 0.3 and contrast > 0.2:
-            texture_type = 'خشنة'
-            particle_size = 'كبير'
-        elif edge_density > 0.15 and contrast > 0.1:
-            texture_type = 'متوسطة'
-            particle_size = 'متوسط'
-        else:
-            texture_type = 'ناعمة'
-            particle_size = 'صغير'
-        
-        # Estimate porosity
-        if homogeneity < 0.5:
-            porosity = 'عالية'
-        elif homogeneity < 0.7:
-            porosity = 'متوسطة'
-        else:
-            porosity = 'منخفضة'
-        
-        return {
-            'texture_type': texture_type,
-            'particle_size': particle_size,
-            'porosity': porosity,
-            'homogeneity_score': homogeneity,
-            'contrast_score': contrast,
-            'edge_density': edge_density
-        }
-    
-    def _generate_recommendations(self, soil_type: Dict, condition: Dict, 
-                                color_analysis: Dict) -> List[str]:
-        """Generate recommendations based on image analysis"""
-        recommendations = []
-        
-        # Soil type specific recommendations
-        if soil_type['soil_type'] == 'Sandy':
-            recommendations.extend([
-                'إضافة المواد العضوية لتحسين قدرة الاحتفاظ بالماء',
-                'استخدام الأسمدة بطيئة الإطلاق',
-                'الري المتكرر بكميات قليلة'
-            ])
-        elif soil_type['soil_type'] == 'Clay':
-            recommendations.extend([
-                'تحسين الصرف وإضافة الرمل',
-                'تجنب الحراثة عند الرطوبة العالية',
-                'إضافة المواد العضوية لتحسين التهوية'
-            ])
-        
-        # Condition specific recommendations
-        if condition['condition'] == 'Dry':
-            recommendations.extend([
-                'زيادة معدل الري',
-                'استخدام المهاد للحفاظ على الرطوبة',
-                'إضافة مواد محتفظة بالماء'
-            ])
-        elif condition['condition'] == 'Waterlogged':
-            recommendations.extend([
-                'تحسين نظام الصرف',
-                'تقليل معدل الري',
-                'إضافة مواد تحسن التهوية'
-            ])
-        
-        # Organic matter recommendations
-        if color_analysis['organic_matter']['level'] == 'منخفض':
-            recommendations.extend([
-                'إضافة الكمبوست والسماد العضوي',
-                'زراعة المحاصيل الغطائية',
-                'تقليل الحراثة العميقة'
-            ])
-        
-        return recommendations
+                encoded = image_data.strip()
 
-# Factory function
+                # Support data URLs such as data:image/jpeg;base64,...
+                if encoded.startswith("data:"):
+                    if "," not in encoded:
+                        raise ValueError("Invalid image data URL")
+                    header, encoded = encoded.split(",", 1)
+
+                    if ";base64" not in header.lower():
+                        raise ValueError("Image data URL must use base64")
+
+                # Remove whitespace/newlines from base64.
+                encoded = "".join(encoded.split())
+
+                try:
+                    image_bytes = base64.b64decode(
+                        encoded,
+                        validate=True,
+                    )
+                except (binascii.Error, ValueError):
+                    raise ValueError("Invalid base64 image data")
+
+                if len(image_bytes) > self.max_image_bytes:
+                    raise ValueError("Image exceeds the 10 MB size limit")
+
+                image = Image.open(io.BytesIO(image_bytes))
+
+            elif isinstance(image_data, bytes):
+                if not image_data:
+                    raise ValueError("Empty image data")
+
+                if len(image_data) > self.max_image_bytes:
+                    raise ValueError("Image exceeds the 10 MB size limit")
+
+                image = Image.open(io.BytesIO(image_data))
+
+            elif isinstance(image_data, np.ndarray):
+                if image_data.size == 0:
+                    raise ValueError("Empty image array")
+
+                if image_data.ndim != 3 or image_data.shape[2] not in (3, 4):
+                    raise ValueError(
+                        "Image array must have shape (height, width, 3 or 4)"
+                    )
+
+                if image_data.dtype == np.bool_:
+                    raise ValueError("Boolean image arrays are unsupported")
+
+                if not np.issubdtype(image_data.dtype, np.number):
+                    raise ValueError("Image array must contain numeric values")
+
+                if not np.isfinite(image_data).all():
+                    raise ValueError("Image contains invalid numeric values")
+
+                array = image_data
+
+                if array.dtype != np.uint8:
+                    if array.min() >= 0 and array.max() <= 1:
+                        array = array * 255.0
+                    elif array.min() < 0 or array.max() > 255:
+                        raise ValueError(
+                            "Image array values must be between 0 and 255"
+                        )
+
+                    array = np.clip(array, 0, 255).astype(np.uint8)
+
+                image = Image.fromarray(array)
+
+            else:
+                raise ValueError(
+                    "image_data must be base64, bytes, or a NumPy array"
+                )
+
+            # Protect against decompression bombs and oversized images.
+            width, height = image.size
+
+            if width <= 0 or height <= 0:
+                raise ValueError("Invalid image dimensions")
+
+            if width * height > self.max_image_pixels:
+                raise ValueError("Image dimensions exceed the allowed limit")
+
+            image = ImageOps.exif_transpose(image)
+            image = image.convert("RGB")
+
+            image = image.resize(
+                (self.input_shape[1], self.input_shape[0]),
+                Image.Resampling.LANCZOS,
+            )
+
+            return (
+                np.asarray(image, dtype=np.float32) / 255.0
+            )
+
+        except (UnidentifiedImageError, OSError) as exc:
+            logger.warning("Invalid or unsupported image: %s", exc)
+            raise ValueError("Could not decode image. Upload a valid image.")
+
+    # ---------------------------------------------------------
+    # Visual feature extraction
+    # ---------------------------------------------------------
+
+    def _extract_image_features(
+        self,
+        image: np.ndarray,
+    ) -> Dict[str, float]:
+        """Extract reproducible image statistics, not soil measurements."""
+
+        if (
+            not isinstance(image, np.ndarray)
+            or image.ndim != 3
+            or image.shape[2] != 3
+            or not np.isfinite(image).all()
+        ):
+            raise ValueError("Invalid preprocessed RGB image")
+
+        red = image[:, :, 0]
+        green = image[:, :, 1]
+        blue = image[:, :, 2]
+
+        # Relative luminance.
+        gray = (
+            0.2126 * red
+            + 0.7152 * green
+            + 0.0722 * blue
+        )
+
+        # Simple RGB saturation indicator.
+        maximum = np.max(image, axis=2)
+        minimum = np.min(image, axis=2)
+
+        saturation = np.zeros_like(maximum)
+        non_black = maximum > 0
+
+        saturation[non_black] = (
+            maximum[non_black] - minimum[non_black]
+        ) / maximum[non_black]
+
+        # Average horizontal and vertical brightness differences.
+        horizontal_edges = np.abs(np.diff(gray, axis=1))
+        vertical_edges = np.abs(np.diff(gray, axis=0))
+
+        edge_density = float(
+            (
+                np.mean(horizontal_edges > 0.10)
+                + np.mean(vertical_edges > 0.10)
+            ) / 2.0
+        )
+
+        return {
+            "mean_red": float(np.mean(red)),
+            "mean_green": float(np.mean(green)),
+            "mean_blue": float(np.mean(blue)),
+            "std_red": float(np.std(red)),
+            "std_green": float(np.std(green)),
+            "std_blue": float(np.std(blue)),
+            "mean_brightness": float(np.mean(gray)),
+            "brightness_std": float(np.std(gray)),
+            "mean_saturation": float(np.mean(saturation)),
+            "contrast": float(np.std(gray)),
+            "edge_density": edge_density,
+        }
+
+    # ---------------------------------------------------------
+    # Soil classification
+    # ---------------------------------------------------------
+
+    def _classify_soil_type(
+        self,
+        image: np.ndarray,
+    ) -> Dict[str, Any]:
+        """
+        Do not classify soil type from color alone.
+
+        Reliable texture classification requires suitable reference data
+        or a validated model trained on representative soil images.
+        """
+
+        return {
+            "soil_type": "Unknown",
+            "soil_type_ar": "غير محدد",
+            "confidence": 0.0,
+            "status": "not_classified",
+            "reason": (
+                "A normal image alone cannot reliably distinguish "
+                "sand, clay, loam and other soil texture classes."
+            ),
+            "all_probabilities": None,
+            "model_source": self.model_source,
+        }
+
+    # ---------------------------------------------------------
+    # Soil condition assessment
+    # ---------------------------------------------------------
+
+    def _assess_soil_condition(
+        self,
+        image: np.ndarray,
+    ) -> Dict[str, Any]:
+        """Avoid claiming moisture, contamination or soil health from RGB."""
+
+        return {
+            "condition": "Unknown",
+            "condition_ar": "غير محددة",
+            "confidence": 0.0,
+            "health_score": None,
+            "status": "visual_inspection_only",
+            "all_conditions": None,
+            "reason": (
+                "Dryness, waterlogging, compaction, contamination and "
+                "soil health require field observations or measurements."
+            ),
+        }
+
+    # ---------------------------------------------------------
+    # Color analysis
+    # ---------------------------------------------------------
+
+    def _analyze_color_properties(
+        self,
+        image: np.ndarray,
+    ) -> Dict[str, Any]:
+        """Describe visible color without converting it into lab values."""
+
+        features = self._extract_image_features(image)
+
+        brightness = features["mean_brightness"]
+        saturation = features["mean_saturation"]
+
+        if brightness < 0.30:
+            brightness_description = "داكنة"
+        elif brightness < 0.65:
+            brightness_description = "متوسطة الإضاءة"
+        else:
+            brightness_description = "فاتحة"
+
+        if saturation < 0.15:
+            color_description = "ضعيفة التشبع"
+        elif saturation < 0.40:
+            color_description = "متوسطة التشبع"
+        else:
+            color_description = "مرتفعة التشبع"
+
+        return {
+            "visual_color": {
+                "brightness": brightness_description,
+                "saturation": color_description,
+                "mean_brightness": round(brightness, 4),
+                "mean_saturation": round(saturation, 4),
+            },
+            "organic_matter": {
+                "level": None,
+                "estimated_percentage": None,
+                "status": "requires_laboratory_analysis",
+                "reason": (
+                    "Soil darkness is not a reliable measurement "
+                    "of organic matter."
+                ),
+            },
+            "moisture": {
+                "level": None,
+                "estimated_percentage": None,
+                "status": "requires_field_measurement",
+                "reason": (
+                    "Image brightness and color are affected by lighting, "
+                    "camera settings and soil composition."
+                ),
+            },
+            "iron_content": {
+                "level": None,
+                "status": "requires_laboratory_analysis",
+                "reason": (
+                    "Red or brown color alone cannot quantify iron content."
+                ),
+            },
+            "overall_color_health": None,
+            "interpretation": "visual_description_only",
+        }
+
+    # ---------------------------------------------------------
+    # Texture appearance
+    # ---------------------------------------------------------
+
+    def _analyze_texture(
+        self,
+        image: np.ndarray,
+    ) -> Dict[str, Any]:
+        """
+        Describe visible image patterns only.
+
+        Pixel edges are not equivalent to actual soil particle size.
+        """
+
+        features = self._extract_image_features(image)
+
+        return {
+            "visual_pattern": "not_calibrated",
+            "particle_size": None,
+            "porosity": None,
+            "homogeneity_score": round(
+                1.0 / (1.0 + features["contrast"]),
+                4,
+            ),
+            "contrast_score": round(features["contrast"], 4),
+            "edge_density": round(features["edge_density"], 4),
+            "status": "visual_texture_indicators_only",
+            "reason": (
+                "Image texture statistics cannot establish particle-size "
+                "distribution or soil porosity. A soil texture test is needed."
+            ),
+        }
+
+    # ---------------------------------------------------------
+    # Recommendations
+    # ---------------------------------------------------------
+
+    def _generate_recommendations(
+        self,
+        soil_type: Dict[str, Any],
+        condition: Dict[str, Any],
+        color_analysis: Dict[str, Any],
+    ) -> List[str]:
+        """Provide safe next steps without assuming a diagnosis."""
+
+        return [
+            "خذ عينة ممثلة من التربة وأرسلها إلى مخبر لتحليل pH وNPK والمواد العضوية.",
+            "تحقق من قوام التربة ميدانياً باستعمال اختبار اللمس أو تحليل توزيع الحبيبات.",
+            "قِس رطوبة التربة بأداة مناسبة بدل الاعتماد على لون الصورة.",
+            "التقط صوراً إضافية في إضاءة طبيعية ومن دون فلاتر لتحسين الفحص البصري.",
+            "لا تضف أسمدة أو مواد معالجة اعتماداً على الصورة وحدها.",
+        ]
+
+    # ---------------------------------------------------------
+    # Main public method
+    # ---------------------------------------------------------
+
+    def analyze_soil_image(
+        self,
+        image_data: Union[str, bytes, np.ndarray],
+    ) -> Dict[str, Any]:
+        """Return deterministic visual observations for an uploaded image."""
+
+        try:
+            processed_image = self._preprocess_image(image_data)
+
+            features = self._extract_image_features(processed_image)
+
+            soil_type_prediction = self._classify_soil_type(
+                processed_image
+            )
+
+            condition_prediction = self._assess_soil_condition(
+                processed_image
+            )
+
+            color_analysis = self._analyze_color_properties(
+                processed_image
+            )
+
+            texture_analysis = self._analyze_texture(
+                processed_image
+            )
+
+            recommendations = self._generate_recommendations(
+                soil_type_prediction,
+                condition_prediction,
+                color_analysis,
+            )
+
+            return {
+                "soil_classification": soil_type_prediction,
+                "soil_condition": condition_prediction,
+                "color_analysis": color_analysis,
+                "texture_analysis": texture_analysis,
+                "image_features": features,
+                "recommendations": recommendations,
+
+                # No validated classifier means no confidence claim.
+                "confidence_score": 0.0,
+                "confidence_status": "not_available",
+
+                "analysis_timestamp": datetime.now(
+                    timezone.utc
+                ).isoformat(),
+
+                "model_source": self.model_source,
+                "model_trained": False,
+                "field_validated": False,
+                "analysis_type": "deterministic_visual_analysis",
+                "data_source": "user_uploaded_image",
+                "is_real_image": True,
+                "is_scientific_diagnosis": False,
+
+                "limitations": [
+                    "No validated CNN model is configured.",
+                    "Soil type is not classified.",
+                    "No pH, NPK, moisture or organic matter values are inferred.",
+                    "Visual features depend on lighting and camera conditions.",
+                ],
+
+                "disclaimer": (
+                    "This service describes visible image characteristics. "
+                    "It does not provide a scientifically validated soil "
+                    "diagnosis or replace laboratory and field testing."
+                ),
+            }
+
+        except Exception as exc:
+            logger.error(
+                "Soil image analysis failed: %s",
+                exc,
+                exc_info=True,
+            )
+            raise
+
+    def get_model_status(self) -> Dict[str, Any]:
+        return {
+            "status": "ready",
+            "model_source": self.model_source,
+            "model_trained": False,
+            "field_validated": False,
+            "cnn_available": False,
+            "analysis_type": "deterministic_visual_analysis",
+            "message": (
+                "Image processing is available, but no validated "
+                "soil classification model is configured."
+            ),
+        }
+
+
 def create_soil_image_diagnosis() -> SoilImageDiagnosisAI:
-    """Create and return a SoilImageDiagnosisAI instance"""
+    """Factory function used by main.py."""
     return SoilImageDiagnosisAI()
