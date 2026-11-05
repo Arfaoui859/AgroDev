@@ -12,7 +12,7 @@ The profit estimator uses deterministic financial calculations.
 The crop recommender remains separately identified by its actual model source.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
