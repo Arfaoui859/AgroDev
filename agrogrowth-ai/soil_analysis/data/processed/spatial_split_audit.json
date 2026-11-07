@@ -1,0 +1,465 @@
+{
+  "dataset_rows": 2157,
+  "validation_method": "GroupKFold",
+  "number_of_folds": 5,
+  "grouping_method": "fixed longitude/latitude grid cells",
+  "grid_sizes_degrees": [
+    0.25,
+    0.5
+  ],
+  "results": {
+    "0.25": {
+      "status": "completed",
+      "number_of_blocks": 105,
+      "smallest_block": 1,
+      "largest_block": 85,
+      "average_samples_per_block": 20.54,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 1725,
+          "test_rows": 432,
+          "train_blocks": 85,
+          "test_blocks": 20,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1725,
+              "test": 430
+            },
+            "carbon_organic": {
+              "train": 1725,
+              "test": 432
+            },
+            "nitrogen_total": {
+              "train": 1695,
+              "test": 416
+            },
+            "potassium_extractable": {
+              "train": 1725,
+              "test": 432
+            },
+            "electrical_conductivity": {
+              "train": 1695,
+              "test": 414
+            },
+            "phosphorus_extractable": {
+              "train": 1695,
+              "test": 416
+            },
+            "zinc_extractable": {
+              "train": 1695,
+              "test": 416
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 422,
+            "20-50": 10
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 1725,
+          "test_rows": 432,
+          "train_blocks": 83,
+          "test_blocks": 22,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1723,
+              "test": 432
+            },
+            "carbon_organic": {
+              "train": 1725,
+              "test": 432
+            },
+            "nitrogen_total": {
+              "train": 1690,
+              "test": 421
+            },
+            "potassium_extractable": {
+              "train": 1725,
+              "test": 432
+            },
+            "electrical_conductivity": {
+              "train": 1688,
+              "test": 421
+            },
+            "phosphorus_extractable": {
+              "train": 1690,
+              "test": 421
+            },
+            "zinc_extractable": {
+              "train": 1690,
+              "test": 421
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 426,
+            "20-50": 6
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 1726,
+          "test_rows": 431,
+          "train_blocks": 84,
+          "test_blocks": 21,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1724,
+              "test": 431
+            },
+            "carbon_organic": {
+              "train": 1726,
+              "test": 431
+            },
+            "nitrogen_total": {
+              "train": 1682,
+              "test": 429
+            },
+            "potassium_extractable": {
+              "train": 1726,
+              "test": 431
+            },
+            "electrical_conductivity": {
+              "train": 1680,
+              "test": 429
+            },
+            "phosphorus_extractable": {
+              "train": 1682,
+              "test": 429
+            },
+            "zinc_extractable": {
+              "train": 1682,
+              "test": 429
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 430,
+            "20-50": 1
+          }
+        },
+        {
+          "fold": 4,
+          "train_rows": 1726,
+          "test_rows": 431,
+          "train_blocks": 84,
+          "test_blocks": 21,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1724,
+              "test": 431
+            },
+            "carbon_organic": {
+              "train": 1726,
+              "test": 431
+            },
+            "nitrogen_total": {
+              "train": 1688,
+              "test": 423
+            },
+            "potassium_extractable": {
+              "train": 1726,
+              "test": 431
+            },
+            "electrical_conductivity": {
+              "train": 1686,
+              "test": 423
+            },
+            "phosphorus_extractable": {
+              "train": 1688,
+              "test": 423
+            },
+            "zinc_extractable": {
+              "train": 1688,
+              "test": 423
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 428,
+            "20-50": 3
+          }
+        },
+        {
+          "fold": 5,
+          "train_rows": 1726,
+          "test_rows": 431,
+          "train_blocks": 84,
+          "test_blocks": 21,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1724,
+              "test": 431
+            },
+            "carbon_organic": {
+              "train": 1726,
+              "test": 431
+            },
+            "nitrogen_total": {
+              "train": 1689,
+              "test": 422
+            },
+            "potassium_extractable": {
+              "train": 1726,
+              "test": 431
+            },
+            "electrical_conductivity": {
+              "train": 1687,
+              "test": 422
+            },
+            "phosphorus_extractable": {
+              "train": 1689,
+              "test": 422
+            },
+            "zinc_extractable": {
+              "train": 1689,
+              "test": 422
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 428,
+            "20-50": 3
+          }
+        }
+      ],
+      "all_folds_have_zero_block_overlap": true,
+      "all_folds_have_zero_coordinate_overlap": true
+    },
+    "0.5": {
+      "status": "completed",
+      "number_of_blocks": 72,
+      "smallest_block": 1,
+      "largest_block": 106,
+      "average_samples_per_block": 29.96,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 1725,
+          "test_rows": 432,
+          "train_blocks": 58,
+          "test_blocks": 14,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1723,
+              "test": 432
+            },
+            "carbon_organic": {
+              "train": 1725,
+              "test": 432
+            },
+            "nitrogen_total": {
+              "train": 1684,
+              "test": 427
+            },
+            "potassium_extractable": {
+              "train": 1725,
+              "test": 432
+            },
+            "electrical_conductivity": {
+              "train": 1682,
+              "test": 427
+            },
+            "phosphorus_extractable": {
+              "train": 1684,
+              "test": 427
+            },
+            "zinc_extractable": {
+              "train": 1684,
+              "test": 427
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 430,
+            "20-50": 2
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 1725,
+          "test_rows": 432,
+          "train_blocks": 58,
+          "test_blocks": 14,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1725,
+              "test": 430
+            },
+            "carbon_organic": {
+              "train": 1725,
+              "test": 432
+            },
+            "nitrogen_total": {
+              "train": 1685,
+              "test": 426
+            },
+            "potassium_extractable": {
+              "train": 1725,
+              "test": 432
+            },
+            "electrical_conductivity": {
+              "train": 1685,
+              "test": 424
+            },
+            "phosphorus_extractable": {
+              "train": 1685,
+              "test": 426
+            },
+            "zinc_extractable": {
+              "train": 1685,
+              "test": 426
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 428,
+            "20-50": 4
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 1726,
+          "test_rows": 431,
+          "train_blocks": 59,
+          "test_blocks": 13,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1724,
+              "test": 431
+            },
+            "carbon_organic": {
+              "train": 1726,
+              "test": 431
+            },
+            "nitrogen_total": {
+              "train": 1684,
+              "test": 427
+            },
+            "potassium_extractable": {
+              "train": 1726,
+              "test": 431
+            },
+            "electrical_conductivity": {
+              "train": 1682,
+              "test": 427
+            },
+            "phosphorus_extractable": {
+              "train": 1684,
+              "test": 427
+            },
+            "zinc_extractable": {
+              "train": 1684,
+              "test": 427
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 430,
+            "20-50": 1
+          }
+        },
+        {
+          "fold": 4,
+          "train_rows": 1726,
+          "test_rows": 431,
+          "train_blocks": 57,
+          "test_blocks": 15,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1724,
+              "test": 431
+            },
+            "carbon_organic": {
+              "train": 1726,
+              "test": 431
+            },
+            "nitrogen_total": {
+              "train": 1690,
+              "test": 421
+            },
+            "potassium_extractable": {
+              "train": 1726,
+              "test": 431
+            },
+            "electrical_conductivity": {
+              "train": 1688,
+              "test": 421
+            },
+            "phosphorus_extractable": {
+              "train": 1690,
+              "test": 421
+            },
+            "zinc_extractable": {
+              "train": 1690,
+              "test": 421
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 428,
+            "20-50": 3
+          }
+        },
+        {
+          "fold": 5,
+          "train_rows": 1726,
+          "test_rows": 431,
+          "train_blocks": 56,
+          "test_blocks": 16,
+          "overlapping_blocks": 0,
+          "overlapping_exact_coordinates": 0,
+          "target_counts": {
+            "ph": {
+              "train": 1724,
+              "test": 431
+            },
+            "carbon_organic": {
+              "train": 1726,
+              "test": 431
+            },
+            "nitrogen_total": {
+              "train": 1701,
+              "test": 410
+            },
+            "potassium_extractable": {
+              "train": 1726,
+              "test": 431
+            },
+            "electrical_conductivity": {
+              "train": 1699,
+              "test": 410
+            },
+            "phosphorus_extractable": {
+              "train": 1701,
+              "test": 410
+            },
+            "zinc_extractable": {
+              "train": 1701,
+              "test": 410
+            }
+          },
+          "test_depth_distribution": {
+            "0-20": 418,
+            "20-50": 13
+          }
+        }
+      ],
+      "all_folds_have_zero_block_overlap": true,
+      "all_folds_have_zero_coordinate_overlap": true
+    }
+  },
+  "training_performed": false
+}

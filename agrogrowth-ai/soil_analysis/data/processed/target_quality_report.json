@@ -1,0 +1,664 @@
+{
+  "ph": {
+    "count": 49180,
+    "q1": 5.854,
+    "median": 6.26,
+    "q3": 6.7555,
+    "iqr_lower_bound": 4.501750000000001,
+    "iqr_upper_bound": 8.10775,
+    "suspicious_count": 3562,
+    "suspicious_by_source": {
+      "afsis_spectral": 3551,
+      "afsis_wetchem": 11
+    },
+    "suspicious_examples": [
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.60393,
+        "longitude": 35.62835,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 3.778
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.5228,
+        "longitude": 34.91574,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 8.363
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.25472,
+        "longitude": 35.95456,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.08
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.23305,
+        "longitude": 35.93625,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.261
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.19889,
+        "longitude": 35.96379,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.141
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.19795,
+        "longitude": 35.96289,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.423
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.19345,
+        "longitude": 35.95816,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.025
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.19207,
+        "longitude": 35.98761,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.338
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.19049,
+        "longitude": 35.98883,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.334
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.19032,
+        "longitude": 35.94528,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "ph": 4.452
+      }
+    ]
+  },
+  "carbon_organic": {
+    "count": 49183,
+    "q1": 6.59,
+    "median": 9.93,
+    "q3": 15.27,
+    "iqr_lower_bound": -6.43,
+    "iqr_upper_bound": 28.29,
+    "suspicious_count": 3206,
+    "suspicious_by_source": {
+      "afsis_spectral": 3182,
+      "afsis_wetchem": 24
+    },
+    "suspicious_examples": [
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.6239,
+        "longitude": 35.18756,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 30.66
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61498,
+        "longitude": 35.60298,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 38.52
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61348,
+        "longitude": 35.60063,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 37.18
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61346,
+        "longitude": 35.59959,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 39.13
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61271,
+        "longitude": 35.60433,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 34.68
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.60393,
+        "longitude": 35.62835,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 58.15
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59912,
+        "longitude": 35.65183,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 42.65
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59885,
+        "longitude": 35.56839,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 32.82
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59876,
+        "longitude": 35.19737,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 35.63
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59837,
+        "longitude": 35.19859,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "carbon_organic": 29.94
+      }
+    ]
+  },
+  "nitrogen_total": {
+    "count": 49137,
+    "q1": 0.51,
+    "median": 0.77,
+    "q3": 1.17,
+    "iqr_lower_bound": -0.47999999999999987,
+    "iqr_upper_bound": 2.1599999999999997,
+    "suspicious_count": 3232,
+    "suspicious_by_source": {
+      "afsis_spectral": 3228,
+      "afsis_wetchem": 4
+    },
+    "suspicious_examples": [
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.6239,
+        "longitude": 35.18756,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 2.24
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61498,
+        "longitude": 35.60298,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 2.37
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61348,
+        "longitude": 35.60063,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 2.73
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61346,
+        "longitude": 35.59959,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 2.9
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.61271,
+        "longitude": 35.60433,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 2.26
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.60393,
+        "longitude": 35.62835,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 5.29
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59912,
+        "longitude": 35.65183,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 3.35
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59885,
+        "longitude": 35.56839,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 2.27
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59876,
+        "longitude": 35.19737,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 3.08
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.59837,
+        "longitude": 35.19859,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "nitrogen_total": 2.18
+      }
+    ]
+  },
+  "potassium_extractable": {
+    "count": 49183,
+    "q1": 101.83,
+    "median": 177.21,
+    "q3": 309.085,
+    "iqr_lower_bound": -209.0525,
+    "iqr_upper_bound": 619.9675,
+    "suspicious_count": 2911,
+    "suspicious_by_source": {
+      "afsis_spectral": 2907,
+      "afsis_wetchem": 4
+    },
+    "suspicious_examples": [
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.5228,
+        "longitude": 34.91574,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 621.281
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.38127,
+        "longitude": 35.39794,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 869.225
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -8.11086,
+        "longitude": 35.90699,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 711.559
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -7.05747,
+        "longitude": 36.03257,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 1271.155
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -7.00909,
+        "longitude": 36.43056,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 713.036
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -7.00497,
+        "longitude": 36.37681,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 1089.11
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -6.98129,
+        "longitude": 36.43997,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 764.092
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -6.97368,
+        "longitude": 36.39346,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 890.566
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -6.97125,
+        "longitude": 36.42341,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 1168.779
+      },
+      {
+        "source": "afsis_spectral",
+        "latitude": -6.96572,
+        "longitude": 36.40973,
+        "horizon_upper": 20,
+        "horizon_lower": 50,
+        "potassium_extractable": 943.693
+      }
+    ]
+  },
+  "electrical_conductivity": {
+    "count": 2109,
+    "q1": 0.497483,
+    "median": 0.640053,
+    "q3": 0.801802,
+    "iqr_lower_bound": 0.0410045,
+    "iqr_upper_bound": 1.2582805000000001,
+    "suspicious_count": 49,
+    "suspicious_by_source": {
+      "afsis_wetchem": 49
+    },
+    "suspicious_examples": [
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.66634,
+        "longitude": 9.04746,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.26854
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 10.20077,
+        "longitude": 9.69903,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.54804
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.65042,
+        "longitude": 9.03177,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.74623
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.93767,
+        "longitude": 8.22513,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.48341
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 10.0806,
+        "longitude": 8.3294,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.33976
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 10.23994,
+        "longitude": 5.98379,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.26578
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 10.95486,
+        "longitude": 4.48322,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.29659
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.02349,
+        "longitude": 11.65002,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.3566
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.96416,
+        "longitude": 8.2312,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 1.29607
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.60565,
+        "longitude": 9.02098,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "electrical_conductivity": 2.06869
+      }
+    ]
+  },
+  "phosphorus_extractable": {
+    "count": 2111,
+    "q1": 3.39175,
+    "median": 4.97802,
+    "q3": 7.5996950000000005,
+    "iqr_lower_bound": -2.9201675000000007,
+    "iqr_upper_bound": 13.9116125,
+    "suspicious_count": 133,
+    "suspicious_by_source": {
+      "afsis_wetchem": 133
+    },
+    "suspicious_examples": [
+      {
+        "source": "afsis_wetchem",
+        "latitude": 10.16906,
+        "longitude": 9.70933,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 14.1132
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.3695,
+        "longitude": 10.02454,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 18.255
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.51283,
+        "longitude": 7.71379,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 15.8249
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 10.17564,
+        "longitude": 9.71533,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 13.9557
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 11.1343,
+        "longitude": 8.3189,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 14.5806
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 10.95615,
+        "longitude": 4.4375,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 15.0589
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.96902,
+        "longitude": 9.99535,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 15.7292
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 8.95866,
+        "longitude": 8.37119,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 17.2714
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.88804,
+        "longitude": 9.99499,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 14.1643
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.84595,
+        "longitude": 4.50129,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "phosphorus_extractable": 17.285
+      }
+    ]
+  },
+  "zinc_extractable": {
+    "count": 2111,
+    "q1": 0.9758635,
+    "median": 1.22557,
+    "q3": 1.489725,
+    "iqr_lower_bound": 0.20507125000000004,
+    "iqr_upper_bound": 2.26051725,
+    "suspicious_count": 31,
+    "suspicious_by_source": {
+      "afsis_wetchem": 31
+    },
+    "suspicious_examples": [
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.60861,
+        "longitude": 8.97728,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.33105
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.51283,
+        "longitude": 7.71379,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.29899
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 8.97793,
+        "longitude": 11.01234,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.52736
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.32327,
+        "longitude": 8.58151,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.30507
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.59994,
+        "longitude": 9.03623,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.44039
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 11.18975,
+        "longitude": 8.3139,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.42137
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.88729,
+        "longitude": 4.52143,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.30076
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.09397,
+        "longitude": 11.71565,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.34877
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.68322,
+        "longitude": 6.0378,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.59209
+      },
+      {
+        "source": "afsis_wetchem",
+        "latitude": 9.97055,
+        "longitude": 7.64599,
+        "horizon_upper": 0,
+        "horizon_lower": 20,
+        "zinc_extractable": 2.35305
+      }
+    ]
+  }
+}

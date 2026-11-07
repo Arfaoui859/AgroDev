@@ -1,0 +1,338 @@
+{
+  "dataset_rows": 2157,
+  "dataset_source": "afsis_wetchem",
+  "targets": {
+    "ph": {
+      "target_rows": 2155,
+      "candidate_predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "pairwise_valid_rows": {
+        "aluminium_extractable": 2155,
+        "boron_extractable": 2109,
+        "calcium_extractable": 2155,
+        "carbon_organic": 2155,
+        "copper_extractable": 2109,
+        "electrical_conductivity": 2109,
+        "iron_extractable": 2109,
+        "magnesium_extractable": 2155,
+        "manganese_extractable": 2109,
+        "nitrogen_total": 2109,
+        "phosphorus_extractable": 2109,
+        "potassium_extractable": 2155,
+        "sodium_extractable": 2155,
+        "sulphur_extractable": 2109,
+        "zinc_extractable": 2109
+      },
+      "all_predictors_complete_rows": 2109
+    },
+    "carbon_organic": {
+      "target_rows": 2157,
+      "candidate_predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "pairwise_valid_rows": {
+        "aluminium_extractable": 2155,
+        "boron_extractable": 2111,
+        "calcium_extractable": 2157,
+        "copper_extractable": 2111,
+        "electrical_conductivity": 2109,
+        "iron_extractable": 2111,
+        "magnesium_extractable": 2157,
+        "manganese_extractable": 2111,
+        "nitrogen_total": 2111,
+        "ph": 2155,
+        "phosphorus_extractable": 2111,
+        "potassium_extractable": 2157,
+        "sodium_extractable": 2155,
+        "sulphur_extractable": 2111,
+        "zinc_extractable": 2111
+      },
+      "all_predictors_complete_rows": 2109
+    },
+    "nitrogen_total": {
+      "target_rows": 2111,
+      "candidate_predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "pairwise_valid_rows": {
+        "aluminium_extractable": 2109,
+        "boron_extractable": 2111,
+        "calcium_extractable": 2111,
+        "carbon_organic": 2111,
+        "copper_extractable": 2111,
+        "electrical_conductivity": 2109,
+        "iron_extractable": 2111,
+        "magnesium_extractable": 2111,
+        "manganese_extractable": 2111,
+        "ph": 2109,
+        "phosphorus_extractable": 2111,
+        "potassium_extractable": 2111,
+        "sodium_extractable": 2109,
+        "sulphur_extractable": 2111,
+        "zinc_extractable": 2111
+      },
+      "all_predictors_complete_rows": 2109
+    },
+    "potassium_extractable": {
+      "target_rows": 2157,
+      "candidate_predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "pairwise_valid_rows": {
+        "aluminium_extractable": 2155,
+        "boron_extractable": 2111,
+        "calcium_extractable": 2157,
+        "carbon_organic": 2157,
+        "copper_extractable": 2111,
+        "electrical_conductivity": 2109,
+        "iron_extractable": 2111,
+        "magnesium_extractable": 2157,
+        "manganese_extractable": 2111,
+        "nitrogen_total": 2111,
+        "ph": 2155,
+        "phosphorus_extractable": 2111,
+        "sodium_extractable": 2155,
+        "sulphur_extractable": 2111,
+        "zinc_extractable": 2111
+      },
+      "all_predictors_complete_rows": 2109
+    },
+    "electrical_conductivity": {
+      "target_rows": 2109,
+      "candidate_predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "pairwise_valid_rows": {
+        "aluminium_extractable": 2109,
+        "boron_extractable": 2109,
+        "calcium_extractable": 2109,
+        "carbon_organic": 2109,
+        "copper_extractable": 2109,
+        "iron_extractable": 2109,
+        "magnesium_extractable": 2109,
+        "manganese_extractable": 2109,
+        "nitrogen_total": 2109,
+        "ph": 2109,
+        "phosphorus_extractable": 2109,
+        "potassium_extractable": 2109,
+        "sodium_extractable": 2109,
+        "sulphur_extractable": 2109,
+        "zinc_extractable": 2109
+      },
+      "all_predictors_complete_rows": 2109
+    },
+    "phosphorus_extractable": {
+      "target_rows": 2111,
+      "candidate_predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "pairwise_valid_rows": {
+        "aluminium_extractable": 2109,
+        "boron_extractable": 2111,
+        "calcium_extractable": 2111,
+        "carbon_organic": 2111,
+        "copper_extractable": 2111,
+        "electrical_conductivity": 2109,
+        "iron_extractable": 2111,
+        "magnesium_extractable": 2111,
+        "manganese_extractable": 2111,
+        "nitrogen_total": 2111,
+        "ph": 2109,
+        "potassium_extractable": 2111,
+        "sodium_extractable": 2109,
+        "sulphur_extractable": 2111,
+        "zinc_extractable": 2111
+      },
+      "all_predictors_complete_rows": 2109
+    },
+    "zinc_extractable": {
+      "target_rows": 2111,
+      "candidate_predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable"
+      ],
+      "pairwise_valid_rows": {
+        "aluminium_extractable": 2109,
+        "boron_extractable": 2111,
+        "calcium_extractable": 2111,
+        "carbon_organic": 2111,
+        "copper_extractable": 2111,
+        "electrical_conductivity": 2109,
+        "iron_extractable": 2111,
+        "magnesium_extractable": 2111,
+        "manganese_extractable": 2111,
+        "nitrogen_total": 2111,
+        "ph": 2109,
+        "phosphorus_extractable": 2111,
+        "potassium_extractable": 2111,
+        "sodium_extractable": 2109,
+        "sulphur_extractable": 2111
+      },
+      "all_predictors_complete_rows": 2109
+    }
+  },
+  "global_availability": {
+    "aluminium_extractable": {
+      "available": 2155,
+      "missing": 2
+    },
+    "boron_extractable": {
+      "available": 2111,
+      "missing": 46
+    },
+    "calcium_extractable": {
+      "available": 2157,
+      "missing": 0
+    },
+    "carbon_organic": {
+      "available": 2157,
+      "missing": 0
+    },
+    "copper_extractable": {
+      "available": 2111,
+      "missing": 46
+    },
+    "electrical_conductivity": {
+      "available": 2109,
+      "missing": 48
+    },
+    "iron_extractable": {
+      "available": 2111,
+      "missing": 46
+    },
+    "magnesium_extractable": {
+      "available": 2157,
+      "missing": 0
+    },
+    "manganese_extractable": {
+      "available": 2111,
+      "missing": 46
+    },
+    "nitrogen_total": {
+      "available": 2111,
+      "missing": 46
+    },
+    "ph": {
+      "available": 2155,
+      "missing": 2
+    },
+    "phosphorus_extractable": {
+      "available": 2111,
+      "missing": 46
+    },
+    "potassium_extractable": {
+      "available": 2157,
+      "missing": 0
+    },
+    "sodium_extractable": {
+      "available": 2155,
+      "missing": 2
+    },
+    "sulphur_extractable": {
+      "available": 2111,
+      "missing": 46
+    },
+    "zinc_extractable": {
+      "available": 2111,
+      "missing": 46
+    }
+  }
+}

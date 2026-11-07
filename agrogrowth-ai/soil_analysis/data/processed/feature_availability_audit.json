@@ -1,0 +1,1787 @@
+{
+  "audit_name": "AgroGrowth Feature Availability & Ablation Audit",
+  "dataset": "wetchem_reference.csv",
+  "dataset_rows_topsoil": 2134,
+  "validation": {
+    "method": "GroupKFold",
+    "folds": 5,
+    "spatial_block_degrees": 0.25,
+    "target_depth_cm": "0-20",
+    "random_state": 42
+  },
+  "unsupported_api_inputs": [
+    "moisture",
+    "sand",
+    "silt",
+    "clay",
+    "organic_matter"
+  ],
+  "targets": {
+    "ph": {
+      "target_observations": 2133,
+      "target_missing": 1,
+      "lab_assisted": {
+        "status": "evaluated",
+        "scenario": "lab_assisted",
+        "features": [
+          "aluminium_extractable",
+          "boron_extractable",
+          "calcium_extractable",
+          "carbon_organic",
+          "copper_extractable",
+          "electrical_conductivity",
+          "iron_extractable",
+          "magnesium_extractable",
+          "manganese_extractable",
+          "nitrogen_total",
+          "phosphorus_extractable",
+          "potassium_extractable",
+          "sodium_extractable",
+          "sulphur_extractable",
+          "zinc_extractable"
+        ],
+        "feature_count": 15,
+        "target_rows": 2133,
+        "spatial_blocks": 100,
+        "models": {
+          "median_baseline": {
+            "oof_mae": 0.3346295311767464,
+            "oof_r2": -0.0035948671745944516,
+            "oof_rows": 2133,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 19,
+                "mae": 0.358532775175644,
+                "r2": -0.0001607868197970319
+              },
+              {
+                "fold": 2,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.337567681498829,
+                "r2": -0.012899561007646332
+              },
+              {
+                "fold": 3,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 79,
+                "test_spatial_blocks": 21,
+                "mae": 0.31921663934426237,
+                "r2": -0.009846818771725996
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.30429779342723,
+                "r2": -0.0015556218469578997
+              },
+              {
+                "fold": 5,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.3535059389671363,
+                "r2": -0.016037255925146043
+              }
+            ]
+          },
+          "random_forest": {
+            "oof_mae": 0.23414112033641069,
+            "oof_r2": 0.5387217907530363,
+            "oof_rows": 2133,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 19,
+                "mae": 0.2450612539070002,
+                "r2": 0.5117848534773668
+              },
+              {
+                "fold": 2,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.23805738890620268,
+                "r2": 0.5129987683045085
+              },
+              {
+                "fold": 3,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 79,
+                "test_spatial_blocks": 21,
+                "mae": 0.2238236239044302,
+                "r2": 0.5333618842293264
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.2195547212337959,
+                "r2": 0.549349841165111
+              },
+              {
+                "fold": 5,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.24419800597074567,
+                "r2": 0.5689643964033106
+              }
+            ]
+          },
+          "extra_trees": {
+            "oof_mae": 0.23312911186342353,
+            "oof_r2": 0.5389507813651104,
+            "oof_rows": 2133,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 19,
+                "mae": 0.24663342092245635,
+                "r2": 0.5067788763003087
+              },
+              {
+                "fold": 2,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.23374926736329504,
+                "r2": 0.5257233688412539
+              },
+              {
+                "fold": 3,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 79,
+                "test_spatial_blocks": 21,
+                "mae": 0.2216642130119699,
+                "r2": 0.534367823944899
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.2188648808424619,
+                "r2": 0.5507889611668024
+              },
+              {
+                "fold": 5,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.24472753406494493,
+                "r2": 0.5623085568289448
+              }
+            ]
+          },
+          "hist_gradient_boosting": {
+            "oof_mae": 0.2382581999072155,
+            "oof_r2": 0.5259125283889703,
+            "oof_rows": 2133,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 19,
+                "mae": 0.24230141963705068,
+                "r2": 0.5134123528786134
+              },
+              {
+                "fold": 2,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.24267896669128589,
+                "r2": 0.49585334901356004
+              },
+              {
+                "fold": 3,
+                "train_rows": 1706,
+                "test_rows": 427,
+                "train_spatial_blocks": 79,
+                "test_spatial_blocks": 21,
+                "mae": 0.2283384666847071,
+                "r2": 0.517758422100804
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.22653375184945188,
+                "r2": 0.5261087446339148
+              },
+              {
+                "fold": 5,
+                "train_rows": 1707,
+                "test_rows": 426,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 20,
+                "mae": 0.25144181191937676,
+                "r2": 0.5569376521725803
+              }
+            ]
+          }
+        }
+      },
+      "user_input_scenarios": {
+        "direct_measurements": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        },
+        "lab_measurements_if_available": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        }
+      }
+    },
+    "carbon_organic": {
+      "target_observations": 2134,
+      "target_missing": 0,
+      "lab_assisted": {
+        "status": "evaluated",
+        "scenario": "lab_assisted",
+        "features": [
+          "aluminium_extractable",
+          "boron_extractable",
+          "calcium_extractable",
+          "copper_extractable",
+          "electrical_conductivity",
+          "iron_extractable",
+          "magnesium_extractable",
+          "manganese_extractable",
+          "nitrogen_total",
+          "ph",
+          "phosphorus_extractable",
+          "potassium_extractable",
+          "sodium_extractable",
+          "sulphur_extractable",
+          "zinc_extractable"
+        ],
+        "feature_count": 15,
+        "target_rows": 2134,
+        "spatial_blocks": 101,
+        "models": {
+          "median_baseline": {
+            "oof_mae": 3.712156044985942,
+            "oof_r2": -0.02100115174793582,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 3.931694449648712,
+                "r2": -0.027601279001282064
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 3.610353138173302,
+                "r2": -0.0315651141836244
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 3.05964494145199,
+                "r2": -0.123904579399704
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 3.8738526697892266,
+                "r2": -0.012961146830226422
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 4.086110798122066,
+                "r2": -0.011386044465028222
+              }
+            ]
+          },
+          "random_forest": {
+            "oof_mae": 1.567747615798515,
+            "oof_r2": 0.8888811813721249,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 1.5065696536219135,
+                "r2": 0.938772291783673
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 1.6874119990672143,
+                "r2": 0.8713550494336487
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 1.424538655784583,
+                "r2": 0.7527839532071556
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 1.3911166896405232,
+                "r2": 0.9665211736844256
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 1.8297145866649138,
+                "r2": 0.8386240215940726
+              }
+            ]
+          },
+          "extra_trees": {
+            "oof_mae": 1.6035383619242871,
+            "oof_r2": 0.8782687917310693,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 1.5089811311397343,
+                "r2": 0.9389388187996489
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 1.8010273898204523,
+                "r2": 0.8466221104303792
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 1.5088914490392555,
+                "r2": 0.6217076092592878
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 1.4545577204293518,
+                "r2": 0.9426110172413341
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 1.7445643909233173,
+                "r2": 0.8485229830763144
+              }
+            ]
+          },
+          "hist_gradient_boosting": {
+            "oof_mae": 1.98191726773098,
+            "oof_r2": 0.7336455783461115,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 1.9380410849674121,
+                "r2": 0.8467025523288707
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 2.129631016063483,
+                "r2": 0.7694353023788604
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 1.9735188294342367,
+                "r2": -0.03837164965448325
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 1.83705769812353,
+                "r2": 0.7734542785884373
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 2.0314537204942535,
+                "r2": 0.7073793346026321
+              }
+            ]
+          }
+        }
+      },
+      "user_input_scenarios": {
+        "direct_measurements": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        },
+        "lab_measurements_if_available": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        }
+      }
+    },
+    "nitrogen_total": {
+      "target_observations": 2110,
+      "target_missing": 24,
+      "lab_assisted": {
+        "status": "evaluated",
+        "scenario": "lab_assisted",
+        "features": [
+          "aluminium_extractable",
+          "boron_extractable",
+          "calcium_extractable",
+          "carbon_organic",
+          "copper_extractable",
+          "electrical_conductivity",
+          "iron_extractable",
+          "magnesium_extractable",
+          "manganese_extractable",
+          "ph",
+          "phosphorus_extractable",
+          "potassium_extractable",
+          "sodium_extractable",
+          "sulphur_extractable",
+          "zinc_extractable"
+        ],
+        "feature_count": 15,
+        "target_rows": 2110,
+        "spatial_blocks": 87,
+        "models": {
+          "median_baseline": {
+            "oof_mae": 0.2800940434597156,
+            "oof_r2": -0.07608538956751643,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.3361168388625593,
+                "r2": -0.09990368498722701
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.2771473877068558,
+                "r2": -0.20880846189642743
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.28601989976303316,
+                "r2": -0.1047388641926077
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.2634899289099526,
+                "r2": -0.00820762808847264
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.2376024536817102,
+                "r2": -0.005822495893156088
+              }
+            ]
+          },
+          "random_forest": {
+            "oof_mae": 0.10695638409914267,
+            "oof_r2": 0.8319350756703289,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.1090469441894654,
+                "r2": 0.8681277888493399
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.11862169568439414,
+                "r2": 0.7899654402948988
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.11294118120723913,
+                "r2": 0.823461482527617
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.1003008123907601,
+                "r2": 0.8295556070736463
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.09381249745458968,
+                "r2": 0.8216785815701171
+              }
+            ]
+          },
+          "extra_trees": {
+            "oof_mae": 0.10536617745961033,
+            "oof_r2": 0.8348627230998891,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.10781184042969982,
+                "r2": 0.86950943618067
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.1168928693903336,
+                "r2": 0.7928213445215977
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.11276780747899272,
+                "r2": 0.8176001410888666
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.09648511754391412,
+                "r2": 0.8410938289667841
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.09281619873317498,
+                "r2": 0.8303348258747159
+              }
+            ]
+          },
+          "hist_gradient_boosting": {
+            "oof_mae": 0.10841649558056558,
+            "oof_r2": 0.8274925275315212,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.1121840874173383,
+                "r2": 0.8604084059338688
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.12000643884903749,
+                "r2": 0.7895789890219881
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.10990352705524513,
+                "r2": 0.8243906177067983
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.10225340440403045,
+                "r2": 0.8243657485790117
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.0976821189451768,
+                "r2": 0.8101045973455265
+              }
+            ]
+          }
+        }
+      },
+      "user_input_scenarios": {
+        "direct_measurements": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        },
+        "lab_measurements_if_available": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        }
+      }
+    },
+    "potassium_extractable": {
+      "target_observations": 2134,
+      "target_missing": 0,
+      "lab_assisted": {
+        "status": "evaluated",
+        "scenario": "lab_assisted",
+        "features": [
+          "aluminium_extractable",
+          "boron_extractable",
+          "calcium_extractable",
+          "carbon_organic",
+          "copper_extractable",
+          "electrical_conductivity",
+          "iron_extractable",
+          "magnesium_extractable",
+          "manganese_extractable",
+          "nitrogen_total",
+          "ph",
+          "phosphorus_extractable",
+          "sodium_extractable",
+          "sulphur_extractable",
+          "zinc_extractable"
+        ],
+        "feature_count": 15,
+        "target_rows": 2134,
+        "spatial_blocks": 101,
+        "models": {
+          "median_baseline": {
+            "oof_mae": 43.898704479850046,
+            "oof_r2": -0.0232981754740329,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 51.10386163934425,
+                "r2": -0.059282750062092715
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 47.09094822014051,
+                "r2": -0.050342285190644986
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 40.322350140515226,
+                "r2": -0.011320062013396637
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 39.46722,
+                "r2": -0.005620757128893317
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 41.503533098591554,
+                "r2": -0.002317921635091924
+              }
+            ]
+          },
+          "random_forest": {
+            "oof_mae": 25.538903363253823,
+            "oof_r2": 0.6176642784216253,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 24.951565992711874,
+                "r2": 0.7266035422700718
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 28.917394488404877,
+                "r2": 0.5413509071061775
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 27.23928853811197,
+                "r2": 0.4685914329043195
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 22.12949231380157,
+                "r2": 0.6459000855291711
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 24.45423527694772,
+                "r2": 0.6418760173056384
+              }
+            ]
+          },
+          "extra_trees": {
+            "oof_mae": 25.204731387141106,
+            "oof_r2": 0.6467377963816676,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 24.732574531713322,
+                "r2": 0.741305404292711
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 28.674520210982305,
+                "r2": 0.5584092756897021
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 27.340497214947963,
+                "r2": 0.4673127543562836
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 21.416704346575585,
+                "r2": 0.6997947569762611
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 23.85620248417263,
+                "r2": 0.7017467608102586
+              }
+            ]
+          },
+          "hist_gradient_boosting": {
+            "oof_mae": 26.52785453448777,
+            "oof_r2": 0.575489925106274,
+            "oof_rows": 2134,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 82,
+                "test_spatial_blocks": 19,
+                "mae": 26.16021432683072,
+                "r2": 0.6852103015962611
+              },
+              {
+                "fold": 2,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 29.499979748346824,
+                "r2": 0.5092139865416226
+              },
+              {
+                "fold": 3,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 27.16729703278522,
+                "r2": 0.4698188579440006
+              },
+              {
+                "fold": 4,
+                "train_rows": 1707,
+                "test_rows": 427,
+                "train_spatial_blocks": 80,
+                "test_spatial_blocks": 21,
+                "mae": 24.167411831095443,
+                "r2": 0.6110388705753977
+              },
+              {
+                "fold": 5,
+                "train_rows": 1708,
+                "test_rows": 426,
+                "train_spatial_blocks": 81,
+                "test_spatial_blocks": 20,
+                "mae": 25.642295825396836,
+                "r2": 0.5512364526948141
+              }
+            ]
+          }
+        }
+      },
+      "user_input_scenarios": {
+        "direct_measurements": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        },
+        "lab_measurements_if_available": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        }
+      }
+    },
+    "electrical_conductivity": {
+      "target_observations": 2109,
+      "target_missing": 25,
+      "lab_assisted": {
+        "status": "evaluated",
+        "scenario": "lab_assisted",
+        "features": [
+          "aluminium_extractable",
+          "boron_extractable",
+          "calcium_extractable",
+          "carbon_organic",
+          "copper_extractable",
+          "iron_extractable",
+          "magnesium_extractable",
+          "manganese_extractable",
+          "nitrogen_total",
+          "ph",
+          "phosphorus_extractable",
+          "potassium_extractable",
+          "sodium_extractable",
+          "sulphur_extractable",
+          "zinc_extractable"
+        ],
+        "feature_count": 15,
+        "target_rows": 2109,
+        "spatial_blocks": 86,
+        "models": {
+          "median_baseline": {
+            "oof_mae": 0.18359806922712185,
+            "oof_r2": -0.027028171726786843,
+            "oof_rows": 2109,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 16,
+                "mae": 0.20547790995260665,
+                "r2": -0.07993729213929734
+              },
+              {
+                "fold": 2,
+                "train_rows": 1686,
+                "test_rows": 423,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.18000905791962174,
+                "r2": -0.04542803539390583
+              },
+              {
+                "fold": 3,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.1929300260663507,
+                "r2": -0.07670724691349262
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.17343690498812347,
+                "r2": -0.0030000777998542283
+              },
+              {
+                "fold": 5,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.16607935985748218,
+                "r2": -0.021251291940096007
+              }
+            ]
+          },
+          "random_forest": {
+            "oof_mae": 0.1340503758651216,
+            "oof_r2": 0.46740021691389333,
+            "oof_rows": 2109,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 16,
+                "mae": 0.13147905404123197,
+                "r2": 0.5525396256415509
+              },
+              {
+                "fold": 2,
+                "train_rows": 1686,
+                "test_rows": 423,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.13487047609301658,
+                "r2": 0.45737725867452883
+              },
+              {
+                "fold": 3,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.1478530050243048,
+                "r2": 0.39782837977414
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.12618020050494103,
+                "r2": 0.47793839250711
+              },
+              {
+                "fold": 5,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.12983857000940335,
+                "r2": 0.32150401206681045
+              }
+            ]
+          },
+          "extra_trees": {
+            "oof_mae": 0.133972153970732,
+            "oof_r2": 0.4665663981608965,
+            "oof_rows": 2109,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 16,
+                "mae": 0.13177957331911536,
+                "r2": 0.5411154161963017
+              },
+              {
+                "fold": 2,
+                "train_rows": 1686,
+                "test_rows": 423,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.1345616708659049,
+                "r2": 0.46460758362919985
+              },
+              {
+                "fold": 3,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.14858100502600055,
+                "r2": 0.3868007377686754
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.12551848978595934,
+                "r2": 0.4853314771927192
+              },
+              {
+                "fold": 5,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.1293877379726087,
+                "r2": 0.3338347100921165
+              }
+            ]
+          },
+          "hist_gradient_boosting": {
+            "oof_mae": 0.13391423678866712,
+            "oof_r2": 0.4605926372357344,
+            "oof_rows": 2109,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 16,
+                "mae": 0.1319208267618834,
+                "r2": 0.5470216178490392
+              },
+              {
+                "fold": 2,
+                "train_rows": 1686,
+                "test_rows": 423,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.1344479254264338,
+                "r2": 0.4492083994337053
+              },
+              {
+                "fold": 3,
+                "train_rows": 1687,
+                "test_rows": 422,
+                "train_spatial_blocks": 68,
+                "test_spatial_blocks": 18,
+                "mae": 0.1484798783249159,
+                "r2": 0.39318451251561537
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.12060149745554521,
+                "r2": 0.5167075896021418
+              },
+              {
+                "fold": 5,
+                "train_rows": 1688,
+                "test_rows": 421,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 17,
+                "mae": 0.13408865785392782,
+                "r2": 0.25139042097517883
+              }
+            ]
+          }
+        }
+      },
+      "user_input_scenarios": {
+        "direct_measurements": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        },
+        "lab_measurements_if_available": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        }
+      }
+    },
+    "phosphorus_extractable": {
+      "target_observations": 2110,
+      "target_missing": 24,
+      "lab_assisted": {
+        "status": "evaluated",
+        "scenario": "lab_assisted",
+        "features": [
+          "aluminium_extractable",
+          "boron_extractable",
+          "calcium_extractable",
+          "carbon_organic",
+          "copper_extractable",
+          "electrical_conductivity",
+          "iron_extractable",
+          "magnesium_extractable",
+          "manganese_extractable",
+          "nitrogen_total",
+          "ph",
+          "potassium_extractable",
+          "sodium_extractable",
+          "sulphur_extractable",
+          "zinc_extractable"
+        ],
+        "feature_count": 15,
+        "target_rows": 2110,
+        "spatial_blocks": 87,
+        "models": {
+          "median_baseline": {
+            "oof_mae": 2.914780202843602,
+            "oof_r2": -0.07387136528221916,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 3.05285532464455,
+                "r2": -0.11072520405737207
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.7281384397163118,
+                "r2": -0.08386640542661672
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.8907590426540284,
+                "r2": -0.01642665496861051
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.8314087962085304,
+                "r2": -0.11534518955771134
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 3.071553190023753,
+                "r2": -0.08699364201460802
+              }
+            ]
+          },
+          "random_forest": {
+            "oof_mae": 2.3489362268332084,
+            "oof_r2": 0.31873157898112825,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 2.436778457364706,
+                "r2": 0.3222864979636888
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.477281862018463,
+                "r2": 0.059952705767726044
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.241089185835259,
+                "r2": 0.30787434561132254
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.247914413139079,
+                "r2": 0.4425826349500701
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 2.34129497199331,
+                "r2": 0.40560360800623096
+              }
+            ]
+          },
+          "extra_trees": {
+            "oof_mae": 2.321826384578299,
+            "oof_r2": 0.3467546363976699,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 2.3962942903857294,
+                "r2": 0.32911472259705743
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.344725749147654,
+                "r2": 0.2865202279114394
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.3263095469010002,
+                "r2": 0.26489977814818055
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.234759212046472,
+                "r2": 0.4492337080856774
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 2.3069536169884626,
+                "r2": 0.44392533100975395
+              }
+            ]
+          },
+          "hist_gradient_boosting": {
+            "oof_mae": 2.355355239760969,
+            "oof_r2": 0.30836604418040237,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 2.5203008983319815,
+                "r2": 0.28315482178646945
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.464413485214314,
+                "r2": 0.13802003116602124
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.214484663871434,
+                "r2": 0.2533949916520837
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 2.2091921724348285,
+                "r2": 0.4776324557951457
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 2.368156882737889,
+                "r2": 0.390404271859245
+              }
+            ]
+          }
+        }
+      },
+      "user_input_scenarios": {
+        "direct_measurements": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        },
+        "lab_measurements_if_available": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        }
+      }
+    },
+    "zinc_extractable": {
+      "target_observations": 2110,
+      "target_missing": 24,
+      "lab_assisted": {
+        "status": "evaluated",
+        "scenario": "lab_assisted",
+        "features": [
+          "aluminium_extractable",
+          "boron_extractable",
+          "calcium_extractable",
+          "carbon_organic",
+          "copper_extractable",
+          "electrical_conductivity",
+          "iron_extractable",
+          "magnesium_extractable",
+          "manganese_extractable",
+          "nitrogen_total",
+          "ph",
+          "phosphorus_extractable",
+          "potassium_extractable",
+          "sodium_extractable",
+          "sulphur_extractable"
+        ],
+        "feature_count": 15,
+        "target_rows": 2110,
+        "spatial_blocks": 87,
+        "models": {
+          "median_baseline": {
+            "oof_mae": 0.30651366208530806,
+            "oof_r2": -0.013443424224268252,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.3071081113744076,
+                "r2": -0.030222212733888698
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.3337575721040189,
+                "r2": -0.025953389495560142
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.29323938862559246,
+                "r2": -0.014507556102244745
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.2990807061611374,
+                "r2": -0.019681720533621272
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.2993008812351544,
+                "r2": -0.04640122038988803
+              }
+            ]
+          },
+          "random_forest": {
+            "oof_mae": 0.22208174962198823,
+            "oof_r2": 0.45814559583972037,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.2252953674371948,
+                "r2": 0.4297622189878618
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.2539124153284551,
+                "r2": 0.42355809602789585
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.2181576658859405,
+                "r2": 0.4448051683358789
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.2099928113164065,
+                "r2": 0.48322111689215774
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.20292967596335407,
+                "r2": 0.4833570122997485
+              }
+            ]
+          },
+          "extra_trees": {
+            "oof_mae": 0.2204391110517791,
+            "oof_r2": 0.4661182993385259,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.22487789618193782,
+                "r2": 0.43023594978627255
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.24903162083222638,
+                "r2": 0.4440637905189725
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.21713966545418642,
+                "r2": 0.4446656401945328
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.20697643433346494,
+                "r2": 0.4973211236236188
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.20406337864146207,
+                "r2": 0.48520070344407695
+              }
+            ]
+          },
+          "hist_gradient_boosting": {
+            "oof_mae": 0.21896394289426666,
+            "oof_r2": 0.46730107758768813,
+            "oof_rows": 2110,
+            "folds": [
+              {
+                "fold": 1,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 71,
+                "test_spatial_blocks": 16,
+                "mae": 0.22242549576893428,
+                "r2": 0.43976389385399783
+              },
+              {
+                "fold": 2,
+                "train_rows": 1687,
+                "test_rows": 423,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.24620208611249833,
+                "r2": 0.4497971570377497
+              },
+              {
+                "fold": 3,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.21437261721125184,
+                "r2": 0.44383967690326964
+              },
+              {
+                "fold": 4,
+                "train_rows": 1688,
+                "test_rows": 422,
+                "train_spatial_blocks": 69,
+                "test_spatial_blocks": 18,
+                "mae": 0.21141559956517084,
+                "r2": 0.48379125224755193
+              },
+              {
+                "fold": 5,
+                "train_rows": 1689,
+                "test_rows": 421,
+                "train_spatial_blocks": 70,
+                "test_spatial_blocks": 17,
+                "mae": 0.2002951315609862,
+                "r2": 0.48982123874816275
+              }
+            ]
+          }
+        }
+      },
+      "user_input_scenarios": {
+        "direct_measurements": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        },
+        "lab_measurements_if_available": {
+          "status": "not_evaluable",
+          "reason": "No valid measured predictor features available.",
+          "features": [],
+          "models": {}
+        }
+      }
+    }
+  },
+  "production_models_saved": false,
+  "synthetic_data_used": false
+}

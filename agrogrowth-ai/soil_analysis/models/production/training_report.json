@@ -1,0 +1,274 @@
+{
+  "created_at": "2026-11-07T17:27:29.479975+00:00",
+  "dataset": "data/processed/wetchem_reference.csv",
+  "dataset_sha256": "20d0ffdacb2754858728447659f790811ef8a60bcce163aa5292fc650e2dc403",
+  "original_rows": 2157,
+  "rows_after_depth_filter": 2134,
+  "depth_interval_cm": [
+    0,
+    20
+  ],
+  "usable_analytes": [
+    "aluminium_extractable",
+    "boron_extractable",
+    "calcium_extractable",
+    "carbon_organic",
+    "copper_extractable",
+    "electrical_conductivity",
+    "iron_extractable",
+    "magnesium_extractable",
+    "manganese_extractable",
+    "nitrogen_total",
+    "ph",
+    "phosphorus_extractable",
+    "potassium_extractable",
+    "sodium_extractable",
+    "sulphur_extractable",
+    "zinc_extractable"
+  ],
+  "excluded_empty_analytes": [
+    "carbon_total"
+  ],
+  "validation": {
+    "method": "GroupKFold",
+    "spatial_grid_degrees": 0.25,
+    "folds": 5,
+    "spatial_buffer": false
+  },
+  "synthetic_data_used": false,
+  "prediction_scope": "lab_assisted_only",
+  "models": {
+    "ph": {
+      "artifact": "ph.joblib",
+      "model_type": "random_forest",
+      "target": "ph",
+      "features": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "metrics": {
+        "r2": 0.5267045108874728,
+        "mae": 0.23814250811085377,
+        "rmse": 0.3017780614163837,
+        "oof_samples": 2133,
+        "training_samples": 2133,
+        "spatial_groups": 100
+      },
+      "prediction_scope": "lab_assisted_only",
+      "field_validated": false,
+      "tunisia_validated": false
+    },
+    "carbon_organic": {
+      "artifact": "carbon_organic.joblib",
+      "model_type": "random_forest",
+      "target": "carbon_organic",
+      "features": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "metrics": {
+        "r2": 0.8645137938036125,
+        "mae": 1.5939803882303194,
+        "rmse": 4.018806889598734,
+        "oof_samples": 2134,
+        "training_samples": 2134,
+        "spatial_groups": 101
+      },
+      "prediction_scope": "lab_assisted_only",
+      "field_validated": false,
+      "tunisia_validated": false
+    },
+    "nitrogen_total": {
+      "artifact": "nitrogen_total.joblib",
+      "model_type": "extra_trees",
+      "target": "nitrogen_total",
+      "features": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "metrics": {
+        "r2": 0.8320534674661015,
+        "mae": 0.10610482456480928,
+        "rmse": 0.1518343306733714,
+        "oof_samples": 2110,
+        "training_samples": 2110,
+        "spatial_groups": 87
+      },
+      "prediction_scope": "lab_assisted_only",
+      "field_validated": false,
+      "tunisia_validated": false
+    },
+    "electrical_conductivity": {
+      "artifact": "electrical_conductivity.joblib",
+      "model_type": "random_forest",
+      "target": "electrical_conductivity",
+      "features": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "metrics": {
+        "r2": 0.4686008824027702,
+        "mae": 0.1341469934938363,
+        "rmse": 0.17208524750160142,
+        "oof_samples": 2109,
+        "training_samples": 2109,
+        "spatial_groups": 86
+      },
+      "prediction_scope": "lab_assisted_only",
+      "field_validated": false,
+      "tunisia_validated": false
+    },
+    "phosphorus_extractable": {
+      "artifact": "phosphorus_extractable.joblib",
+      "model_type": "extra_trees",
+      "target": "phosphorus_extractable",
+      "features": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "metrics": {
+        "r2": 0.33660086238429476,
+        "mae": 2.3385001259075042,
+        "rmse": 3.7709066790911314,
+        "oof_samples": 2110,
+        "training_samples": 2110,
+        "spatial_groups": 87
+      },
+      "prediction_scope": "lab_assisted_only",
+      "field_validated": false,
+      "tunisia_validated": false
+    },
+    "potassium_extractable": {
+      "artifact": "potassium_extractable.joblib",
+      "model_type": "extra_trees",
+      "target": "potassium_extractable",
+      "features": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "metrics": {
+        "r2": 0.626857810187655,
+        "mae": 25.4250126028905,
+        "rmse": 37.04405182239782,
+        "oof_samples": 2134,
+        "training_samples": 2134,
+        "spatial_groups": 101
+      },
+      "prediction_scope": "lab_assisted_only",
+      "field_validated": false,
+      "tunisia_validated": false
+    },
+    "zinc_extractable": {
+      "artifact": "zinc_extractable.joblib",
+      "model_type": "hist_gradient_boosting",
+      "target": "zinc_extractable",
+      "features": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable"
+      ],
+      "metrics": {
+        "r2": 0.4479620114945069,
+        "mae": 0.22225485928211328,
+        "rmse": 0.2862095541505924,
+        "oof_samples": 2110,
+        "training_samples": 2110,
+        "spatial_groups": 87
+      },
+      "prediction_scope": "lab_assisted_only",
+      "field_validated": false,
+      "tunisia_validated": false
+    }
+  },
+  "skipped_models": {}
+}

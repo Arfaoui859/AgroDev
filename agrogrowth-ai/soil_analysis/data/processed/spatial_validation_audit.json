@@ -1,0 +1,48 @@
+{
+  "dataset": "/workspaces/AgroDev/agrogrowth-ai/soil_analysis/data/processed/wetchem_reference.csv",
+  "total_rows": 2157,
+  "rows_with_coordinates": 2157,
+  "coordinate_summary": {
+    "unique_exact_locations": 2153,
+    "locations_with_multiple_samples": 4,
+    "largest_exact_location_group": 2,
+    "unique_location_depth_combinations": 2157,
+    "location_depth_combinations_repeated": 0
+  },
+  "geographic_extent": {
+    "longitude_min": -13.42769,
+    "longitude_max": 48.7414,
+    "latitude_min": -29.00123,
+    "latitude_max": 14.8592
+  },
+  "spatial_grid_analysis": [
+    {
+      "cell_size_degrees": 0.1,
+      "number_of_spatial_blocks": 178,
+      "blocks_with_one_sample": 33,
+      "blocks_with_multiple_samples": 145,
+      "largest_block_samples": 49,
+      "samples_in_blocks": 2157
+    },
+    {
+      "cell_size_degrees": 0.25,
+      "number_of_spatial_blocks": 105,
+      "blocks_with_one_sample": 10,
+      "blocks_with_multiple_samples": 95,
+      "largest_block_samples": 85,
+      "samples_in_blocks": 2157
+    },
+    {
+      "cell_size_degrees": 0.5,
+      "number_of_spatial_blocks": 72,
+      "blocks_with_one_sample": 9,
+      "blocks_with_multiple_samples": 63,
+      "largest_block_samples": 106,
+      "samples_in_blocks": 2157
+    }
+  ],
+  "depth_intervals": {
+    "0-20": 2134,
+    "20-50": 23
+  }
+}

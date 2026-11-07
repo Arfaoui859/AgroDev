@@ -1,0 +1,30 @@
+{
+  "reference_dataset": {
+    "source": "afsis_wetchem",
+    "rows": 2157,
+    "targets": {
+      "ph": 2155,
+      "carbon_organic": 2157,
+      "nitrogen_total": 2111,
+      "potassium_extractable": 2157,
+      "electrical_conductivity": 2109,
+      "phosphorus_extractable": 2111,
+      "zinc_extractable": 2111
+    }
+  },
+  "spectral_dataset": {
+    "source": "afsis_spectral",
+    "rows": 47026,
+    "targets": {
+      "ph": 47025,
+      "carbon_organic": 47026,
+      "nitrogen_total": 47026,
+      "potassium_extractable": 47026,
+      "electrical_conductivity": 0,
+      "phosphorus_extractable": 0,
+      "zinc_extractable": 0
+    }
+  },
+  "training_status": "not_trained",
+  "warning": "Spectral-derived values must not be treated as independent laboratory ground truth."
+}

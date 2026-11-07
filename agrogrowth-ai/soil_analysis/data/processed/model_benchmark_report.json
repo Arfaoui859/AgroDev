@@ -1,0 +1,1591 @@
+{
+  "dataset": "afsis_wetchem",
+  "depth_interval_cm": "0-20",
+  "rows": 2134,
+  "spatial_grid_degrees": 0.25,
+  "validation": "GroupKFold",
+  "folds": 5,
+  "feature_policy": "Other measured numeric soil properties; target excluded per experiment; metadata and coordinates excluded.",
+  "candidate_features": [
+    "aluminium_extractable",
+    "boron_extractable",
+    "calcium_extractable",
+    "carbon_organic",
+    "copper_extractable",
+    "electrical_conductivity",
+    "iron_extractable",
+    "magnesium_extractable",
+    "manganese_extractable",
+    "nitrogen_total",
+    "ph",
+    "phosphorus_extractable",
+    "potassium_extractable",
+    "sodium_extractable",
+    "sulphur_extractable",
+    "zinc_extractable"
+  ],
+  "targets": {
+    "ph": {
+      "samples": 2133,
+      "spatial_groups": 100,
+      "predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "models": {
+        "median_baseline": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.358532775175644,
+              "rmse": 0.44421229437584087,
+              "r2": -0.0001607868197970319
+            },
+            {
+              "fold": 2,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.337567681498829,
+              "rmse": 0.4291973432571739,
+              "r2": -0.012899561007646332
+            },
+            {
+              "fold": 3,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.31921663934426237,
+              "rmse": 0.41861752395222857,
+              "r2": -0.009846818771725996
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.30429779342723,
+              "rmse": 0.41777188084513617,
+              "r2": -0.0015556218469578997
+            },
+            {
+              "fold": 5,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.3535059389671363,
+              "rmse": 0.4840315551486055,
+              "r2": -0.016037255925146043
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.3346295311767464,
+            "rmse": 0.439441124597329,
+            "r2": -0.0035948671745944516,
+            "evaluated_samples": 2133
+          }
+        },
+        "random_forest": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.24589427766898092,
+              "rmse": 0.3124870154065153,
+              "r2": 0.5050599169919745
+            },
+            {
+              "fold": 2,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.23874978260685345,
+              "rmse": 0.2987437682570947,
+              "r2": 0.5092616002550246
+            },
+            {
+              "fold": 3,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.2222858274097656,
+              "rmse": 0.28364056364971374,
+              "r2": 0.5363851141196339
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.21897045257349726,
+              "rmse": 0.27948122852678803,
+              "r2": 0.5517689378999084
+            },
+            {
+              "fold": 5,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.248919622563872,
+              "rmse": 0.32051504229714617,
+              "r2": 0.5544882985118819
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.23496494798418685,
+            "rmse": 0.2993940296739095,
+            "r2": 0.5341529947432551,
+            "evaluated_samples": 2133
+          }
+        },
+        "extra_trees": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.24729067418683345,
+              "rmse": 0.3155687333172735,
+              "r2": 0.49524967427861843
+            },
+            {
+              "fold": 2,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.2358101632496935,
+              "rmse": 0.29725700540516936,
+              "r2": 0.5141339769551645
+            },
+            {
+              "fold": 3,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.22374411432493208,
+              "rmse": 0.28631891832184425,
+              "r2": 0.5275881511861322
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.2191851086636485,
+              "rmse": 0.2798898108035994,
+              "r2": 0.550457414136079
+            },
+            {
+              "fold": 5,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.24680060456703198,
+              "rmse": 0.31841827745938633,
+              "r2": 0.5602981836195358
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.23456760817553346,
+            "rmse": 0.29988420824769946,
+            "r2": 0.5326263433881042,
+            "evaluated_samples": 2133
+          }
+        },
+        "hist_gradient_boosting": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.24230141963705068,
+              "rmse": 0.30983908565165313,
+              "r2": 0.5134123528786134
+            },
+            {
+              "fold": 2,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.2435730277808783,
+              "rmse": 0.30393800294096474,
+              "r2": 0.4920483867062997
+            },
+            {
+              "fold": 3,
+              "train_samples": 1706,
+              "test_samples": 427,
+              "mae": 0.22677902352554638,
+              "rmse": 0.2901149217652946,
+              "r2": 0.5149786833335632
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.22469808195651977,
+              "rmse": 0.2842289932231902,
+              "r2": 0.5364106869698437
+            },
+            {
+              "fold": 5,
+              "train_samples": 1707,
+              "test_samples": 426,
+              "mae": 0.25144181191937676,
+              "rmse": 0.3196327571709571,
+              "r2": 0.5569376521725803
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.2377583810989198,
+            "rmse": 0.3018260069098682,
+            "r2": 0.5265541077181479,
+            "evaluated_samples": 2133
+          }
+        }
+      }
+    },
+    "carbon_organic": {
+      "samples": 2134,
+      "spatial_groups": 101,
+      "predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "models": {
+        "median_baseline": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 3.931694449648712,
+              "rmse": 9.38329496842226,
+              "r2": -0.027601279001282064
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 3.610353138173302,
+              "rmse": 10.668398885981748,
+              "r2": -0.0315651141836244
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 3.05964494145199,
+              "rmse": 4.444270826875815,
+              "r2": -0.123904579399704
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 3.8738526697892266,
+              "rmse": 12.344678724425709,
+              "r2": -0.012961146830226422
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 4.086110798122066,
+              "rmse": 15.32351477004231,
+              "r2": -0.011386044465028222
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 3.712156044985942,
+            "rmse": 11.032214901510166,
+            "r2": -0.02100115174793582,
+            "evaluated_samples": 2134
+          }
+        },
+        "random_forest": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.515299503933708,
+              "rmse": 2.307246790658001,
+              "r2": 0.9378699075754812
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.6599680726622275,
+              "rmse": 3.608779257184676,
+              "r2": 0.8819628291892373
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.4090876485568427,
+              "rmse": 2.0494797520005323,
+              "r2": 0.7609902199475673
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.3932854230594744,
+              "rmse": 2.2790321185657048,
+              "r2": 0.9654749675079032
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 1.8227614224674926,
+              "rmse": 6.042305729344771,
+              "r2": 0.8427446005376658
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 1.5599573208799362,
+            "rmse": 3.583156551272384,
+            "r2": 0.8922958661670892,
+            "evaluated_samples": 2134
+          }
+        },
+        "extra_trees": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.544704445944605,
+              "rmse": 2.438866003314966,
+              "r2": 0.9305791737619813
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.6461176810447373,
+              "rmse": 3.9419655968996956,
+              "r2": 0.8591607138200245
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.5271908510070447,
+              "rmse": 3.3168298982923714,
+              "r2": 0.37399931667830755
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.4688974862023711,
+              "rmse": 2.670303995419694,
+              "r2": 0.9526025894563294
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 1.7590393396690742,
+              "rmse": 5.947118840197353,
+              "r2": 0.8476601904866145
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 1.5891103687497168,
+            "rmse": 3.8714218983715174,
+            "r2": 0.874269161922213,
+            "evaluated_samples": 2134
+          }
+        },
+        "hist_gradient_boosting": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 2.067048575718187,
+              "rmse": 4.202309665035301,
+              "r2": 0.7938942999814641
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 2.2270700871368163,
+              "rmse": 5.227377630772312,
+              "r2": 0.7523342760064544
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.9174721906200816,
+              "rmse": 3.6312938646372777,
+              "r2": 0.24967191948404155
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 1.83705769812353,
+              "rmse": 5.83796288994689,
+              "r2": 0.7734542785884373
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 2.0314537204942535,
+              "rmse": 8.242375761305162,
+              "r2": 0.7073793346026321
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 2.016013222335127,
+            "rmse": 5.65872133779021,
+            "r2": 0.7313805711503953,
+            "evaluated_samples": 2134
+          }
+        }
+      }
+    },
+    "nitrogen_total": {
+      "samples": 2110,
+      "spatial_groups": 87,
+      "predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "models": {
+        "median_baseline": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.3361168388625593,
+              "rmse": 0.44199255193197556,
+              "r2": -0.09990368498722701
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.2771473877068558,
+              "rmse": 0.4032522578375598,
+              "r2": -0.20880846189642743
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.28601989976303316,
+              "rmse": 0.40080422900795215,
+              "r2": -0.1047388641926077
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.2634899289099526,
+              "rmse": 0.3469374608237407,
+              "r2": -0.00820762808847264
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.2376024536817102,
+              "rmse": 0.31532623358653394,
+              "r2": -0.005822495893156088
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.2800940434597156,
+            "rmse": 0.3843331327122835,
+            "r2": -0.07608538956751643,
+            "evaluated_samples": 2110
+          }
+        },
+        "random_forest": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.10881433217383978,
+              "rmse": 0.15311353235030384,
+              "r2": 0.8680066940122737
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.1190044729611611,
+              "rmse": 0.1681880238610136,
+              "r2": 0.7897219157474349
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.11294118120723913,
+              "rmse": 0.16022202507619224,
+              "r2": 0.823461482527617
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.10073822313193245,
+              "rmse": 0.14293555818719264,
+              "r2": 0.8288692113793844
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.09309248415844998,
+              "rmse": 0.13188184093147462,
+              "r2": 0.824057345718854
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.10693041928993807,
+            "rmse": 0.15182310254615866,
+            "r2": 0.8320783057921811,
+            "evaluated_samples": 2110
+          }
+        },
+        "extra_trees": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.10819500664863087,
+              "rmse": 0.152542559760571,
+              "r2": 0.8689892856664739
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.11657066291323001,
+              "rmse": 0.1678588955441232,
+              "r2": 0.7905440997899253
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.11276780747899272,
+              "rmse": 0.16286011158248742,
+              "r2": 0.8176001410888666
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.09563673979574777,
+              "rmse": 0.13594122868940364,
+              "r2": 0.845207480352308
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.09237620942617729,
+              "rmse": 0.12906410910345137,
+              "r2": 0.8314952632088243
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.1051207518181894,
+            "rmse": 0.15042214968149917,
+            "r2": 0.8351630140369748,
+            "evaluated_samples": 2110
+          }
+        },
+        "hist_gradient_boosting": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.1121840874173383,
+              "rmse": 0.15745891549266489,
+              "r2": 0.8604084059338688
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.12000643884903749,
+              "rmse": 0.16824517313600731,
+              "r2": 0.7895789890219881
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.10990352705524513,
+              "rmse": 0.15979983870302458,
+              "r2": 0.8243906177067983
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.10225340440403045,
+              "rmse": 0.14480408481646145,
+              "r2": 0.8243657485790117
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.0976821189451768,
+              "rmse": 0.13701138497223908,
+              "r2": 0.8101045973455265
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.10841649558056558,
+            "rmse": 0.15388220986517934,
+            "r2": 0.8274925275315212,
+            "evaluated_samples": 2110
+          }
+        }
+      }
+    },
+    "potassium_extractable": {
+      "samples": 2134,
+      "spatial_groups": 101,
+      "predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "models": {
+        "median_baseline": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 51.10386163934425,
+              "rmse": 69.614851180108,
+              "r2": -0.059282750062092715
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 47.09094822014051,
+              "rmse": 61.60911129193917,
+              "r2": -0.050342285190644986
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 40.322350140515226,
+              "rmse": 54.69066313489499,
+              "r2": -0.011320062013396637
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 39.46722,
+              "rmse": 56.10588649871262,
+              "r2": -0.005620757128893317
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 41.503533098591554,
+              "rmse": 63.530426859246454,
+              "r2": -0.002317921635091924
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 43.898704479850046,
+            "rmse": 61.34545684360294,
+            "r2": -0.0232981754740329,
+            "evaluated_samples": 2134
+          }
+        },
+        "random_forest": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 24.873464339067525,
+              "rmse": 35.18134066677948,
+              "r2": 0.7294591361525341
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 28.846239001878068,
+              "rmse": 40.73159551865904,
+              "r2": 0.540903685547062
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 27.274183717934395,
+              "rmse": 39.52530706644478,
+              "r2": 0.47178254407139053
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 22.28450717155515,
+              "rmse": 33.23279427279654,
+              "r2": 0.6471817109214434
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 24.991112732717202,
+              "rmse": 39.73682507766982,
+              "r2": 0.6078716173315237
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 25.65421197775695,
+            "rmse": 37.79449884126738,
+            "r2": 0.611586271569356,
+            "evaluated_samples": 2134
+          }
+        },
+        "extra_trees": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 24.837982293250068,
+              "rmse": 34.58639351096639,
+              "r2": 0.738531931472366
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 28.5838847620607,
+              "rmse": 39.804250645505256,
+              "r2": 0.5615704011379927
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 27.269324572573513,
+              "rmse": 39.45436810454528,
+              "r2": 0.4736769036404056
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 21.41979370461469,
+              "rmse": 30.478885365679915,
+              "r2": 0.7032330505582637
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 24.186645613426485,
+              "rmse": 35.68641457569923,
+              "r2": 0.683737440098515
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 25.26002894484383,
+            "rmse": 36.165750221082334,
+            "r2": 0.6443421926066787,
+            "evaluated_samples": 2134
+          }
+        },
+        "hist_gradient_boosting": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 26.716800174705178,
+              "rmse": 38.82982430233617,
+              "r2": 0.6704366165813078
+            },
+            {
+              "fold": 2,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 29.23658104630684,
+              "rmse": 41.91244732207276,
+              "r2": 0.5138984535300704
+            },
+            {
+              "fold": 3,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 27.437600212563197,
+              "rmse": 40.00768318616485,
+              "r2": 0.4588108901038028
+            },
+            {
+              "fold": 4,
+              "train_samples": 1707,
+              "test_samples": 427,
+              "mae": 24.167411831095443,
+              "rmse": 34.89349051210332,
+              "r2": 0.6110388705753977
+            },
+            {
+              "fold": 5,
+              "train_samples": 1708,
+              "test_samples": 426,
+              "mae": 25.642295825396836,
+              "rmse": 42.50967764266815,
+              "r2": 0.5512364526948141
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 26.640605410324937,
+            "rmse": 39.72181944104112,
+            "r2": 0.5709621025639287,
+            "evaluated_samples": 2134
+          }
+        }
+      }
+    },
+    "electrical_conductivity": {
+      "samples": 2109,
+      "spatial_groups": 86,
+      "predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "models": {
+        "median_baseline": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.20547790995260665,
+              "rmse": 0.28163976027857374,
+              "r2": -0.07993729213929734
+            },
+            {
+              "fold": 2,
+              "train_samples": 1686,
+              "test_samples": 423,
+              "mae": 0.18000905791962174,
+              "rmse": 0.2403206130807011,
+              "r2": -0.04542803539390583
+            },
+            {
+              "fold": 3,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.1929300260663507,
+              "rmse": 0.24685707716297678,
+              "r2": -0.07670724691349262
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.17343690498812347,
+              "rmse": 0.2216194471410604,
+              "r2": -0.0030000777998542283
+            },
+            {
+              "fold": 5,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.16607935985748218,
+              "rmse": 0.19741891429446387,
+              "r2": -0.021251291940096007
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.18359806922712185,
+            "rmse": 0.23923482787489073,
+            "r2": -0.027028171726786843,
+            "evaluated_samples": 2109
+          }
+        },
+        "random_forest": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.13147905404123197,
+              "rmse": 0.1812892230080289,
+              "r2": 0.5525396256415509
+            },
+            {
+              "fold": 2,
+              "train_samples": 1686,
+              "test_samples": 423,
+              "mae": 0.13487047609301658,
+              "rmse": 0.17313821970622442,
+              "r2": 0.45737725867452883
+            },
+            {
+              "fold": 3,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.1478530050243048,
+              "rmse": 0.18461071586818398,
+              "r2": 0.39782837977414
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.126180200504941,
+              "rmse": 0.159888880579707,
+              "r2": 0.47793839250711
+            },
+            {
+              "fold": 5,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.12983857000940335,
+              "rmse": 0.16091483774738388,
+              "r2": 0.32150401206681045
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.1340503758651216,
+            "rmse": 0.17227954613041532,
+            "r2": 0.4674002169138932,
+            "evaluated_samples": 2109
+          }
+        },
+        "extra_trees": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.13177957331911536,
+              "rmse": 0.18358890465635277,
+              "r2": 0.5411154161963017
+            },
+            {
+              "fold": 2,
+              "train_samples": 1686,
+              "test_samples": 423,
+              "mae": 0.1345616708659049,
+              "rmse": 0.1719808375591359,
+              "r2": 0.46460758362919985
+            },
+            {
+              "fold": 3,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.14858100502600055,
+              "rmse": 0.18629344603838488,
+              "r2": 0.3868007377686754
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.12551848978595936,
+              "rmse": 0.1587527245770069,
+              "r2": 0.4853314771927192
+            },
+            {
+              "fold": 5,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.1293877379726087,
+              "rmse": 0.15944593436841195,
+              "r2": 0.3338347100921164
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.133972153970732,
+            "rmse": 0.17241435066994423,
+            "r2": 0.4665663981608965,
+            "evaluated_samples": 2109
+          }
+        },
+        "hist_gradient_boosting": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.1319208267618834,
+              "rmse": 0.18240361236929598,
+              "r2": 0.5470216178490392
+            },
+            {
+              "fold": 2,
+              "train_samples": 1686,
+              "test_samples": 423,
+              "mae": 0.1344479254264338,
+              "rmse": 0.1744365973052277,
+              "r2": 0.4492083994337053
+            },
+            {
+              "fold": 3,
+              "train_samples": 1687,
+              "test_samples": 422,
+              "mae": 0.1484798783249159,
+              "rmse": 0.18532119533319447,
+              "r2": 0.39318451251561537
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.12060149745554521,
+              "rmse": 0.1538375558624378,
+              "r2": 0.5167075896021418
+            },
+            {
+              "fold": 5,
+              "train_samples": 1688,
+              "test_samples": 421,
+              "mae": 0.13408865785392782,
+              "rmse": 0.16902468672346346,
+              "r2": 0.25139042097517883
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.13391423678866712,
+            "rmse": 0.17337707085021895,
+            "r2": 0.4605926372357344,
+            "evaluated_samples": 2109
+          }
+        }
+      }
+    },
+    "phosphorus_extractable": {
+      "samples": 2110,
+      "spatial_groups": 87,
+      "predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable",
+        "zinc_extractable"
+      ],
+      "models": {
+        "median_baseline": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 3.05285532464455,
+              "rmse": 5.261048794621331,
+              "r2": -0.11072520405737207
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 2.7281384397163118,
+              "rmse": 3.994388477784987,
+              "r2": -0.08386640542661672
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.8907590426540284,
+              "rmse": 5.583818888534494,
+              "r2": -0.01642665496861051
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.8314087962085304,
+              "rmse": 4.564696182666694,
+              "r2": -0.11534518955771134
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 3.071553190023753,
+              "rmse": 4.410144875506385,
+              "r2": -0.08699364201460802
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 2.914780202843602,
+            "rmse": 4.797715205965513,
+            "r2": -0.07387136528221916,
+            "evaluated_samples": 2110
+          }
+        },
+        "random_forest": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.4465154597659944,
+              "rmse": 4.103085053614568,
+              "r2": 0.32441032053583363
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 2.4896473933219716,
+              "rmse": 3.7701155189377453,
+              "r2": 0.03442843030600706
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.2410891858352584,
+              "rmse": 4.607716754289334,
+              "r2": 0.30787434561132254
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.253799934800607,
+              "rmse": 3.2309953863123364,
+              "r2": 0.4411976546880364
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 2.3551240669220252,
+              "rmse": 3.278210386288761,
+              "r2": 0.399386714254946
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 2.3572989632601664,
+            "rmse": 3.833388633812928,
+            "r2": 0.31443437310278255,
+            "evaluated_samples": 2110
+          }
+        },
+        "extra_trees": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.4103352110229066,
+              "rmse": 4.106142993660669,
+              "r2": 0.32340294069921127
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 2.380170786977842,
+              "rmse": 3.282743979156311,
+              "r2": 0.2679357785733363
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.3263095469010002,
+              "rmse": 4.748610818600911,
+              "r2": 0.26489977814818055
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.226948493945498,
+              "rmse": 3.2004618226963917,
+              "r2": 0.45170934175114363
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 2.309487949451702,
+              "rmse": 3.1615620860424025,
+              "r2": 0.44136940104717637
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 2.3306838966349206,
+            "rmse": 3.7530362182817947,
+            "r2": 0.34287370765715,
+            "evaluated_samples": 2110
+          }
+        },
+        "hist_gradient_boosting": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.5203008983319815,
+              "rmse": 4.226508050543336,
+              "r2": 0.28315482178646945
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 2.464413485214314,
+              "rmse": 3.562140206079719,
+              "r2": 0.13802003116602124
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.214484663871434,
+              "rmse": 4.785625944628114,
+              "r2": 0.2533949916520837
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 2.2091921724348285,
+              "rmse": 3.1238870338319487,
+              "r2": 0.4776324557951457
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 2.368156882737889,
+              "rmse": 3.3026329694185637,
+              "r2": 0.390404271859245
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 2.355355239760969,
+            "rmse": 3.850317000638135,
+            "r2": 0.30836604418040237,
+            "evaluated_samples": 2110
+          }
+        }
+      }
+    },
+    "zinc_extractable": {
+      "samples": 2110,
+      "spatial_groups": 87,
+      "predictors": [
+        "aluminium_extractable",
+        "boron_extractable",
+        "calcium_extractable",
+        "carbon_organic",
+        "copper_extractable",
+        "electrical_conductivity",
+        "iron_extractable",
+        "magnesium_extractable",
+        "manganese_extractable",
+        "nitrogen_total",
+        "ph",
+        "phosphorus_extractable",
+        "potassium_extractable",
+        "sodium_extractable",
+        "sulphur_extractable"
+      ],
+      "models": {
+        "median_baseline": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.3071081113744076,
+              "rmse": 0.3888878801896877,
+              "r2": -0.030222212733888698
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.3337575721040189,
+              "rmse": 0.4222327190433045,
+              "r2": -0.025953389495560142
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.29323938862559246,
+              "rmse": 0.37715195700118626,
+              "r2": -0.014507556102244745
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.2990807061611374,
+              "rmse": 0.3863131707121355,
+              "r2": -0.019681720533621272
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.2993008812351544,
+              "rmse": 0.36167233844290947,
+              "r2": -0.04640122038988803
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.30651366208530806,
+            "rmse": 0.38779249450573877,
+            "r2": -0.013443424224268252,
+            "evaluated_samples": 2110
+          }
+        },
+        "random_forest": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.22306062110354952,
+              "rmse": 0.28683650818359274,
+              "r2": 0.43953183864946843
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.2538296543166827,
+              "rmse": 0.31653827897056186,
+              "r2": 0.42339774548851183
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.2181576658859405,
+              "rmse": 0.2790046425447445,
+              "r2": 0.4448051683358789
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.2102641619855395,
+              "rmse": 0.2754060754348151,
+              "r2": 0.4817579637488537
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.20289746159154545,
+              "rmse": 0.2535168580705917,
+              "r2": 0.48586006673060145
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.22166605145661605,
+            "rmse": 0.283026391246062,
+            "r2": 0.4601730300751792,
+            "evaluated_samples": 2110
+          }
+        },
+        "extra_trees": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.22257654072156394,
+              "rmse": 0.28577978127230763,
+              "r2": 0.44365384407090724
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.25054207203598633,
+              "rmse": 0.3133825040458025,
+              "r2": 0.43483747671508055
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.21713966545418642,
+              "rmse": 0.27903969920543314,
+              "r2": 0.4446656401945328
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.20715563021695627,
+              "rmse": 0.27165776523781937,
+              "r2": 0.4957686413137945
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.20449379676378995,
+              "rmse": 0.2549880262741494,
+              "r2": 0.47987560481019975
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.22040336486563983,
+            "rmse": 0.28165131439239677,
+            "r2": 0.4654057600416235,
+            "evaluated_samples": 2110
+          }
+        },
+        "hist_gradient_boosting": {
+          "fold_results": [
+            {
+              "fold": 1,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.22242549576893428,
+              "rmse": 0.2867771214062677,
+              "r2": 0.43976389385399783
+            },
+            {
+              "fold": 2,
+              "train_samples": 1687,
+              "test_samples": 423,
+              "mae": 0.24620208611249833,
+              "rmse": 0.3092071186017198,
+              "r2": 0.4497971570377497
+            },
+            {
+              "fold": 3,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.21437261721125184,
+              "rmse": 0.2792471336181483,
+              "r2": 0.44383967690326964
+            },
+            {
+              "fold": 4,
+              "train_samples": 1688,
+              "test_samples": 422,
+              "mae": 0.21141559956517084,
+              "rmse": 0.27486527566583,
+              "r2": 0.48379125224755193
+            },
+            {
+              "fold": 5,
+              "train_samples": 1689,
+              "test_samples": 421,
+              "mae": 0.2002951315609862,
+              "rmse": 0.2525383641259252,
+              "r2": 0.48982123874816275
+            }
+          ],
+          "out_of_fold_metrics": {
+            "mae": 0.21896394289426666,
+            "rmse": 0.2811515964561839,
+            "r2": 0.46730107758768813,
+            "evaluated_samples": 2110
+          }
+        }
+      }
+    }
+  },
+  "production_models_saved": false
+}
