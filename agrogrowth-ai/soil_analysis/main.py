@@ -50,7 +50,7 @@ class ClimateMatchingRequest(BaseModel):
 class SoilAnalysisResponse(BaseModel):
     soil_type: Dict[str, Any]
     properties: Dict[str, Any]
-    health_score: float
+    health_score: Optional[float]
     fertility_level: str
     overall_recommendations: List[str]
     analysis_timestamp: str
