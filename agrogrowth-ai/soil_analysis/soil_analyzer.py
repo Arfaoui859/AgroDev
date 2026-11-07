@@ -1,3 +1,4 @@
+
 """
 AgroGrowth soil screening engine.
 Transparent deterministic rules only; no synthetic training or invented data.
@@ -15,7 +16,7 @@ class SoilAnalyzerAI:
         self.model_source = "deterministic-rules"
         self.is_ready = True
         self.field_validated = False
-        self.is_trained = False  # No ML model is trained in this engine.
+        self.is_trained = False
 
         self.property_ranges = {
             "ph": (3.0, 10.0),
@@ -26,142 +27,357 @@ class SoilAnalyzerAI:
             "moisture": (0.0, 100.0),
             "salinity": (0.0, 20.0),
             "temperature": (-10.0, 50.0),
+            "sand": (0.0, 100.0),
+            "silt": (0.0, 100.0),
+            "clay": (0.0, 100.0),
         }
+
         self.assessable_properties = {
             "ph", "nitrogen", "phosphorus", "potassium",
             "organic_matter", "moisture", "salinity",
         }
-        self.unit_dependent_properties = {"nitrogen", "phosphorus", "potassium"}
-        self.soil_classes = ["Sandy", "Loamy", "Clay", "Silty", "Peaty", "Chalky"]
 
-    def _validate_input_data(self, data: Dict[str, Any]) -> Dict[str, float]:
+        self.texture_properties = {"sand", "silt", "clay"}
+        self.unit_dependent_properties = {
+            "nitrogen", "phosphorus", "potassium"
+        }
+
+        self.soil_classes = [
+            "Sand", "Loamy Sand", "Sandy Loam", "Loam",
+            "Silt Loam", "Silt", "Sandy Clay Loam",
+            "Clay Loam", "Silty Clay Loam",
+            "Sandy Clay", "Silty Clay", "Clay",
+        ]
+
+    def _validate_input_data(
+        self, data: Dict[str, Any]
+    ) -> Dict[str, float]:
+
         if not isinstance(data, dict) or not data:
             raise ValueError("Soil input data cannot be empty.")
+
         validated = {}
+
         for prop, raw in data.items():
             if prop not in self.property_ranges:
                 raise ValueError(f"Unsupported soil property: {prop}")
+
             if isinstance(raw, bool) or raw is None:
                 raise ValueError(f"Invalid numeric value for {prop}.")
+
             try:
                 value = float(raw)
             except (TypeError, ValueError):
                 raise ValueError(f"Invalid numeric value for {prop}.")
+
             if not math.isfinite(value):
                 raise ValueError(f"Non-finite value for {prop}.")
+
             low, high = self.property_ranges[prop]
+
             if not low <= value <= high:
-                raise ValueError(f"{prop} must be between {low} and {high}.")
+                raise ValueError(
+                    f"{prop} must be between {low} and {high}."
+                )
+
             validated[prop] = value
-        if not any(k in self.assessable_properties for k in validated):
-            raise ValueError("At least one assessable soil property is required.")
+
+        has_assessable = any(
+            key in self.assessable_properties for key in validated
+        )
+        has_texture = any(
+            key in self.texture_properties for key in validated
+        )
+
+        if not has_assessable and not has_texture:
+            raise ValueError("At least one soil property is required.")
+
+        texture_values = [
+            validated[key]
+            for key in self.texture_properties
+            if key in validated
+        ]
+
+        if len(texture_values) == 3:
+            total = sum(texture_values)
+            if not 99.0 <= total <= 101.0:
+                raise ValueError(
+                    f"Sand, silt and clay must total 100%. Got {total:.2f}%."
+                )
+
         return validated
 
+    def _classify_soil_texture(
+        self, data: Dict[str, float]
+    ) -> Dict[str, Any]:
+
+        required = {"sand", "silt", "clay"}
+
+        if not required.issubset(data):
+            return {
+                "classification": "Unknown",
+                "confidence": None,
+                "status": "insufficient_texture_data",
+                "message": (
+                    "Sand, silt and clay measurements are required."
+                ),
+            }
+
+        sand = data["sand"]
+        silt = data["silt"]
+        clay = data["clay"]
+
+        total = sand + silt + clay
+
+        if not 99.0 <= total <= 101.0:
+            return {
+                "classification": "Unknown",
+                "confidence": None,
+                "status": "invalid_texture_percentages",
+                "message": "Texture percentages must total 100%.",
+            }
+
+        # Normalize small rounding differences.
+        sand = sand * 100.0 / total
+        silt = silt * 100.0 / total
+        clay = clay * 100.0 / total
+
+        # USDA texture triangle decision rules.
+        if clay >= 40:
+            if silt >= 40:
+                classification = "Silty Clay"
+            elif sand >= 45:
+                classification = "Sandy Clay"
+            else:
+                classification = "Clay"
+
+        elif clay >= 27:
+            if silt >= 40:
+                classification = "Silty Clay Loam"
+            elif sand >= 45:
+                classification = "Sandy Clay Loam"
+            else:
+                classification = "Clay Loam"
+
+        elif silt >= 80 and clay < 12:
+            classification = "Silt"
+
+        elif silt >= 50 and clay < 27:
+            classification = "Silt Loam"
+
+        elif sand >= 85 and (silt + 1.5 * clay) < 15:
+            classification = "Sand"
+
+        elif (silt + 1.5 * clay) >= 15 and (
+            silt + 2 * clay
+        ) < 30:
+            classification = "Loamy Sand"
+
+        elif 7 <= clay < 27 and 28 <= silt < 50:
+            classification = "Loam"
+
+        elif sand >= 52 and clay < 20:
+            classification = "Sandy Loam"
+
+        else:
+            classification = "Loam"
+
+        return {
+            "classification": classification,
+            "confidence": None,
+            "status": "rule_based_classification",
+            "method": "USDA texture triangle approximation",
+            "percentages": {
+                "sand": round(sand, 2),
+                "silt": round(silt, 2),
+                "clay": round(clay, 2),
+            },
+            "message": (
+                "Classification based on supplied texture percentages."
+            ),
+        }
+
     def _assess_property_status(self, name: str, value: float) -> str:
-        # NPK cannot be interpreted safely without unit + extraction method.
         if name in self.unit_dependent_properties:
             return "requires_unit_and_lab_method"
+
         if name == "ph":
-            if 6.0 <= value <= 7.0: return "optimal"
-            if 5.5 <= value < 6.0 or 7.0 < value <= 7.5: return "acceptable"
+            if 6.0 <= value <= 7.0:
+                return "optimal"
+            if 5.5 <= value < 6.0 or 7.0 < value <= 7.5:
+                return "acceptable"
             return "needs_attention"
+
         if name == "organic_matter":
-            if value >= 3.0: return "optimal"
-            if value >= 1.5: return "acceptable"
+            if value >= 3.0:
+                return "optimal"
+            if value >= 1.5:
+                return "acceptable"
             return "needs_attention"
+
         if name == "moisture":
-            if 40 <= value <= 70: return "optimal"
-            if 20 <= value < 40 or 70 < value <= 85: return "acceptable"
+            if 40 <= value <= 70:
+                return "optimal"
+            if 20 <= value < 40 or 70 < value <= 85:
+                return "acceptable"
             return "needs_attention"
+
         if name == "salinity":
-            if value <= 2.0: return "optimal"
-            if value <= 4.0: return "acceptable"
+            if value <= 2.0:
+                return "optimal"
+            if value <= 4.0:
+                return "acceptable"
             return "needs_attention"
+
         return "not_assessed"
 
-    def _get_property_recommendations(self, name: str, value: float) -> List[str]:
+    def _get_property_recommendations(
+        self, name: str, value: float
+    ) -> List[str]:
+
         if name in self.unit_dependent_properties:
-            return ["لا يمكن تفسير هذه القيمة دون معرفة الوحدة وطريقة التحليل المخبري."]
+            return [
+                "لا يمكن تفسير هذه القيمة دون معرفة الوحدة وطريقة التحليل المخبري."
+            ]
+
         if name == "ph" and value < 6.0:
-            return ["تحقق من حموضة التربة مخبرياً قبل اختيار أي مادة لتعديلها."]
+            return [
+                "تحقق من حموضة التربة مخبرياً قبل اختيار أي مادة لتعديلها."
+            ]
+
         if name == "ph" and value > 7.5:
-            return ["تحقق من قلوية التربة مخبرياً قبل اختيار أي معالجة."]
+            return [
+                "تحقق من قلوية التربة مخبرياً قبل اختيار أي معالجة."
+            ]
+
         if name == "organic_matter" and value < 3.0:
-            return ["يمكن دراسة استعمال الكمبوست الناضج ومحاصيل التغطية بعد تقييم التربة."]
+            return [
+                "يمكن دراسة استعمال الكمبوست الناضج ومحاصيل التغطية بعد تقييم التربة."
+            ]
+
         if name == "moisture" and value < 40:
-            return ["تحقق من احتياجات المحصول ورطوبة منطقة الجذور قبل تعديل برنامج الري."]
+            return [
+                "تحقق من احتياجات المحصول ورطوبة منطقة الجذور قبل تعديل برنامج الري."
+            ]
+
         if name == "moisture" and value > 70:
-            return ["تحقق من الصرف ورطوبة منطقة الجذور قبل تعديل الري."]
+            return [
+                "تحقق من الصرف ورطوبة منطقة الجذور قبل تعديل الري."
+            ]
+
         if name == "salinity" and value > 2.0:
-            return ["تحقق مخبرياً من ملوحة التربة ومياه الري قبل اختيار المعالجة."]
+            return [
+                "تحقق مخبرياً من ملوحة التربة ومياه الري قبل اختيار المعالجة."
+            ]
+
         if name == "temperature":
             return ["درجة الحرارة وحدها لا تكفي لتقييم جودة التربة."]
+
         return []
 
-    def _calculate_soil_health_score(self, data: Dict[str, float]) -> Optional[float]:
-        # Only properties with defensible generic screening rules contribute.
-        score_map = {"optimal": 100.0, "acceptable": 70.0, "needs_attention": 40.0}
+    def _calculate_soil_health_score(
+        self, data: Dict[str, float]
+    ) -> Optional[float]:
+
+        score_map = {
+            "optimal": 100.0,
+            "acceptable": 70.0,
+            "needs_attention": 40.0,
+        }
+
         scores = [
             score_map[self._assess_property_status(k, v)]
             for k, v in data.items()
             if k in {"ph", "organic_matter", "moisture", "salinity"}
             and self._assess_property_status(k, v) in score_map
         ]
+
         return round(sum(scores) / len(scores), 2) if scores else None
 
-    def _assess_fertility_level(self, data: Dict[str, float]) -> str:
+    def _assess_fertility_level(
+        self, data: Dict[str, float]
+    ) -> str:
+
         score = self._calculate_soil_health_score(data)
+
         if score is None:
             return "بيانات غير كافية"
-        if score >= 80: return "مؤشر إرشادي مرتفع"
-        if score >= 60: return "مؤشر إرشادي متوسط"
-        if score >= 40: return "مؤشر إرشادي منخفض"
+        if score >= 80:
+            return "مؤشر إرشادي مرتفع"
+        if score >= 60:
+            return "مؤشر إرشادي متوسط"
+        if score >= 40:
+            return "مؤشر إرشادي منخفض"
+
         return "مؤشر إرشادي منخفض جداً"
 
-    def _get_overall_recommendations(self, data: Dict[str, float],
-                                     soil_type: Optional[str] = None) -> List[str]:
-        recommendations = ["هذه النتيجة فحص إرشادي وليست تحليلاً مخبرياً أو تشخيصاً زراعياً."]
+    def _get_overall_recommendations(
+        self,
+        data: Dict[str, float],
+        soil_type: Optional[str] = None,
+    ) -> List[str]:
+
+        recommendations = [
+            "هذه النتيجة فحص إرشادي وليست تحليلاً مخبرياً أو تشخيصاً زراعياً."
+        ]
+
         missing = sorted(self.assessable_properties - set(data))
+
         if missing:
-            recommendations.append("خصائص غير متوفرة: " + ", ".join(missing))
+            recommendations.append(
+                "خصائص غير متوفرة: " + ", ".join(missing)
+            )
+
         if self.unit_dependent_properties.intersection(data):
             recommendations.append(
                 "قيم NPK معروضة كما أدخلها المستخدم، ولم تدخل في التقييم "
                 "لغياب الوحدة وطريقة الاستخلاص/التحليل."
             )
+
         recommendations.append(
             "للتسميد واتخاذ القرار، اعتمد تحليلاً مخبرياً يذكر الوحدات "
             "وطريقة القياس واحتياجات المحصول."
         )
+
         return recommendations
 
-    def analyze_soil_properties(self, sensor_data: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_soil_properties(
+        self, sensor_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+
         validated = self._validate_input_data(sensor_data)
+
         properties = {}
+
         for name, value in validated.items():
             properties[name] = {
                 "current_value": value,
                 "predicted_optimal": None,
-                "status": self._assess_property_status(name, value),
-                "recommendations": self._get_property_recommendations(name, value),
+                "status": (
+                    "texture_measurement"
+                    if name in self.texture_properties
+                    else self._assess_property_status(name, value)
+                ),
+                "recommendations": (
+                    []
+                    if name in self.texture_properties
+                    else self._get_property_recommendations(name, value)
+                ),
                 "source": "user_supplied_input",
-                "unit": None,
+                "unit": "%" if name in self.texture_properties else None,
                 "measurement_method": None,
             }
 
         score = self._calculate_soil_health_score(validated)
-        # Texture cannot be inferred from pH/NPK/moisture values.
+
         return {
-            "soil_type": {
-                "classification": "Unknown",
-                "confidence": 0.0,
-                "status": "insufficient_texture_data",
-                "message": "يلزم قياس نسب الرمل والطمي والطين لتحديد قوام التربة.",
-            },
+            "soil_type": self._classify_soil_texture(validated),
             "properties": properties,
             "health_score": score,
             "fertility_level": self._assess_fertility_level(validated),
-            "overall_recommendations": self._get_overall_recommendations(validated),
+            "overall_recommendations": self._get_overall_recommendations(
+                validated
+            ),
             "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
             "data_source": "user_supplied_input",
             "is_real_data": None,
