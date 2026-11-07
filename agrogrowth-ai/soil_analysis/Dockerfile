@@ -1,5 +1,5 @@
 
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -10,9 +10,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install project dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Soil AI dependencies using the model-compatible stack
+COPY soil_analysis/requirements-ml.txt ./requirements-ml.txt
+RUN pip install --no-cache-dir -r requirements-ml.txt
 
 # Copy shared AI modules
 COPY ai_common ./ai_common
@@ -25,7 +25,7 @@ ENV PYTHONUNBUFFERED=1
 ENV SERVICE_PORT=8001
 
 # ML artifacts destination
-RUN mkdir -p /app/soil_analysis/models/soil_ml
+RUN mkdir -p /app/soil_analysis/models/production
 
 EXPOSE 8001
 
