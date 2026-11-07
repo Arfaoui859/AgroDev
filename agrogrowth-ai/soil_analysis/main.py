@@ -335,14 +335,19 @@ async def analyze_soil(request: SoilAnalysisRequest):
     except HTTPException:
         raise
 
+    except ValueError as exc:
+        logger.warning("Invalid soil analysis input: %s", exc)
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
     except Exception as exc:
         logger.exception("Soil analysis failed.")
-
         raise HTTPException(
             status_code=500,
             detail="Soil analysis failed.",
         ) from exc
-
 
 # ---------------------------------------------------------------------
 # Existing endpoint: climate and crop matching
