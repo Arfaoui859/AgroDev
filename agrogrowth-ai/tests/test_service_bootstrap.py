@@ -77,15 +77,74 @@ def test_uvicorn_is_imported_when_used(service: str):
 @pytest.mark.parametrize("service,port", sorted(EXPECTED_PORTS.items()))
 def test_default_port_is_canonical(service: str, port: int):
     source = _source(service)
-    match = re.search(r'os\.environ\.get\(\s*"PORT"\s*,\s*(\d+)\s*\)', source)
-    if match:
-        assert int(match.group(1)) == port, (
-            f"{service} defaults to port {match.group(1)}, expected {port}"
-        )
-    else:
-        # Services that hard-code the port must use the canonical one.
-        assert f"port={port}" in source or f"port = {port}" in source
+    tree = ast.parse(source)
 
+    def constant_int(node):
+        if isinstance(node, ast.Constant):
+            try:
+                return int(node.value)
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    def get_default(node, env_name):
+        if not isinstance(node, ast.Call):
+            return None
+
+        func = node.func
+        is_get = (
+            isinstance(func, ast.Attribute)
+            and func.attr == "get"
+            and isinstance(func.value, ast.Attribute)
+            and func.value.attr == "environ"
+            and isinstance(func.value.value, ast.Name)
+            and func.value.value.id == "os"
+        )
+        if not is_get or len(node.args) < 2:
+            return None
+
+        if not (
+            isinstance(node.args[0], ast.Constant)
+            and node.args[0].value == env_name
+        ):
+            return None
+
+        fallback = node.args[1]
+        value = constant_int(fallback)
+        if value is not None:
+            return value
+
+        if env_name == "PORT":
+            return get_default(fallback, "SERVICE_PORT")
+
+        return None
+
+    defaults = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+
+        value = node.value
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+
+        if not any(
+            isinstance(target, ast.Name) and target.id == "port"
+            for target in targets
+        ):
+            continue
+
+        if isinstance(value, ast.Call) and isinstance(value.func, ast.Name):
+            if value.func.id == "int" and value.args:
+                value = value.args[0]
+
+        configured_port = get_default(value, "PORT")
+        if configured_port is not None:
+            defaults.append(configured_port)
+
+    assert defaults, f"{service}/main.py has no recognizable PORT default"
+    assert all(value == port for value in defaults), (
+        f"{service} defaults to {defaults}, expected {port}"
+    )
 
 def test_default_ports_are_unique():
     assert len(set(EXPECTED_PORTS.values())) == len(EXPECTED_PORTS)

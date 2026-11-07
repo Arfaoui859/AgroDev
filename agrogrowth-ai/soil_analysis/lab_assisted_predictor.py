@@ -1,8 +1,9 @@
+"""Memory-aware production inference for laboratory-assisted soil ML models."""
 
-"""Production inference for laboratory-assisted soil ML models."""
-
+import gc
 import json
 import math
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +21,7 @@ class LabAssistedSoilPredictor:
         if not 0 < min_feature_coverage <= 1:
             raise ValueError("min_feature_coverage must be in (0, 1].")
 
-        if not MANIFEST_PATH.exists():
+        if not MANIFEST_PATH.is_file():
             raise FileNotFoundError(
                 f"Model manifest not found: {MANIFEST_PATH}"
             )
@@ -30,36 +31,37 @@ class LabAssistedSoilPredictor:
         with MANIFEST_PATH.open("r", encoding="utf-8") as file:
             self.manifest = json.load(file)
 
-        
         scope = self.manifest.get("prediction_scope")
-        if scope is None:
-            scopes = {
-                config.get("prediction_scope")
-                for config in self.manifest.get("models", {}).values()
-             }
-            if scopes != {"lab_assisted_only"}:
-                raise ValueError(f"Unexpected model prediction scopes: {scopes}")
-        else:
-            if scope != "lab_assisted_only":
-                raise ValueError(f"Unexpected model prediction scope: {scope}")
-         
-
-
-        self.models = {}
-        self._load_models()
-
-    def _load_models(self):
         configurations = self.manifest.get("models", {})
 
         if not configurations:
             raise RuntimeError("No production models found in manifest.")
+
+        if scope is None:
+            scopes = {
+                config.get("prediction_scope")
+                for config in configurations.values()
+            }
+            if scopes != {"lab_assisted_only"}:
+                raise ValueError(
+                    f"Unexpected model prediction scopes: {scopes}"
+                )
+        elif scope != "lab_assisted_only":
+            raise ValueError(
+                f"Unexpected model prediction scope: {scope}"
+            )
+
+        # Metadata only. No model is loaded into memory here.
+        self.models = {}
 
         for target, config in configurations.items():
             features = config.get("features", [])
             artifact_name = config.get("artifact")
 
             if not features or not artifact_name:
-                raise ValueError(f"Invalid manifest configuration: {target}")
+                raise ValueError(
+                    f"Invalid manifest configuration: {target}"
+                )
 
             if "carbon_total" in features:
                 raise ValueError(
@@ -69,28 +71,38 @@ class LabAssistedSoilPredictor:
             artifact_path = (MODEL_DIR / artifact_name).resolve()
 
             if not artifact_path.is_relative_to(MODEL_DIR.resolve()):
-                raise ValueError(f"Invalid artifact path for {target}.")
+                raise ValueError(
+                    f"Invalid artifact path for {target}."
+                )
 
             if not artifact_path.is_file():
                 raise FileNotFoundError(
                     f"Missing model artifact: {artifact_path}"
                 )
 
-            model = joblib.load(artifact_path)
-            expected_features = len(features)
-            actual_features = getattr(model, "n_features_in_", None)
-
-            if actual_features != expected_features:
-                raise RuntimeError(
-                    f"{target}: expected {expected_features} features, "
-                    f"loaded model has {actual_features}."
-                )
-
             self.models[target] = {
-                "model": model,
+                "artifact_path": artifact_path,
                 "features": features,
                 "metrics": config.get("metrics", {}),
             }
+
+        # Only one prediction pipeline may load models at a time.
+        self._prediction_lock = threading.Lock()
+
+    def _load_model(self, target: str, configuration: dict):
+        model = joblib.load(configuration["artifact_path"])
+
+        expected_features = len(configuration["features"])
+        actual_features = getattr(model, "n_features_in_", None)
+
+        if actual_features != expected_features:
+            del model
+            raise RuntimeError(
+                f"{target}: expected {expected_features} features, "
+                f"loaded model has {actual_features}."
+            )
+
+        return model
 
     @staticmethod
     def _normalize_value(name: str, value: Any):
@@ -98,15 +110,21 @@ class LabAssistedSoilPredictor:
             return None
 
         if isinstance(value, bool):
-            raise ValueError(f"{name} must be numeric, not boolean.")
+            raise ValueError(
+                f"{name} must be numeric, not boolean."
+            )
 
         try:
             number = float(value)
         except (TypeError, ValueError):
-            raise ValueError(f"{name} must be a numeric value.")
+            raise ValueError(
+                f"{name} must be a numeric value."
+            )
 
         if not math.isfinite(number):
-            raise ValueError(f"{name} must be finite.")
+            raise ValueError(
+                f"{name} must be finite."
+            )
 
         return number
 
@@ -116,52 +134,66 @@ class LabAssistedSoilPredictor:
 
         results = {}
 
-        for target, configuration in self.models.items():
-            features = configuration["features"]
-            normalized = {}
+        with self._prediction_lock:
+            for target, configuration in self.models.items():
+                features = configuration["features"]
+                normalized = {}
 
-            for feature in features:
-                normalized[feature] = self._normalize_value(
-                    feature, lab_values.get(feature)
-                )
+                for feature in features:
+                    normalized[feature] = self._normalize_value(
+                        feature, lab_values.get(feature)
+                    )
 
-            available = [
-                name for name, value in normalized.items()
-                if value is not None
-            ]
-            missing = [
-                name for name, value in normalized.items()
-                if value is None
-            ]
+                available = [
+                    name for name, value in normalized.items()
+                    if value is not None
+                ]
+                missing = [
+                    name for name, value in normalized.items()
+                    if value is None
+                ]
 
-            coverage = len(available) / len(features)
+                coverage = len(available) / len(features)
 
-            if coverage < self.min_feature_coverage:
-                results[target] = {
-                    "status": "insufficient_input",
-                    "coverage": round(coverage, 3),
-                    "required_coverage": self.min_feature_coverage,
-                    "available_features": len(available),
-                    "required_features": len(features),
-                    "missing_features": missing,
-                    "prediction": None,
-                }
-                continue
+                if coverage < self.min_feature_coverage:
+                    results[target] = {
+                        "status": "insufficient_input",
+                        "coverage": round(coverage, 3),
+                        "required_coverage": self.min_feature_coverage,
+                        "available_features": len(available),
+                        "required_features": len(features),
+                        "missing_features": missing,
+                        "prediction": None,
+                    }
+                    continue
 
-            row = pd.DataFrame(
-                [[normalized[name] for name in features]],
-                columns=features,
-            )
+                model = None
+                row = None
 
-            prediction = configuration["model"].predict(row)[0]
+                try:
+                    # Load only this target's model.
+                    model = self._load_model(target, configuration)
 
-            results[target] = {
-                "status": "predicted",
-                "prediction": float(prediction),
-                "coverage": round(coverage, 3),
-                "imputed_features": missing,
-                "metrics": configuration["metrics"],
-            }
+                    row = pd.DataFrame(
+                        [[normalized[name] for name in features]],
+                        columns=features,
+                    )
+
+                    prediction = model.predict(row)[0]
+
+                    results[target] = {
+                        "status": "predicted",
+                        "prediction": float(prediction),
+                        "coverage": round(coverage, 3),
+                        "imputed_features": missing,
+                        "metrics": configuration["metrics"],
+                    }
+
+                finally:
+                    # Release this model before loading the next one.
+                    del row
+                    del model
+                    gc.collect()
 
         return {
             "status": "success",

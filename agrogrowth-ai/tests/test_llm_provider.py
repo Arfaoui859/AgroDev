@@ -97,6 +97,31 @@ def test_unconfigured_reports_heuristic_default():
     assert "demo" in lp.model_source()
 
 
+@pytest.mark.parametrize("provider", ["openai", "openrouter", "groq", "together"])
+def test_explicit_remote_provider_without_credentials_is_unconfigured(
+    monkeypatch, provider
+):
+    monkeypatch.setenv("AI_PROVIDER", provider)
+
+    cfg = lp.resolve_config()
+
+    assert cfg.kind == "none"
+    assert cfg.provider == "none"
+    assert lp.is_configured() is False
+
+
+@pytest.mark.parametrize("provider", ["ollama", "vllm"])
+def test_local_provider_uses_default_url_without_api_key(monkeypatch, provider):
+    monkeypatch.setenv("AI_PROVIDER", provider)
+
+    cfg = lp.resolve_config()
+
+    assert cfg.kind == "openai-compatible"
+    assert cfg.provider == provider
+    assert cfg.base_url == lp.DEFAULT_BASE_URLS[provider]
+    assert cfg.api_key is None
+
+
 def test_unknown_message_source_marker_detected_by_gateway_regex():
     import re
 

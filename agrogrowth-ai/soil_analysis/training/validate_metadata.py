@@ -1,98 +1,134 @@
 
 from pathlib import Path
-import pandas as pd
 import json
+
+import pandas as pd
+
 
 BASE = Path(__file__).resolve().parents[1]
 RAW = BASE / "data" / "raw"
 OUT = BASE / "data" / "processed"
 
-data = pd.read_csv(RAW / "iSDA_soil_data.csv")
-metadata = pd.read_csv(RAW / "iSDA_soil_metadata.csv")
+DATA_FILE = RAW / "iSDA_soil_data.csv"
+METADATA_FILE = RAW / "iSDA_soil_metadata.csv"
 
-<<<<<<< HEAD
-# Explicit corrections documented for this dataset.
-corrections = {
-    "longitude": "Longitude of soil sampling location",
-    "latitude": "Latitude of soil sampling location",
-=======
-# Metadata naming differences
-aliases = {
->>>>>>> b049e4d ( ai soil)
+# Normalize known naming differences between the dataset
+# and its metadata. These are aliases, not fabricated columns.
+ALIASES = {
     "potassium_etractable": "potassium_extractable",
     "zn_mehlich3": "zinc_extractable",
 }
 
-<<<<<<< HEAD
-metadata_report = {
-    "csv_columns": list(data.columns),
-    "metadata_columns": metadata["column_name"].tolist(),
-    "corrections_required": corrections,
-    "unmatched_metadata_names": [
-        name for name in metadata["column_name"]
-        if name not in data.columns
-        and name not in corrections
-    ],
-    "missing_csv_columns": [
-        name for name in data.columns
-        if name not in metadata["column_name"]
-        and name not in corrections.values()
-    ],
-    "units": dict(zip(metadata["column_name"], metadata["unit"])),
-    "status": "review_required_before_training"
-=======
-metadata_names = set(metadata["column_name"].dropna())
-csv_names = set(data.columns)
+TARGET_COLUMNS = [
+    "ph",
+    "carbon_organic",
+    "nitrogen_total",
+    "potassium_extractable",
+    "electrical_conductivity",
+    "phosphorus_extractable",
+    "zinc_extractable",
+]
 
-normalized_metadata_names = {
-    aliases.get(name, name) for name in metadata_names
-}
 
-missing_in_csv = sorted(normalized_metadata_names - csv_names)
-missing_in_metadata = sorted(csv_names - normalized_metadata_names)
+def main():
+    if not DATA_FILE.exists():
+        raise FileNotFoundError(f"Dataset not found: {DATA_FILE}")
 
-units = {}
-for _, row in metadata.iterrows():
-    name = aliases.get(row["column_name"], row["column_name"])
-    unit = row["unit"]
-    units[name] = None if pd.isna(unit) else str(unit)
+    if not METADATA_FILE.exists():
+        raise FileNotFoundError(
+            f"Metadata file not found: {METADATA_FILE}"
+        )
 
-report = {
-    "rows": len(data),
-    "columns": len(data.columns),
-    "metadata_aliases_applied": aliases,
-    "missing_in_csv": missing_in_csv,
-    "missing_in_metadata": missing_in_metadata,
-    "units": units,
-    "targets_candidate_counts": {
-        col: int(data[col].notna().sum())
-        for col in [
-            "ph",
-            "carbon_organic",
-            "nitrogen_total",
-            "potassium_extractable",
-            "electrical_conductivity",
-            "phosphorus_extractable",
-            "zinc_extractable"
-        ]
-    },
-    "status": (
-        "column_mapping_valid"
-        if not missing_in_csv and not missing_in_metadata
-        else "mapping_review_required"
+    data = pd.read_csv(DATA_FILE)
+    metadata = pd.read_csv(METADATA_FILE)
+
+    if "column_name" not in metadata.columns:
+        raise ValueError(
+            "Metadata CSV must contain a 'column_name' column"
+        )
+
+    metadata_names = {
+        str(name).strip()
+        for name in metadata["column_name"].dropna()
+    }
+
+    csv_names = set(data.columns)
+
+    normalized_metadata_names = {
+        ALIASES.get(name, name)
+        for name in metadata_names
+    }
+
+    missing_in_csv = sorted(
+        normalized_metadata_names - csv_names
     )
->>>>>>> b049e4d ( ai soil)
-}
 
-OUT.mkdir(parents=True, exist_ok=True)
+    missing_in_metadata = sorted(
+        csv_names - normalized_metadata_names
+    )
 
-with open(OUT / "metadata_validation.json", "w", encoding="utf-8") as f:
-<<<<<<< HEAD
-    json.dump(metadata_report, f, indent=2, ensure_ascii=False)
+    units = {}
 
-print(json.dumps(metadata_report, indent=2, ensure_ascii=False))
-=======
-    json.dump(report, f, indent=2, ensure_ascii=False)
+    if "unit" in metadata.columns:
+        for _, row in metadata.iterrows():
+            raw_name = row["column_name"]
 
-print(json.dumps(report, indent=2, ensure_ascii=False))
->>>>>>> b049e4d ( ai soil)
+            if pd.isna(raw_name):
+                continue
+
+            name = str(raw_name).strip()
+            normalized_name = ALIASES.get(name, name)
+
+            unit = row["unit"]
+            units[normalized_name] = (
+                None if pd.isna(unit) else str(unit)
+            )
+
+    target_candidate_counts = {
+        column: int(data[column].notna().sum())
+        for column in TARGET_COLUMNS
+        if column in data.columns
+    }
+
+    missing_targets = sorted(
+        set(TARGET_COLUMNS) - csv_names
+    )
+
+    report = {
+        "rows": int(len(data)),
+        "columns": int(len(data.columns)),
+        "csv_columns": list(data.columns),
+        "metadata_columns": sorted(metadata_names),
+        "metadata_aliases_applied": ALIASES,
+        "missing_in_csv": missing_in_csv,
+        "missing_in_metadata": missing_in_metadata,
+        "missing_target_columns": missing_targets,
+        "units": units,
+        "targets_candidate_counts": target_candidate_counts,
+        "status": (
+            "column_mapping_valid"
+            if not missing_in_csv
+            and not missing_in_metadata
+            and not missing_targets
+            else "mapping_review_required"
+        ),
+    }
+
+    OUT.mkdir(parents=True, exist_ok=True)
+
+    output_file = OUT / "metadata_validation.json"
+
+    with output_file.open("w", encoding="utf-8") as file:
+        json.dump(
+            report,
+            file,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    print(f"\nReport saved to: {output_file}")
+
+
+if __name__ == "__main__":
+    main()

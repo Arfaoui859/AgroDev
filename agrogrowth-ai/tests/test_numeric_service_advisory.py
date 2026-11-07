@@ -2,7 +2,7 @@
 The numeric services must expose a farmer-facing advisory when a provider is
 configured, and must label the numeric analysis and the advisory separately.
 
-The numeric models are synthetic; the advisory is LLM-produced. These tests
+Soil screening uses user-supplied measurements and deterministic rules; crop recommendations use a demo source. The advisory is LLM-produced. These tests
 drive the real endpoint coroutines and assert both labels are present and
 correct, so a client can never mistake synthetic numbers for field data or
 rule text for model text.
@@ -58,8 +58,9 @@ def _crop_request(**overrides):
 
 def test_soil_without_provider_has_no_advisory_and_is_labelled_synthetic():
     result = asyncio.run(soil_main.analyze_soil(_soil_request()))
-    assert result.data_source == "synthetic-model"
-    assert result.is_real_data is False
+    assert result.data_source == "user_supplied_input"
+    assert result.is_real_data is None
+    assert result.model_source == soil_main.get_soil_model_source()
     assert result.advisory is None
 
 
@@ -69,9 +70,10 @@ def test_soil_with_provider_adds_labelled_advisory(monkeypatch):
     monkeypatch.setattr(llm.LLMProvider, "chat", lambda self, *a, **k: "نصيحة تربة.")
 
     result = asyncio.run(soil_main.analyze_soil(_soil_request(language="ar")))
-    # Numeric analysis stays synthetic; only the advisory is LLM-produced.
-    assert result.is_real_data is False
-    assert result.model_source == "synthetic-demo"
+    # Input measurements and model provenance are reported separately.
+    assert result.data_source == "user_supplied_input"
+    assert result.is_real_data is None
+    assert result.model_source == soil_main.get_soil_model_source()
     assert result.advisory["text"] == "نصيحة تربة."
     assert result.advisory["language"] == "ar"
 
@@ -91,7 +93,7 @@ def test_soil_advisory_failure_does_not_break_analysis(monkeypatch):
 
 def test_crop_without_provider_is_labelled_synthetic():
     result = asyncio.run(crop_main.recommend_crops(_crop_request()))
-    assert result.data_source == "synthetic-model"
+    assert result.data_source == crop_main.get_crop_recommender_source()
     assert result.is_real_data is False
     assert result.advisory is None
     assert result.recommendations
@@ -112,4 +114,4 @@ def test_soil_health_reports_advisory_configured(monkeypatch):
     monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
     health = asyncio.run(soil_main.health_check())
     assert health["advisory_configured"] is True
-    assert health["model_source"] == "synthetic-demo"
+    assert health["model_source"] == soil_main.get_soil_model_source()

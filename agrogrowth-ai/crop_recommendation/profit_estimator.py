@@ -137,10 +137,20 @@ class ProfitEstimatorAI:
     }
 
     def __init__(self):
+        # Expose class-level configuration as instance attributes.
+        # This also makes the estimator configuration explicit.
+        self.MODEL_SOURCE = type(self).MODEL_SOURCE
+        self.FIELD_VALIDATED = type(self).FIELD_VALIDATED
+        self.market_data = type(self).market_data
+        self.cost_structure = type(self).cost_structure
+
         # No model training and no synthetic data.
         self.is_trained = False
         self.model_source = self.MODEL_SOURCE
-        logger.info("ProfitEstimatorAI initialized using deterministic calculations")
+
+        logger.info(
+            "ProfitEstimatorAI initialized using deterministic calculations"
+        )
 
     @staticmethod
     def _number(
@@ -208,7 +218,7 @@ class ProfitEstimatorAI:
 
         fixed_per_hectare = {
             "land_lease": cost_per_hectare(
-                "land_lease_per_hectare", 
+                "land_lease_per_hectare",
                 reference["land_lease_per_hectare_year"]
             ),
             "equipment_depreciation": cost_per_hectare(

@@ -24,8 +24,9 @@ def test_quick_recommendation_returns_well_formed_payload():
     )
     assert body["quick_recommendations"], "expected at least one recommendation"
     top = body["quick_recommendations"][0]
-    # These three keys were produced by the buggy access.
+    # This endpoint reports suitability and risk, not financial estimates.
     assert top["crop_name"]
-    assert isinstance(top["expected_profit_per_hectare"], (int, float))
     assert top["risk_level"]
+    assert "expected_profit_per_hectare" not in top
+    assert "does not estimate profit" in body["disclaimer"].lower()
     assert body["best_crop"] == top

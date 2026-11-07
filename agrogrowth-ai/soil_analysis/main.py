@@ -9,15 +9,14 @@ Provides:
 - Laboratory-assisted ML predictions
 - Crop requirements and supported soil/crop metadata
 
-Important:
-Laboratory ML predictions are separate from field/sensor analysis.
-The current production models are lab_assisted_only and are not
-field-validated or Tunisia-validated.
+Laboratory ML predictions use sequential on-demand model loading.
+Models are not field-validated or Tunisia-validated.
 """
 
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -42,6 +41,8 @@ from soil_analysis.soil_analyzer import create_soil_analyzer
 from soil_analysis.climate_crop_matcher import create_climate_crop_matcher
 from soil_analysis.soil_image_diagnosis import create_soil_image_diagnosis
 from soil_analysis.lab_assisted_predictor import LabAssistedSoilPredictor
+from ai_common.llm_provider import get_provider
+from ai_common.advisory import narrate
 
 
 # ---------------------------------------------------------------------
@@ -69,6 +70,7 @@ class SoilAnalysisRequest(BaseModel):
         description="GPS coordinates (latitude, longitude)",
     )
     farm_id: Optional[str] = None
+    language: str = Field(default='ar', description='Advisory language')
 
 
 class ClimateMatchingRequest(BaseModel):
@@ -102,6 +104,12 @@ class SoilAnalysisResponse(BaseModel):
     fertility_level: str
     overall_recommendations: List[str]
     analysis_timestamp: str
+    data_source: Optional[str] = None
+    is_real_data: Optional[bool] = None
+    model_source: Optional[str] = None
+    model_trained: Optional[bool] = None
+    advisory: Optional[Dict[str, Any]] = None
+    disclaimer: Optional[str] = None
 
 
 class CropMatchingResponse(BaseModel):
@@ -132,19 +140,18 @@ image_diagnosis = create_soil_image_diagnosis()
 
 
 # ---------------------------------------------------------------------
-# Laboratory ML predictor — lazy-loaded once
+# Laboratory ML predictor — metadata lazy initialization
 # ---------------------------------------------------------------------
 
 _lab_predictor: Optional[LabAssistedSoilPredictor] = None
 _lab_predictor_error: Optional[str] = None
+_lab_predictor_init_lock = threading.Lock()
 
 
 def get_lab_predictor() -> LabAssistedSoilPredictor:
     """
-    Load laboratory models once and reuse them across requests.
-
-    Loading is lazy so that an unavailable laboratory model does not
-    prevent the other Soil Analysis endpoints from starting.
+    Initialize predictor metadata once, safely under concurrent requests.
+    Model artifacts remain unloaded until sequential prediction.
     """
     global _lab_predictor
     global _lab_predictor_error
@@ -152,31 +159,38 @@ def get_lab_predictor() -> LabAssistedSoilPredictor:
     if _lab_predictor is not None:
         return _lab_predictor
 
-    try:
-        predictor = LabAssistedSoilPredictor(
-            min_feature_coverage=0.80
-        )
+    with _lab_predictor_init_lock:
+        # Another request may have initialized it while we waited.
+        if _lab_predictor is not None:
+            return _lab_predictor
 
-        if len(predictor.models) != 7:
-            raise RuntimeError(
-                f"Expected 7 production models, "
-                f"loaded {len(predictor.models)}."
+        try:
+            predictor = LabAssistedSoilPredictor(
+                min_feature_coverage=0.80
             )
 
-        _lab_predictor = predictor
-        _lab_predictor_error = None
+            if len(predictor.models) != 7:
+                raise RuntimeError(
+                    f"Expected 7 production models, "
+                    f"found {len(predictor.models)}."
+                )
 
-        logger.info(
-            "Loaded %d laboratory-assisted soil models.",
-            len(_lab_predictor.models),
-        )
+            _lab_predictor = predictor
+            _lab_predictor_error = None
 
-        return _lab_predictor
+            logger.info(
+                "Initialized metadata for %d laboratory-assisted models.",
+                len(predictor.models),
+            )
 
-    except Exception as exc:
-        _lab_predictor_error = str(exc)
-        logger.exception("Failed to load laboratory soil models.")
-        raise
+            return predictor
+
+        except Exception as exc:
+            _lab_predictor_error = str(exc)
+            logger.exception(
+                "Failed to initialize laboratory model metadata."
+            )
+            raise
 
 
 # ---------------------------------------------------------------------
@@ -187,7 +201,7 @@ app = FastAPI(
     title="AgroGrowth Soil Analysis AI",
     description=(
         "Soil analysis, climate-crop matching, image diagnosis, "
-        "and laboratory-assisted soil ML predictions."
+        "and memory-aware laboratory-assisted soil ML predictions."
     ),
     version="1.1.0",
     docs_url="/docs",
@@ -198,12 +212,6 @@ app = FastAPI(
 # ---------------------------------------------------------------------
 # CORS
 # ---------------------------------------------------------------------
-
-# Configure ALLOWED_ORIGINS as comma-separated URLs in production.
-# Example:
-# ALLOWED_ORIGINS=https://agrogrowth.tn,https://www.agrogrowth.tn
-#
-# Wildcard origins cannot be combined safely with credentialed requests.
 
 _origins_env = os.getenv("ALLOWED_ORIGINS", "*").strip()
 
@@ -250,16 +258,37 @@ async def root():
 
 
 # ---------------------------------------------------------------------
+# Optional LLM advisory status
+# ---------------------------------------------------------------------
+
+def get_advisory_provider_status():
+    try:
+        provider = get_provider()
+        configured = bool(provider.is_configured())
+        return {
+            "configured": configured,
+            "model_source": provider.model_source() if configured else None,
+        }
+    except Exception as exc:
+        logger.warning("Soil advisory provider status unavailable: %s", exc)
+        return {"configured": False, "model_source": None}
+
+
+def get_soil_model_source():
+    source = getattr(soil_analyzer, "model_source", None)
+    return source or "deterministic-rules"
+
+
+# ---------------------------------------------------------------------
 # Health check
 # ---------------------------------------------------------------------
 
 @app.get("/health")
 async def health_check():
     """
-    Report service availability and model training/loading information.
+    Report service availability and model metadata state.
 
-    is_trained and is_ready are intentionally reported separately.
-    A deterministic service can be ready without being ML-trained.
+    Lab model artifacts are never loaded by this endpoint.
     """
 
     def service_status(service):
@@ -272,9 +301,14 @@ async def health_check():
             ),
         }
 
+    advisory_status = get_advisory_provider_status()
+
     return {
         "status": "healthy",
         "service": "Soil Analysis AI",
+        "model_source": get_soil_model_source(),
+        "advisory_configured": advisory_status["configured"],
+        "advisory_model_source": advisory_status["model_source"],
         "services": {
             "soil_analyzer": service_status(soil_analyzer),
             "climate_matcher": service_status(climate_matcher),
@@ -290,14 +324,12 @@ async def health_check():
             "image_diagnosis": bool(
                 getattr(image_diagnosis, "is_trained", False)
             ),
-            "lab_assisted_models": (
-                len(_lab_predictor.models)
-                if _lab_predictor is not None
-                else 0
-            ),
+            # Sequential inference does not retain model objects.
+            "lab_assisted_models": 0,
         },
         "lab_assisted": {
-            "loaded": _lab_predictor is not None,
+            "loaded": False,
+            "metadata_ready": _lab_predictor is not None,
             "expected_models": 7,
             "prediction_scope": "lab_assisted_only",
             "field_validated": False,
@@ -308,7 +340,7 @@ async def health_check():
 
 
 # ---------------------------------------------------------------------
-# Existing endpoint: soil analysis
+# Soil analysis
 # ---------------------------------------------------------------------
 
 @app.post(
@@ -319,8 +351,7 @@ async def analyze_soil(request: SoilAnalysisRequest):
     """
     Analyze soil properties from farmer/sensor input.
 
-    This endpoint preserves the existing soil analyzer contract.
-    It does not call the laboratory-assisted ML models.
+    This endpoint does not call laboratory-assisted ML models.
     """
 
     try:
@@ -329,6 +360,36 @@ async def analyze_soil(request: SoilAnalysisRequest):
         result = soil_analyzer.analyze_soil_properties(
             request.sensor_data
         )
+
+        # Keep measurement provenance separate from model provenance.
+        result["data_source"] = "user_supplied_input"
+        result["is_real_data"] = None
+        result["model_source"] = get_soil_model_source()
+
+        # Advisory is optional and must never break numeric analysis.
+        try:
+            advisory = narrate(
+                result,
+                task=(
+                    "Explain this rule-based soil screening result. "
+                    "Give cautious, practical guidance. Distinguish "
+                    "user-provided measurements from verified lab results. "
+                    "Do not invent missing measurements or units."
+                ),
+                language=request.language,
+                context={
+                    "sensor_data": request.sensor_data,
+                    "location": request.location,
+                },
+            )
+            if advisory:
+                result["advisory"] = advisory
+        except Exception as advisory_error:
+            logger.warning(
+                "Optional soil advisory unavailable: %s",
+                advisory_error,
+            )
+            result["advisory"] = None
 
         return SoilAnalysisResponse(**result)
 
@@ -349,8 +410,9 @@ async def analyze_soil(request: SoilAnalysisRequest):
             detail="Soil analysis failed.",
         ) from exc
 
+
 # ---------------------------------------------------------------------
-# Existing endpoint: climate and crop matching
+# Climate and crop matching
 # ---------------------------------------------------------------------
 
 @app.post(
@@ -383,7 +445,7 @@ async def match_crops(request: ClimateMatchingRequest):
 
 
 # ---------------------------------------------------------------------
-# Existing endpoint: image diagnosis
+# Soil image diagnosis
 # ---------------------------------------------------------------------
 
 @app.post(
@@ -433,21 +495,16 @@ async def diagnose_soil_image(file: UploadFile = File(...)):
 
 
 # ---------------------------------------------------------------------
-# New endpoint: laboratory-assisted soil prediction
+# Laboratory-assisted soil prediction
 # ---------------------------------------------------------------------
 
 @app.post("/predict-lab-soil")
-async def predict_lab_soil(request: LabAssistedSoilRequest):
+def predict_lab_soil(request: LabAssistedSoilRequest):
     """
-    Predict laboratory soil analytes using the seven trained ML models.
+    Predict laboratory soil analytes using seven sequentially loaded models.
 
-    Input:
-        lab_values: laboratory measurements.
-
-    Important:
-        - This is a lab-assisted prediction endpoint.
-        - It is not a sensor-only or image-only prediction endpoint.
-        - The models are not field-validated or Tunisia-validated.
+    Each model is loaded for its prediction and released before
+    the next model is loaded.
     """
 
     if not request.lab_values:
@@ -458,7 +515,6 @@ async def predict_lab_soil(request: LabAssistedSoilRequest):
 
     try:
         predictor = get_lab_predictor()
-
         result = predictor.predict(request.lab_values)
 
         return result
@@ -473,40 +529,61 @@ async def predict_lab_soil(request: LabAssistedSoilRequest):
         raise
 
     except Exception as exc:
-        logger.exception("Laboratory-assisted prediction failed.")
+        logger.exception(
+            "Laboratory-assisted soil prediction failed."
+        )
 
         raise HTTPException(
             status_code=503,
-            detail="Laboratory-assisted prediction service is unavailable.",
+            detail=(
+                "Laboratory-assisted prediction service is unavailable."
+            ),
         ) from exc
 
 
 # ---------------------------------------------------------------------
-# New endpoint: laboratory model status
+# Laboratory model status — metadata only, no artifact loading
+# ---------------------------------------------------------------------
 
 @app.get("/lab-models/status")
 async def lab_models_status():
     """
-    Load laboratory ML models on demand and report their status.
-    Detailed errors are kept in application logs.
+    Report model metadata and artifact availability.
+
+    This endpoint does not load any joblib model into memory.
     """
 
     try:
         predictor = get_lab_predictor()
-
         models = {}
 
         for target, config in predictor.models.items():
+            artifact_path = config["artifact_path"]
+
             models[target] = {
-                "loaded": True,
+                "loaded": False,
+                "available": artifact_path.is_file(),
                 "feature_count": len(config["features"]),
                 "prediction_scope": "lab_assisted_only",
                 "metrics": config.get("metrics", {}),
             }
 
+        available_count = sum(
+            1
+            for model in models.values()
+            if model["available"]
+        )
+
+        status = (
+            "ready"
+            if available_count == len(models) == 7
+            else "degraded"
+        )
+
         return {
-            "status": "ready",
-            "models_loaded": len(models),
+            "status": status,
+            "models_loaded": 0,
+            "models_available": available_count,
             "expected_models": 7,
             "prediction_scope": "lab_assisted_only",
             "field_validated": False,
@@ -515,17 +592,20 @@ async def lab_models_status():
         }
 
     except Exception as exc:
-        logger.exception("Laboratory model diagnostic failed.")
+        logger.exception(
+            "Laboratory model metadata diagnostic failed."
+        )
 
         return JSONResponse(
             status_code=503,
             content={
                 "status": "error",
                 "models_loaded": 0,
+                "models_available": 0,
                 "expected_models": 7,
                 "error_type": type(exc).__name__,
                 "message": (
-                    "Laboratory models could not be loaded. "
+                    "Laboratory model metadata could not be loaded. "
                     "Check service logs for details."
                 ),
             },
@@ -533,7 +613,7 @@ async def lab_models_status():
 
 
 # ---------------------------------------------------------------------
-# Existing endpoint: crop requirements
+# Crop requirements
 # ---------------------------------------------------------------------
 
 @app.get("/crop-requirements/{crop_name}")
@@ -566,7 +646,7 @@ async def get_crop_requirements(crop_name: str):
 
 
 # ---------------------------------------------------------------------
-# Existing endpoint: supported crops
+# Supported crops
 # ---------------------------------------------------------------------
 
 @app.get("/supported-crops")
@@ -600,7 +680,7 @@ async def get_supported_crops():
 
 
 # ---------------------------------------------------------------------
-# Existing endpoint: supported soil types
+# Supported soil types
 # ---------------------------------------------------------------------
 
 @app.get("/soil-types")
@@ -673,7 +753,12 @@ async def general_exception_handler(request, exc: Exception):
 # ---------------------------------------------------------------------
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8000"))
+    port = int(
+        os.environ.get(
+            "PORT",
+            os.environ.get("SERVICE_PORT", "8001"),
+        )
+    )
 
     uvicorn.run(
         app,

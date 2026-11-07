@@ -452,7 +452,7 @@ def get_crop_recommender_source():
     if getattr(crop_recommender, "is_trained", False):
         return "synthetic-demo"
 
-    return "unknown"
+    return "synthetic-demo"
 
 
 # ---------------------------------------------------------
@@ -517,6 +517,7 @@ async def health_check():
         "status": "healthy" if overall_ready else "degraded",
         "service": "Crop Recommendation AI",
         "version": "1.1.0",
+        "model_source": get_crop_recommender_source(),
 
         "components": {
             "crop_recommender": (

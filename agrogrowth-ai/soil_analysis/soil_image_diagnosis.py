@@ -100,16 +100,21 @@ class SoilImageDiagnosisAI:
         sat[mask] = (maximum[mask]-minimum[mask])/maximum[mask]
         edge_h = np.abs(np.diff(gray,axis=1))
         edge_v = np.abs(np.diff(gray,axis=0))
-        return {
-            "mean_red":float(np.mean(r)),"mean_green":float(np.mean(g)),
-            "mean_blue":float(np.mean(b)),"std_red":float(np.std(r)),
-            "std_green":float(np.std(g)),"std_blue":float(np.std(b)),
-            "mean_brightness":float(np.mean(gray)),
-            "brightness_std":float(np.std(gray)),
-            "mean_saturation":float(np.mean(sat)),
-            "contrast":float(np.std(gray)),
-            "edge_density":float((np.mean(edge_h>0.10)+np.mean(edge_v>0.10))/2),
-        }
+        features = {}
+        features["mean_red"] = float(np.mean(r))
+        features["mean_green"] = float(np.mean(g))
+        features["mean_blue"] = float(np.mean(b))
+        features["std_red"] = float(np.std(r))
+        features["std_green"] = float(np.std(g))
+        features["std_blue"] = float(np.std(b))
+        features["mean_brightness"] = float(np.mean(gray))
+        features["brightness_std"] = float(np.std(gray))
+        features["mean_saturation"] = float(np.mean(sat))
+        features["contrast"] = float(np.std(gray))
+        features["edge_density"] = float(
+            (np.mean(edge_h > 0.10) + np.mean(edge_v > 0.10)) / 2
+        )
+        return features
 
     def _classify_soil_type(self, image):
         return {"soil_type":"Unknown","soil_type_ar":"غير محدد","confidence":0.0,
