@@ -483,50 +483,53 @@ async def predict_lab_soil(request: LabAssistedSoilRequest):
 
 # ---------------------------------------------------------------------
 # New endpoint: laboratory model status
-# ---------------------------------------------------------------------
 
 @app.get("/lab-models/status")
 async def lab_models_status():
     """
-    Return laboratory ML model loading and validation status.
-
-    This endpoint does not force model loading.
+    Load laboratory ML models on demand and report their status.
+    Detailed errors are kept in application logs.
     """
 
-    if _lab_predictor is None:
+    try:
+        predictor = get_lab_predictor()
+
+        models = {}
+
+        for target, config in predictor.models.items():
+            models[target] = {
+                "loaded": True,
+                "feature_count": len(config["features"]),
+                "prediction_scope": "lab_assisted_only",
+                "metrics": config.get("metrics", {}),
+            }
+
         return {
-            "status": (
-                "error"
-                if _lab_predictor_error
-                else "not_loaded"
-            ),
-            "models_loaded": 0,
+            "status": "ready",
+            "models_loaded": len(models),
             "expected_models": 7,
             "prediction_scope": "lab_assisted_only",
             "field_validated": False,
             "tunisia_validated": False,
-            "error": _lab_predictor_error,
+            "models": models,
         }
 
-    models = {}
+    except Exception as exc:
+        logger.exception("Laboratory model diagnostic failed.")
 
-    for target, config in _lab_predictor.models.items():
-        models[target] = {
-            "loaded": True,
-            "feature_count": len(config["features"]),
-            "prediction_scope": "lab_assisted_only",
-            "metrics": config.get("metrics", {}),
-        }
-
-    return {
-        "status": "ready",
-        "models_loaded": len(models),
-        "expected_models": 7,
-        "prediction_scope": "lab_assisted_only",
-        "field_validated": False,
-        "tunisia_validated": False,
-        "models": models,
-    }
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "models_loaded": 0,
+                "expected_models": 7,
+                "error_type": type(exc).__name__,
+                "message": (
+                    "Laboratory models could not be loaded. "
+                    "Check service logs for details."
+                ),
+            },
+        )
 
 
 # ---------------------------------------------------------------------
