@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { serviceStatusManager, ServiceStatus } from '@/lib/serviceStatus';
 
 export interface HealthCheckResult {
@@ -18,13 +19,13 @@ export interface SystemHealth {
   criticalIssues: string[];
   healthChecks: HealthCheckResult[];
   lastUpdate: Date;
+  services: ServiceStatus[];
+  aiServiceIds: string[];
 }
 
 const FALLBACK_TO_MOCK = import.meta.env.VITE_FALLBACK_TO_MOCK !== 'false';
 
 export const useServiceHealthChecker = () => {
-  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
 
   const performHealthCheck = useCallback(async (service: ServiceStatus): Promise<HealthCheckResult> => {
     const startTime = Date.now();
@@ -32,12 +33,16 @@ export const useServiceHealthChecker = () => {
     try {
       // Skip health check if no endpoint provided
       if (!service.endpoint) {
+        const isAvailable = service.status === 'available';
+
         return {
           serviceId: service.id,
-          isAvailable: false,
+          isAvailable,
           responseTime: 0,
           lastChecked: new Date(),
-          error: 'No endpoint configured'
+          error: isAvailable
+            ? undefined
+            : service.errorMessage ?? 'No endpoint configured'
         };
       }
 
@@ -136,113 +141,169 @@ export const useServiceHealthChecker = () => {
     }
   }, []);
 
+  const healthQuery = useQuery<SystemHealth>({
+    queryKey: ['system-health'],
+    queryFn: async (): Promise<SystemHealth> => {
+      try {
+        const { aiServices, coreServices } =
+          await serviceStatusManager.checkAllServices();
+
+        const allServices = [
+          ...coreServices,
+          ...aiServices.flatMap(category => category.services)
+        ];
+
+        const aiServiceIds = new Set(
+          aiServices.flatMap(category =>
+            category.services.map(service => service.id)
+          )
+        );
+
+        const healthChecks = await Promise.all(
+          allServices.map(async service => {
+            if (aiServiceIds.has(service.id)) {
+              return {
+                serviceId: service.id,
+                isAvailable: service.status === 'available',
+                responseTime: 0,
+                lastChecked: service.lastChecked ?? new Date(),
+                error: service.status === 'available'
+                  ? undefined
+                  : service.errorMessage ?? 'AI service unavailable'
+              };
+            }
+
+            return performHealthCheck(service);
+          })
+        );
+
+        const availableServices =
+          healthChecks.filter(check => check.isAvailable).length;
+
+        const coreServicesCount = coreServices.length;
+        const aiServicesCount =
+          aiServices.reduce((count, category) =>
+            count + category.services.length, 0);
+
+        const coreServicesAvailable = healthChecks
+          .filter(check => coreServices.some(
+            service => service.id === check.serviceId
+          ))
+          .filter(check => check.isAvailable).length;
+
+        let overall: SystemHealth['overall'];
+
+        if (coreServicesAvailable === 0) {
+          overall = 'down';
+        } else if (
+          coreServicesAvailable < coreServicesCount ||
+          availableServices < allServices.length * 0.5
+        ) {
+          overall = 'degraded';
+        } else {
+          overall = 'healthy';
+        }
+
+        const criticalIssues: string[] = [];
+
+        if (coreServicesAvailable === 0) {
+          criticalIssues.push('Database connection failed');
+        }
+
+        const aiServicesAvailable = healthChecks
+          .filter(check => aiServiceIds.has(check.serviceId))
+          .filter(check => check.isAvailable).length;
+
+        if (aiServicesAvailable === 0) {
+          criticalIssues.push('All AI services unavailable');
+        }
+
+        const authHealthCheck = healthChecks.find(
+          check => check.serviceId === 'supabase-auth'
+        );
+
+        if (authHealthCheck && !authHealthCheck.isAvailable) {
+          criticalIssues.push('Authentication service unavailable');
+        }
+
+        return {
+          overall,
+          coreServicesCount,
+          aiServicesCount,
+          availableServices,
+          totalServices: allServices.length,
+          criticalIssues,
+          healthChecks,
+          lastUpdate: new Date(),
+          services: allServices.map(service => {
+            const check = healthChecks.find(
+              result => result.serviceId === service.id
+            );
+
+            if (!check) return service;
+
+            const status: ServiceStatus['status'] =
+              aiServiceIds.has(service.id) || !service.endpoint
+                ? service.status
+                : check.isAvailable
+                  ? 'available'
+                  : check.error?.startsWith('HTTP ')
+                    ? 'unavailable'
+                    : 'error';
+
+            return {
+              ...service,
+              status,
+              lastChecked: check.lastChecked,
+              errorMessage: check.isAvailable
+                ? undefined
+                : service.errorMessage ?? check.error
+            };
+          }),
+          aiServiceIds: [...aiServiceIds]
+        };
+      } catch (error) {
+        console.error('❌ Health check failed:', error);
+
+        return {
+          overall: 'down',
+          coreServicesCount: 0,
+          aiServicesCount: 0,
+          availableServices: 0,
+          totalServices: 0,
+          criticalIssues: ['Health check system failure'],
+          healthChecks: [],
+          lastUpdate: new Date(),
+          services: [],
+          aiServiceIds: []
+        };
+      }
+    },
+    staleTime: 55_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+    retry: false
+  });
+
+  const systemHealth = healthQuery.data ?? null;
+  const isChecking = healthQuery.isFetching;
+
   const checkAllServices = useCallback(async (): Promise<SystemHealth> => {
-    setIsChecking(true);
-    
-    try {
-      const { aiServices, coreServices } = await serviceStatusManager.checkAllServices();
-      
-      const allServices = [
-        ...coreServices,
-        ...aiServices.flatMap(category => category.services)
-      ];
+    const result = await healthQuery.refetch();
 
-      // Perform health checks in parallel
-      const healthCheckPromises = allServices.map(service => performHealthCheck(service));
-      const healthChecks = await Promise.all(healthCheckPromises);
-
-      const availableServices = healthChecks.filter(check => check.isAvailable).length;
-      const coreServicesCount = coreServices.length;
-      const aiServicesCount = aiServices.flatMap(cat => cat.services).length;
-
-      // Determine overall system health
-      const coreServicesAvailable = healthChecks
-        .filter(check => coreServices.some(s => s.id === check.serviceId))
-        .filter(check => check.isAvailable).length;
-
-      let overall: 'healthy' | 'degraded' | 'down';
-      
-      if (coreServicesAvailable === 0) {
-        overall = 'down';
-      } else if (coreServicesAvailable < coreServicesCount || availableServices < allServices.length * 0.5) {
-        overall = 'degraded';
-      } else {
-        overall = 'healthy';
-      }
-
-      // Identify critical issues
-      const criticalIssues: string[] = [];
-      
-      if (coreServicesAvailable === 0) {
-        criticalIssues.push('Database connection failed');
-      }
-      
-      const aiServicesAvailable = healthChecks
-        .filter(check => aiServices.flatMap(cat => cat.services).some(s => s.id === check.serviceId))
-        .filter(check => check.isAvailable).length;
-      
-      if (aiServicesAvailable === 0) {
-        criticalIssues.push('All AI services unavailable');
-      }
-
-      // Check for authentication issues
-      const authHealthCheck = healthChecks.find(check => check.serviceId === 'supabase-auth');
-      if (authHealthCheck && !authHealthCheck.isAvailable) {
-        criticalIssues.push('Authentication service unavailable');
-      }
-
-      const systemHealth: SystemHealth = {
-        overall,
-        coreServicesCount,
-        aiServicesCount,
-        availableServices,
-        totalServices: allServices.length,
-        criticalIssues,
-        healthChecks,
-        lastUpdate: new Date()
-      };
-
-      console.log('🔍 System Health Check Results:', {
-        overall,
-        available: `${availableServices}/${allServices.length}`,
-        criticalIssues,
-        fallbackMode: FALLBACK_TO_MOCK ? 'ENABLED' : 'DISABLED'
-      });
-
-      setSystemHealth(systemHealth);
-      return systemHealth;
-
-    } catch (error) {
-      console.error('❌ Health check failed:', error);
-      
-      const fallbackHealth: SystemHealth = {
-        overall: 'down',
-        coreServicesCount: 0,
-        aiServicesCount: 0,
-        availableServices: 0,
-        totalServices: 0,
-        criticalIssues: ['Health check system failure'],
-        healthChecks: [],
-        lastUpdate: new Date()
-      };
-      
-      setSystemHealth(fallbackHealth);
-      return fallbackHealth;
-    } finally {
-      setIsChecking(false);
-    }
-  }, [performHealthCheck]);
-
-  // Auto-check on mount and every 60 seconds
-  useEffect(() => {
-    checkAllServices();
-    
-    const interval = setInterval(() => {
-      checkAllServices();
-    }, 60000); // Check every minute
-
-    return () => clearInterval(interval);
-  }, [checkAllServices]);
+    return result.data ?? {
+      overall: 'down',
+      coreServicesCount: 0,
+      aiServicesCount: 0,
+      availableServices: 0,
+      totalServices: 0,
+      criticalIssues: ['Health check system failure'],
+      healthChecks: [],
+      lastUpdate: new Date(),
+      services: [],
+      aiServiceIds: []
+    };
+  }, [healthQuery.refetch]);
 
   const isServiceAvailable = useCallback((serviceId: string): boolean => {
     if (!systemHealth) return false;
@@ -271,6 +332,8 @@ export const useServiceHealthChecker = () => {
     getServiceError,
     shouldShowMockData,
     healthChecks: systemHealth?.healthChecks || [],
+    services: systemHealth?.services || [],
+    aiServiceIds: systemHealth?.aiServiceIds || [],
     isSystemHealthy: systemHealth?.overall === 'healthy',
     hasCriticalIssues: (systemHealth?.criticalIssues.length || 0) > 0
   };

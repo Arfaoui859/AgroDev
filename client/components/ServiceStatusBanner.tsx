@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { serviceStatusManager, AI_SERVICES, CORE_SERVICES } from '@/lib/serviceStatus';
+import { useServiceHealthChecker } from '@/hooks/useServiceHealthChecker';
 
 interface ServiceStatusSummary {
   totalServices: number;
@@ -31,75 +31,59 @@ interface ServiceStatusSummary {
 }
 
 const ServiceStatusBanner: React.FC = () => {
-  const [summary, setSummary] = useState<ServiceStatusSummary | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { services, aiServiceIds, isChecking, checkAllServices } =
+    useServiceHealthChecker();
 
-  const loadServiceSummary = async () => {
-    setIsLoading(true);
-    try {
-      const { aiServices, coreServices } = await serviceStatusManager.checkAllServices();
-      
-      const allServices = [
-        ...coreServices,
-        ...aiServices.flatMap(category => category.services)
-      ];
-      
-      const available = allServices.filter(s => s.status === 'available');
-      const unavailable = allServices.filter(s => s.status === 'unavailable');
-      const errors = allServices.filter(s => s.status === 'error');
-      
-      // Identify critically missing services
-      const criticalServices = [
-        'supabase-db',
-        'supabase-auth', 
-        'crop-recommendation',
-        'soil-analysis',
-        'plant-disease-detection'
-      ];
-      
-      const criticallyMissing = criticalServices.filter(serviceId => {
-        const service = allServices.find(s => s.id === serviceId);
-        return service && service.status !== 'available';
-      });
+  const summary: ServiceStatusSummary | null = services.length > 0
+    ? (() => {
+        const available = services.filter(s => s.status === 'available');
+        const unavailable = services.filter(s => s.status === 'unavailable');
+        const errors = services.filter(s => s.status === 'error');
 
-      const recommendations = [];
-      
-      if (coreServices.some(s => s.status !== 'available')) {
-        recommendations.push('تحقق من اتصال قاعدة البيانات Supabase');
-      }
-      
-      if (unavailable.filter(s => s.requiresLocal).length > 0) {
-        recommendations.push('تشغيل خدمات الذكاء الاصطناعي المحلية (docker-compose up)');
-      }
-      
-      if (errors.length > 0) {
-        recommendations.push('مراجعة إعدادات API والشبكة');
-      }
+        const criticalServices = [
+          'supabase-db',
+          'supabase-auth',
+          'crop-recommendation',
+          'soil-analysis',
+          'plant-disease-detection'
+        ];
 
-      setSummary({
-        totalServices: allServices.length,
-        availableServices: available.length,
-        unavailableServices: unavailable.length,
-        errorServices: errors.length,
-        criticallyMissing: criticallyMissing,
-        recommendations
-      });
-    } catch (error) {
-      console.error('Failed to load service summary:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const criticallyMissing = criticalServices.filter(serviceId => {
+          const service = services.find(s => s.id === serviceId);
+          return service && service.status !== 'available';
+        });
 
-  useEffect(() => {
-    loadServiceSummary();
-    // Refresh every 30 seconds
-    const interval = setInterval(loadServiceSummary, 30000);
-    return () => clearInterval(interval);
-  }, []);
+        const recommendations: string[] = [];
 
-  if (isLoading) {
+        if (services.some(
+          s => s.id.startsWith('supabase-') && s.status !== 'available'
+        )) {
+          recommendations.push('تحقق من اتصال قاعدة البيانات Supabase');
+        }
+
+        if (unavailable.some(s => s.requiresLocal)) {
+          recommendations.push(
+            'تشغيل خدمات الذكاء الاصطناعي المحلية (docker-compose up)'
+          );
+        }
+
+        if (errors.length > 0) {
+          recommendations.push('مراجعة إعدادات API والشبكة');
+        }
+
+        return {
+          totalServices: services.length,
+          availableServices: available.length,
+          unavailableServices: unavailable.length,
+          errorServices: errors.length,
+          criticallyMissing,
+          recommendations
+        };
+      })()
+    : null;
+
+  if (isChecking && !summary) {
     return (
       <Alert className="mb-4">
         <RefreshCw className="h-4 w-4 animate-spin" />
@@ -112,6 +96,7 @@ const ServiceStatusBanner: React.FC = () => {
 
   const getStatusLevel = () => {
     if (summary.criticallyMissing.length > 0) return 'critical';
+    if (summary.errorServices > 0) return 'warning';
     if (summary.unavailableServices > summary.availableServices) return 'warning';
     if (summary.unavailableServices > 0) return 'info';
     return 'success';
@@ -182,7 +167,7 @@ const ServiceStatusBanner: React.FC = () => {
               {isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
             </Button>
             
-            <Button variant="outline" size="sm" onClick={loadServiceSummary}>
+            <Button variant="outline" size="sm" onClick={() => checkAllServices()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               تحديث
             </Button>
@@ -302,8 +287,12 @@ const ServiceStatusBanner: React.FC = () => {
   }
 
   function getAIServicesCount(): number {
-    return AI_SERVICES.flatMap(cat => cat.services).filter(s => 
-      summary?.availableServices ? s.status === 'available' : false
+    const aiIds = new Set(aiServiceIds);
+
+    return services.filter(
+      service =>
+        aiIds.has(service.id) &&
+        service.status === 'available'
     ).length;
   }
 };

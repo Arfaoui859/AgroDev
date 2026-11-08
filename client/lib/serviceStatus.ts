@@ -195,6 +195,7 @@ export class ServiceStatusManager {
   private static instance: ServiceStatusManager;
   private statusCache = new Map<string, ServiceStatus>();
   private lastCheck = new Map<string, Date>();
+  private inFlight = new Map<string, Promise<ServiceStatus>>();
 
   static getInstance(): ServiceStatusManager {
     if (!ServiceStatusManager.instance) {
@@ -205,69 +206,89 @@ export class ServiceStatusManager {
 
   async checkServiceStatus(service: ServiceStatus): Promise<ServiceStatus> {
     const cacheKey = service.id;
-    const lastCheckTime = this.lastCheck.get(cacheKey);
     const now = new Date();
+    const lastCheckTime = this.lastCheck.get(cacheKey);
 
-    // Use cached result if checked within last 5 minutes
-    if (lastCheckTime && (now.getTime() - lastCheckTime.getTime()) < 5 * 60 * 1000) {
+    // Reuse a fresh cached result.
+    if (
+      lastCheckTime &&
+      now.getTime() - lastCheckTime.getTime() < 5 * 60 * 1000
+    ) {
       return this.statusCache.get(cacheKey) || service;
     }
 
-    const updatedService: ServiceStatus = {
-      ...service,
-      status: 'checking',
-      lastChecked: now,
-    };
+    // Deduplicate concurrent probes for the same service.
+    const pendingCheck = this.inFlight.get(cacheKey);
+    if (pendingCheck) return pendingCheck;
 
-    try {
-      if (service.endpoint) {
-        const response = await fetch(service.endpoint, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
+    const checkPromise = (async (): Promise<ServiceStatus> => {
+      const updatedService: ServiceStatus = {
+        ...service,
+        status: 'checking',
+        lastChecked: new Date()
+      };
 
-        if (!response.ok) {
-          updatedService.status = 'unavailable';
-          updatedService.errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        } else {
-          // Capability probes answer 200 even when the underlying engine is not
-          // configured; honour the explicit `available` flag so the UI does not
-          // enable a feature that would then fail.
-          let declaredAvailable = true;
-          let declaredReason: string | undefined;
-          try {
-            const body = await response.clone().json();
-            if (typeof body?.available === 'boolean') {
-              declaredAvailable = body.available;
-              if (!declaredAvailable) {
-                declaredReason =
-                  body.requiresConfiguration || body.provenance || 'Not configured';
-              }
-            }
-          } catch {
-            // Non-JSON body: treat a 2xx as available.
-          }
+      try {
+        if (service.endpoint) {
+          const response = await fetch(service.endpoint, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          });
 
-          if (declaredAvailable) {
-            updatedService.status = 'available';
-            updatedService.errorMessage = undefined;
-          } else {
+          if (!response.ok) {
             updatedService.status = 'unavailable';
+            updatedService.errorMessage =
+              `HTTP ${response.status}: ${response.statusText}`;
+          } else {
+            let declaredAvailable = true;
+            let declaredReason: string | undefined;
+
+            try {
+              const body = await response.clone().json();
+
+              if (typeof body?.available === 'boolean') {
+                declaredAvailable = body.available;
+
+                if (!declaredAvailable) {
+                  declaredReason =
+                    body.requiresConfiguration ||
+                    body.provenance ||
+                    'Not configured';
+                }
+              }
+            } catch {
+              // A non-JSON 2xx response is treated as available.
+            }
+
+            updatedService.status = declaredAvailable
+              ? 'available'
+              : 'unavailable';
+
             updatedService.errorMessage = declaredReason;
           }
+        } else {
+          // Preserve the configured status of local-only services.
+          updatedService.status = service.status;
+          updatedService.errorMessage = service.errorMessage;
         }
-      } else if (service.requiresLocal) {
-        updatedService.status = 'unavailable';
-        updatedService.errorMessage = 'Requires local AI services to be running';
+      } catch (error) {
+        updatedService.status = 'error';
+        updatedService.errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
       }
-    } catch (error) {
-      updatedService.status = 'error';
-      updatedService.errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    }
 
-    this.statusCache.set(cacheKey, updatedService);
-    this.lastCheck.set(cacheKey, now);
-    return updatedService;
+      this.statusCache.set(cacheKey, updatedService);
+      this.lastCheck.set(cacheKey, updatedService.lastChecked!);
+
+      return updatedService;
+    })();
+
+    const trackedPromise = checkPromise.finally(() => {
+      this.inFlight.delete(cacheKey);
+    });
+
+    this.inFlight.set(cacheKey, trackedPromise);
+    return trackedPromise;
   }
 
   async checkAllServices(): Promise<{ aiServices: ServiceCategory[], coreServices: ServiceStatus[] }> {
