@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { apiFetch } from '../lib/apiFetch';
 
 interface TreatmentProduct {
   id: string;
@@ -91,7 +92,26 @@ interface TreatmentStep {
   conditions: string[];
   precautions: string[];
   expectedResults: string;
-  costEstimate: number;
+  costEstimate: number | null;
+}
+
+interface TreatmentSource {
+  title: string;
+  organization: string;
+  url: string;
+}
+
+interface TreatmentCatalog {
+  crops: {
+    cropType: string;
+    cropName: string;
+  }[];
+  supportedPairs: {
+    cropType: string;
+    diseaseId: string;
+    cropName: string;
+    diseaseName: string;
+  }[];
 }
 
 interface TreatmentPlan {
@@ -101,9 +121,9 @@ interface TreatmentPlan {
   cropType: string;
   severity: 'Mild' | 'Moderate' | 'Severe' | 'Critical';
   approach: 'Chemical' | 'Organic' | 'Integrated' | 'Biological';
-  totalDuration: number;
-  totalCost: number;
-  successRate: number;
+  totalDuration: number | null;
+  totalCost: number | null;
+  successRate: number | null;
   steps: TreatmentStep[];
   preventionMeasures: string[];
   followUpSchedule: {
@@ -113,12 +133,14 @@ interface TreatmentPlan {
   };
   emergencyActions: string[];
   createdAt: Date;
-  aiConfidence: number;
+  aiConfidence: number | null;
   riskFactors: string[];
   alternativeTreatments: string[];
   /** Provenance from the treatment gateway (rule-based when no LLM is configured). */
   dataSource?: string;
   isRealData?: boolean;
+  recommendationType?: string;
+  sources?: TreatmentSource[];
 }
 
 const TreatmentRecommendations: React.FC = () => {
@@ -130,7 +152,10 @@ const TreatmentRecommendations: React.FC = () => {
   const [showStartDialog, setShowStartDialog] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [products, setProducts] = useState<TreatmentProduct[]>([]);
-  
+  const [treatmentCatalog, setTreatmentCatalog] =
+    useState<TreatmentCatalog | null>(null);
+  const [unsupportedMessage, setUnsupportedMessage] = useState('');
+
   // Form state for generating recommendations
   const [formData, setFormData] = useState({
     diseaseId: searchParams.get('diseaseId') || '',
@@ -165,7 +190,25 @@ const TreatmentRecommendations: React.FC = () => {
     Biological: Bug
   };
 
+  const fetchTreatmentCatalog = async () => {
+    try {
+      const response = await apiFetch('/api/disease-treatment/catalog');
+      const result = await response.json();
+
+      if (!response.ok || !result.success || !result.data) {
+        throw new Error(result.message || 'Catalog unavailable');
+      }
+
+      setTreatmentCatalog(result.data);
+    } catch (error) {
+      console.error('Error fetching treatment catalog:', error);
+      toast.error('تعذّر تحميل قائمة المحاصيل والأمراض');
+    }
+  };
+
   const generateTreatmentPlan = async () => {
+    setUnsupportedMessage('');
+
     if (!formData.diseaseId || !formData.diseaseName || !formData.cropType) {
       toast.error('يرجى ملء جميع البيانات المطلوبة');
       return;
@@ -173,7 +216,7 @@ const TreatmentRecommendations: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/disease-treatment/recommend', {
+      const response = await apiFetch('/api/disease-treatment/recommend', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,6 +247,13 @@ const TreatmentRecommendations: React.FC = () => {
         });
         toast.success('تم توليد خطة العلاج بنجاح');
       } else {
+        if (response.status === 422 || data.dataSource === 'unsupported') {
+          setTreatmentPlan(null);
+          setUnsupportedMessage(
+            data.message ||
+            'لا توجد إرشادات موثّقة لهذا المرض والمحصول حالياً.'
+          );
+        }
         toast.error(data.message || 'فشل في توليد خطة العلاج');
       }
     } catch (error) {
@@ -216,7 +266,7 @@ const TreatmentRecommendations: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`/api/disease-treatment/products?cropType=${formData.cropType}&approach=${formData.approach}`);
+      const response = await apiFetch(`/api/disease-treatment/products?cropType=${formData.cropType}&approach=${formData.approach}`);
       const data = await response.json();
 
       if (data.success) {
@@ -234,15 +284,14 @@ const TreatmentRecommendations: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/disease-treatment/start', {
+      const response = await apiFetch('/api/disease-treatment/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           planId: treatmentPlan.planId,
-          userId: 'user-123',
-          cropId: startTreatmentData.cropId,
+              cropId: startTreatmentData.cropId,
           fieldLocation: startTreatmentData.fieldLocation,
           affectedArea: startTreatmentData.affectedArea,
           notes: startTreatmentData.notes
@@ -269,9 +318,15 @@ const TreatmentRecommendations: React.FC = () => {
     return products.find(p => p.id === productId);
   };
 
-  const formatCurrency = (amount: number) => {
-    return `${amount.toFixed(2)} د.ت`;
+  const formatCurrency = (amount: number | null | undefined) => {
+    return amount == null || !Number.isFinite(amount)
+      ? 'غير متاح'
+      : `${amount.toFixed(2)} د.ت`;
   };
+
+  useEffect(() => {
+    fetchTreatmentCatalog();
+  }, []);
 
   useEffect(() => {
     if (formData.diseaseId && formData.diseaseName && formData.cropType) {
@@ -312,28 +367,81 @@ const TreatmentRecommendations: React.FC = () => {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <Label>اسم المرض</Label>
-                <Input
-                  value={formData.diseaseName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, diseaseName: e.target.value }))}
-                  placeholder="مثال: اللفحة المتأخرة"
-                />
-              </div>
-              <div>
                 <Label>نوع المحصول</Label>
                 <select
                   value={formData.cropType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cropType: e.target.value }))}
+                  onChange={(e) => {
+                    const cropType = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      cropType,
+                      diseaseId: '',
+                      diseaseName: ''
+                    }));
+                    setTreatmentPlan(null);
+                    setUnsupportedMessage('');
+                  }}
                   className="w-full border rounded px-3 py-2"
                 >
                   <option value="">اختر المحصول</option>
-                  <option value="tomato">طماطم</option>
-                  <option value="olive">زيتون</option>
-                  <option value="citrus">حمضيات</option>
-                  <option value="wheat">قمح</option>
-                  <option value="pepper">فلفل</option>
-                  <option value="potato">بطاطس</option>
+                  {(treatmentCatalog?.crops || []).map(crop => (
+                    <option key={crop.cropType} value={crop.cropType}>
+                      {crop.cropName}
+                    </option>
+                  ))}
                 </select>
+              </div>
+
+              <div>
+                <Label>المرض</Label>
+                <select
+                  value={formData.diseaseId}
+                  onChange={(e) => {
+                    const diseaseId = e.target.value;
+                    const selectedPair = treatmentCatalog?.supportedPairs.find(
+                      pair =>
+                        pair.cropType === formData.cropType &&
+                        pair.diseaseId === diseaseId
+                    );
+
+                    setFormData(prev => ({
+                      ...prev,
+                      diseaseId,
+                      diseaseName: selectedPair?.diseaseName || ''
+                    }));
+                    setUnsupportedMessage('');
+                  }}
+                  disabled={!formData.cropType}
+                  className="w-full border rounded px-3 py-2 disabled:opacity-50"
+                >
+                  <option value="">اختر المرض المتاح</option>
+                  {(treatmentCatalog?.supportedPairs || [])
+                    .filter(pair => pair.cropType === formData.cropType)
+                    .map(pair => (
+                      <option key={pair.diseaseId} value={pair.diseaseId}>
+                        {pair.diseaseName}
+                      </option>
+                    ))}
+                </select>
+
+                {formData.cropType &&
+                  !(treatmentCatalog?.supportedPairs || []).some(
+                    pair => pair.cropType === formData.cropType
+                  ) && (
+                    <p className="text-xs text-amber-700 mt-2">
+                      لا توجد حالياً إرشادات علاجية موثّقة لهذا المحصول.
+                      لن يتم إنشاء خطة غير مثبتة.
+                    </p>
+                  )}
+
+                {formData.cropType &&
+                  (treatmentCatalog?.supportedPairs || []).some(
+                    pair => pair.cropType === formData.cropType
+                  ) && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      اختر مرضاً من الإرشادات المتاحة لهذا المحصول.
+                    </p>
+                  )}
               </div>
               <div>
                 <Label>شدة المرض</Label>
@@ -385,7 +493,16 @@ const TreatmentRecommendations: React.FC = () => {
               </div>
             </div>
 
-            <Button 
+            {unsupportedMessage && (
+              <Alert role="status">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  {unsupportedMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Button
               onClick={generateTreatmentPlan} 
               disabled={loading}
               className="w-full"
@@ -407,8 +524,10 @@ const TreatmentRecommendations: React.FC = () => {
             <Alert className="border-amber-300 bg-amber-50 text-amber-900">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                هذه الخطة مولّدة بمحرّك قواعد زراعية (المصدر: {treatmentPlan.dataSource ?? 'rule-based'})،
-                وليست مخرجات نموذج ذكاء اصطناعي مدرّب. راجعها مع مهندس زراعي قبل التطبيق.
+                هذه إرشادات زراعية مجمّعة من مصادر إرشاد منشورة
+                (المصدر: {treatmentPlan.dataSource ?? 'غير محدد'}).
+                ليست تشخيصاً مؤكداً ولا وصفة مبيدات معتمدة في تونس.
+                راجع مهندساً زراعياً قبل أي تدخل.
               </AlertDescription>
             </Alert>
           )}
@@ -441,14 +560,14 @@ const TreatmentRecommendations: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-600">{treatmentPlan.totalDuration}</div>
+                    <div className="text-2xl font-bold text-blue-600">{treatmentPlan.totalDuration == null ? 'غير متاح' : treatmentPlan.totalDuration}</div>
                     <div className="text-sm text-muted-foreground">يوم</div>
                     <div className="text-xs text-muted-foreground">مدة العلاج</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-green-600">{treatmentPlan.successRate}%</div>
+                    <div className="text-2xl font-bold text-green-600">{treatmentPlan.successRate == null ? 'غير متاح' : `${treatmentPlan.successRate}%`}</div>
                     <div className="text-sm text-muted-foreground">نسبة النجاح</div>
                     <div className="text-xs text-muted-foreground">متوقعة</div>
                   </CardContent>
@@ -462,7 +581,7 @@ const TreatmentRecommendations: React.FC = () => {
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-orange-600">{(treatmentPlan.aiConfidence * 100).toFixed(0)}%</div>
+                    <div className="text-2xl font-bold text-orange-600">{treatmentPlan.aiConfidence == null ? 'غير متاح' : `${(treatmentPlan.aiConfidence * 100).toFixed(0)}%`}</div>
                     <div className="text-sm text-muted-foreground">ثقة الذكاء</div>
                     <div className="text-xs text-muted-foreground">الاصطناعي</div>
                   </CardContent>
@@ -490,6 +609,31 @@ const TreatmentRecommendations: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {treatmentPlan.sources && treatmentPlan.sources.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>المصادر العلمية والإرشادية</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3">
+                  {treatmentPlan.sources.map((source, index) => (
+                    <li key={`${source.url}-${index}`} className="text-sm">
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary underline"
+                      >
+                        {source.title}
+                      </a>
+                      <p className="text-muted-foreground">{source.organization}</p>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Main Treatment Content */}
           <Tabs defaultValue="steps" className="w-full">
@@ -639,6 +783,11 @@ const TreatmentRecommendations: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {products.length === 0 && (
+                    <div className="mb-4 rounded-lg border p-4 text-sm text-muted-foreground" role="status">
+                      لا توجد حالياً منتجات موثّقة يمكن اقتراحها. تم إخفاء الكتالوج إلى حين التثبت من التسجيل والملصق والجرعة والاستعمال المسموح في تونس.
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {products.map((product) => (
                       <Card key={product.id} className="h-full">

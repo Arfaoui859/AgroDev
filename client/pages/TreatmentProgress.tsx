@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useParams, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../lib/apiFetch';
 
 interface TreatmentHistory {
   historyId: string;
@@ -63,16 +64,16 @@ interface TreatmentHistory {
   progress: {
     completedSteps: number[];
     currentStep: number;
-    effectiveness: number;
+    effectiveness: number | null;
     sideEffects: string[];
     farmerNotes: string[];
   };
   results: {
-    diseaseEliminated: boolean;
-    cropRecovery: number;
-    yieldImpact: number;
-    costActual: number;
-    timeToRecovery: number;
+    diseaseEliminated: boolean | null;
+    cropRecovery: number | null;
+    yieldImpact: number | null;
+    costActual: number | null;
+    timeToRecovery: number | null;
   };
   followUpAlerts: string[];
 }
@@ -102,7 +103,7 @@ const TreatmentProgress: React.FC = () => {
   
   const [progressUpdate, setProgressUpdate] = useState<ProgressUpdate>({
     date: new Date(),
-    effectiveness: 50,
+    effectiveness: null,
     notes: '',
     sideEffects: [],
     symptoms: {
@@ -112,14 +113,16 @@ const TreatmentProgress: React.FC = () => {
     }
   });
 
-  const [completionData, setCompletionData] = useState({
-    diseaseEliminated: false,
-    cropRecovery: 0,
-    yieldImpact: 0,
-    costActual: 0,
-    overallRating: 5,
-    wouldRecommend: true,
-    finalNotes: ''
+  const [completionData, setCompletionData] = useState<{
+    diseaseEliminated: boolean | null;
+    cropRecovery: number | null;
+    yieldImpact: number | null;
+    costActual: number | null;
+  }>({
+    diseaseEliminated: null,
+    cropRecovery: null,
+    yieldImpact: null,
+    costActual: null
   });
 
   const statusColors = {
@@ -131,24 +134,43 @@ const TreatmentProgress: React.FC = () => {
   };
 
   const fetchTreatmentHistory = async () => {
+    if (!historyId) {
+      toast.error('معرّف سجل العلاج غير موجود');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      // In a real app, this would fetch specific treatment history by ID
-      const response = await fetch(`/api/disease-treatment/history/user-123`);
+      const response = await apiFetch(
+        `/api/disease-treatment/history/${encodeURIComponent(historyId)}`
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast.error('سجل العلاج غير موجود أو لا تملك صلاحية الوصول إليه');
+        } else {
+          toast.error('فشل في جلب سجل العلاج');
+        }
+        setTreatmentHistory(null);
+        return;
+      }
+
       const data = await response.json();
 
-      if (data.success && data.data.length > 0) {
-        // For demo, use the first item
-        const history = {
-          ...data.data[0],
-          startDate: new Date(data.data[0].startDate),
-          endDate: data.data[0].endDate ? new Date(data.data[0].endDate) : undefined
-        };
-        setTreatmentHistory(history);
+      if (data.success && data.data) {
+        setTreatmentHistory({
+          ...data.data,
+          startDate: new Date(data.data.startDate),
+          endDate: data.data.endDate ? new Date(data.data.endDate) : undefined
+        });
+      } else {
+        setTreatmentHistory(null);
+        toast.error(data.message || 'سجل العلاج غير موجود');
       }
     } catch (error) {
       console.error('Error fetching treatment history:', error);
-      toast.error('فشل في جلب تاريخ العلاج');
+      toast.error('فشل في جلب سجل العلاج');
     } finally {
       setLoading(false);
     }
@@ -158,14 +180,14 @@ const TreatmentProgress: React.FC = () => {
     if (!treatmentHistory) return;
 
     try {
-      const response = await fetch(`/api/disease-treatment/progress/${treatmentHistory.historyId}`, {
+      const response = await apiFetch(`/api/disease-treatment/progress/${treatmentHistory.historyId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           stepCompleted: progressUpdate.stepCompleted,
-          effectiveness: progressUpdate.effectiveness,
+          effectiveness: progressUpdate.effectiveness ?? undefined,
           notes: progressUpdate.notes,
           sideEffects: progressUpdate.sideEffects
         })
@@ -181,7 +203,7 @@ const TreatmentProgress: React.FC = () => {
         // Reset form
         setProgressUpdate({
           date: new Date(),
-          effectiveness: 50,
+          effectiveness: null,
           notes: '',
           sideEffects: [],
           symptoms: {
@@ -203,13 +225,18 @@ const TreatmentProgress: React.FC = () => {
     if (!treatmentHistory) return;
 
     try {
-      const response = await fetch(`/api/disease-treatment/complete/${treatmentHistory.historyId}`, {
+      const response = await apiFetch(`/api/disease-treatment/complete/${treatmentHistory.historyId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          results: completionData
+          results: {
+            diseaseEliminated: completionData.diseaseEliminated,
+            cropRecovery: completionData.cropRecovery,
+            yieldImpact: completionData.yieldImpact,
+            costActual: completionData.costActual
+          }
         })
       });
 
@@ -722,7 +749,7 @@ const TreatmentProgress: React.FC = () => {
                   type="range"
                   min="0"
                   max="100"
-                  value={progressUpdate.effectiveness}
+                  value={progressUpdate.effectiveness ?? 0}
                   onChange={(e) => setProgressUpdate(prev => ({ 
                     ...prev, 
                     effectiveness: parseInt(e.target.value) 
@@ -730,7 +757,7 @@ const TreatmentProgress: React.FC = () => {
                   className="w-full"
                 />
                 <div className="text-center text-sm font-medium">
-                  {progressUpdate.effectiveness}%
+                  {progressUpdate.effectiveness === null ? 'لم يتم التقييم' : `${progressUpdate.effectiveness}%`}
                 </div>
               </div>
             </div>
@@ -780,16 +807,20 @@ const TreatmentProgress: React.FC = () => {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={completionData.diseaseEliminated}
-                onChange={(e) => setCompletionData(prev => ({ 
-                  ...prev, 
-                  diseaseEliminated: e.target.checked 
+            <div>
+              <Label>هل تم القضاء على المرض؟</Label>
+              <select
+                value={completionData.diseaseEliminated === null ? '' : String(completionData.diseaseEliminated)}
+                onChange={(e) => setCompletionData(prev => ({
+                  ...prev,
+                  diseaseEliminated: e.target.value === '' ? null : e.target.value === 'true'
                 }))}
-              />
-              <Label>تم القضاء على المرض بنجاح</Label>
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="">غير محدد</option>
+                <option value="true">نعم، تم القضاء على المرض</option>
+                <option value="false">لا، المرض ما زال موجوداً</option>
+              </select>
             </div>
             
             <div>
@@ -798,10 +829,10 @@ const TreatmentProgress: React.FC = () => {
                 type="number"
                 min="0"
                 max="100"
-                value={completionData.cropRecovery}
+                value={completionData.cropRecovery ?? ''}
                 onChange={(e) => setCompletionData(prev => ({ 
                   ...prev, 
-                  cropRecovery: parseInt(e.target.value) || 0 
+                  cropRecovery: e.target.value === '' ? null : Number(e.target.value) 
                 }))}
               />
             </div>
@@ -812,10 +843,10 @@ const TreatmentProgress: React.FC = () => {
                 type="number"
                 min="-100"
                 max="100"
-                value={completionData.yieldImpact}
+                value={completionData.yieldImpact ?? ''}
                 onChange={(e) => setCompletionData(prev => ({ 
                   ...prev, 
-                  yieldImpact: parseInt(e.target.value) || 0 
+                  yieldImpact: e.target.value === '' ? null : Number(e.target.value) 
                 }))}
               />
             </div>
@@ -825,45 +856,15 @@ const TreatmentProgress: React.FC = () => {
               <Input
                 type="number"
                 min="0"
-                value={completionData.costActual}
+                value={completionData.costActual ?? ''}
                 onChange={(e) => setCompletionData(prev => ({ 
                   ...prev, 
-                  costActual: parseFloat(e.target.value) || 0 
+                  costActual: e.target.value === '' ? null : Number(e.target.value) 
                 }))}
               />
             </div>
-            
-            <div>
-              <Label>تقييم العلاج (1-10)</Label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => setCompletionData(prev => ({ ...prev, overallRating: rating }))}
-                    className={`w-8 h-8 rounded-full text-sm font-medium ${
-                      rating <= completionData.overallRating
-                        ? 'bg-yellow-400 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}
-                  >
-                    {rating}
-                  </button>
-                ))}
-              </div>
             </div>
-            
-            <div>
-              <Label>ملاحظات نهائية</Label>
-              <Textarea
-                value={completionData.finalNotes}
-                onChange={(e) => setCompletionData(prev => ({ ...prev, finalNotes: e.target.value }))}
-                placeholder="ملاحظات نهائية عن تجربة العلاج..."
-                rows={3}
-              />
-            </div>
-          </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCompleteDialog(false)}>
               إلغاء

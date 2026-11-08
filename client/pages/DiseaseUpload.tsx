@@ -160,6 +160,10 @@ export default function DiseaseUpload() {
       const plan = payload.treatment_plan ?? {};
       const severityLevel =
         primary.severity_level ??
+        detection.top_predictions?.find(
+          (prediction: { disease?: string; severity_level?: string }) =>
+            prediction.disease === primary.disease,
+        )?.severity_level ??
         payload.severity_assessment?.severity_level ??
         "medium";
 
@@ -205,7 +209,7 @@ export default function DiseaseUpload() {
         "treatmentRedirectData",
         JSON.stringify({
           diagnosisId: diagnosisResult.id,
-          diseaseId: `${diagnosisResult.cropType}_${diagnosis.disease.replace(/\s+/g, "_")}`,
+          diseaseId: primary.disease || "unknown",
           diseaseName: diagnosis.disease,
           cropType: diagnosisResult.cropType,
           severity:

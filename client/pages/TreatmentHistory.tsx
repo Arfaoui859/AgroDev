@@ -47,6 +47,7 @@ import {
 import { Pie, PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart as RechartsLineChart, Line, Area, AreaChart } from 'recharts';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../lib/apiFetch';
 
 interface TreatmentHistory {
   historyId: string;
@@ -119,7 +120,7 @@ const TreatmentHistory: React.FC = () => {
   const fetchTreatmentHistory = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/disease-treatment/history/user-123');
+      const response = await apiFetch('/api/disease-treatment/history');
       const data = await response.json();
 
       if (data.success) {
@@ -140,7 +141,7 @@ const TreatmentHistory: React.FC = () => {
 
   const fetchTreatmentStats = async () => {
     try {
-      const response = await fetch('/api/disease-treatment/stats/user-123');
+      const response = await apiFetch('/api/disease-treatment/stats');
       const data = await response.json();
 
       if (data.success) {

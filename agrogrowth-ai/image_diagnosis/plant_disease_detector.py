@@ -424,6 +424,7 @@ class PlantDiseaseDetector:
                     "original_class": primary["original_class"],
                     "disease_name_ar": primary["disease_name_ar"],
                     "probability": primary["probability"],
+                    "severity_level": primary["severity_level"],
                 },
                 "confidence_score": primary["probability"],
                 "detection_method": "mobilenetv3_onnx",
@@ -503,7 +504,8 @@ class PlantDiseaseDetector:
             'primary_disease': {
                 'disease': sorted_diseases[0][0],
                 'disease_name_ar': self.disease_database[sorted_diseases[0][0]]['name_ar'],
-                'probability': float(sorted_diseases[0][1])
+                'probability': float(sorted_diseases[0][1]),
+                'severity_level': self.disease_database[sorted_diseases[0][0]]['severity']
             },
             'confidence_score': float(sorted_diseases[0][1]),
             'detection_method': 'feature_based_heuristics'

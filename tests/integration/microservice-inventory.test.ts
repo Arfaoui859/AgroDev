@@ -41,8 +41,13 @@ describe("🐍 Python microservice inventory", () => {
       const src = fs.readFileSync(path.join(dir, "main.py"), "utf8");
       // The service must expose /health ...
       expect(src).toMatch(/@app\.(get|api_route)\(\s*["']\/health["']/);
-      // ... and default to the documented port via PORT.
-      expect(src).toMatch(new RegExp(`PORT["']?\\s*,\\s*${port}\\b`));
+      // ... and resolve the documented default port through PORT,
+      // allowing a SERVICE_PORT fallback before the hardcoded default.
+      const directPort = new RegExp(`PORT["']?\\s*,\\s*["']?${port}["']?\\b`);
+      const fallbackPort = new RegExp(
+        `PORT["']?\\s*,[\\s\\S]{0,200}?["']${port}["']`,
+      );
+      expect(src).toMatch(directPort.test(src) ? directPort : fallbackPort);
     },
   );
 
