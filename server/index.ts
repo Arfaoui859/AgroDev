@@ -296,6 +296,9 @@ import {
 export function createServer() {
   const app = express();
 
+  // Trust the single reverse proxy in front of the Render service.
+  app.set("trust proxy", 1);
+
   // Security middleware
   app.use(securityHeaders());
   app.use(corsMiddleware());
