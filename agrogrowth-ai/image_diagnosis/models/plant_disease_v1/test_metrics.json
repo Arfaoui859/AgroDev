@@ -1,0 +1,15 @@
+{
+  "model": "MobileNetV3-Large",
+  "model_type": "transfer_learning",
+  "dataset": "fatemehENG/plantvillage-full",
+  "test_samples": 10948,
+  "num_classes": 38,
+  "accuracy": 0.9968030690537084,
+  "macro_precision": 0.9961037762996221,
+  "macro_recall": 0.9901103789952412,
+  "macro_f1": 0.9926167284204149,
+  "validation_macro_f1": 0.9899213740060337,
+  "onnx_max_absolute_difference": 3.874301910400391e-06,
+  "onnx_prediction_agreement": 1.0,
+  "onnx_parity": "PASS"
+}

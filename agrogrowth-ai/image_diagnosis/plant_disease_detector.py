@@ -1,6 +1,5 @@
 """
-PlantDiseaseDetector - Advanced CNN-based plant disease detection system
-Uses deep learning to identify diseases, pests, and health issues from plant images
+PlantDiseaseDetector - Heuristic plant disease detection and analysis
 """
 
 import numpy as np
@@ -13,45 +12,21 @@ import io
 from datetime import datetime
 import json
 
+try:
+    from .onnx_classifier import PlantDiseaseONNXClassifier
+except ImportError:
+    from onnx_classifier import PlantDiseaseONNXClassifier
+
 logger = logging.getLogger(__name__)
-
-# TensorFlow is optional: it is only needed to *construct* the CNN
-# architectures, while the inference paths are feature-based heuristics. Importing
-# it lazily keeps the service bootable in environments without the (heavy)
-# deep-learning stack instead of failing at import time.
-keras = None
-layers = None
-
-
-def _load_keras() -> bool:
-    """Load TensorFlow/Keras on first use. Returns True when available."""
-    global keras, layers
-    if keras is not None:
-        return True
-    try:
-        from tensorflow import keras as _keras
-        from tensorflow.keras import layers as _layers
-
-        keras, layers = _keras, _layers
-        return True
-    except Exception as exc:  # pragma: no cover - depends on environment
-        logger.warning(
-            "TensorFlow unavailable (%s); CNN layers disabled, heuristic inference unaffected",
-            exc,
-        )
-        return False
-
-
 
 class PlantDiseaseDetector:
     """CNN-based AI model for detecting plant diseases and health issues"""
     
     def __init__(self):
-        self.disease_model = None
-        self.severity_model = None
-        self.is_trained = False
-        self.model_unavailable_reason: Optional[str] = None
+        self.is_ready = False
+        self.inference_mode = "heuristic"
         self.input_shape = (224, 224, 3)
+        self.ml_classifier = None
         
         # Comprehensive disease database
         self.disease_database = {
@@ -227,138 +202,28 @@ class PlantDiseaseDetector:
         self._initialize_models()
     
     def _initialize_models(self):
-        """Initialize the disease detection models"""
-        if not _load_keras():
-            # Heuristic inference needs no CNN weights, so the detector stays
-            # fully usable; only the (unused) CNN construction is skipped.
-            self.model_unavailable_reason = "tensorflow-not-installed"
-            self.is_trained = True
-            logger.info(
-                "PlantDiseaseDetector running in heuristic mode (TensorFlow not installed)"
-            )
-            return
+        """Load the trained ONNX classifier, with an explicit heuristic fallback."""
         try:
-            self._build_disease_detection_model()
-            self._build_severity_assessment_model()
-            self._simulate_training()
-            logger.info("PlantDiseaseDetector initialized successfully")
-        except Exception as e:
-            logger.error(f"Error initializing PlantDiseaseDetector: {e}")
-    
-    def _build_disease_detection_model(self):
-        """Build CNN architecture for disease detection"""
-        self.disease_model = keras.Sequential([
-            # Input layer
-            layers.Input(shape=self.input_shape),
-            
-            # Data augmentation layers
-            layers.RandomFlip("horizontal_and_vertical"),
-            layers.RandomRotation(0.2),
-            layers.RandomZoom(0.1),
-            
-            # First convolutional block
-            layers.Conv2D(32, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Second convolutional block
-            layers.Conv2D(64, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Third convolutional block
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Fourth convolutional block
-            layers.Conv2D(256, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            layers.Dropout(0.25),
-            
-            # Fifth convolutional block
-            layers.Conv2D(512, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.GlobalAveragePooling2D(),
-            
-            # Dense layers
-            layers.Dense(512, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(256, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.5),
-            
-            # Output layer
-            layers.Dense(len(self.disease_database), activation='softmax', name='disease_classification')
-        ])
-        
-        # Compile model
-        self.disease_model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=0.001),
-            loss='categorical_crossentropy',
-            metrics=['accuracy', 'top_3_accuracy']
-        )
-    
-    def _build_severity_assessment_model(self):
-        """Build model for assessing disease severity"""
-        self.severity_model = keras.Sequential([
-            layers.Input(shape=self.input_shape),
-            
-            # Simpler architecture for severity assessment
-            layers.Conv2D(64, (5, 5), activation='relu'),
-            layers.MaxPooling2D((3, 3)),
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(256, (3, 3), activation='relu'),
-            layers.GlobalAveragePooling2D(),
-            
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(64, activation='relu'),
-            layers.Dropout(0.5),
-            
-            # Output: regression for severity score (0-4)
-            layers.Dense(1, activation='linear', name='severity_score')
-        ])
-        
-        self.severity_model.compile(
-            optimizer='adam',
-            loss='mse',
-            metrics=['mae']
-        )
-    
-    def _simulate_training(self):
-        """Simulate model training with synthetic data"""
-        # Generate synthetic training data for demonstration
-        X_train = np.random.random((500, *self.input_shape))
-        
-        # Disease classification labels
-        num_diseases = len(self.disease_database)
-        y_disease = keras.utils.to_categorical(
-            np.random.randint(0, num_diseases, 500),
-            num_diseases
-        )
-        
-        # Severity labels (0-4)
-        y_severity = np.random.uniform(0, 4, (500, 1))
-        
-        # Simulate training (in production, use real annotated data)
-        # self.disease_model.fit(X_train, y_disease, epochs=1, verbose=0)
-        # self.severity_model.fit(X_train, y_severity, epochs=1, verbose=0)
-        
-        self.is_trained = True
-        logger.info("Simulated training completed for plant disease detection models")
-    
+            self.ml_classifier = PlantDiseaseONNXClassifier()
+            self.inference_mode = "onnx"
+            self.is_ready = True
+            logger.info(
+                "Trained plant disease ONNX model loaded: %s",
+                self.ml_classifier.MODEL_SOURCE,
+            )
+        except Exception as exc:
+            self.ml_classifier = None
+            self.inference_mode = "heuristic"
+            self.is_ready = True
+            logger.exception(
+                "ONNX model unavailable; using heuristic fallback: %s", exc
+            )
+
     def detect_plant_disease(self, image_data: Union[str, bytes, np.ndarray], 
                            plant_type: Optional[str] = None) -> Dict[str, Any]:
         """Comprehensive plant disease detection and analysis"""
         try:
-            if not self.is_trained:
+            if not self.is_ready:
                 raise ValueError("Models not trained")
             
             # Preprocess image
@@ -492,7 +357,86 @@ class PlantDiseaseDetector:
         return features
     
     def _predict_diseases(self, image: np.ndarray) -> Dict[str, Any]:
-        """Predict diseases using the trained CNN model"""
+        """Run trained ONNX inference, falling back to the legacy heuristic."""
+        if self.ml_classifier is None:
+            result = self._predict_diseases_heuristic(image)
+            result["data_source"] = "heuristic"
+            result["model_source"] = "feature-based-heuristics"
+            result["is_real_data"] = False
+            return result
+
+        try:
+            raw_predictions = self.ml_classifier.predict(image)
+            top_predictions = []
+
+            def map_class(class_name):
+                name = class_name.lower()
+
+                if name.endswith("___healthy"):
+                    return "healthy"
+                if "bacterial_spot" in name:
+                    return "bacterial_spot"
+                if "early_blight" in name:
+                    return "early_blight"
+                if "late_blight" in name:
+                    return "late_blight"
+                if "powdery_mildew" in name:
+                    return "powdery_mildew"
+                if "tomato_mosaic_virus" in name:
+                    return "mosaic_virus"
+                if "spider_mites" in name:
+                    return "spider_mites"
+
+                # Keep crop-specific diseases distinct; never guess a treatment.
+                return "plantvillage_disease"
+
+            for item in raw_predictions:
+                class_name = item["class_name"]
+                disease = map_class(class_name)
+                probability = float(item["probability"])
+                info = self.disease_database.get(disease, {})
+
+                top_predictions.append({
+                    "disease": disease,
+                    "original_class": class_name,
+                    "disease_name_ar": info.get(
+                        "name_ar", f"مرض نباتي: {class_name}"
+                    ),
+                    "probability": probability,
+                    "description": info.get(
+                        "description",
+                        "تصنيف من نموذج PlantVillage؛ يلزم التحقق الميداني"
+                    ),
+                    "severity_level": info.get("severity", "unknown"),
+                })
+
+            if not top_predictions:
+                raise ValueError("ONNX classifier returned no predictions")
+
+            primary = top_predictions[0]
+            return {
+                "top_predictions": top_predictions,
+                "primary_disease": {
+                    "disease": primary["disease"],
+                    "original_class": primary["original_class"],
+                    "disease_name_ar": primary["disease_name_ar"],
+                    "probability": primary["probability"],
+                },
+                "confidence_score": primary["probability"],
+                "detection_method": "mobilenetv3_onnx",
+                "data_source": "trained-ml",
+                "model_source": self.ml_classifier.MODEL_SOURCE,
+            }
+
+        except Exception as exc:
+            logger.exception("ONNX inference failed; using heuristic fallback: %s", exc)
+            result = self._predict_diseases_heuristic(image)
+            result["data_source"] = "heuristic-fallback"
+            result["fallback_reason"] = str(exc)
+            return result
+
+    def _predict_diseases_heuristic(self, image: np.ndarray) -> Dict[str, Any]:
+        """Predict diseases using feature-based heuristic rules (not ML)."""
         # In a real implementation, this would use the trained CNN
         # For now, we'll use feature-based heuristics
         
@@ -703,11 +647,23 @@ class PlantDiseaseDetector:
         """Generate comprehensive treatment plan"""
         primary_disease = disease_predictions['primary_disease']['disease']
         severity_level = severity_assessment['severity_level']
-        disease_info = self.disease_database[primary_disease]
+        disease_info = self.disease_database.get(primary_disease)
         
-        # Get base treatment recommendations
-        treatment_steps = disease_info['treatment'].copy()
-        prevention_steps = disease_info['prevention'].copy()
+        # Never guess treatments for classes without a validated treatment entry.
+        if disease_info is None:
+            treatment_steps = [
+                'عدم استعمال مبيد اعتماداً على الصورة وحدها',
+                'تأكيد التشخيص لدى خبير زراعي',
+                'فحص النبات ميدانياً وتصوير الأعراض بوضوح',
+            ]
+            prevention_steps = [
+                'مراقبة النباتات المجاورة',
+                'تنظيف الأدوات الزراعية',
+                'اتباع ممارسات النظافة الزراعية العامة',
+            ]
+        else:
+            treatment_steps = disease_info['treatment'].copy()
+            prevention_steps = disease_info['prevention'].copy()
         
         # Adjust treatment based on severity
         if severity_level in ['high', 'very_high']:
@@ -742,8 +698,14 @@ class PlantDiseaseDetector:
             'general_care': general_care,
             'emergency_actions': emergency_actions,
             'treatment_timeline': timeline,
-            'estimated_recovery_time': self._estimate_recovery_time(primary_disease, severity_level),
-            'success_probability': self._estimate_treatment_success(primary_disease, severity_level),
+            'estimated_recovery_time': (
+                self._estimate_recovery_time(primary_disease, severity_level)
+                if disease_info is not None else None
+            ),
+            'success_probability': (
+                self._estimate_treatment_success(primary_disease, severity_level)
+                if disease_info is not None else None
+            ),
             'follow_up_schedule': self._create_follow_up_schedule(severity_level)
         }
     

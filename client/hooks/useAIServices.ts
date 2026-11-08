@@ -90,6 +90,7 @@ interface LeafAnalysisResult {
       severity_stage: string;
     };
     nutritional_health_score: number;
+    nutrition_status_available: boolean;
     nutrition_recommendations: string[];
   };
   growth_assessment: {

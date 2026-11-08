@@ -43,8 +43,10 @@ class _FakeUpload:
         self.content_type = content_type
         self.filename = filename
 
-    async def read(self):
-        return self._data
+    async def read(self, size=-1):
+        if size is None or size < 0:
+            return self._data
+        return self._data[:size]
 
 
 def _png_bytes() -> bytes:
@@ -145,10 +147,15 @@ def test_confidence_is_clamped(monkeypatch):
     assert out["confidence"] == 1.0
 
 
-def test_health_reports_vision_configured(monkeypatch):
+def test_health_reports_vision_configured_without_claiming_request_usage(monkeypatch):
     monkeypatch.setenv("AI_API_KEY", "k")
     monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
     monkeypatch.setenv("AI_VISION_MODEL", "gpt-4o-mini")
+
     health = asyncio.run(image_main.health())
+
+    assert health["status"] == "healthy"
     assert health["vision_configured"] is True
-    assert health["model_source"].endswith(":gpt-4o-mini")
+    assert health["vision_provider_configured"] is True
+    assert health["model_source"] == "heuristic-demo"
+    assert "No scientific validation is implied." in health["disclaimer"]

@@ -1,6 +1,5 @@
 """
-LeafScanAI - Advanced leaf analysis and scanning system
-Specialized in analyzing leaf health, nutrition status, and growth patterns
+LeafScanAI - Heuristic leaf analysis and health assessment
 """
 
 import numpy as np
@@ -14,43 +13,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# TensorFlow is optional: it is only needed to *construct* the CNN
-# architectures, while the inference paths are feature-based heuristics. Importing
-# it lazily keeps the service bootable in environments without the (heavy)
-# deep-learning stack instead of failing at import time.
-keras = None
-layers = None
-
-
-def _load_keras() -> bool:
-    """Load TensorFlow/Keras on first use. Returns True when available."""
-    global keras, layers
-    if keras is not None:
-        return True
-    try:
-        from tensorflow import keras as _keras
-        from tensorflow.keras import layers as _layers
-
-        keras, layers = _keras, _layers
-        return True
-    except Exception as exc:  # pragma: no cover - depends on environment
-        logger.warning(
-            "TensorFlow unavailable (%s); CNN layers disabled, heuristic inference unaffected",
-            exc,
-        )
-        return False
-
-
-
 class LeafScanAI:
     """AI system for comprehensive leaf analysis and health assessment"""
     
     def __init__(self):
-        self.nutrition_model = None
-        self.growth_model = None
-        self.leaf_health_model = None
-        self.is_trained = False
-        self.model_unavailable_reason: Optional[str] = None
+        self.is_ready = False
+        self.inference_mode = "heuristic"
         self.input_shape = (224, 224, 3)
         
         # Nutritional deficiency database
@@ -98,7 +66,7 @@ class LeafScanAI:
                 'severity_stages': ['طفيف', 'متوسط', 'شديد', 'حرج'],
                 'treatment': [
                     'رش كلوريد الحديد على الأوراق',
-                    'إضافة كب��يتات الحديد للتربة',
+                    'إضافة كبريتات الحديد للتربة',
                     'تحسين تصريف التربة'
                 ],
                 'recovery_time': '5-10 أيام'
@@ -121,7 +89,7 @@ class LeafScanAI:
                 'color_indicators': {'tip_burn': True, 'deformed_growth': True},
                 'severity_stages': ['طفيف', 'متوسط', 'شديد', 'حرج'],
                 'treatment': [
-                    'إضافة الجير الز��اعي',
+                    'إضافة الجير الزراعي',
                     'رش كلوريد الكالسيوم',
                     'تحسين تصريف التربة'
                 ],
@@ -158,139 +126,17 @@ class LeafScanAI:
         self._initialize_models()
     
     def _initialize_models(self):
-        """Initialize the leaf analysis models"""
-        if not _load_keras():
-            self.model_unavailable_reason = "tensorflow-not-installed"
-            self.is_trained = True
-            logger.info(
-                "LeafScanAI running in heuristic mode (TensorFlow not installed)"
-            )
-            return
-        try:
-            self._build_nutrition_analysis_model()
-            self._build_growth_assessment_model()
-            self._build_health_evaluation_model()
-            self._simulate_training()
-            logger.info("LeafScanAI initialized successfully")
-        except Exception as e:
-            logger.error(f"Error initializing LeafScanAI: {e}")
-    
-    def _build_nutrition_analysis_model(self):
-        """Build model for nutritional deficiency detection"""
-        self.nutrition_model = keras.Sequential([
-            layers.Input(shape=self.input_shape),
-            
-            # Specialized layers for color analysis
-            layers.Conv2D(64, (5, 5), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D((2, 2)),
-            
-            layers.Conv2D(256, (3, 3), activation='relu'),
-            layers.BatchNormalization(),
-            layers.GlobalAveragePooling2D(),
-            
-            layers.Dense(256, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.3),
-            
-            # Output for nutrition classification
-            layers.Dense(len(self.nutrition_deficiencies), activation='softmax')
-        ])
-        
-        self.nutrition_model.compile(
-            optimizer='adam',
-            loss='categorical_crossentropy',
-            metrics=['accuracy']
-        )
-    
-    def _build_growth_assessment_model(self):
-        """Build model for growth assessment"""
-        self.growth_model = keras.Sequential([
-            layers.Input(shape=self.input_shape),
-            
-            layers.Conv2D(32, (7, 7), activation='relu'),
-            layers.MaxPooling2D((3, 3)),
-            layers.Conv2D(64, (5, 5), activation='relu'),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.GlobalAveragePooling2D(),
-            
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.4),
-            
-            # Multiple outputs for different growth aspects
-            layers.Dense(64, activation='relu'),
-            layers.Dense(5, activation='linear', name='growth_metrics')  # 5 growth parameters
-        ])
-        
-        self.growth_model.compile(
-            optimizer='adam',
-            loss='mse',
-            metrics=['mae']
-        )
-    
-    def _build_health_evaluation_model(self):
-        """Build model for overall leaf health evaluation"""
-        self.leaf_health_model = keras.Sequential([
-            layers.Input(shape=self.input_shape),
-            
-            layers.Conv2D(64, (3, 3), activation='relu'),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(128, (3, 3), activation='relu'),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(256, (3, 3), activation='relu'),
-            layers.GlobalAveragePooling2D(),
-            
-            layers.Dense(128, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(64, activation='relu'),
-            
-            # Health score output (0-100)
-            layers.Dense(1, activation='sigmoid', name='health_score')
-        ])
-        
-        self.leaf_health_model.compile(
-            optimizer='adam',
-            loss='mse',
-            metrics=['mae']
-        )
-    
-    def _simulate_training(self):
-        """Simulate model training"""
-        # Generate synthetic data for demonstration
-        X_train = np.random.random((300, *self.input_shape))
-        
-        # Nutrition labels
-        y_nutrition = keras.utils.to_categorical(
-            np.random.randint(0, len(self.nutrition_deficiencies), 300),
-            len(self.nutrition_deficiencies)
-        )
-        
-        # Growth metrics (5 parameters)
-        y_growth = np.random.random((300, 5))
-        
-        # Health scores (0-1)
-        y_health = np.random.random((300, 1))
-        
-        # Simulate training
-        # self.nutrition_model.fit(X_train, y_nutrition, epochs=1, verbose=0)
-        # self.growth_model.fit(X_train, y_growth, epochs=1, verbose=0)
-        # self.leaf_health_model.fit(X_train, y_health, epochs=1, verbose=0)
-        
-        self.is_trained = True
-        logger.info("Simulated training completed for leaf analysis models")
-    
+        """Mark the deterministic heuristic analysis engine as ready."""
+        self.is_ready = True
+        self.inference_mode = "heuristic"
+        logger.info("LeafScanAI initialized in heuristic mode")
+
     def analyze_leaf_comprehensive(self, image_data: Union[str, bytes, np.ndarray], 
                                  plant_type: Optional[str] = None,
                                  growth_stage: Optional[str] = None) -> Dict[str, Any]:
         """Comprehensive leaf analysis including nutrition, growth, and health"""
         try:
-            if not self.is_trained:
+            if not self.is_ready:
                 raise ValueError("Models not trained")
             
             # Preprocess image
@@ -454,78 +300,128 @@ class LeafScanAI:
         
         return features
     
-    def _analyze_nutrition_status(self, image: np.ndarray, features: Dict[str, float]) -> Dict[str, Any]:
-        """Analyze nutritional status from leaf characteristics"""
-        
-        # Rule-based nutritional analysis
-        nutrition_scores = {}
-        deficiencies = list(self.nutrition_deficiencies.keys())
-        
-        # Initialize scores
-        for deficiency in deficiencies:
-            nutrition_scores[deficiency] = 0.1
-        
-        # Nitrogen deficiency analysis
-        if features['yellow_ratio'] > 0.3 and features['green_dominance'] < 1.5:
-            nutrition_scores['nitrogen_deficiency'] = 0.7
-        
-        # Phosphorus deficiency analysis
-        if features['purple_ratio'] > 0.1 or features['a_component'] < 120:
-            nutrition_scores['phosphorus_deficiency'] = 0.6
-        
-        # Potassium deficiency analysis (edge burn)
-        if features['edge_density'] > 0.4 and features['brown_ratio'] > 0.1:
-            nutrition_scores['potassium_deficiency'] = 0.6
-        
-        # Iron deficiency analysis (interveinal chlorosis)
-        if (features['yellow_ratio'] > 0.2 and 
-            features['edge_density'] > 0.3 and 
-            features['chlorophyll_index'] < 0.3):
-            nutrition_scores['iron_deficiency'] = 0.7
-        
-        # Magnesium deficiency analysis
-        if (features['yellow_ratio'] > 0.25 and 
-            features['green_dominance'] < 2.0 and
-            features['edge_density'] < 0.3):
-            nutrition_scores['magnesium_deficiency'] = 0.5
-        
-        # Calcium deficiency analysis
-        if features['brown_ratio'] > 0.15 and features['texture_contrast'] > 50:
-            nutrition_scores['calcium_deficiency'] = 0.5
-        
-        # Healthy nutrition
-        if (features['green_dominance'] > 2.5 and 
-            features['color_uniformity'] > 0.7 and 
-            features['chlorophyll_index'] > 0.4):
-            nutrition_scores['healthy_nutrition'] = 0.8
-        
-        # Normalize scores
-        total_score = sum(nutrition_scores.values())
-        nutrition_scores = {k: v/total_score for k, v in nutrition_scores.items()}
-        
-        # Get primary deficiency
-        primary_deficiency = max(nutrition_scores.items(), key=lambda x: x[1])
-        deficiency_info = self.nutrition_deficiencies[primary_deficiency[0]]
-        
-        # Assess severity
-        severity_score = self._assess_nutrition_severity(features, primary_deficiency[0])
-        
-        return {
-            'primary_deficiency': {
-                'type': primary_deficiency[0],
-                'name_ar': deficiency_info['name_ar'],
-                'probability': float(primary_deficiency[1]),
-                'severity_score': severity_score,
-                'severity_stage': deficiency_info['severity_stages'][min(3, int(severity_score))],
-                'symptoms': deficiency_info['symptoms']
-            },
-            'all_deficiency_scores': {k: float(v) for k, v in nutrition_scores.items()},
-            'nutrition_recommendations': deficiency_info['treatment'],
-            'estimated_recovery_time': deficiency_info['recovery_time'],
-            'nutritional_health_score': float((1 - severity_score) * 100),
-            'monitoring_frequency': self._get_nutrition_monitoring_frequency(severity_score)
+    def _analyze_nutrition_status(
+        self, image: np.ndarray, features: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """Conservative visual screening; not a nutrient diagnosis."""
+
+        scores = {
+            key: 0.0
+            for key in self.nutrition_deficiencies
         }
-    
+
+        # A color alone is not sufficient evidence.
+        # These rules only identify visual patterns worth investigating.
+        if (
+            features["yellow_ratio"] > 0.30
+            and features["green_dominance"] < 1.5
+        ):
+            scores["nitrogen_deficiency"] = 0.7
+
+        if features["purple_ratio"] > 0.10:
+            scores["phosphorus_deficiency"] = 0.6
+
+        if (
+            features["brown_ratio"] > 0.10
+            and features["edge_density"] > 0.02
+        ):
+            scores["potassium_deficiency"] = 0.6
+
+        if (
+            features["yellow_ratio"] > 0.20
+            and features["edge_density"] > 0.03
+            and features["chlorophyll_index"] < 0.3
+        ):
+            scores["iron_deficiency"] = 0.7
+
+        if (
+            features["yellow_ratio"] > 0.25
+            and features["green_dominance"] < 2.0
+            and features["edge_density"] < 0.3
+        ):
+            scores["magnesium_deficiency"] = 0.5
+
+        if (
+            features["brown_ratio"] > 0.15
+            and features["texture_contrast"] > 0.05
+        ):
+            scores["calcium_deficiency"] = 0.5
+
+        candidates = {
+            key: value
+            for key, value in scores.items()
+            if key != "healthy_nutrition" and value > 0
+        }
+
+        # No positive visual pattern: do not invent a deficiency
+        # and do not claim that the plant is nutritionally healthy.
+        if not candidates:
+            return {
+                "primary_deficiency": {
+                    "type": "insufficient_visual_evidence",
+                    "name_ar": "الأدلة البصرية غير كافية",
+                    "probability": 0.0,
+                    "severity_score": 0.0,
+                    "severity_stage": "غير قابل للتقييم",
+                    "symptoms": (
+                        "الصورة وحدها لا توفر مؤشرات كافية لتقييم "
+                        "العناصر الغذائية."
+                    ),
+                },
+                "all_deficiency_scores": scores,
+                "nutrition_recommendations": [],
+                "estimated_recovery_time": "غير قابل للتقدير",
+                "nutritional_health_score": 0.0,
+                "nutrition_status_available": False,
+                "monitoring_frequency": (
+                    "إعادة التصوير بوضوح أو إجراء تحليل مخبري"
+                ),
+            }
+
+        # The highest rule score is a screening indicator, not
+        # a calibrated probability or confirmed nutrient deficiency.
+        selected_type = max(candidates, key=candidates.get)
+        total = sum(candidates.values())
+        normalized = {
+            key: value / total for key, value in candidates.items()
+        }
+        scores.update(normalized)
+
+        info = self.nutrition_deficiencies[selected_type]
+        severity = self._assess_nutrition_severity(
+            features, selected_type
+        )
+        severity = max(0.0, min(3.0, float(severity)))
+
+        stages = info["severity_stages"]
+        stage_index = min(len(stages) - 1, int(severity))
+
+        return {
+            "primary_deficiency": {
+                "type": selected_type,
+                "name_ar": f"مؤشرات بصرية لاحتمال {info['name_ar']}",
+                "probability": float(normalized[selected_type]),
+                "severity_score": severity,
+                "severity_stage": stages[stage_index],
+                "symptoms": info["symptoms"],
+            },
+            "all_deficiency_scores": {
+                key: float(value) for key, value in scores.items()
+            },
+            # No fertilizer prescription from an image-only heuristic.
+            "nutrition_recommendations": [
+                "تأكيد الحالة بتحليل التربة أو تحليل الأوراق قبل اختيار السماد."
+            ],
+            "estimated_recovery_time": "غير قابل للتقدير دون تأكيد الحالة",
+            "nutritional_health_score": float(
+                max(0.0, min(100.0, (1.0 - severity / 3.0) * 100.0))
+            ),
+            "nutrition_status_available": True,
+            "monitoring_frequency": self._get_nutrition_monitoring_frequency(
+                severity
+            ),
+        }
+
     def _assess_leaf_growth(self, image: np.ndarray, features: Dict[str, float], 
                           growth_stage: Optional[str] = None) -> Dict[str, Any]:
         """Assess leaf growth and development"""
@@ -829,60 +725,66 @@ class LeafScanAI:
             )
         }
     
-    def _calculate_overall_leaf_score(self, nutrition: Dict[str, Any], 
-                                    growth: Dict[str, Any], 
-                                    health: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculate overall leaf quality score"""
-        
-        # Weight the different aspects
-        nutrition_weight = 0.35
-        growth_weight = 0.30
-        health_weight = 0.35
-        
-        nutrition_score = nutrition['nutritional_health_score']
-        growth_score = growth['overall_growth_score']
-        health_score = health['overall_health_score']
-        
-        overall_score = (nutrition_score * nutrition_weight + 
-                        growth_score * growth_weight + 
-                        health_score * health_weight)
-        
-        # Quality grade
-        if overall_score >= 90:
-            quality_grade = 'A+'
-            quality_description = 'ممتاز - جودة استثنائية'
-        elif overall_score >= 80:
-            quality_grade = 'A'
-            quality_description = 'ممتاز - جودة عالية'
-        elif overall_score >= 70:
-            quality_grade = 'B+'
-            quality_description = 'جيد جدا��'
-        elif overall_score >= 60:
-            quality_grade = 'B'
-            quality_description = 'جيد'
-        elif overall_score >= 50:
-            quality_grade = 'C+'
-            quality_description = 'متوسط فما فوق'
-        elif overall_score >= 40:
-            quality_grade = 'C'
-            quality_description = 'متوسط'
+    def _calculate_overall_leaf_score(
+        self,
+        nutrition: Dict[str, Any],
+        growth: Dict[str, Any],
+        health: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Calculate leaf score without penalizing unavailable nutrition data."""
+
+        nutrition_available = nutrition.get(
+            "nutrition_status_available", True
+        )
+        growth_score = float(growth["overall_growth_score"])
+        health_score = float(health["overall_health_score"])
+        nutrition_score = float(nutrition["nutritional_health_score"])
+
+        if nutrition_available:
+            overall_score = (
+                nutrition_score * 0.35
+                + growth_score * 0.30
+                + health_score * 0.35
+            )
         else:
-            quality_grade = 'D'
-            quality_description = 'يحتاج تحسين'
-        
+            # Redistribute the available 65% weight proportionally.
+            overall_score = (
+                growth_score * 0.30 + health_score * 0.35
+            ) / 0.65
+
+        overall_score = max(0.0, min(100.0, overall_score))
+
+        if overall_score >= 90:
+            quality_grade, quality_description = "A+", "ممتاز - جودة استثنائية"
+        elif overall_score >= 80:
+            quality_grade, quality_description = "A", "ممتاز - جودة عالية"
+        elif overall_score >= 70:
+            quality_grade, quality_description = "B+", "جيد جداً"
+        elif overall_score >= 60:
+            quality_grade, quality_description = "B", "جيد"
+        elif overall_score >= 50:
+            quality_grade, quality_description = "C+", "متوسط فما فوق"
+        elif overall_score >= 40:
+            quality_grade, quality_description = "C", "متوسط"
+        else:
+            quality_grade, quality_description = "D", "يحتاج تحسين"
+
         return {
-            'overall_score': float(overall_score),
-            'quality_grade': quality_grade,
-            'quality_description': quality_description,
-            'component_scores': {
-                'nutrition': float(nutrition_score),
-                'growth': float(growth_score),
-                'health': float(health_score)
+            "overall_score": float(overall_score),
+            "quality_grade": quality_grade,
+            "quality_description": quality_description,
+            "component_scores": {
+                "nutrition": nutrition_score,
+                "growth": growth_score,
+                "health": health_score,
             },
-            'improvement_potential': float(min(100, overall_score + 15)),
-            'quality_trend': self._predict_quality_trend(overall_score, nutrition, growth, health)
+            "nutrition_score_available": nutrition_available,
+            "improvement_potential": float(min(100, overall_score + 15)),
+            "quality_trend": self._predict_quality_trend(
+                overall_score, nutrition, growth, health
+            ),
         }
-    
+
     # Helper methods
     def _assess_nutrition_severity(self, features: Dict[str, float], deficiency_type: str) -> float:
         """Assess severity of nutritional deficiency"""
@@ -905,7 +807,7 @@ class LeafScanAI:
         severity_factors.append(1 - features['green_dominance'] / 3)
         
         severity = np.mean(severity_factors)
-        return min(3.0, max(0.0, severity * 4))  # Scale to 0-3
+        return min(3.0, max(0.0, float(severity) * 4))  # Scale to 0-3
     
     def _get_nutrition_monitoring_frequency(self, severity: float) -> str:
         """Get monitoring frequency based on severity"""
@@ -1008,7 +910,7 @@ class LeafScanAI:
         for component, value in components.items():
             if value < 0.6:
                 if component == 'color_health':
-                    areas.append('تحسين التغذية والصحة العا��ة')
+                    areas.append('تحسين التغذية والصحة العامة')
                 elif component == 'surface_integrity':
                     areas.append('حماية السطح من الأضرار')
                 elif component == 'chlorophyll_health':

@@ -21,6 +21,15 @@ import { resetServiceProbeCache } from "../../server/services/providers/serviceP
 let upstream: http.Server | undefined;
 let visionUrl: string;
 const received: Array<{ url: string; contentType: string; body: string }> = [];
+const heuristicPayload = {
+  disease_detection: {
+    primary_disease: { disease: "early_blight", disease_name_ar: "اللفحة المبكرة" },
+    top_predictions: [],
+  },
+  severity_assessment: { severity_level: "medium" },
+  health_score: { health_score: 62.5 },
+};
+let nextResponsePayload: Record<string, any> = heuristicPayload;
 const savedEnv: Record<string, string | undefined> = {};
 
 const PNG = Buffer.from(
@@ -44,16 +53,7 @@ async function startVisionService() {
         body,
       });
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({
-          disease_detection: {
-            primary_disease: { disease: "early_blight", disease_name_ar: "اللفحة المبكرة" },
-            top_predictions: [],
-          },
-          severity_assessment: { severity_level: "medium" },
-          health_score: { health_score: 62.5 },
-        }),
-      );
+      res.end(JSON.stringify(nextResponsePayload));
     });
   });
   await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
@@ -82,6 +82,7 @@ describe("🔎 Vision gateway forwarding", () => {
 
   beforeEach(() => {
     received.length = 0;
+    nextResponsePayload = heuristicPayload;
     resetServiceProbeCache();
   });
 
@@ -103,8 +104,53 @@ describe("🔎 Vision gateway forwarding", () => {
       .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
       .expect(200);
     expect(res.body.dataSource).toBe("heuristic");
+    expect(res.body.data_source).toBe("heuristic");
     expect(res.body.isRealData).toBe(false);
+    expect(res.body.is_real_data).toBe(false);
     expect(res.body.modelSource).toBe("heuristic-demo");
+    expect(res.body.model_source).toBe("heuristic-demo");
+  });
+
+  test("preserves valid request-level vision-model provenance", async () => {
+    nextResponsePayload = {
+      ...heuristicPayload,
+      data_source: "vision-model",
+      is_real_data: true,
+      model_source: "provider:test-vision-model",
+    };
+
+    const res = await request(app)
+      .post("/api/ai/images/detect-disease")
+      .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
+      .expect(200);
+
+    expect(res.body.dataSource).toBe("vision-model");
+    expect(res.body.data_source).toBe("vision-model");
+    expect(res.body.isRealData).toBe(true);
+    expect(res.body.is_real_data).toBe(true);
+    expect(res.body.modelSource).toBe("provider:test-vision-model");
+    expect(res.body.model_source).toBe("provider:test-vision-model");
+  });
+
+  test("rejects untrusted vision provenance", async () => {
+    nextResponsePayload = {
+      ...heuristicPayload,
+      data_source: "vision-model",
+      is_real_data: false,
+      model_source: "provider:unverified",
+    };
+
+    const res = await request(app)
+      .post("/api/ai/images/detect-disease")
+      .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
+      .expect(200);
+
+    expect(res.body.dataSource).toBe("heuristic");
+    expect(res.body.data_source).toBe("heuristic");
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.is_real_data).toBe(false);
+    expect(res.body.modelSource).toBe("heuristic-demo");
+    expect(res.body.model_source).toBe("heuristic-demo");
   });
 
   test("forwards the optional plant_type field", async () => {

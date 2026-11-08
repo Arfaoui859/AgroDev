@@ -755,12 +755,15 @@ const PlantDiseaseDetection: React.FC = () => {
                       </div>
                       <div className="p-4 bg-yellow-50 rounded-lg">
                         <div
-                          className={`text-3xl font-bold ${getHealthColor(leafResult.leaf_nutrition.nutritional_health_score)}`}
+                          className={`text-3xl font-bold ${
+                            leafResult.leaf_nutrition.nutrition_status_available === true
+                              ? getHealthColor(leafResult.leaf_nutrition.nutritional_health_score)
+                              : "text-gray-500"
+                          }`}
                         >
-                          {leafResult.leaf_nutrition.nutritional_health_score.toFixed(
-                            1,
-                          )}
-                          %
+                          {leafResult.leaf_nutrition.nutrition_status_available === true
+                            ? `${leafResult.leaf_nutrition.nutritional_health_score.toFixed(1)}%`
+                            : "غير متاح"}
                         </div>
                         <div className="text-sm text-gray-600">
                           الصحة الغذائية
@@ -804,21 +807,30 @@ const PlantDiseaseDetection: React.FC = () => {
                               }
                             </Badge>
                           </div>
-                          <Progress
-                            value={
-                              leafResult.leaf_nutrition.primary_deficiency
-                                .probability * 100
-                            }
-                            className="h-2"
-                          />
-                          <div className="text-sm text-gray-600">
-                            ��رجة الثقة:{" "}
-                            {(
-                              leafResult.leaf_nutrition.primary_deficiency
-                                .probability * 100
-                            ).toFixed(1)}
-                            %
-                          </div>
+                          {leafResult.leaf_nutrition.nutrition_status_available === true ? (
+                            <>
+                              <Progress
+                                value={
+                                  leafResult.leaf_nutrition.primary_deficiency
+                                    .probability * 100
+                                }
+                                className="h-2"
+                              />
+                              <div className="text-sm text-gray-600">
+                                مؤشر بصري استرشادي، وليس درجة ثقة تشخيصية:{" "}
+                                {(
+                                  leafResult.leaf_nutrition.primary_deficiency
+                                    .probability * 100
+                                ).toFixed(1)}
+                                %
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-500">
+                              لا توجد أدلة بصرية كافية لتقييم العناصر الغذائية.
+                              يُنصح بتحليل التربة أو الأوراق.
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -835,6 +847,12 @@ const PlantDiseaseDetection: React.FC = () => {
                                 {rec}
                               </div>
                             ))}
+                          {leafResult.leaf_nutrition.nutrition_status_available !== true && (
+                            <p className="text-sm text-gray-500">
+                              لا توجد توصيات تسميد آلية دون أدلة كافية. يُرجى
+                              تأكيد الاحتياجات بتحليل مخبري.
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1014,6 +1032,30 @@ const PlantDiseaseDetection: React.FC = () => {
             {/* Comprehensive Results */}
             {comprehensiveResult && (
               <div className="space-y-6">
+                {comprehensiveResult.status === "insufficient_visual_evidence" ? (
+                  <Card className="border-yellow-300 bg-yellow-50">
+                    <CardHeader>
+                      <CardTitle className="text-yellow-900">
+                        الصورة غير كافية للتحليل
+                      </CardTitle>
+                      <CardDescription className="text-yellow-800">
+                        {comprehensiveResult.image_suitability?.message_ar ||
+                          "الصورة ما فيهاش تفاصيل بصرية كافية لتقييم النبات."}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-3 text-sm text-gray-700">
+                        للحصول على نتيجة أفضل:
+                      </p>
+                      <ul className="list-disc space-y-2 pr-5 text-sm text-gray-700">
+                        <li>صوّر ورقة نبات حقيقية، موش سطح بلون موحّد.</li>
+                        <li>استعمل إضاءة طبيعية وخلي الورقة واضحة وفي التركيز.</li>
+                        <li>أظهر المنطقة المتضررة وجزءاً من الورقة المحيطة بها.</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
                 {/* Overall Health Summary */}
                 <Card className="border-blue-200 bg-blue-50">
                   <CardHeader>
@@ -1054,10 +1096,9 @@ const PlantDiseaseDetection: React.FC = () => {
                       </div>
                       <div>
                         <div className="text-2xl font-bold text-purple-600">
-                          {comprehensiveResult.overall_plant_health.components.nutrition_health.toFixed(
-                            1,
-                          )}
-                          %
+                          {comprehensiveResult.nutrition_health_available === true
+                            ? `${comprehensiveResult.overall_plant_health.components.nutrition_health.toFixed(1)}%`
+                            : "غير متاح"}
                         </div>
                         <div className="text-sm text-gray-600">
                           الصحة الغذائية
@@ -1180,6 +1221,8 @@ const PlantDiseaseDetection: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
+                  </>
+                )}
               </div>
             )}
           </TabsContent>

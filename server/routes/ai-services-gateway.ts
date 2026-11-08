@@ -186,6 +186,50 @@ const respondFromMicroservice = async (
   res.json(payload);
 };
 
+
+/**
+ * Image Diagnosis uses request-level provenance returned by the actual
+ * inference endpoint. Never infer it from /health.
+ */
+const respondFromImageMicroservice = (
+  res: Response,
+  data: any,
+  allowVisionModel = false,
+) => {
+  const payload =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? { ...data }
+      : { result: data };
+
+  const rawDataSource = payload.data_source ?? payload.dataSource;
+  const rawIsRealData = payload.is_real_data ?? payload.isRealData;
+  const rawModelSource = payload.model_source ?? payload.modelSource;
+
+  const validVisionSource =
+    rawDataSource === "vision-model" || rawDataSource === "llm";
+
+  const isRealData =
+    allowVisionModel &&
+    rawIsRealData === true &&
+    validVisionSource &&
+    typeof rawModelSource === "string" &&
+    rawModelSource.trim().length > 0;
+
+  const finalDataSource = isRealData ? rawDataSource : "heuristic";
+  const finalModelSource = isRealData ? rawModelSource : "heuristic-demo";
+
+  // Keep snake_case and camelCase identical for every frontend consumer.
+  res.json({
+    ...payload,
+    data_source: finalDataSource,
+    dataSource: finalDataSource,
+    is_real_data: isRealData,
+    isRealData,
+    model_source: finalModelSource,
+    modelSource: finalModelSource,
+  });
+};
+
 // 🌱 SOIL ANALYSIS ENDPOINTS
 export const analyzeSoilData = async (req: Request, res: Response) => {
   const sensorData = req.body?.sensor_data ?? req.body ?? {};
@@ -538,7 +582,7 @@ export const detectPlantDisease = [
         },
       );
 
-      await respondFromMicroservice(res, response.data, AI_SERVICES.IMAGE_DIAGNOSIS);
+      await respondFromImageMicroservice(res, response.data, true);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Plant Disease Detection", res);
     }
@@ -579,7 +623,7 @@ export const analyzeLeafHealth = [
         },
       );
 
-      await respondFromMicroservice(res, response.data, AI_SERVICES.IMAGE_DIAGNOSIS);
+      await respondFromImageMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Leaf Analysis", res);
     }
@@ -624,7 +668,7 @@ export const comprehensivePlantAnalysis = [
         },
       );
 
-      await respondFromMicroservice(res, response.data, AI_SERVICES.IMAGE_DIAGNOSIS);
+      await respondFromImageMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(
         error as AxiosError,
@@ -661,7 +705,7 @@ export const quickPlantHealthCheck = [
         },
       );
 
-      await respondFromMicroservice(res, response.data, AI_SERVICES.IMAGE_DIAGNOSIS);
+      await respondFromImageMicroservice(res, response.data);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Quick Health Check", res);
     }
