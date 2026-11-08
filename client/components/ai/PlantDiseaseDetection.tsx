@@ -157,10 +157,11 @@ const PlantDiseaseDetection: React.FC = () => {
         );
       }
       if (data && typeof data === "object") {
+        const metadata = data.metadata ?? {};
         setProvenance({
-          dataSource: data.dataSource,
-          isRealData: data.isRealData,
-          modelSource: data.modelSource ?? null,
+          dataSource: metadata.dataSource ?? data.dataSource,
+          isRealData: metadata.isRealData ?? data.isRealData,
+          modelSource: metadata.model ?? data.modelSource ?? null,
         });
       }
       return data;
@@ -492,191 +493,107 @@ const PlantDiseaseDetection: React.FC = () => {
             </Card>
 
             {/* Disease Detection Results */}
-            {diseaseResult && (
+            {diseaseResult?.diagnosis && (
               <div className="space-y-6">
-                {/* Primary Disease */}
-                <Card
-                  className={
-                    diseaseResult.disease_detection.primary_disease.disease ===
-                    "healthy"
-                      ? "border-green-200 bg-green-50"
-                      : "border-red-200 bg-red-50"
-                  }
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      {diseaseResult.disease_detection.primary_disease
-                        .disease === "healthy" ? (
-                        <CheckCircle className="w-5 h-5 ml-2 text-green-600" />
-                      ) : (
-                        <AlertTriangle className="w-5 h-5 ml-2 text-red-600" />
-                      )}
-                      التشخيص ��لأساسي
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <h3 className="text-xl font-bold mb-2">
-                          {
-                            diseaseResult.disease_detection.primary_disease
-                              .disease_name_ar
-                          }
-                        </h3>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm">نسبة الثقة:</span>
-                            <Badge variant="outline">
-                              {(
-                                diseaseResult.disease_detection.primary_disease
-                                  .probability * 100
-                              ).toFixed(1)}
-                              %
-                            </Badge>
-                          </div>
-                          <Progress
-                            value={
-                              diseaseResult.disease_detection.primary_disease
-                                .probability * 100
-                            }
-                            className="h-2"
-                          />
-                        </div>
-                      </div>
+                {(() => {
+                  const d = diseaseResult.diagnosis;
+                  const confidence = Number(d.confidence);
+                  const validConfidence =
+                    Number.isFinite(confidence) && confidence >= 0 && confidence <= 100;
+                  const healthy = ["healthy", "no-disease"].includes(d.diseaseId);
+                  const sections = [
+                    { title: "العلاج الفوري", items: diseaseResult.recommendations?.immediate ?? d.treatment },
+                    { title: "العناية قصيرة المدى", items: diseaseResult.recommendations?.shortTerm },
+                    { title: "الوقاية", items: diseaseResult.recommendations?.longTerm ?? d.prevention },
+                    { title: "المراقبة", items: diseaseResult.recommendations?.monitoring },
+                  ];
 
-                      <div>
-                        <h4 className="font-medium mb-2">تقييم الشدة</h4>
-                        <div className="space-y-2">
-                          <Badge
-                            className={getSeverityColor(
-                              diseaseResult.severity_assessment.severity_level,
-                            )}
-                          >
-                            {diseaseResult.severity_assessment.severity_level}
-                          </Badge>
-                          <div className="text-sm">
-                            درجة الشدة:{" "}
-                            {diseaseResult.severity_assessment.severity_score.toFixed(
-                              1,
-                            )}
-                            /4
-                          </div>
-                          <div className="text-sm">
-                            المنطقة المتضررة:{" "}
-                            {diseaseResult.severity_assessment.affected_area_percentage.toFixed(
-                              1,
-                            )}
-                            %
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-medium mb-2">مستوى الإلحاح</h4>
-                        <Badge
-                          className={getSeverityColor(
-                            diseaseResult.severity_assessment.urgency_level,
-                          )}
-                        >
-                          {diseaseResult.severity_assessment.urgency_level}
-                        </Badge>
-                        <div className="mt-2">
-                          <span className="text-sm">الصحة العامة: </span>
-                          <span
-                            className={`font-medium ${getHealthColor(diseaseResult.health_score.health_score)}`}
-                          >
-                            {diseaseResult.health_score.health_score.toFixed(1)}
-                            %
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* All Predictions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>جميع التشخيصات المحتملة</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {diseaseResult.disease_detection.top_predictions.map(
-                        (prediction: any, index: number) => (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                          >
+                  return (
+                    <>
+                      <Card className={healthy ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            {healthy
+                              ? <CheckCircle className="w-5 h-5 ml-2 text-green-600" />
+                              : <AlertTriangle className="w-5 h-5 ml-2 text-red-600" />}
+                            التشخيص الأساسي
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                              <span className="font-medium">
-                                {prediction.disease_name_ar}
-                              </span>
-                              <Badge
-                                className={`mr-2 ${getSeverityColor(prediction.severity_level)}`}
-                                variant="outline"
-                              >
-                                {prediction.severity_level}
+                              <h3 className="text-xl font-bold mb-2">{d.disease || "تشخيص غير محدد"}</h3>
+                              <p className="text-sm text-gray-600">{d.description || "لا يوجد وصف إضافي متاح."}</p>
+                              <div className="mt-3">
+                                <span className="text-sm">نسبة الثقة: </span>
+                                {validConfidence
+                                  ? <>
+                                      <Badge variant="outline">{confidence.toFixed(1)}%</Badge>
+                                      <Progress value={confidence} className="h-2 mt-2" />
+                                    </>
+                                  : <span className="text-sm text-gray-500">غير متاحة</span>}
+                              </div>
+                            </div>
+                            <div>
+                              <h4 className="font-medium mb-2">تقييم الشدة</h4>
+                              <Badge className={getSeverityColor(d.severity || "unknown")}>
+                                {d.severity || "غير متاح"}
                               </Badge>
                             </div>
-                            <div className="text-right">
-                              <div className="text-sm text-gray-600">
-                                احتمالية
-                              </div>
-                              <div className="font-medium">
-                                {(prediction.probability * 100).toFixed(1)}%
-                              </div>
+                            <div>
+                              <h4 className="font-medium mb-2">مستوى الإلحاح</h4>
+                              <Badge className={getSeverityColor(d.urgency || "unknown")}>
+                                {d.urgency || "غير متاح"}
+                              </Badge>
                             </div>
                           </div>
-                        ),
+                        </CardContent>
+                      </Card>
+
+                      {Array.isArray(d.symptoms) && d.symptoms.length > 0 && (
+                        <Card>
+                          <CardHeader><CardTitle>الأعراض المرصودة</CardTitle></CardHeader>
+                          <CardContent>
+                            <ul className="list-disc list-inside space-y-2">
+                              {d.symptoms.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                            </ul>
+                          </CardContent>
+                        </Card>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Treatment Plan */}
-                {diseaseResult.treatment_plan &&
-                  diseaseResult.treatment_plan.immediate_treatment.length >
-                    0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center">
-                          <Activity className="w-5 h-5 ml-2" />
-                          خطة العلاج
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <h4 className="font-medium mb-3">العلاج الفوري:</h4>
-                          <div className="space-y-2">
-                            {diseaseResult.treatment_plan.immediate_treatment.map(
-                              (treatment: string, index: number) => (
-                                <Alert key={index}>
-                                  <AlertDescription>
-                                    {treatment}
-                                  </AlertDescription>
-                                </Alert>
-                              ),
+                      {sections.some(x => Array.isArray(x.items) && x.items.length > 0) && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center">
+                              <Activity className="w-5 h-5 ml-2" />
+                              التوصيات وخطة العلاج
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {sections.map(section =>
+                              Array.isArray(section.items) && section.items.length > 0 ? (
+                                <div key={section.title}>
+                                  <h4 className="font-medium mb-2">{section.title}</h4>
+                                  <ul className="list-disc list-inside space-y-2">
+                                    {section.items.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                                  </ul>
+                                </div>
+                              ) : null
                             )}
-                          </div>
-                        </div>
+                          </CardContent>
+                        </Card>
+                      )}
 
-                        {diseaseResult.treatment_plan
-                          .estimated_recovery_time && (
-                          <div className="pt-3 border-t">
-                            <span className="text-sm text-gray-600">
-                              وقت التعافي المتوقع:{" "}
-                            </span>
-                            <Badge variant="outline">
-                              {
-                                diseaseResult.treatment_plan
-                                  .estimated_recovery_time
-                              }
-                            </Badge>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
+                      {diseaseResult.metadata && (
+                        <p className="text-xs text-gray-500 text-left">
+                          المصدر: {diseaseResult.metadata.model || "غير محدد"}
+                          {" · "}
+                          {diseaseResult.metadata.isRealData ? "نتيجة نموذج" : "تحليل استدلالي تجريبي"}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
           </TabsContent>
