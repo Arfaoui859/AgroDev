@@ -316,16 +316,31 @@ def _run_quick_health_check(image_data: bytes) -> Dict[str, Any]:
     disease_result = detector.detect_plant_disease(image_data)
     leaf_result = scanner.analyze_leaf_comprehensive(image_data)
 
-    health_score = disease_result["health_score"]["health_score"]
+    detection = disease_result.get("disease_detection", {})
+    disease_source = detection.get("data_source", "heuristic")
+    disease_model = detection.get("model_source", "feature-based-heuristics")
+    uses_trained_model = disease_source == "trained-ml"
 
     return {
         "status": "success",
-        "health_score": float(health_score),
-        "primary_disease": disease_result["disease_detection"]["primary_disease"]["disease_name_ar"],
+        "health_score": float(disease_result["health_score"]["health_score"]),
+        "primary_disease": detection.get("primary_disease", {}).get(
+            "disease_name_ar", "غير محدد"
+        ),
         "nutrition_status": leaf_result["leaf_nutrition"]["primary_deficiency"]["name_ar"],
-        "data_source": "heuristic",
+        "data_source": "mixed" if uses_trained_model else "heuristic",
         "is_real_data": False,
-        "model_source": "heuristic-demo",
+        "model_source": f"{disease_model}+leaf-feature-heuristics",
+        "component_sources": {
+            "disease_detection": disease_source,
+            "leaf_nutrition": "heuristic",
+            "health_score": "deterministic-aggregation",
+        },
+        "disclaimer": (
+            "Disease classification may use a trained PlantVillage model. "
+            "Leaf nutrition and the combined health score are heuristic, "
+            "not laboratory measurements or field-validated results."
+        ),
     }
 
 
@@ -523,13 +538,29 @@ def _run_comprehensive_analysis(
         "disease_analysis": disease,
         "leaf_analysis": leaf,
         "nutrition_health_available": nutrition_available,
-        "data_source": "heuristic",
+        "data_source": (
+            "mixed"
+            if disease.get("disease_detection", {}).get("data_source") == "trained-ml"
+            else "heuristic"
+        ),
         "is_real_data": False,
-        "model_source": "heuristic-demo",
+        "model_source": (
+            f"{disease.get('disease_detection', {}).get('model_source', 'feature-based-heuristics')}"
+            "+leaf-feature-heuristics+deterministic-aggregation"
+        ),
+        "component_sources": {
+            "disease_detection": disease.get("disease_detection", {}).get(
+                "data_source", "heuristic"
+            ),
+            "leaf_analysis": "heuristic",
+            "nutrition_analysis": "heuristic",
+            "overall_health_score": "deterministic-aggregation",
+        },
         "disclaimer": (
-            "This result uses visual heuristic analysis, not a trained "
-            "diagnostic model or laboratory nutrient measurement. "
-            "It is not a substitute for expert assessment."
+            "Disease classification may use a trained PlantVillage model. "
+            "Leaf and nutrition analysis remain heuristic; nutrient status "
+            "is not a laboratory measurement. The combined health score "
+            "is not field-validated and is not a substitute for expert assessment."
         ),
     }
 

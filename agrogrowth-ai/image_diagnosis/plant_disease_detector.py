@@ -15,7 +15,10 @@ import json
 try:
     from .onnx_classifier import PlantDiseaseONNXClassifier
 except ImportError:
-    from onnx_classifier import PlantDiseaseONNXClassifier
+    try:
+        from onnx_classifier import PlantDiseaseONNXClassifier
+    except ImportError:
+        PlantDiseaseONNXClassifier = None
 
 logger = logging.getLogger(__name__)
 
