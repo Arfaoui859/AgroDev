@@ -39,6 +39,16 @@ describe("🛡️ Middleware ordering", () => {
     expect(sawTooMany).toBe(true);
   });
 
+  test("read-only AI capability probes do not consume the inference limit", async () => {
+    for (let i = 0; i < 12; i++) {
+      const agroChat = await request(app).get("/api/ai/agro-chat");
+      const alerts = await request(app).get("/api/ai/alert-notifier");
+
+      expect(agroChat.status).not.toBe(429);
+      expect(alerts.status).not.toBe(429);
+    }
+  });
+
   test("disease analysis route is rate limited too", async () => {
     let sawTooMany = false;
     for (let i = 0; i < 12; i++) {

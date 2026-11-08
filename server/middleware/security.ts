@@ -132,8 +132,36 @@ export function aiRateLimiter(): RequestHandler {
     max: Number(process.env.AI_RATE_LIMIT_MAX || 30),
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) =>
-      req.method === "OPTIONS" || req.originalUrl.startsWith("/api/ai/health"),
+    skip: (req) => {
+      const path = req.originalUrl.split("?")[0];
+      const readOnlyCapabilityPaths = new Set([
+        "/api/ai/soil-analysis",
+        "/api/ai/climate-crop-matcher",
+        "/api/ai/pest-control",
+        "/api/ai/irrigation-optimizer",
+        "/api/ai/weather-yield-planner",
+        "/api/ai/smart-match",
+        "/api/ai/farming-tasks-planner",
+        "/api/ai/alert-notifier",
+        "/api/ai/agro-chat",
+        "/api/ai/plant-disease-detection",
+        "/api/ai/leaf-scan",
+        "/api/ai/yield-predictor",
+        "/api/ai/market-forecast",
+        "/api/ai/supply-demand",
+      ]);
+      const isReadOnlyCapabilityProbe =
+        req.method === "GET" &&
+        (readOnlyCapabilityPaths.has(path) ||
+          path === "/api/ai/capabilities" ||
+          path.startsWith("/api/ai/capabilities/"));
+
+      return (
+        req.method === "OPTIONS" ||
+        path.startsWith("/api/ai/health") ||
+        isReadOnlyCapabilityProbe
+      );
+    },
     message: {
       error: "Too many AI requests, please slow down and try again shortly.",
     },
