@@ -290,6 +290,7 @@ import { setupAdminUser } from "./routes/admin-setup";
 import {
   analyzeSoilDetailed,
   analyzeSoilBatch,
+  listSoilAnalysisReports,
   getSoilAnalysisReport,
 } from "./routes/soil-analysis-detailed";
 
@@ -422,6 +423,7 @@ export function createServer() {
   // Soil Analysis Detailed routes (AI-powered detailed analysis)
   app.post("/api/soil-analysis/analyze", requireAuth, analyzeSoilDetailed);
   app.post("/api/soil-analysis/batch", requireAuth, analyzeSoilBatch);
+  app.get("/api/soil-analysis/reports", requireAuth, listSoilAnalysisReports);
   app.get("/api/soil-analysis/report/:analysisId", requireAuth, getSoilAnalysisReport);
 
   // Smart Crop Suggestions routes
