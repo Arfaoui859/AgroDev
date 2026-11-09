@@ -221,33 +221,26 @@ const EnhancedAnalysis: React.FC = () => {
   const crop = data.cropSuitability ?? {};
   const quality = data.dataQuality ?? {};
   const discussReportWithAgent = () => {
-    const groundedContext = {
-      executiveSummary: String(data.executiveSummary || "").slice(0, 1200),
-      soilTexture: data.soilCharacterization?.texture,
-      soilProperties: {
-        chemical: Array.isArray(data.soilCharacterization?.chemical) ? data.soilCharacterization.chemical.slice(0, 6) : [],
-        physical: Array.isArray(data.soilCharacterization?.physical) ? data.soilCharacterization.physical.slice(0, 6) : [],
-      },
-      findings: findings.slice(0, 8),
-      cropSuitability: {
-        status: crop.status,
-        candidates: Array.isArray(crop.candidates) ? crop.candidates.slice(0, 5) : [],
-        caveats: Array.isArray(crop.caveats) ? crop.caveats.slice(0, 8) : [],
-      },
-      targetCropPlan: data.targetCropPlan ? {
-        targetCrop: data.targetCropPlan.targetCrop,
-        feasibility: data.targetCropPlan.feasibility,
-        reasons: Array.isArray(data.targetCropPlan.reasons) ? data.targetCropPlan.reasons.slice(0, 6) : [],
-        actions: Array.isArray(data.targetCropPlan.actions) ? data.targetCropPlan.actions.slice(0, 6) : [],
-        firstAction: data.targetCropPlan.firstAction,
-        retestWhen: data.targetCropPlan.retestWhen,
-      } : null,
-      waterAndIrrigation: data.waterAndIrrigation,
-      missingMeasurements: Array.isArray(quality.missingMeasurements) ? quality.missingMeasurements.slice(0, 12) : [],
-      recommendations: recommendations.slice(0, 8),
-      followUpPlan: followUp.slice(0, 6),
-    };
-    const compactContext = JSON.stringify(groundedContext);
+    const candidateNotes = Array.isArray(crop.candidates)
+      ? crop.candidates.slice(0, 4).map((item: any) => `${text(item.crop)}: ${text(item.why_it_may_fit)}; conditions: ${text(item.conditions_to_check)}`).join("\n")
+      : "لا توجد قائمة مرشحين موثقة في التقرير.";
+    const findingNotes = findings.slice(0, 5)
+      .map((item: any) => `${text(item.parameter)} (${text(item.observedValue)} ${text(item.unit, "")}): ${text(item.interpretation)}`)
+      .join("\n");
+    const actionNotes = recommendations.slice(0, 5)
+      .map((item: any) => `${text(item.priority)}: ${text(item.action)} — ${text(item.reason)}`)
+      .join("\n");
+    const compactContext = [
+      "ملخص التقرير: " + text(data.executiveSummary).slice(0, 700),
+      "نسيج التربة: " + text(data.soilCharacterization?.texture?.classification) + "؛ الأساس: " + text(data.soilCharacterization?.texture?.basis),
+      "أبرز النتائج: " + findingNotes.slice(0, 750),
+      "المحاصيل المرشحة: " + candidateNotes.slice(0, 750),
+      "خطة المحصول المستهدف: " + text(data.targetCropPlan?.targetCrop) + "؛ الجدوى: " + text(data.targetCropPlan?.feasibility) + "؛ أول خطوة: " + text(data.targetCropPlan?.firstAction),
+      "النواقص: " + list(quality.missingMeasurements).slice(0, 8).join("، "),
+      "التوصيات: " + actionNotes.slice(0, 700),
+      "المتابعة: " + followUp.slice(0, 3).map((item: any) => `${text(item.when)}: ${text(item.whatToDo)}`).join("؛ "),
+      "الماء والري: " + text(data.waterAndIrrigation?.status) + "؛ " + text(data.waterAndIrrigation?.limitations),
+    ].join("\n").slice(0, 3000);
     navigate("/ai-assistant", {
       state: {
         initialPrompt: "أنت AgroGrowth Agent. أريد منك أن تبني قرار زراعة عملي اعتماداً على تقرير التربة التالي، لا تعطيني كلاماً عاماً. قارن المحاصيل المرشحة، اختر أفضل الخيارات الممكنة للموسم الحالي إذا كانت المعطيات كافية، وضّح شروط الزراعة والمخاطر والماء والتهيئة وخطة أول 30 يوماً. إذا نقصت معلومات حاسمة اسألني عنها ولا تخمّن. هذا التقرير هو المصدر: " + compactContext,
