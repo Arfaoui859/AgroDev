@@ -104,11 +104,17 @@ describe("🔐 Admin panel authorization (production posture)", () => {
     });
 
     test.each(ADMIN_ENDPOINTS)(
-      "%s allows a caller presenting the correct admin token",
+      "%s authenticates the caller before returning real data or an explicit unavailable response",
       async (path) => {
         const res = await request(app).get(path).set("x-admin-token", TOKEN);
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
+        if (path === "/api/admin/users") {
+          expect(res.status).toBe(200);
+          expect(res.body.success).toBe(true);
+        } else {
+          expect(res.status).toBe(503);
+          expect(res.body.code).toBe("SIMULATED_DATA_DISABLED");
+          expect(res.body.productionReady).toBe(false);
+        }
       },
     );
 
