@@ -108,19 +108,15 @@ async def get_crop_water_database():
 
 @app.get("/irrigation-methods")
 async def get_irrigation_methods():
-    """
-    الحصول على معلومات طرق الري المختلفة
-    """
-    try:
-        return {
-            'success': True,
-            'data': irrigation_optimizer.irrigation_methods,
-            'message': 'تم جلب معلومات طرق الري بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching irrigation methods: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "IRRIGATION_METHOD_CATALOGUE_NOT_VERIFIED",
+            "message": "The bundled irrigation-method catalogue has not been reviewed against verified local cost and suitability references.",
+            "production_ready": False,
+        },
+    )
+
 
 @app.post("/analyze-soil-moisture")
 async def analyze_soil_moisture(
