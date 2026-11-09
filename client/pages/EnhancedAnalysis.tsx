@@ -47,6 +47,8 @@ const EnhancedAnalysis: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [savedAt, setSavedAt] = useState("");
+  const [historyReports, setHistoryReports] = useState<Array<Record<string, unknown>>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -71,6 +73,45 @@ const EnhancedAnalysis: React.FC = () => {
       });
     } catch { /* Ignore malformed legacy local draft; never invent measurements. */ }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    setHistoryLoading(true);
+    soilAnalysisService.listReports(10)
+      .then((items) => { if (active) setHistoryReports(items); })
+      .catch(() => { if (active) setHistoryReports([]); })
+      .finally(() => { if (active) setHistoryLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const openSavedReport = async (analysisId: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await soilAnalysisService.getReport(analysisId);
+      const saved = result.data as Record<string, any>;
+      setReport({
+        success: true,
+        data: saved.report,
+        dataSource: "ai-advisory",
+        isRealData: false,
+        analysisId,
+        persistence: { persisted: true },
+        provenance: {
+          measurements: "user-provided-unverified",
+          advisory: "llm-generated",
+          mlPrediction: "not-available",
+          modelTraining: "not-claimed",
+          note_ar: "القياسات مدخلة من المستخدم وغير متحقق منها مخبرياً؛ التقرير استشارة LLM وليس نتيجة نموذج ML مدرّب.",
+        },
+      });
+      setSavedAt(String(saved.analyzedAt || saved.createdAt || ""));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "تعذّر فتح التقرير المحفوظ.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const numericPayload = useMemo(() => {
     const payload: Record<string, any> = {};
@@ -156,6 +197,10 @@ const EnhancedAnalysis: React.FC = () => {
           </form>
 
           <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between gap-3"><h3 className="font-bold text-slate-900">سجل تقاريرك السحابية</h3><span className="text-xs text-slate-500">{historyLoading ? "جاري التحميل..." : historyReports.length + " تقرير"}</span></div>
+              {historyReports.length ? <ul className="mt-3 space-y-2">{historyReports.map((item:any) => <li key={String(item.analysisId)} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-800">{String(item.executiveSummary || "تقرير تحليل تربة")}</p><p className="text-xs text-slate-500">{item.analyzedAt ? new Date(String(item.analyzedAt)).toLocaleString("ar-TN") : "تاريخ غير متاح"}</p></div><button type="button" onClick={()=>openSavedReport(String(item.analysisId))} className="shrink-0 rounded-lg border border-emerald-200 px-3 py-2 text-xs font-bold text-emerald-800">فتح التقرير</button></li>)}</ul> : <p className="mt-3 text-sm leading-6 text-slate-500">لا توجد تقارير سحابية متاحة حالياً. يلزم تسجيل الدخول وربط العينة بحقل تملكه لحفظها.</p>}
+            </div>
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5"><div className="flex items-center gap-2 font-bold text-emerald-950"><ShieldCheck size={19}/> الشفافية العلمية</div><ul className="mt-3 space-y-2 text-sm leading-6 text-emerald-950"><li>• قياساتك تبقى مصنّفة كمدخلات مستخدم غير متحقق منها مخبرياً.</li><li>• تفسير التقرير استشارة LLM، وليس تنبؤاً من نموذج ML مدرّب.</li><li>• لا درجات صحة ولا نسب توافق ولا كميات أسمدة من غير أدلة كافية.</li><li>• الوحدات وطرق التحليل المجهولة تظهر كقيود، ولا نفترضها.</li></ul></div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="font-bold text-slate-900">ماذا يحتوي التقرير؟</h3><div className="mt-4 grid gap-3 sm:grid-cols-2">{[[FlaskConical,"جودة البيانات والقياسات"],[Activity,"تفسير كل مؤشر"],[Leaf,"خصائص التربة والملاءمة"],[ClipboardList,"توصيات مبررة بالأدلة"],[RefreshCw,"خطة المتابعة والتحقق"],[ShieldCheck,"الحدود والمراجعة المختصة"]].map(([Icon,label]:any)=><div key={label} className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-700"><Icon size={17} className="text-emerald-700"/>{label}</div>)}</div></div>
           </div>
