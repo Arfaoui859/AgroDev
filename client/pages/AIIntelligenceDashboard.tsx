@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 type AIService = {
   name:string; nameAr?:string; key:string; url?:string; status:string;
   responseTime?:number; lastChecked?:string; error?:string;
-  modelSource?:string|null; isRealModel?:boolean; modelTrainedOnSyntheticData?:boolean;
+  modelSource?:string|null; modelKind?:"unknown"|"synthetic"|"rule-based"|"model"; isRealModel?:boolean; modelTrainedOnSyntheticData?:boolean;
 };
 type HealthPayload = {
   overview?:{totalServices:number;availableServices:number;reachableServices?:number;unavailableServices:number;notConfiguredServices?:number;rateLimitedServices?:number;syntheticModelServices:number;lastUpdated:string;checkDuration:number};
@@ -21,6 +21,7 @@ type HealthPayload = {
 
 function classify(service:AIService) {
   const error=(service.error||"").toLowerCase();
+  if(service.status==="available" && service.modelKind==="rule-based") return {label:"متصل · محرك قواعد",tone:"warning" as const};
   if(service.status==="available" && service.modelTrainedOnSyntheticData===true) return {label:"متصل · نموذج اصطناعي",tone:"warning" as const};
   if(service.status==="available" && service.isRealModel!==true) return {label:"متصل · المصدر غير مثبت",tone:"warning" as const};
   if(service.status==="available") return {label:"متصل",tone:"success" as const};
@@ -83,7 +84,7 @@ export default function AIIntelligenceDashboard(){
             <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
               <span>الاستجابة: {typeof service.responseTime==="number"?service.responseTime+" ms":"غير متاح"}</span>
               <span>مصدر النموذج: {service.modelSource||"غير معلن"}</span>
-              <span>{service.isRealModel===true?"نموذج غير معلن كاصطناعي":service.modelTrainedOnSyntheticData===true?"مصدر اصطناعي/قواعد":"لم يتم إثبات نموذج مدرّب"}</span>
+              <span>{service.modelKind==="rule-based"?"محرك قواعد حتمي، وليس نموذج ML مدرّب":service.isRealModel===true?"مصدر نموذج فعلي معلن":service.modelTrainedOnSyntheticData===true?"مصدر اصطناعي/تجريبي":"لم يتم إثبات نموذج مدرّب"}</span>
             </div>
             {service.error&&<p className="mt-2 break-words text-xs text-destructive">{service.error}</p>}
           </div>;
