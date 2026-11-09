@@ -155,14 +155,13 @@ describe("🏷️ Uniform provenance contract across AI endpoints", () => {
     expect(res.body.success).toBe(false);
   });
 
-  test("crop recommendation states it is not real inference", async () => {
+  test("crop recommendation refuses unvalidated inference", async () => {
     const res = await request(app)
       .post("/api/ai/crops/recommend")
       .send({ ph: 7, temperature: 22, rainfall: 450, season: "winter" })
-      .expect(200);
-    expect(res.body.dataSource).toBe("rule-based");
-    expect(res.body.isRealData).toBe(false);
-    expect(typeof res.body.modelSource).toBe("string");
+      .expect(503);
+    expect(res.body.success).toBe(false);
+    expect(res.body.recommendations).toBeUndefined();
   });
 
   test("assistant states it is not real inference when no LLM is configured", async () => {
@@ -176,24 +175,21 @@ describe("🏷️ Uniform provenance contract across AI endpoints", () => {
   });
 });
 
-describe("marketplace data provenance", () => {
+describe("marketplace and supply-chain persistence requirements", () => {
   let app: express.Express;
-
-  beforeAll(async () => {
-    app = createServer();
-  });
+  beforeAll(async () => { app = createServer(); });
 
   it.each([
     "/api/marketplace/listings",
     "/api/marketplace/inquiries",
     "/api/marketplace/analytics",
     "/api/supply-chain/nodes",
-  ])("labels %s as simulated so demo data is not read as real", async (path) => {
-    const res = await request(app).get(path);
-    expect(res.status).toBe(200);
-    expect(res.body.dataSource).toBe("simulated");
+  ])("%s fails closed without persisted marketplace data", async (path) => {
+    const res = await request(app).get(path).expect(503);
+    expect(res.body.success).toBe(false);
+    expect(res.body.dataAvailable).toBe(false);
     expect(res.body.isRealData).toBe(false);
-    expect(typeof res.body.disclaimer).toBe("string");
+    expect(res.body.code).toBe(path.includes("supply-chain") ? "SUPPLY_CHAIN_STORE_NOT_CONNECTED" : "MARKETPLACE_STORE_NOT_CONNECTED");
   });
 });
 
@@ -204,12 +200,9 @@ describe("marketplace data provenance", () => {
  * that apart from real records, otherwise a hardcoded "24 active farms" reads
  * as live production data.
  */
-describe("agronomist dashboard data provenance", () => {
+describe("agronomist dashboard requires verified farm records", () => {
   let app: express.Express;
-
-  beforeAll(() => {
-    app = createServer();
-  });
+  beforeAll(() => { app = createServer(); });
 
   it.each([
     "/api/agronomist-dashboard/overview",
@@ -218,19 +211,9 @@ describe("agronomist dashboard data provenance", () => {
     "/api/agronomist-dashboard/training-programs",
     "/api/agronomist-dashboard/performance-analysis",
     "/api/agronomist-dashboard/metrics",
-  ])("labels %s as simulated", async (path) => {
-    const res = await request(app).get(path);
-    expect(res.status).toBe(200);
-    expect(res.body.dataSource).toBe("simulated");
-    expect(res.body.isRealData).toBe(false);
-    expect(typeof res.body.disclaimer).toBe("string");
-  });
-
-  it("reports the farm figures the UI displays from one source", async () => {
-    const res = await request(app)
-      .get("/api/agronomist-dashboard/overview")
-      .expect(200);
-    expect(res.body.data.farms.length).toBeGreaterThan(0);
-    expect(res.body.data.summary.totalFarms).toBe(res.body.data.farms.length);
+  ])("%s does not return seeded demonstration figures", async (path) => {
+    const res = await request(app).get(path).expect(503);
+    expect(res.body.code).toBe("DASHBOARD_DATA_SOURCE_NOT_CONNECTED");
+    expect(res.body.data).toBeNull();
   });
 });
