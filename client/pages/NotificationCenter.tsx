@@ -970,178 +970,50 @@ export default function NotificationCenter() {
           </div>
         </TabsContent>
 
-        {/* Rules Tab */}
+        {/* Rules Tab: no fake rules or trigger counters */}
         <TabsContent value="rules" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{isArabic ? 'قواعد الإشعارات التلقائية' : 'Notification Rules'}</CardTitle>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                  {isArabic ? 'إنشاء قاعدة' : 'Create Rule'}
-                </Button>
-              </div>
+              <CardTitle>{isArabic ? "قواعد التنبيه" : "Alert rules"}</CardTitle>
+              <CardDescription>{isArabic ? "القواعد المتاحة حالياً مبنية على سجلات فعلية ومحددة بوضوح." : "Available rules are explicit and based on persisted records."}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    name: 'Soil Moisture Alert',
-                    nameArabic: 'تنبيه رطوبة التربة',
-                    description: 'Alert when soil moisture drops below 25%',
-                    descriptionArabic: 'تنبيه عند انخفاض رطوبة التربة أقل من 25%',
-                    isActive: true,
-                    triggerCount: 12,
-                    lastTriggered: '2024-01-20 14:30'
-                  },
-                  {
-                    name: 'Weather Warning',
-                    nameArabic: 'تحذير الطقس',
-                    description: 'Alert for severe weather conditions',
-                    descriptionArabic: 'تنبيه لظروف الطقس القاسية',
-                    isActive: true,
-                    triggerCount: 5,
-                    lastTriggered: '2024-01-19 08:15'
-                  },
-                  {
-                    name: 'Price Drop Alert',
-                    nameArabic: 'تنبيه انخفاض السعر',
-                    description: 'Alert when crop price drops by 10%',
-                    descriptionArabic: 'تنبيه عند انخفاض سعر المحصول بنسبة 10%',
-                    isActive: false,
-                    triggerCount: 3,
-                    lastTriggered: '2024-01-18 16:45'
-                  }
-                ].map((rule, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-start space-x-3 rtl:space-x-reverse">
-                      <Switch checked={rule.isActive} />
-                      <div>
-                        <h4 className="font-medium">{isArabic ? rule.nameArabic : rule.name}</h4>
-                        <p className="text-sm text-muted-foreground">{isArabic ? rule.descriptionArabic : rule.description}</p>
-                        <div className="flex items-center space-x-4 rtl:space-x-reverse mt-2 text-xs text-muted-foreground">
-                          <span>{isArabic ? 'مرات التفعيل:' : 'Triggered:'} {rule.triggerCount}</span>
-                          <span>•</span>
-                          <span>{isArabic ? 'آخر مرة:' : 'Last:'} {rule.lastTriggered}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2 rtl:space-x-reverse">
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  {isArabic
+                    ? "قواعد المراقبة المستقلة الحالية: غياب تحليل التربة، اقتراب أو تجاوز تاريخ الحصاد المسجل، تعطل الحساس، وانخفاض بطاريته. محرر القواعد المخصصة غير مربوط بقاعدة بيانات بعد؛ لذلك لا نعرض قواعد تجريبية أو أعداد تفعيل وهمية."
+                    : "Current autonomous rules cover missing soil records, approaching or passed recorded harvest dates, inactive sensors and low sensor battery. A custom rule editor is not connected to persistence yet, so demo rules and fabricated trigger counts are not shown."}
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Settings Tab */}
+        {/* Settings Tab: disclose channels that are actually connected */}
         <TabsContent value="settings" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Notification Preferences */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{isArabic ? 'تفضيلات الإشعارات' : 'Notification Preferences'}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { category: 'sensor', nameArabic: 'حساسات', name: 'Sensors' },
-                  { category: 'weather', nameArabic: 'طقس', name: 'Weather' },
-                  { category: 'crop', nameArabic: 'محاصيل', name: 'Crops' },
-                  { category: 'market', nameArabic: 'سوق', name: 'Market' },
-                  { category: 'ai_prediction', nameArabic: 'تنبؤ ذكي', name: 'AI Predictions' }
-                ].map((category) => (
-                  <div key={category.category} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                      {getNotificationIcon('info', category.category)}
-                      <span>{isArabic ? category.nameArabic : category.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                      <div className="flex space-x-1 rtl:space-x-reverse">
-                        <Button size="sm" variant="outline" className="w-8 h-8 p-0">
-                          <Bell className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="w-8 h-8 p-0">
-                          <Mail className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="w-8 h-8 p-0">
-                          <Phone className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Quiet Hours */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{isArabic ? 'ساعات الهدوء' : 'Quiet Hours'}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <Switch defaultChecked />
-                  <Label>{isArabic ? 'تفعيل ساعات الهدوء' : 'Enable quiet hours'}</Label>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{isArabic ? 'البداية' : 'Start Time'}</Label>
-                    <Input type="time" defaultValue="22:00" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{isArabic ? 'النهاية' : 'End Time'}</Label>
-                    <Input type="time" defaultValue="07:00" />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <Switch />
-                  <Label className="text-sm">{isArabic ? 'السماح بالإشعارات الحرجة فقط' : 'Critical notifications only'}</Label>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Contact Information */}
           <Card>
             <CardHeader>
-              <CardTitle>{isArabic ? 'معلومات الاتصال' : 'Contact Information'}</CardTitle>
+              <CardTitle>{isArabic ? "قنوات الإشعارات" : "Notification channels"}</CardTitle>
+              <CardDescription>{isArabic ? "حالة القنوات المتصلة فعلياً" : "Actual delivery-channel status"}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{isArabic ? 'البريد الإلكتروني' : 'Email'}</Label>
-                  <Input type="email" defaultValue="ahmed@example.com" />
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="font-medium">{isArabic ? "داخل المنصة" : "In-app"}</p>
+                  <p className="text-xs text-muted-foreground">{isArabic ? "تنبيهات محفوظة في Supabase وتظهر في مركز الإشعارات." : "Persisted in Supabase and shown in the notification center."}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label>{isArabic ? 'رقم الهاتف' : 'Phone Number'}</Label>
-                  <Input type="tel" defaultValue="+962 79 123 4567" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{isArabic ? 'واتساب (اختياري)' : 'WhatsApp (Optional)'}</Label>
-                  <Input type="tel" placeholder="+962 79 123 4567" />
-                </div>
-                <div className="space-y-2">
-                  <Label>{isArabic ? 'جهة اتصال طوارئ' : 'Emergency Contact'}</Label>
-                  <Input type="tel" placeholder="+962 79 999 8888" />
-                </div>
+                <Badge variant="default">{isArabic ? "متاح" : "Connected"}</Badge>
               </div>
-              
-              <div className="flex justify-end mt-6">
-                <Button>
-                  <Save className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                  {isArabic ? 'حفظ الإعدادات' : 'Save Settings'}
-                </Button>
-              </div>
+              {(["Push", "Email", "SMS", "WhatsApp"] as const).map((channel) => (
+                <div key={channel} className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <p className="font-medium">{channel}</p>
+                    <p className="text-xs text-muted-foreground">{isArabic ? "يتطلب إعداد مزود إرسال واشتراك المستخدم." : "Requires a delivery provider and user subscription."}</p>
+                  </div>
+                  <Badge variant="secondary">{isArabic ? "غير مربوط" : "Not configured"}</Badge>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
