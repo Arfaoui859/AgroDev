@@ -91,7 +91,7 @@ BEGIN
     CREATE ROLE service_role NOLOGIN NOINHERIT BYPASSRLS;
   END IF;
 END
-$;
+$$;
 
 GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO anon, authenticated, service_role;
