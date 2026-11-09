@@ -894,7 +894,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         } else {
           const farms = farmsResult.data ?? [];
           const farmIds = farms.map((farm: any) => farm.id);
-          const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, sensorResult, satelliteResult] = await Promise.all([
+          const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, forecastResult, sensorResult, satelliteResult] = await Promise.all([
             db.from("crop_cultivations")
               .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,updated_at")
               .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(12),
