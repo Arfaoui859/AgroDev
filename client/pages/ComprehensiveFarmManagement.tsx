@@ -1460,10 +1460,7 @@ const ComprehensiveFarmManagement: React.FC<
                     <Button
                       className="w-full"
                       variant="outline"
-                      onClick={() => {
-                        // Navigate to detailed market analysis
-                        console.log("View market details for", item.cropName);
-                      }}
+                      onClick={() => navigate("/market-dashboard", { state: { selectedCrop: item.cropName } })}
                     >
                       <LineChart className="h-4 w-4 mr-2" />
                       {isArabic
