@@ -309,7 +309,14 @@ async def health_check():
     فحص صحة الخدمة
     """
     return {
-        'status': 'healthy',
+        'status': 'degraded',
+        'production_ready': False,
+        'disabled_features': [
+            'irrigation_optimization',
+            'water_requirement_estimation',
+            'soil_moisture_assessment',
+            'weather_based_conservation_tips',
+        ],
         'service': 'Smart Irrigation Optimizer',
         # Trained on synthetic samples generated in-process.
         'model_source': 'synthetic-demo',
