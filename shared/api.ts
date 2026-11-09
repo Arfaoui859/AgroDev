@@ -24,6 +24,7 @@ export interface RawSoilData {
   copper?: number;
   boron?: number;
   electricalConductivity?: number;
+  electricalConductivityUnit?: string;
   soilTexture?: string;
   sandPercent?: number;
   siltPercent?: number;
