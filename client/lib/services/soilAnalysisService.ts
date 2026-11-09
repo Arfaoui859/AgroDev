@@ -97,6 +97,7 @@ class SoilAnalysisService {
     if (!finite(data.moisture) || data.moisture < 0 || data.moisture > 100) errors.push("الرطوبة مطلوبة ويجب أن تكون بين 0 و100%");
     if (data.sampleDepth !== undefined && (!finite(data.sampleDepth) || !Number.isInteger(data.sampleDepth) || data.sampleDepth <= 0 || data.sampleDepth > 300)) errors.push("عمق العينة يجب أن يكون عدداً صحيحاً بالسنتيمتر، أكبر من 0 ولا يتجاوز 300 سم");
     if (data.electricalConductivity !== undefined && !data.electricalConductivityUnit?.trim()) errors.push("أدخل وحدة EC عند إدخال قيمة التوصيل الكهربائي");
+    if (data.waterElectricalConductivity !== undefined && !data.waterElectricalConductivityUnit?.trim()) errors.push("أدخل وحدة EC لماء الري عند إدخال قيمته");
     const ranges: Array<[keyof RawSoilData, number, number, string]> = [
       ["organicMatter", 0, 100, "المادة العضوية"],
       ["electricalConductivity", 0, 100, "التوصيل الكهربائي"],
@@ -111,6 +112,13 @@ class SoilAnalysisService {
       ["manganese", 0, 1000000, "المنغنيز"],
       ["copper", 0, 1000000, "النحاس"],
       ["boron", 0, 1000000, "البورون"],
+      ["sandPercent", 0, 100, "الرمل"], ["siltPercent", 0, 100, "الغرين"], ["clayPercent", 0, 100, "الطين"],
+      ["calciumCarbonateTotal", 0, 100, "كربونات الكالسيوم الكلية"], ["calciumCarbonateActive", 0, 100, "الكِلس النشط"],
+      ["cec", 0, 200, "السعة التبادلية"], ["sodium", 0, 1000000, "الصوديوم"],
+      ["sodiumAdsorptionRatio", 0, 1000, "SAR"], ["exchangeableSodiumPercentage", 0, 100, "ESP"],
+      ["waterElectricalConductivity", 0, 100, "EC ماء الري"], ["waterPh", 0, 14, "pH ماء الري"],
+      ["slopePercent", 0, 100, "انحدار الأرض"], ["targetYield", 0, 1000000, "المردودية المستهدفة"],
+      ["farmAreaHectares", 0, 10000000, "مساحة المزرعة"],
     ];
     for (const [key, min, max, label] of ranges) {
       const value = data[key];
