@@ -59,25 +59,23 @@ beforeAll(() => {
 
 beforeEach(() => mockedWeather.mockReset());
 
-describe("🌱 AI crop recommender uses real weather", () => {
-  test("marks weatherAvailable=true and returns recommendations", async () => {
+describe("🌱 AI crop recommender refuses unvalidated model output", () => {
+  test("does not return crop recommendations from an unvalidated service", async () => {
     mockedWeather.mockResolvedValue(sampleWeather);
     const res = await request(app).post("/api/ai/recommend").send(validBody);
-    expect(res.status).toBe(200);
-    expect(res.body.metadata.weatherAvailable).toBe(true);
-    expect(res.body.metadata.isRealData).toBe(false);
-    expect(Array.isArray(res.body.recommendations)).toBe(true);
+    expect(res.status).toBe(503);
+    expect(res.body.success).toBe(false);
+    expect(res.body.recommendations).toBeUndefined();
   });
 
-  test("states weather was unavailable instead of inventing it", async () => {
+  test("does not substitute invented weather or recommendations when the provider is down", async () => {
     mockedWeather.mockRejectedValue(new ProviderError("Open-Meteo", "network", "down"));
     const res = await request(app).post("/api/ai/recommend").send(validBody);
-    expect(res.status).toBe(200);
-    expect(res.body.metadata.weatherAvailable).toBe(false);
-    expect(res.body.analysis.climateAssessment).toContain("تعذّر");
+    expect([503, 502]).toContain(res.status);
+    expect(res.body.recommendations).toBeUndefined();
   });
 
-  test("rejects a request without coordinates", async () => {
+  test("rejects a request without coordinates before calling the service", async () => {
     const res = await request(app).post("/api/ai/recommend").send({ soilData: {} });
     expect(res.status).toBe(400);
   });
