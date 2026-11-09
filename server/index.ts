@@ -274,6 +274,7 @@ import {
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { listAssistantFarms, createAssistantCultivation, listAssistantCultivations } from "./routes/assistant-actions";
+import { getAutonomousAgentStatus, updateAutonomousAgentSettings, runAutonomousAgentNow, runScheduledAutonomousAgent } from "./routes/autonomous-farm-agent";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
@@ -455,6 +456,12 @@ export function createServer() {
   app.get("/api/budget-plans", requireAuth, getBudgetPlans);
   app.put("/api/budget-plans/:id", requireAuth, updateBudgetPlan);
   app.delete("/api/budget-plans/:id", requireAuth, deleteBudgetPlan);
+
+  // Autonomous Farm Agent: user-scoped controls plus a secret-protected scheduled runner.
+  app.get("/api/assistant/agent/status", requireAuth, getAutonomousAgentStatus);
+  app.patch("/api/assistant/agent/settings", requireAuth, updateAutonomousAgentSettings);
+  app.post("/api/assistant/agent/scan", requireAuth, runAutonomousAgentNow);
+  app.post("/api/internal/autonomous-agent/run", runScheduledAutonomousAgent);
 
   // Assistant actions are always explicit, authenticated, and persisted.
   app.get("/api/assistant/farms", requireAuth, listAssistantFarms);
