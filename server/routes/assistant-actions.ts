@@ -172,3 +172,35 @@ export const createAssistantCultivation: RequestHandler = async (req, res) => {
     message: "تم حفظ المحصول في سجل المزرعة.",
   });
 };
+
+export const listAssistantCultivations: RequestHandler = async (req, res) => {
+  const db = callerDatabase(req);
+  if (!db) {
+    return res.status(401).json({
+      success: false,
+      code: "VERIFIED_SESSION_REQUIRED",
+      message: "سجّل الدخول من جديد لعرض المحاصيل المسجلة.",
+    });
+  }
+
+  let query = db
+    .from("crop_cultivations")
+    .select("id,farm_id,section_id,crop_name,crop_variety,planting_date,expected_harvest_date,area_hectares,current_growth_stage,status,created_at")
+    .order("planting_date", { ascending: false });
+  if (req.query.farm_id) query = query.eq("farm_id", String(req.query.farm_id));
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("Assistant cultivation list failed:", error.code);
+    return res.status(503).json({
+      success: false,
+      code: "CULTIVATION_DATA_UNAVAILABLE",
+      message: "تعذّر تحميل المحاصيل من قاعدة البيانات. تأكد من تطبيق ترحيل الصلاحيات.",
+    });
+  }
+  return res.json({
+    success: true,
+    data: data ?? [],
+    provenance: { source: "supabase.crop_cultivations", persisted: true },
+  });
+};
