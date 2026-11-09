@@ -1,9 +1,10 @@
 /**
  * API integration tests exercising the real Express application (not mocks).
  *
- * These tests boot the actual server created by `createServer()` and assert on
- * real route behaviour, including the rule-based AI fallbacks that are used when
- * the external AI microservices / LLM provider are not configured.
+ * These tests boot the actual server created by createServer() and assert on
+ * real route behaviour. Crop recommendations and assistant replies may use
+ * explicitly labelled local rules; soil analysis must fail closed when its
+ * dedicated microservice is unavailable.
  */
 import request from "supertest";
 import express from "express";
@@ -306,7 +307,11 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
 
       test("a matching x-admin-token does not re-enable disabled production demo endpoints", async () => {
         const previousToken = process.env.ADMIN_API_TOKEN;
+        const previousEnv = process.env.NODE_ENV;
+        const previousDemo = process.env.ENABLE_DEMO_ENDPOINTS;
+        process.env.NODE_ENV = "production";
         process.env.ADMIN_API_TOKEN = "test-admin-token";
+        delete process.env.ENABLE_DEMO_ENDPOINTS;
         try {
           const prodApp = createServer();
           const response = await request(prodApp)
@@ -320,6 +325,10 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
         } finally {
           if (previousToken === undefined) delete process.env.ADMIN_API_TOKEN;
           else process.env.ADMIN_API_TOKEN = previousToken;
+          if (previousEnv === undefined) delete process.env.NODE_ENV;
+          else process.env.NODE_ENV = previousEnv;
+          if (previousDemo === undefined) delete process.env.ENABLE_DEMO_ENDPOINTS;
+          else process.env.ENABLE_DEMO_ENDPOINTS = previousDemo;
         }
       });
 
