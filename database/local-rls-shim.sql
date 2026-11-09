@@ -29,12 +29,12 @@ CREATE OR REPLACE FUNCTION storage.foldername(object_name text)
 RETURNS text[]
 LANGUAGE sql
 IMMUTABLE
-AS $
+AS $storage_folder$
   SELECT CASE
     WHEN object_name IS NULL OR object_name = '' THEN ARRAY[]::text[]
     ELSE string_to_array(trim(both '/' from object_name), '/')[1:greatest(array_length(string_to_array(trim(both '/' from object_name), '/'), 1) - 1, 0)]
   END
-$;
+$storage_folder$;
 
 CREATE SCHEMA IF NOT EXISTS auth;
 
