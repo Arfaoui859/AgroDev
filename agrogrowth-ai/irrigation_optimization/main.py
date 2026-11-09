@@ -144,28 +144,15 @@ async def recommend_irrigation_method(
     soil_type: str = "loamy",
     budget: Optional[float] = None
 ):
-    """
-    توصية طريقة الري المثلى
-    """
-    try:
-        soil_data = {
-            'soil_type': soil_type,
-            'budget_constraint': budget
-        }
-        
-        recommendation = irrigation_optimizer._recommend_irrigation_method(
-            crop_type, soil_data, farm_size
-        )
-        
-        return {
-            'success': True,
-            'data': recommendation,
-            'message': 'تم تحديد طريقة الري المثلى بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error recommending irrigation method: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "IRRIGATION_METHOD_NOT_VALIDATED",
+            "message": "Method selection depends on unverified static assumptions and is disabled until validated local data is connected.",
+            "production_ready": False,
+        },
+    )
+
 
 @app.get("/water-conservation-tips/{crop_type}")
 async def get_water_conservation_tips(crop_type: str):
