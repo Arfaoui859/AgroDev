@@ -137,6 +137,9 @@ const AIAssistantChatbot: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [pendingCropAction, setPendingCropAction] = useState<{cropName:string; farmId:string; plantingDate:string; areaHectares:string} | null>(null);
+  const [assistantFarms, setAssistantFarms] = useState<Array<{id:string;name:string;size_hectares:number}>>([]);
+  const [actionSaving, setActionSaving] = useState(false);
 
   useEffect(() => {
     initializeChatbot();
@@ -300,6 +303,102 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
+  const prepareCropAction = async (message: string) => {
+    const plantingIntent = /نحب|باش|بش|راني|نزرع|نغرس|سنية|نضيف|ازرع|أزرع|plant|grow|sow|add crop|cultivate/i.test(message);
+    if (!plantingIntent) return;
+    const crops: Array<[RegExp,string]> = [
+      [/طماطم|بندورة|tomato/i, "طماطم"],
+      [/قمح|wheat/i, "قمح"],
+      [/زيتون|olive/i, "زيتون"],
+      [/شعير|barley/i, "شعير"],
+      [/بطاطا|بطاطس|potato/i, "بطاطا"],
+      [/فلفل|pepper/i, "فلفل"],
+      [/بصل|onion/i, "بصل"]
+    ];
+    const found = crops.find(([pattern]) => pattern.test(message));
+    if (!found) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const response = await fetch("/api/assistant/farms", {
+        headers: { Authorization: "Bearer " + session.access_token }
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || "FARM_LOOKUP_FAILED");
+      const farms = payload.data || [];
+      setAssistantFarms(farms);
+      if (!farms.length) {
+        setMessages(prev => [...prev, {
+          id: "no-farm-" + Date.now(), type: "assistant",
+          content: language === "ar" ? "ما عندك حتى مزرعة مسجلة في حسابك. سجّل المزرعة أولاً وبعد نجم نضيف المحصول." : "No farm is registered on your account yet. Register a farm first.",
+          timestamp: new Date().toISOString(), language, category: "general"
+        }]);
+        return;
+      }
+      setPendingCropAction({
+        cropName: found[1],
+        farmId: farms[0].id,
+        plantingDate: new Date().toISOString().slice(0,10),
+        areaHectares: ""
+      });
+      setMessages(prev => [...prev, {
+        id: "crop-proposal-" + Date.now(), type: "assistant",
+        content: language === "ar"
+          ? "فهمتك. حضّرت مسودة لإضافة " + found[1] + ". اختار المزرعة والمساحة وتاريخ الغراسة، وبعد راجع واضغط تأكيد. ما نحفظ شيء قبل موافقتك."
+          : "I prepared a draft to register " + found[1] + ". Choose the farm, area and planting date, then confirm. Nothing is saved before your approval.",
+        timestamp: new Date().toISOString(), language, category: "agriculture"
+      }]);
+    } catch (error) {
+      setMessages(prev => [...prev, {
+        id: "crop-proposal-error-" + Date.now(), type: "assistant",
+        content: language === "ar"
+          ? "ما نجمتش نجيب مزارعك بحساب موثّق. تأكد من تسجيل الدخول وربط قاعدة البيانات."
+          : "I could not load your farms using a verified session. Check sign-in and database setup.",
+        timestamp: new Date().toISOString(), language, category: "general"
+      }]);
+    }
+  };
+
+  const confirmCropAction = async () => {
+    if (!pendingCropAction || !pendingCropAction.farmId || !pendingCropAction.plantingDate ||
+        !Number.isFinite(Number(pendingCropAction.areaHectares)) || Number(pendingCropAction.areaHectares) <= 0) return;
+    setActionSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const response = await fetch("/api/assistant/actions/cultivations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token },
+        body: JSON.stringify({
+          farm_id: pendingCropAction.farmId,
+          crop_name: pendingCropAction.cropName,
+          planting_date: pendingCropAction.plantingDate,
+          area_hectares: Number(pendingCropAction.areaHectares)
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.message || payload.code || "CULTIVATION_SAVE_FAILED");
+      setMessages(prev => [...prev, {
+        id: "crop-saved-" + Date.now(), type: "assistant",
+        content: language === "ar"
+          ? "تم حفظ " + pendingCropAction.cropName + " في سجل المزرعة. رقم العملية: " + payload.data.id
+          : "Saved " + pendingCropAction.cropName + " in the farm register. Record ID: " + payload.data.id,
+        timestamp: new Date().toISOString(), language,
+        metadata: { sources: ["Supabase · crop_cultivations"] }, category: "agriculture"
+      }]);
+      setPendingCropAction(null);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "CULTIVATION_SAVE_FAILED";
+      setMessages(prev => [...prev, {
+        id: "crop-save-error-" + Date.now(), type: "assistant",
+        content: language === "ar" ? "ما تمش حفظ المحصول: " + reason + ". ما نعتبرش العملية ناجحة قبل تأكيد قاعدة البيانات." : "The crop was not saved: " + reason,
+        timestamp: new Date().toISOString(), language, category: "general"
+      }]);
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
   const sendMessage = async (content?: string) => {
     const messageContent = content || input;
     if (!messageContent.trim()) return;
@@ -320,6 +419,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     try {
       const aiResponse = await generateAIResponse(messageContent);
       setMessages(prev => [...prev, aiResponse]);
+      await prepareCropAction(messageContent);
 
       // Update conversation
       updateActiveConversation(userMessage, aiResponse);
@@ -770,6 +870,48 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                     </div>
                   </div>
                 ))}
+
+                {pendingCropAction && (
+                  <div className="mx-2 mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-right">
+                    <div className="mb-3 font-semibold text-emerald-950">
+                      {language === "ar" ? "مراجعة وتأكيد إضافة المحصول" : "Review and confirm crop"}
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "المزرعة" : "Farm"}</label>
+                        <Select value={pendingCropAction.farmId} onValueChange={(farmId) => setPendingCropAction(p => p ? {...p, farmId} : p)}>
+                          <SelectTrigger><SelectValue placeholder="اختر المزرعة" /></SelectTrigger>
+                          <SelectContent>
+                            {assistantFarms.map(farm => <SelectItem key={farm.id} value={farm.id}>{farm.name} · {farm.size_hectares} ha</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "المحصول" : "Crop"}</label>
+                        <Input value={pendingCropAction.cropName} readOnly />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "المساحة (هكتار)" : "Area (ha)"}</label>
+                        <Input type="number" min="0.01" step="0.01" value={pendingCropAction.areaHectares} onChange={e => setPendingCropAction(p => p ? {...p, areaHectares: e.target.value} : p)} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "تاريخ الغراسة" : "Planting date"}</label>
+                        <Input type="date" value={pendingCropAction.plantingDate} onChange={e => setPendingCropAction(p => p ? {...p, plantingDate: e.target.value} : p)} />
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button onClick={confirmCropAction} disabled={actionSaving || !pendingCropAction.areaHectares || Number(pendingCropAction.areaHectares) <= 0}>
+                        {actionSaving ? (language === "ar" ? "جاري الحفظ..." : "Saving...") : (language === "ar" ? "تأكيد الإضافة" : "Confirm")}
+                      </Button>
+                      <Button variant="outline" onClick={() => setPendingCropAction(null)} disabled={actionSaving}>
+                        {language === "ar" ? "إلغاء" : "Cancel"}
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-emerald-900/80">
+                      {language === "ar" ? "يتم التثبت من ملكية المزرعة والمساحة قبل الحفظ." : "Farm ownership and available area are checked before saving."}
+                    </p>
+                  </div>
+                )}
 
                 {/* Loading indicator */}
                 {isLoading && (
