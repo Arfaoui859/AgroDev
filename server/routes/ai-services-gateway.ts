@@ -1091,7 +1091,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
       AI_SERVICES.IRRIGATION_OPTIMIZATION,
     ].join("|");
     const cacheAgeMs = aiServicesHealthCache ? startTime - aiServicesHealthCache.checkedAt : Infinity;
-    if (aiServicesHealthCache && aiServicesHealthCache.key === cacheKey && cacheAgeMs < AI_SERVICES_HEALTH_CACHE_TTL_MS) {
+    if (req.query.force !== "true" && aiServicesHealthCache && aiServicesHealthCache.key === cacheKey && cacheAgeMs < AI_SERVICES_HEALTH_CACHE_TTL_MS) {
       return res.json({
         ...aiServicesHealthCache.payload,
         cached: true,
