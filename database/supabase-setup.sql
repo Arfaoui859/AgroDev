@@ -92,8 +92,8 @@ CREATE POLICY "Users can upload plant images to their farms" ON storage.objects
 -- =====================================================
 
 -- User profiles policies
-CREATE POLICY "Users can view all public profiles" ON user_profiles
-    FOR SELECT USING (true);
+CREATE POLICY "Users can view own profile" ON user_profiles
+    FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert their own profile" ON user_profiles
     FOR INSERT WITH CHECK (auth.uid() = user_id);
@@ -226,9 +226,15 @@ CREATE POLICY "Users can view sensor readings from their own devices" ON sensor_
         )
     );
 
--- Weather records policies (allow all users to view weather data)
-CREATE POLICY "All users can view weather records" ON weather_records
-    FOR SELECT USING (true);
+-- Weather records contain farm-linked location data; only the farm owner may read them.
+CREATE POLICY "Farm owners can view their weather records" ON weather_records
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM farms
+            WHERE farms.id = weather_records.farm_id
+              AND farms.owner_id = auth.uid()
+        )
+    );
 
 -- Market prices policies (public data)
 CREATE POLICY "All users can view market prices" ON market_prices
