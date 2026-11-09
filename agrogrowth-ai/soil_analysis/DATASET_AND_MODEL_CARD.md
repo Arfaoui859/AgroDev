@@ -40,6 +40,10 @@ The production manifest points to `data/processed/wetchem_reference.csv`, not to
 | Model library | scikit-learn 1.9.1 |
 | Artifact library | joblib 1.6.0 |
 
+The upstream metadata CSV contains a known documentation defect: the text descriptions for the `longitude` and `latitude` columns are reversed. The numeric columns are used by their names in the spatial audit, and their recorded ranges are consistent with African longitude/latitude extents; nevertheless, this upstream metadata defect should be retained in the audit trail and checked before any new geospatial join.
+
+The committed models cover seven laboratory analytes only. They do not predict soil moisture, sand, silt, clay, USDA texture class, or other untrained targets. The deterministic farmer-facing analyzer may interpret some supplied values, but that is a separate rules-based path.
+
 The model training pipeline uses only measured wet-chemistry analytes as predictors. For each target, the target column is excluded from its own feature list. Coordinates and metadata are not predictors. Missing predictor values are median-imputed inside a scikit-learn pipeline.
 
 The source's raw metadata contains legacy unit labels for some analytes. The repository's validation pipeline applies explicit overrides for organic carbon and total nitrogen to g/kg, consistent with iSDA's published FAQ. The effective target units used for interpretation are listed below.
