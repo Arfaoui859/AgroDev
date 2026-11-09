@@ -59,6 +59,14 @@ export async function probeService(
         modelSource,
         heuristic: modelSource !== null && HEURISTIC_MARKERS.test(modelSource),
       };
+    } else if (response.status === 429) {
+      // Rate limiting is an HTTP response from the target host. Preserve
+      // reachability, but keep provenance unknown so inference remains blocked.
+      probe = {
+        reachable: true,
+        modelSource: null,
+        heuristic: false,
+      };
     }
   } catch {
     probe = UNREACHABLE;
