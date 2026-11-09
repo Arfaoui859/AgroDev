@@ -242,26 +242,16 @@ export const analyzeSoilData = async (req: Request, res: Response) => {
         sensor_data: sensorData,
         location: normaliseLocation(req.body?.location),
         farm_id: req.body?.farm_id,
-        // Forwarded so a configured LLM produces the advisory in the farmer's
-        // language and can tailor it to the crop.
         language: req.body?.language,
         crop: req.body?.crop ?? req.body?.crop_type,
       },
     );
-    await respondFromMicroservice(res, response.data, AI_SERVICES.SOIL_ANALYSIS);
+    return await respondFromMicroservice(res, response.data, AI_SERVICES.SOIL_ANALYSIS);
   } catch (error) {
-    // Microservice unavailable: fall back to the transparent rule-based engine
-    // rather than fabricating an ML result.
-    console.warn(
-      "Soil microservice unavailable, using rule-based analysis:",
-      (error as AxiosError).message,
-    );
-    try {
-      const fallback = analyzeSoilForUI(normaliseSoilInput(sensorData));
-      res.json(fallback);
-    } catch (fallbackError) {
-      handleAIServiceError(error as AxiosError, "Soil Analysis", res);
-    }
+    // Fail closed. The professional report workflow is the canonical soil analysis;
+    // never substitute local heuristic output when the configured service is down.
+    console.warn("Soil analysis microservice unavailable:", (error as AxiosError).message);
+    return handleAIServiceError(error as AxiosError, "Soil Analysis", res);
   }
 };
 
