@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications, Notification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Bell, BellRing, X, Check, CheckCheck, Trash2, Filter, AlertTriangle, 
@@ -18,6 +19,7 @@ interface NotificationCenterProps {
 
 const NotificationCenter: React.FC<NotificationCenterProps> = ({ className }) => {
   const { isArabic } = useLanguage();
+  const navigate = useNavigate();
   const {
     notifications,
     unreadCount,
@@ -346,6 +348,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className }) =>
                     variant="ghost"
                     size="sm"
                     className="text-xs"
+                    onClick={() => navigate('/user-settings')}
                   >
                     <Settings className="h-3 w-3 mr-1 rtl:ml-1 rtl:mr-0" />
                     {isArabic ? 'الإعدادات' : 'Settings'}
