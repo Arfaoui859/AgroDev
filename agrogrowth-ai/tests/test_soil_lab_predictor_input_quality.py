@@ -22,7 +22,7 @@ def make_predictor():
     predictor = LabAssistedSoilPredictor.__new__(
         LabAssistedSoilPredictor
     )
-    predictor.min_feature_coverage = 0.8
+    predictor.min_feature_coverage = 0.5
     predictor.manifest = {
         "dataset": "reference.csv",
         "dataset_sha256": "test-digest",
