@@ -157,16 +157,7 @@ export default function LivestockDashboard() {
     value: count
   }));
 
-  const productionTrends = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
-    return {
-      date: date.toLocaleDateString('ar-TN'),
-      milk: 180 + Math.random() * 40,
-      feed: 450 + Math.random() * 100,
-      revenue: 800 + Math.random() * 200
-    };
-  });
+  const productionTrends: Array<{date: string; milk: number; feed: number; revenue: number}> = [];
 
   if (loading) {
     return (
@@ -176,6 +167,17 @@ export default function LivestockDashboard() {
           <p className="mt-4 text-muted-foreground">جاري تحميل بيانات الثروة الحيوانية...</p>
         </div>
       </div>
+    );
+  }
+
+  if (animals.length === 0) {
+    return (
+      <main className="mx-auto max-w-4xl p-6" dir="rtl">
+        <h1 className="mb-4 text-2xl font-bold">إدارة الثروة الحيوانية</h1>
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
+          لا توجد سجلات حيوانات موثقة متاحة. مؤشرات الإنتاج والصحة والإيرادات غير معروضة إلى حين ربط قاعدة بيانات حقيقية؛ لن نولّد أرقاماً يومية افتراضية.
+        </div>
+      </main>
     );
   }
 
