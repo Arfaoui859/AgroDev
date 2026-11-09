@@ -275,6 +275,7 @@ import {
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { listAssistantFarms, createAssistantCultivation, listAssistantCultivations } from "./routes/assistant-actions";
 import { getAutonomousAgentStatus, updateAutonomousAgentSettings, runAutonomousAgentNow, runScheduledAutonomousAgent } from "./routes/autonomous-farm-agent";
+import { listAgentConversations, createAgentConversation, listAgentConversationMessages, addAgentConversationMessage, deleteAgentConversation } from "./routes/assistant-conversations";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
@@ -462,6 +463,13 @@ export function createServer() {
   app.patch("/api/assistant/agent/settings", requireAuth, updateAutonomousAgentSettings);
   app.post("/api/assistant/agent/scan", requireAuth, runAutonomousAgentNow);
   app.post("/api/internal/autonomous-agent/run", runScheduledAutonomousAgent);
+
+  // Persistent assistant memory: all records are scoped to the verified caller.
+  app.get("/api/assistant/conversations", requireAuth, listAgentConversations);
+  app.post("/api/assistant/conversations", requireAuth, createAgentConversation);
+  app.get("/api/assistant/conversations/:conversationId/messages", requireAuth, listAgentConversationMessages);
+  app.post("/api/assistant/conversations/:conversationId/messages", requireAuth, addAgentConversationMessage);
+  app.delete("/api/assistant/conversations/:conversationId", requireAuth, deleteAgentConversation);
 
   // Assistant actions are always explicit, authenticated, and persisted.
   app.get("/api/assistant/farms", requireAuth, listAssistantFarms);
