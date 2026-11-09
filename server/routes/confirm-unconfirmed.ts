@@ -3,7 +3,7 @@ import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { verifyAdminToken } from '../lib/adminAuth';
 
 export const confirmUnconfirmedUsers: RequestHandler = async (req, res) => {
-  // Protected by header x-admin-token matching service role key
+  // Protected by the dedicated ADMIN_API_TOKEN via x-admin-token
   if (!verifyAdminToken(req)) {
     return res.status(403).json({ success: false, error: 'Forbidden: invalid admin token' });
   }
