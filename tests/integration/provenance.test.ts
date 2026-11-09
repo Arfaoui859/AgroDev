@@ -15,7 +15,7 @@ import type { AddressInfo } from "node:net";
 import request from "supertest";
 import express from "express";
 import { createServer } from "../../server/index";
-import { resetServiceProbeCache } from "../../server/services/providers/serviceProbe";
+import { probeService, resetServiceProbeCache } from "../../server/services/providers/serviceProbe";
 
 type Kind = "heuristic" | "trained" | "none";
 
@@ -23,6 +23,19 @@ let kind: Kind = "none";
 let server: http.Server | undefined;
 let visionUrl: string;
 const savedEnv: Record<string, string | undefined> = {};
+
+async function startRateLimitedService() {
+  const srv = http.createServer((req, res) => {
+    if (req.url === "/health") {
+      res.writeHead(429, { "Content-Type": "application/json", "Retry-After": "30" });
+      res.end(JSON.stringify({ error: "rate limited" }));
+      return;
+    }
+    res.writeHead(404).end("{}");
+  });
+  await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+  return srv;
+}
 
 async function startService(reportedModelSource: string) {
   const srv = http.createServer((req, res) => {
@@ -61,6 +74,15 @@ afterAll(() => {
 
 describe("🔬 Microservice provenance probe", () => {
   let app: express.Application;
+
+  test("HTTP 429 confirms host reachability but leaves model provenance unknown", async () => {
+    server = await startRateLimitedService();
+    visionUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    const probe = await probeService(visionUrl);
+    expect(probe.reachable).toBe(true);
+    expect(probe.modelSource).toBeNull();
+    expect(probe.heuristic).toBe(false);
+  });
   beforeAll(() => {
     app = createServer();
   });
