@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS soil_analyses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     farm_id UUID REFERENCES farms(id) ON DELETE CASCADE,
     section_id UUID REFERENCES farm_sections(id) ON DELETE SET NULL,
-    analysis_type VARCHAR(50) NOT NULL, -- 'sensor', 'lab', 'image'
+    analysis_type VARCHAR(50) NOT NULL, -- 'sensor', 'lab', 'image', 'manual' (user-entered, unverified)
     sensor_data JSONB NOT NULL, -- Raw sensor measurements
     analysis_result JSONB, -- AI analysis results
     recommendations JSONB, -- AI recommendations
