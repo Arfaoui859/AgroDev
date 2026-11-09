@@ -53,7 +53,7 @@ export function buildFarmAgentEvents(input: {
     const latestSoil = farmSoil[0];
     if (!latestSoil) {
       events.push({
-        key: `soil-baseline:${farm.id}:missing`,
+        key: `soil-baseline:${farm.id}:${utcWeekStart(now)}`,
         farmId: farm.id,
         type: "agent_soil_baseline_missing",
         title: "بيانات التربة غير متوفرة",
