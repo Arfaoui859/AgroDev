@@ -169,7 +169,7 @@ export default function History() {
         <p className="text-muted-foreground mb-6">
           لم تقم بإجراء أي تحليل ��لتربة بعد. ابدأ أول تحليل لك الآن
         </p>
-        <Button onClick={() => navigate("/")}>
+        <Button onClick={() => navigate("/data-input")}>
           <Plus className="w-4 h-4 ml-2" />
           إضافة تحليل جديد
         </Button>
