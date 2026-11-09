@@ -1002,6 +1002,13 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .limit(8)
             : { data: [], error: null };
           const platformRecords: string[] = [...basePlatformRecords];
+            if (farms.length > 1 && !selectedFarm) {
+              platformRecords.push(
+                "Farm selection required: this account has multiple farms and the current question does not identify exactly one. The following farm records belong to different farms; do not combine their soil, crop, weather, sensor or financial measurements. Ask the user which farm they mean before giving farm-specific conclusions."
+              );
+            } else if (selectedFarm) {
+              platformRecords.push("Selected farm for this question: " + (selectedFarm.name || selectedFarm.id) + " [farm_id=" + selectedFarm.id + "]. Use this farm as the primary context.");
+            }
             for (const farm of farms) {
               const farmName = typeof farm.name === "string" ? farm.name : "Farm";
               platformRecords.push("Farm " + farmName + " [farm_id=" + farm.id + "] · " + (Number(farm.size_hectares) || 0) + " ha; soil_type=" + (farm.soil_type || "not recorded") + "; climate_zone=" + (farm.climate_zone || "not recorded") + "; elevation_m=" + (farm.elevation_meters ?? "not recorded") + "; water_source=" + (farm.water_source || "not recorded") + "; irrigation_type=" + (farm.irrigation_type || "not recorded") + "; organic_certified=" + (farm.organic_certified === true ? "yes" : farm.organic_certified === false ? "no" : "not recorded"));
@@ -1053,7 +1060,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             farmContext = {
               governorate: selectedFarm && typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
               crop: activeCultivations.length === 1 ? activeCultivations[0].crop_name : undefined,
-              farmSizeHectares: rawSize > 0 ? rawSize : undefined,
+              farmSizeHectares: selectedFarm
+              ? (Number(selectedFarm.size_hectares) > 0 ? Number(selectedFarm.size_hectares) : undefined)
+              : farms.length === 1 && rawSize > 0 ? rawSize : undefined,
               soil: Object.keys(soil).length ? soil : undefined,
               operationalAlerts,
               platformRecords,
