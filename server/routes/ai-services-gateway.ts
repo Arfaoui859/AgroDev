@@ -17,6 +17,8 @@ import { isLLMConfigured } from "../services/providers/llmProvider";
 import { getLLMInfo } from "../services/providers/llmProvider";
 import { probeService } from "../services/providers/serviceProbe";
 import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
+import { resolveUserIdFromJwt } from "../middleware/auth";
+import { scopedClientFromAuthHeader } from "../lib/supabase";
 
 /**
  * Model-source markers that mean "this service is not running a model trained
@@ -804,10 +806,8 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
 
 // 🧠 SMART ASSISTANT ENDPOINTS
 export const chatWithAIAssistant = async (req: Request, res: Response) => {
-  const { message, question, context, history, language } = req.body ?? {};
+  const { message, question, history, language } = req.body ?? {};
   const userMessage: string = (message || question || "").toString();
-  // Correlation id lets a user quote a request in a support report without the
-  // server logging the prompt itself.
   const correlationId = crypto.randomUUID();
   res.set("X-Correlation-Id", correlationId);
 
@@ -820,19 +820,117 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       correlationId,
     });
   }
-  // Cap history so a caller cannot inflate the provider bill or context window.
-  const safeHistory = Array.isArray(history) ? history.slice(-12) : undefined;
+
+  const safeHistory = Array.isArray(history)
+    ? history
+        .filter((entry: any) =>
+          entry && (entry.role === "user" || entry.role === "assistant") &&
+          typeof entry.content === "string" && entry.content.length <= 4000,
+        )
+        .slice(-12)
+        .map((entry: any) => ({ role: entry.role, content: entry.content }))
+    : undefined;
 
   try {
+    let farmContext: {
+      governorate?: string;
+      crop?: string;
+      farmSizeHectares?: number;
+      soil?: Record<string, number>;
+    } | undefined;
+    let farmContextStatus: "linked" | "no_farms" | "anonymous" | "unavailable" = "anonymous";
+
+    // When a verified session is supplied, build context from the caller's
+    // own persisted records. Client-supplied farm measurements are not trusted.
+    let userId: string | null = null;
+    try {
+      userId = await resolveUserIdFromJwt(req);
+    } catch (authError) {
+      const reason = authError instanceof Error ? authError.message : "";
+      if (reason === "AUTH_INVALID_TOKEN") {
+        return res.status(401).json({ error: "Unauthorized", correlationId });
+      }
+      farmContextStatus = "unavailable";
+    }
+
+    if (userId) {
+      const db = scopedClientFromAuthHeader(req.header("authorization"));
+      if (!db) {
+        farmContextStatus = "unavailable";
+      } else {
+        const { data: farms, error: farmsError } = await db
+          .from("farms")
+          .select("id,location,size_hectares")
+          .eq("owner_id", userId)
+          .limit(20);
+        if (farmsError) {
+          farmContextStatus = "unavailable";
+        } else if (!farms?.length) {
+          farmContextStatus = "no_farms";
+        } else {
+          const farmIds = farms.map((farm: any) => farm.id);
+          const [cropResult, soilResult] = await Promise.all([
+            db.from("crop_cultivations")
+              .select("crop_name,status,updated_at")
+              .in("farm_id", farmIds)
+              .eq("status", "active")
+              .order("updated_at", { ascending: false })
+              .limit(1),
+            db.from("soil_analyses")
+              .select("analysis_type,ph_level,organic_matter_percent,moisture_percent,temperature_celsius,analyzed_at")
+              .in("farm_id", farmIds)
+              .in("analysis_type", ["lab", "sensor"])
+              .order("analyzed_at", { ascending: false })
+              .limit(1),
+          ]);
+
+          if (cropResult.error || soilResult.error) {
+            farmContextStatus = "unavailable";
+          } else {
+            const firstLocation = farms.find((farm: any) => farm.location && typeof farm.location === "object")?.location;
+            const rawSize = farms.reduce((sum: number, farm: any) => {
+              const size = Number(farm.size_hectares);
+              return sum + (Number.isFinite(size) && size > 0 ? size : 0);
+            }, 0);
+            const latestSoil = soilResult.data?.[0];
+            const soil: Record<string, number> = {};
+            if (latestSoil) {
+              const ph = toNumber(latestSoil.ph_level);
+              const organicMatter = toNumber(latestSoil.organic_matter_percent);
+              const moisture = toNumber(latestSoil.moisture_percent);
+              const temperature = toNumber(latestSoil.temperature_celsius);
+              if (ph !== undefined) soil.ph = ph;
+              if (organicMatter !== undefined) soil.organicMatter = organicMatter;
+              if (moisture !== undefined) soil.moisture = moisture;
+              if (temperature !== undefined) soil.temperature = temperature;
+            }
+            farmContext = {
+              governorate: typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
+              crop: cropResult.data?.[0]?.crop_name || undefined,
+              farmSizeHectares: rawSize > 0 ? rawSize : undefined,
+              soil: Object.keys(soil).length ? soil : undefined,
+            };
+            farmContextStatus = "linked";
+          }
+        }
+      }
+    }
+
     const result = await answerAgriculturalQuestion({
       question: userMessage,
       language: language || detectLanguage(userMessage),
-      context,
+      context: farmContext,
       history: safeHistory,
     });
-    res.json({ ...result, correlationId });
+    const contextNote = farmContextStatus === "linked"
+      ? "تم ربط الإجابة بسياق المزرعة المسجل في حسابك؛ القياسات غير المتوفرة لم يتم تخمينها."
+      : farmContextStatus === "no_farms"
+        ? "لا توجد مزرعة مسجلة في الحساب بعد؛ هذه إجابة عامة وليست تحليلاً خاصاً بمزرعتك."
+        : farmContextStatus === "unavailable"
+          ? "تعذّر جلب سياق المزرعة والتحقق منه؛ هذه إجابة عامة ولا تعتمد على بيانات مزرعة غير متاحة."
+          : "لم يتم تقديم جلسة موثقة؛ هذه إجابة عامة.";
+    res.json({ ...result, farmContextStatus, note: [result.note, contextNote].filter(Boolean).join(" "), correlationId });
   } catch (error) {
-    // Log the correlation id and error category only — never the prompt.
     console.error(
       `Assistant error [${correlationId}]:`,
       error instanceof Error ? error.name : "unknown",
