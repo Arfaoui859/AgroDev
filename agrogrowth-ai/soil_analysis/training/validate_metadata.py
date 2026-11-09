@@ -19,6 +19,15 @@ ALIASES = {
     "zn_mehlich3": "zinc_extractable",
 }
 
+# The source metadata CSV labels these analytes as mg/kg, but the
+# iSDA analytical metadata/FAQ documents total nitrogen and organic
+# carbon in g/kg. Apply explicit, auditable unit corrections here.
+UNIT_OVERRIDES = {
+    "carbon_organic": "g/kg",
+    "carbon_total": "g/kg",
+    "nitrogen_total": "g/kg",
+}
+
 TARGET_COLUMNS = [
     "ph",
     "carbon_organic",
@@ -84,6 +93,8 @@ def main():
                 None if pd.isna(unit) else str(unit)
             )
 
+    units.update(UNIT_OVERRIDES)
+
     target_candidate_counts = {
         column: int(data[column].notna().sum())
         for column in TARGET_COLUMNS
@@ -104,6 +115,7 @@ def main():
         "missing_in_metadata": missing_in_metadata,
         "missing_target_columns": missing_targets,
         "units": units,
+        "unit_overrides_applied": UNIT_OVERRIDES,
         "targets_candidate_counts": target_candidate_counts,
         "status": (
             "column_mapping_valid"
