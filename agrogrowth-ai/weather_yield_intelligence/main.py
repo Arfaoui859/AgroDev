@@ -279,6 +279,15 @@ async def analyze_field_image(file: UploadFile = File(...)):
     """
     رفع وتحليل صورة الحقل لتقدير المردودية
     """
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "FIELD_IMAGE_MODEL_NOT_VALIDATED",
+            "message": "Field-image yield analysis relies on the synthetic yield predictor and is disabled.",
+            "production_ready": False,
+        },
+    )
+
     try:
         # قراءة الصورة
         image_data = await file.read()
