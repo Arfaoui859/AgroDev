@@ -68,7 +68,7 @@ import {
   deleteExpense,
   updateRevenue,
   deleteRevenue,
-} from "./routes/financial-management";
+} from "./routes/farm-finance";
 import {
   getAnimals,
   getAnimalHealth,
@@ -272,6 +272,7 @@ import {
   updateFarmerProfile,
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
+import { listAssistantFarms, createAssistantCultivation, listAssistantCultivations } from "./routes/assistant-actions";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
@@ -348,11 +349,6 @@ export function createServer() {
       "/api/optimize-feed-budget",
       "/api/health-alerts",
       "/api/livestock-dashboard",
-      "/api/expenses",
-      "/api/revenues",
-      "/api/profitability-analysis",
-      "/api/financial-summary",
-      "/api/budget-plans",
       // SaaS / logistics / supply-chain modules are served from fixed in-memory
       // fixtures (mock vehicles, orders, plans, tracking records). Stamp them so
       // the SPA can disclose that these are illustrative, not live records.
@@ -491,20 +487,25 @@ export function createServer() {
   app.use("/api/weather-yield-intelligence", weatherYieldIntelligenceRouter);
 
   // Financial Management routes
-  app.post("/api/expenses", createExpense);
-  app.get("/api/expenses", getExpenses);
-  app.put("/api/expenses/:id", updateExpense);
-  app.delete("/api/expenses/:id", deleteExpense);
-  app.post("/api/revenues", createRevenue);
-  app.get("/api/revenues", getRevenues);
-  app.put("/api/revenues/:id", updateRevenue);
-  app.delete("/api/revenues/:id", deleteRevenue);
-  app.get("/api/profitability-analysis", getProfitabilityAnalysis);
-  app.get("/api/financial-summary", getFinancialSummary);
-  app.post("/api/budget-plans", createBudgetPlan);
-  app.get("/api/budget-plans", getBudgetPlans);
-  app.put("/api/budget-plans/:id", updateBudgetPlan);
-  app.delete("/api/budget-plans/:id", deleteBudgetPlan);
+  app.post("/api/expenses", requireAuth, createExpense);
+  app.get("/api/expenses", requireAuth, getExpenses);
+  app.put("/api/expenses/:id", requireAuth, updateExpense);
+  app.delete("/api/expenses/:id", requireAuth, deleteExpense);
+  app.post("/api/revenues", requireAuth, createRevenue);
+  app.get("/api/revenues", requireAuth, getRevenues);
+  app.put("/api/revenues/:id", requireAuth, updateRevenue);
+  app.delete("/api/revenues/:id", requireAuth, deleteRevenue);
+  app.get("/api/profitability-analysis", requireAuth, getProfitabilityAnalysis);
+  app.get("/api/financial-summary", requireAuth, getFinancialSummary);
+  app.post("/api/budget-plans", requireAuth, createBudgetPlan);
+  app.get("/api/budget-plans", requireAuth, getBudgetPlans);
+  app.put("/api/budget-plans/:id", requireAuth, updateBudgetPlan);
+  app.delete("/api/budget-plans/:id", requireAuth, deleteBudgetPlan);
+
+  // Assistant actions are always explicit, authenticated, and persisted.
+  app.get("/api/assistant/farms", requireAuth, listAssistantFarms);
+  app.get("/api/assistant/cultivations", requireAuth, listAssistantCultivations);
+  app.post("/api/assistant/actions/cultivations", requireAuth, createAssistantCultivation);
 
   // Advanced Livestock Management routes
   app.get("/api/animals", getAnimals);
