@@ -1047,7 +1047,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             };
             farmContextStatus = "linked";
 
-            const wantsLiveWeather = /(weather|météo|meteo|طقس|مطر|حرارة|ري|irrigation|arrosage|ns9i|s9i|matar|skhouna|bard|jaw|jew|ri7|rri7|nrawi)/i.test(userMessage);
+            const wantsLiveWeather = /(weather|météo|meteo|طقس|مطر|حرارة|ري|irrigation|arrosage|ns9i|s9i|matar|skhouna|bard|jaw|jew|ri7|rri7|nrawi|crop|plant|sow|grow|planting|محصول|زراعة|نزرع|نغرس|nzra3|ghars|zra3a)/i.test(userMessage);
             if (wantsLiveWeather) {
               const namedFarmMatches = farms.filter((farm: any) =>
                 typeof farm.name === "string" && farm.name.trim().length >= 3 &&
