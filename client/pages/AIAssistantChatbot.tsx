@@ -75,6 +75,7 @@ interface ChatMessage {
     relatedTopics?: string[];
     /** Persisted disease record ID used to refresh its private image URL. */
     diseaseRecordId?: string;
+    cultivationId?: string;
   };
   attachments?: {
     type: 'image' | 'document' | 'chart';
@@ -484,14 +485,16 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       });
       const payload = await response.json();
       if (!response.ok || payload.success !== true) throw new Error(payload.message || payload.code || "CULTIVATION_SAVE_FAILED");
-      setMessages(prev => [...prev, {
+      const cropSavedMessage: ChatMessage = {
         id: "crop-saved-" + Date.now(), type: "assistant",
         content: language === "ar"
           ? "تم حفظ " + pendingCropAction.cropName + " في سجل المزرعة. رقم العملية: " + payload.data.id
           : "Saved " + pendingCropAction.cropName + " in the farm register. Record ID: " + payload.data.id,
         timestamp: new Date().toISOString(), language,
-        metadata: { sources: ["Supabase · crop_cultivations"] }, category: "agriculture"
-      }]);
+        metadata: { sources: ["Supabase · crop_cultivations"], cultivationId: payload.data.id }, category: "agriculture"
+      };
+      setMessages(prev => [...prev, cropSavedMessage]);
+      await persistAssistantMessage(cropSavedMessage);
       setPendingCropAction(null);
     } catch (error) {
       const reason = error instanceof Error ? error.message : "CULTIVATION_SAVE_FAILED";
