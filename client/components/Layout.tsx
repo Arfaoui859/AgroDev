@@ -96,17 +96,9 @@ interface NavigationItem {
   allowedRoles: string[]; // Add role-based access control
 }
 
-interface QuickActionItem {
-  name: string;
-  nameArabic: string;
-  href: string;
-  icon: React.ElementType;
-  color: string;
-  allowedRoles: string[];
-}
 
-// Define role-based quick actions
-// Define role-based navigation categories
+
+// Define the role-aware navigation categories
 const navigationCategories: NavigationCategory[] = [
   {
     name: "Dashboards",
