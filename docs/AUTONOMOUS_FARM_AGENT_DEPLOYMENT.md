@@ -9,10 +9,11 @@ The agent evaluates persisted, user-owned farm records and creates deduplicated 
 - Active cultivations whose recorded expected harvest date has passed.
 - Registered sensors marked inactive.
 - Registered sensors with a stored battery level at or below 20%.
+- Recorded high/critical plant-detection results that are not marked recovered; these create a verification/follow-up reminder, not a confirmed disease diagnosis.
 
 Every alert carries an evidence payload and a stable event key. Duplicate notifications are prevented by a database unique index. These are operational reminders, not diagnoses or guaranteed agronomic advice.
 
-The first slice does **not** claim to monitor live sensor streams, forecast weather, detect plant disease continuously, track live market prices, or deliver push/SMS/email. It creates in-app notifications only. Those capabilities need their respective verified data integrations and delivery providers.
+The first slice does **not** claim to monitor live sensor streams, forecast weather, detect plant disease continuously, track live market prices, or deliver push/SMS/email. It can follow up on high/critical disease-detection records already saved in the database, while explicitly requiring field verification. It creates in-app notifications only. Those capabilities need their respective verified data integrations and delivery providers.
 
 The assistant now persists user-scoped conversations/messages and can include the caller's registered farm size/location, active crop, latest lab/sensor soil measurements, and recent unarchived agent alerts in its context. If the session or farm records cannot be verified, the assistant labels its answer as general instead of pretending it has farm context.
 
@@ -76,7 +77,7 @@ The scheduled workflow has also been committed as a standalone file to the repos
 - GitHub Actions schedule: every 15 minutes (best effort).
 - In-app dashboard status refresh: every 60 seconds; this refresh does not itself run a farm scan.
 - A scheduled scan requires the main app endpoint to be reachable and Render/Supabase to be configured.
-- The current rules use only saved farm, cultivation, soil-analysis and sensor-device records. Missing records create a data-completeness reminder, never an invented measurement.
+- The current rules use only saved farm, cultivation, soil-analysis, sensor-device and plant-disease-detection records. Missing records create a data-completeness reminder, never an invented measurement.
 - In-app alerts are not yet push notifications. Push requires service-worker subscription handling and a delivery provider; email/SMS require separately configured providers and consent.
 
 ## Source and test coverage
