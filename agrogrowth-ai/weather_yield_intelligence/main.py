@@ -193,19 +193,15 @@ async def analyze_field_image(file: UploadFile = File(...)):
 
 @app.get("/climate-zones")
 def get_climate_zones():
-    """
-    الحصول على معلومات المناطق المناخية
-    """
-    try:
-        return {
-            'success': True,
-            'data': to_json_safe(get_weather_planner().climate_zones),
-            'message': 'تم جلب معلومات المناطق المناخية'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching climate zones: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CLIMATE_REFERENCE_NOT_VERIFIED",
+            "message": "Bundled climate-zone reference values are not linked to a verified dated climate dataset.",
+            "production_ready": False,
+        },
+    )
+
 
 @app.get("/crop-yield-database")
 def get_crop_yield_database():
