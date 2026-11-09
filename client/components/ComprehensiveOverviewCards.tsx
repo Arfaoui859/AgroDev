@@ -228,7 +228,7 @@ const ComprehensiveOverviewCards: React.FC<ComprehensiveOverviewCardsProps> = ({
             activeCrops: cropsData?.active_crops_count || 8,
             totalYield: cropsData?.total_yield || 1247,
             healthyPercentage: cropsData?.healthy_percentage || 92,
-            diseaseAlerts: alertsData?.count || 3,
+            diseaseAlerts: alertsData?.count ?? alertsData?.data?.length ?? 0,
             harvestReadiness: cropsData?.harvest_ready_percentage || 35,
             topPerformers: cropsData?.top_performers || [
               {
