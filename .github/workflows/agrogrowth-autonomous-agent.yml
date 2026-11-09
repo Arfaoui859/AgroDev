@@ -18,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Validate monitor configuration
+      - name: Check monitor secrets
+        id: config
         shell: bash
         env:
           MONITOR_URL: ${{ secrets.AGRO_AGENT_MONITOR_URL }}
@@ -26,11 +27,14 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "$MONITOR_URL" || -z "$MONITOR_TOKEN" ]]; then
-            echo "::error::Configure AGRO_AGENT_MONITOR_URL and AGRO_AGENT_MONITOR_TOKEN in GitHub Actions secrets."
-            exit 1
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Monitor is not enabled yet. Configure AGRO_AGENT_MONITOR_URL and AGRO_AGENT_MONITOR_TOKEN after deploying the API."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run evidence-based farm monitoring
+        if: steps.config.outputs.configured == 'true'
         shell: bash
         env:
           MONITOR_URL: ${{ secrets.AGRO_AGENT_MONITOR_URL }}
