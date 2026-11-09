@@ -57,7 +57,7 @@ export function buildFarmAgentEvents(input: {
         farmId: farm.id,
         type: "agent_soil_baseline_missing",
         title: "بيانات التربة غير متوفرة",
-        message: `لم يتم العثور على تحليل تربة مسجل لمزرعة «${farmName}». أضف قياسات مخبرية أو حساسات موثوقة حتى تكون توصيات التربة مبنية على بيانات فعلية.`,
+        message: `لم يتم العثور على تحليل تربة مخبري أو قياسات حساسات موثوقة مسجلة لمزرعة «${farmName}». أضف قياسات موثقة حتى تكون توصيات التربة مبنية على بيانات فعلية.`,
         priority: "normal",
         actionUrl: "/soil-analysis",
         evidence: { evidence: "no_soil_analysis_record", farm_name: farmName },
@@ -184,7 +184,7 @@ export async function runFarmAgentScan(
 
   const [cultivationResult, soilResult, sensorResult, profileResult] = await Promise.all([
     db.from("crop_cultivations").select("id,farm_id,crop_name,expected_harvest_date,status").in("farm_id", farmIds),
-    db.from("soil_analyses").select("id,farm_id,analyzed_at,created_at").in("farm_id", farmIds).order("analyzed_at", { ascending: false }),
+    db.from("soil_analyses").select("id,farm_id,analysis_type,analyzed_at,created_at").in("farm_id", farmIds).in("analysis_type", ["lab", "sensor"]).order("analyzed_at", { ascending: false }),
     db.from("sensor_devices").select("id,farm_id,device_id,status,battery_level").in("farm_id", farmIds),
     db.from("user_profiles").select("preferences").eq("user_id", userId).maybeSingle(),
   ]);
