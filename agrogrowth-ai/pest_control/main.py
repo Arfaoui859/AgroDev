@@ -147,7 +147,13 @@ async def identify_pest(request: PestIdentificationRequest):
                 'symptoms_analysis': symptoms_analysis,
                 'image_analysis': image_analysis
             }),
-            'message': 'تم تحديد الآفة بنجاح'
+            'model_source': 'symptom-keyword-rules',
+            'field_validated': False,
+            'confidence_calibrated': False,
+            'message': (
+                'تمت مطابقة الأعراض مع قواعد كلمات مفتاحية؛ '
+                'هذه ليست نتيجة نموذج مدرّب أو تشخيصاً مؤكداً.'
+            )
         }
         
     except Exception as e:
