@@ -85,8 +85,17 @@ async def analyze_pest_problem(request: PestAnalysisRequest):
 @app.post("/identify-pest")
 async def identify_pest(request: PestIdentificationRequest):
     """
-    تحديد نوع الآفة أو المرض بناءً على الأعراض والصورة
+    Match user-entered symptoms using transparent keyword rules only.
     """
+    if request.image_data:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "PEST_IMAGE_MODEL_NOT_AVAILABLE",
+                "message": "Image diagnosis is unavailable because no trained, validated pest-image classifier is configured.",
+                "production_ready": False,
+            },
+        )
     try:
         # تحليل الأعراض
         symptoms_analysis = pest_recommender._analyze_symptoms(
