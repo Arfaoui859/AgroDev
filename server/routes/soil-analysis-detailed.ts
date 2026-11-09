@@ -250,6 +250,35 @@ export const analyzeSoilBatch: RequestHandler = async(req,res)=>{
   }
 };
 
+export const listSoilAnalysisReports: RequestHandler = async(req,res)=>{
+  try {
+    const db = scopedClientFromAuthHeader(req.header("authorization"));
+    if (!db) return res.status(503).json({success:false,error:"DATABASE_OR_SESSION_UNAVAILABLE",message:"يلزم تسجيل الدخول والاتصال بقاعدة البيانات لعرض سجل التقارير."});
+    const requestedLimit = Number(req.query.limit ?? 20);
+    const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit,1),50) : 20;
+    const { data, error } = await db
+      .from("soil_analyses")
+      .select("id,section_id,farm_id,analysis_type,analyzed_at,created_at,sensor_data,analysis_result")
+      .order("analyzed_at",{ascending:false})
+      .limit(limit);
+    if (error) throw error;
+    const reports = (data ?? []).map((row:any)=>({
+      analysisId:row.id,
+      fieldId:row.section_id,
+      farmId:row.farm_id,
+      analysisType:row.analysis_type,
+      analyzedAt:row.analyzed_at,
+      createdAt:row.created_at,
+      input:row.sensor_data,
+      executiveSummary:row.analysis_result?.executiveSummary ?? null,
+    }));
+    return res.json({success:true,data:reports,count:reports.length,persistence:{persisted:true,source:"supabase-rls"}});
+  } catch(error) {
+    console.error("Soil report history failed:",error);
+    return res.status(500).json({success:false,error:"REPORT_HISTORY_FAILED",message:"تعذّر تحميل سجل التقارير حالياً."});
+  }
+};
+
 export const getSoilAnalysisReport: RequestHandler = async(req,res)=>{
   try {
     const db = scopedClientFromAuthHeader(req.header("authorization"));
@@ -268,4 +297,4 @@ export const getSoilAnalysisReport: RequestHandler = async(req,res)=>{
   }
 };
 
-export default {analyzeSoilDetailed,analyzeSoilBatch,getSoilAnalysisReport};
+export default {analyzeSoilDetailed,analyzeSoilBatch,listSoilAnalysisReports,getSoilAnalysisReport};
