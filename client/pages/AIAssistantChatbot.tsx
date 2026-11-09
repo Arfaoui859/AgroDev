@@ -281,7 +281,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
 
     setImageUploading(true);
     setInput("");
-    setMessages(prev => [...prev, {
+    const imageUserMessage: ChatMessage = {
       id: "image-user-" + Date.now(),
       type: "user",
       content: (imageContext ? imageContext + "\n" : "") +
@@ -289,7 +289,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       timestamp: new Date().toISOString(),
       language,
       category: "agriculture"
-    }]);
+    };
+    setMessages(prev => [...prev, imageUserMessage]);
 
     try {
       const form = new FormData();
@@ -337,7 +338,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
             cropType ? "" : "What crop is shown? I can refine the interpretation with that context."
           ].filter(Boolean).join("\n\n");
 
-      setMessages(prev => [...prev, {
+      const imageAssistantMessage: ChatMessage = {
         id: "image-result-" + Date.now(),
         type: "assistant",
         content: lines,
@@ -350,7 +351,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           suggestions: cropType ? ["شنوّة نعمل توا؟", "كيفاش نمنع انتشار المرض؟"] : ["المحصول طماطم", "المحصول زيتون"]
         },
         category: "agriculture"
-      }]);
+      };
+      setMessages(prev => [...prev, imageAssistantMessage]);
+      await updateActiveConversation(imageUserMessage, imageAssistantMessage);
       // Keep the original image and verified response available for an explicit,
       // user-approved save into the selected farm/cultivation record.
       const { data: { session } } = await supabase.auth.getSession();
@@ -541,7 +544,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       });
       const payload = await response.json();
       if (!response.ok || payload.success !== true) throw new Error(payload.code || "DISEASE_RECORD_SAVE_FAILED");
-      setMessages(prev => [...prev, {
+      const diseaseSavedMessage: ChatMessage = {
         id: "disease-saved-" + Date.now(), type: "assistant",
         content: language === "ar"
           ? "تم حفظ الصورة وسجلّ المتابعة وربطهما بالمزرعة" + (payload.data?.cultivation_id ? " والمحصول المسجّل" : "") + ". رقم السجل: " + payload.data.id + ". النتيجة تتطلب تثبّتاً ميدانياً."
@@ -550,7 +553,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         metadata: { sources: ["Supabase · plant_disease_detections", "Supabase Storage · private evidence bucket"], diseaseRecordId: payload.data.id },
         attachments: payload.data?.image_signed_url ? [{ type: "image", url: payload.data.image_signed_url, name: pendingDiseaseSave.file.name }] : undefined,
         category: "agriculture"
-      }]);
+      };
+      setMessages(prev => [...prev, diseaseSavedMessage]);
+      await persistAssistantMessage(diseaseSavedMessage);
       setPendingDiseaseSave(null);
     } catch (error) {
       const reason = error instanceof Error ? error.message : "DISEASE_RECORD_SAVE_FAILED";
@@ -624,13 +629,15 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       }
       const rows = payload.data || [];
       const summary = rows.map((row: any) => "• " + row.observed_from + " → " + row.observed_to + ": NDVI mean " + Number(row.mean_value).toFixed(3) + " (min " + Number(row.min_value).toFixed(3) + ", max " + Number(row.max_value).toFixed(3) + "; pixels " + row.sample_count + ")").join("\n");
-      setMessages(prev => [...prev, {
+      const satelliteResultMessage: ChatMessage = {
         id: "satellite-result-" + Date.now(), type: "assistant",
         content: (language === "ar" ? "تم جلب وحفظ نتائج Sentinel-2 للمزرعة " : "Sentinel-2 results retrieved and saved for farm ") + payload.farm.name + ":\n" + summary + "\n\n" + (language === "ar" ? "NDVI يقيس خضرة الغطاء النباتي، موش تشخيص مرض ولا قياس مباشر للمردودية. النتائج دورية وتتأثر بالسحب وعدد البكسلات الصالحة." : "NDVI measures vegetation greenness, not disease or direct yield. Observations are periodic and affected by clouds and valid-pixel count."),
         timestamp: new Date().toISOString(), language,
         metadata: { sources: [payload.provenance?.provider || "Copernicus Data Space Ecosystem · Sentinel Hub"] },
         category: "agriculture"
-      }]);
+      };
+      setMessages(prev => [...prev, satelliteResultMessage]);
+      await persistAssistantMessage(satelliteResultMessage);
       setPendingSatelliteRequest(null);
     } catch (error) {
       const reason = error instanceof Error ? error.message : "SATELLITE_ANALYSIS_FAILED";
@@ -919,6 +926,41 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         language,
         category: "general",
       }]);
+    }
+  };
+
+  const persistAssistantMessage = async (message: ChatMessage) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const headers = { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token };
+      let conversationId = activeConversation;
+      if (!conversationId) {
+        const createResponse = await fetch("/api/assistant/conversations", {
+          method: "POST", headers,
+          body: JSON.stringify({ title: message.content.slice(0, 180), language: message.language, category: message.category || "general" })
+        });
+        const created = await createResponse.json();
+        if (!createResponse.ok || created.success !== true) throw new Error(created.code || "CONVERSATION_CREATE_FAILED");
+        conversationId = created.data.id;
+        setActiveConversation(conversationId);
+      }
+      const response = await fetch("/api/assistant/conversations/" + encodeURIComponent(conversationId) + "/messages", {
+        method: "POST", headers,
+        body: JSON.stringify({
+          role: "assistant",
+          content: message.content,
+          language: message.language,
+          dataSource: message.metadata?.dataSource,
+          modelSource: message.metadata?.modelSource,
+          metadata: message.metadata || {},
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || "CONVERSATION_MESSAGE_SAVE_FAILED");
+      await loadConversations();
+    } catch (error) {
+      console.error("Assistant action result could not be persisted:", error);
     }
   };
 
