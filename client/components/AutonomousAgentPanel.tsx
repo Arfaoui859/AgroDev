@@ -18,7 +18,7 @@ type AgentStatus = {
   scheduler: string;
 };
 
-type ScanEvent = { key: string; title: string; message: string; priority: "normal" | "high" };
+type ScanEvent = { key: string; title: string; message: string; priority: "normal" | "high"; recommendedActions?: string[] };
 
 export default function AutonomousAgentPanel() {
   const [status, setStatus] = useState<AgentStatus | null>(null);
@@ -177,6 +177,14 @@ export default function AutonomousAgentPanel() {
                   <Badge variant={event.priority === "high" ? "destructive" : "secondary"}>{event.priority === "high" ? "أولوية مرتفعة" : "متابعة"}</Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{event.message}</p>
+                {event.recommendedActions?.length ? (
+                  <div className="mt-3 rounded-md bg-muted/50 p-3">
+                    <p className="mb-2 text-xs font-semibold">الخطوات المقترحة للتحقق والمعالجة</p>
+                    <ol className="list-decimal space-y-1 pr-5 text-xs text-muted-foreground">
+                      {event.recommendedActions.map((action, index) => <li key={index}>{action}</li>)}
+                    </ol>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
