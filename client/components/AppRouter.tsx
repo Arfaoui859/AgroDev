@@ -93,6 +93,7 @@ const SmartLogistics = React.lazy(() => import("../pages/SmartLogistics"));
 const QualityInventoryManagement = React.lazy(() => import("../pages/QualityInventoryManagement"));
 const DynamicPricing = React.lazy(() => import("../pages/DynamicPricing"));
 const AIServicesTest = React.lazy(() => import("../pages/AIServicesTest"));
+const AIIntelligenceDashboard = React.lazy(() => import("../pages/AIIntelligenceDashboard"));
 const AIAssistantChatbot = React.lazy(() => import("../pages/AIAssistantChatbot"));
 
 const DatabaseDiagnostics = React.lazy(() => import("../pages/DatabaseDiagnostics"));
@@ -303,14 +304,8 @@ export default function AppRouter() {
             element={<GovernmentDashboard />}
           />
           <Route path="/field-management" element={<FieldManagement />} />
-          <Route
-            path="/ai-intelligence"
-            element={<Navigate to="/farmer-dashboard" replace />}
-          />
-          <Route
-            path="/ai-intelligence-dashboard"
-            element={<Navigate to="/farmer-dashboard" replace />}
-          />
+          <Route path="/ai-intelligence" element={<AIIntelligenceDashboard />} />
+          <Route path="/ai-intelligence-dashboard" element={<AIIntelligenceDashboard />} />
           <Route path="/ai-assistant" element={<AIAssistantChatbot />} />
           <Route path="/ai-chatbot" element={<AIAssistantChatbot />} />
           <Route path="/smart-advisor" element={<Navigate to="/ai-assistant" replace />} />
