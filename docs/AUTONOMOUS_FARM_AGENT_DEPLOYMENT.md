@@ -55,7 +55,7 @@ The workflow `.github/workflows/agrogrowth-autonomous-agent.yml` invokes the pro
 
 ## 4. Deploy the code
 
-The new API, UI, migration and workflow are committed to `feat/soil-analysis-professional-report`.
+The new API, UI, migration and workflow are committed to `feat/soil-analysis-professional-report`. The same branch now includes `.github/workflows/agrogrowth-quality-gate.yml`, which runs lint, Jest unit/integration tests, and the production build on pushes. Its run must finish successfully before this branch is considered verified.
 
 The scheduled workflow has also been committed as a standalone file to the repository's current default branch (`feat/ai-integration-production-hardening`), so the scheduler does not require merging this entire feature branch. It safely skips until both GitHub secrets are configured. The feature branch is substantially ahead of the default branch; do not merge the whole branch blindly. Ensure the main Render service deploys a branch containing these commits. The `render.yaml` main service branch is now set to `feat/soil-analysis-professional-report`. Render must still sync/apply the Blueprint and complete a successful deploy; editing this file does not itself change the live service.
 
