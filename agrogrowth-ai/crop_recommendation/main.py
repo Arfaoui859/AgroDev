@@ -512,9 +512,22 @@ async def health_check():
     )
 
     overall_ready = crop_ready and profit_ready
+    production_ready = (
+        overall_ready
+        and get_crop_recommender_source() != "synthetic-demo"
+        and profit_estimator.model_source != "deterministic-financial-rules"
+    )
 
     return {
-        "status": "healthy" if overall_ready else "degraded",
+        "status": "healthy" if production_ready else "degraded",
+        "production_ready": production_ready,
+        "disabled_features": [
+            "crop_recommendations",
+            "profit_estimation",
+            "crop_comparison",
+            "market_data",
+            "quick_recommendation",
+        ],
         "service": "Crop Recommendation AI",
         "version": "1.1.0",
         "model_source": get_crop_recommender_source(),
@@ -563,6 +576,15 @@ async def health_check():
     response_model=CropRecommendationResponse,
 )
 async def recommend_crops(request: CropRecommendationRequest):
+
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CROP_MODEL_NOT_VALIDATED",
+            "message": "The crop recommender was trained on synthetic samples. Production recommendations are disabled until a documented real dataset and independent evaluation are available.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(
@@ -641,6 +663,15 @@ async def recommend_crops(request: CropRecommendationRequest):
 )
 async def estimate_profit(request: ProfitEstimationRequest):
 
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "FINANCIAL_REFERENCE_DATA_NOT_VERIFIED",
+            "message": "The profitability engine uses unverified reference prices and cost assumptions. Financial estimates are disabled until source, region, currency, date, and units are verified.",
+            "production_ready": False,
+        },
+    )
+
     try:
         logger.info(
             "Profit estimation request: crop=%s, farm_size=%s",
@@ -683,6 +714,15 @@ async def estimate_profit(request: ProfitEstimationRequest):
     response_model=CropComparisonResponse,
 )
 async def compare_crops(request: CropComparisonRequest):
+
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "FINANCIAL_REFERENCE_DATA_NOT_VERIFIED",
+            "message": "Crop comparisons depend on unverified reference prices and cost assumptions and are disabled until verified inputs are available.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(
@@ -819,6 +859,15 @@ async def get_crop_details(crop_name: str):
 @app.get("/market-data/{crop_name}")
 async def get_market_data(crop_name: str):
 
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "LIVE_MARKET_DATA_NOT_CONFIGURED",
+            "message": "The stored crop prices are indicative placeholders, not verified market observations. They are not exposed as market data.",
+            "production_ready": False,
+        },
+    )
+
     try:
         normalized_name = crop_name.strip().lower()
 
@@ -890,6 +939,15 @@ async def quick_recommendation(
         gt=0,
     ),
 ):
+
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CROP_MODEL_NOT_VALIDATED",
+            "message": "The quick recommender calls the same synthetic-trained crop model and injects default soil, water, capital, and experience values. It is disabled for production.",
+            "production_ready": False,
+        },
+    )
 
     try:
         input_data = {
