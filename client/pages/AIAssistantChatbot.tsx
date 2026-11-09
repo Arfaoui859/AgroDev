@@ -1054,8 +1054,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         id: "memory-save-warning-" + Date.now(),
         type: "assistant",
         content: language === "ar"
-          ? "تنبيه: تم توليد الإجابة، لكن تعذّر حفظ سجل المحادثة في قاعدة البيانات. راجع إعدادات قاعدة البيانات أو أعد المحاولة."
-          : "The answer was generated, but its conversation history could not be saved to the database.",
+          ? "تنبيه حفظ المحادثة: تم توليد الإجابة، لكن لم يتم تأكيد حفظ سجلها. رمز الخطأ: " + (error instanceof Error ? error.message : "UNKNOWN") + ". تحقق من migration لجداول farm_agent_conversations وfarm_agent_messages، ومن JWT وسياسات RLS. الإجابة الحالية لا تعني أن سجلها محفوظ."
+          : "Conversation persistence failed (" + (error instanceof Error ? error.message : "UNKNOWN") + "). Verify the assistant migration, caller JWT and RLS policies. The generated answer is not proof that its history was saved.",
         timestamp: new Date().toISOString(),
         language,
         category: "general",
@@ -1066,7 +1066,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   const persistAssistantMessage = async (message: ChatMessage) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
       const headers = { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token };
       let conversationId = activeConversation;
       if (!conversationId) {
@@ -1094,7 +1094,18 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       if (!response.ok || payload.success !== true) throw new Error(payload.code || "CONVERSATION_MESSAGE_SAVE_FAILED");
       await loadConversations();
     } catch (error) {
-      console.error("Assistant action result could not be persisted:", error);
+      const reason = error instanceof Error ? error.message : "CONVERSATION_MESSAGE_SAVE_FAILED";
+      console.error("Assistant action result could not be persisted:", reason);
+      setMessages(prev => [...prev, {
+        id: "action-memory-warning-" + Date.now(),
+        type: "assistant",
+        content: language === "ar"
+          ? "تم تنفيذ العملية حسب تأكيد الخادم، لكن تعذّر حفظ نتيجتها داخل سجل المحادثة. رمز الخطأ: " + reason + ". بيانات العملية نفسها قد تكون محفوظة؛ راجع سجل المزرعة قبل إعادة تنفيذها لتجنب التكرار."
+          : "The server confirmed the action, but its result could not be added to chat history (" + reason + "). The underlying record may already exist; check the farm register before retrying to avoid duplicates.",
+        timestamp: new Date().toISOString(),
+        language,
+        category: "general",
+      }]);
     }
   };
 
