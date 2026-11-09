@@ -115,16 +115,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const timeoutMs = 30000;
         const authPromise = supabase.auth.getSession();
+        let authTimeout: number | undefined;
         const timeoutPromise = new Promise((_, reject) => {
-          window.setTimeout(
+          authTimeout = window.setTimeout(
             () => reject(new Error("Auth initialization timeout")),
             timeoutMs,
           );
         });
 
-        const {
-          data: { session: initialSession },
-        } = (await Promise.race([authPromise, timeoutPromise])) as any;
+        let initialSession: Session | null;
+        try {
+          const result = (await Promise.race([authPromise, timeoutPromise])) as any;
+          initialSession = result.data.session;
+        } finally {
+          if (authTimeout !== undefined) window.clearTimeout(authTimeout);
+        }
 
         if (!mounted) return;
         setSession(initialSession);
