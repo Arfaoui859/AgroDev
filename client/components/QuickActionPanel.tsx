@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -181,29 +182,33 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
   isArabic = false, 
   onActionExecute 
 }) => {
+  const navigate = useNavigate();
   const [selectedAction, setSelectedAction] = useState<QuickAction | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [actionData, setActionData] = useState<any>({});
   const [isExecuting, setIsExecuting] = useState(false);
 
   const handleActionClick = (action: QuickAction) => {
     setSelectedAction(action);
     setActionData({});
+    setActionError(null);
   };
 
   const handleExecuteAction = async () => {
     if (!selectedAction) return;
+    if (!onActionExecute) {
+      setActionError(isArabic ? "هذه العملية غير مربوطة بخدمة تنفيذ حالياً." : "This action is not connected to an execution handler yet.");
+      return;
+    }
 
     setIsExecuting(true);
+    setActionError(null);
     try {
-      if (onActionExecute) {
-        await onActionExecute(selectedAction.id, actionData);
-      }
-      // Simulate action execution
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await onActionExecute(selectedAction.id, actionData);
       setSelectedAction(null);
       setActionData({});
     } catch (error) {
-      console.error('Error executing action:', error);
+      setActionError(error instanceof Error ? error.message : (isArabic ? "تعذّر فتح الخدمة المطلوبة." : "Could not open the requested service."));
     } finally {
       setIsExecuting(false);
     }
@@ -352,6 +357,8 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
                       </div>
                     )}
 
+                    {actionError && <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>}
+                    {actionError && <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>}
                     <Button 
                       onClick={handleExecuteAction} 
                       disabled={isExecuting}
@@ -365,7 +372,7 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
                       ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
-                          {isArabic ? 'تنفيذ الإجراء' : 'Execute Action'}
+                          {isArabic ? 'فتح الخدمة المناسبة' : 'Open related workspace'}
                         </>
                       )}
                     </Button>
@@ -444,7 +451,7 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
                       ) : (
                         <>
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          {isArabic ? 'تأكيد' : 'Confirm'}
+                          {isArabic ? 'فتح الخدمة المناسبة' : 'Open related workspace'}
                         </>
                       )}
                     </Button>
@@ -456,42 +463,24 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Emergency Contacts */}
+      {/* Real platform contact routes; no fabricated expert profiles or phone numbers. */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Users className="h-5 w-5" />
-            <span>{isArabic ? 'جهات اتصال طارئة' : 'Emergency Contacts'}</span>
+            <span>{isArabic ? 'التواصل والمساعدة' : 'Help and communication'}</span>
           </CardTitle>
           <CardDescription>
-            {isArabic ? 'خبراء متاحون للاستشارة الفورية' : 'Available experts for immediate consultation'}
+            {isArabic ? 'افتح مساحة التواصل داخل AgroGrowth أو اسأل المساعد الذكي.' : 'Open AgroGrowth collaboration or ask the AI assistant.'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {emergencyContacts.map((contact) => (
-              <div key={contact.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${getStatusColor(contact.status)}`} />
-                  <div>
-                    <p className="font-medium">{isArabic ? contact.nameArabic : contact.name}</p>
-                    <p className="text-sm text-gray-600">{isArabic ? contact.roleArabic : contact.role}</p>
-                    <p className="text-xs text-gray-500">{contact.phone}</p>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
-                    <Phone className="h-4 w-4 mr-1" />
-                    {isArabic ? 'اتصال' : 'Call'}
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    {isArabic ? 'رسالة' : 'Message'}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+        <CardContent className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={() => navigate('/farmer-collaboration')}>
+            <MessageCircle className="h-4 w-4 mr-2" />{isArabic ? 'مساحة التواصل' : 'Collaboration'}
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/ai-assistant')}>
+            <Zap className="h-4 w-4 mr-2" />{isArabic ? 'المساعد الذكي' : 'AI assistant'}
+          </Button>
         </CardContent>
       </Card>
     </div>
