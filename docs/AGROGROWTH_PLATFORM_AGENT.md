@@ -26,6 +26,16 @@ The chatbot is the conversational control surface for AgroGrowth, not a standalo
 
 The model receives compact facts, not credentials or raw uploaded images. The context is owner-scoped through the caller's JWT. Context compaction preserves account/farm identity and recent operational/weather/market records. Missing/failed optional sources are omitted rather than fabricated. The advisor recognises common Tunisian Arabic Arabizi phrases for language selection and specialist routing.
 
+### Conversational farm scan
+
+The assistant recognises explicit farm-scan requests and presents a confirmation card before calling `POST /api/assistant/agent/scan`.
+
+- Runs the existing authenticated record-based autonomous scan.
+- Returns detected events, evidence and recommended follow-up steps in the chat.
+- Saves the confirmed scan result in conversation history.
+- The scan can create deduplicated in-app notifications.
+- It is limited to saved farm, cultivation, soil, sensor-device and disease-follow-up records; it does not provide continuous telemetry or live weather/market/disease surveillance.
+
 ### Image diagnosis → farm record
 
 After an image analysis succeeds, the chat can prepare a review card to select the correct farm and (optionally) crop cultivation. The image and analysis result are saved only after the user confirms.
