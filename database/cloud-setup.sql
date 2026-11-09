@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     farm_size_hectares DECIMAL(10,2),
     preferred_crops TEXT[],
     contact_preferences JSONB,
+    preferences JSONB NOT NULL DEFAULT '{"language":"ar","notifications":true,"weather_alerts":true,"market_alerts":true}'::jsonb,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
