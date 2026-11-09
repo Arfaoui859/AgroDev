@@ -77,18 +77,13 @@ describe("🔌 AI gateway → microservice request contracts", () => {
     expect(req.data.farm_size).toBe(2);
   });
 
-  test("market forecast hits /forecast-price with the required fields", async () => {
-    await request(app)
+  test("market forecast refuses to proxy the unvalidated synthetic market model", async () => {
+    const response = await request(app)
       .post("/api/ai/market/forecast-prices")
       .send({ crop: "olive", price: 8.5 });
-
-    const req = lastRequest();
-    // "/forecast-prices" does not exist on the service; the real path is singular.
-    expect(req.url).toContain("/forecast-price");
-    expect(req.url).not.toContain("/forecast-prices");
-    expect(req.data.crop_type).toBe("olive");
-    expect(req.data.current_price).toBe(8.5);
-    expect(req.data.forecast_days).toBe(30);
+    expect(response.status).toBe(503);
+    expect(response.body.success).toBe(false);
+    expect(lastRequest()).toBeUndefined();
   });
 
   test("farming task planning uses the real /plan-season endpoint", async () => {
@@ -161,19 +156,13 @@ describe("🔌 AI gateway → microservice request contracts", () => {
     expect(sentConfigs.length).toBe(0);
   });
 
-  test("supply-demand forwards the fields the service requires", async () => {
-    await request(app)
+  test("supply-demand refuses unvalidated market model output", async () => {
+    const response = await request(app)
       .post("/api/ai/market/supply-demand")
       .send({ crop: "tomato", production: 1200 });
-
-    const req = lastRequest();
-    expect(req.url).toContain("/analyze-supply-demand");
-    expect(req.data).toMatchObject({
-      crop_type: "tomato",
-      current_production: 1200,
-      region: "tunisia",
-      analysis_period: 30,
-    });
+    expect(response.status).toBe(503);
+    expect(response.body.success).toBe(false);
+    expect(lastRequest()).toBeUndefined();
   });
 });
 
