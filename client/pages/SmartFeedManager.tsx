@@ -127,105 +127,35 @@ const SmartFeedManager: React.FC = () => {
 
   const fetchNutritionalRequirements = async (animalId: string) => {
     try {
-      const response = await fetch(`/api/feed-recommendations/${animalId}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setNutritionalReqs(data.data);
+      const response = await fetch(`/api/feed-recommendations/${encodeURIComponent(animalId)}`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success !== true || !data.data) {
+        setNutritionalReqs(null);
+        return;
       }
+      setNutritionalReqs(data.data);
     } catch (error) {
-      console.error('Error fetching nutritional requirements:', error);
-      // Mock data for demo
-      const mockData: NutritionalRequirements = {
-        dailyRequirements: {
-          protein: 120,
-          energy: 15000,
-          fiber: 1800,
-          minerals: { calcium: 45, phosphorus: 35, sodium: 8 },
-          vitamins: { vitaminA: 4.5, vitaminD: 2.2, vitaminE: 1.1 }
-        },
-        feedRecommendations: [
-          {
-            feedType: 'برسيم مجفف',
-            quantity: 8.5,
-            unit: 'kg',
-            cost: 6.8,
-            nutritionalBenefit: 'مصدر ممتاز للبروتين والفيتامينات',
-            proteinContent: 18,
-            energyContent: 250,
-            fiberContent: 25
-          },
-          {
-            feedType: 'علف مركز',
-            quantity: 4.2,
-            unit: 'kg',
-            cost: 5.0,
-            nutritionalBenefit: 'طاقة عالية ومتوازن غذائياً',
-            proteinContent: 16,
-            energyContent: 280,
-            fiberContent: 8
-          },
-          {
-            feedType: 'ذرة مطحونة',
-            quantity: 3.1,
-            unit: 'kg',
-            cost: 2.8,
-            nutritionalBenefit: 'طاقة عالية سهلة الهضم',
-            proteinContent: 9,
-            energyContent: 320,
-            fiberContent: 2
-          }
-        ],
-        specialRequirements: [
-          'زيادة تدريجية في التغذية خلال الثلث الأخير من الحمل',
-          'مياه نظيفة متوفرة بكميات كافية',
-          'مراقبة كمية الطعام المتناولة يومياً'
-        ]
-      };
-      setNutritionalReqs(mockData);
+      console.error("Nutritional requirements unavailable:", error);
+      setNutritionalReqs(null);
     }
   };
 
   const optimizeFeedBudget = async () => {
     try {
-      const response = await fetch('/api/optimize-feed-budget', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          farmId: 'farm1',
-          budget: parseFloat(budget)
-        })
+      const response = await fetch("/api/optimize-feed-budget", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ budget: Number(budget) }),
       });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setFeedOptimization(data.data);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success !== true || !data.data) {
+        setFeedOptimization(null);
+        return;
       }
+      setFeedOptimization(data.data);
     } catch (error) {
-      console.error('Error optimizing feed budget:', error);
-      // Mock optimization data
-      const mockOptimization: FeedOptimization = {
-        optimizedPlan: animals.slice(0, 3).map((animal, idx) => ({
-          animalId: animal.id,
-          feedPlan: [
-            { feedType: 'برسيم مجفف', quantity: 8 + idx, cost: 6.4 + idx * 0.5 },
-            { feedType: 'علف مركز', quantity: 4 + idx * 0.5, cost: 4.8 + idx * 0.3 },
-            { feedType: 'ذرة مطحونة', quantity: 3 + idx * 0.2, cost: 2.7 + idx * 0.2 }
-          ],
-          totalCost: 13.9 + idx * 2.1
-        })),
-        totalBudgetUsed: parseFloat(budget) * 0.85,
-        savingsRecommendations: [
-          'يمكن تحسين جودة الأعلاف ضمن الميزانية المتاحة',
-          'النظر في شراء الأعلاف بكميات كبيرة للحصول على خصومات',
-          'زراعة علف أخضر محلي لتقليل التكاليف',
-          'التعاون مع مزارعين آخرين للشراء الجماعي'
-        ]
-      };
-      setFeedOptimization(mockOptimization);
+      console.error("Feed budget optimization unavailable:", error);
+      setFeedOptimization(null);
     }
   };
 
@@ -302,6 +232,17 @@ const SmartFeedManager: React.FC = () => {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (animals.length === 0) {
+    return (
+      <main className="mx-auto max-w-4xl p-6" dir="rtl">
+        <h1 className="mb-4 text-2xl font-bold">إدارة الأعلاف الذكية</h1>
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
+          بيانات الحيوانات ومخزون الأعلاف غير متاحة حالياً. لم يتم إنشاء حيوانات أو احتياجات غذائية أو تكاليف افتراضية. اربط قاعدة بيانات الثروة الحيوانية ومصدر بيانات الأعلاف قبل تفعيل هذه الصفحة.
+        </div>
+      </main>
     );
   }
 
