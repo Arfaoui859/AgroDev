@@ -426,6 +426,8 @@ export const getSmartCropRecommendations = async (
     });
   }
 
+  return res.status(503).json({ success: false, code: "CROP_MODEL_NOT_VALIDATED", message: "Crop recommendation model is not validated for production use.", data: null, dataAvailable: false, isRealData: false });
+
   try {
     const response = await callAIService(
       AI_SERVICES.CROP_RECOMMENDATION,
@@ -775,23 +777,7 @@ export const forecastMarketPrices = async (req: Request, res: Response) => {
       isRealData: false,
     });
   }
-  try {
-    const response = await callAIService(
-      AI_SERVICES.MARKET_FORECAST,
-      "/forecast-price",
-      "POST",
-      {
-        crop_type: cropType,
-        current_price: currentPrice,
-        forecast_days: toNumber(b.forecast_days ?? b.days) ?? 30,
-        market_conditions: b.market_conditions,
-        language: b.language,
-      },
-    );
-    await respondFromMicroservice(res, response.data, AI_SERVICES.MARKET_FORECAST);
-  } catch (error) {
-    handleAIServiceError(error as AxiosError, "Market Forecast", res);
-  }
+  return res.status(503).json({ success: false, code: "MARKET_MODEL_NOT_VALIDATED", message: "Market forecasting is unavailable until a verified, timestamped market data source and validated model are connected.", data: null, dataAvailable: false, isRealData: false });
 };
 
 export const analyzeSupplyDemand = async (req: Request, res: Response) => {
@@ -810,22 +796,7 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
       isRealData: false,
     });
   }
-  try {
-    const response = await callAIService(
-      AI_SERVICES.MARKET_FORECAST,
-      "/analyze-supply-demand",
-      "POST",
-      {
-        crop_type: cropType,
-        current_production: production,
-        region: b.region ?? "tunisia",
-        analysis_period: toNumber(b.analysis_period ?? b.period) ?? 30,
-      },
-    );
-    await respondFromMicroservice(res, response.data, AI_SERVICES.MARKET_FORECAST);
-  } catch (error) {
-    handleAIServiceError(error as AxiosError, "Supply Demand Analysis", res);
-  }
+  return res.status(503).json({ success: false, code: "MARKET_MODEL_NOT_VALIDATED", message: "Supply and demand analysis is unavailable until a verified market source is connected.", data: null, dataAvailable: false, isRealData: false });
 };
 
 // 🧠 SMART ASSISTANT ENDPOINTS
