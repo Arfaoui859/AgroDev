@@ -98,8 +98,11 @@ INSERT INTO public.push_subscriptions (user_id, endpoint, keys) VALUES
 INSERT INTO public.notifications (user_id, title, message, type) VALUES
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'A notification', 'body', 'info');
 
+DELETE FROM public.market_prices
+WHERE crop_name = 'rls-test-tomato' AND market_location = 'RLS verification fixture';
+
 INSERT INTO public.market_prices (crop_name, market_location, price_per_kg, price_date) VALUES
-  ('tomato', 'Tunis', 2.5, CURRENT_DATE);
+  ('rls-test-tomato', 'RLS verification fixture', 2.5, CURRENT_DATE);
 
 -- ---------------------------------------------------------------------------
 -- SCENARIO 1 — Farmer A: sees own data, never Farmer B's.
@@ -379,6 +382,10 @@ SET LOCAL request.jwt.claims = '{"sub":"cccccccc-cccc-cccc-cccc-cccccccccccc","r
 SELECT public.assert_true(public.is_admin() IS TRUE,
   'is_admin() resolves without infinite recursion in policy context');
 ROLLBACK;
+
+-- Remove the uniquely named public reference-data fixture as well.
+DELETE FROM public.market_prices
+WHERE crop_name = 'rls-test-tomato' AND market_location = 'RLS verification fixture';
 
 -- Cleanup test identities.
 DELETE FROM public.farms WHERE owner_id IN (
