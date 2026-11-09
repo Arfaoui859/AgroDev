@@ -9,6 +9,7 @@ type AgentEvent = {
   priority: "normal" | "high";
   actionUrl: string;
   evidence: Record<string, unknown>;
+  recommendedActions: string[];
 };
 
 function utcDay(value: Date): string {
@@ -59,6 +60,7 @@ export function buildFarmAgentEvents(input: {
         type: "agent_soil_baseline_missing",
         title: "بيانات التربة غير متوفرة",
         message: `لم يتم العثور على تحليل تربة مخبري أو قياسات حساسات موثوقة مسجلة لمزرعة «${farmName}». أضف قياسات موثقة حتى تكون توصيات التربة مبنية على بيانات فعلية.`,
+        recommendedActions: ["احجز تحليلاً مخبرياً لعينة ممثلة من الحقل.", "سجّل تاريخ أخذ العينة وموقعها وعمقها.", "لا تعتمد قرارات التسميد على قياسات غير موثقة."],
         priority: "normal",
         actionUrl: "/soil-analysis",
         evidence: { evidence: "no_verified_soil_analysis_record", farm_name: farmName },
@@ -72,6 +74,7 @@ export function buildFarmAgentEvents(input: {
           type: "agent_soil_review_due",
           title: "مراجعة بيانات التربة",
           message: `آخر تحليل تربة مسجل لمزرعة «${farmName}» عمره ${daysBetween(soilDate, now)} يوماً. راجع إن كانت القياسات مازالت تمثل الوضع الحالي قبل اعتماد توصيات جديدة.`,
+          recommendedActions: ["قارن تاريخ التحليل بآخر عمليات تسميد أو ري.", "إذا تغيرت ظروف الحقل، أعد أخذ عينة مخبرية.", "حدّث سجل التحليل قبل طلب توصية جديدة."],
           priority: "normal",
           actionUrl: "/soil-analysis",
           evidence: { last_analysis_at: soilDate.toISOString(), age_days: daysBetween(soilDate, now), review_window_days: soilReviewDays },
@@ -96,6 +99,7 @@ export function buildFarmAgentEvents(input: {
         title: "موعد حصاد مسجل يقترب",
         message: delta === 0
           ? `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» هو اليوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`\n          : `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» بعد ${delta} يوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`,
+        recommendedActions: ["افحص نضج المحصول ميدانياً ولا تعتمد التاريخ وحده.", "تحقق من توفر اليد العاملة ومعدات الحصاد.", "راجع توقعات الطقس قبل تثبيت موعد الحصاد."],
         priority: delta <= 2 ? "high" : "normal",
         actionUrl: "/crop-management",
         evidence: { cultivation_id: cultivation.id, expected_harvest_date: cultivation.expected_harvest_date, days_until_harvest: delta },
@@ -107,6 +111,7 @@ export function buildFarmAgentEvents(input: {
         type: "agent_harvest_date_passed",
         title: "تجاوز موعد الحصاد المسجل",
         message: `تاريخ الحصاد المتوقع لمحصول «${crop}» في «${farmName}» مرّ منذ ${Math.abs(delta)} يوم، ومازال السجل بحالة نشطة. حدّث حالة المحصول بعد التثبت من الوضع الميداني.`,
+        recommendedActions: ["تحقق من المحصول في الحقل.", "حدّث حالة الزراعة إلى محصود أو مدّد الموعد المتوقع.", "سجّل الكمية والجودة والتكاليف بعد الحصاد."],
         priority: "normal",
         actionUrl: "/crop-management",
         evidence: { cultivation_id: cultivation.id, expected_harvest_date: cultivation.expected_harvest_date, days_after_expected_date: Math.abs(delta) },
@@ -131,6 +136,7 @@ export function buildFarmAgentEvents(input: {
       type: "agent_disease_followup",
       title: "نتيجة كشف نباتي تستحق المتابعة",
       message: `توجد نتيجة كشف مسجلة بدرجة خطورة «${severity}» للمحصول «${crop}» في «${farmName}» (${disease}). هذه نتيجة مسجلة وليست تأكيداً مستقلاً للتشخيص؛ افحص النبات واطلب مراجعة مختص، وتابع حالة العلاج.`,
+      recommendedActions: ["التقط صوراً واضحة للنباتات المتأثرة.", "اعزل النباتات المشتبه بها إذا كان ذلك مناسباً.", "اطلب مراجعة مهندس فلاحي قبل تطبيق العلاج.", "سجّل العلاج وتاريخ المتابعة بعد التحقق."],
       priority: "high",
       actionUrl: "/disease-detection",
       evidence: {
@@ -156,6 +162,7 @@ export function buildFarmAgentEvents(input: {
         type: "agent_sensor_inactive",
         title: "حساس مسجل كغير نشط",
         message: `آخر حالة مسجلة للحساس «${sensor.device_id || sensor.id}» في «${farmName}» هي «inactive». تحقق من الطاقة والاتصال قبل الاعتماد على قراءاته.`,
+        recommendedActions: ["افحص مصدر الطاقة والاتصال.", "تحقق من آخر قراءة فعلية للحساس.", "حدّث حالة الجهاز بعد الإصلاح."],
         priority: "high",
         actionUrl: "/notifications",
         evidence: { sensor_id: sensor.id, device_status: sensor.status, sensor_record_updated_at: sensor.updated_at ?? null },
@@ -167,6 +174,7 @@ export function buildFarmAgentEvents(input: {
         type: "agent_sensor_maintenance",
         title: "حساس في وضع الصيانة",
         message: `الحساس «${sensor.device_id || sensor.id}» في «${farmName}» مسجل بحالة صيانة. تأكد من تحديث حالته بعد إكمال التدخل.`,
+        recommendedActions: ["راجع سبب إدخال الحساس في وضع الصيانة.", "أكمل التدخل الفني.", "حدّث الحالة إلى نشط بعد اختبار القراءة."],
         priority: "normal",
         actionUrl: "/notifications",
         evidence: { sensor_id: sensor.id, device_status: sensor.status, sensor_record_updated_at: sensor.updated_at ?? null },
@@ -180,6 +188,7 @@ export function buildFarmAgentEvents(input: {
         type: "agent_sensor_battery_low",
         title: "بطارية الحساس منخفضة حسب السجل",
         message: `آخر مستوى بطارية مسجل للحساس «${sensor.device_id || sensor.id}» في «${farmName}» هو ${battery}%. تحقق من الجهاز؛ هذه ليست قراءة بث حي.`,
+        recommendedActions: ["افحص مستوى البطارية على الجهاز نفسه.", "اشحن البطارية أو استبدلها حسب تعليمات المصنع.", "تحقق من عودة الاتصال بعد الصيانة."],
         priority: battery <= 10 ? "high" : "normal",
         actionUrl: "/notifications",
         evidence: { sensor_id: sensor.id, battery_level_percent: battery, sensor_record_updated_at: sensor.updated_at ?? null },
@@ -187,7 +196,7 @@ export function buildFarmAgentEvents(input: {
     }
   }
 
-  return events;
+  return events.sort((a, b) => (a.priority === "high" ? 0 : 1) - (b.priority === "high" ? 0 : 1));
 }
 
 export async function runFarmAgentScan(
@@ -263,6 +272,7 @@ export async function runFarmAgentScan(
           agent_source: "agrogrowth-autonomous-agent",
           farm_id: event.farmId,
           evidence: event.evidence,
+          recommended_actions: event.recommendedActions,
           observed_at: now.toISOString(),
           data_kind: "record-based-operational-reminder",
         },
