@@ -61,7 +61,7 @@ export default function AIIntelligenceDashboard(){
     </header>
     {error&&<Alert variant="destructive"><AlertTitle>تعذّر فحص الخدمات</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
     {health?.note&&<Alert><AlertTriangle className="h-4 w-4"/><AlertDescription>{health.note}</AlertDescription></Alert>}
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">الخدمات المتاحة</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":available+" / "+total}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">طلبات محدودة (429)</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":limited}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">خدمات بلا عنوان مضبوط</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":misconfigured}</CardContent></Card>
