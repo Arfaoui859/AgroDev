@@ -54,41 +54,21 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
     });
   });
 
-  describe("🌱 Soil analysis (rule-based fallback)", () => {
-    test("POST /api/ai/soil/analyze returns a structured analysis", async () => {
+  describe("🌱 Soil analysis fails closed when its microservice is unavailable", () => {
+    test("POST /api/ai/soil/analyze does not return a heuristic report", async () => {
       const response = await request(app)
         .post("/api/ai/soil/analyze")
-        .send({
-          sensor_data: {
-            ph: 5.2,
-            nitrogen: 30,
-            phosphorus: 15,
-            potassium: 120,
-            moisture: 20,
-            salinity: 5.5,
-          },
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty("health_score");
-      expect(response.body.health_score).toBeGreaterThanOrEqual(0);
-      expect(response.body.health_score).toBeLessThanOrEqual(100);
-      expect(response.body).toHaveProperty("findings");
-      expect(response.body).toHaveProperty("missing_measurements");
-      expect(response.body.problems.length).toBeGreaterThan(0);
-      expect(response.body.dataSource).toBe("rule-based");
+        .send({ sensor_data: { ph: 5.2, moisture: 20 } })
+        .expect(503);
+      expect(response.body.success).toBe(false);
     });
 
-    test("POST /api/ai/soil/analyze flags missing measurements instead of guessing", async () => {
+    test("missing service does not silently produce a soil estimate", async () => {
       const response = await request(app)
         .post("/api/ai/soil/analyze")
         .send({ sensor_data: { ph: 6.8 } })
-        .expect(200);
-
-      expect(response.body.missing_measurements.length).toBeGreaterThan(0);
-      expect(
-        response.body.findings.some((f: any) => f.status === "missing"),
-      ).toBe(true);
+        .expect(503);
+      expect(response.body.success).toBe(false);
     });
   });
 
