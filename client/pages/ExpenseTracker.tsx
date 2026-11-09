@@ -57,6 +57,7 @@ interface ExpenseCategory {
 const ExpenseTracker: React.FC = () => {
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -187,11 +188,12 @@ const ExpenseTracker: React.FC = () => {
       });
       const data = await response.json();
       
-      if (data.success) {
-        setExpenses(data.data.expenses);
-      }
+      if (!response.ok || data.success !== true) throw new Error(data.message || data.code || 'تعذّر تحميل المصاريف.');
+      setExpenses(data.data.expenses);
+      setApiError(null);
     } catch (error) {
       console.error('Error fetching expenses:', error);
+      setApiError(error instanceof Error ? error.message : 'تعذّر تحميل المصاريف.');
     } finally {
       setLoading(false);
     }
@@ -233,7 +235,9 @@ const ExpenseTracker: React.FC = () => {
       
       const data = await response.json();
       
+      if (!response.ok || data.success !== true) throw new Error(data.message || data.code || 'تعذّر حفظ المصروف.');
       if (data.success) {
+        setApiError(null);
         fetchExpenses();
         resetForm();
         setIsAddDialogOpen(false);
@@ -241,6 +245,7 @@ const ExpenseTracker: React.FC = () => {
       }
     } catch (error) {
       console.error('Error saving expense:', error);
+      setApiError(error instanceof Error ? error.message : 'تعذّر حفظ المصروف.');
     }
   };
 
@@ -358,6 +363,7 @@ const ExpenseTracker: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      {apiError && <Alert variant="destructive"><AlertDescription>{apiError} تأكد من تسجيل الدخول وتطبيق ترحيل قاعدة البيانات.</AlertDescription></Alert>}
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
