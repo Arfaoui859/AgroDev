@@ -23,139 +23,63 @@ beforeAll(() => {
 });
 
 describe("🗂  Fixture-backed data is disabled", () => {
-  const simulatedPaths = [
-    "/api/admin/overview",
-    "/api/government-dashboard/overview",
-    "/api/investor-dashboard/overview",
-    "/api/veterinarian-dashboard/overview",
-    "/api/segmentation/segments",
-    "/api/soil-ai-detector/alerts",
-    "/api/smart-advisor/recommendations",
-    "/api/disease-treatment/history",
-    "/api/gamification/profile",
-    "/api/fertilizer/inventory",
-    "/api/animals",
-    "/api/animal-health/animal-1",
-    "/api/breeding-recommendations",
-    "/api/feed-recommendations/animal-1",
-    "/api/optimize-feed-budget",
-    "/api/health-alerts",
-    "/api/livestock-dashboard",
-    "/api/expenses",
-    "/api/revenues",
-    "/api/profitability-analysis",
-    "/api/financial-summary",
-    "/api/budget-plans",
-    "/api/predictive-analytics/overview",
-    "/api/risk-detection/overview",
-    "/api/farmer-dashboard/overview",
-    "/api/digital-transformation/projects",
-    "/api/collaboration/chat-rooms",
-    // SaaS / logistics / supply-chain modules serve fixed in-memory fixtures
-    // (mock vehicles, orders, plans, tracking records). They must be labelled
-    // too, otherwise the SPA shows demo numbers as live operational records.
-    "/api/saas/metrics",
-    "/api/saas/analytics",
-    "/api/saas/subscriptions",
-    "/api/saas/plans",
-    "/api/subscription/plans",
-    "/api/subscription/payment-methods",
-    "/api/subscription/promo-codes",
-    "/api/supply-chain/tracking",
-    "/api/supply-chain/metrics",
-    "/api/supply-chain/nodes",
-    "/api/logistics/vehicles",
-    "/api/logistics/orders",
-    "/api/logistics/metrics",
-    "/api/marketplace/listings",
-    "/api/marketplace/inquiries",
-    "/api/marketplace/analytics",
-    // Fixture-backed routers with no database or licensed feed behind them:
-    // emergency response, IP management, emerging technology and the trader
-    // dashboard all build their records from fixed in-memory arrays.
-    "/api/emergency-response/scenarios",
-    "/api/emergency-response/plans",
-    "/api/emergency-response/contacts",
-    "/api/ip-management/patents",
-    "/api/ip-management/trademarks",
-    "/api/ip-management/licenses",
-    "/api/emerging-tech/technologies",
-    "/api/emerging-tech/investments",
-    "/api/emerging-tech/market-trends",
-    "/api/trader-dashboard/overview",
-    "/api/trader-dashboard/inventory",
-    "/api/trader-dashboard/orders",
-    "/api/livestock-management/animals",
-    "/api/livestock-management/feed-inventory",
-    // Investor and agronomist dashboards are generated from seeded demo
-    // generators: fabricated returns, portfolios and supervised farms.
-    "/api/investor/dashboard",
-    "/api/investor/opportunities",
-    "/api/investor/profitability",
-    "/api/investor/insights",
-    "/api/investor/portfolio",
-    "/api/agronomist-dashboard/overview",
-    "/api/agronomist-dashboard/farms",
-    "/api/agronomist-dashboard/disease-analyses",
-    "/api/agronomist-dashboard/recommendations",
-    "/api/agronomist-dashboard/training-programs",
-    // The alert/task feed serves a seeded fixture for `user-123`; there is no
-    // per-farmer alert store behind it.
-    "/api/alerts/user/user-123",
-    "/api/alerts/user/user-123/stats",
-    "/api/tasks/user/user-123/today",
-    "/api/notifications",
-    "/api/notification-rules",
-    "/api/notification-stats",
-    "/api/send-notification",
+  test.each([
+    "/api/public/market-prices",
     "/api/public/production",
     "/api/public/exports",
     "/api/public/weather",
     "/api/public/stats",
     "/api/public/key-info",
     "/api/public/create-key",
+  ])("%s is unavailable without a verified public data source", async (path) => {
+    const res = await request(app).get(path);
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("PUBLIC_DATA_SOURCE_NOT_CONNECTED");
+    expect(res.headers["x-data-provenance"]).toBe("unavailable");
+    expect(res.headers["x-is-real-data"]).toBe("false");
+  });
+
+  test.each([
     "/api/ai/models",
     "/api/ai/insights",
     "/api/ai/behavior-data",
     "/api/ai/recommendations",
-    "/api/ai/feedback",
-    "/api/ai/market/forecast-prices",
-    "/api/ai/market/supply-demand",
-    "/api/ai/assistant/alerts",
-  ];
+  ])("%s does not return generated adaptive analytics", async (path) => {
+    const res = await request(app).get(path).expect(503);
+    expect(res.body.code).toBe("ADAPTIVE_AI_DATA_NOT_CONNECTED");
+    expect(res.body.dataAvailable).toBe(false);
+  });
 
-  test.each(simulatedPaths)(
-    "%s is unavailable rather than returning simulated data",
-    async (path) => {
-      const res = await request(app).get(path);
-      if (res.status !== 404) {
-        expect(res.status).toBe(503);
-        expect(res.headers["x-data-provenance"]).toBe("simulated-disabled");
-        expect(res.headers["x-is-real-data"]).toBe("false");
-        expect(res.body.code).toBe("SIMULATED_DATA_DISABLED");
-      }
-    },
-  );
+  test("market forecast and supply-demand routes are not exposed as GET endpoints", async () => {
+    await request(app).get("/api/ai/market/forecast-prices").expect(404);
+    await request(app).get("/api/ai/market/supply-demand").expect(404);
+  });
 
-  test("fixture-backed business modules fail closed", async () => {
-    for (const path of [
-      "/api/saas/metrics",
-      "/api/logistics/vehicles",
-      "/api/supply-chain/tracking",
-      "/api/marketplace/listings",
-    ]) {
+  test("assistant alerts validates the farm scope before contacting the service", async () => {
+    await request(app).get("/api/ai/assistant/alerts").expect(400);
+  });
+
+  test("fixture-backed SaaS and logistics modules remain disabled", async () => {
+    for (const path of ["/api/saas/metrics", "/api/logistics/vehicles"]) {
       const res = await request(app).get(path);
       expect(res.status).toBe(503);
       expect(res.body.code).toBe("SIMULATED_DATA_DISABLED");
     }
   });
 
-  test("unmetered water usage analytics are disabled", async () => {
+  test("marketplace and supply chain require persisted records", async () => {
+    const marketplace = await request(app).get("/api/marketplace/listings").expect(503);
+    expect(marketplace.body.code).toBe("MARKETPLACE_STORE_NOT_CONNECTED");
+    const supply = await request(app).get("/api/supply-chain/tracking").expect(503);
+    expect(supply.body.code).toBe("SUPPLY_CHAIN_STORE_NOT_CONNECTED");
+  });
+
+  test("unverified water usage analytics are unavailable", async () => {
     const response = await request(app)
       .post("/api/weather-irrigation/analytics/water-usage")
       .send({ farmId: "field-1", period: "month", cropTypes: ["olive"] });
     expect(response.status).toBe(503);
-    expect(response.body.code).toBe("IRRIGATION_TELEMETRY_NOT_CONNECTED");
+    expect(response.body.code).toBe("IRRIGATION_ANALYTICS_NOT_VERIFIED");
     expect(response.body.isRealData).toBe(false);
   });
 
