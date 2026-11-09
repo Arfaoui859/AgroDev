@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardContent,
@@ -189,11 +190,14 @@ const ComprehensiveOverviewCards: React.FC<ComprehensiveOverviewCardsProps> = ({
         }
 
         // Fetch notifications for alerts
-        const alertsResponse = await fetch(
-          "/api/notifications?type=crop&status=unread",
-        );
+        const { data: { session } } = await supabase.auth.getSession();
+        const alertsResponse = session?.access_token
+          ? await fetch("/api/notifications?unread=true&limit=50", {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            })
+          : null;
         let alertsData = null;
-        if (alertsResponse.ok) {
+        if (alertsResponse?.ok) {
           alertsData = await alertsResponse.json();
         }
 
