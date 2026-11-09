@@ -901,6 +901,13 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         } else {
           const farms = farmsResult.data ?? [];
           const farmIds = farms.map((farm: any) => farm.id);
+          const namedFarmMatches = farms.filter((farm: any) =>
+            typeof farm.name === "string" && farm.name.trim().length >= 3 &&
+            userMessage.toLocaleLowerCase().includes(farm.name.trim().toLocaleLowerCase())
+          );
+          const selectedFarm = farms.length === 1
+            ? farms[0]
+            : namedFarmMatches.length === 1 ? namedFarmMatches[0] : null;
           const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, forecastResult, sensorResult, satelliteResult] = await Promise.all([
             db.from("crop_cultivations")
               .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,irrigation_method,fertilizer_plan,pesticide_plan,area_hectares,estimated_yield,total_cost,revenue,profit,updated_at")
@@ -944,12 +951,12 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           if (cropResult.error || soilResult.error) {
             farmContextStatus = "unavailable";
           } else {
-            const firstLocation = farms.find((farm: any) => farm.location && typeof farm.location === "object")?.location;
+            const firstLocation = selectedFarm?.location && typeof selectedFarm.location === "object" ? selectedFarm.location : undefined;
             const rawSize = farms.reduce((sum: number, farm: any) => {
               const size = Number(farm.size_hectares);
               return sum + (Number.isFinite(size) && size > 0 ? size : 0);
             }, 0);
-            const latestSoil = farms.length === 1 ? soilResult.data?.[0] : undefined;
+            const latestSoil = selectedFarm ? (soilResult.data ?? []).find((record: any) => record.farm_id === selectedFarm.id) : undefined;
             const soil: { ph?: number; organicMatter?: number; moisture?: number; temperature?: number } = {};
             if (latestSoil) {
               const ph = toNumber(latestSoil.ph_level);
@@ -1036,9 +1043,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               const device = (sensorResult.data ?? []).find((item: any) => item.id === reading.device_id);
               platformRecords.push("Stored sensor reading [sensor_type=" + (device?.device_type || "unknown") + "; reading=" + reading.reading_type + "; value=" + reading.value + " " + reading.unit + "; quality=" + (reading.quality_indicator || "unreported") + "; recorded_at=" + reading.recorded_at + "; farm_id=" + (device?.farm_id || "unknown") + "; section_id=" + (device?.section_id || "unlinked") + "]. Stored telemetry record; not necessarily current.");
             }
-            const activeCultivations = (cropResult.data ?? []).filter((item: any) => item.status === "active");
+            const activeCultivations = (cropResult.data ?? []).filter((item: any) => item.status === "active" && (selectedFarm ? item.farm_id === selectedFarm.id : farms.length === 1));
             farmContext = {
-              governorate: farms.length === 1 && typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
+              governorate: selectedFarm && typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
               crop: activeCultivations.length === 1 ? activeCultivations[0].crop_name : undefined,
               farmSizeHectares: rawSize > 0 ? rawSize : undefined,
               soil: Object.keys(soil).length ? soil : undefined,
@@ -1049,17 +1056,10 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
 
             const wantsLiveWeather = /(weather|météo|meteo|طقس|مطر|حرارة|ري|irrigation|arrosage|ns9i|s9i|matar|skhouna|bard|jaw|jew|ri7|rri7|nrawi|crop|plant|sow|grow|planting|محصول|زراعة|نزرع|نغرس|nzra3|ghars|zra3a)/i.test(userMessage);
             if (wantsLiveWeather) {
-              const namedFarmMatches = farms.filter((farm: any) =>
-                typeof farm.name === "string" && farm.name.trim().length >= 3 &&
-                userMessage.toLocaleLowerCase().includes(farm.name.trim().toLocaleLowerCase())
-              );
-              const selectedWeatherFarm = farms.length === 1
-                ? farms[0]
-                : namedFarmMatches.length === 1 ? namedFarmMatches[0] : null;
-              if (!selectedWeatherFarm) {
+              if (!selectedFarm) {
                 platformRecords.push("Live farm-specific weather was not fetched because no unique farm was selected. The account has " + farms.length + " farms. Ask the user to mention one exact saved farm name before fetching its forecast.");
               } else {
-                const farmLocation = selectedWeatherFarm.location && typeof selectedWeatherFarm.location === "object" ? selectedWeatherFarm.location : {};
+                const farmLocation = selectedFarm.location && typeof selectedFarm.location === "object" ? selectedFarm.location : {};
                 const lat = Number((farmLocation as any).lat);
                 const lon = Number((farmLocation as any).lng ?? (farmLocation as any).lon);
                 if (Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
@@ -1067,7 +1067,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                     const liveWeather = await getWeatherFromOpenMeteo({
                       lat,
                       lon,
-                      locationName: selectedWeatherFarm.name,
+                      locationName: selectedFarm.name,
                       governorate: typeof (farmLocation as any).region === "string" ? (farmLocation as any).region : undefined,
                     });
                     const nextDays = liveWeather.forecast.daily.slice(0, 5).map(day =>
@@ -1080,7 +1080,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                         farmContext.rainfall = todayRainfall;
                       }
                     }
-                    platformRecords.push("LIVE WEATHER FROM OPEN-METEO for the selected farm " + selectedWeatherFarm.name + " [observation_time=" + (liveWeather.source.observationTime || "unreported") + "; provider=" + liveWeather.source.provider + "; current_temperature=" + liveWeather.current.temperature + " C; humidity=" + liveWeather.current.humidity + "%; wind=" + liveWeather.current.windSpeed + " km/h; conditions=" + liveWeather.current.description + "; ET0=" + liveWeather.agriculturalIndices.evapotranspiration + "; gridded_soil_moisture_estimate=" + liveWeather.agriculturalIndices.soilMoisture + "; crop_stress_indicator=" + liveWeather.agriculturalIndices.cropStress + "; next_days=" + nextDays + "]. Real provider forecast for farm coordinates, not an on-farm sensor measurement; soil moisture is a gridded model estimate.");
+                    platformRecords.push("LIVE WEATHER FROM OPEN-METEO for the selected farm " + selectedFarm.name + " [observation_time=" + (liveWeather.source.observationTime || "unreported") + "; provider=" + liveWeather.source.provider + "; current_temperature=" + liveWeather.current.temperature + " C; humidity=" + liveWeather.current.humidity + "%; wind=" + liveWeather.current.windSpeed + " km/h; conditions=" + liveWeather.current.description + "; ET0=" + liveWeather.agriculturalIndices.evapotranspiration + "; gridded_soil_moisture_estimate=" + liveWeather.agriculturalIndices.soilMoisture + "; crop_stress_indicator=" + liveWeather.agriculturalIndices.cropStress + "; next_days=" + nextDays + "]. Real provider forecast for farm coordinates, not an on-farm sensor measurement; soil moisture is a gridded model estimate.");
                   } catch (weatherError) {
                     platformRecords.push("Live Open-Meteo weather request failed for the registered farm; no live values were substituted. Existing dated weather records remain historical only. Provider error=" + (weatherError instanceof Error ? weatherError.message.slice(0, 180) : "unknown"));
                   }
