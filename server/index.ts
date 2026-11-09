@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import { handleDemo } from "./routes/demo";
 import {
   securityHeaders,
   corsMiddleware,
@@ -11,7 +10,7 @@ import {
   keyMintRateLimiter,
 } from "./middleware/security";
 import { requireAuth, requireAdminAccess } from "./middleware/auth";
-import { withSimulatedProvenance } from "./lib/provenance";
+import { blockSimulatedData } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import { handleUploadError } from "./middleware/upload";
 import {
@@ -278,11 +277,6 @@ import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
 import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
-import {
-  setupDemoUsers,
-  getDemoUsers,
-  deleteDemoUsers,
-} from "./routes/setup-demo-users";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
 import { debugAuth } from "./routes/debug-auth";
 import { setupInspectorUser, setupMultipleUsers } from "./routes/setup-inspector-user";
@@ -349,6 +343,10 @@ export function createServer() {
       "/api/supply-chain",
       "/api/logistics",
       "/api/marketplace",
+      "/api/market",
+      "/api/market-analysis",
+      "/api/public/market-prices",
+      "/api/soil-ai-detector",
       // Further fixture-backed modules: the routers below build their records
       // from fixed in-memory arrays (see the "Mock data for demonstration"
       // block at the top of each). They have no database or licensed feed
@@ -363,7 +361,7 @@ export function createServer() {
       "/api/investor",
       "/api/agronomist-dashboard",
     ],
-    withSimulatedProvenance("simulated"),
+    blockSimulatedData(),
   );
 
   // Health check routes
@@ -376,7 +374,6 @@ export function createServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  app.get("/api/demo", handleDemo);
 
   // Public, secret-free capability probes used by the SPA service-status panel.
   app.use("/api/system", systemCapabilitiesRoutes);
@@ -713,11 +710,6 @@ export function createServer() {
   app.post("/api/test/auth/signup", requireAdminToken(), testAuthSignup);
   app.post("/api/test/auth/signin", requireAdminToken(), testAuthSignin);
   app.get("/api/debug/auth", requireAdminToken(), debugAuth);
-
-  // Demo User Setup
-  app.post("/api/setup-demo-users", requireAdminToken(), setupDemoUsers);
-  app.get("/api/demo-users", requireAdminToken(), getDemoUsers);
-  app.delete("/api/setup-demo-users", requireAdminToken(), deleteDemoUsers);
 
   // Inspector User Setup
   app.post("/api/setup-inspector", requireAdminToken(), setupInspectorUser);
