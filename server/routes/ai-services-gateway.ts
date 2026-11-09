@@ -229,31 +229,42 @@ const respondFromImageMicroservice = (
       : { result: data };
 
   const rawDataSource = payload.data_source ?? payload.dataSource;
-  const rawIsRealData = payload.is_real_data ?? payload.isRealData;
   const rawModelSource = payload.model_source ?? payload.modelSource;
+  const source =
+    typeof rawModelSource === "string" ? rawModelSource.trim() : "";
+  const syntheticSource =
+    !source || /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i.test(source);
 
   const validVisionSource =
     rawDataSource === "vision-model" || rawDataSource === "llm";
 
-  const isRealData =
-    allowVisionModel &&
-    rawIsRealData === true &&
-    validVisionSource &&
-    typeof rawModelSource === "string" &&
-    rawModelSource.trim().length > 0;
+  if (!allowVisionModel || syntheticSource || !validVisionSource) {
+    return res.status(503).json({
+      success: false,
+      code: syntheticSource ? "VISION_MODEL_PROVENANCE_UNAVAILABLE" : "VISION_MODEL_NOT_APPROVED",
+      message: "Image analysis is unavailable because no approved trained model provenance was returned.",
+      productionReady: false,
+      dataSource: "unavailable",
+      isRealData: false,
+      modelSource: source || null,
+    });
+  }
 
-  const finalDataSource = isRealData ? rawDataSource : "heuristic";
-  const finalModelSource = isRealData ? rawModelSource : "heuristic-demo";
+  // A genuine model inference is still a prediction, not a verified diagnosis.
+  const dataSource = rawDataSource === "llm"
+    ? "llm-generated"
+    : "trained-model-inference";
 
-  // Keep snake_case and camelCase identical for every frontend consumer.
   res.json({
     ...payload,
-    data_source: finalDataSource,
-    dataSource: finalDataSource,
-    is_real_data: isRealData,
-    isRealData,
-    model_source: finalModelSource,
-    modelSource: finalModelSource,
+    data_source: dataSource,
+    dataSource,
+    is_real_data: false,
+    isRealData: false,
+    model_source: source,
+    modelSource: source,
+    field_validated: false,
+    fieldValidated: false,
   });
 };
 
