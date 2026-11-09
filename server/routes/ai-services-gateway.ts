@@ -1075,13 +1075,23 @@ export const getSupportedDiseases = async (req: Request, res: Response) => {
 };
 
 const AI_SERVICES_HEALTH_CACHE_TTL_MS = 30_000;
-let aiServicesHealthCache: { payload: Record<string, any>; checkedAt: number } | null = null;
+let aiServicesHealthCache: { payload: Record<string, any>; checkedAt: number; key: string } | null = null;
 
 export const getAIServicesHealth = async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
+    const cacheKey = [
+      AI_SERVICES.SOIL_ANALYSIS,
+      AI_SERVICES.CROP_RECOMMENDATION,
+      AI_SERVICES.IMAGE_DIAGNOSIS,
+      AI_SERVICES.MARKET_FORECAST,
+      AI_SERVICES.SMART_ASSISTANT,
+      AI_SERVICES.SMART_MARKETPLACE,
+      AI_SERVICES.PEST_CONTROL,
+      AI_SERVICES.IRRIGATION_OPTIMIZATION,
+    ].join("|");
     const cacheAgeMs = aiServicesHealthCache ? startTime - aiServicesHealthCache.checkedAt : Infinity;
-    if (aiServicesHealthCache && cacheAgeMs < AI_SERVICES_HEALTH_CACHE_TTL_MS) {
+    if (aiServicesHealthCache && aiServicesHealthCache.key === cacheKey && cacheAgeMs < AI_SERVICES_HEALTH_CACHE_TTL_MS) {
       return res.json({
         ...aiServicesHealthCache.payload,
         cached: true,
@@ -1260,7 +1270,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
 
     // Cache the whole health snapshot briefly: the dashboard can be opened by
     // multiple components and repeated probes can trigger upstream/host 429s.
-    aiServicesHealthCache = { payload: results, checkedAt: Date.now() };
+    aiServicesHealthCache = { payload: results, checkedAt: Date.now(), key: cacheKey };
     // Always return 200 status since unavailable services are expected in development
     res.json({ ...results, cached: false, cacheAgeMs: 0 });
   } catch (error) {
