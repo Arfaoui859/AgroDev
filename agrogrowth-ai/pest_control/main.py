@@ -82,37 +82,6 @@ async def analyze_pest_problem(request: PestAnalysisRequest):
         },
     )
 
-    try:
-        logger.info(f"Analyzing pest problem for crop: {request.crop_type}")
-        
-        input_data = request.model_dump()
-        result = pest_recommender.analyze_pest_problem(input_data)
-        payload = to_json_safe(result)
-
-        # The numeric analysis is synthetic; a configured LLM adds a labelled
-        # advisory explaining the treatment plan to the farmer.
-        advisory = narrate(
-            payload,
-            task="Explain this pest/disease analysis and the treatment plan.",
-            language=request.language,
-            context={"crop_type": request.crop_type, "symptoms": request.symptoms},
-        )
-        if advisory:
-            payload['advisory'] = advisory
-        
-        return {
-            'success': True,
-            'data': payload,
-            'data_source': 'synthetic-model',
-            'is_real_data': False,
-            'model_source': 'synthetic-demo',
-            'message': 'تم تحليل مشكلة الآفات بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error in pest analysis: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/identify-pest")
 async def identify_pest(request: PestIdentificationRequest):
     """
@@ -174,39 +143,6 @@ async def recommend_treatment(request: TreatmentRecommendationRequest):
         },
     )
 
-    try:
-        # إنشاء بيانات وهمية للتوصية
-        input_data = {
-            'crop_type': request.crop_type,
-            'farm_size': request.farm_size,
-            'budget_constraint': request.budget_constraint,
-            'organic_preference': request.organic_preference
-        }
-        
-        pest_identification = {
-            'identified_pest': request.pest_name,
-            'confidence_score': 0.8
-        }
-        
-        severity_assessment = {
-            'severity_score': request.severity_level,
-            'severity_level': 'متوسط' if request.severity_level < 0.5 else 'شديد'
-        }
-        
-        treatments = pest_recommender._recommend_treatments(
-            pest_identification, severity_assessment, input_data
-        )
-        
-        return {
-            'success': True,
-            'data': to_json_safe(treatments),
-            'message': 'تم إنشاء توصيات العلاج بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error in treatment recommendation: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/upload-pest-image")
 async def upload_pest_image(file: UploadFile = File(...)):
     """
@@ -220,23 +156,6 @@ async def upload_pest_image(file: UploadFile = File(...)):
             "production_ready": False,
         },
     )
-
-    try:
-        # قراءة الصورة
-        image_data = await file.read()
-        
-        # تحليل الصورة (يعمل في threadpool حتى لا يعطّل حلقة الأحداث)
-        analysis = await offload(pest_recommender._analyze_pest_image, image_data)
-        
-        return {
-            'success': True,
-            'data': to_json_safe(analysis),
-            'message': 'تم تحليل الصورة بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error analyzing uploaded image: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/pest-database")
 async def get_pest_database():
@@ -296,32 +215,6 @@ async def assess_severity(
         },
     )
 
-    try:
-        input_data = {
-            'affected_area_percentage': affected_area_percentage,
-            'plant_health_score': plant_health_score,
-            'weather_conditions': {
-                'temperature': temperature,
-                'humidity': humidity
-            }
-        }
-        
-        pest_identification = {'identified_pest': pest_name}
-        
-        assessment = pest_recommender._assess_pest_severity(
-            input_data, pest_identification
-        )
-        
-        return {
-            'success': True,
-            'data': to_json_safe(assessment),
-            'message': 'تم تقييم شدة الإصابة بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error assessing severity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/treatment-schedule/{pest_name}")
 async def get_treatment_schedule(
     pest_name: str,
@@ -339,30 +232,6 @@ async def get_treatment_schedule(
             "production_ready": False,
         },
     )
-
-    try:
-        # إنشاء توصيات وهمية للجدولة
-        mock_treatment = {
-            'treatment_name_ar': 'علاج أساسي',
-            'application_frequency': 'كل 7 أيام',
-            'safety_level': 'آمن'
-        }
-        
-        input_data = {'farm_size': farm_size}
-        
-        schedule = pest_recommender._create_treatment_schedule(
-            [mock_treatment], input_data
-        )
-        
-        return {
-            'success': True,
-            'data': schedule,
-            'message': 'تم إنشاء جدولة العلاج بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error creating treatment schedule: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 async def health_check():
