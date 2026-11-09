@@ -838,6 +838,8 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       crop?: string;
       farmSizeHectares?: number;
       soil?: { ph?: number; organicMatter?: number; moisture?: number; temperature?: number };
+      temperature?: number;
+      rainfall?: number;
       operationalAlerts?: string[];
       platformRecords?: string[];
     } | undefined;
