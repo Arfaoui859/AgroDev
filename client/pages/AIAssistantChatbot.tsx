@@ -73,6 +73,8 @@ interface ChatMessage {
     suggestions?: string[];
     actionItems?: string[];
     relatedTopics?: string[];
+    /** Persisted disease record ID used to refresh its private image URL. */
+    diseaseRecordId?: string;
   };
   attachments?: {
     type: 'image' | 'document' | 'chart';
