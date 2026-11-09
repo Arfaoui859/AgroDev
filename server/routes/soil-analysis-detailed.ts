@@ -199,7 +199,7 @@ export const analyzeSoilBatch: RequestHandler = async(req,res)=>{
 };
 
 export const getSoilAnalysisReport: RequestHandler = async(_req,res)=>{
-  return res.status(501).json({success:false,error:"REPORT_STORAGE_NOT_IMPLEMENTED",message:"التخزين السحابي للتقارير غير مفعّل بعد. التقرير الحالي يُحفظ محلياً في هذا المتصفح."});
+  return res.status(501).json({success:false,error:"REPORT_NOT_IMPLEMENTED",message:"التخزين السحابي للتقارير غير مفعّل بعد. التقرير الحالي يُحفظ محلياً في هذا المتصفح."});
 };
 
 export default {analyzeSoilDetailed,analyzeSoilBatch,getSoilAnalysisReport};
