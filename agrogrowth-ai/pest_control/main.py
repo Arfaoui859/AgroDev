@@ -281,6 +281,15 @@ async def assess_severity(
     """
     تقييم شدة الإصابة بالآفة
     """
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "PEST_SEVERITY_NOT_VALIDATED",
+            "message": "Severity scoring is not calibrated against field observations and must not be presented as a validated diagnosis.",
+            "production_ready": False,
+        },
+    )
+
     try:
         input_data = {
             'affected_area_percentage': affected_area_percentage,
