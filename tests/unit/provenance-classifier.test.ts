@@ -23,8 +23,10 @@ describe("classifyProvenance", () => {
     expect(classifyProvenance({ dataSource: "rule-based" })).toBe("engine");
   });
 
-  test("microservice output counts as real model output", () => {
-    expect(classifyProvenance({ dataSource: "microservice" })).toBe("real");
+  test("microservice or trained-model labels without explicit verification remain unknown", () => {
+    expect(classifyProvenance({ dataSource: "microservice" })).toBe("unknown");
+    expect(classifyProvenance({ dataSource: "trained-model" })).toBe("unknown");
+    expect(classifyProvenance({ dataSource: "llm-generated" })).toBe("unknown");
   });
 
   test("client-computed estimate is 'estimate'", () => {
