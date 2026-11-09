@@ -133,6 +133,16 @@ class LabAssistedSoilPredictor:
             raise ValueError("lab_values must be a dictionary.")
 
         results = {}
+        recognized_features = {
+            feature
+            for configuration in self.models.values()
+            for feature in configuration["features"]
+        }
+        supplied_fields = set(lab_values)
+        ignored_input_fields = sorted(
+            str(name)
+            for name in supplied_fields - recognized_features
+        )
 
         with self._prediction_lock:
             for target, configuration in self.models.items():
@@ -200,6 +210,22 @@ class LabAssistedSoilPredictor:
             "prediction_scope": "lab_assisted_only",
             "field_validated": False,
             "tunisia_validated": False,
+            "input_quality": {
+                "recognized_feature_count": len(
+                    supplied_fields & recognized_features
+                ),
+                "ignored_input_fields": ignored_input_fields,
+                "units_validated": False,
+                "laboratory_method_validated": False,
+                "sample_depth_validated": False,
+                "sample_date_validated": False,
+                "warning": (
+                    "Numeric values are checked for finiteness only. "
+                    "Units, extraction methods, sample depth, and date "
+                    "are not validated by this endpoint. Supply values "
+                    "using the source dataset's compatible conventions."
+                ),
+            },
             "dataset": self.manifest.get("dataset"),
             "dataset_sha256": self.manifest.get("dataset_sha256"),
             "models": results,
