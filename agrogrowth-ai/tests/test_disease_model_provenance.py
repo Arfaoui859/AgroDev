@@ -61,3 +61,53 @@ def test_render_installs_image_diagnosis_runtime_requirements():
 
     assert "pip install -r image_diagnosis/requirements.txt" in service_block
     assert "pip install -r requirements.txt" not in service_block
+
+
+
+def test_supported_diseases_exposes_the_model_label_catalogue(monkeypatch):
+    classifier = SimpleNamespace(
+        MODEL_SOURCE="mobilenetv3-plantvillage-v1",
+        idx_to_class={
+            0: "Apple___Apple_scab",
+            1: "Tomato___healthy",
+        },
+    )
+    detector = SimpleNamespace(
+        ml_classifier=classifier,
+        inference_mode="onnx",
+        disease_database={
+            "healthy": {
+                "name_ar": "صحي",
+                "description": "حالة سليمة",
+                "severity": "none",
+                "treatment": [],
+                "prevention": [],
+            }
+        },
+    )
+
+    async def immediate_offload(function, *args, **kwargs):
+        return function(*args, **kwargs)
+
+    monkeypatch.setattr(main, "get_disease_detector", lambda: detector)
+    monkeypatch.setattr(main, "offload", immediate_offload)
+
+    response = asyncio.run(main.supported_diseases())
+
+    assert response["classifier_loaded"] is True
+    assert response["model_source"] == "mobilenetv3-plantvillage-v1"
+    assert response["model_class_count"] == 2
+    assert response["model_classes"] == [
+        {
+            "index": 0,
+            "class_name": "Apple___Apple_scab",
+            "crop": "Apple",
+            "condition": "Apple_scab",
+        },
+        {
+            "index": 1,
+            "class_name": "Tomato___healthy",
+            "crop": "Tomato",
+            "condition": "healthy",
+        },
+    ]
