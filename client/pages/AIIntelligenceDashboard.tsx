@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Activity, AlertTriangle, Bot, CheckCircle2, Clock3, RefreshCw, Settings2, ShieldAlert, Sprout } from "lucide-react";
+import { Activity, AlertTriangle, Bot, Clock3, RefreshCw, ShieldAlert, Sprout } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
