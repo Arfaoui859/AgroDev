@@ -63,8 +63,7 @@ interface ChatMessage {
     /**
      * Where the answer actually came from. "llm" only when a configured model
      * produced it; "rule-based" when the backend's agronomic engine did;
-     * "local-fallback" when the browser answered from its own static text
-     * because the advisor service was unreachable.
+     * The backend-reported source; no client-side fabricated fallback is used.
      */
     dataSource?: 'llm' | 'rule-based';
     /** Model that wrote the answer, e.g. "openai:gpt-4o-mini". */
@@ -1351,6 +1350,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                                 )}
                                 {message.metadata.note && <p>{message.metadata.note}</p>}
                                 {message.metadata.disclaimer && <p>{message.metadata.disclaimer}</p>}
+                                {message.metadata.usedAgents?.length ? <p>{language === 'ar' ? 'المجالات المستعملة: ' : language === 'fr' ? 'Agents utilisés : ' : 'Agents used: '}{message.metadata.usedAgents.join(' · ')}</p> : null}
                                 {message.metadata.contextSummary?.map((fact, index) => <p key={index}>• {fact}</p>)}
                               </div>
                             )}
