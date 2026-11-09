@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowUpRight, Bot, LayoutDashboard, Sprout, Tractor } from "lucide-react";
+import { Bot, LayoutDashboard, Sprout, Tractor } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FarmerDashboard from "./FarmerDashboard";
 import ComprehensiveFarmManagement from "./ComprehensiveFarmManagement";
