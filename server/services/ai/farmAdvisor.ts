@@ -302,6 +302,7 @@ function buildRuleBasedAnswer(
   const { question, context } = request;
   const lang = request.language ?? detectLanguage(question);
   const sections: string[] = [];
+  const storedRecords = (context?.platformRecords ?? []).filter(record => /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast|Stored market prediction|Public stored market prediction|Recorded market price|Verified soil analysis|Saved plant-health record|Saved leaf-health analysis|Saved satellite observation|Registered sensor|Stored sensor reading|Cultivation |Farm |Plot )/.test(record));
 
   if (agents.includes("soil") && context?.soil) {
     const soil = analyzeSoil(context.soil);
@@ -378,13 +379,31 @@ function buildRuleBasedAnswer(
         fr: `Météo disponible : ${context?.temperature ?? "—"}°C, pluie ${context?.rainfall ?? "—"} mm. Consultez la page météo pour des prévisions précises.`,
         en: `Available weather: ${context?.temperature ?? "—"}°C, rainfall ${context?.rainfall ?? "—"} mm. Use the weather page for accurate forecasts.`,
       }[lang]);
-    } else {
+    } else if (!storedRecords.some(record => /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast)/.test(record))) {
       sections.push({
-        ar: "للحصول على توصيات دقيقة حول الطقس والري، استعمل صفحة الطقس التي تجلب بيانات حقيقية من مزود Open-Meteo.",
-        fr: "Pour des conseils précis sur la météo et l'irrigation, utilisez la page météo qui récupère des données réelles auprès d'Open-Meteo.",
-        en: "For accurate weather and irrigation advice, use the weather page, which retrieves real data from Open-Meteo.",
+        ar: "لا توجد بيانات طقس مسجلة متاحة في سياق هذه الإجابة. يمكن جلب توقع حقيقي من Open-Meteo عند توفر إحداثيات المزرعة.",
+        fr: "Aucune donnée météo enregistrée n'est disponible dans ce contexte. Une prévision réelle Open-Meteo peut être récupérée si les coordonnées de la ferme sont disponibles.",
+        en: "No stored weather record is available in this context. A real Open-Meteo forecast can be fetched when farm coordinates are available.",
       }[lang]);
     }
+  }
+
+  if (storedRecords.length) {
+    const relevantRecords = storedRecords.filter(record => {
+      if (agents.includes("weather")) return /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast|Registered sensor|Stored sensor reading|Saved satellite observation)/.test(record);
+      if (agents.includes("market")) return /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(record);
+      if (agents.includes("soil")) return /^Verified soil analysis/.test(record);
+      if (agents.includes("disease")) return /^(Saved plant-health record|Saved leaf-health analysis)/.test(record);
+      if (agents.includes("crop")) return /^(Farm |Plot |Cultivation )/.test(record);
+      return true;
+    });
+    const selectedRecords = (relevantRecords.length ? relevantRecords : storedRecords).slice(-8);
+    const recordLines = selectedRecords.map(record => "• " + record).join("\n");
+    sections.push({
+      ar: "حقائق مسجلة في AgroGrowth (سجلات محفوظة وليست قياسات مؤكدة مستقلاً):\n" + recordLines,
+      fr: "Faits enregistrés dans AgroGrowth (données stockées, non vérifiées indépendamment):\n" + recordLines,
+      en: "AgroGrowth stored facts (records, not independently verified measurements):\n" + recordLines,
+    }[lang]);
   }
 
   if (context?.operationalAlerts?.length) {
@@ -404,11 +423,11 @@ function buildRuleBasedAnswer(
     }[lang]);
   }
 
-  if (agents.includes("market")) {
+  if (agents.includes("market") && !storedRecords.some(record => /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(record))) {
     sections.push({
-      ar: "بيانات الأسعار تُجلب من مصادر السوق المتاحة. لا نقدّم أسعاراً مباشرة هنا لتجنب تقديم أرقام غير موثوقة؛ راجع صفحة السوق.",
-      fr: "Les prix proviennent des sources de marché disponibles. Nous n'affichons pas de prix ici pour éviter des chiffres non fiables ; consultez la page marché.",
-      en: "Prices come from the available market sources. We do not quote prices here to avoid unreliable figures; see the market page.",
+      ar: "لا يوجد سعر مسجل موثوق لهذا المحصول في سياق الإجابة. لا تخمّن سعراً؛ راجع صفحة السوق أو أضف تسجيلاً بمصدر وتاريخ ومكان واضح.",
+      fr: "Aucun prix enregistré avec une provenance suffisante n'est disponible dans ce contexte. N'inventez pas de prix; consultez le marché ou ajoutez un relevé daté, localisé et sourcé.",
+      en: "No sufficiently sourced market quote is available in this context. Do not guess a price; check the market page or add a dated, located and sourced record.",
     }[lang]);
   }
 
