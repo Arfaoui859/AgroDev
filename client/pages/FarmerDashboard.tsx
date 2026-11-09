@@ -501,9 +501,19 @@ const FarmerDashboard: React.FC = () => {
           <QuickActionPanel
             isArabic={isArabic}
             onActionExecute={(actionId, data) => {
-              console.log("Executing action:", actionId, data);
-              // Here you can implement the actual action execution logic
-              // For example, calling specific APIs based on the action type
+              const destinations: Record<string, string> = {
+                emergency_irrigation: "/smart-irrigation",
+                pest_alert: "/pest-control",
+                disease_photo: "/disease-upload",
+                weather_alert: "/weather-alerts",
+                expert_call: "/farmer-collaboration",
+                fertilizer_urgent: "/fertilizer-recommendations",
+                soil_test: "/enhanced-analysis",
+                chat_expert: "/farmer-collaboration",
+              };
+              const destination = destinations[actionId];
+              if (!destination) throw new Error("لا توجد وجهة معروفة لهذا الإجراء.");
+              navigate(destination, { state: { quickAction: actionId, details: data } });
             }}
           />
         </TabsContent>
