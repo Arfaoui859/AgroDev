@@ -27,39 +27,15 @@ describe("🔑 Public API key minting", () => {
     process.env = ORIGINAL;
   });
 
-  test("minting is rate limited per IP (429 after the configured max)", async () => {
-    let sawTooMany = false;
-    for (let i = 0; i < 8; i++) {
+  test("API-key minting fails closed until keys and usage are persisted", async () => {
+    for (let i = 0; i < 4; i++) {
       const res = await request(app)
         .post("/api/public/create-key")
         .send({ name: "Test", email: "t@example.com" });
-      if (res.status === 429) {
-        sawTooMany = true;
-        break;
-      }
+      expect(res.status).toBe(503);
+      expect(res.body.code).toBe("PUBLIC_DATA_SOURCE_NOT_CONNECTED");
+      expect(res.body.data?.apiKey).toBeUndefined();
     }
-    expect(sawTooMany).toBe(true);
   });
 
-  test("a created key is long, high-entropy and not time-guessable", async () => {
-    const res = await request(app)
-      .post("/api/public/create-key")
-      .send({ name: "Test", email: "t@example.com" });
-
-    expect(res.status).toBe(200);
-    const key: string = res.body?.data?.apiKey;
-    expect(typeof key).toBe("string");
-    expect(key.startsWith("agro_")).toBe(true);
-    // 24 random bytes base64url-encoded -> ~32 chars of payload.
-    expect(key.length).toBeGreaterThan(25);
-    // The old scheme embedded Date.now(); the new one must not.
-    expect(key).not.toMatch(/_1[0-9]{12}_/);
-  });
-
-  test("still rejects a request missing name/email", async () => {
-    const res = await request(app)
-      .post("/api/public/create-key")
-      .send({ name: "OnlyName" });
-    expect(res.status).toBe(400);
-  });
 });
