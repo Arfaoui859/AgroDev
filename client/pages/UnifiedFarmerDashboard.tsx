@@ -72,7 +72,7 @@ export default function UnifiedFarmerDashboard() {
         </div>
       </header>
 
-      <Tabs defaultValue="overview" dir="rtl" className="space-y-5">
+      <Tabs defaultValue="overview" dir={dir} className="space-y-5">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-xl bg-white p-2 shadow-sm md:grid-cols-4">
           <TabsTrigger value="overview" className="min-h-11 gap-2 rounded-lg">
             <LayoutDashboard className="h-4 w-4" />
