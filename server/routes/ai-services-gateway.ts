@@ -115,18 +115,21 @@ const handleAIServiceError = (
 
   if (error.response) {
     res.status(error.response.status).json({
+      success: false,
       error: `${serviceName} service error`,
       message: error.response.data || error.message,
       status: error.response.status,
     });
   } else if (error.request) {
     res.status(503).json({
+      success: false,
       error: `${serviceName} service unavailable`,
       message: "Service is not responding",
       status: 503,
     });
   } else {
     res.status(500).json({
+      success: false,
       error: "Internal server error",
       message: error.message,
       status: 500,
