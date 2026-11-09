@@ -36,3 +36,25 @@ ORDER BY tablename, policyname;
 
 -- Refresh the PostgREST schema cache after confirming the migration.
 NOTIFY pgrst, 'reload schema';
+
+-- Financial ledger tables and ownership policies.
+SELECT
+  to_regclass('public.farm_expenses') IS NOT NULL AS farm_expenses_present,
+  to_regclass('public.farm_revenues') IS NOT NULL AS farm_revenues_present;
+
+SELECT
+  tablename,
+  rowsecurity AS rls_enabled
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND tablename IN ('farm_expenses', 'farm_revenues')
+ORDER BY tablename;
+
+SELECT
+  tablename,
+  policyname,
+  cmd
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('farm_expenses', 'farm_revenues')
+ORDER BY tablename, policyname;
