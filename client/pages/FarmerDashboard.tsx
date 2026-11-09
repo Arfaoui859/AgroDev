@@ -693,10 +693,22 @@ const FarmerDashboard: React.FC = () => {
                       </div>
                       <div className="flex space-x-2">
                         {alert.actionable && alert.actionText && (
-                          <Button size="sm" variant="outline">
-                            {isArabic
-                              ? alert.actionTextArabic
-                              : alert.actionText}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const destinations: Record<AlertData["type"], string> = {
+                                weather: "/weather-alerts",
+                                disease: "/disease-upload",
+                                irrigation: "/smart-irrigation",
+                                pest: "/pest-control",
+                                soil: "/enhanced-analysis",
+                                market: "/market-dashboard",
+                              };
+                              navigate(destinations[alert.type]);
+                            }}
+                          >
+                            {isArabic ? alert.actionTextArabic : alert.actionText}
                           </Button>
                         )}
                         <Button
