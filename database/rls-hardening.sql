@@ -85,6 +85,12 @@ ALTER TABLE public.user_analytics         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weather_forecasts      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weather_records        ENABLE ROW LEVEL SECURITY;
 
+-- Keep the profile shape used by the application consistent across fresh and
+-- existing Supabase projects.
+ALTER TABLE public.user_profiles
+  ADD COLUMN IF NOT EXISTS preferences JSONB NOT NULL
+  DEFAULT '{"language":"ar","notifications":true,"weather_alerts":true,"market_alerts":true}'::jsonb;
+
 -- ---------------------------------------------------------------------------
 -- 3. users / user_profiles
 --
@@ -167,6 +173,12 @@ BEGIN
     true
   )
   ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO public.user_profiles (user_id)
+  SELECT NEW.id
+  WHERE NOT EXISTS (
+    SELECT 1 FROM public.user_profiles WHERE user_id = NEW.id
+  );
 
   RETURN NEW;
 END;
