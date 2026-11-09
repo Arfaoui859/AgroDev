@@ -259,6 +259,7 @@ export const listSoilAnalysisReports: RequestHandler = async(req,res)=>{
     const { data, error } = await db
       .from("soil_analyses")
       .select("id,section_id,farm_id,analysis_type,analyzed_at,created_at,sensor_data,analysis_result")
+      .eq("analysis_type","lab")
       .order("analyzed_at",{ascending:false})
       .limit(limit);
     if (error) throw error;
@@ -286,6 +287,7 @@ export const getSoilAnalysisReport: RequestHandler = async(req,res)=>{
     const { data, error } = await db
       .from("soil_analyses")
       .select("id,sensor_data,analysis_result,recommendations,analyzed_at,created_at")
+      .eq("analysis_type","lab")
       .eq("id", req.params.analysisId)
       .maybeSingle();
     if (error) throw error;
