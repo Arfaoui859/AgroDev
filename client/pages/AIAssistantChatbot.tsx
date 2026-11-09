@@ -231,7 +231,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         'توقعات الطقس',
         'أسعار السوق اليوم',
         'نصائح الري',
-        'تشخيص أمراض النباتات'
+        'تشخيص أمراض النباتات',
+        'فحص شامل لمزرعتي',
+        'تحليل المزرعة بالساتلايت'
       ],
       en: [
         'Best crop for next season',
@@ -239,7 +241,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         'Weather forecast',
         'Today\'s market prices',
         'Irrigation tips',
-        'Plant disease diagnosis'
+        'Plant disease diagnosis',
+        'Scan my farm',
+        'Analyze my farm by satellite'
       ],
       fr: [
         'Meilleure culture pour la saison',
@@ -247,7 +251,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         'Prévisions météo',
         'Prix du marché aujourd\'hui',
         'Conseils d\'irrigation',
-        'Diagnostic des maladies'
+        'Diagnostic des maladies',
+        'Scanner ma ferme',
+        'Analyser ma ferme par satellite'
       ]
     };
     setQuickActions(actions[language]);
