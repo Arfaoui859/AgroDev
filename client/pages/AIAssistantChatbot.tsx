@@ -1069,9 +1069,22 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       setMessages(prev => [...prev, {
         id: "memory-save-warning-" + Date.now(),
         type: "assistant",
-        content: language === "ar"
-          ? "تنبيه حفظ المحادثة: تم توليد الإجابة، لكن لم يتم تأكيد حفظ سجلها. رمز الخطأ: " + (error instanceof Error ? error.message : "UNKNOWN") + ". تحقق من migration لجداول farm_agent_conversations وfarm_agent_messages، ومن JWT وسياسات RLS. الإجابة الحالية لا تعني أن سجلها محفوظ."
-          : "Conversation persistence failed (" + (error instanceof Error ? error.message : "UNKNOWN") + "). Verify the assistant migration, caller JWT and RLS policies. The generated answer is not proof that its history was saved.",
+        content: (() => {
+          const detail = error instanceof Error ? error.message : "UNKNOWN";
+          if (detail.includes("ASSISTANT_MIGRATION_REQUIRED")) {
+            return language === "ar"
+              ? "تعذّر حفظ المحادثة لأن جداول الذاكرة غير موجودة في Supabase. افتح Supabase → SQL Editor، وطبّق الملف database/autonomous-farm-agent.sql كاملاً، ثم أعد تحميل التطبيق وجرّب من جديد. الإجابة الحالية لم يُؤكّد حفظ سجلها."
+              : "Conversation history tables are missing. In Supabase SQL Editor, apply database/autonomous-farm-agent.sql, reload the app, and retry. The generated answer was not confirmed as persisted.";
+          }
+          if (detail.includes("ASSISTANT_RLS_DENIED")) {
+            return language === "ar"
+              ? "رفضت سياسات RLS حفظ المحادثة. يلزم التحقق من JWT المستخدم وسياسات الوصول إلى farm_agent_conversations وfarm_agent_messages. لم يتم تأكيد حفظ السجل."
+              : "RLS denied conversation persistence. Verify the user's JWT and policies on farm_agent_conversations and farm_agent_messages. History was not confirmed as saved.";
+          }
+          return language === "ar"
+            ? "تم توليد الإجابة لكن تعذّر تأكيد حفظ سجل المحادثة. رمز الخطأ: " + detail + ". لم يتم اعتبار السجل محفوظاً."
+            : "The answer was generated, but conversation history was not confirmed as saved. Error: " + detail;
+        })(),
         timestamp: new Date().toISOString(),
         language,
         category: "general",
