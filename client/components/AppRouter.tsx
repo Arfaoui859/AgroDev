@@ -152,7 +152,7 @@ export default function AppRouter() {
         <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center" role="status" aria-live="polite"><span className="text-sm text-gray-500">Loading page…</span></div>}>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/data-input" element={<Index />} />
+          <Route path="/data-input" element={<EnhancedAnalysis />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/enhanced-analysis" element={<EnhancedAnalysis />} />
           <Route path="/analyze" element={<Analysis />} />
