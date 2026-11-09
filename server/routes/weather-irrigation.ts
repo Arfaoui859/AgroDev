@@ -3,7 +3,6 @@ import {
   getWeatherFromOpenMeteo,
   calculateEvapotranspiration as calculateEt0FromWeather,
 } from '../services/providers/weatherProvider';
-import { markSimulated } from '../lib/provenance';
 
 const router = express.Router();
 
@@ -306,17 +305,16 @@ router.get('/alerts/:stationId', async (req, res) => {
 // real per-field water consumption. The figures below are therefore an
 // illustrative baseline, stamped as simulated so the SPA can disclose them
 // instead of showing them as measured usage.
-router.post('/analytics/water-usage', (req, res) => {
-  markSimulated(res, 'simulated');
-  const { farmId, period, cropTypes } = req.body ?? {};
-  const analytics = generateWaterUsageAnalytics(farmId, period, cropTypes);
-  res.json({
-    ...analytics,
+router.post('/analytics/water-usage', (_req, res) => {
+  res.set('X-Data-Provenance', 'simulated-disabled');
+  res.set('X-Is-Real-Data', 'false');
+  return res.status(503).json({
+    success: false,
+    code: 'IRRIGATION_TELEMETRY_NOT_CONNECTED',
+    message: 'Water-usage analytics require real, persisted irrigation meter or sensor readings. Simulated consumption figures are disabled.',
     dataSource: 'simulated',
     isRealData: false,
-    disclaimer:
-      'بيانات استهلاك مياه تقديرية توضيحية وليست قياسات عدّادات حقيقية. ' +
-      'Illustrative water-usage estimate, not metered measurements.',
+    productionReady: false,
   });
 });
 
