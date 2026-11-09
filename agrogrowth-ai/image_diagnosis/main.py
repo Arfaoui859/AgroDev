@@ -257,7 +257,9 @@ async def health():
     )
 
     return {
-        "status": "healthy",
+        "status": "healthy" if classifier is not None else "degraded",
+        "production_ready": classifier is not None,
+        "disabled_features": [] if classifier is not None else ["disease_classification"],
         "models_loaded": {
             "disease_detector": True,
             "leaf_scanner": leaf_scanner is not None,
@@ -274,10 +276,9 @@ async def health():
         # Kept for backward compatibility. Configuration does not prove usage.
         "vision_configured": configured,
         "disclaimer": (
-            "Disease classification uses the trained PlantVillage ONNX model "
-            "when its artifact and runtime are available; otherwise it falls "
-            "back to feature heuristics. Leaf and quick health checks remain "
-            "heuristic. No Tunisia field validation is implied."
+            "A trained PlantVillage ONNX classifier is required for disease classification. "
+            "Heuristic-only image results are disabled as diagnoses. Leaf and quick health "
+            "checks remain heuristic. No Tunisia field validation is implied."
         ),
     }
 # =========================================================
@@ -289,6 +290,16 @@ async def health():
 # keeping the event loop free to answer /health while a diagnosis is running.
 def _run_disease_detection(image_data: bytes, content_type: str, plant_type: Optional[str]) -> Dict[str, Any]:
     detector = get_disease_detector()
+    classifier = getattr(detector, "ml_classifier", None)
+    if classifier is None:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "DISEASE_CLASSIFIER_NOT_LOADED",
+                "message": "A trained ONNX disease classifier is not loaded. Heuristic image outputs are not returned as AI diagnoses.",
+                "production_ready": False,
+            },
+        )
     result = detector.detect_plant_disease(image_data, plant_type)
 
     detection = result.get("disease_detection", {})
