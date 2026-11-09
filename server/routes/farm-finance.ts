@@ -6,11 +6,19 @@ function dbFor(req: Parameters<RequestHandler>[0]) {
   return scopedClientFromAuthHeader(req.header("authorization"));
 }
 
-function unavailable(res: Parameters<RequestHandler>[1]) {
+function unavailable(res: Parameters<RequestHandler>[1], error?: { code?: string; message?: string }) {
+  const databaseCode = error?.code;
+  const missingTable = databaseCode === "PGRST205" || /Could not find the table/i.test(error?.message ?? "");
+  const denied = databaseCode === "42501";
   return res.status(503).json({
     success: false,
-    code: "FARM_FINANCE_DATABASE_UNAVAILABLE",
-    message: "يلزم تسجيل دخول موثّق وتطبيق ترحيل قاعدة البيانات لحفظ المعاملات المالية.",
+    code: missingTable ? "FARM_FINANCE_MIGRATION_REQUIRED" : denied ? "FARM_FINANCE_RLS_DENIED" : "FARM_FINANCE_DATABASE_UNAVAILABLE",
+    databaseCode,
+    message: missingTable
+      ? "جداول الإدارة المالية غير موجودة. طبّق database/farm-finance-persistence.sql في Supabase."
+      : denied
+        ? "قاعدة البيانات رفضت العملية بسبب صلاحيات RLS أو ملكية المزرعة."
+        : "تعذّر الاتصال بقاعدة البيانات المالية. لم يتم حفظ العملية.",
   });
 }
 
@@ -241,7 +249,7 @@ export const getFinancialSummary: RequestHandler = async (req, res) => {
     db.from("farm_expenses").select("amount,category").eq("user_id", req.userId),
     db.from("farm_revenues").select("amount,transportation_cost,marketing_cost").eq("user_id", req.userId),
   ]);
-  if (expensesResult.error || revenuesResult.error) return unavailable(res);
+  if (expensesResult.error || revenuesResult.error) return unavailable(res, expensesResult.error || revenuesResult.error || undefined);
   const expenses = expensesResult.data ?? [];
   const revenues = revenuesResult.data ?? [];
   const totalExpenses = expenses.reduce((sum, row) => sum + Number(row.amount), 0);
