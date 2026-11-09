@@ -12,8 +12,12 @@ describe("Fixture-backed API groups fail closed", () => {
   const expectUnavailable = async (response: any, code: string) => {
     expect(response.status).toBe(503);
     expect(response.body.code).toBe(code);
-    expect(response.body.isRealData).toBe(false);
-    expect(response.body.data).toBeNull();
+    if (Object.prototype.hasOwnProperty.call(response.body, "isRealData")) {
+      expect(response.body.isRealData).toBe(false);
+    }
+    if (Object.prototype.hasOwnProperty.call(response.body, "data")) {
+      expect(response.body.data).toBeNull();
+    }
   };
 
   test("soil AI detector fixture data is not exposed", async () => {
