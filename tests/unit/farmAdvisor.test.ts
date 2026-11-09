@@ -271,3 +271,47 @@ describe("answerAgriculturalQuestion — localisation", () => {
     expect(result.answer).toMatch(/المحاصيل الأنسب/);
   });
 });
+
+
+describe("specialist routing and grounded financial answers", () => {
+  test("routes profitability questions to finance and uses only saved cultivation figures", async () => {
+    const result = await answerAgriculturalQuestion({
+      question: "What is my farm profitability?",
+      language: "en",
+      context: {
+        platformRecords: [
+          "Cultivation tomato [status=active; total_cost=900; revenue=1400; profit=500; cultivation_id=real-cultivation-id]. Stored user figures.",
+        ],
+      },
+    });
+    expect(result.usedAgents).toContain("finance");
+    expect(result.answer).toContain("Recorded financial figures");
+    expect(result.answer).toContain("profit=500");
+    expect(result.answer).toContain("verify currency, period");
+  });
+
+  test("does not invent financial amounts when no saved figures exist", async () => {
+    const result = await answerAgriculturalQuestion({
+      question: "How profitable is my farm?",
+      language: "en",
+    });
+    expect(result.usedAgents).toContain("finance");
+    expect(result.answer).toContain("No numeric costs, revenue or profit figures");
+    expect(result.answer).not.toMatch(/\\d+\\s*(TND|DT|USD)/);
+  });
+
+  test("routes livestock and harvest questions to their specialist domains", async () => {
+    const livestock = await answerAgriculturalQuestion({
+      question: "My sheep are sick, what should I do?",
+      language: "en",
+    });
+    const harvest = await answerAgriculturalQuestion({
+      question: "When should I harvest my crop?",
+      language: "en",
+    });
+    expect(livestock.usedAgents).toContain("livestock");
+    expect(livestock.answer).toContain("verified veterinary record");
+    expect(harvest.usedAgents).toContain("operations");
+    expect(harvest.answer).toContain("recorded planting date");
+  });
+});
