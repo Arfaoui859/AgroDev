@@ -66,7 +66,7 @@ export function normalizeSoilRequest(input: Record<string, unknown>): RawSoilDat
 
 function validateSoilData(data: RawSoilData): string[] {
   const errors: string[] = [];
-  if (data.sampleDepth !== undefined && (!Number.isFinite(data.sampleDepth) || data.sampleDepth <= 0 || data.sampleDepth > 300)) errors.push("sampleDepth must be greater than 0 and no more than 300 cm");
+  if (data.sampleDepth !== undefined && (!Number.isFinite(data.sampleDepth) || !Number.isInteger(data.sampleDepth) || data.sampleDepth <= 0 || data.sampleDepth > 300)) errors.push("sampleDepth must be a whole number of centimeters greater than 0 and no more than 300 cm");
   if (data.electricalConductivity !== undefined && !data.electricalConductivityUnit?.trim()) errors.push("electricalConductivityUnit is required when electrical conductivity is supplied");
   if (!Number.isFinite(data.ph) || data.ph < 0 || data.ph > 14) errors.push("pH must be a finite number between 0 and 14");
   if (!Number.isFinite(data.moisture) || data.moisture < 0 || data.moisture > 100) errors.push("moisture must be a finite percentage between 0 and 100");
