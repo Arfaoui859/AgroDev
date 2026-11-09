@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
+import { supabase } from "@/lib/supabase";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -322,402 +323,83 @@ interface RealTimeData {
   };
 }
 
-// ============ MOCK DATA ============
-
-const mockSensors: IoTSensor[] = [
-  {
-    id: 'sensor-001',
-    name: 'Soil Moisture Sensor #1',
-    nameArabic: 'حساس رطوبة التربة #1',
-    type: 'soil_moisture',
-    typeArabic: 'رطوبة التربة',
-    fieldId: 'field-001',
-    fieldName: 'North Field',
-    location: {
-      lat: 32.1970,
-      lng: 35.6185,
-      description: 'North Field Center',
-      descriptionArabic: 'وسط الحقل الشمالي'
-    },
-    status: 'online',
-    statusArabic: 'متصل',
-    batteryLevel: 87,
-    signalStrength: 92,
-    lastReading: {
-      value: 35.2,
-      unit: '%',
-      timestamp: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
-      quality: 'excellent'
-    },
-    thresholds: {
-      min: 25,
-      max: 80,
-      optimal: { min: 40, max: 70 }
-    },
-    calibrationDate: '2024-01-01',
-    manufacturer: 'AgroSense',
-    model: 'SM-Pro-2024',
-    installationDate: '2023-12-15'
-  },
-  {
-    id: 'sensor-002',
-    name: 'pH Sensor #1',
-    nameArabic: 'حساس الحموضة #1',
-    type: 'soil_ph',
-    typeArabic: 'حموضة التربة',
-    fieldId: 'field-001',
-    fieldName: 'North Field',
-    location: {
-      lat: 32.1968,
-      lng: 35.6183,
-      description: 'North Field East Side',
-      descriptionArabic: 'الجانب الشرقي للحقل الشمالي'
-    },
-    status: 'warning',
-    statusArabic: 'تحذير',
-    batteryLevel: 23,
-    signalStrength: 78,
-    lastReading: {
-      value: 5.8,
-      unit: 'pH',
-      timestamp: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      quality: 'good'
-    },
-    thresholds: {
-      min: 5.5,
-      max: 8.0,
-      optimal: { min: 6.0, max: 7.5 }
-    },
-    calibrationDate: '2024-01-01',
-    manufacturer: 'SoilTech',
-    model: 'pH-Monitor-v3',
-    installationDate: '2023-12-20'
-  },
-  {
-    id: 'sensor-003',
-    name: 'Temperature Sensor #1',
-    nameArabic: 'حساس درجة الحرارة #1',
-    type: 'temperature',
-    typeArabic: 'درجة الحرارة',
-    fieldId: 'field-002',
-    fieldName: 'South Field',
-    location: {
-      lat: 32.1962,
-      lng: 35.6177,
-      description: 'South Field Weather Station',
-      descriptionArabic: 'محطة الطقس بالحقل الجنوبي'
-    },
-    status: 'online',
-    statusArabic: 'متصل',
-    batteryLevel: 95,
-    signalStrength: 88,
-    lastReading: {
-      value: 24.5,
-      unit: '°C',
-      timestamp: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      quality: 'excellent'
-    },
-    thresholds: {
-      min: -5,
-      max: 45,
-      optimal: { min: 18, max: 28 }
-    },
-    calibrationDate: '2024-01-05',
-    manufacturer: 'WeatherPro',
-    model: 'TMP-4000',
-    installationDate: '2023-11-10'
-  }
-];
-
-const mockNotifications: Notification[] = [
-  {
-    id: 'notif-001',
-    type: 'critical',
-    typeArabic: 'حرج',
-    category: 'sensor',
-    categoryArabic: 'حساس',
-    priority: 'critical',
-    priorityArabic: 'حرج',
-    title: 'Soil Moisture Critical Level',
-    titleArabic: 'مستوى رطوبة التربة حرج',
-    message: 'Soil moisture in North Field has dropped to 15%. Immediate irrigation required.',
-    messageArabic: 'انخفضت رطوبة التربة في الحقل الشمالي إلى 15%. مطلوب ري فوري.',
-    actionRequired: true,
-    actions: [
-      {
-        label: 'Start Irrigation',
-        labelArabic: 'بدء الري',
-        action: 'start_irrigation',
-        type: 'primary'
-      },
-      {
-        label: 'View Field',
-        labelArabic: 'عرض الحقل',
-        action: 'view_field',
-        type: 'secondary'
-      }
-    ],
-    channels: ['in_app', 'push', 'sms'],
-    source: {
-      type: 'iot_sensor',
-      id: 'sensor-001',
-      name: 'Soil Moisture Sensor #1'
-    },
-    targetUsers: ['user-001'],
-    targetRoles: ['farmer'],
-    timestamp: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
-    isRead: false,
-    isArchived: false,
-    isStarred: true,
-    metadata: {
-      relatedFieldId: 'field-001',
-      sensorData: {
-        currentValue: 15,
-        previousValue: 25,
-        threshold: 25
-      }
-    }
-  },
-  {
-    id: 'notif-002',
-    type: 'warning',
-    typeArabic: 'تحذير',
-    category: 'ai_prediction',
-    categoryArabic: 'تنبؤ ذكي',
-    priority: 'high',
-    priorityArabic: 'عالي',
-    title: 'Disease Risk Prediction',
-    titleArabic: 'توقع خطر المرض',
-    message: 'AI model predicts 78% chance of fungal infection in tomatoes within next 3 days.',
-    messageArabic: 'النموذج الذكي يتوقع احتمال 78% للإصابة الفطرية في الطماطم خلال 3 أيام القادمة.',
-    actionRequired: true,
-    actions: [
-      {
-        label: 'View Recommendations',
-        labelArabic: 'عرض التوصيات',
-        action: 'view_recommendations',
-        type: 'primary'
-      },
-      {
-        label: 'Schedule Inspection',
-        labelArabic: 'جدولة فحص',
-        action: 'schedule_inspection',
-        type: 'secondary'
-      }
-    ],
-    channels: ['in_app', 'email'],
-    source: {
-      type: 'ai_model',
-      id: 'disease-predictor-v2',
-      name: 'Disease Prediction AI'
-    },
-    targetUsers: ['user-001'],
-    targetRoles: ['farmer', 'agronomist'],
-    timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    isRead: false,
-    isArchived: false,
-    isStarred: false,
-    confidence: 78,
-    expiresAt: new Date(Date.now() + 259200000).toISOString(), // 3 days from now
-    metadata: {
-      relatedFieldId: 'field-001',
-      relatedCropId: 'crop-tomato-001',
-      weatherConditions: {
-        humidity: 85,
-        temperature: 22,
-        rainfall: 15
-      }
-    }
-  },
-  {
-    id: 'notif-003',
-    type: 'info',
-    typeArabic: 'معلومات',
-    category: 'market',
-    categoryArabic: 'سوق',
-    priority: 'medium',
-    priorityArabic: 'متوسط',
-    title: 'Market Price Update',
-    titleArabic: 'تحديث أسعار السوق',
-    message: 'Tomato prices increased by 12% this week. Consider early harvest for better profits.',
-    messageArabic: 'ارتفعت أسعار الطماطم بنسبة 12% هذا الأسبوع. فكر في الحصاد المبكر لأرباح أفضل.',
-    actionRequired: false,
-    channels: ['in_app'],
-    source: {
-      type: 'api',
-      id: 'market-api',
-      name: 'Market Data API'
-    },
-    targetUsers: ['user-001'],
-    targetRoles: ['farmer', 'trader'],
-    timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-    isRead: true,
-    isArchived: false,
-    isStarred: false,
-    metadata: {
-      marketData: {
-        crop: 'tomato',
-        currentPrice: 1.85,
-        previousPrice: 1.65,
-        changePercent: 12.1
-      }
-    }
-  },
-  {
-    id: 'notif-004',
-    type: 'warning',
-    typeArabic: 'تحذير',
-    category: 'weather',
-    categoryArabic: 'طقس',
-    priority: 'high',
-    priorityArabic: 'عالي',
-    title: 'Severe Weather Alert',
-    titleArabic: 'تنبيه طقس قاسي',
-    message: 'Heavy rainfall and strong winds expected tomorrow. Secure equipment and check drainage.',
-    messageArabic: 'أمطار غزيرة ورياح قوية متوقعة غداً. أمّن المعدات وتفقد أنظمة الصرف.',
-    actionRequired: true,
-    actions: [
-      {
-        label: 'Weather Details',
-        labelArabic: 'تفاصيل الطقس',
-        action: 'view_weather',
-        type: 'primary'
-      },
-      {
-        label: 'Preparation Checklist',
-        labelArabic: 'قائمة التحضيرات',
-        action: 'view_checklist',
-        type: 'secondary'
-      }
-    ],
-    channels: ['in_app', 'push', 'sms'],
-    source: {
-      type: 'api',
-      id: 'weather-api',
-      name: 'Weather Service'
-    },
-    targetUsers: ['user-001'],
-    targetRoles: ['farmer'],
-    targetRegions: ['north-region'],
-    timestamp: new Date(Date.now() - 10800000).toISOString(), // 3 hours ago
-    isRead: false,
-    isArchived: false,
-    isStarred: true,
-    metadata: {
-      weatherConditions: {
-        expectedRainfall: 45,
-        windSpeed: 65,
-        duration: 8
-      }
-    }
-  }
-];
-
-const mockRealTimeData: RealTimeData = {
-  timestamp: new Date().toISOString(),
-  sensors: {
-    'sensor-001': {
-      value: 35.2,
-      status: 'normal',
-      change: 'decrease',
-      changePercent: -2.1
-    },
-    'sensor-002': {
-      value: 5.8,
-      status: 'warning',
-      change: 'decrease',
-      changePercent: -3.2
-    },
-    'sensor-003': {
-      value: 24.5,
-      status: 'normal',
-      change: 'increase',
-      changePercent: 1.8
-    }
-  },
-  weather: {
-    temperature: 24.5,
-    humidity: 65,
-    windSpeed: 12,
-    pressure: 1013.2,
-    precipitation: 0,
-    condition: 'partly_cloudy'
-  },
-  systemHealth: {
-    connectedSensors: 2,
-    totalSensors: 3,
-    dataLatency: 120,
-    errorRate: 5.2
-  }
-};
-
-// ============ MAIN COMPONENT ============
+// Sensor and notification values are loaded from authenticated persistence; no demo records are seeded.\n\n// ============ MAIN COMPONENT ============
 
 export default function NotificationCenter() {
   const { isArabic } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [sensors, setSensors] = useState<IoTSensor[]>(mockSensors);
-  const [realTimeData, setRealTimeData] = useState<RealTimeData>(mockRealTimeData);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [sensors] = useState<IoTSensor[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
-  const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
+  const loadNotifications = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setNotifications([]);
+      setLastUpdated(null);
+      return;
+    }
+    const response = await fetch("/api/notifications?limit=100", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (!response.ok) {
+      setNotifications([]);
+      throw new Error(`Notification feed unavailable (HTTP ${response.status})`);
+    }
+    const payload = await response.json();
+    const rows = Array.isArray(payload?.data) ? payload.data : [];
+    setNotifications(rows.map((raw: any): Notification => {
+      const priority = raw.priority === "normal" ? "medium" : raw.priority || "medium";
+      const category = raw.category === "agrogrowth_agent" ? "system" : raw.category || "system";
+      const type = priority === "urgent" || priority === "critical" ? "critical" : priority === "high" ? "warning" : "info";
+      const actionUrl = raw.action_url || undefined;
+      return {
+        id: String(raw.id),
+        type,
+        typeArabic: type === "critical" ? "حرج" : type === "warning" ? "تحذير" : "معلومات",
+        category,
+        categoryArabic: category === "system" ? "نظام" : category,
+        priority,
+        priorityArabic: priority === "high" ? "عالي" : priority === "low" ? "منخفض" : "متوسط",
+        title: raw.title || "",
+        titleArabic: raw.title || "",
+        message: raw.message || "",
+        messageArabic: raw.message || "",
+        data: raw.metadata || {},
+        actionRequired: Boolean(actionUrl),
+        actions: actionUrl ? [{ label: "Open", labelArabic: "فتح", action: actionUrl, type: "primary" }] : [],
+        channels: ["in_app"],
+        source: { type: "system", id: raw.metadata?.agent_source || "agrogrowth", name: "AgroGrowth" },
+        targetUsers: [],
+        targetRoles: [],
+        timestamp: raw.created_at || new Date().toISOString(),
+        readAt: raw.read_at || undefined,
+        archivedAt: raw.archived_at || undefined,
+        isRead: Boolean(raw.read_at),
+        isArchived: Boolean(raw.archived_at),
+        isStarred: Boolean(raw.is_starred),
+      };
+    }));
+    setLastUpdated(new Date().toISOString());
+  };
 
-  // Simulate real-time updates
   useEffect(() => {
-    if (!isRealTimeEnabled) return;
-
-    const interval = setInterval(() => {
-      // Simulate sensor data updates
-      setSensors(prev => prev.map(sensor => ({
-        ...sensor,
-        lastReading: {
-          ...sensor.lastReading,
-          value: sensor.lastReading.value + (Math.random() - 0.5) * 2,
-          timestamp: new Date().toISOString()
-        },
-        batteryLevel: Math.max(0, sensor.batteryLevel - Math.random() * 0.1),
-        signalStrength: Math.min(100, Math.max(0, sensor.signalStrength + (Math.random() - 0.5) * 5))
-      })));
-
-      // Simulate new notifications occasionally
-      if (Math.random() < 0.1) { // 10% chance every interval
-        const newNotification: Notification = {
-          id: `notif-${Date.now()}`,
-          type: Math.random() > 0.7 ? 'warning' : 'info',
-          typeArabic: Math.random() > 0.7 ? 'تحذير' : 'معلومات',
-          category: 'sensor',
-          categoryArabic: 'حساس',
-          priority: 'medium',
-          priorityArabic: 'متوسط',
-          title: 'Sensor Reading Update',
-          titleArabic: 'تحديث قراءة الحساس',
-          message: 'New sensor reading detected with slight variation.',
-          messageArabic: 'تم اكتشاف قراءة جديدة للحساس مع تغير طفيف.',
-          actionRequired: false,
-          channels: ['in_app'],
-          source: {
-            type: 'iot_sensor',
-            id: 'sensor-001',
-            name: 'Soil Moisture Sensor #1'
-          },
-          targetUsers: ['user-001'],
-          targetRoles: ['farmer'],
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          isArchived: false,
-          isStarred: false
-        };
-        
-        setNotifications(prev => [newNotification, ...prev.slice(0, 49)]);
+    let active = true;
+    const refresh = async () => {
+      try {
+        if (active) await loadNotifications();
+      } catch (error) {
+        console.error("Unable to refresh persisted notifications:", error);
       }
-    }, 5000); // Update every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [isRealTimeEnabled]);
+    };
+    void refresh();
+    const interval = window.setInterval(refresh, 60_000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, []);
 
   // Filter notifications
   const filteredNotifications = notifications.filter(notification => {
@@ -857,62 +539,23 @@ export default function NotificationCenter() {
           </div>
         </div>
         
-        <div className="flex items-center space-x-3 rtl:space-x-reverse">
-          <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <Label className="text-sm">
-              {isArabic ? 'المراقبة اللحظية' : 'Real-time Monitoring'}
-            </Label>
-            <Switch 
-              checked={isRealTimeEnabled} 
-              onCheckedChange={setIsRealTimeEnabled}
-            />
-            {isRealTimeEnabled && (
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            )}
-          </div>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{isArabic ? "تحديث من قاعدة البيانات" : "Database-backed feed"}</span>
+          <Button variant="outline" size="sm" onClick={() => void loadNotifications()}>
+            <RefreshCw className="h-4 w-4 mr-2" />{isArabic ? "تحديث" : "Refresh"}
           </Button>
         </div>
       </div>
 
-      {/* Real-time Status Bar */}
-      {isRealTimeEnabled && (
-        <Card className="bg-gradient-to-r from-green-500 to-blue-600 text-white">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <Satellite className="h-4 w-4" />
-                  <span className="text-sm opacity-90">{isArabic ? 'الحساسات المتصلة' : 'Connected Sensors'}</span>
-                </div>
-                <p className="text-lg font-bold">{realTimeData.systemHealth.connectedSensors}/{realTimeData.systemHealth.totalSensors}</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <Zap className="h-4 w-4" />
-                  <span className="text-sm opacity-90">{isArabic ? 'زمن الاستجابة' : 'Data Latency'}</span>
-                </div>
-                <p className="text-lg font-bold">{realTimeData.systemHealth.dataLatency}ms</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <Activity className="h-4 w-4" />
-                  <span className="text-sm opacity-90">{isArabic ? 'معدل الأخطاء' : 'Error Rate'}</span>
-                </div>
-                <p className="text-lg font-bold">{realTimeData.systemHealth.errorRate}%</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span className="text-sm opacity-90">{isArabic ? 'آخر تحديث' : 'Last Update'}</span>
-                </div>
-                <p className="text-sm">{new Date(realTimeData.timestamp).toLocaleTimeString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Database className="h-4 w-4 text-emerald-600" />
+            <span>{isArabic ? "الإشعارات المعروضة محفوظة في قاعدة البيانات، وليست بيانات تجريبية." : "Displayed notifications are persisted database records, not demo data."}</span>
+          </div>
+          <span className="text-xs text-muted-foreground">{isArabic ? "آخر تحديث: " : "Last refresh: "}{lastUpdated ? new Date(lastUpdated).toLocaleString() : (isArabic ? "غير متوفر" : "Unavailable")}</span>
+        </CardContent>
+      </Card>
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -1208,6 +851,13 @@ export default function NotificationCenter() {
         {/* Sensors Tab */}
         <TabsContent value="sensors" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sensors.length === 0 && (
+              <Card className="md:col-span-2 lg:col-span-3">
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  {isArabic ? "لا توجد حساسات فعلية مسجلة لهذا الحساب أو لم يتم ربط تدفق قراءاتها بعد. لن نعرض قياسات تجريبية." : "No real sensors are registered for this account or a reading stream is not connected. Demo readings are not shown."}
+                </CardContent>
+              </Card>
+            )}
             {sensors.map((sensor) => (
               <Card key={sensor.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
