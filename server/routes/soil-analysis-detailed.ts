@@ -199,7 +199,7 @@ async function persistSoilReport(req: import("express").Request, soilData: RawSo
     .insert({
       farm_id: section.farm_id,
       section_id: section.id,
-      analysis_type: "lab",
+      analysis_type: "manual", // User-entered, unverified measurements; not a confirmed lab result.
       sensor_data: soilData,
       analysis_result: report,
       recommendations: Array.isArray(report.recommendations) ? report.recommendations : [],
@@ -343,7 +343,7 @@ export const listSoilAnalysisReports: RequestHandler = async(req,res)=>{
     const { data, error } = await db
       .from("soil_analyses")
       .select("id,section_id,farm_id,analysis_type,analyzed_at,created_at,sensor_data,analysis_result")
-      .eq("analysis_type","lab")
+       .in("analysis_type",["lab","manual"])
       .order("analyzed_at",{ascending:false})
       .limit(limit);
     if (error) throw error;
@@ -371,7 +371,7 @@ export const getSoilAnalysisReport: RequestHandler = async(req,res)=>{
     const { data, error } = await db
       .from("soil_analyses")
       .select("id,sensor_data,analysis_result,recommendations,analyzed_at,created_at")
-      .eq("analysis_type","lab")
+      .in("analysis_type",["lab","manual"])
       .eq("id", req.params.analysisId)
       .maybeSingle();
     if (error) throw error;
