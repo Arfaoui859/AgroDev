@@ -73,14 +73,14 @@ async def analyze_pest_problem(request: PestAnalysisRequest):
     """
     تحليل شامل لمشكلة الآفات وتقديم التوصيات
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "PEST_MODEL_NOT_VALIDATED",
-                "message": "The current pest analysis uses synthetic model data and is disabled for production diagnosis.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "PEST_MODEL_NOT_VALIDATED",
+            "message": "The current pest analysis uses synthetic model data and is disabled for production diagnosis.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(f"Analyzing pest problem for crop: {request.crop_type}")
@@ -159,14 +159,14 @@ async def recommend_treatment(request: TreatmentRecommendationRequest):
     """
     توصية العلاج المناسب للآفة المحددة
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "TREATMENT_EVIDENCE_NOT_VALIDATED",
-                "message": "Treatment recommendations require verified pest identification and an evidence-backed treatment registry.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "TREATMENT_EVIDENCE_NOT_VALIDATED",
+            "message": "Treatment recommendations require verified pest identification and an evidence-backed treatment registry.",
+            "production_ready": False,
+        },
+    )
 
     try:
         # إنشاء بيانات وهمية للتوصية
@@ -307,14 +307,14 @@ async def get_treatment_schedule(
     """
     إنشاء جدولة العلاج للآفة المحددة
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "TREATMENT_SCHEDULE_NOT_IMPLEMENTED",
-                "message": "No verified treatment schedule registry is configured; mock treatment schedules are disabled.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "TREATMENT_SCHEDULE_NOT_IMPLEMENTED",
+            "message": "No verified treatment schedule registry is configured; mock treatment schedules are disabled.",
+            "production_ready": False,
+        },
+    )
 
     try:
         # إنشاء توصيات وهمية للجدولة
