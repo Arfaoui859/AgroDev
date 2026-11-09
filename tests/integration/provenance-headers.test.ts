@@ -116,19 +116,20 @@ describe("💧 Weather-irrigation serves real data or an explicit 503", () => {
     }
   });
 
-  test("unknown station is a 404, not fabricated weather", async () => {
+  test("unknown station does not receive invented weather", async () => {
     const res = await request(app).get(
       "/api/weather-irrigation/forecast/does-not-exist",
     );
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
+    expect(res.body.dataAvailable).toBe(false);
+    expect(res.body.isRealData).toBe(false);
   });
 
-  test("alerts for an unknown station is a 404, not a crash", async () => {
-    // Regression: /alerts/:stationId passed a null forecast into the alerts
-    // generator, which threw on forecast.forEach and killed the process.
+  test("alerts stay unavailable until a verified station feed is connected", async () => {
     const res = await request(app).get(
       "/api/weather-irrigation/alerts/does-not-exist",
     );
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(503);
+    expect(res.body.dataAvailable).toBe(false);
   });
 });
