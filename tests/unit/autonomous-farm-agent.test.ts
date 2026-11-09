@@ -97,7 +97,21 @@ describe("Autonomous Farm Agent event evaluation", () => {
     const event = events.find((item) => item.type === "agent_disease_followup");
     expect(event?.priority).toBe("high");
     expect(event?.evidence.diagnosis_requires_field_verification).toBe(true);
+    expect(event?.recommendedActions.length).toBeGreaterThan(0);
     expect(event?.message).toContain("ليست تأكيداً مستقلاً للتشخيص");
+  });
+
+  test("sorts high-priority operational events before normal reminders", () => {
+    const events = buildFarmAgentEvents({
+      farms: [{ id: "farm-1", name: "North field" }],
+      cultivations: [],
+      soilAnalyses: [],
+      sensors: [{ id: "sensor-1", farm_id: "farm-1", status: "inactive" }],
+      now,
+    });
+    expect(events[0].priority).toBe("high");
+    expect(events[events.length - 1].priority).toBe("normal");
+    expect(events.every((event) => event.recommendedActions.length > 0)).toBe(true);
   });
 
   test("does not reopen a plant detection already marked recovered", () => {
