@@ -2,13 +2,14 @@ import crypto from "crypto";
 import multer from "multer";
 import type { Request, Response, RequestHandler } from "express";
 import { scopedClientFromAuthHeader, supabaseAdmin } from "../lib/supabase";
+import { requireRealImages, uploadError } from "../middleware/upload";
 
 const diseaseEvidenceUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, callback) => {
     if (["image/jpeg", "image/png", "image/webp"].includes(file.mimetype)) callback(null, true);
-    else callback(new Error("Only JPEG, PNG and WebP images are accepted."));
+    else callback(uploadError({ message: "Only JPEG, PNG and WebP images are accepted." }));
   },
 }).single("file");
 
@@ -17,6 +18,7 @@ const allowedSeverity = new Set(["low", "moderate", "medium", "high", "critical"
 
 export const createAssistantDiseaseDetection: RequestHandler[] = [
   diseaseEvidenceUpload,
+  requireRealImages(),
   async (req: Request, res: Response) => {
     const userId = req.userId;
     const db = req.identitySource === "jwt" ? scopedClientFromAuthHeader(req.header("authorization")) : null;
