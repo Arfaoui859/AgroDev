@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
+import { supabase } from '@/lib/supabase';
 
 export interface Notification {
   id: string;
@@ -55,9 +56,7 @@ export const useNotifications = () => {
   return context;
 };
 
-// The backend exposes demo notifications until a per-user feed exists. They are
-// mapped to this context's shape and disclosed via the server's provenance
-// header; the client never invents farm-specific alerts of its own.
+// Notifications are loaded from the authenticated, user-scoped Supabase feed.
 
 const CLIENT_TYPE: Record<string, Notification['type']> = {
   critical: 'urgent',
@@ -93,11 +92,17 @@ interface ServerNotification {
   actionRequired?: boolean;
   actions?: Array<{ label?: string; labelArabic?: string; action?: string }>;
   data?: Record<string, unknown>;
+  read_at?: string | null;
+  created_at?: string;
+  action_url?: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 function mapServerNotification(raw: ServerNotification): Notification {
   const firstAction = raw.actions?.[0];
-  const category = raw.category ?? 'system';
+  const rawCategory = raw.category ?? 'system';
+  const category = rawCategory === 'agrogrowth_agent' ? 'alert' : rawCategory;
+  const priority = raw.priority === 'normal' ? 'medium' : raw.priority ?? 'medium';
   return {
     id: String(raw.id),
     title: raw.title ?? '',
@@ -107,17 +112,17 @@ function mapServerNotification(raw: ServerNotification): Notification {
     type: CLIENT_TYPE[raw.type ?? 'info'] ?? 'info',
     category: (category as Notification['category']) ?? 'system',
     categoryArabic: raw.categoryArabic ?? CATEGORY_ARABIC[category] ?? 'نظام',
-    priority: raw.priority ?? 'medium',
-    isRead: Boolean(raw.isRead),
-    timestamp: raw.timestamp ?? new Date().toISOString(),
+    priority,
+    isRead: Boolean(raw.read_at || raw.isRead),
+    timestamp: raw.created_at ?? raw.timestamp ?? new Date().toISOString(),
     action: firstAction
       ? {
           label: firstAction.label ?? '',
           labelArabic: firstAction.labelArabic ?? firstAction.label ?? '',
-          url: firstAction.action ?? '#',
+          url: raw.action_url ?? firstAction.action ?? '#',
         }
-      : undefined,
-    metadata: raw.data,
+      : raw.action_url ? { label: 'Open', labelArabic: 'فتح', url: raw.action_url } : undefined,
+    metadata: raw.metadata ?? raw.data,
   };
 }
 
@@ -130,7 +135,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const refreshNotifications = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/notifications');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setNotifications([]);
+        setProvenance({ simulated: false });
+        return;
+      }
+      const response = await fetch('/api/notifications', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const body = await response.json();
       const list: ServerNotification[] = Array.isArray(body?.data) ? body.data : [];
@@ -178,22 +191,51 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         notification.id === id ? { ...notification, isRead: true } : notification
       )
     );
-    void fetch(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'PATCH' }).catch(() => {});
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
+        method: 'PATCH', headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+    })();
   };
 
   const markAllAsRead = () => {
     setNotifications(prev =>
       prev.map(notification => ({ ...notification, isRead: true }))
     );
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        await fetch('/api/notifications/bulk', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ action: 'read', ids: notifications.map((item) => item.id) }),
+        });
+      }
+    })();
   };
 
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
-    void fetch(`/api/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) await fetch(`/api/notifications/${encodeURIComponent(id)}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+    })();
   };
 
   const clearAllNotifications = () => {
+    const ids = notifications.map((item) => item.id);
     setNotifications([]);
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token && ids.length) await fetch('/api/notifications/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: 'delete', ids }),
+      });
+    })();
   };
 
   const getNotificationsByCategory = (category: string) => {
