@@ -18,14 +18,14 @@
     "aluminium_extractable": "mg/kg",
     "boron_extractable": "mg/kg",
     "calcium_extractable": "mg/kg",
-    "carbon_organic": "mg/kg",
-    "carbon_total": "mg/kg",
+    "carbon_organic": "g/kg",
+    "carbon_total": "g/kg",
     "copper_extractable": "mg/kg",
     "electrical_conductivity": "dS/m",
     "iron_extractable": "mg/kg",
     "magnesium_extractable": "mg/kg",
     "manganese_extractable": "mg/kg",
-    "nitrogen_total": "mg/kg",
+    "nitrogen_total": "g/kg",
     "ph": null,
     "phosphorus_extractable": "mg/kg",
     "potassium_extractable": "mg/kg",
@@ -42,5 +42,10 @@
     "phosphorus_extractable": 2111,
     "zinc_extractable": 2111
   },
-  "status": "column_mapping_valid"
+  "status": "column_mapping_valid",
+  "unit_overrides_applied": {
+    "carbon_organic": "g/kg",
+    "carbon_total": "g/kg",
+    "nitrogen_total": "g/kg"
+  }
 }
