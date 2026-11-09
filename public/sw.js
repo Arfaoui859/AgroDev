@@ -1,7 +1,7 @@
 // AgroGrowth Service Worker
 // Version 1.0.0
 
-const CACHE_NAME = "agrogrowth-v1.0.0";
+const CACHE_NAME = "agrogrowth-v1.0.1";
 const OFFLINE_URL = "/offline.html";
 
 // Assets to cache for offline functionality
@@ -15,7 +15,6 @@ const STATIC_CACHE_URLS = [
 // API endpoints to cache
 const API_CACHE_URLS = [
   "/api/farm-management/overview",
-  "/api/notifications",
   "/api/weather/coordinates",
 ];
 
@@ -79,6 +78,19 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Never cache authenticated or user-private API responses. Cache Storage is
+  // shared by tabs on this browser profile and is not an account-isolation layer.
+  const privateApi =
+    url.pathname.startsWith("/api/notifications") ||
+    url.pathname.startsWith("/api/assistant") ||
+    url.pathname.startsWith("/api/farm-management") ||
+    url.pathname.startsWith("/api/sensors") ||
+    url.pathname.startsWith("/api/real-time-data");
+  if (request.headers.has("Authorization") || privateApi) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   // Skip non-GET requests
   if (request.method !== "GET") {
