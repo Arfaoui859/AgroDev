@@ -10,6 +10,15 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- policies written against auth.uid() behave identically.
 CREATE SCHEMA IF NOT EXISTS auth;
 
+-- Minimal auth.users table for exercising the production signup trigger in CI.
+-- Supabase owns the real table; this shim is isolated to the disposable test DB.
+CREATE TABLE IF NOT EXISTS auth.users (
+  id uuid PRIMARY KEY,
+  email text,
+  raw_user_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  email_confirmed_at timestamptz
+);
+
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE AS $$
   SELECT NULLIF(
