@@ -129,10 +129,18 @@ export const createRevenue: RequestHandler = async (req, res) => {
   const db = dbFor(req);
   if (!db) return unavailable(res);
   const body = req.body ?? {};
-  const amount = Number(body.amount ?? body.netRevenue);
-  const date = String(body.date ?? body.revenue_date ?? "");
-  if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return res.status(400).json({ success: false, code: "INVALID_REVENUE", message: "تحقق من المبلغ والتاريخ." });
+  const amount = Number(body.amount ?? body.totalRevenue ?? body.netRevenue);
+  const date = String(body.date ?? body.revenue_date ?? body.saleDate ?? "");
+  const quantity = body.quantity === "" || body.quantity === undefined || body.quantity === null ? null : Number(body.quantity);
+  const unitPrice = body.unitPrice === "" || body.unitPrice === undefined || body.unitPrice === null ? null : Number(body.unitPrice);
+  const transportationCost = Number(body.transportationCost ?? 0);
+  const marketingCost = Number(body.marketingCost ?? 0);
+  if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      (quantity !== null && (!Number.isFinite(quantity) || quantity <= 0)) ||
+      (unitPrice !== null && (!Number.isFinite(unitPrice) || unitPrice <= 0)) ||
+      !Number.isFinite(transportationCost) || transportationCost < 0 ||
+      !Number.isFinite(marketingCost) || marketingCost < 0) {
+    return res.status(400).json({ success: false, code: "INVALID_REVENUE", message: "تحقق من المبلغ والكمية والسعر والتاريخ والمصاريف." });
   }
   const payload = {
     user_id: req.userId,
@@ -142,11 +150,18 @@ export const createRevenue: RequestHandler = async (req, res) => {
     currency: String(body.currency ?? "TND").slice(0, 3),
     revenue_date: date,
     description: String(body.description ?? "").slice(0, 2000),
-    quantity: Number.isFinite(Number(body.quantity)) && body.quantity !== "" ? Number(body.quantity) : null,
+    quantity,
     unit: body.unit ? String(body.unit).slice(0, 40) : null,
     buyer: body.buyer ? String(body.buyer).slice(0, 160) : null,
     market_location: body.marketLocation ? String(body.marketLocation).slice(0, 160) : null,
     payment_status: String(body.paymentStatus ?? "received").slice(0, 40),
+    variety_name: String(body.varietyName ?? "").slice(0, 120),
+    unit_price: unitPrice,
+    quality_grade: body.qualityGrade ? String(body.qualityGrade).slice(0, 30) : null,
+    harvest_date: body.harvestDate || null,
+    storage_days: Number.isInteger(Number(body.storageDays)) && Number(body.storageDays) >= 0 ? Number(body.storageDays) : 0,
+    transportation_cost: transportationCost,
+    marketing_cost: marketingCost,
   };
   const { data, error } = await db.from("farm_revenues").insert(payload).select("*").single();
   if (error) {
@@ -174,14 +189,29 @@ export const updateRevenue: RequestHandler = async (req, res) => {
   const db = dbFor(req);
   if (!db) return unavailable(res);
   const body = req.body ?? {};
-  const amount = Number(body.amount ?? body.netRevenue);
-  const date = String(body.date ?? body.revenue_date ?? "");
-  if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  const amount = Number(body.amount ?? body.totalRevenue ?? body.netRevenue);
+  const date = String(body.date ?? body.revenue_date ?? body.saleDate ?? "");
+  const transportationCost = Number(body.transportationCost ?? 0);
+  const marketingCost = Number(body.marketingCost ?? 0);
+  if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isFinite(transportationCost) || transportationCost < 0 ||
+      !Number.isFinite(marketingCost) || marketingCost < 0) {
     return res.status(400).json({ success: false, code: "INVALID_REVENUE" });
   }
   const { data, error } = await db.from("farm_revenues").update({
     amount, revenue_date: date, description: String(body.description ?? "").slice(0, 2000),
     crop_related: body.cropRelated ? String(body.cropRelated).slice(0, 100) : null,
+    quantity: body.quantity === "" || body.quantity === undefined ? null : Number(body.quantity),
+    unit: body.unit ? String(body.unit).slice(0, 40) : null,
+    buyer: body.buyer ? String(body.buyer).slice(0, 160) : null,
+    market_location: body.marketLocation ? String(body.marketLocation).slice(0, 160) : null,
+    variety_name: String(body.varietyName ?? "").slice(0, 120),
+    unit_price: body.unitPrice === "" || body.unitPrice === undefined ? null : Number(body.unitPrice),
+    quality_grade: body.qualityGrade ? String(body.qualityGrade).slice(0, 30) : null,
+    harvest_date: body.harvestDate || null,
+    storage_days: Number.isInteger(Number(body.storageDays)) && Number(body.storageDays) >= 0 ? Number(body.storageDays) : 0,
+    transportation_cost: transportationCost,
+    marketing_cost: marketingCost,
     updated_at: new Date().toISOString(),
   }).eq("id", req.params.id).eq("user_id", req.userId).select("*").maybeSingle();
   if (error) {
@@ -209,20 +239,22 @@ export const getFinancialSummary: RequestHandler = async (req, res) => {
   if (!db) return unavailable(res);
   const [expensesResult, revenuesResult] = await Promise.all([
     db.from("farm_expenses").select("amount,category").eq("user_id", req.userId),
-    db.from("farm_revenues").select("amount").eq("user_id", req.userId),
+    db.from("farm_revenues").select("amount,transportation_cost,marketing_cost").eq("user_id", req.userId),
   ]);
   if (expensesResult.error || revenuesResult.error) return unavailable(res);
   const expenses = expensesResult.data ?? [];
   const revenues = revenuesResult.data ?? [];
   const totalExpenses = expenses.reduce((sum, row) => sum + Number(row.amount), 0);
-  const totalRevenue = revenues.reduce((sum, row) => sum + Number(row.amount), 0);
+  const grossRevenue = revenues.reduce((sum, row) => sum + Number(row.amount), 0);
+  const salesCosts = revenues.reduce((sum, row) => sum + Number(row.transportation_cost ?? 0) + Number(row.marketing_cost ?? 0), 0);
+  const totalRevenue = grossRevenue - salesCosts;
   const categoryBreakdown = expenses.reduce((totals: Record<string, number>, row) => {
     totals[row.category] = (totals[row.category] ?? 0) + Number(row.amount);
     return totals;
   }, {});
   return res.json({
     success: true,
-    data: { totalExpenses, totalRevenue, netProfit: totalRevenue - totalExpenses, categoryBreakdown, expenseCount: expenses.length, revenueCount: revenues.length },
+    data: { totalExpenses, grossRevenue, salesCosts, totalRevenue, netProfit: totalRevenue - totalExpenses, categoryBreakdown, expenseCount: expenses.length, revenueCount: revenues.length },
     provenance: { source: "supabase.farm_expenses+farm_revenues", persisted: true },
   });
 };
