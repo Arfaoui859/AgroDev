@@ -78,6 +78,8 @@ interface ChatMessage {
     note?: string;
     disclaimer?: string;
     usedAgents?: string[];
+    /** Server trace identifier for support and log correlation. */
+    correlationId?: string;
     /** Persisted disease record ID used to refresh its private image URL. */
     diseaseRecordId?: string;
     cultivationId?: string;
@@ -838,7 +840,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
    */
   const callAdvisorApi = async (
     messageContent: string
-  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string; disclaimer?: string; modelSource?: string; farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable'; contextSummary?: string[]; usedAgents?: string[] }> => {
+  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string; disclaimer?: string; modelSource?: string; farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable'; contextSummary?: string[]; usedAgents?: string[]; correlationId?: string }> => {
     const history = messages.slice(-6).map(m => ({
       role: m.type === 'user' ? 'user' : 'assistant',
       content: m.content
@@ -852,10 +854,13 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       },
       body: JSON.stringify({ message: messageContent, language, history })
     });
+    const payload = await response.json();
     if (!response.ok) {
-      throw new Error(`Advisor API error: ${response.status}`);
+      const requestId = payload?.correlationId || response.headers.get('X-Correlation-Id');
+      const detail = typeof payload?.error === 'string' ? payload.error : 'Advisor API request failed';
+      throw new Error(`${detail} (HTTP ${response.status}${requestId ? `, ref ${requestId}` : ''})`);
     }
-    return response.json();
+    return { ...payload, correlationId: payload?.correlationId || response.headers.get('X-Correlation-Id') || undefined };
   };
 
   const generateAIResponse = async (userInput: string): Promise<ChatMessage> => {
@@ -880,6 +885,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           note: result.note,
           disclaimer: result.disclaimer,
           usedAgents: result.usedAgents?.slice(0, 8),
+          correlationId: result.correlationId,
           suggestions: quickActions.slice(0, 4),
           relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
         },
@@ -1351,6 +1357,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                                 {message.metadata.note && <p>{message.metadata.note}</p>}
                                 {message.metadata.disclaimer && <p>{message.metadata.disclaimer}</p>}
                                 {message.metadata.usedAgents?.length ? <p>{language === 'ar' ? 'المجالات المستعملة: ' : language === 'fr' ? 'Agents utilisés : ' : 'Agents used: '}{message.metadata.usedAgents.join(' · ')}</p> : null}
+                                {message.metadata.correlationId && <p className="font-mono text-[10px] opacity-70">{language === 'ar' ? 'مرجع التتبّع: ' : language === 'fr' ? 'Référence : ' : 'Trace ID: '}{message.metadata.correlationId}</p>}
                                 {message.metadata.contextSummary?.map((fact, index) => <p key={index}>• {fact}</p>)}
                               </div>
                             )}
