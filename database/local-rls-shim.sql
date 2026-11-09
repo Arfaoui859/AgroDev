@@ -32,7 +32,7 @@ IMMUTABLE
 AS $storage_folder$
   SELECT CASE
     WHEN object_name IS NULL OR object_name = '' THEN ARRAY[]::text[]
-    ELSE string_to_array(trim(both '/' from object_name), '/')[1:greatest(array_length(string_to_array(trim(both '/' from object_name), '/'), 1) - 1, 0)]
+    ELSE (string_to_array(trim(both '/' from object_name), '/'))[1:greatest(array_length(string_to_array(trim(both '/' from object_name), '/'), 1) - 1, 0)]
   END
 $storage_folder$;
 
