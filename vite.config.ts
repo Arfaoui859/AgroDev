@@ -49,6 +49,38 @@ export default defineConfig(({ command }) => {
           assetFileNames: "assets/[name]-[hash][extname]",
           chunkFileNames: "assets/[name]-[hash].js",
           entryFileNames: "assets/[name]-[hash].js",
+          // Keep framework and heavyweight shared dependencies out of the SPA
+          // entry chunk. Route-level React.lazy() imports remain independently
+          // loadable; these stable vendor groups avoid duplicating shared code.
+          manualChunks(id) {
+            if (!id.includes("/node_modules/")) return;
+
+            const packagePath = id.split("/node_modules/")[1] ?? "";
+
+            if (/^(react|react-dom|scheduler)\\//.test(packagePath)) {
+              return "vendor-react";
+            }
+            if (/^(react-router-dom|@remix-run\\/router)\\//.test(packagePath)) {
+              return "vendor-router";
+            }
+            if (packagePath.startsWith("@supabase/")) return "vendor-supabase";
+            if (packagePath.startsWith("@tanstack/")) return "vendor-query";
+            if (packagePath.startsWith("@radix-ui/")) return "vendor-radix";
+            if (
+              packagePath.startsWith("react-hook-form/") ||
+              packagePath.startsWith("@hookform/") ||
+              packagePath.startsWith("zod/")
+            ) {
+              return "vendor-forms";
+            }
+            if (
+              packagePath.startsWith("date-fns/") ||
+              packagePath.startsWith("react-day-picker/")
+            ) {
+              return "vendor-date";
+            }
+            if (packagePath.startsWith("lucide-react/")) return "vendor-icons";
+          },
         },
       },
     },
