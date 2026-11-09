@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Bot, LayoutDashboard, Sprout, Tractor } from "lucide-react";
@@ -20,6 +20,8 @@ export default function UnifiedFarmerDashboard() {
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const initialTab = requestedTab === "farm" || requestedTab === "ai" || requestedTab === "assistant" ? requestedTab : "overview";
+  const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => setActiveTab(initialTab), [initialTab]);
   const copy = {
     ar: {
       eyebrow: "مساحة العمل الزراعية",
@@ -76,7 +78,7 @@ export default function UnifiedFarmerDashboard() {
         </div>
       </header>
 
-      <Tabs defaultValue={initialTab} dir={dir} className="space-y-5">
+      <Tabs value={activeTab} onValueChange={setActiveTab} dir={dir} className="space-y-5">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-xl bg-white p-2 shadow-sm md:grid-cols-4">
           <TabsTrigger value="overview" className="min-h-11 gap-2 rounded-lg">
             <LayoutDashboard className="h-4 w-4" />
