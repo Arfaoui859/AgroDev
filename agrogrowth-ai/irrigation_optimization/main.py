@@ -71,6 +71,15 @@ async def optimize_irrigation_schedule(request: IrrigationOptimizationRequest):
     """
     تحسين جدولة الري بناءً على المعطيات المدخلة
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "IRRIGATION_MODEL_NOT_VALIDATED",
+                "message": "The current irrigation optimizer uses synthetic training data and is disabled for production scheduling.",
+                "production_ready": False,
+            },
+        )
+
     try:
         logger.info(f"Optimizing irrigation for crop: {request.crop_type}, stage: {request.growth_stage}")
         
@@ -114,6 +123,15 @@ async def calculate_water_requirements(request: WaterRequirementRequest):
     """
     حساب الاحتياجات المائية للمحصول
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "WEATHER_INPUTS_INCOMPLETE",
+                "message": "This endpoint previously injected fixed wind-speed and solar-radiation values. Supply a validated ET0/weather source before calculating water requirements.",
+                "production_ready": False,
+            },
+        )
+
     try:
         weather_data = {
             'temperature': request.temperature,
@@ -178,6 +196,15 @@ async def analyze_soil_moisture(
     """
     تحليل رطوبة التربة وتحديد الحاجة للري
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "WEATHER_INPUTS_INCOMPLETE",
+                "message": "This endpoint previously injected fixed weather values. A verified weather/ET0 input is required for a defensible irrigation assessment.",
+                "production_ready": False,
+            },
+        )
+
     try:
         soil_data = {
             'moisture_percentage': current_moisture,
@@ -241,6 +268,15 @@ async def get_water_conservation_tips(crop_type: str):
     """
     نصائح توفير المياه للمحصول المحدد
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "LIVE_WEATHER_NOT_CONFIGURED",
+                "message": "This endpoint previously generated tips from mock weather and a fixed irrigation method; mock context is disabled.",
+                "production_ready": False,
+            },
+        )
+
     try:
         # Mock current analysis for tips generation
         current_analysis = {
