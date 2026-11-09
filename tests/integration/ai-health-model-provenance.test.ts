@@ -75,7 +75,7 @@ describe("🧪 AI health model provenance", () => {
       throw error;
     });
 
-    const res = await request(app).get("/api/ai/health").expect(200);
+    const res = await request(app).get("/api/ai/health?force=true").expect(200);
     const soil = res.body.services.find((s: any) => s.key === "soil_analysis");
 
     expect(soil.status).toBe("rate_limited");
