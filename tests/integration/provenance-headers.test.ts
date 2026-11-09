@@ -22,7 +22,7 @@ beforeAll(() => {
   app = createServer();
 });
 
-describe("🗂  Simulated-data provenance headers", () => {
+describe("🗂  Fixture-backed data is disabled", () => {
   const simulatedPaths = [
     "/api/admin/overview",
     "/api/government-dashboard/overview",
@@ -91,21 +91,19 @@ describe("🗂  Simulated-data provenance headers", () => {
   ];
 
   test.each(simulatedPaths)(
-    "%s is labelled simulated",
+    "%s is unavailable rather than returning simulated data",
     async (path) => {
       const res = await request(app).get(path);
-      // The handler may 404 if a route name differs; only assert provenance on
-      // a real response so the test does not become a route-name lock.
       if (res.status !== 404) {
-        expect(res.headers["x-data-provenance"]).toBe("simulated");
+        expect(res.status).toBe(503);
+        expect(res.headers["x-data-provenance"]).toBe("simulated-disabled");
         expect(res.headers["x-is-real-data"]).toBe("false");
+        expect(res.body.code).toBe("SIMULATED_DATA_DISABLED");
       }
     },
   );
 
-  test("the fixture-backed modules actually return payloads", async () => {
-    // Guards against the provenance assertion above silently passing on a 404:
-    // these paths are consumed by five SPA screens, so they must resolve.
+  test("fixture-backed business modules fail closed", async () => {
     for (const path of [
       "/api/saas/metrics",
       "/api/logistics/vehicles",
@@ -113,7 +111,8 @@ describe("🗂  Simulated-data provenance headers", () => {
       "/api/marketplace/listings",
     ]) {
       const res = await request(app).get(path);
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(503);
+      expect(res.body.code).toBe("SIMULATED_DATA_DISABLED");
     }
   });
 
