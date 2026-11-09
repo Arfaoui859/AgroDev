@@ -56,7 +56,7 @@ The workflow `.github/workflows/agrogrowth-autonomous-agent.yml` invokes the pro
 
 The new API, UI, migration and workflow are committed to `feat/soil-analysis-professional-report`.
 
-The workflow schedule runs only after the workflow file is merged into the repository's default branch. Ensure the main Render service deploys a branch containing these commits. The `render.yaml` main service branch is now set to `feat/soil-analysis-professional-report`. Render must still sync/apply the Blueprint and complete a successful deploy; editing this file does not itself change the live service.
+The scheduled workflow has also been committed as a standalone file to the repository's current default branch (`feat/ai-integration-production-hardening`), so the scheduler does not require merging this entire feature branch. It safely skips until both GitHub secrets are configured. The feature branch is substantially ahead of the default branch; do not merge the whole branch blindly. Ensure the main Render service deploys a branch containing these commits. The `render.yaml` main service branch is now set to `feat/soil-analysis-professional-report`. Render must still sync/apply the Blueprint and complete a successful deploy; editing this file does not itself change the live service.
 
 **Cost and duplicate-service warning:** the current Blueprint declares `starter` and `standard` plans and service names that do not all match the live URLs shown in the operator dashboard. Do not apply the entire Blueprint until the existing Render services and expected charges are reviewed. Prefer changing the existing main web service's branch in its Render settings and adding the required environment variables; do not create duplicate Python services just to make the YAML green.
 
