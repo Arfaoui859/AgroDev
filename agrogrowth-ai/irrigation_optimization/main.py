@@ -80,44 +80,6 @@ async def optimize_irrigation_schedule(request: IrrigationOptimizationRequest):
         },
     )
 
-    try:
-        logger.info(f"Optimizing irrigation for crop: {request.crop_type}, stage: {request.growth_stage}")
-        
-        input_data = {
-            'crop_type': request.crop_type,
-            'growth_stage': request.growth_stage,
-            'weather_data': request.weather_data.model_dump(),
-            'soil_data': request.soil_data.model_dump(),
-            'farm_size': request.farm_size,
-            'days_ahead': request.days_ahead
-        }
-        
-        result = irrigation_optimizer.optimize_irrigation_schedule(input_data)
-        
-        # The numeric schedule is synthetic; a configured LLM adds a labelled
-        # advisory explaining the plan and the water savings to the farmer.
-        advisory = narrate(
-            result,
-            task="Explain this irrigation schedule and how to follow it.",
-            language=request.language,
-            context={"crop_type": request.crop_type, "growth_stage": request.growth_stage},
-        )
-        if advisory:
-            result['advisory'] = advisory
-
-        return {
-            'success': True,
-            'data': result,
-            'data_source': 'synthetic-model',
-            'is_real_data': False,
-            'model_source': 'synthetic-demo',
-            'message': 'تم تحسين جدولة الري بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error in irrigation optimization: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/calculate-water-requirements")
 async def calculate_water_requirements(request: WaterRequirementRequest):
     """
@@ -131,28 +93,6 @@ async def calculate_water_requirements(request: WaterRequirementRequest):
             "production_ready": False,
         },
     )
-
-    try:
-        weather_data = {
-            'temperature': request.temperature,
-            'humidity': request.humidity,
-            'wind_speed': 5.0,
-            'solar_radiation': 25.0
-        }
-        
-        result = irrigation_optimizer._calculate_water_requirements(
-            request.crop_type, request.growth_stage, weather_data
-        )
-        
-        return {
-            'success': True,
-            'data': result,
-            'message': 'تم حساب الاحتياجات المائية بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error calculating water requirements: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/crop-water-database")
 async def get_crop_water_database():
@@ -205,34 +145,6 @@ async def analyze_soil_moisture(
         },
     )
 
-    try:
-        soil_data = {
-            'moisture_percentage': current_moisture,
-            'field_capacity': field_capacity,
-            'wilting_point': wilting_point
-        }
-        
-        weather_data = {
-            'temperature': 25.0,
-            'humidity': 60.0,
-            'wind_speed': 5.0,
-            'solar_radiation': 25.0
-        }
-        
-        analysis = irrigation_optimizer._analyze_current_conditions(
-            weather_data, soil_data, crop_type, 'vegetative'
-        )
-        
-        return {
-            'success': True,
-            'data': analysis,
-            'message': 'تم تحليل رطوبة التربة بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error analyzing soil moisture: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/recommend-irrigation-method")
 async def recommend_irrigation_method(
     crop_type: str,
@@ -276,32 +188,6 @@ async def get_water_conservation_tips(crop_type: str):
             "production_ready": False,
         },
     )
-
-    try:
-        # Mock current analysis for tips generation
-        current_analysis = {
-            'weather_conditions': {
-                'temperature': 25.0,
-                'humidity': 60.0,
-                'wind_speed': 5.0
-            }
-        }
-        
-        irrigation_method = {'recommended_method': 'drip'}
-        
-        tips = irrigation_optimizer._generate_water_conservation_tips(
-            crop_type, irrigation_method, current_analysis
-        )
-        
-        return {
-            'success': True,
-            'data': tips,
-            'message': 'تم جلب نصائح توفير المياه بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching conservation tips: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 async def health_check():
