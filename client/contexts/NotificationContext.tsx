@@ -82,7 +82,7 @@ interface ServerNotification {
   type?: string;
   category?: string;
   categoryArabic?: string;
-  priority?: Notification['priority'];
+  priority?: string;
   title?: string;
   titleArabic?: string;
   message?: string;
