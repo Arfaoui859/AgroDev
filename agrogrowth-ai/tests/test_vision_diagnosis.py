@@ -65,7 +65,7 @@ def test_no_provider_labels_heuristic():
     result = _detect()
     assert result.data_source == "heuristic"
     assert result.is_real_data is False
-    assert result.model_source == "heuristic-demo"
+    assert result.model_source == "feature-based-heuristics"
     assert result.disease_detection["detection_method"] == "feature_based_heuristics"
 
 
@@ -158,4 +158,4 @@ def test_health_reports_vision_configured_without_claiming_request_usage(monkeyp
     assert health["vision_configured"] is True
     assert health["vision_provider_configured"] is True
     assert health["model_source"] == "heuristic-demo"
-    assert "No scientific validation is implied." in health["disclaimer"]
+    assert "No Tunisia field validation is implied." in health["disclaimer"]
