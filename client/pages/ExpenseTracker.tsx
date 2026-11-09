@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -179,7 +180,11 @@ const ExpenseTracker: React.FC = () => {
         params.append('endDate', now.toISOString().split('T')[0]);
       }
       
-      const response = await fetch(`/api/expenses?${params}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('يلزم تسجيل الدخول لعرض المصاريف');
+      const response = await fetch(`/api/expenses?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -215,10 +220,13 @@ const ExpenseTracker: React.FC = () => {
       const url = editingExpense ? `/api/expenses/${editingExpense.id}` : '/api/expenses';
       const method = editingExpense ? 'PUT' : 'POST';
       
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('يلزم تسجيل الدخول لحفظ المصروف');
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(expenseData)
       });
@@ -257,8 +265,11 @@ const ExpenseTracker: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('يلزم تسجيل الدخول لحذف المصروف');
         const response = await fetch(`/api/expenses/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
         
         if (response.ok) {
