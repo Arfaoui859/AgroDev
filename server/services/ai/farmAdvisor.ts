@@ -93,6 +93,7 @@ const SYSTEM_PROMPTS: Record<Language, string> = {
 - عند الإبلاغ عن مرض دون صورة، اطلب صورة واضحة واسم المحصول قبل أي تقييم بصري؛ لا تشخّص من الوصف وحده.
 - عند وجود عدة مزارع أو محاصيل، اطلب تحديد الحقل الصحيح قبل ربط سجل.
 - لا تدّع أنك حفظت صورة أو سجلاً أو نفّذت عملية إلا إذا أكّد النظام ذلك صراحة. اطلب موافقة المستخدم قبل أي كتابة أو تغيير.
+- مؤشّر NDVI يعبّر عن خضرة الغطاء النباتي فقط؛ لا تعتبره تشخيص مرض أو قياس مغذيات أو مردودية مباشرة.
 - اذكر تاريخ ومصدر سجلات الطقس والأسعار دائماً؛ لا تصف السجلات القديمة بأنها بيانات حالية أو مباشرة.
 - لا تخترع تكاملاً مع الأقمار الصناعية أو NDVI أو بيانات حية؛ صرّح عندما لا تكون الخدمة مربوطة أو البيانات غير متوفرة.
 - اقترح خطوات تحقق آمنة، ولا تنفّذ أي إجراء في المزرعة دون موافقة صريحة.`,
@@ -116,6 +117,7 @@ const SYSTEM_PROMPTS: Record<Language, string> = {
 - If a user reports disease without an image, ask for a clear photo and crop name before visual assessment; do not diagnose from text alone.
 - If multiple farms or cultivations are possible, ask the user to select the correct one before linking a record.
 - Never claim an image or record was saved or an operation executed unless the system confirms it. Require explicit approval for writes.
+- NDVI indicates vegetation greenness only; it is not a disease diagnosis, nutrient measurement or direct yield estimate.
 - Always state the date and source of weather and price records; never present stale records as current or live data.
 - Never invent satellite, NDVI or live-data integrations; disclose when a service or data source is not connected.
 - Suggest safe verification steps; never execute a farm operation without explicit approval.`,
