@@ -420,9 +420,9 @@ export function createServer() {
   app.use("/api/soil-ai-detector", soilAiDetectorRoutes);
 
   // Soil Analysis Detailed routes (AI-powered detailed analysis)
-  app.post("/api/soil-analysis/analyze", analyzeSoilDetailed);
-  app.post("/api/soil-analysis/batch", analyzeSoilBatch);
-  app.get("/api/soil-analysis/report/:analysisId", getSoilAnalysisReport);
+  app.post("/api/soil-analysis/analyze", requireAuth, analyzeSoilDetailed);
+  app.post("/api/soil-analysis/batch", requireAuth, analyzeSoilBatch);
+  app.get("/api/soil-analysis/report/:analysisId", requireAuth, getSoilAnalysisReport);
 
   // Smart Crop Suggestions routes
   app.use("/api/smart-crop-suggestions", smartCropSuggestionsRoutes);
