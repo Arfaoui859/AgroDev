@@ -147,14 +147,12 @@ describe("🏷️ Uniform provenance contract across AI endpoints", () => {
     }
   });
 
-  test("soil analysis states it is not real inference", async () => {
+  test("soil analysis does not substitute a heuristic result when the service is down", async () => {
     const res = await request(app)
       .post("/api/ai/soil/analyze")
       .send({ sensor_data: { ph: 6.5, nitrogen: 40, phosphorus: 20, potassium: 150 } })
-      .expect(200);
-    expect(res.body.dataSource).toBe("rule-based");
-    expect(res.body.isRealData).toBe(false);
-    expect(typeof res.body.modelSource).toBe("string");
+      .expect(503);
+    expect(res.body.success).toBe(false);
   });
 
   test("crop recommendation states it is not real inference", async () => {
