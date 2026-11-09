@@ -303,6 +303,6 @@ export async function runFarmAgentScan(
     notificationsSuppressedByPreference: !notificationsEnabled,
     events,
     sources: ["farms", "crop_cultivations", "soil_analyses", "sensor_devices", "plant_disease_detections"],
-    limitations: ["No live sensor stream, weather forecast, disease image feed or market feed is evaluated by this scan.", "Alerts are in-app notifications only; push, SMS and email delivery are not configured."],
+    limitations: ["No live sensor stream, weather forecast, automatic image re-analysis or live market feed is evaluated. Existing high/critical disease-detection records are only followed up and still require field verification.", "Alerts are in-app notifications only; push, SMS and email delivery are not configured."],
   };
 }
