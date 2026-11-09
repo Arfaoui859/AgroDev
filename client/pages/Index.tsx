@@ -635,19 +635,19 @@ export default function Index() {
         if (alertsResponse?.ok) {
           const alertsData = await alertsResponse.json();
           const alerts: SystemAlert[] =
-            alertsData.notifications?.map((notif: any) => ({
+            (Array.isArray(alertsData.data) ? alertsData.data : []).map((notif: any) => ({
               id: notif.id,
               type: notif.type || "system",
-              typeArabic: notif.type_ar || "نظام",
-              severity: notif.severity || "medium",
+              typeArabic: notif.priority === "high" || notif.priority === "urgent" ? "تنبيه" : "معلومة",
+              severity: notif.priority || "medium",
               title: notif.title,
-              titleArabic: notif.title_ar || notif.title,
+              titleArabic: notif.title,
               message: notif.message,
-              messageArabic: notif.message_ar || notif.message,
+              messageArabic: notif.message,
               timestamp: notif.created_at,
-              actionRequired: notif.action_required || false,
+              actionRequired: Boolean(notif.action_url),
               href: notif.action_url,
-            })) || [];
+            }));
           setSystemAlerts(alerts);
         }
       } catch (error) {
