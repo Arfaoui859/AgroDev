@@ -436,13 +436,13 @@ function buildRuleBasedAnswer(
   if (agents.includes("finance")) {
     const financialRecords = storedRecords.filter(record =>
       /^Cultivation /.test(record) &&
-      /(?:total_cost|revenue|profit)=(-?\\d+(?:\\.\\d+)?)(?:;|\\])/i.test(record)
+      /(?:total_cost|revenue|profit)=(-?\d+(?:\.\d+)?)(?:;|\])/i.test(record)
     );
     sections.push(financialRecords.length
       ? ({
-          ar: "المعطيات المالية المسجلة (ليست تدقيقاً محاسبياً ولا توقعاً مضموناً):\\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\\n") + "\\nالأرقام من سجلات المستخدم؛ العملة والفترة وطريقة الاحتساب يلزم التثبت منها قبل قرار استثماري.",
-          fr: "Données financières enregistrées (ni audit comptable ni prévision garantie) :\\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\\n") + "\\nLes montants proviennent des enregistrements utilisateur; vérifiez devise, période et méthode de calcul avant toute décision.",
-          en: "Recorded financial figures (not an accounting audit or guaranteed forecast):\\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\\n") + "\\nFigures come from user records; verify currency, period and calculation method before investment decisions.",
+          ar: "المعطيات المالية المسجلة (ليست تدقيقاً محاسبياً ولا توقعاً مضموناً):\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\n") + "\nالأرقام من سجلات المستخدم؛ العملة والفترة وطريقة الاحتساب يلزم التثبت منها قبل قرار استثماري.",
+          fr: "Données financières enregistrées (ni audit comptable ni prévision garantie) :\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\n") + "\nLes montants proviennent des enregistrements utilisateur; vérifiez devise, période et méthode de calcul avant toute décision.",
+          en: "Recorded financial figures (not an accounting audit or guaranteed forecast):\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\n") + "\nFigures come from user records; verify currency, period and calculation method before investment decisions.",
         }[lang])
       : ({
           ar: "ما لقيتش تكاليف أو مداخيل أو أرباح رقمية مسجلة للمحاصيل في سياق الإجابة. ما باش نخترعش أرقام؛ سجّل المصاريف والمبيعات والمساحة والفترة باش نحسبوا الهامش والمردودية.",
