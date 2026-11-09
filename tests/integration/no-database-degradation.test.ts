@@ -52,18 +52,17 @@ describe("🗄️ Routes degrade gracefully with no database configured", () => 
     jest.resetModules();
   });
 
-  test("GET /api/market/all returns an honest empty summary, not 500", async () => {
+  test("GET /api/market/all refuses to fabricate prices when storage is empty", async () => {
     const res = await request(app).get("/api/market/all");
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe("success");
-    expect(res.body.data.summary.averagePrice).toBeNull();
-    expect(res.body.data.isRealData).toBe(true);
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("MARKET_DATA_NOT_AVAILABLE");
+    expect(res.body.dataAvailable).toBe(false);
   });
 
-  test("GET /api/market/trends reports a zero sample size, not 500", async () => {
+  test("GET /api/market/trends refuses to infer trends from an empty database", async () => {
     const res = await request(app).get("/api/market/trends");
-    expect(res.status).toBe(200);
-    expect(res.body.data.sampleSize).toBe(0);
+    expect(res.status).toBe(503);
+    expect(res.body.dataAvailable).toBe(false);
   });
 
   test("GET /api/fields returns an empty list, not 500", async () => {
