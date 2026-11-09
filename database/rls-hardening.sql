@@ -182,6 +182,7 @@ CREATE POLICY "Admins can manage users" ON public.users
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 DROP POLICY IF EXISTS "Users can view all public profiles" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.user_profiles;
 DROP POLICY IF EXISTS "Users can insert their own profile" ON public.user_profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON public.user_profiles;
 DROP POLICY IF EXISTS "Users can view own user_profiles" ON public.user_profiles;
@@ -384,6 +385,7 @@ CREATE POLICY "Admins manage market_predictions" ON public.market_predictions
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 DROP POLICY IF EXISTS "All users can view weather records" ON public.weather_records;
+DROP POLICY IF EXISTS "Farm owners can view their weather records" ON public.weather_records;
 DROP POLICY IF EXISTS "Anyone can read weather_records" ON public.weather_records;
 CREATE POLICY "Owners read own weather_records" ON public.weather_records
   FOR SELECT USING (public.owns_farm(farm_id));
