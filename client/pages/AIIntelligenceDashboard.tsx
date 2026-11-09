@@ -63,7 +63,8 @@ export default function AIIntelligenceDashboard(){
       <Button onClick={()=>void refresh()} disabled={loading}><RefreshCw className={"ml-2 h-4 w-4 "+(loading?"animate-spin":"")}/>فحص الخدمات الآن</Button>
     </header>
     {error&&<Alert variant="destructive"><AlertTitle>تعذّر فحص الخدمات</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-    {health?.note&&<Alert><AlertTriangle className="h-4 w-4"/><AlertDescription>{health.note}</AlertDescription></Alert>}\n    {health?.overview?.rateLimitedServices ? <p className="text-xs text-muted-foreground">ملاحظة: استجابة HTTP 429 تثبت أن الخادم ردّ على الطلب، لكنها لا تثبت أن الاستدلال بالذكاء الاصطناعي متاح أو أن النموذج يعمل.</p> : null}
+    {health?.note&&<Alert><AlertTriangle className="h-4 w-4"/><AlertDescription>{health.note}</AlertDescription></Alert>}
+    {health?.overview?.rateLimitedServices ? <p className="text-xs text-muted-foreground">ملاحظة: استجابة HTTP 429 تثبت أن الخادم ردّ على الطلب، لكنها لا تثبت أن الاستدلال بالذكاء الاصطناعي متاح أو أن النموذج يعمل.</p> : null}
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">الخدمات المتاحة</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":available+" / "+total}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">الخوادم المستجيبة</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":reachable+" / "+total}</CardContent></Card>
