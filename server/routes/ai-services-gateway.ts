@@ -860,16 +860,39 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       if (!db) {
         farmContextStatus = "unavailable";
       } else {
-        const { data: farms, error: farmsError } = await db
-          .from("farms")
-          .select("id,name,location,size_hectares")
-          .eq("owner_id", userId)
-          .limit(20);
-        if (farmsError) {
+        const [userResult, profileResult, farmsResult, publicMarketResult] = await Promise.all([
+          db.from("users").select("role,language_preference").eq("id", userId).maybeSingle(),
+          db.from("user_profiles").select("experience_years,farming_specializations,preferred_crops,location").eq("user_id", userId).maybeSingle(),
+          db.from("farms").select("id,name,location,size_hectares").eq("owner_id", userId).limit(20),
+          db.from("market_prices").select("crop_name,price_per_kg,currency,market_location,price_date,source").order("price_date", { ascending: false }).limit(10),
+        ]);
+        const basePlatformRecords: string[] = [];
+        const userRole = typeof userResult.data?.role === "string" ? userResult.data.role : "unreported";
+        basePlatformRecords.push("Authenticated AgroGrowth account role=" + userRole + "; role is context only and does not grant cross-user data access.");
+        if (typeof userResult.data?.language_preference === "string") {
+          basePlatformRecords.push("Account language preference=" + userResult.data.language_preference);
+        }
+        if (profileResult.data) {
+          if (Number.isFinite(Number(profileResult.data.experience_years))) {
+            basePlatformRecords.push("Recorded farming experience=" + profileResult.data.experience_years + " years");
+          }
+          if (Array.isArray(profileResult.data.farming_specializations) && profileResult.data.farming_specializations.length) {
+            basePlatformRecords.push("Recorded professional specializations=" + profileResult.data.farming_specializations.slice(0, 10).join(", "));
+          }
+          if (Array.isArray(profileResult.data.preferred_crops) && profileResult.data.preferred_crops.length) {
+            basePlatformRecords.push("Recorded preferred crops=" + profileResult.data.preferred_crops.slice(0, 10).join(", "));
+          }
+        }
+        if (farmsResult.error) {
           farmContextStatus = "unavailable";
-        } else if (!farms?.length) {
+        } else if (!farmsResult.data?.length) {
+          for (const price of (publicMarketResult.error ? [] : publicMarketResult.data ?? [])) {
+            basePlatformRecords.push("Recorded market price [crop=" + price.crop_name + "; price=" + price.price_per_kg + " " + (price.currency || "TND") + "/kg; market=" + price.market_location + "; date=" + price.price_date + "; source=" + (price.source || "unreported") + "]. Historical recorded quote, not guaranteed live data.");
+          }
+          farmContext = { platformRecords: basePlatformRecords };
           farmContextStatus = "no_farms";
         } else {
+          const farms = farmsResult.data;
           const farmIds = farms.map((farm: any) => farm.id);
           const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, sensorResult, satelliteResult] = await Promise.all([
             db.from("crop_cultivations")
