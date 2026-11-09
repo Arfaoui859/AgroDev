@@ -58,6 +58,31 @@ describe("Detailed soil analysis with a configured provider",()=>{
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  test("server rebuilds the provided-measurements evidence from the submitted sample",async()=>{
+    const untrustedReport = {
+      ...validReport,
+      dataQuality: {
+        ...validReport.dataQuality,
+        providedMeasurements: [{
+          name:"invented measurement", value:999, unit:"kg/ha", source:"llm",
+        }],
+      },
+    };
+    stubProviderJson(untrustedReport);
+    const res = await request(app).post("/api/soil-analysis/analyze")
+      .send({ph:6.9,moisture:30,organicMatter:2.4,nitrogen:18,nutrientUnit:"mg/kg"})
+      .expect(200);
+
+    expect(res.body.data.dataQuality.providedMeasurements).toEqual([
+      {name:"pH",value:6.9,unit:"unitless",source:"user-entered-unverified"},
+      {name:"رطوبة التربة",value:30,unit:"%",source:"user-entered-unverified"},
+      {name:"المادة العضوية",value:2.4,unit:"%",source:"user-entered-unverified"},
+      {name:"النيتروجين (N)",value:18,unit:"mg/kg",source:"user-entered-unverified"},
+    ]);
+    expect(JSON.stringify(res.body.data.dataQuality.providedMeasurements))
+      .not.toContain("invented measurement");
+  });
+
   test("provider failure is surfaced without fabricating a report",async()=>{
     global.fetch=jest.fn(async()=>new Response(JSON.stringify({error:{message:"upstream 500"}}),{status:500,headers:{"Content-Type":"application/json"}})) as unknown as typeof fetch;
     const res=await request(app).post("/api/soil-analysis/analyze").send({ph:6.9,moisture:30});
