@@ -369,6 +369,7 @@ export function createServer() {
       "/api/public/weather",
       "/api/public/stats",
       "/api/public/key-info",
+      "/api/public/create-key",
       "/api/notifications",
       "/api/notification-rules",
       "/api/notification-stats",
