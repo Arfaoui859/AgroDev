@@ -43,7 +43,8 @@ def test_health_reports_heuristic_when_onnx_model_is_unavailable(monkeypatch):
 
     health = run_health_with_detector(monkeypatch, detector)
 
-    assert health["status"] == "healthy"
+    assert health["status"] == "degraded"
+    assert health["production_ready"] is False
     assert health["model_source"] == main.DEFAULT_DISEASE_MODEL_SOURCE
     assert health["disease_classifier_loaded"] is False
     assert health["disease_classifier_source"] is None
