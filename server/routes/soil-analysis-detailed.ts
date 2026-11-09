@@ -112,6 +112,9 @@ function formatSoilDataForAI(data: RawSoilData): string {
 class AIProviderUnavailableError extends Error {
   constructor(){ super("Soil analysis AI provider is not configured"); this.name="AIProviderUnavailableError"; }
 }
+class InvalidAIReportError extends Error {
+  constructor(){ super("AI provider returned a report that does not match the required professional report schema"); this.name="InvalidAIReportError"; }
+}
 function hasSoilAIProvider(): boolean {
   return isLLMConfigured() || Boolean(AI_SERVICE_URL && AI_API_KEY);
 }
@@ -230,7 +233,7 @@ function extractAndValidateReport(raw:string):Record<string,any> {
       if(isValidProfessionalReport(value)) return value;
     } catch { /* Try next candidate. */ }
   }
-  throw new Error("AI provider returned a report that does not match the required professional report schema");
+  throw new InvalidAIReportError();
 }
 
 export const analyzeSoilDetailed: RequestHandler = async (req,res) => {
@@ -263,7 +266,7 @@ export const analyzeSoilDetailed: RequestHandler = async (req,res) => {
     if(error instanceof AIProviderUnavailableError) return res.status(503).json({success:false,error:"AI_PROVIDER_UNAVAILABLE",message:"خدمة الاستشارة الذكية غير مهيأة حالياً. لم يتم إنشاء تقرير بديل أو وهمي."});
     console.error("Soil analysis error:",error);
     const message=safeErrorMessage(error,"Unknown soil analysis error");
-    const isSchemaError=message.includes("required professional report schema");
+    const isSchemaError=error instanceof InvalidAIReportError;
     return res.status(isSchemaError?502:500).json({success:false,error:isSchemaError?"INVALID_AI_REPORT":"SOIL_ANALYSIS_FAILED",message:process.env.NODE_ENV==="development"?message:"تعذّر إنشاء التقرير. حاول مجدداً لاحقاً."});
   }
 };
