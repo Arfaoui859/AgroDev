@@ -57,6 +57,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import { supabase } from "@/lib/supabase";
 
 // ============ TYPES & INTERFACES ============
 
@@ -625,10 +626,13 @@ export default function Index() {
         }
 
         // Fetch notifications for alerts
-        const alertsResponse = await robustFetch(
-          "/api/notifications?status=unread&limit=3",
-        );
-        if (alertsResponse.ok) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const alertsResponse = session?.access_token
+          ? await robustFetch("/api/notifications?unread=true&limit=3", {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            })
+          : null;
+        if (alertsResponse?.ok) {
           const alertsData = await alertsResponse.json();
           const alerts: SystemAlert[] =
             alertsData.notifications?.map((notif: any) => ({
