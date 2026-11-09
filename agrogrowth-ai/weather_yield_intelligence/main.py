@@ -426,7 +426,15 @@ async def health_check():
     فحص صحة الخدمة
     """
     return {
-        'status': 'healthy',
+        'status': 'degraded',
+        'production_ready': False,
+        'disabled_features': [
+            'weather_crop_planning',
+            'yield_prediction',
+            'combined_analysis',
+            'climate_suitability',
+            'planting_schedule',
+        ],
         # Models are trained on synthetic data generated in-process; there is no
         # field-observation dataset behind these predictions.
         'model_source': 'synthetic-demo',
