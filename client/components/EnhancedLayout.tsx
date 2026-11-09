@@ -278,13 +278,14 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
     };
   }, []);
 
-  // Handle search
+  // Route the global search into the assistant so it can interpret the
+  // request against the user's permitted AgroGrowth context.
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // Implement search logic here
     if (query.trim()) {
-      // Navigate to search results or filter navigation
-      console.log("Searching for:", query);
+      navigate("/ai-assistant", { state: { initialPrompt: query.trim() } });
+      setSearchQuery("");
+      setSidebarOpen(false);
     }
   };
 
