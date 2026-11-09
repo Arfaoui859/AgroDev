@@ -1034,9 +1034,10 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               const device = (sensorResult.data ?? []).find((item: any) => item.id === reading.device_id);
               platformRecords.push("Stored sensor reading [sensor_type=" + (device?.device_type || "unknown") + "; reading=" + reading.reading_type + "; value=" + reading.value + " " + reading.unit + "; quality=" + (reading.quality_indicator || "unreported") + "; recorded_at=" + reading.recorded_at + "; farm_id=" + (device?.farm_id || "unknown") + "; section_id=" + (device?.section_id || "unlinked") + "]. Stored telemetry record; not necessarily current.");
             }
+            const activeCultivations = (cropResult.data ?? []).filter((item: any) => item.status === "active");
             farmContext = {
-              governorate: typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
-              crop: cropResult.data?.find((item: any) => item.status === "active")?.crop_name || undefined,
+              governorate: farms.length === 1 && typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
+              crop: activeCultivations.length === 1 ? activeCultivations[0].crop_name : undefined,
               farmSizeHectares: rawSize > 0 ? rawSize : undefined,
               soil: Object.keys(soil).length ? soil : undefined,
               operationalAlerts,
