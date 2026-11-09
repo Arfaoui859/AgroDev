@@ -86,29 +86,26 @@ describe("🔎 Vision gateway forwarding", () => {
     resetServiceProbeCache();
   });
 
-  test("forwards the image and returns the service diagnosis", async () => {
+  test("forwards the image but rejects an unverified heuristic service diagnosis", async () => {
     const res = await request(app)
       .post("/api/ai/images/detect-disease")
       .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
-      .expect(200);
-    expect(res.body.disease_detection.primary_disease.disease).toBe("early_blight");
+      .expect(503);
+    expect(res.body.code).toBe("VISION_MODEL_PROVENANCE_UNAVAILABLE");
     expect(received).toHaveLength(1);
     expect(received[0].url).toBe("/detect-disease");
     expect(received[0].contentType).toContain("multipart/form-data");
     expect(received[0].body).toContain("leaf.png");
   });
 
-  test("tags heuristic service output with honest provenance", async () => {
+  test("rejects heuristic service output instead of passing it to the farmer", async () => {
     const res = await request(app)
       .post("/api/ai/images/detect-disease")
       .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
-      .expect(200);
-    expect(res.body.dataSource).toBe("heuristic");
-    expect(res.body.data_source).toBe("heuristic");
+      .expect(503);
+    expect(res.body.dataSource).toBe("unavailable");
     expect(res.body.isRealData).toBe(false);
-    expect(res.body.is_real_data).toBe(false);
     expect(res.body.modelSource).toBe("heuristic-demo");
-    expect(res.body.model_source).toBe("heuristic-demo");
   });
 
   test("preserves valid request-level vision-model provenance", async () => {
@@ -124,10 +121,10 @@ describe("🔎 Vision gateway forwarding", () => {
       .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
       .expect(200);
 
-    expect(res.body.dataSource).toBe("vision-model");
-    expect(res.body.data_source).toBe("vision-model");
-    expect(res.body.isRealData).toBe(true);
-    expect(res.body.is_real_data).toBe(true);
+    expect(res.body.dataSource).toBe("llm-generated");
+    expect(res.body.data_source).toBe("llm-generated");
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.is_real_data).toBe(false);
     expect(res.body.modelSource).toBe("provider:test-vision-model");
     expect(res.body.model_source).toBe("provider:test-vision-model");
   });
@@ -143,14 +140,11 @@ describe("🔎 Vision gateway forwarding", () => {
     const res = await request(app)
       .post("/api/ai/images/detect-disease")
       .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
-      .expect(200);
+      .expect(503);
 
-    expect(res.body.dataSource).toBe("heuristic");
-    expect(res.body.data_source).toBe("heuristic");
+    expect(res.body.dataSource).toBe("unavailable");
+    expect(res.body.data_source).toBe("unavailable");
     expect(res.body.isRealData).toBe(false);
-    expect(res.body.is_real_data).toBe(false);
-    expect(res.body.modelSource).toBe("heuristic-demo");
-    expect(res.body.model_source).toBe("heuristic-demo");
   });
 
   test("forwards the optional plant_type field", async () => {
