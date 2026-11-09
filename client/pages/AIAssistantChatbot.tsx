@@ -142,6 +142,7 @@ const AIAssistantChatbot: React.FC = () => {
   const [assistantFarms, setAssistantFarms] = useState<Array<{id:string;name:string;size_hectares:number}>>([]);
   const [assistantCultivations, setAssistantCultivations] = useState<Array<{id:string;farm_id:string;crop_name:string;status:string}>>([]);
   const [pendingDiseaseSave, setPendingDiseaseSave] = useState<{file:File;farmId:string;cultivationId:string;cropType:string;diseaseName:string;severity:string;confidence:number|null;analysisResult:Record<string, unknown>} | null>(null);
+  const [pendingSatelliteRequest, setPendingSatelliteRequest] = useState<{farmId:string;periodDays:string} | null>(null);
   const [actionSaving, setActionSaving] = useState(false);
 
   useEffect(() => {
@@ -560,6 +561,86 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
+  const prepareSatelliteAction = async (message: string) => {
+    const satelliteIntent = /(ساتلايت|قمر صناعي|صور فضائية|ndvi|satellite|sentinel|remote sensing)/i.test(message);
+    const actionIntent = /(حلل|شوف|راقب|اعمل|اعمللي|جيب|ورّيني|check|analyse|analyze|monitor|get|show|look up)/i.test(message);
+    if (!satelliteIntent || !actionIntent) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const response = await fetch("/api/assistant/farms", {
+        headers: { Authorization: "Bearer " + session.access_token }
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || "FARM_LOOKUP_FAILED");
+      const farms = payload.data || [];
+      setAssistantFarms(farms);
+      if (!farms.length) {
+        setMessages(prev => [...prev, {
+          id: "satellite-no-farm-" + Date.now(), type: "assistant",
+          content: language === "ar" ? "ما عندك حتى مزرعة مسجّلة. سجّل المزرعة وحدّد حدودها الجغرافية أولاً." : "No farm is registered. Register a farm and draw its geographic boundary first.",
+          timestamp: new Date().toISOString(), language, category: "agriculture"
+        }]);
+        return;
+      }
+      setPendingSatelliteRequest({ farmId: farms.length === 1 ? farms[0].id : "", periodDays: "90" });
+      setMessages(prev => [...prev, {
+        id: "satellite-proposal-" + Date.now(), type: "assistant",
+        content: language === "ar"
+          ? "نجم نطلب تحليل Sentinel-2 NDVI للمزرعة من Copernicus. اختار المزرعة والفترة، وبعد أكّد الطلب. يلزم حدود GeoJSON محفوظة وبيانات Copernicus مهيّأة في الخادم."
+          : "I can request Sentinel-2 NDVI statistics from Copernicus. Choose a farm and period, then confirm. A saved GeoJSON boundary and server-side Copernicus credentials are required.",
+        timestamp: new Date().toISOString(), language, category: "agriculture"
+      }]);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "SATELLITE_REQUEST_PREPARATION_FAILED";
+      setMessages(prev => [...prev, {
+        id: "satellite-prepare-error-" + Date.now(), type: "assistant",
+        content: language === "ar" ? "ما نجمتش نجهّز طلب الساتلايت: " + reason : "Could not prepare the satellite request: " + reason,
+        timestamp: new Date().toISOString(), language, category: "general"
+      }]);
+    }
+  };
+
+  const confirmSatelliteRequest = async () => {
+    if (!pendingSatelliteRequest?.farmId) return;
+    setActionSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const response = await fetch("/api/assistant/satellite/ndvi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token },
+        body: JSON.stringify({ farm_id: pendingSatelliteRequest.farmId, period_days: Number(pendingSatelliteRequest.periodDays) })
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) {
+        const code = payload.code || "SATELLITE_ANALYSIS_FAILED";
+        if (code === "SATELLITE_CREDENTIALS_NOT_CONFIGURED") throw new Error("COPERNICUS_CLIENT_ID / COPERNICUS_CLIENT_SECRET غير مهيّئين في Render");
+        if (code === "FARM_BOUNDARY_REQUIRED" || code === "VALID_FARM_GEOJSON_BOUNDARY_REQUIRED") throw new Error("حدود المزرعة GeoJSON موش محفوظة أو غير صالحة");
+        throw new Error(code);
+      }
+      const rows = payload.data || [];
+      const summary = rows.map((row: any) => "• " + row.observed_from + " → " + row.observed_to + ": NDVI mean " + Number(row.mean_value).toFixed(3) + " (min " + Number(row.min_value).toFixed(3) + ", max " + Number(row.max_value).toFixed(3) + "; pixels " + row.sample_count + ")").join("\n");
+      setMessages(prev => [...prev, {
+        id: "satellite-result-" + Date.now(), type: "assistant",
+        content: (language === "ar" ? "تم جلب وحفظ نتائج Sentinel-2 للمزرعة " : "Sentinel-2 results retrieved and saved for farm ") + payload.farm.name + ":\n" + summary + "\n\n" + (language === "ar" ? "NDVI يقيس خضرة الغطاء النباتي، موش تشخيص مرض ولا قياس مباشر للمردودية. النتائج دورية وتتأثر بالسحب وعدد البكسلات الصالحة." : "NDVI measures vegetation greenness, not disease or direct yield. Observations are periodic and affected by clouds and valid-pixel count."),
+        timestamp: new Date().toISOString(), language,
+        metadata: { sources: [payload.provenance?.provider || "Copernicus Data Space Ecosystem · Sentinel Hub"], dataSource: "llm" },
+        category: "agriculture"
+      }]);
+      setPendingSatelliteRequest(null);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "SATELLITE_ANALYSIS_FAILED";
+      setMessages(prev => [...prev, {
+        id: "satellite-error-" + Date.now(), type: "assistant",
+        content: language === "ar" ? "ما تمش تحليل الساتلايت: " + reason + ". ما سجّلنا حتى نتيجة." : "Satellite analysis failed: " + reason + ". No result was saved.",
+        timestamp: new Date().toISOString(), language, category: "general"
+      }]);
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
   const sendMessage = async (content?: string) => {
     const messageContent = content || input;
     if (!messageContent.trim()) return;
@@ -581,6 +662,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       const aiResponse = await generateAIResponse(messageContent);
       setMessages(prev => [...prev, aiResponse]);
       await prepareCropAction(messageContent);
+      await prepareSatelliteAction(messageContent);
 
       // Update conversation
       await updateActiveConversation(userMessage, aiResponse);
@@ -1187,6 +1269,48 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                     </div>
                     <p className="mt-2 text-xs text-amber-950/80">
                       {language === "ar" ? "السجل يحفظ النتيجة كما وردت من التحليل، ولا يحوّلها إلى تشخيص ميداني مؤكد." : "The stored result remains an unverified image assessment, not a confirmed field diagnosis."}
+                    </p>
+                  </div>
+                )}
+
+                {pendingSatelliteRequest && (
+                  <div className="mx-2 mb-4 rounded-xl border border-sky-200 bg-sky-50 p-4 text-right">
+                    <div className="mb-2 font-semibold text-sky-950">
+                      {language === "ar" ? "تحليل الحقل بالأقمار الصناعية" : "Satellite field analysis"}
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "المزرعة" : "Farm"}</label>
+                        <Select value={pendingSatelliteRequest.farmId} onValueChange={farmId => setPendingSatelliteRequest(current => current ? { ...current, farmId } : current)}>
+                          <SelectTrigger><SelectValue placeholder={language === "ar" ? "اختار المزرعة" : "Choose farm"} /></SelectTrigger>
+                          <SelectContent>
+                            {assistantFarms.map(farm => <SelectItem key={farm.id} value={farm.id}>{farm.name} · {farm.size_hectares} ha</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "الفترة" : "Period"}</label>
+                        <Select value={pendingSatelliteRequest.periodDays} onValueChange={periodDays => setPendingSatelliteRequest(current => current ? { ...current, periodDays } : current)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="30">30 days</SelectItem>
+                            <SelectItem value="60">60 days</SelectItem>
+                            <SelectItem value="90">90 days</SelectItem>
+                            <SelectItem value="180">180 days</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button onClick={confirmSatelliteRequest} disabled={actionSaving || !pendingSatelliteRequest.farmId}>
+                        {actionSaving ? (language === "ar" ? "جاري طلب البيانات..." : "Requesting data...") : (language === "ar" ? "تأكيد تحليل Sentinel-2" : "Confirm Sentinel-2 analysis")}
+                      </Button>
+                      <Button variant="outline" onClick={() => setPendingSatelliteRequest(null)} disabled={actionSaving}>
+                        {language === "ar" ? "إلغاء" : "Cancel"}
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-sky-950/80">
+                      {language === "ar" ? "يتطلب حدود GeoJSON للمزرعة وحساب Copernicus OAuth مهيّأ في الخادم. لا توجد مراقبة لحظية." : "Requires a farm GeoJSON boundary and Copernicus OAuth credentials on the server. This is not live monitoring."}
                     </p>
                   </div>
                 )}
