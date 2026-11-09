@@ -106,58 +106,6 @@ async def forecast_price(request: PriceForecastRequest):
         },
     )
 
-    try:
-        logger.info(f"Generating price forecast for {request.crop_type}")
-        
-        # Validate crop type
-        supported_crops = ["olive", "citrus", "wheat", "tomato", "potato"]
-        if request.crop_type not in supported_crops:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported crop type. Supported crops: {supported_crops}"
-            )
-        
-        # Generate forecast
-        result = market_forecast_ai.predict_price_forecast(
-            crop_type=request.crop_type,
-            current_price=request.current_price,
-            forecast_days=request.forecast_days,
-            market_conditions=request.market_conditions
-        )
-        
-        if not result.get('success'):
-            raise HTTPException(status_code=500, detail=result.get('error', 'Forecast generation failed'))
-        
-        advisory = narrate(
-            result,
-            task="Explain this price forecast and its uncertainty to the farmer.",
-            language=request.language,
-            context={"crop_type": request.crop_type, "current_price": request.current_price},
-        )
-        payload = dict(result)
-        if advisory:
-            payload["advisory"] = advisory
-
-        return {
-            "success": True,
-            "data": payload,
-            "metadata": {
-                "model_version": "MarketForecastAI v1.0",
-                # Honest provenance: no licensed market feed is configured, so
-                # this forecast is model output, not live quotes.
-                "data_source": "synthetic-model",
-                "is_real_data": False,
-                "model_source": "synthetic-demo",
-                "note": "Forecast is derived from a synthetic model, not live market quotes."
-            }
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in price forecasting: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
 @app.post("/analyze-supply-demand")
 async def analyze_supply_demand(request: SupplyDemandRequest):
     """
@@ -178,47 +126,6 @@ async def analyze_supply_demand(request: SupplyDemandRequest):
             "production_ready": False,
         },
     )
-
-    try:
-        logger.info(f"Analyzing supply-demand for {request.crop_type}")
-        
-        # Validate inputs
-        supported_crops = ["olive", "citrus", "wheat", "tomato", "potato"]
-        if request.crop_type not in supported_crops:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported crop type. Supported crops: {supported_crops}"
-            )
-        
-        # Perform analysis
-        result = supply_demand_ai.analyze_supply_demand_balance(
-            crop_type=request.crop_type,
-            current_production=request.current_production,
-            region=request.region,
-            analysis_period=request.analysis_period
-        )
-        
-        if not result.get('success'):
-            raise HTTPException(status_code=500, detail=result.get('error', 'Analysis failed'))
-        
-        return {
-            "success": True,
-            "data": result,
-            "metadata": {
-                "model_version": "SupplyDemandAI v1.0",
-                "analysis_scope": request.region,
-                "data_source": "synthetic-model",
-                "is_real_data": False,
-                "model_source": "synthetic-demo",
-                "note": "Analysis is model output from synthetic data, not live market statistics."
-            }
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in supply-demand analysis: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/market-conditions/{crop_type}")
 async def get_market_conditions(
@@ -244,84 +151,6 @@ async def get_market_conditions(
         },
     )
 
-    try:
-        logger.info(f"Getting market conditions for {crop_type}")
-        
-        # Validate crop type
-        supported_crops = ["olive", "citrus", "wheat", "tomato", "potato"]
-        if crop_type not in supported_crops:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported crop type. Supported crops: {supported_crops}"
-            )
-        
-        # Get current market conditions (using sample production data)
-        sample_production = {
-            "olive": 140000,
-            "citrus": 380000,
-            "wheat": 1100000,
-            "tomato": 750000,
-            "potato": 320000
-        }.get(crop_type, 100000)
-        
-        # Analyze current conditions
-        supply_demand_result = supply_demand_ai.analyze_supply_demand_balance(
-            crop_type=crop_type,
-            current_production=sample_production,
-            region=region,
-            analysis_period=7 if not include_projections else 30
-        )
-        
-        # Get price forecast for context
-        sample_price = {
-            "olive": 8.5,
-            "citrus": 3.2,
-            "wheat": 1.2,
-            "tomato": 2.8,
-            "potato": 1.5
-        }.get(crop_type, 2.0)
-        
-        price_forecast = market_forecast_ai.predict_price_forecast(
-            crop_type=crop_type,
-            current_price=sample_price,
-            forecast_days=7
-        )
-        
-        return {
-            "success": True,
-            "data": {
-                "crop_type": crop_type,
-                "region": region,
-                "current_market_summary": {
-                    "market_condition": supply_demand_result['data']['market_balance']['market_condition'],
-                    "balance_ratio": supply_demand_result['data']['market_balance']['balance_ratio'],
-                    "price_pressure": price_forecast['data']['trend_analysis']['direction'],
-                    "volatility_level": price_forecast['data']['trend_analysis']['volatility_level']
-                },
-                "supply_demand_analysis": supply_demand_result['data'] if include_projections else {
-                    k: v for k, v in supply_demand_result['data'].items() 
-                    if k not in ['future_projections']
-                },
-                "price_outlook": {
-                    "short_term_trend": price_forecast['data']['trend_analysis']['direction'],
-                    "expected_change": price_forecast['data']['trend_analysis']['total_change_percent'],
-                    "risk_level": price_forecast['data']['risk_assessment']['overall_risk_level']
-                },
-                "recommendations": supply_demand_result['data']['recommendations']
-            },
-            "metadata": {
-                "analysis_date": datetime.now().isoformat(),
-                "data_quality": "high",
-                "confidence_score": 85
-            }
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting market conditions: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
 @app.get("/historical/{crop_type}")
 async def get_historical_performance(
     crop_type: str,
@@ -345,46 +174,6 @@ async def get_historical_performance(
             "production_ready": False,
         },
     )
-
-    try:
-        logger.info(f"Getting historical data for {crop_type}")
-        
-        # Validate inputs
-        supported_crops = ["olive", "citrus", "wheat", "tomato", "potato"]
-        if crop_type not in supported_crops:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported crop type. Supported crops: {supported_crops}"
-            )
-        
-        if days_back > 365:
-            raise HTTPException(
-                status_code=400,
-                detail="Maximum historical period is 365 days"
-            )
-        
-        # Get historical performance
-        result = market_forecast_ai.get_historical_performance(
-            crop_type=crop_type,
-            days_back=days_back
-        )
-        
-        return {
-            "success": True,
-            "data": result,
-            "metadata": {
-                "data_period_days": days_back,
-                "region": region,
-                "data_quality": "simulated",  # Note: This is simulated data
-                "confidence_level": "medium"
-            }
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting historical data: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/supported-crops")
 async def get_supported_crops():
@@ -453,46 +242,6 @@ async def create_price_alert(request: PriceAlertRequest, background_tasks: Backg
             "production_ready": False,
         },
     )
-
-    try:
-        logger.info(f"Creating price alert for {request.crop_type}")
-        
-        # Validate inputs
-        supported_crops = ["olive", "citrus", "wheat", "tomato", "potato"]
-        if request.crop_type not in supported_crops:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported crop type. Supported crops: {supported_crops}"
-            )
-        
-        if request.alert_type not in ["above", "below"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Alert type must be 'above' or 'below'"
-            )
-        
-        # Create alert (in production, this would be stored in database)
-        alert_id = f"alert_{request.crop_type}_{int(datetime.now().timestamp())}"
-        
-        return {
-            "success": True,
-            "data": {
-                "alert_id": alert_id,
-                "crop_type": request.crop_type,
-                "target_price": request.target_price,
-                "alert_type": request.alert_type,
-                "status": "active",
-                "created_at": datetime.now().isoformat(),
-                "notification_method": "email" if request.email else "system"
-            },
-            "message": f"Price alert created successfully for {request.crop_type}"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error creating price alert: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @app.get("/health")
 async def health_check():
