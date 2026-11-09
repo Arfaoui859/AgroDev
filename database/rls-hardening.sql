@@ -177,8 +177,6 @@ CREATE TRIGGER on_auth_user_created_agrogrowth
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
-REVOKE ALL ON FUNCTION public.prevent_self_role_escalation() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.handle_new_auth_user() FROM PUBLIC, anon, authenticated;
 
 DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
 CREATE POLICY "Admins can manage users" ON public.users
