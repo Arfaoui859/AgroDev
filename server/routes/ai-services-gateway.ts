@@ -5,7 +5,6 @@ import axios, { AxiosError } from "axios";
 import FormData from "form-data";
 import multer from "multer";
 import { uploadError, requireRealImages } from "../middleware/upload";
-import { CROP_REFERENCE } from "../services/ai/cropAdvisor";
 import {
   answerAgriculturalQuestion,
   detectLanguage,
@@ -534,7 +533,7 @@ function visionDiagnosisToPayload(
 ) {
   return {
     dataSource: "llm",
-    isRealData: true,
+    isRealData: false,
     modelSource,
     provider,
     disease_detection: {
@@ -961,19 +960,9 @@ export const getSupportedCrops = async (req: Request, res: Response) => {
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.CROP_RECOMMENDATION);
   } catch (error) {
-    // Serve the reference dataset so the UI always has a crop list.
-    res.json({
-      dataSource: "reference-dataset",
-      supported_crops: CROP_REFERENCE.map((c) => ({
-        name: c.crop,
-        name_ar: c.nameAr,
-        category: c.category,
-        growing_season: c.seasons.join("، "),
-        suitable_soil_types: [],
-      })),
-      total_count: CROP_REFERENCE.length,
-      note: "قائمة مرجعية محلية (خدمة التوصيات غير متاحة).",
-    });
+    // Do not substitute an unverified local crop catalogue when the source
+    // service is unavailable. The UI must show an unavailable state.
+    return handleAIServiceError(error as AxiosError, "Supported Crops", res);
   }
 };
 
