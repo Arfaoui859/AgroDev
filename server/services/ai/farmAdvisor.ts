@@ -87,6 +87,10 @@ const SYSTEM_PROMPTS: Record<Language, string> = {
 - كن دقيقاً وعملياً: خطوات قابلة للتنفيذ.
 - إذا كانت البيانات ناقصة، اذكر ما ينقص بدل تخمينه.
 - لا تخترع أرقاماً أو أسعاراً أو قياسات غير موجودة في السياق.
+- في الري: لا تحدد كمية ماء أو مدة تشغيل دقيقة دون بيانات كافية عن المحصول ومرحلة النمو والمساحة ورطوبة التربة والطقس وتصريف نظام الري؛ استعمل القراءات المسجلة مع تاريخها، واطلب الناقص.
+- في التربة: لا تفترض وحدات NPK أو طريقة التحليل إذا لم تكن مسجلة؛ اطلب تقرير المختبر والوحدات قبل توصية تسميد دقيقة.
+- في السوق: فرّق بوضوح بين سعر مسجل بتاريخ ومكان محددين وبين توقع سعري؛ لا تعرض التوقع كسعر بيع مضمون.
+- في الأقمار الصناعية: اذكر فترة الرصد وجودة/عدد البكسلات إن توفرت، وفسّر NDVI كمؤشر خضرة فقط.
 - رتّب تنبيهات المتابعة المسجلة حسب الأولوية، واذكر أنها تنبيهات مبنية على سجلات المنصة وليست تشخيصاً ميدانياً نهائياً.
 - أنت المساعد المركزي للمنصة، اربط بين سجل المزارع والحقول والمحاصيل والتربة والأمراض والطقس والسوق والحساسات عندما تتوفر بياناتها.
 - إذا كانت للمستخدم عدة مزارع أو حقول، لا تختر واحداً بالتخمين؛ اطلب منه تحديد المقصود.
@@ -259,18 +263,16 @@ function summariseContext(context?: FarmContext, lang: Language = "ar"): string[
 function detectRelevantAgents(question: string): string[] {
   const q = question.toLowerCase();
   const agents: string[] = [];
-  const has = (re: RegExp) => re.test(q) || ARABIC_RE.test(question) && re.test(question);
   if (/(تربة|ph|آزوت|فوسفور|بوتاس|ملوحة|soil|sol)/i.test(question) || /soil|sol\b/.test(q))
     agents.push("soil");
-  if (/(محصول|بذور|زراعة|crop|semis|culture)/i.test(question) || /crop|culture/.test(q))
+  if (/(محصول|بذور|زراعة|crop|semis|culture|ma7soul|gharsa|ghars|zra3a)/i.test(question) || /crop|culture/.test(q))
     agents.push("crop");
-  if (/(طقس|مطر|حرارة|ري|weather|météo|irrigation|arrosage)/i.test(question) || /weather|irrigation/.test(q))
+  if (/(طقس|مطر|حرارة|ري|weather|météo|irrigation|arrosage|meteo|matar|skhouna|bard|ns9i|s9i|satellite|ndvi|الساتلايت|قمر صناعي)/i.test(question) || /weather|irrigation|satellite|ndvi/.test(q))
     agents.push("weather");
-  if (/(مرض|حشرة|آفة|disease|maladie|pest|ravageur)/i.test(question) || /disease|pest/.test(q))
+  if (/(مرض|حشرة|آفة|disease|maladie|pest|ravageur|mardh|maradh|7achra|doud)/i.test(question) || /disease|pest/.test(q))
     agents.push("disease");
-  if (/(سعر|سوق|تصدير|price|marché|market)/i.test(question) || /price|market/.test(q))
+  if (/(سعر|سوق|تصدير|price|marché|market|sou9|souq|sou9|sou3|souma|prix)/i.test(question) || /price|market|souq|sou9/.test(q))
     agents.push("market");
-  void has;
   return agents.length ? agents : ["general"];
 }
 
