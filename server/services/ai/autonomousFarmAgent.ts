@@ -60,7 +60,7 @@ export function buildFarmAgentEvents(input: {
         message: `لم يتم العثور على تحليل تربة مخبري أو قياسات حساسات موثوقة مسجلة لمزرعة «${farmName}». أضف قياسات موثقة حتى تكون توصيات التربة مبنية على بيانات فعلية.`,
         priority: "normal",
         actionUrl: "/soil-analysis",
-        evidence: { evidence: "no_soil_analysis_record", farm_name: farmName },
+        evidence: { evidence: "no_verified_soil_analysis_record", farm_name: farmName },
       });
     } else {
       const soilDate = new Date(latestSoil.analyzed_at || latestSoil.created_at);
