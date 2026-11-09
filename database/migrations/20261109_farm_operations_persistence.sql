@@ -68,6 +68,13 @@ CREATE TABLE IF NOT EXISTS public.farm_revenues (
   buyer text,
   market_location text,
   payment_status text NOT NULL DEFAULT 'received',
+  variety_name text NOT NULL DEFAULT '',
+  unit_price numeric(14,4),
+  quality_grade text,
+  harvest_date date,
+  storage_days integer NOT NULL DEFAULT 0 CHECK (storage_days >= 0),
+  transportation_cost numeric(14,3) NOT NULL DEFAULT 0 CHECK (transportation_cost >= 0),
+  marketing_cost numeric(14,3) NOT NULL DEFAULT 0 CHECK (marketing_cost >= 0),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -81,3 +88,13 @@ CREATE POLICY "Users manage their own farm revenues"
   FOR ALL
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
+
+-- Idempotent extension for deployments that already created farm_revenues.
+ALTER TABLE public.farm_revenues
+  ADD COLUMN IF NOT EXISTS variety_name text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS unit_price numeric(14,4),
+  ADD COLUMN IF NOT EXISTS quality_grade text,
+  ADD COLUMN IF NOT EXISTS harvest_date date,
+  ADD COLUMN IF NOT EXISTS storage_days integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS transportation_cost numeric(14,3) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS marketing_cost numeric(14,3) NOT NULL DEFAULT 0;
