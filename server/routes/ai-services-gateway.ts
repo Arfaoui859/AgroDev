@@ -173,13 +173,38 @@ const respondFromMicroservice = async (
 ) => {
   const probe = serviceUrl
     ? await probeService(serviceUrl)
-    : { reachable: true, modelSource: null as string | null, heuristic: false };
-  // Never present synthetic/heuristic output as model inference.
-  const dataSource = probe.heuristic ? "heuristic" : "microservice";
+    : { reachable: false, modelSource: null as string | null, heuristic: false };
+
+  // Reachability is not proof of model provenance. Fail closed when the
+  // service is unreachable, declares synthetic/demo logic, or omits a source.
+  if (!probe.reachable || !probe.modelSource || probe.heuristic) {
+    return res.status(503).json({
+      success: false,
+      code: !probe.reachable
+        ? "AI_SERVICE_UNAVAILABLE"
+        : probe.heuristic
+          ? "SYNTHETIC_MODEL_DISABLED"
+          : "MODEL_PROVENANCE_UNKNOWN",
+      message: "The AI service is unavailable for production output because its model provenance is missing, synthetic, or unverified.",
+      productionReady: false,
+      modelSource: probe.modelSource,
+      isRealData: false,
+    });
+  }
+
+  const source = probe.modelSource;
+  const ruleBased = /deterministic-rules|rule-based/i.test(source);
+  const llmBased = /openrouter|gemini|gpt|llm/i.test(source);
   const provenance = {
-    dataSource,
-    isRealData: !probe.heuristic,
-    modelSource: probe.modelSource,
+    dataSource: ruleBased
+      ? "rule-based"
+      : llmBased
+        ? "llm-generated"
+        : "trained-model",
+    // A model-generated result is not itself a verified measurement.
+    isRealData: false,
+    modelSource: source,
+    fieldValidated: false,
   };
   const payload =
     data && typeof data === "object" && !Array.isArray(data)
