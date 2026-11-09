@@ -211,70 +211,27 @@ export const getCropHistory: RequestHandler = async (req, res) => {
   }
 };
 
-export const getFieldAlerts: RequestHandler = async (req, res) => {
-  try {
-    const { fieldId } = req.query;
-    
-    // For now, return mock alerts until we implement a full alerting system
-    const alerts = [
-      {
-        id: 'alert_1',
-        fieldId: fieldId,
-        type: 'soil_moisture',
-        severity: 'medium',
-        title: 'انخفاض في رطوبة التربة',
-        titleEn: 'Low Soil Moisture',
-        message: 'مستوى الرطوبة في التربة أقل من المعدل المطلوب',
-        messageEn: 'Soil moisture level is below required threshold',
-        timestamp: new Date().toISOString(),
-        resolved: false
-      }
-    ];
-
-    res.json({
-      status: 'success',
-      data: alerts,
-      message: 'تم استرجاع التنبيهات بنجاح'
-    });
-  } catch (error) {
-    console.error('Error fetching field alerts:', error);
-    sendCaughtError(res, error, 'فشل في استرجاع التنبيهات');
-  }
+export const getFieldAlerts: RequestHandler = async (_req, res) => {
+  // Do not manufacture alerts. Until alert rules are backed by measured sensor
+  // or soil records and a persisted resolution workflow, report an explicit
+  // empty, unconfigured feed instead of showing a fabricated warning.
+  return res.json({
+    status: 'success',
+    data: [],
+    provenance: { source: 'not-configured', simulated: false, persisted: false },
+    message: 'لا توجد تنبيهات موثّقة متاحة حالياً.',
+  });
 };
 
-export const getActivityLogs: RequestHandler = async (req, res) => {
-  try {
-    const { fieldId, farmId } = req.query;
-    
-    // For now, return mock activity logs until we implement full activity tracking
-    const activities = [
-      {
-        id: 'activity_1',
-        fieldId: fieldId,
-        farmId: farmId,
-        type: 'soil_analysis',
-        description: 'تحليل التربة',
-        descriptionEn: 'Soil Analysis',
-        user: 'المزارع أحمد',
-        userEn: 'Farmer Ahmed',
-        timestamp: new Date().toISOString(),
-        data: {
-          ph: 6.5,
-          nitrogen: 45,
-          phosphorus: 32
-        }
-      }
-    ];
-
-    res.json({
-      status: 'success',
-      data: activities,
-      message: 'تم استرجاع سجل الأنشطة بنجاح'
-    });
-  } catch (error) {
-    console.error('Error fetching activity logs:', error);
-    sendCaughtError(res, error, 'فشل في استرجاع سجل الأنشطة');
-  }
+export const getActivityLogs: RequestHandler = async (_req, res) => {
+  // Activity history is not yet connected to a persisted event table.
+  // An empty feed is safer than inventing a farmer, timestamp or soil values.
+  return res.json({
+    status: 'success',
+    data: [],
+    provenance: { source: 'not-configured', simulated: false, persisted: false },
+    message: 'سجلّ الأنشطة غير مربوط بقاعدة البيانات بعد.',
+  });
 };
 
 export const getFieldPerformance: RequestHandler = async (req, res) => {
