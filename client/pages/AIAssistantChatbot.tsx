@@ -243,6 +243,63 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     setQuickActions(actions[language]);
   };
 
+  const sendImageForAnalysis = async (file?: File) => {
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size > 10 * 1024 * 1024) {
+      setMessages(prev => [...prev, {
+        id: "image-error-" + Date.now(),
+        type: "assistant",
+        content: language === "ar" ? "الصورة لازم تكون JPEG أو PNG أو WebP وحجمها أقل من 10MB." : "Image must be JPEG, PNG or WebP and under 10MB.",
+        timestamp: new Date().toISOString(),
+        language,
+        category: "general"
+      }]);
+      return;
+    }
+    setImageUploading(true);
+    setMessages(prev => [...prev, {
+      id: "image-user-" + Date.now(),
+      type: "user",
+      content: (language === "ar" ? "صورة للتحليل: " : "Image for analysis: ") + file.name,
+      timestamp: new Date().toISOString(),
+      language,
+      category: "agriculture"
+    }]);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const response = await fetch("/api/ai/images/detect-disease", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || payload.error || ("HTTP " + response.status));
+      const diagnosis = payload.diagnosis || payload.primary_disease || payload.disease || payload.result || payload;
+      setMessages(prev => [...prev, {
+        id: "image-result-" + Date.now(),
+        type: "assistant",
+        content: (language === "ar" ? "نتيجة تحليل الصورة (يلزم التثبت ميدانياً):\n" : "Image analysis result (verify in the field):\n") +
+          (typeof diagnosis === "string" ? diagnosis : JSON.stringify(diagnosis, null, 2)),
+        timestamp: new Date().toISOString(),
+        language,
+        metadata: { sources: [payload.model_source || payload.modelSource || "Image diagnosis service"] },
+        category: "agriculture"
+      }]);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "IMAGE_ANALYSIS_UNAVAILABLE";
+      setMessages(prev => [...prev, {
+        id: "image-error-" + Date.now(),
+        type: "assistant",
+        content: language === "ar"
+          ? "تعذّر تحليل الصورة حالياً: " + reason + ". تنجم تفتح صفحة تشخيص الصور: /disease-upload"
+          : "Image analysis unavailable: " + reason + ". Open /disease-upload.",
+        timestamp: new Date().toISOString(),
+        language,
+        category: "general"
+      }]);
+    } finally {
+      setImageUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    }
+  };
+
   const sendMessage = async (content?: string) => {
     const messageContent = content || input;
     if (!messageContent.trim()) return;
@@ -736,6 +793,24 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
               {/* Input Area */}
               <div className="flex-shrink-0 p-4 border-t bg-gray-50">
                 <div className="flex gap-2">
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={e => void sendImageForAnalysis(e.target.files?.[0])}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-10"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={imageUploading || isLoading}
+                    title={language === "ar" ? "إرفاق صورة نبات" : "Attach plant image"}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
                   <Textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
