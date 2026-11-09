@@ -1,4 +1,5 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Bot, LayoutDashboard, Sprout, Tractor } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,9 @@ import AIAssistantChatbot from "./AIAssistantChatbot";
  */
 export default function UnifiedFarmerDashboard() {
   const { language, dir } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab = requestedTab === "farm" || requestedTab === "ai" || requestedTab === "assistant" ? requestedTab : "overview";
   const copy = {
     ar: {
       eyebrow: "مساحة العمل الزراعية",
@@ -72,7 +76,7 @@ export default function UnifiedFarmerDashboard() {
         </div>
       </header>
 
-      <Tabs defaultValue="overview" dir={dir} className="space-y-5">
+      <Tabs defaultValue={initialTab} dir={dir} className="space-y-5">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-xl bg-white p-2 shadow-sm md:grid-cols-4">
           <TabsTrigger value="overview" className="min-h-11 gap-2 rounded-lg">
             <LayoutDashboard className="h-4 w-4" />
