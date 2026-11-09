@@ -871,7 +871,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           farmContextStatus = "no_farms";
         } else {
           const farmIds = farms.map((farm: any) => farm.id);
-          const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, sensorResult] = await Promise.all([
+          const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, sensorResult, satelliteResult] = await Promise.all([
             db.from("crop_cultivations")
               .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,updated_at")
               .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(12),
@@ -895,6 +895,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             db.from("sensor_devices")
               .select("farm_id,device_type,status,battery_level,last_maintenance_date,updated_at")
               .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(20),
+            db.from("satellite_observations")
+              .select("farm_id,index_name,mean_value,min_value,max_value,observed_from,observed_to,provider,sample_count,no_data_count")
+              .in("farm_id", farmIds).order("observed_to", { ascending: false }).limit(12),
           ]);
 
           if (cropResult.error || soilResult.error) {
@@ -951,6 +954,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             }
             for (const sensor of sensorResult.data ?? []) {
               platformRecords.push("Registered sensor [type=" + sensor.device_type + "; status=" + sensor.status + "; battery=" + (sensor.battery_level ?? "unreported") + "%; last maintenance=" + (sensor.last_maintenance_date || "unreported") + "; updated=" + (sensor.updated_at || "unreported") + "]. Registry data, not live telemetry.");
+            }
+            for (const observation of (satelliteResult.error ? [] : satelliteResult.data ?? [])) {
+              platformRecords.push("Saved satellite observation [index=" + observation.index_name + "; mean=" + observation.mean_value + "; min=" + observation.min_value + "; max=" + observation.max_value + "; interval=" + observation.observed_from + " to " + observation.observed_to + "; provider=" + observation.provider + "; valid_pixels=" + observation.sample_count + "; no_data_pixels=" + observation.no_data_count + "]. Periodic satellite vegetation index, not live telemetry or a disease diagnosis.");
             }
             farmContext = {
               governorate: typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
