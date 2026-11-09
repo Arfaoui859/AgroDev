@@ -105,7 +105,8 @@ services:
     region: frankfurt
     plan: starter
     rootDir: agrogrowth-ai
-    buildCommand: pip install -r requirements.txt
+    # Keep runtime sklearn/joblib versions aligned with the committed production artifacts.
+    buildCommand: pip install -r soil_analysis/requirements-ml.txt
     startCommand: python -m uvicorn soil_analysis.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
