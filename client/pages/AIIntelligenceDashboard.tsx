@@ -12,7 +12,7 @@ type AIService = {
   modelSource?:string|null; isRealModel?:boolean; modelTrainedOnSyntheticData?:boolean;
 };
 type HealthPayload = {
-  overview?:{totalServices:number;availableServices:number;unavailableServices:number;syntheticModelServices:number;lastUpdated:string;checkDuration:number};
+  overview?:{totalServices:number;availableServices:number;unavailableServices:number;notConfiguredServices?:number;rateLimitedServices?:number;syntheticModelServices:number;lastUpdated:string;checkDuration:number};
   services?:AIService[];
   llm?:{configured:boolean;credentialAvailable:boolean;provider?:string;model?:string;textModel?:string;visionModel?:string};
   fallbackEngine?:{available:boolean;type:string;description:string};
