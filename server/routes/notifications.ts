@@ -6,6 +6,8 @@ function callerDb(req: Request) {
 }
 
 function unavailable(res: Response, code: string) {
+  res.set("X-Data-Provenance", "unavailable");
+  res.set("X-Is-Real-Data", "false");
   return res.status(503).json({
     success: false,
     code,
