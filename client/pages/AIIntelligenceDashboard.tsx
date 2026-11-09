@@ -21,6 +21,8 @@ type HealthPayload = {
 
 function classify(service:AIService) {
   const error=(service.error||"").toLowerCase();
+  if(service.status==="available" && service.modelTrainedOnSyntheticData===true) return {label:"متصل · نموذج اصطناعي",tone:"warning" as const};
+  if(service.status==="available" && service.isRealModel!==true) return {label:"متصل · المصدر غير مثبت",tone:"warning" as const};
   if(service.status==="available") return {label:"متصل",tone:"success" as const};
   if(error.includes("service_url_not_configured")) return {label:"عنوان الخدمة غير مضبوط",tone:"danger" as const};
   if(error.includes("429")||error.includes("too many requests")) return {label:"تحديد طلبات (429)",tone:"warning" as const};
@@ -50,6 +52,7 @@ export default function AIIntelligenceDashboard(){
   const available=health?.overview?.availableServices??services.filter(s=>s.status==="available").length;
   const limited=services.filter(s=>classify(s).label.includes("429")).length;
   const misconfigured=services.filter(s=>classify(s).label==="عنوان الخدمة غير مضبوط"||classify(s).label==="إعداد عنوان خاطئ").length;
+  const validatedModels=services.filter(s=>s.status==="available"&&s.isRealModel===true&&s.modelTrainedOnSyntheticData!==true).length;
 
   return <main className="space-y-6" dir="rtl">
     <header className="flex flex-wrap items-center justify-between gap-3">
@@ -62,6 +65,7 @@ export default function AIIntelligenceDashboard(){
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">الخدمات المتاحة</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":available+" / "+total}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">طلبات محدودة (429)</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":limited}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">خدمات بلا عنوان مضبوط</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":misconfigured}</CardContent></Card>
+      <Card><CardHeader className="pb-2"><CardTitle className="text-sm">نماذج بمصدر موثّق</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":validatedModels}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">مزود النموذج اللغوي</CardTitle></CardHeader><CardContent className="text-lg font-semibold">{health?.llm?.configured?health.llm.provider||"مهيأ":"غير مهيأ"}</CardContent></Card>
     </div>
     <Card>
