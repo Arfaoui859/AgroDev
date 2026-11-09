@@ -837,6 +837,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       crop?: string;
       farmSizeHectares?: number;
       soil?: { ph?: number; organicMatter?: number; moisture?: number; temperature?: number };
+      operationalAlerts?: string[];
     } | undefined;
     let farmContextStatus: "linked" | "no_farms" | "anonymous" | "unavailable" = "anonymous";
 
@@ -869,7 +870,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           farmContextStatus = "no_farms";
         } else {
           const farmIds = farms.map((farm: any) => farm.id);
-          const [cropResult, soilResult] = await Promise.all([
+          const [cropResult, soilResult, alertsResult] = await Promise.all([
             db.from("crop_cultivations")
               .select("crop_name,status,updated_at")
               .in("farm_id", farmIds)
@@ -882,6 +883,13 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               .in("analysis_type", ["lab", "sensor"])
               .order("analyzed_at", { ascending: false })
               .limit(1),
+            db.from("notifications")
+              .select("title,message,priority,created_at,archived_at")
+              .eq("user_id", userId)
+              .eq("category", "agrogrowth_agent")
+              .is("archived_at", null)
+              .order("created_at", { ascending: false })
+              .limit(8),
           ]);
 
           if (cropResult.error || soilResult.error) {
@@ -904,11 +912,15 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               if (moisture !== undefined) soil.moisture = moisture;
               if (temperature !== undefined) soil.temperature = temperature;
             }
+            const operationalAlerts = (alertsResult.error ? [] : (alertsResult.data ?? []))
+              .filter((alert: any) => typeof alert.title === "string" && typeof alert.message === "string")
+              .map((alert: any) => `[${alert.priority || "normal"}] ${alert.title}: ${alert.message}`);
             farmContext = {
               governorate: typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
               crop: cropResult.data?.[0]?.crop_name || undefined,
               farmSizeHectares: rawSize > 0 ? rawSize : undefined,
               soil: Object.keys(soil).length ? soil : undefined,
+              operationalAlerts,
             };
             farmContextStatus = "linked";
           }
