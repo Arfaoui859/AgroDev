@@ -77,7 +77,7 @@ export const createExpense: RequestHandler = async (req, res) => {
   const { data, error } = await db.from("farm_expenses").insert(payload).select("*").single();
   if (error) {
     console.error("Create expense failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   return res.status(201).json({ success: true, data: expenseRecord(data), provenance: { source: "supabase.farm_expenses", persisted: true } });
 };
@@ -93,7 +93,7 @@ export const getExpenses: RequestHandler = async (req, res) => {
   const { data, error } = await query;
   if (error) {
     console.error("List expenses failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   const expenses = (data ?? []).map(expenseRecord);
   const categoryTotals = expenses.reduce((totals: Record<string, number>, item) => {
@@ -115,7 +115,7 @@ export const updateExpense: RequestHandler = async (req, res) => {
   const { data, error } = await db.from("farm_expenses").update({ ...payload, updated_at: new Date().toISOString() }).eq("id", req.params.id).eq("user_id", req.userId).select("*").maybeSingle();
   if (error) {
     console.error("Update expense failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   if (!data) return res.status(404).json({ success: false, code: "EXPENSE_NOT_FOUND" });
   return res.json({ success: true, data: expenseRecord(data), provenance: { source: "supabase.farm_expenses", persisted: true } });
@@ -127,7 +127,7 @@ export const deleteExpense: RequestHandler = async (req, res) => {
   const { data, error } = await db.from("farm_expenses").delete().eq("id", req.params.id).eq("user_id", req.userId).select("id").maybeSingle();
   if (error) {
     console.error("Delete expense failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   if (!data) return res.status(404).json({ success: false, code: "EXPENSE_NOT_FOUND" });
   return res.json({ success: true, data: { id: data.id }, provenance: { source: "supabase.farm_expenses", persisted: true } });
@@ -174,7 +174,7 @@ export const createRevenue: RequestHandler = async (req, res) => {
   const { data, error } = await db.from("farm_revenues").insert(payload).select("*").single();
   if (error) {
     console.error("Create revenue failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   return res.status(201).json({ success: true, data, provenance: { source: "supabase.farm_revenues", persisted: true } });
 };
@@ -188,7 +188,7 @@ export const getRevenues: RequestHandler = async (req, res) => {
   const { data, error } = await query;
   if (error) {
     console.error("List revenues failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   return res.json({ success: true, data: data ?? [], provenance: { source: "supabase.farm_revenues", persisted: true } });
 };
@@ -224,7 +224,7 @@ export const updateRevenue: RequestHandler = async (req, res) => {
   }).eq("id", req.params.id).eq("user_id", req.userId).select("*").maybeSingle();
   if (error) {
     console.error("Update revenue failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   if (!data) return res.status(404).json({ success: false, code: "REVENUE_NOT_FOUND" });
   return res.json({ success: true, data, provenance: { source: "supabase.farm_revenues", persisted: true } });
@@ -236,7 +236,7 @@ export const deleteRevenue: RequestHandler = async (req, res) => {
   const { data, error } = await db.from("farm_revenues").delete().eq("id", req.params.id).eq("user_id", req.userId).select("id").maybeSingle();
   if (error) {
     console.error("Delete revenue failed:", error.code);
-    return unavailable(res);
+    return unavailable(res, error);
   }
   if (!data) return res.status(404).json({ success: false, code: "REVENUE_NOT_FOUND" });
   return res.json({ success: true, data: { id: data.id }, provenance: { source: "supabase.farm_revenues", persisted: true } });
