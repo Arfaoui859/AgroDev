@@ -1,0 +1,45 @@
+name: AgroGrowth Autonomous Farm Monitor
+
+on:
+  schedule:
+    # GitHub Actions schedules are best-effort; this is not a hard real-time SLA.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agrogrowth-autonomous-farm-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check monitor secrets
+        id: config
+        shell: bash
+        env:
+          MONITOR_URL: ${{ secrets.AGRO_AGENT_MONITOR_URL }}
+          MONITOR_TOKEN: ${{ secrets.AGRO_AGENT_MONITOR_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$MONITOR_URL" || -z "$MONITOR_TOKEN" ]]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Monitor is not enabled yet. Configure AGRO_AGENT_MONITOR_URL and AGRO_AGENT_MONITOR_TOKEN after deploying the API."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run evidence-based farm monitoring
+        if: steps.config.outputs.configured == 'true'
+        shell: bash
+        env:
+          MONITOR_URL: ${{ secrets.AGRO_AGENT_MONITOR_URL }}
+          MONITOR_TOKEN: ${{ secrets.AGRO_AGENT_MONITOR_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE_URL="${MONITOR_URL%/}"
+          curl --fail-with-body --silent --show-error             --retry 4 --retry-delay 20 --retry-all-errors --connect-timeout 90 --max-time 240             -X POST "${BASE_URL}/api/internal/autonomous-agent/run"             -H "Authorization: Bearer ${MONITOR_TOKEN}"             -H "Content-Type: application/json"             -d '{}'
