@@ -11,7 +11,7 @@ describe("Fixture-backed API groups fail closed", () => {
 
   const expectDisabled = async (response: any) => {
     expect(response.status).toBe(503);
-    expect(response.body.code).toBe("SIMULATED_DATA_DISABLED");
+    expect(["MARKET_SOURCE_NOT_CONNECTED", "PUBLIC_DATA_SOURCE_NOT_CONNECTED"]).toContain(response.body.code);
     expect(response.body.isRealData).toBe(false);
     expect(response.headers["x-data-provenance"]).toBe("simulated-disabled");
   };
