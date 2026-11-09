@@ -1055,10 +1055,16 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           const statusCode = (error as AxiosError)?.response?.status;
           return {
             ...service,
+            // An HTTP 429 is a real response from the service host: the host is
+            // reachable, but its health endpoint is rate-limited. Do not count
+            // it as an available inference service or claim the model is healthy.
             status: statusCode === 429 ? "rate_limited" : "unavailable",
+            reachable: statusCode === 429,
             responseTime: Date.now() - checkStart,
             lastChecked: new Date().toISOString(),
-            error: statusCode === 429 ? "HTTP 429: provider rate limit; reachability is inconclusive" : (error as Error).message
+            error: statusCode === 429
+              ? "HTTP 429: health endpoint rate-limited; host responded, inference availability remains unverified"
+              : (error as Error).message
           };
         }
       })
@@ -1082,6 +1088,10 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     const unavailableCount = serviceResults.filter(s => s.status === "unavailable").length;
     const notConfiguredCount = serviceResults.filter(s => s.status === "not_configured").length;
     const rateLimitedCount = serviceResults.filter(s => s.status === "rate_limited").length;
+    // A 429 confirms that the host responded, not that inference is available.
+    const reachableCount = serviceResults.filter(
+      (s: any) => s.status === "available" || s.status === "rate_limited" || s.reachable === true,
+    ).length;
     // Services that answer /health but self-declare synthetic/heuristic models.
     const syntheticCount = serviceResults.filter(
       (s: any) => s.modelTrainedOnSyntheticData === true,
@@ -1091,6 +1101,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
       overview: {
         totalServices: serviceResults.length,
         availableServices: availableCount,
+        reachableServices: reachableCount,
         unavailableServices: unavailableCount + notConfiguredCount,
         notConfiguredServices: notConfiguredCount,
         rateLimitedServices: rateLimitedCount,
