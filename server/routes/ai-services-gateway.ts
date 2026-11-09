@@ -910,7 +910,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               .select("id,farm_id,name,area_hectares,soil_type,current_crop,planted_date,expected_harvest_date")
               .in("farm_id", farmIds).limit(15),
             db.from("plant_disease_detections")
-              .select("farm_id,cultivation_id,plant_type,primary_disease,severity_level,recovery_status,disease_confidence,detected_at")
+              .select("farm_id,cultivation_id,detection_method,plant_type,primary_disease,severity_level,affected_area_percentage,treatment_applied,recovery_status,disease_confidence,detected_at")
               .in("farm_id", farmIds).order("detected_at", { ascending: false }).limit(8),
             db.from("weather_records")
               .select("farm_id,temperature_celsius,humidity_percent,rainfall_mm,wind_speed_kmh,uv_index,cloud_cover_percent,weather_conditions,record_date,source")
