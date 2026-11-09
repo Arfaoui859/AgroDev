@@ -67,49 +67,26 @@ def test_narrate_requests_french_and_reports_it(monkeypatch):
     assert "French" in joined
 
 
-def test_pest_accepts_french_and_keeps_canonical_fields():
-    resp = pest_client.post(
+def test_pest_diagnosis_is_disabled_until_real_model_validation():
+    response = pest_client.post(
         "/analyze-pest-problem",
-        json={
-            "crop_type": "tomato",
-            "symptoms": ["أوراق مجعدة", "إفرازات لزجة"],
-            "affected_area_percentage": 25.0,
-            "plant_health_score": 0.7,
-            "farm_size": 1.5,
-            "language": "fr",
-        },
+        json={"crop_type": "tomato", "symptoms": ["أوراق مجعدة"], "language": "fr"},
     )
-    assert resp.status_code == 200, resp.text
-    body = resp.json()
-    data = body["data"]
-    # Canonical, machine-readable fields are unchanged by the locale.
-    assert data["pest_identification"]["identified_pest"]
-    assert isinstance(data["pest_identification"]["confidence_score"], float)
-    assert len(data["treatment_recommendations"]) > 0
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "PEST_MODEL_NOT_VALIDATED"
 
 
-def test_irrigation_accepts_french_and_keeps_canonical_fields():
-    resp = irr_client.post(
+def test_irrigation_optimizer_is_disabled_until_real_model_validation():
+    response = irr_client.post(
         "/optimize-irrigation",
-        json={
-            "crop_type": "wheat",
-            "growth_stage": "vegetative",
-            "weather_data": {"temperature": 28, "humidity": 60},
-            "soil_data": {"moisture_percentage": 45},
-            "farm_size": 1.0,
-            "days_ahead": 7,
-            "language": "fr",
-        },
+        json={"crop_type": "wheat", "language": "fr"},
     )
-    assert resp.status_code == 200, resp.text
-    data = resp.json()["data"]
-    # Numeric schedule fields are locale-independent.
-    assert data["water_requirements"]["daily_requirement_mm"] >= 0
-    assert isinstance(data["irrigation_schedule"], list)
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "IRRIGATION_MODEL_NOT_VALIDATED"
 
 
-def test_weather_plan_accepts_french():
-    resp = wy_client.post(
+def test_weather_and_yield_models_are_disabled_until_real_training_data():
+    weather = wy_client.post(
         "/create-weather-plan",
         json={
             "location": {"latitude": 35.0, "longitude": 10.0, "region": "Tunisie"},
@@ -118,42 +95,22 @@ def test_weather_plan_accepts_french():
             "language": "fr",
         },
     )
-    assert resp.status_code == 200, resp.text
-    data = resp.json()["data"]
-    assert data["climate_analysis"]["climate_zone"]
-    assert isinstance(data["crop_suitability"], list)
+    assert weather.status_code == 503
+    assert weather.json()["detail"]["code"] == "WEATHER_MODEL_NOT_VALIDATED"
 
-
-def test_yield_prediction_accepts_french():
-    resp = wy_client.post(
+    yield_result = wy_client.post(
         "/predict-crop-yield",
-        json={
-            "crop_type": "wheat",
-            "location": {"latitude": 35.0, "longitude": 10.0, "region": "Tunisie"},
-            "weather_data": {"temperature": 22, "humidity": 60, "annual_rainfall": 450},
-            "soil_data": {"ph": 6.8, "fertility_score": 0.75, "moisture_percentage": 45},
-            "farm_size": 2.0,
-            "language": "fr",
-        },
+        json={"crop_type": "wheat", "language": "fr"},
     )
-    assert resp.status_code == 200, resp.text
-    data = resp.json()["data"]
-    assert data["yield_prediction"]["predicted_yield_kg_ha"] >= 0
+    assert yield_result.status_code == 503
+    assert yield_result.json()["detail"]["code"] == "YIELD_MODEL_NOT_VALIDATED"
 
 
-@pytest.mark.parametrize("lang", ["ar", "ar-tn", "fr", "en"])
-def test_all_supported_languages_are_accepted(lang):
-    resp = pest_client.post(
-        "/analyze-pest-problem",
-        json={"crop_type": "tomato", "symptoms": ["أوراق مجعدة"], "language": lang},
-    )
-    assert resp.status_code == 200, resp.text
-
-
-def test_unknown_language_does_not_break_the_service():
-    # An unexpected value must not 500; the advisory falls back to Arabic.
-    resp = pest_client.post(
-        "/analyze-pest-problem",
-        json={"crop_type": "tomato", "symptoms": ["أوراق مجعدة"], "language": "de"},
-    )
-    assert resp.status_code == 200, resp.text
+def test_disabled_endpoints_do_not_return_language_dependent_fake_results():
+    for language in ["ar", "ar-tn", "fr", "en", "de"]:
+        response = pest_client.post(
+            "/analyze-pest-problem",
+            json={"crop_type": "tomato", "symptoms": ["أوراق مجعدة"], "language": language},
+        )
+        assert response.status_code == 503
+        assert response.json()["detail"]["production_ready"] is False
