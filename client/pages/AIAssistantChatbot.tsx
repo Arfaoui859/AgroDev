@@ -168,7 +168,7 @@ const AIAssistantChatbot: React.FC = () => {
       // Consume the one-shot prompt so browser back/forward does not replay it.
       navigate(routeLocation.pathname, { replace: true, state: null });
     }
-  }, [routeLocation.key]);
+  }, [routeLocation.key, routeLocation.pathname, navigate]);
 
   useEffect(() => {
     scrollToBottom();
