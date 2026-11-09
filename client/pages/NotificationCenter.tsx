@@ -447,58 +447,95 @@ export default function NotificationCenter() {
     }
   };
 
-  // Handle notification actions
-  const markAsRead = (notificationId: string) => {
-    setNotifications(prev => prev.map(notif => 
-      notif.id === notificationId ? { ...notif, isRead: true, readAt: new Date().toISOString() } : notif
-    ));
+  // Persist notification actions against the authenticated user's records.
+  const persistNotificationRequest = async (path: string, method: string, body?: unknown) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error("Sign in is required.");
+    const response = await fetch(path, {
+      method,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.success !== true) throw new Error(payload.message || payload.code || `HTTP ${response.status}`);
+    return payload;
   };
 
-  const markAsUnread = (notificationId: string) => {
-    setNotifications(prev => prev.map(notif => 
-      notif.id === notificationId ? { ...notif, isRead: false, readAt: undefined } : notif
-    ));
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await persistNotificationRequest(`/api/notifications/${encodeURIComponent(notificationId)}/read`, "PATCH");
+      setNotifications(prev => prev.map(notif =>
+        notif.id === notificationId ? { ...notif, isRead: true, readAt: new Date().toISOString() } : notif
+      ));
+    } catch (error) { console.error("Could not mark notification read:", error); }
   };
 
-  const toggleStar = (notificationId: string) => {
-    setNotifications(prev => prev.map(notif => 
-      notif.id === notificationId ? { ...notif, isStarred: !notif.isStarred } : notif
-    ));
+  const markAsUnread = async (notificationId: string) => {
+    try {
+      await persistNotificationRequest(`/api/notifications/${encodeURIComponent(notificationId)}/unread`, "PATCH");
+      setNotifications(prev => prev.map(notif =>
+        notif.id === notificationId ? { ...notif, isRead: false, readAt: undefined } : notif
+      ));
+    } catch (error) { console.error("Could not mark notification unread:", error); }
   };
 
-  const archiveNotification = (notificationId: string) => {
-    setNotifications(prev => prev.map(notif => 
-      notif.id === notificationId ? { ...notif, isArchived: true, archivedAt: new Date().toISOString() } : notif
-    ));
+  const toggleStar = async (notificationId: string) => {
+    try {
+      await persistNotificationRequest(`/api/notifications/${encodeURIComponent(notificationId)}/star`, "PATCH");
+      setNotifications(prev => prev.map(notif =>
+        notif.id === notificationId ? { ...notif, isStarred: !notif.isStarred } : notif
+      ));
+    } catch (error) { console.error("Could not star notification:", error); }
   };
 
-  const deleteNotification = (notificationId: string) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+  const archiveNotification = async (notificationId: string) => {
+    try {
+      await persistNotificationRequest(`/api/notifications/${encodeURIComponent(notificationId)}/archive`, "PATCH");
+      setNotifications(prev => prev.map(notif =>
+        notif.id === notificationId ? { ...notif, isArchived: true, archivedAt: new Date().toISOString() } : notif
+      ));
+    } catch (error) { console.error("Could not archive notification:", error); }
   };
 
-  // Handle bulk actions
-  const handleBulkAction = (action: string) => {
-    switch (action) {
-      case 'mark_read':
-        setNotifications(prev => prev.map(notif => 
-          selectedNotifications.includes(notif.id) ? { ...notif, isRead: true, readAt: new Date().toISOString() } : notif
-        ));
-        break;
-      case 'mark_unread':
-        setNotifications(prev => prev.map(notif => 
-          selectedNotifications.includes(notif.id) ? { ...notif, isRead: false, readAt: undefined } : notif
-        ));
-        break;
-      case 'archive':
-        setNotifications(prev => prev.map(notif => 
-          selectedNotifications.includes(notif.id) ? { ...notif, isArchived: true, archivedAt: new Date().toISOString() } : notif
-        ));
-        break;
-      case 'delete':
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      await persistNotificationRequest(`/api/notifications/${encodeURIComponent(notificationId)}`, "DELETE");
+      setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+    } catch (error) { console.error("Could not delete notification:", error); }
+  };
+
+  const handleBulkAction = async (action: string) => {
+    const actionMap: Record<string, string> = {
+      mark_read: "read",
+      mark_unread: "unread",
+      archive: "archive",
+      delete: "delete",
+    };
+    const serverAction = actionMap[action];
+    if (!serverAction || !selectedNotifications.length) return;
+    try {
+      await persistNotificationRequest("/api/notifications/bulk", "PATCH", {
+        action: serverAction,
+        ids: selectedNotifications,
+      });
+      if (action === "delete") {
         setNotifications(prev => prev.filter(notif => !selectedNotifications.includes(notif.id)));
-        break;
+      } else if (action === "archive") {
+        setNotifications(prev => prev.map(notif => selectedNotifications.includes(notif.id)
+          ? { ...notif, isArchived: true, archivedAt: new Date().toISOString() } : notif));
+      } else {
+        const read = action === "mark_read";
+        setNotifications(prev => prev.map(notif => selectedNotifications.includes(notif.id)
+          ? { ...notif, isRead: read, readAt: read ? new Date().toISOString() : undefined } : notif));
+      }
+    } catch (error) {
+      console.error("Bulk notification action failed:", error);
+    } finally {
+      setSelectedNotifications([]);
     }
-    setSelectedNotifications([]);
   };
 
   // Get notification priority badge
