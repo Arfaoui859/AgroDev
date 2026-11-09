@@ -321,7 +321,11 @@ export const analyzeSoilBatch: RequestHandler = async(req,res)=>{
       const soil=normalizeSoilRequest(input||{});
       const errors=validateSoilData(soil);
       if(errors.length) throw new Error(errors.join("; "));
-      return extractAndValidateReport(await callAIService(prompt,formatSoilDataForAI(soil)));
+      const report = extractAndValidateReport(await callAIService(prompt,formatSoilDataForAI(soil)));
+      // Batch reports must preserve the same measurement evidence guarantees
+      // as single-sample reports; never trust LLM-authored measurements.
+      report.dataQuality.providedMeasurements = buildProvidedMeasurements(soil);
+      return report;
     }));
     const analyses=results.map((result,index)=>({fieldId:(soils[index]?.fieldId||soils[index]?.field_id||`sample_${index+1}`),status:result.status,data:result.status==="fulfilled"?result.value:{error:safeErrorMessage(result.reason,"Analysis failed")}}));
     const successfulAnalyses=analyses.filter(x=>x.status==="fulfilled").length;
