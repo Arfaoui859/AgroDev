@@ -312,9 +312,10 @@ export function createServer() {
     aiRateLimiter(),
   );
 
-  // Provenance labelling for modules that synthesise their figures (no licensed
-  // data feed). Responses are stamped X-Data-Provenance: simulated so the SPA
-  // can disclose them instead of presenting synthetic numbers as observations.
+  // Fail closed for modules whose current handlers are backed by in-memory
+  // fixtures, seeded generators, or unverified static records. A disclosure
+  // banner is not enough: these APIs return 503 until real persistence and
+  // verifiable data sources are connected.
   app.use(
     [
       "/api/admin",
