@@ -33,7 +33,7 @@ describe("🗂  Fixture-backed data is disabled", () => {
     "/api/smart-advisor/recommendations",
     "/api/disease-treatment/history",
     "/api/gamification/profile",
-    "/api/fertilizer/recommendations/fertilizer",
+    "/api/fertilizer/inventory",
     "/api/animals",
     "/api/animal-health/animal-1",
     "/api/breeding-recommendations",
@@ -130,6 +130,15 @@ describe("🗂  Fixture-backed data is disabled", () => {
       expect(res.status).toBe(503);
       expect(res.body.code).toBe("SIMULATED_DATA_DISABLED");
     }
+  });
+
+  test("unmetered water usage analytics are disabled", async () => {
+    const response = await request(app)
+      .post("/api/weather-irrigation/analytics/water-usage")
+      .send({ farmId: "field-1", period: "month", cropTypes: ["olive"] });
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe("IRRIGATION_TELEMETRY_NOT_CONNECTED");
+    expect(response.body.isRealData).toBe(false);
   });
 
   test("real weather is not labelled simulated", async () => {
