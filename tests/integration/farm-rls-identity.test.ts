@@ -117,4 +117,30 @@ describe("🏡 Farm/field routes forward the caller's JWT to Supabase", () => {
       process.env.NODE_ENV = prev;
     }
   });
+
+  test("field alerts are explicitly empty until a real alert source is connected", async () => {
+    const res = await request(app)
+      .get("/api/field-alerts")
+      .set("authorization", "Bearer farmer-jwt");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+    expect(res.body.provenance).toMatchObject({
+      source: "not-configured",
+      simulated: false,
+      persisted: false,
+    });
+  });
+
+  test("activity history never returns a fabricated farmer or soil measurement", async () => {
+    const res = await request(app)
+      .get("/api/activity-logs")
+      .set("authorization", "Bearer farmer-jwt");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+    expect(res.body.provenance).toMatchObject({
+      source: "not-configured",
+      simulated: false,
+      persisted: false,
+    });
+  });
 });
