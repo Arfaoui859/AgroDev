@@ -1,38 +1,20 @@
-"""
-Endpoint regression tests for the previously broken AI services.
+"""Fail-closed regression tests for services with unvalidated synthetic models."""
 
-Both the pest-control and weather/yield services imported cleanly, reported
-healthy, and passed the existing suite, yet every main endpoint raised
-`AttributeError` on undefined helper methods (returning HTTP 500). These tests
-drive the real service coroutines end to end and assert a serialisable,
-well-formed payload — the check that would have caught the outage.
-
-A FastAPI TestClient is used so the response actually goes through the JSON
-encoder; that is what surfaced the numpy-scalar serialisation failure in the
-pest service.
-"""
-
-import numpy as np
-import pytest
 from fastapi.testclient import TestClient
 
-pest_main = pytest.importorskip("pest_control.main")
-wy_main = pytest.importorskip("weather_yield_intelligence.main")
+from pest_control.main import app as pest_app
+from weather_yield_intelligence.main import app as weather_app
 
-pest_client = TestClient(pest_main.app)
-wy_client = TestClient(wy_main.app)
+pest_client = TestClient(pest_app)
+weather_client = TestClient(weather_app)
 
 
-# --------------------------------------------------------------------------
-# Pest control
-# --------------------------------------------------------------------------
-
-def test_pest_analyze_problem_returns_full_analysis():
-    resp = pest_client.post(
+def test_pest_synthetic_analysis_and_treatment_are_disabled():
+    response = pest_client.post(
         "/analyze-pest-problem",
         json={
             "crop_type": "tomato",
-            "symptoms": ["أوراق مجعدة", "إفرازات لزجة"],
+            "symptoms": ["curled leaves"],
             "affected_area_percentage": 25.0,
             "plant_health_score": 0.7,
             "weather_conditions": {
@@ -44,115 +26,89 @@ def test_pest_analyze_problem_returns_full_analysis():
             "farm_size": 1.5,
         },
     )
-    assert resp.status_code == 200, resp.text
-    body = resp.json()
-    assert body["success"] is True
-    data = body["data"]
-    assert data["pest_identification"]["identified_pest"]
-    assert 0.0 <= data["pest_identification"]["confidence_score"] <= 1.0
-    assert len(data["treatment_recommendations"]) > 0
-    # The schedule is what crashed before the helpers existed.
-    assert data["treatment_schedule"]["total_applications"] >= 1
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "PEST_MODEL_NOT_VALIDATED"
 
-
-@pytest.mark.parametrize(
-    "symptoms,expected",
-    [
-        (["أوراق مجعدة", "إفرازات لزجة"], "aphids"),
-        (["نقط صفراء صغيرة", "خيوط عنكبوتية"], "spider_mites"),
-        (["طبقة بيضاء", "مسحوق أبيض"], "powdery_mildew"),
-    ],
-)
-def test_pest_identification_matches_symptom_keywords(symptoms, expected):
-    resp = pest_client.post(
-        "/identify-pest", json={"crop_type": "tomato", "symptoms": symptoms}
-    )
-    assert resp.status_code == 200, resp.text
-    identified = resp.json()["data"]["identification"]["identified_pest"]
-    assert identified == expected
-
-
-def test_pest_recommend_treatment_and_severity():
-    rec = pest_client.post(
+    treatment = pest_client.post(
         "/recommend-treatment",
-        json={"pest_name": "aphids", "severity_level": 0.6, "farm_size": 2.0,
-              "organic_preference": True},
+        json={"pest_name": "aphids", "severity_level": 0.6},
     )
-    assert rec.status_code == 200, rec.text
-    assert len(rec.json()["data"]) > 0
+    assert treatment.status_code == 503
 
-    sev = pest_client.post(
+    schedule = pest_client.get("/treatment-schedule/aphids")
+    assert schedule.status_code == 503
+
+
+def test_pest_image_and_uncalibrated_severity_are_disabled():
+    image = pest_client.post(
+        "/upload-pest-image",
+        files={"file": ("leaf.jpg", b"not-a-real-image", "image/jpeg")},
+    )
+    assert image.status_code == 503
+
+    severity = pest_client.post(
         "/assess-severity",
-        params={"pest_name": "aphids", "affected_area_percentage": 40,
-                "plant_health_score": 0.5, "temperature": 32, "humidity": 85},
+        params={"pest_name": "aphids", "affected_area_percentage": 40},
     )
-    assert sev.status_code == 200, sev.text
-    assert sev.json()["data"]["above_threshold"] is True
+    assert severity.status_code == 503
 
 
-def test_pest_database_and_prevention_are_json_serialisable():
-    db = pest_client.get("/pest-database")
-    assert db.status_code == 200
-    assert len(db.json()["data"]) > 0
+def test_symptom_keyword_identification_is_not_misrepresented_as_ml():
+    response = pest_client.post(
+        "/identify-pest",
+        json={"crop_type": "tomato", "symptoms": ["أوراق مجعدة", "إفرازات لزجة"]},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["data"]["identification"]["identified_pest"] == "aphids"
+    assert body["model_source"] == "symptom-keyword-rules"
+    assert body["field_validated"] is False
 
-    prev = pest_client.get("/prevention-measures/tomato")
-    assert prev.status_code == 200
-    assert len(prev.json()["data"]) > 0
+
+def test_pest_reference_database_remains_available():
+    database = pest_client.get("/pest-database")
+    assert database.status_code == 200
+    assert database.json()["data"]
 
 
-# --------------------------------------------------------------------------
-# Weather & yield
-# --------------------------------------------------------------------------
-
-def test_weather_plan_returns_seasonal_plan():
-    resp = wy_client.post(
+def test_weather_and_yield_synthetic_predictions_are_disabled():
+    weather = weather_client.post(
         "/create-weather-plan",
         json={
-            "location": {"latitude": 35.0, "longitude": 10.0, "region": "تونس"},
-            "crop_options": ["wheat", "tomato", "olive"],
+            "location": {"latitude": 35.0, "longitude": 10.0, "region": "Tunisia"},
+            "crop_options": ["wheat", "tomato"],
             "planning_horizon_months": 12,
         },
     )
-    assert resp.status_code == 200, resp.text
-    data = resp.json()["data"]
-    assert data["climate_analysis"]["climate_zone"]["zone_type"]
-    assert len(data["crop_suitability"]) == 3
-    assert len(data["seasonal_plan"]["monthly_plans"]) == 12
+    assert weather.status_code == 503
 
-
-def test_yield_prediction_returns_economic_analysis():
-    resp = wy_client.post(
+    yield_result = weather_client.post(
         "/predict-crop-yield",
-        json={
-            "crop_type": "wheat",
-            "farm_size": 2.0,
-            "weather_data": {"temperature": 22, "humidity": 60,
-                             "annual_rainfall": 450, "recent_rainfall": 10},
-            "soil_data": {"ph": 6.8, "fertility_score": 0.75,
-                          "organic_matter": 3.5, "moisture_percentage": 45},
-            "management_practices": {"irrigation_efficiency": 0.85,
-                                     "fertilizer_application_rate": 1.0,
-                                     "pest_management_score": 0.85,
-                                     "disease_control_score": 0.8},
-        },
+        json={"crop_type": "wheat", "farm_size": 2.0},
     )
-    assert resp.status_code == 200, resp.text
-    data = resp.json()["data"]
-    assert data["yield_prediction"]["predicted_yield_kg_ha"] > 0
-    assert "profitability" in data["economic_analysis"]
-    assert data["confidence_metrics"]["confidence_score"] > 0
+    assert yield_result.status_code == 503
+
+    combined = weather_client.post("/combined-analysis", json={})
+    assert combined.status_code == 503
 
 
-def test_weather_plan_is_deterministic_for_same_input():
-    """The seasonal outlook must not contain random jitter between calls."""
-    payload = {
-        "location": {"latitude": 35.0, "longitude": 10.0, "region": "تونس"},
-        "crop_options": ["wheat", "tomato"],
-        "planning_horizon_months": 12,
-    }
-    first = wy_client.post("/create-weather-plan", json=payload).json()["data"]
-    second = wy_client.post("/create-weather-plan", json=payload).json()["data"]
-    assert (
-        first["crop_suitability"][0]["suitability_score"]
-        == second["crop_suitability"][0]["suitability_score"]
+def test_simulated_climate_and_yield_reference_endpoints_are_disabled():
+    suitability = weather_client.post(
+        "/assess-climate-suitability",
+        params={"crop_type": "wheat"},
     )
+    assert suitability.status_code == 503
+
+    schedule = weather_client.post(
+        "/optimize-planting-schedule",
+        params={"crop_types": ["wheat", "tomato"]},
+    )
+    assert schedule.status_code == 503
+
+    database = weather_client.get("/crop-yield-database")
+    assert database.status_code == 503
+
+
+def test_services_report_degraded_until_validated_models_exist():
+    assert pest_client.get("/health").json()["production_ready"] is False
+    assert weather_client.get("/health").json()["production_ready"] is False
