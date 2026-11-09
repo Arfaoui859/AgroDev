@@ -11,16 +11,20 @@ The chatbot is the conversational control surface for AgroGrowth, not a standalo
 `POST /api/ai/assistant/chat` now builds context from the authenticated user's own records:
 
 - Authenticated account role, language preference, recorded farming experience, specializations and preferred crops (used only to adapt answer depth; never to grant cross-user access).
-- Farms and their saved GeoJSON boundaries (boundary data is not sent to the LLM).
+- Farms with saved soil type, climate zone, elevation, water source, irrigation type and organic certification (saved GeoJSON boundaries are not sent to the LLM).
+- Account roles beyond farmers, including traders and investors; public market prices and valid stored market predictions are supplied even when the user has no registered farm.
 - Farm sections/plots and their crop, soil type, area and planting/harvest dates.
 - Crop cultivation records and growth stages.
-- Latest verified soil records (lab/laboratory/sensor only).
+- Latest lab/laboratory/sensor soil records, including recorded pH, NPK values, organic matter, moisture, health score and fertility fields. The schema does not carry NPK units, so the assistant must not assume them.
+- Saved leaf-health assessments and nutrition-deficiency notes, with analysis dates.
 - Saved plant-disease follow-up records, explicitly labelled as unverified visual/inspection records.
-- Persisted weather records and registered sensor-device status (not live telemetry).
-- Historical market-price records, with source and date.
+- Persisted weather records and weather forecasts, with dates and provider/source.
+- Recent sensor readings linked through the caller’s own registered devices, explicitly labelled as stored telemetry rather than live measurements.
+- On a weather/irrigation question, a real Open-Meteo current/7-day forecast is fetched for the single registered farm only when its saved latitude/longitude is valid. It is not called for multiple farms until the user selects one; gridded soil-moisture is labelled as a model estimate, not a farm sensor reading.
+- Historical market-price records, with source and date, plus saved market predictions with their validity dates and confidence fields. Predictions are never described as guaranteed prices.
 - Saved satellite vegetation-index observations, when the satellite migration has been applied.
 
-The model receives compact facts, not credentials or raw uploaded images. The context is owner-scoped through the caller's JWT. Missing/failed optional sources are omitted rather than fabricated.
+The model receives compact facts, not credentials or raw uploaded images. The context is owner-scoped through the caller's JWT. Context compaction preserves account/farm identity and recent operational/weather/market records. Missing/failed optional sources are omitted rather than fabricated. The advisor recognises common Tunisian Arabic Arabizi phrases for language selection and specialist routing.
 
 ### Image diagnosis → farm record
 
@@ -73,8 +77,8 @@ The assistant UI recognises requests such as “حلللي بالساتلايت�
 ## Honest capability boundaries
 
 - Chat history is persisted separately from farm facts. This context enrichment does not grant the LLM arbitrary database write access.
-- Crop registration already uses a separate confirmation flow.
-- Disease record persistence is implemented, but the underlying diagnosis still depends on the configured vision provider returning an approved provenance response.
+- Crop registration already uses a separate confirmation flow; successful crop-registration actions are also saved in chat history. The UI recognises common Tunisian Arabizi crop names and several additional crops (citrus, dates, almonds, legumes, maize and cucurbits).
+- Disease record persistence is implemented, but the underlying diagnosis still depends on the configured vision provider returning an approved provenance response. Image analysis itself is not assumed to be trained/validated just because a provider responds.
 - Satellite analysis is a real Copernicus integration path, but it will return `SATELLITE_CREDENTIALS_NOT_CONFIGURED` until OAuth secrets are added, `FARM_BOUNDARY_REQUIRED` until a valid farm polygon exists, and will not claim results if the provider returns no usable observations.
 - NDVI is a vegetation-greenness indicator. It is not a disease diagnosis, nutrient analysis, direct yield estimate, or continuous/live sensor feed.
 - The code has been committed to the feature branch. Database migrations, Render secrets, live Copernicus calls, storage writes and production deployment are not performed by a GitHub source commit.
