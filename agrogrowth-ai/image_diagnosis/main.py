@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional
 import logging
+from datetime import datetime, timezone
 import sys
 import os
 import io
@@ -291,36 +292,74 @@ async def health():
 def _run_disease_detection(image_data: bytes, content_type: str, plant_type: Optional[str]) -> Dict[str, Any]:
     detector = get_disease_detector()
     classifier = getattr(detector, "ml_classifier", None)
-    if classifier is None:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "DISEASE_CLASSIFIER_NOT_LOADED",
-                "message": "A trained ONNX disease classifier is not loaded. Heuristic image outputs are not returned as AI diagnoses.",
-                "production_ready": False,
-            },
-        )
-    result = detector.detect_plant_disease(image_data, plant_type)
+    disease_catalogue = getattr(detector, "disease_database", {}) or {}
+    vision = diagnose_with_vision(image_data, content_type, plant_type, disease_catalogue)
 
+    # A configured multimodal provider is a valid image-analysis path even
+    # without ONNX. Do not manufacture heuristic health/area scores in that case.
+    if classifier is None:
+        if vision is None:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "DISEASE_CLASSIFIER_NOT_LOADED",
+                    "message": "No trained ONNX classifier or configured vision provider is available. Heuristic image outputs are not returned as diagnoses.",
+                    "production_ready": False,
+                },
+            )
+        severity = str(vision.get("severity") or "unknown").lower()
+        return {
+            "disease_detection": {
+                "primary_disease": {
+                    "disease": vision["disease"],
+                    "disease_name_ar": vision["disease_name_ar"],
+                    "probability": vision.get("confidence", 0.0),
+                    "severity": severity,
+                    "description": vision.get("description", ""),
+                },
+                "top_predictions": [{
+                    "disease": vision["disease"],
+                    "disease_name_ar": vision["disease_name_ar"],
+                    "probability": vision.get("confidence", 0.0),
+                    "severity_level": severity,
+                }],
+                "confidence_score": vision.get("confidence", 0.0),
+                "detection_method": "vision_model",
+                "matched_catalogue": vision.get("matched_catalogue", False),
+                "symptoms": vision.get("symptoms", []),
+                "causes": vision.get("causes", []),
+                "treatment": vision.get("treatment", []),
+                "prevention": vision.get("prevention", []),
+            },
+            "severity_assessment": {"severity_level": severity, "source": "vision-model"},
+            "health_score": {"health_score": None, "available": False, "reason": "No validated health scoring model is loaded."},
+            "affected_areas": {"areas": [], "available": False},
+            "image_features": {"available": False, "reason": "No feature-based assessment was used."},
+            "treatment_plan": {
+                "immediate_treatment": vision.get("treatment", []),
+                "prevention_measures": vision.get("prevention", []),
+                "general_care": [],
+                "source": "vision-model-advisory",
+            },
+            "risk_assessment": {"available": False, "reason": "No validated risk model is loaded."},
+            "environmental_analysis": {"available": False, "reason": "Environmental conditions were not measured."},
+            "monitoring_recommendations": [],
+            "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
+            "data_source": "vision-model",
+            "is_real_data": True,
+            "model_source": vision.get("model_source", "configured-vision-provider"),
+        }
+
+    result = detector.detect_plant_disease(image_data, plant_type)
     detection = result.get("disease_detection", {})
     detection_source = detection.get("data_source", "heuristic")
     detection_model = detection.get("model_source", "heuristic-demo")
 
-    vision = diagnose_with_vision(
-        image_data,
-        content_type,
-        plant_type,
-        getattr(detector, "disease_database", {}) or {},
-    )
-
     if vision:
-        result["disease_detection"] = merge_into_detection(
-            detection, vision
-        )
+        result["disease_detection"] = merge_into_detection(detection, vision)
         result["data_source"] = (
             f"vision-model+{detection_source}"
-            if detection_source != "heuristic"
-            else "vision-model"
+            if detection_source != "heuristic" else "vision-model"
         )
         result["model_source"] = (
             f"{vision.get('model_source', 'vision-provider')}+{detection_model}"
