@@ -11,9 +11,13 @@ if str(AI_ROOT) not in sys.path:
 
 from pest_control.main import app as pest_app
 from weather_yield_intelligence.main import app as weather_app
+from crop_recommendation.main import app as crop_app
+from irrigation_optimization.main import app as irrigation_app
 
 pest_client = TestClient(pest_app)
 weather_client = TestClient(weather_app)
+crop_client = TestClient(crop_app)
+irrigation_client = TestClient(irrigation_app)
 
 
 def test_pest_synthetic_analysis_and_treatment_are_disabled():
@@ -119,3 +123,25 @@ def test_simulated_climate_and_yield_reference_endpoints_are_disabled():
 def test_services_report_degraded_until_validated_models_exist():
     assert pest_client.get("/health").json()["production_ready"] is False
     assert weather_client.get("/health").json()["production_ready"] is False
+
+
+
+def test_unverified_crop_climate_and_irrigation_catalogues_are_disabled():
+    assert crop_client.get("/supported-crops").status_code == 503
+    assert crop_client.get("/crop-details/wheat").status_code == 503
+
+    climate = weather_client.get("/climate-zones")
+    assert climate.status_code == 503
+    assert climate.json()["detail"]["code"] == "CLIMATE_REFERENCE_NOT_VERIFIED"
+
+    for path in ["/crop-water-database", "/irrigation-methods"]:
+        response = irrigation_client.get(path)
+        assert response.status_code == 503
+        assert response.json()["detail"]["code"].endswith("NOT_VERIFIED")
+
+    method = irrigation_client.post(
+        "/recommend-irrigation-method",
+        params={"crop_type": "wheat", "farm_size": 2.0},
+    )
+    assert method.status_code == 503
+    assert method.json()["detail"]["code"] == "IRRIGATION_METHOD_NOT_VALIDATED"
