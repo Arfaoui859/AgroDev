@@ -473,25 +473,14 @@ const FarmerDashboard: React.FC = () => {
           <ComprehensiveOverviewCards
             isArabic={isArabic}
             onCardClick={(cardType, action) => {
-              console.log("Card clicked:", cardType, action);
-              // Here you can implement navigation to specific sections
-              // For example, switch to the corresponding tab
-              switch (cardType) {
-                case "crops":
-                  // Could navigate to crops management page
-                  break;
-                case "livestock":
-                  // Could navigate to livestock page
-                  break;
-                case "financial":
-                  // Could navigate to financial dashboard
-                  break;
-                case "offline":
-                  navigate("/offline-manager");
-                  break;
-                default:
-                  break;
-              }
+              const destinations: Record<string, string> = {
+                crops: "/crop-planner",
+                livestock: "/livestock-dashboard",
+                financial: "/financial-dashboard",
+                offline: "/offline-manager",
+              };
+              const destination = destinations[cardType];
+              if (destination) navigate(destination, { state: { dashboardAction: action } });
             }}
           />
         </TabsContent>
@@ -732,16 +721,14 @@ const FarmerDashboard: React.FC = () => {
           <CommunicationHub
             isArabic={isArabic}
             onStartConsultation={(expertId, consultationType) => {
-              console.log(
-                "Starting consultation with expert:",
-                expertId,
-                consultationType,
-              );
-              // Here you can implement the actual consultation logic
+              navigate("/farmer-collaboration", {
+                state: { requestedExpertId: expertId, consultationType },
+              });
             }}
             onInitiateTrade={(traderId, tradeType) => {
-              console.log("Initiating trade with trader:", traderId, tradeType);
-              // Here you can implement the actual trade logic
+              navigate("/smart-marketplace", {
+                state: { requestedTraderId: traderId, tradeType },
+              });
             }}
           />
         </TabsContent>
