@@ -328,7 +328,7 @@ export default function NotificationCenter() {
     const payload = await response.json();
     const rows = Array.isArray(payload?.data) ? payload.data : [];
     setNotifications(rows.map((raw: any): Notification => {
-      const priority = raw.priority === "normal" ? "medium" : raw.priority || "medium";
+      const priority = raw.priority === "urgent" ? "critical" : raw.priority === "normal" ? "medium" : raw.priority || "medium";
       const category = raw.category === "agrogrowth_agent" ? "system" : raw.category || "system";
       const type = priority === "urgent" || priority === "critical" ? "critical" : priority === "high" ? "warning" : "info";
       const actionUrl = raw.action_url || undefined;
