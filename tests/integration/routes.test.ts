@@ -73,49 +73,34 @@ describe("🧭 Route mounting regressions", () => {
       .expect(400);
   });
 
-  test("predictive-analytics lists models and refuses fake training", async () => {
-    const models = await request(app).get("/api/predictive-analytics/models").expect(200);
-    expect(Array.isArray(models.body)).toBe(true);
+  test("predictive analytics refuses unvalidated model registry and inference", async () => {
+    const models = await request(app).get("/api/predictive-analytics/models").expect(503);
+    expect(models.body.code).toBe("PREDICTIVE_MODELS_NOT_VALIDATED");
+    expect(models.body.data).toBeNull();
 
-    const train = await request(app)
-      .post(`/api/predictive-analytics/models/${models.body[0].id}/train`)
-      .expect(501);
-    expect(train.body.isRealData).toBe(false);
-  });
-
-  test("predictive-analytics predict requires input and never fabricates", async () => {
-    await request(app)
-      .post("/api/predictive-analytics/models/model-yield-1/predict")
-      .send({ input_data: {} })
-      .expect(400);
-
-    const response = await request(app)
+    const prediction = await request(app)
       .post("/api/predictive-analytics/models/model-yield-1/predict")
       .send({ input_data: { rainfall: 300 } })
       .expect(503);
-    expect(response.body.isRealData).toBe(false);
+    expect(prediction.body.code).toBe("PREDICTIVE_MODELS_NOT_VALIDATED");
   });
 
-  test("risk-detection exposes all feeds and supports alert actions", async () => {
-    const alerts = await request(app).get("/api/risk-detection/alerts").expect(200);
-    expect(Array.isArray(alerts.body)).toBe(true);
-    expect(alerts.body.length).toBeGreaterThan(0);
-
-    await request(app).get("/api/risk-detection/weather-risks").expect(200);
-    await request(app).get("/api/risk-detection/diseases").expect(200);
-    await request(app).get("/api/risk-detection/market-risks").expect(200);
-    await request(app).get("/api/risk-detection/sensors").expect(200);
-
-    const alertId = alerts.body[0].id;
-    const ack = await request(app)
-      .post(`/api/risk-detection/alerts/${alertId}/acknowledge`)
-      .expect(200);
-    expect(ack.body.success).toBe(true);
-
-    const esc = await request(app)
-      .post(`/api/risk-detection/alerts/${alertId}/escalate`)
-      .expect(200);
-    expect(esc.body.alert.status).toBe("escalated");
+  test("risk detection does not expose synthetic alerts or impact values", async () => {
+    for (const path of [
+      "/api/risk-detection/alerts",
+      "/api/risk-detection/weather-risks",
+      "/api/risk-detection/diseases",
+      "/api/risk-detection/market-risks",
+      "/api/risk-detection/sensors",
+    ]) {
+      const response = await request(app).get(path).expect(503);
+      expect(response.body.code).toBe("RISK_FEEDS_NOT_VERIFIED");
+      expect(response.body.data).toBeNull();
+    }
+    const action = await request(app)
+      .post("/api/risk-detection/alerts/risk-1/acknowledge")
+      .expect(503);
+    expect(action.body.code).toBe("RISK_FEEDS_NOT_VERIFIED");
   });
 
   test("smart-advisor serves the context feeds the client requests", async () => {
