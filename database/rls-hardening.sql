@@ -88,8 +88,8 @@ ALTER TABLE public.weather_records        ENABLE ROW LEVEL SECURITY;
 -- ---------------------------------------------------------------------------
 -- 3. users / user_profiles
 --
--- The client signup path inserts its own row with the publishable key, so an
--- INSERT policy scoped to auth.uid() = id is required.
+-- Supabase Auth creates the application row through a trusted auth.users
+-- trigger. Direct self-service inserts are restricted to the farmer role.
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
 DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
@@ -111,7 +111,7 @@ CREATE OR REPLACE FUNCTION public.prevent_self_role_escalation()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = ''
-AS $
+AS $$
 BEGIN
   IF auth.uid() IS NOT NULL
      AND auth.role() = 'authenticated'
@@ -129,7 +129,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS prevent_self_role_escalation ON public.users;
 CREATE TRIGGER prevent_self_role_escalation
@@ -144,7 +144,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 BEGIN
   INSERT INTO public.users (
     id, email, full_name, role, email_verified, is_active
@@ -163,7 +163,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created_agrogrowth ON auth.users;
 CREATE TRIGGER on_auth_user_created_agrogrowth
