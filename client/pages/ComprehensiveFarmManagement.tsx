@@ -1501,14 +1501,12 @@ const ComprehensiveFarmManagement: React.FC<
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(
-              (Array.isArray(dashboardData.equipment) ? dashboardData.equipment : [])
             {(!Array.isArray(dashboardData.equipment) || dashboardData.equipment.length === 0) && (
               <div className="col-span-full rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
                 {isArabic ? "لا توجد معدات مسجلة في قاعدة بيانات المزرعة بعد. أضف المعدات من سجل المزرعة لعرض حالتها وصيانتها هنا." : "No equipment records are available yet. Add equipment to the farm register to track status and maintenance here."}
               </div>
             )}
-            .map((equipment: any) => (
+            {(Array.isArray(dashboardData.equipment) ? dashboardData.equipment : []).map((equipment: any) => (
               <Card
                 key={equipment.id}
                 className={`hover:shadow-lg transition-shadow ${equipment.status === "maintenance" ? "border-red-300" : ""}`}
