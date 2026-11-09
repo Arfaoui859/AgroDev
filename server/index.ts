@@ -318,7 +318,6 @@ export function createServer() {
   // verifiable data sources are connected.
   app.use(
     [
-      "/api/admin",
       "/api/government-dashboard",
       "/api/investor-dashboard",
       "/api/veterinarian-dashboard",
@@ -557,13 +556,13 @@ export function createServer() {
   // requireAdminAccess(): an x-admin-token, or a verified JWT whose role is
   // admin/administrator. Anonymous callers get 401; non-admin JWTs get 403.
   // (The non-production demo fallback still applies for local development.)
-  app.get("/api/admin/overview", requireAdminAccess, getAdminDashboard);
+  app.get("/api/admin/overview", requireAdminAccess, blockSimulatedData(), getAdminDashboard);
   app.get("/api/admin/users", requireAdminAccess, getAdminUsers);
-  app.get("/api/admin/system-metrics", requireAdminAccess, getAdminSystemMetrics);
-  app.get("/api/admin/usage-analytics", requireAdminAccess, getAdminUsageAnalytics);
-  app.get("/api/admin/security-events", requireAdminAccess, getAdminSecurityEvents);
-  app.get("/api/admin/activity-logs", requireAdminAccess, getAdminActivityLogs);
-  app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
+  app.get("/api/admin/system-metrics", requireAdminAccess, blockSimulatedData(), getAdminSystemMetrics);
+  app.get("/api/admin/usage-analytics", requireAdminAccess, blockSimulatedData(), getAdminUsageAnalytics);
+  app.get("/api/admin/security-events", requireAdminAccess, blockSimulatedData(), getAdminSecurityEvents);
+  app.get("/api/admin/activity-logs", requireAdminAccess, blockSimulatedData(), getAdminActivityLogs);
+  app.get("/api/admin/subscriptions", requireAdminAccess, blockSimulatedData(), getAdminSubscriptions);
 
   // Government Dashboard routes
   app.use("/api/government-dashboard", governmentDashboardRoutes);
