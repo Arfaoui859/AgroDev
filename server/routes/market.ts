@@ -86,6 +86,10 @@ export const getMarketData: RequestHandler = async (req, res) => {
       },
       forecast: generatePriceForecast(marketPrices),
       lastUpdated: new Date().toISOString(),
+      dataSource: "platform-database-unverified",
+      isRealData: false,
+      sourceVerified: false,
+      disclaimer: "البيانات مخزّنة في قاعدة المنصة ولم يتم التحقق منها بشكل مستقل أو مطابقتها مع أسعار رسمية.",
     };
 
     res.json({
@@ -386,8 +390,9 @@ function generatePriceForecast(prices: any[]): any {
   return {
     nextWeek: currentPrice * (1 + trend * 0.1),
     nextMonth: currentPrice * (1 + trend * 0.3),
-    confidence: prices.length > 20 ? "عالية" : "متوسطة",
-    method: "الانحدار الخطي",
+    confidence: "غير مُعاير",
+    method: "simple_linear_trend_unvalidated",
+    fieldValidated: false,
   };
 }
 
