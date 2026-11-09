@@ -16,7 +16,7 @@ concurrency:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Validate monitor configuration
         shell: bash
@@ -38,4 +38,4 @@ jobs:
         run: |
           set -euo pipefail
           BASE_URL="${MONITOR_URL%/}"
-          curl --fail-with-body --silent --show-error             --retry 2 --retry-delay 10 --connect-timeout 20 --max-time 240             -X POST "${BASE_URL}/api/internal/autonomous-agent/run"             -H "Authorization: Bearer ${MONITOR_TOKEN}"             -H "Content-Type: application/json"             -d '{}'
+          curl --fail-with-body --silent --show-error             --retry 4 --retry-delay 20 --retry-all-errors --connect-timeout 90 --max-time 240             -X POST "${BASE_URL}/api/internal/autonomous-agent/run"             -H "Authorization: Bearer ${MONITOR_TOKEN}"             -H "Content-Type: application/json"             -d '{}'
