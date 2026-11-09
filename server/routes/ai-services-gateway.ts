@@ -873,7 +873,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           basePlatformRecords.push("Account language preference=" + userResult.data.language_preference);
         }
         if (profileResult.data) {
-          if (Number.isFinite(Number(profileResult.data.experience_years))) {
+          if (profileResult.data.experience_years !== null && profileResult.data.experience_years !== undefined && Number.isFinite(Number(profileResult.data.experience_years))) {
             basePlatformRecords.push("Recorded farming experience=" + profileResult.data.experience_years + " years");
           }
           if (Array.isArray(profileResult.data.farming_specializations) && profileResult.data.farming_specializations.length) {
@@ -892,7 +892,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           farmContext = { platformRecords: basePlatformRecords };
           farmContextStatus = "no_farms";
         } else {
-          const farms = farmsResult.data;
+          const farms = farmsResult.data ?? [];
           const farmIds = farms.map((farm: any) => farm.id);
           const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, sensorResult, satelliteResult] = await Promise.all([
             db.from("crop_cultivations")
