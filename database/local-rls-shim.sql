@@ -8,6 +8,37 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Supabase's JWT-claim accessor. The real implementation reads
 -- current_setting('request.jwt.claims'); this shim mirrors that contract so
 -- policies written against auth.uid() behave identically.
+-- Supabase Storage compatibility objects for the disposable CI database.
+-- These mirror only the columns/functions referenced by RLS policies; they are
+-- not a replacement for Supabase Storage and are never applied to production.
+CREATE SCHEMA IF NOT EXISTS storage;
+
+CREATE TABLE IF NOT EXISTS storage.objects (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bucket_id text NOT NULL,
+  name text NOT NULL,
+  owner_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (bucket_id, name)
+);
+
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION storage.foldername(object_name text)
+RETURNS text[]
+LANGUAGE sql
+IMMUTABLE
+AS $
+  SELECT CASE
+    WHEN object_name IS NULL OR object_name = '' THEN ARRAY[]::text[]
+    ELSE string_to_array(trim(both '/' from object_name), '/')[1:greatest(array_length(string_to_array(trim(both '/' from object_name), '/'), 1) - 1, 0)]
+  END
+$;
+
+GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO anon, authenticated, service_role;
+
 CREATE SCHEMA IF NOT EXISTS auth;
 
 -- Minimal auth.users table for exercising the production signup trigger in CI.
