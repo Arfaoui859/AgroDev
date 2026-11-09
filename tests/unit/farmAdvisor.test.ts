@@ -195,6 +195,31 @@ describe("answerAgriculturalQuestion", () => {
     expect(summary).toContain("Latest sensor reading");
   });
 
+  test("uses saved market and live weather records when the LLM is unavailable", async () => {
+    const market = await answerAgriculturalQuestion({
+      question: "What is the recorded tomato market price?",
+      language: "en",
+      context: {
+        platformRecords: [
+          "Recorded market price [crop=tomato; price=2.75 TND/kg; market=Kasserine; date=2026-11-09; source=verified-market-survey]. Historical recorded quote, not guaranteed live data.",
+        ],
+      },
+    });
+    const weather = await answerAgriculturalQuestion({
+      question: "What is the current weather?",
+      language: "en",
+      context: {
+        platformRecords: [
+          "LIVE WEATHER FROM OPEN-METEO [observation_time=2026-11-09T18:00; provider=Open-Meteo; current_temperature=22.3 C; humidity=45%]. Real provider forecast, not an on-farm sensor measurement.",
+        ],
+      },
+    });
+    expect(market.dataSource).toBe("rule-based");
+    expect(market.answer).toContain("2.75 TND/kg");
+    expect(weather.answer).toContain("current_temperature=22.3 C");
+    expect(weather.answer).toContain("Open-Meteo");
+  });
+
   test("does not invent market prices in rule-based mode", async () => {
     const result = await answerAgriculturalQuestion({
       question: "ما هي أسعار السوق اليوم؟",
