@@ -11,12 +11,10 @@ import express from "express";
 import { createServer } from "../../server/index";
 
 /**
- * These tests assert the in-process rule-based fallback, so the external
- * microservice URLs must point somewhere nothing is listening. Otherwise a
- * developer or CI runner that happens to have the AI services up on their
- * default localhost ports (as .env specifies) would silently exercise the
- * microservice path instead, and these assertions would fail on the response
- * shape rather than on any real defect.
+ * These tests require unreachable external services to verify fail-closed
+ * soil behavior and explicitly labelled local fallbacks. Otherwise a developer
+ * or CI runner with services listening on default localhost ports could
+ * silently exercise a different code path.
  */
 const UNREACHABLE = "http://127.0.0.1:1";
 const savedEnv: Record<string, string | undefined> = {};
