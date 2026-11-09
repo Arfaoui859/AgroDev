@@ -48,6 +48,7 @@ import {
   Plus,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import { supabase } from "@/lib/supabase";
 
 interface NavigationItem {
   id: string;
@@ -258,14 +259,15 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
     let cancelled = false;
     const loadUnreadCount = async () => {
       try {
-        const response = await fetch("/api/notifications?status=unread");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const response = await fetch("/api/notifications?unread=true", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
         if (!response.ok) return;
         const payload = await response.json();
         const items = Array.isArray(payload) ? payload : (payload?.data ?? []);
-        const unread = items.filter(
-          (n: { isRead?: boolean }) => n.isRead !== true,
-        ).length;
-        if (!cancelled) setNotifications(unread);
+        if (!cancelled) setNotifications(items.length);
       } catch {
         // Leave the badge as-is when the endpoint is unreachable.
       }
