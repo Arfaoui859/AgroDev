@@ -122,6 +122,7 @@ import {
 import governmentDashboardRoutes from "./routes/government-dashboard";
 import {
   getFarms,
+  createFarm,
   getFarmById,
   getFields,
   getFieldById,
@@ -590,6 +591,7 @@ export function createServer() {
   // identity) before the handler runs. The scoped Supabase client then enforces
   // ownership through RLS as a second layer.
   app.get("/api/farms", requireAuth, getFarms);
+  app.post("/api/farms", requireAuth, createFarm);
   app.get("/api/farms/:farmId", requireAuth, getFarmById);
   app.get("/api/fields", requireAuth, getFields);
   app.get("/api/fields/:fieldId", requireAuth, getFieldById);
