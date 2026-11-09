@@ -1502,69 +1502,13 @@ const ComprehensiveFarmManagement: React.FC<
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {(
-              dashboardData.equipment || [
-                {
-                  id: 1,
-                  name: "جرار كوبوتا",
-                  nameArabic: "جرار كوبوتا",
-                  type: "Tractor",
-                  status: "operational",
-                  usage: 85,
-                  nextMaintenance: "2024-09-15",
-                  fuel: 75,
-                },
-                {
-                  id: 2,
-                  name: "حصادة القمح",
-                  nameArabic: "حصادة القمح",
-                  type: "Harvester",
-                  status: "operational",
-                  usage: 92,
-                  nextMaintenance: "2024-08-20",
-                  fuel: 45,
-                },
-                {
-                  id: 3,
-                  name: "مضخة الري",
-                  nameArabic: "مضخة الري",
-                  type: "Irrigation",
-                  status: "maintenance",
-                  usage: 78,
-                  nextMaintenance: "2024-08-10",
-                  fuel: 0,
-                },
-                {
-                  id: 4,
-                  name: "رشاش المبيدات",
-                  nameArabic: "رشاش المبيدات",
-                  type: "Sprayer",
-                  status: "operational",
-                  usage: 65,
-                  nextMaintenance: "2024-09-30",
-                  fuel: 90,
-                },
-                {
-                  id: 5,
-                  name: "مولد الكهرباء",
-                  nameArabic: "مولد الكهرباء",
-                  type: "Generator",
-                  status: "operational",
-                  usage: 45,
-                  nextMaintenance: "2024-10-05",
-                  fuel: 60,
-                },
-                {
-                  id: 6,
-                  name: "آلة البذر",
-                  nameArabic: "آلة البذر",
-                  type: "Seeder",
-                  status: "operational",
-                  usage: 30,
-                  nextMaintenance: "2024-11-15",
-                  fuel: 80,
-                },
-              ]
-            ).map((equipment: any) => (
+              (Array.isArray(dashboardData.equipment) ? dashboardData.equipment : [])
+            {(!Array.isArray(dashboardData.equipment) || dashboardData.equipment.length === 0) && (
+              <div className="col-span-full rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+                {isArabic ? "لا توجد معدات مسجلة في قاعدة بيانات المزرعة بعد. أضف المعدات من سجل المزرعة لعرض حالتها وصيانتها هنا." : "No equipment records are available yet. Add equipment to the farm register to track status and maintenance here."}
+              </div>
+            )}
+            .map((equipment: any) => (
               <Card
                 key={equipment.id}
                 className={`hover:shadow-lg transition-shadow ${equipment.status === "maintenance" ? "border-red-300" : ""}`}
