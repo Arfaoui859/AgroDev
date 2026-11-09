@@ -49,7 +49,7 @@ export default function FarmOperationsWorkspace(){
       setFarms(fp.data||[]);
       if(cp.success===true)setCrops(cp.data||[]);
       if(!farmId&&fp.data?.length)setFarmId(fp.data[0].id);
-    }catch(e){setError(e instanceof Error?e.message:"تعذّر تحميل البيانات.");}
+    }catch(e){setError(e instanceof Error?e.message:copy.loadError);}
     finally{setLoading(false);}
   };
   useEffect(()=>{void load();},[]);
@@ -66,10 +66,10 @@ export default function FarmOperationsWorkspace(){
       });
       const payload=await response.json();
       if(!response.ok||payload.success!==true)throw new Error(payload.message||payload.code||copy.saveFarmError);
-      setNotice("تم حفظ المزرعة في قاعدة البيانات.");
+      setNotice(copy.farmSaved);
       setFarmName("");setFarmRegion("");setFarmArea("");setFarmSoilType("");
       await load();
-    }catch(e){setError(e instanceof Error?e.message:"تعذّر حفظ المزرعة.");}
+    }catch(e){setError(e instanceof Error?e.message:copy.saveFarmError);}
     finally{setFarmSaving(false);}
   };
 
@@ -78,7 +78,7 @@ export default function FarmOperationsWorkspace(){
     if (!selectedFarm || Number(area) <= 0 || Number(area) > Number(selectedFarm.size_hectares)) { setError(copy.invalidArea); setSaving(false); return; }
     try{
       const {data:{session}}=await supabase.auth.getSession();
-      if(!session?.access_token)throw new Error("يلزم تسجيل الدخول.");
+      if(!session?.access_token)throw new Error(copy.login);
       const response=await fetch("/api/assistant/actions/cultivations",{
         method:"POST",
         headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},
@@ -86,10 +86,10 @@ export default function FarmOperationsWorkspace(){
       });
       const payload=await response.json();
       if(!response.ok||payload.success!==true)throw new Error(payload.message||payload.code||copy.saveCropError);
-      setNotice("تم حفظ المحصول في قاعدة البيانات.");
+      setNotice(copy.cropSaved);
       setCropName("");setArea("");
       await load();
-    }catch(e){setError(e instanceof Error?e.message:"تعذّر حفظ المحصول.");}
+    }catch(e){setError(e instanceof Error?e.message:copy.saveCropError);}
     finally{setSaving(false);}
   };
 
