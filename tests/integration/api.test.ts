@@ -225,8 +225,6 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
     describe("Privileged maintenance endpoints are not anonymous", () => {
       const privileged: Array<[string, string]> = [
         ["post", "/api/setup-admin"],
-        ["post", "/api/setup-demo-users"],
-        ["get", "/api/demo-users"],
         ["post", "/api/setup-inspector"],
         ["post", "/api/setup-users"],
         ["get", "/api/debug/auth"],
@@ -250,7 +248,7 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
             const prodApp = createServer();
             const agent = request(prodApp) as any;
             const response = await agent[method](path).send({});
-            expect([401, 403]).toContain(response.status);
+            expect(response.status).toBe(404);
           } finally {
             if (previousEnv === undefined) delete process.env.NODE_ENV;
             else process.env.NODE_ENV = previousEnv;
@@ -275,10 +273,8 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
             .get("/api/demo-users")
             .set("x-admin-token", "test-admin-token");
           expect(response.status).toBe(404);
-          expect(response.body).toMatchObject({
-            success: false,
-            error: "Demo provisioning is disabled",
-          });
+          expect(response.body.error).toMatch(/not found/i);
+          expect(response.body.demoUsers).toBeUndefined();
         } finally {
           if (previousToken === undefined) delete process.env.ADMIN_API_TOKEN;
           else process.env.ADMIN_API_TOKEN = previousToken;
@@ -320,7 +316,7 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
           .get("/api/demo-users")
           .set("x-admin-token", "test-admin-token")
           .expect(404);
-        expect(response.body.success).toBe(false);
+        expect(response.body.error).toMatch(/not found/i);
         expect(response.body.demoUsers).toBeUndefined();
       } finally {
         if (previousEnv === undefined) delete process.env.NODE_ENV;
