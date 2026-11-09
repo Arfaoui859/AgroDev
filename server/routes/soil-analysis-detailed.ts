@@ -109,6 +109,45 @@ function formatSoilDataForAI(data: RawSoilData): string {
   return JSON.stringify({notice:"Treat absent fields as unknown. Do not infer units or methods.",measurements:values.filter(([,v])=>v!==undefined&&v!==null&&v!=="").map(([name,value,unit])=>({name,value,unit}))},null,2);
 }
 
+/**
+ * The LLM may explain the measurements, but it is not the source of truth
+ * for what the user actually submitted. Rebuild this section server-side.
+ */
+function buildProvidedMeasurements(data: RawSoilData): Array<{
+  name: string; value: string | number; unit: string; source: string;
+}> {
+  const values: Array<[string, unknown, string]> = [
+    ["pH", data.ph, "unitless"],
+    ["رطوبة التربة", data.moisture, "%"],
+    ["المادة العضوية", data.organicMatter, "%"],
+    ["النيتروجين (N)", data.nitrogen, data.nutrientUnit || "الوحدة غير محددة"],
+    ["الفوسفور (P)", data.phosphorus, data.nutrientUnit || "الوحدة غير محددة"],
+    ["البوتاسيوم (K)", data.potassium, data.nutrientUnit || "الوحدة غير محددة"],
+    ["الكالسيوم", data.calcium, data.nutrientUnit || "الوحدة غير محددة"],
+    ["المغنيسيوم", data.magnesium, data.nutrientUnit || "الوحدة غير محددة"],
+    ["الكبريت", data.sulfur, data.nutrientUnit || "الوحدة غير محددة"],
+    ["الحديد", data.iron, data.nutrientUnit || "الوحدة غير محددة"],
+    ["الزنك", data.zinc, data.nutrientUnit || "الوحدة غير محددة"],
+    ["المنغنيز", data.manganese, data.nutrientUnit || "الوحدة غير محددة"],
+    ["النحاس", data.copper, data.nutrientUnit || "الوحدة غير محددة"],
+    ["البورون", data.boron, data.nutrientUnit || "الوحدة غير محددة"],
+    ["التوصيل الكهربائي (EC)", data.electricalConductivity, data.electricalConductivityUnit || "الوحدة غير محددة"],
+    ["الرمل", data.sandPercent, "%"],
+    ["الغرين", data.siltPercent, "%"],
+    ["الطين", data.clayPercent, "%"],
+    ["عمق العينة", data.sampleDepth, "cm"],
+  ];
+
+  return values
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .map(([name, value, unit]) => ({
+      name,
+      value: value as string | number,
+      unit,
+      source: "user-entered-unverified",
+    }));
+}
+
 class AIProviderUnavailableError extends Error {
   constructor(){ super("Soil analysis AI provider is not configured"); this.name="AIProviderUnavailableError"; }
 }
@@ -244,6 +283,7 @@ export const analyzeSoilDetailed: RequestHandler = async (req,res) => {
     if(!hasSoilAIProvider()) throw new AIProviderUnavailableError();
     const prompt=await loadSoilAnalysisPrompt();
     const report=extractAndValidateReport(await callAIService(prompt,formatSoilDataForAI(soilData)));
+    report.dataQuality.providedMeasurements = buildProvidedMeasurements(soilData);
     let persistence: { persisted: boolean; reason?: string; analysisId?: string };
     try {
       persistence = await persistSoilReport(req, soilData, report);
