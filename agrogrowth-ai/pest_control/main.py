@@ -206,6 +206,15 @@ async def upload_pest_image(file: UploadFile = File(...)):
     """
     رفع صورة للآفة أو المرض وتحليلها
     """
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "PEST_IMAGE_MODEL_NOT_AVAILABLE",
+            "message": "No trained, validated pest-image classifier is configured. Heuristic image outputs are disabled.",
+            "production_ready": False,
+        },
+    )
+
     try:
         # قراءة الصورة
         image_data = await file.read()
