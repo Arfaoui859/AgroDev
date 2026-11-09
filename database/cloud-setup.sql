@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS soil_analyses (
     sensor_data JSONB NOT NULL, -- Raw sensor measurements
     analysis_result JSONB, -- AI analysis results
     recommendations JSONB, -- AI recommendations
-    ph_level DECIMAL(3,2),
+    ph_level DECIMAL(4,2),
     nitrogen_level DECIMAL(8,2),
     phosphorus_level DECIMAL(8,2),
     potassium_level DECIMAL(8,2),
