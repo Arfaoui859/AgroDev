@@ -340,6 +340,19 @@ export function createServer() {
       "/api/smart-advisor",
       "/api/disease-treatment",
       "/api/gamification",
+      "/api/fertilizer",
+      "/api/animals",
+      "/api/animal-health",
+      "/api/breeding-recommendations",
+      "/api/feed-recommendations",
+      "/api/optimize-feed-budget",
+      "/api/health-alerts",
+      "/api/livestock-dashboard",
+      "/api/expenses",
+      "/api/revenues",
+      "/api/profitability-analysis",
+      "/api/financial-summary",
+      "/api/budget-plans",
       // SaaS / logistics / supply-chain modules are served from fixed in-memory
       // fixtures (mock vehicles, orders, plans, tracking records). Stamp them so
       // the SPA can disclose that these are illustrative, not live records.
