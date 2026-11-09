@@ -12,7 +12,9 @@ The agent evaluates persisted, user-owned farm records and creates deduplicated 
 
 Every alert carries an evidence payload and a stable event key. Duplicate notifications are prevented by a database unique index. These are operational reminders, not diagnoses or guaranteed agronomic advice.
 
-The first slice does **not** claim to monitor live sensor streams, forecast weather, detect plant disease continuously, track live market prices, or deliver push/SMS/email. It creates in-app notifications only. Those capabilities need their respective verified data integrations and delivery providers.\n\nThe assistant now persists user-scoped conversations/messages and can include the caller's registered farm size/location, active crop, latest lab/sensor soil measurements, and recent unarchived agent alerts in its context. If the session or farm records cannot be verified, the assistant labels its answer as general instead of pretending it has farm context.
+The first slice does **not** claim to monitor live sensor streams, forecast weather, detect plant disease continuously, track live market prices, or deliver push/SMS/email. It creates in-app notifications only. Those capabilities need their respective verified data integrations and delivery providers.
+
+The assistant now persists user-scoped conversations/messages and can include the caller's registered farm size/location, active crop, latest lab/sensor soil measurements, and recent unarchived agent alerts in its context. If the session or farm records cannot be verified, the assistant labels its answer as general instead of pretending it has farm context.
 
 ## 1. Apply the Supabase migration
 
@@ -77,7 +79,9 @@ The workflow schedule runs only after the workflow file is merged into the repos
 
 ## Source and test coverage
 
-- Engine: `server/services/ai/autonomousFarmAgent.ts`\n- Advisor farm/alert context: `server/routes/ai-services-gateway.ts` + `server/services/ai/farmAdvisor.ts`\n- Persistent assistant memory API: `server/routes/assistant-conversations.ts`
+- Engine: `server/services/ai/autonomousFarmAgent.ts`
+- Advisor farm/alert context: `server/routes/ai-services-gateway.ts` + `server/services/ai/farmAdvisor.ts`
+- Persistent assistant memory API: `server/routes/assistant-conversations.ts`
 - Authenticated API and protected scheduled endpoint: `server/routes/autonomous-farm-agent.ts`
 - Assistant panel: `client/components/AutonomousAgentPanel.tsx`
 - Database migration: `database/autonomous-farm-agent.sql`
