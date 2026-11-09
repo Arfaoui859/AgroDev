@@ -104,7 +104,7 @@ export async function runScheduledAutonomousAgent(req: Request, res: Response) {
   const settingsByUser = new Map((settingsRows ?? []).map((row: any) => [row.user_id, row]));
   const now = new Date();
   const summary = { usersDiscovered: userIds.length, usersScanned: 0, usersSkipped: 0, usersFailed: 0, notificationsCreated: 0, eventsDetected: 0 };
-  const failures: Array<{ userId: string; code: string }> = [];
+  const failures: Array<{ userIndex: number; code: string }> = [];
 
   for (const [userIndex, userId] of userIds.entries()) {
     const setting: any = settingsByUser.get(userId);
