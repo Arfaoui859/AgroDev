@@ -152,7 +152,6 @@ const AIAssistantChatbot: React.FC = () => {
 
   const initializeChatbot = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
     const welcomeMessage: ChatMessage = {
       id: 'welcome-1',
@@ -484,7 +483,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       await prepareCropAction(messageContent);
 
       // Update conversation
-      updateActiveConversation(userMessage, aiResponse);
+      await updateActiveConversation(userMessage, aiResponse);
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -603,56 +602,119 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     generateQuickActions();
   };
 
-  const loadConversations = () => {
-    // Demo conversations
-    const demoConversations: Conversation[] = [
-      {
-        id: 'conv-1',
-        title: language === 'ar' ? 'استشارة حول زراعة الطماطم' : 
-               language === 'en' ? 'Tomato Growing Consultation' : 
-               'Consultation Culture de Tomates',
-        messages: [],
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        category: 'agriculture',
-        tags: ['طماطم', 'زراعة', 'استشارة']
-      },
-      {
-        id: 'conv-2',
-        title: language === 'ar' ? 'تحليل أسعار السوق' : 
-               language === 'en' ? 'Market Price Analysis' : 
-               'Analyse des Prix du Marché',
-        messages: [],
-        createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        category: 'market',
-        tags: ['أسعار', 'سوق', 'تحليل']
+  const loadConversations = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setConversations([]);
+        return;
       }
-    ];
-    setConversations(demoConversations);
+      const response = await fetch("/api/assistant/conversations", {
+        headers: { Authorization: "Bearer " + session.access_token },
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || "CONVERSATION_LIST_FAILED");
+      setConversations((payload.data || []).map((row: any): Conversation => ({
+        id: row.id,
+        title: row.title,
+        messages: [],
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        category: row.category || "general",
+        tags: [],
+      })));
+    } catch (error) {
+      console.error("Could not load persistent assistant conversations:", error);
+      setConversations([]);
+    }
   };
 
-  const updateActiveConversation = (userMessage: ChatMessage, aiMessage: ChatMessage) => {
-    if (!activeConversation) {
-      // Create new conversation
-      const newConv: Conversation = {
-        id: `conv-${Date.now()}`,
-        title: userMessage.content.substring(0, 50) + (userMessage.content.length > 50 ? '...' : ''),
-        messages: [userMessage, aiMessage],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        category: aiMessage.category || 'general',
-        tags: []
+  const openConversation = async (conversationId: string) => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const response = await fetch(`/api/assistant/conversations/${encodeURIComponent(conversationId)}/messages`, {
+        headers: { Authorization: "Bearer " + session.access_token },
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || "CONVERSATION_MESSAGES_FAILED");
+      const loaded: ChatMessage[] = (payload.data || []).map((row: any): ChatMessage => ({
+        id: row.id,
+        type: row.role,
+        content: row.content,
+        timestamp: row.created_at,
+        language: row.language || language,
+        metadata: {
+          ...(row.metadata || {}),
+          dataSource: row.data_source === "llm" || row.data_source === "rule-based" ? row.data_source : undefined,
+          modelSource: row.model_source || undefined,
+        },
+        category: "general",
+      }));
+      setActiveConversation(conversationId);
+      setMessages(loaded);
+    } catch (error) {
+      console.error("Could not open assistant conversation:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateActiveConversation = async (userMessage: ChatMessage, aiMessage: ChatMessage) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + session.access_token,
       };
-      setConversations(prev => [newConv, ...prev]);
-      setActiveConversation(newConv.id);
-    } else {
-      // Update existing conversation
-      setConversations(prev => prev.map(conv => 
-        conv.id === activeConversation 
-          ? { ...conv, messages: [...conv.messages, userMessage, aiMessage], updatedAt: new Date().toISOString() }
-          : conv
-      ));
+      let conversationId = activeConversation;
+      if (!conversationId) {
+        const createResponse = await fetch("/api/assistant/conversations", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            title: userMessage.content.slice(0, 180),
+            language,
+            category: aiMessage.category || "general",
+          }),
+        });
+        const created = await createResponse.json();
+        if (!createResponse.ok || created.success !== true) throw new Error(created.code || "CONVERSATION_CREATE_FAILED");
+        conversationId = created.data.id;
+        setActiveConversation(conversationId);
+      }
+
+      for (const message of [userMessage, aiMessage]) {
+        const saveResponse = await fetch(`/api/assistant/conversations/${encodeURIComponent(conversationId)}/messages`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            role: message.type,
+            content: message.content,
+            language: message.language,
+            dataSource: message.metadata?.dataSource,
+            modelSource: message.metadata?.modelSource,
+            metadata: message.metadata || {},
+          }),
+        });
+        const saved = await saveResponse.json();
+        if (!saveResponse.ok || saved.success !== true) throw new Error(saved.code || "CONVERSATION_MESSAGE_SAVE_FAILED");
+      }
+      await loadConversations();
+    } catch (error) {
+      console.error("Assistant answer was generated but conversation persistence failed:", error);
+      setMessages(prev => [...prev, {
+        id: "memory-save-warning-" + Date.now(),
+        type: "assistant",
+        content: language === "ar"
+          ? "تنبيه: تم توليد الإجابة، لكن تعذّر حفظ سجل المحادثة في قاعدة البيانات. راجع إعدادات قاعدة البيانات أو أعد المحاولة."
+          : "The answer was generated, but its conversation history could not be saved to the database.",
+        timestamp: new Date().toISOString(),
+        language,
+        category: "general",
+      }]);
     }
   };
 
@@ -783,7 +845,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                   <div
                     key={conv.id}
                     className="p-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm"
-                    onClick={() => setActiveConversation(conv.id)}
+                    onClick={() => void openConversation(conv.id)}
                   >
                     <p className="font-medium truncate">{conv.title}</p>
                     <p className="text-xs text-gray-500">
@@ -818,7 +880,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                     <Badge variant="outline" className="text-xs">
                       {language === 'ar' ? 'متصل' : language === 'en' ? 'Online' : 'En Ligne'}
                     </Badge>
-                    <Button variant="ghost" size="sm" onClick={() => setMessages([])}>
+                    <Button variant="ghost" size="sm" onClick={() => { setMessages([]); setActiveConversation(null); }}>
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </div>
