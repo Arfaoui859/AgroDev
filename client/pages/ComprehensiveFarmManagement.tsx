@@ -1,6 +1,7 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   Card,
@@ -96,6 +97,7 @@ const ComprehensiveFarmManagement: React.FC<
   onEquipmentMaintenance,
 }) => {
   const { isArabic, toggleLanguage } = useLanguage();
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
