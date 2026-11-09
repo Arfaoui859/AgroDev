@@ -27,6 +27,15 @@ class SoilAnalysisService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
+  async listReports(limit = 20): Promise<Array<Record<string, unknown>>> {
+    const safeLimit = Math.min(Math.max(limit, 1), 50);
+    const response = await fetch(this.baseURL + "/reports?limit=" + safeLimit, { headers: await this.authHeaders() });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.success !== true || !Array.isArray(result.data)) {
+      throw new Error(result.message || result.error || "تعذّر تحميل سجل التقارير");
+    }
+    return result.data;
+  }
   async getReport(analysisId: string): Promise<Record<string, unknown>> {
     const response = await fetch(`${this.baseURL}/report/${encodeURIComponent(analysisId)}`, {
       headers: await this.authHeaders(),
