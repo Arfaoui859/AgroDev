@@ -954,7 +954,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .order("price_date", { ascending: false })
                 .limit(12)
             : { data: [], error: null };
-          const platformRecords: string[] = [];
+          const platformRecords: string[] = [...basePlatformRecords];
             for (const farm of farms) {
               const farmName = typeof farm.name === "string" ? farm.name : "Farm";
               platformRecords.push("Farm " + farmName + " · " + (Number(farm.size_hectares) || 0) + " ha");
