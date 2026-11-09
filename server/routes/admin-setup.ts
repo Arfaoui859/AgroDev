@@ -1,123 +1,129 @@
-import { RequestHandler } from 'express';
-import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
-import { safeInsert } from '../lib/supabaseHelpers';
+import { RequestHandler } from "express";
+import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
+
+const EMAIL_PATTERN = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
 
 export const setupAdminUser: RequestHandler = async (req, res) => {
   if (!isSupabaseConfigured || !supabaseAdmin) {
-    return res.status(500).json({
+    return res.status(503).json({
       success: false,
-      error: 'Supabase admin client not configured',
+      error: "Supabase admin client is not configured",
     });
   }
 
-  const { email = 'admin@agrogrowth.com', password = 'admin123' } = req.body || {};
+  const email = typeof req.body?.email === "string"
+    ? req.body.email.trim().toLowerCase()
+    : "";
+  const password = typeof req.body?.password === "string"
+    ? req.body.password
+    : "";
+
+  // Never ship or silently apply default administrator credentials.
+  if (!EMAIL_PATTERN.test(email) || password.length < 12) {
+    return res.status(400).json({
+      success: false,
+      error: "A valid email and a password of at least 12 characters are required",
+    });
+  }
 
   try {
     let userId: string;
     let created = false;
 
-    // Try to create user in Supabase Auth
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: 'مدير النظام',
-        full_name_ar: 'مدير النظام',
-        role: 'admin',
-      },
-    });
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: "مدير النظام" },
+      });
 
     if (authError) {
-      // If user already exists, find them
-      if (authError.message?.includes('already registered')) {
-        const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = (listData?.users as any[])?.find((u) => u.email === email);
-
-        if (!existingUser) {
-          return res.status(400).json({
-            success: false,
-            error: 'User already registered but cannot be found',
-          });
-        }
-
-        userId = existingUser.id;
-      } else {
+      if (!authError.message?.toLowerCase().includes("already registered")) {
         return res.status(400).json({
           success: false,
-          error: authError.message || 'Failed to create auth user',
+          error: authError.message || "Failed to create administrator identity",
         });
       }
+
+      const { data: listData, error: listError } =
+        await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (listError) throw listError;
+
+      const existingUser = listData.users.find(
+        (candidate) => candidate.email?.toLowerCase() === email,
+      );
+      if (!existingUser) {
+        return res.status(409).json({
+          success: false,
+          error: "The identity already exists but could not be resolved",
+        });
+      }
+      userId = existingUser.id;
     } else {
-      userId = authData.user?.id || '';
+      if (!authData.user?.id) {
+        throw new Error("Supabase Auth did not return a user ID");
+      }
+      userId = authData.user.id;
       created = true;
     }
 
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Failed to get user ID',
-      });
-    }
-
-    // Create or update user record in custom table
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
+    // Use only columns that exist in database/cloud-setup.sql.
+    const { data: persistedUser, error: userError } = await supabaseAdmin
+      .from("users")
       .upsert(
         {
           id: userId,
           email,
-          full_name: 'مدير النظام',
-          full_name_ar: 'مدير النظام',
-          role: 'admin',
-          verified: true,
-          created_at: new Date().toISOString(),
+          full_name: "مدير النظام",
+          role: "admin",
+          email_verified: true,
+          is_active: true,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'id' },
+        { onConflict: "id" },
       )
-      .select();
+      .select("id, email, role")
+      .single();
 
-    if (userError) {
-      console.log('User record upsert note:', userError.message);
+    if (userError || persistedUser?.role !== "admin") {
+      console.error("Administrator profile persistence failed:", userError);
+      return res.status(500).json({
+        success: false,
+        error: "Administrator identity exists, but the database role was not persisted",
+      });
     }
 
-    // Create user profile if it doesn't exist
-    const { data: profileData, error: profileError } = await supabaseAdmin
-      .from('user_profiles')
-      .upsert(
-        {
-          user_id: userId,
-          preferences: {
-            language: 'ar',
-            notifications: true,
-            weather_alerts: true,
-            market_alerts: true,
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' },
-      )
-      .select();
+    // Profile preferences are not columns in the current user_profiles schema.
+    const { data: existingProfile, error: profileLookupError } =
+      await supabaseAdmin
+        .from("user_profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    if (profileError) {
-      console.log('Profile upsert note:', profileError.message);
+    if (profileLookupError) {
+      console.warn("Administrator profile lookup failed:", profileLookupError.message);
+    } else if (!existingProfile) {
+      const { error: profileInsertError } = await supabaseAdmin
+        .from("user_profiles")
+        .insert({ user_id: userId });
+      if (profileInsertError) {
+        console.warn("Administrator profile creation failed:", profileInsertError.message);
+      }
     }
 
     return res.json({
       success: true,
-      message: `Admin user '${email}' has been set up successfully`,
+      message: "Administrator account and database role are configured",
       userId,
       email,
-      role: 'admin',
+      role: persistedUser.role,
       created,
     });
-  } catch (error: any) {
-    console.error('Setup admin user error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to set up admin user',
-    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to set up administrator";
+    console.error("Setup administrator error:", message);
+    return res.status(500).json({ success: false, error: message });
   }
 };
