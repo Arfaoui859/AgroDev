@@ -93,7 +93,8 @@ export function buildFarmAgentEvents(input: {
         farmId: cultivation.farm_id,
         type: "agent_harvest_upcoming",
         title: "موعد حصاد مسجل يقترب",
-        message: delta === 0\n          ? `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» هو اليوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`\n          : `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» بعد ${delta} يوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`,
+        message: delta === 0
+          ? `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» هو اليوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`\n          : `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» بعد ${delta} يوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`,
         priority: delta <= 2 ? "high" : "normal",
         actionUrl: "/crop-management",
         evidence: { cultivation_id: cultivation.id, expected_harvest_date: cultivation.expected_harvest_date, days_until_harvest: delta },
