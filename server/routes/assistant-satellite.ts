@@ -1,3 +1,4 @@
+import axios from "axios";
 import type { Request, Response, RequestHandler } from "express";
 import { scopedClientFromAuthHeader, supabaseAdmin } from "../lib/supabase";
 import { fetchFarmNdvi } from "../services/satellite/sentinelHub";
@@ -88,6 +89,15 @@ export const analyzeFarmSatelliteNdvi: RequestHandler = async (req: Request, res
     }
     if (message === "VALID_FARM_GEOJSON_BOUNDARY_REQUIRED") {
       return res.status(422).json({ success: false, code: message });
+    }
+    if (axios.isAxiosError(error)) {
+      const providerStatus = error.response?.status;
+      if (providerStatus === 429) {
+        return res.status(503).json({ success: false, code: "SATELLITE_PROVIDER_RATE_LIMITED", message: "Copernicus rate-limited the request. Retry later; no new observation was saved." });
+      }
+      if (providerStatus === 401 || providerStatus === 403) {
+        return res.status(502).json({ success: false, code: "SATELLITE_PROVIDER_AUTH_OR_PERMISSION_FAILED", message: "Copernicus rejected the configured OAuth credentials or account permissions." });
+      }
     }
     if (message === "NO_VALID_SATELLITE_OBSERVATIONS") {
       return res.status(404).json({ success: false, code: message, message: "No usable Sentinel-2 observations were returned for this period and polygon." });
