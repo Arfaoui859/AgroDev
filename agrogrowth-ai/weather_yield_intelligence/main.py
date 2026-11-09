@@ -149,35 +149,6 @@ def create_weather_based_plan(request: WeatherPlanningRequest):
         },
     )
 
-    try:
-        logger.info(f"Creating weather-based plan for location: {request.location.region}")
-        
-        input_data = request.model_dump()
-        result = get_weather_planner().create_weather_based_plan(input_data)
-        payload = to_json_safe(result)
-
-        advisory = narrate(
-            payload,
-            task="Explain this weather-based crop plan and the reasoning behind it.",
-            language=request.language,
-            context={"region": request.location.region, "crop_options": request.crop_options},
-        )
-        if advisory:
-            payload['advisory'] = advisory
-        
-        return {
-            'success': True,
-            'data': payload,
-            'data_source': 'synthetic-model',
-            'is_real_data': False,
-            'model_source': 'synthetic-demo',
-            'message': 'تم إنشاء الخطة المناخية بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error creating weather plan: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/predict-crop-yield")
 def predict_crop_yield(request: YieldPredictionRequest):
     """
@@ -191,35 +162,6 @@ def predict_crop_yield(request: YieldPredictionRequest):
             "production_ready": False,
         },
     )
-
-    try:
-        logger.info(f"Predicting yield for crop: {request.crop_type}")
-        
-        input_data = request.model_dump()
-        result = get_yield_predictor().predict_crop_yield(input_data)
-        payload = to_json_safe(result)
-
-        advisory = narrate(
-            payload,
-            task="Explain this yield prediction and how the farmer can improve it.",
-            language=request.language,
-            context={"crop_type": request.crop_type, "farm_size": request.farm_size},
-        )
-        if advisory:
-            payload['advisory'] = advisory
-        
-        return {
-            'success': True,
-            'data': payload,
-            'data_source': 'synthetic-model',
-            'is_real_data': False,
-            'model_source': 'synthetic-demo',
-            'message': 'تم التنبؤ بالمردودية بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error predicting yield: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/combined-analysis")
 def comprehensive_analysis(request: CombinedAnalysisRequest):
@@ -235,45 +177,6 @@ def comprehensive_analysis(request: CombinedAnalysisRequest):
         },
     )
 
-    try:
-        logger.info("Performing comprehensive weather and yield analysis")
-        
-        # تحليل التخطيط المناخي
-        weather_input = request.weather_planning.model_dump()
-        weather_analysis = get_weather_planner().create_weather_based_plan(weather_input)
-        
-        # تحليل توقع المردودية
-        yield_input = request.yield_prediction.model_dump()
-        yield_analysis = get_yield_predictor().predict_crop_yield(yield_input)
-        
-        # دمج النتائج
-        combined_insights = _generate_combined_insights(
-            weather_analysis, yield_analysis, request.analysis_scope
-        )
-        
-        # توصيات متكاملة
-        integrated_recommendations = _generate_integrated_recommendations(
-            weather_analysis, yield_analysis
-        )
-        
-        return {
-            'success': True,
-            'data': to_json_safe({
-                'weather_analysis': weather_analysis,
-                'yield_analysis': yield_analysis,
-                'combined_insights': combined_insights,
-                'integrated_recommendations': integrated_recommendations,
-                'executive_summary': _generate_executive_summary(
-                    weather_analysis, yield_analysis
-                )
-            }),
-            'message': 'تم إنجاز التحليل الشامل بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error in comprehensive analysis: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/upload-field-image")
 async def analyze_field_image(file: UploadFile = File(...)):
     """
@@ -287,25 +190,6 @@ async def analyze_field_image(file: UploadFile = File(...)):
             "production_ready": False,
         },
     )
-
-    try:
-        # قراءة الصورة
-        image_data = await file.read()
-        
-        # تحليل الصورة
-        analysis = await offload(
-            get_yield_predictor()._analyze_field_image, image_data
-        )
-        
-        return {
-            'success': True,
-            'data': to_json_safe(analysis),
-            'message': 'تم تحليل صورة الحقل بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error analyzing field image: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/climate-zones")
 def get_climate_zones():
@@ -337,17 +221,6 @@ def get_crop_yield_database():
         },
     )
 
-    try:
-        return {
-            'success': True,
-            'data': to_json_safe(get_yield_predictor().crop_yield_database),
-            'message': 'تم جلب قاعدة بيانات العوائد'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching yield database: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/assess-climate-suitability")
 def assess_crop_climate_suitability(
     crop_type: str,
@@ -366,33 +239,6 @@ def assess_crop_climate_suitability(
         },
     )
 
-    try:
-        input_data = {
-            'crop_options': [crop_type],
-            'location': location.model_dump(),
-            'current_conditions': current_weather.model_dump()
-        }
-        
-        # محاكاة تحلي�� مناخي مبسط
-        climate_analysis = {
-            'climate_zone': {'zone_type': 'mediterranean'},
-            'climate_trends': {'warming_rate': 0.2}
-        }
-        
-        suitability = get_weather_planner()._assess_crop_climate_suitability(
-            input_data, climate_analysis
-        )
-        
-        return {
-            'success': True,
-            'data': to_json_safe(suitability[0] if suitability else {}),
-            'message': 'تم تقييم الملائمة المناخية'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error assessing climate suitability: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/optimize-planting-schedule")
 def optimize_planting_schedule(
     crop_types: List[str],
@@ -410,33 +256,6 @@ def optimize_planting_schedule(
             "production_ready": False,
         },
     )
-
-    try:
-        input_data = {
-            'crop_options': crop_types,
-            'location': location.model_dump(),
-            'planning_horizon_months': planning_months
-        }
-        
-        # محاكاة تحليل مناخي
-        climate_analysis = {
-            'climate_zone': {'zone_type': 'mediterranean'},
-            'seasonal_outlook': {'favorable_months': [3, 4, 5, 10, 11]}
-        }
-        
-        optimal_timing = get_weather_planner()._determine_optimal_planting_times(
-            input_data, climate_analysis
-        )
-        
-        return {
-            'success': True,
-            'data': to_json_safe(optimal_timing),
-            'message': 'تم تحسين جدولة الزراعة'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error optimizing planting schedule: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 async def health_check():
