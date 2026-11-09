@@ -118,6 +118,23 @@ describe("🏡 Farm/field routes forward the caller's JWT to Supabase", () => {
     }
   });
 
+  test("POST /api/farms rejects an anonymous production caller before persistence", async () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      const res = await request(app).post("/api/farms").send({
+        name: "Must not be created",
+        region: "Siliana",
+        size_hectares: 2,
+      });
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("UNAUTHORIZED");
+      expect(createClientCalls().length).toBe(0);
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
+
   test("field alerts are explicitly empty until a real alert source is connected", async () => {
     const res = await request(app)
       .get("/api/field-alerts")
