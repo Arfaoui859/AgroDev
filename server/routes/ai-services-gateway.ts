@@ -838,6 +838,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       farmSizeHectares?: number;
       soil?: { ph?: number; organicMatter?: number; moisture?: number; temperature?: number };
       operationalAlerts?: string[];
+      platformRecords?: string[];
     } | undefined;
     let farmContextStatus: "linked" | "no_farms" | "anonymous" | "unavailable" = "anonymous";
 
@@ -870,26 +871,30 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           farmContextStatus = "no_farms";
         } else {
           const farmIds = farms.map((farm: any) => farm.id);
-          const [cropResult, soilResult, alertsResult] = await Promise.all([
+          const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, sensorResult] = await Promise.all([
             db.from("crop_cultivations")
-              .select("crop_name,status,updated_at")
-              .in("farm_id", farmIds)
-              .eq("status", "active")
-              .order("updated_at", { ascending: false })
-              .limit(1),
+              .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,updated_at")
+              .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(12),
             db.from("soil_analyses")
               .select("analysis_type,ph_level,organic_matter_percent,moisture_percent,temperature_celsius,analyzed_at")
-              .in("farm_id", farmIds)
-              .in("analysis_type", ["lab", "laboratory", "sensor"])
-              .order("analyzed_at", { ascending: false })
-              .limit(1),
+              .in("farm_id", farmIds).in("analysis_type", ["lab", "laboratory", "sensor"])
+              .order("analyzed_at", { ascending: false }).limit(1),
             db.from("notifications")
               .select("title,message,priority,created_at,archived_at")
-              .eq("user_id", userId)
-              .eq("category", "agrogrowth_agent")
-              .is("archived_at", null)
-              .order("created_at", { ascending: false })
-              .limit(8),
+              .eq("user_id", userId).eq("category", "agrogrowth_agent")
+              .is("archived_at", null).order("created_at", { ascending: false }).limit(8),
+            db.from("farm_sections")
+              .select("id,farm_id,name,area_hectares,soil_type,current_crop,planted_date,expected_harvest_date")
+              .in("farm_id", farmIds).limit(30),
+            db.from("plant_disease_detections")
+              .select("farm_id,cultivation_id,plant_type,primary_disease,severity_level,recovery_status,disease_confidence,detected_at")
+              .in("farm_id", farmIds).order("detected_at", { ascending: false }).limit(8),
+            db.from("weather_records")
+              .select("farm_id,temperature_celsius,humidity_percent,rainfall_mm,weather_conditions,record_date,source")
+              .in("farm_id", farmIds).order("record_date", { ascending: false }).limit(5),
+            db.from("sensor_devices")
+              .select("farm_id,device_type,status,battery_level,last_maintenance_date,updated_at")
+              .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(20),
           ]);
 
           if (cropResult.error || soilResult.error) {
@@ -915,12 +920,34 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             const operationalAlerts = (alertsResult.error ? [] : (alertsResult.data ?? []))
               .filter((alert: any) => typeof alert.title === "string" && typeof alert.message === "string")
               .map((alert: any) => `[${alert.priority || "normal"}] ${alert.title}: ${alert.message}`);
+            const platformRecords: string[] = [];
+            for (const farm of farms) {
+              const farmName = typeof farm.name === "string" ? farm.name : "Farm";
+              platformRecords.push("Farm " + farmName + " · " + (Number(farm.size_hectares) || 0) + " ha");
+              for (const section of (sectionsResult.data ?? []).filter((item: any) => item.farm_id === farm.id)) {
+                platformRecords.push("Plot " + section.name + " in " + farmName + ": " + section.area_hectares + " ha; crop=" + (section.current_crop || "not recorded") + "; soil=" + (section.soil_type || "not recorded") + "; planted=" + (section.planted_date || "unknown") + "; expected harvest=" + (section.expected_harvest_date || "unknown"));
+              }
+            }
+            for (const crop of cropResult.data ?? []) {
+              const farm = farms.find((item: any) => item.id === crop.farm_id);
+              platformRecords.push("Cultivation " + crop.crop_name + " [status=" + crop.status + "; stage=" + (crop.current_growth_stage || "not recorded") + "; planted=" + crop.planting_date + "; expected harvest=" + (crop.expected_harvest_date || "unknown") + "; farm=" + (farm?.name || crop.farm_id) + "; cultivation_id=" + crop.id + "]");
+            }
+            for (const detection of diseaseResult.data ?? []) {
+              platformRecords.push("Saved plant-health record [crop=" + (detection.plant_type || "unknown") + "; suspected condition=" + (detection.primary_disease || "not classified") + "; severity=" + (detection.severity_level || "not recorded") + "; recovery=" + (detection.recovery_status || "pending") + "; confidence=" + (detection.disease_confidence ?? "not reported") + "; detected=" + detection.detected_at + "; farm_id=" + detection.farm_id + "; cultivation_id=" + (detection.cultivation_id || "not linked") + "]. Saved model/inspection result, not a confirmed field diagnosis.");
+            }
+            for (const weather of weatherResult.data ?? []) {
+              platformRecords.push("Recorded weather [date=" + weather.record_date + "; temperature=" + (weather.temperature_celsius ?? "unknown") + " C; humidity=" + (weather.humidity_percent ?? "unknown") + "%; rainfall=" + (weather.rainfall_mm ?? "unknown") + " mm; conditions=" + (weather.weather_conditions || "unknown") + "; source=" + (weather.source || "unreported") + "]");
+            }
+            for (const sensor of sensorResult.data ?? []) {
+              platformRecords.push("Registered sensor [type=" + sensor.device_type + "; status=" + sensor.status + "; battery=" + (sensor.battery_level ?? "unreported") + "%; last maintenance=" + (sensor.last_maintenance_date || "unreported") + "; updated=" + (sensor.updated_at || "unreported") + "]. Registry data, not live telemetry.");
+            }
             farmContext = {
               governorate: typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
-              crop: cropResult.data?.[0]?.crop_name || undefined,
+              crop: cropResult.data?.find((item: any) => item.status === "active")?.crop_name || undefined,
               farmSizeHectares: rawSize > 0 ? rawSize : undefined,
               soil: Object.keys(soil).length ? soil : undefined,
               operationalAlerts,
+              platformRecords,
             };
             farmContextStatus = "linked";
           }
