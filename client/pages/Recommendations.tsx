@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
@@ -86,11 +85,22 @@ export default function Recommendations() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const location = localStorage.getItem('selectedLocation');
-    if (location) {
-      setLocationData(JSON.parse(location));
-      generateRecommendations(JSON.parse(location));
-    } else {
+    const storedLocation = localStorage.getItem('selectedLocation');
+    if (!storedLocation) {
+      navigate('/location');
+      return;
+    }
+    try {
+      const parsed: unknown = JSON.parse(storedLocation);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("INVALID_SAVED_LOCATION");
+      }
+      const location = parsed as LocationData;
+      setLocationData(location);
+      void generateRecommendations(location);
+    } catch {
+      localStorage.removeItem('selectedLocation');
+      toast.error('بيانات الموقع المحفوظة غير صالحة. أعد تحديد موقعك.');
       navigate('/location');
     }
   }, [navigate]);
@@ -189,11 +199,14 @@ export default function Recommendations() {
         timestamp: new Date().toISOString(),
         id: Date.now().toString(),
       };
-      const history = JSON.parse(
-        localStorage.getItem('cropRecommendationHistory') || '[]',
-      );
-      history.unshift(historyData);
-      localStorage.setItem('cropRecommendationHistory', JSON.stringify(history));
+      try {
+        const storedHistory: unknown = JSON.parse(localStorage.getItem('cropRecommendationHistory') || '[]');
+        const history = Array.isArray(storedHistory) ? storedHistory : [];
+        history.unshift(historyData);
+        localStorage.setItem('cropRecommendationHistory', JSON.stringify(history.slice(0, 50)));
+      } catch (storageError) {
+        console.warn('Recommendations are ready, but local history could not be updated:', storageError);
+      }
 
       toast.success('تم تحليل البيانات وإنتاج التوصيات بنجاح');
     } catch (error) {
