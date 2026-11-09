@@ -133,7 +133,7 @@ function formatSoilDataForAI(data: RawSoilData): string {
     ["Previous crop",data.previousCrop,""],["Target crop",data.targetCrop,""],["Target yield",data.targetYield,"unit not supplied"],["Farm area",data.farmAreaHectares,"ha"],["Irrigation method",data.irrigationMethod,""],["Region",data.region,""],["Crop mode",data.cropMode,""],
     ["Current crop",data.currentCrop,""],["Season",data.season,""],["Notes",data.notes,""],
   ];
-  return JSON.stringify({notice:"Treat absent fields as unknown. Do not infer units or methods.",measurements:values.filter(([,v])=>v!==undefined&&v!==null&&v!=="").map(([name,value,unit])=>({name,value,unit}))},null,2);
+  return JSON.stringify({referenceDateTunisia:new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Tunis"}).format(new Date()),notice:"Treat absent fields as unknown. Do not infer units or methods. Use referenceDateTunisia only to reason about the calendar; do not infer live weather or guarantee a sowing window.",measurements:values.filter(([,v])=>v!==undefined&&v!==null&&v!=="").map(([name,value,unit])=>({name,value,unit}))},null,2);
 }
 
 /**
