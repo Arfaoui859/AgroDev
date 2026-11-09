@@ -10,7 +10,7 @@ function unavailable(res: Parameters<RequestHandler>[1], error?: { code?: string
   const databaseCode = error?.code;
   const missingTable = databaseCode === "PGRST205" || /Could not find the table/i.test(error?.message ?? "");
   const denied = databaseCode === "42501";
-  return res.status(503).json({
+  return res.status(denied ? 403 : 503).json({
     success: false,
     code: missingTable ? "FARM_FINANCE_MIGRATION_REQUIRED" : denied ? "FARM_FINANCE_RLS_DENIED" : "FARM_FINANCE_DATABASE_UNAVAILABLE",
     databaseCode,
