@@ -1,4 +1,5 @@
 import { RawSoilData } from "@shared/api";
+import { supabase } from "@/lib/supabase";
 
 export interface SoilAnalysisProvenance {
   measurements: "user-provided-unverified";
@@ -15,10 +16,27 @@ export interface SoilAnalysisEnvelope<T = Record<string, unknown>> {
   isRealData: false;
   provenance: SoilAnalysisProvenance;
   analysisId?: string;
+  persistence?: { persisted: boolean; reason?: string };
 }
 
 class SoilAnalysisService {
   private readonly baseURL = "/api/soil-analysis";
+  private async authHeaders(): Promise<Record<string, string>> {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  async getReport(analysisId: string): Promise<Record<string, unknown>> {
+    const response = await fetch(`${this.baseURL}/report/${encodeURIComponent(analysisId)}`, {
+      headers: await this.authHeaders(),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.success !== true) {
+      throw new Error(result.message || result.error || `تعذّر استرجاع التقرير (HTTP ${response.status})`);
+    }
+    return result;
+  }
 
   async analyzeSoil(soilData: RawSoilData): Promise<SoilAnalysisEnvelope> {
     const validation = this.validateSoilData(soilData);
@@ -28,7 +46,7 @@ class SoilAnalysisService {
 
     const response = await fetch(`${this.baseURL}/analyze`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await this.authHeaders()) },
       body: JSON.stringify(soilData),
     });
     const result = await response.json().catch(() => ({}));
@@ -46,7 +64,7 @@ class SoilAnalysisService {
     }
     const response = await fetch(`${this.baseURL}/batch`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await this.authHeaders()) },
       body: JSON.stringify({ soils }),
     });
     const result = await response.json().catch(() => ({}));
