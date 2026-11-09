@@ -19,6 +19,10 @@ jest.mock("axios", () => {
   callable.__esModule = true;
   callable.default = callable;
   callable.post = callable;
+  callable.get = jest.fn(async () => ({
+    data: { status: "healthy", model_source: "gemini", is_real_model: true },
+    status: 200,
+  }));
   return callable;
 });
 
