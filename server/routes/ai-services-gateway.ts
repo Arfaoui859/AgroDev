@@ -292,27 +292,8 @@ export const matchCropToClimate = async (req: Request, res: Response) => {
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.SOIL_ANALYSIS);
   } catch (error) {
-    const climate = req.body?.climate_data ?? {};
-    const soil = req.body?.soil_data ?? {};
-    const fallback = recommendCrops({
-      ph: soil.ph,
-      temperature: climate.temperature,
-      rainfall: climate.rainfall,
-      salinity: soil.salinity,
-      season: climate.season,
-    });
-    res.json({
-      dataSource: "rule-based",
-      suitable_crops: fallback.recommendations.map((c, i) => ({
-        rank: i + 1,
-        crop: c.crop,
-        name_ar: c.nameAr,
-        suitability_score: c.suitabilityScore,
-        reasons: c.reasonsAr,
-      })),
-      best_crop: fallback.recommendations[0] ?? null,
-      disclaimer: fallback.disclaimer,
-    });
+    console.warn("Crop/climate service unavailable; no synthetic fallback is served.");
+    return handleAIServiceError(error as AxiosError, "Crop/Climate Matching", res);
   }
 };
 
@@ -417,14 +398,15 @@ export const getSmartCropRecommendations = async (
       : undefined,
   };
 
-  // Missing or invalid required measurements: use the honest local fallback.
-  // Never send a request that is guaranteed to fail FastAPI validation.
+  // Never manufacture defaults or return an unvalidated local substitute.
   if (requiredErrors.length > 0) {
-    console.warn(
-      "Crop microservice skipped: invalid or missing required measurements:",
-      requiredErrors,
-    );
-    return res.json(recommendCropsForUI(normaliseCropInput(body)));
+    return res.status(422).json({
+      success: false,
+      code: "CROP_INPUT_INVALID",
+      message: "Valid temperature, annual rainfall, and soil pH measurements are required.",
+      validationErrors: requiredErrors,
+      productionReady: false,
+    });
   }
 
   try {
@@ -441,11 +423,8 @@ export const getSmartCropRecommendations = async (
       AI_SERVICES.CROP_RECOMMENDATION,
     );
   } catch (error) {
-    console.warn(
-      "Crop microservice unavailable, using rule-based recommendations:",
-      (error as AxiosError).message,
-    );
-    return res.json(recommendCropsForUI(normaliseCropInput(body)));
+    console.warn("Crop recommendation service unavailable:", (error as AxiosError).message);
+    return handleAIServiceError(error as AxiosError, "Crop Recommendation", res);
   }
 };
 
@@ -472,32 +451,7 @@ export const getQuickCropRecommendation = async (
     );
     await respondFromMicroservice(res, response.data, AI_SERVICES.CROP_RECOMMENDATION);
   } catch (error) {
-    const fallback = recommendCropsForUI({
-      ph: soil_ph,
-      temperature,
-      rainfall,
-      area_hectares: farm_size,
-    });
-    const top = fallback.recommendations.slice(0, 3);
-    res.json({
-      dataSource: "rule-based",
-      quick_recommendations: top.map((c) => ({
-        crop_name: c.crop,
-        crop_name_ar: c.name_ar,
-        suitability_score: c.suitability_score,
-        expected_profit_per_hectare: c.profit_analysis.net_profit,
-        risk_level: c.risk_assessment.overall_risk_level,
-        growing_season: c.growing_season,
-      })),
-      best_crop: top[0]
-        ? {
-            crop_name: top[0].crop,
-            crop_name_ar: top[0].name_ar,
-            suitability_score: top[0].suitability_score,
-          }
-        : null,
-      disclaimer: fallback.disclaimer,
-    });
+    return handleAIServiceError(error as AxiosError, "Quick Crop Recommendation", res);
   }
 };
 
@@ -1200,11 +1154,9 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           "محرك قواعد زراعية محلي يوفر تحليلاً بديلاً عند تعذّر الخدمات (بدون تقديم نتائج كنموذج ذكاء اصطناعي).",
       },
       note:
-        unavailableCount > 0
-          ? "بعض خدمات الذكاء الاصطناعي غير متاحة؛ يتم استخدام محرك القواعد الزراعية كبديل شفاف."
-          : syntheticCount > 0
-            ? "جميع الخدمات تعمل، لكن بعضها مصرّح بأنه مدرّب على بيانات اصطناعية (model_source: synthetic-demo) وليس على بيانات حقلية موثّقة."
-            : "جميع خدمات الذكاء الاصطناعي تعمل بشكل طبيعي",
+        unavailableCount > 0 || syntheticCount > 0
+          ? "بعض خدمات الذكاء الاصطناعي غير متاحة أو غير موثّقة؛ لا يتم استخدام نتائج اصطناعية أو بدائل مخمّنة."
+          : "كل الخدمات التي اجتازت فحص المصدر متاحة؛ يلزم التحقق الميداني لكل قدرة قبل اعتمادها زراعياً.",
     };
 
     // Always return 200 status since unavailable services are expected in development
