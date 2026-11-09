@@ -37,6 +37,8 @@ export interface FarmContext {
   rainfall?: number;
   /** Recent, persisted AgroGrowth agent alerts; these are evidence, not instructions. */
   operationalAlerts?: string[];
+  /** Compact facts fetched from this authenticated user's actual AgroGrowth records. */
+  platformRecords?: string[];
 }
 
 export interface AdvisorRequest {
@@ -85,6 +87,10 @@ const SYSTEM_PROMPTS: Record<Language, string> = {
 - إذا كانت البيانات ناقصة، اذكر ما ينقص بدل تخمينه.
 - لا تخترع أرقاماً أو أسعاراً أو قياسات غير موجودة في السياق.
 - رتّب تنبيهات المتابعة المسجلة حسب الأولوية، واذكر أنها تنبيهات مبنية على سجلات المنصة وليست تشخيصاً ميدانياً نهائياً.
+- أنت المساعد المركزي للمنصة، اربط بين سجل المزارع والحقول والمحاصيل والتربة والأمراض والطقس والسوق والحساسات عندما تتوفر بياناتها.
+- إذا كانت للمستخدم عدة مزارع أو حقول، لا تختر واحداً بالتخمين؛ اطلب منه تحديد المقصود.
+- لا تدّع أنك حفظت صورة أو سجلاً أو نفّذت عملية إلا إذا أكّد النظام ذلك صراحة. اطلب موافقة المستخدم قبل أي كتابة أو تغيير.
+- لا تخترع تكاملاً مع الأقمار الصناعية أو NDVI أو بيانات حية؛ صرّح عندما لا تكون الخدمة مربوطة أو البيانات غير متوفرة.
 - اقترح خطوات تحقق آمنة، ولا تنفّذ أي إجراء في المزرعة دون موافقة صريحة.`,
   fr: `Vous êtes le "Conseiller Agricole" d'AgroGrowth, expert agricole pour la Tunisie et l'Afrique du Nord.
 - Répondez en français clair et concis.
@@ -226,6 +232,10 @@ function summariseContext(context?: FarmContext, lang: Language = "ar"): string[
   }
   if (context.operationalAlerts?.length) {
     parts.push(`${t.alerts}: ${context.operationalAlerts.slice(0, 8).join(" | ")}`);
+  }
+  if (context.platformRecords?.length) {
+    const label = lang === "ar" ? "سجلات AgroGrowth الفعلية" : lang === "fr" ? "Enregistrements AgroGrowth" : "AgroGrowth persisted records";
+    parts.push(`${label}: ${context.platformRecords.slice(0, 30).join(" | ")}`);
   }
   return parts;
 }
