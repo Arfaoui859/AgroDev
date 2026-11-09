@@ -49,6 +49,7 @@ export function normalizeSoilRequest(input: Record<string, unknown>): RawSoilDat
     iron: numeric("iron"), zinc: numeric("zinc"), manganese: numeric("manganese"),
     copper: numeric("copper"), boron: numeric("boron"),
     electricalConductivity: numeric("electricalConductivity", "electrical_conductivity", "salinity", "conductivity"),
+    electricalConductivityUnit: typeof pick("electricalConductivityUnit", "electrical_conductivity_unit", "ec_unit") === "string" ? String(pick("electricalConductivityUnit", "electrical_conductivity_unit", "ec_unit")) : undefined,
     soilTexture: typeof pick("soilTexture", "soil_texture") === "string" ? String(pick("soilTexture", "soil_texture")) : undefined,
     sandPercent: numeric("sandPercent", "sand_percent", "sand"),
     siltPercent: numeric("siltPercent", "silt_percent", "silt"),
@@ -98,7 +99,7 @@ function formatSoilDataForAI(data: RawSoilData): string {
     ["Sulfur",data.sulfur,data.nutrientUnit || "unit not supplied"],["Iron",data.iron,data.nutrientUnit || "unit not supplied"],
     ["Zinc",data.zinc,data.nutrientUnit || "unit not supplied"],["Manganese",data.manganese,data.nutrientUnit || "unit not supplied"],
     ["Copper",data.copper,data.nutrientUnit || "unit not supplied"],["Boron",data.boron,data.nutrientUnit || "unit not supplied"],
-    ["Electrical conductivity",data.electricalConductivity,"dS/m; method: "+(data.electricalConductivityMethod || "not supplied")],
+    ["Electrical conductivity",data.electricalConductivity,[data.electricalConductivityUnit || "unit not supplied","method: "+(data.electricalConductivityMethod || "not supplied")].join("; ")],
     ["Texture (user reported)",data.soilTexture,""],["Sand",data.sandPercent,"%"],["Silt",data.siltPercent,"%"],["Clay",data.clayPercent,"%"],
     ["Nutrient laboratory method",data.nutrientMethod,""],["Current crop",data.currentCrop,""],["Season",data.season,""],["Notes",data.notes,""],
   ];
