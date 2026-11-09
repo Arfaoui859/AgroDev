@@ -155,6 +155,24 @@ describe("answerAgriculturalQuestion", () => {
     expect(market.usedAgents).toContain("market");
   });
 
+  test("keeps account identity and the newest operational records in bounded context", async () => {
+    const records = [
+      "Authenticated AgroGrowth account role=investor",
+      "Farm A · 2 ha",
+      ...Array.from({ length: 48 }, (_, index) => "Historical record " + index),
+      "LIVE WEATHER FROM OPEN-METEO [provider=Open-Meteo; observation_time=2026-11-09T18:00]",
+      "Latest sensor reading [recorded_at=2026-11-09T17:55]",
+    ];
+    const result = await answerAgriculturalQuestion({
+      question: "Give me a farm and market briefing",
+      context: { platformRecords: records },
+    });
+    const summary = result.contextSummary.join(" ");
+    expect(summary).toContain("role=investor");
+    expect(summary).toContain("LIVE WEATHER FROM OPEN-METEO");
+    expect(summary).toContain("Latest sensor reading");
+  });
+
   test("does not invent market prices in rule-based mode", async () => {
     const result = await answerAgriculturalQuestion({
       question: "ما هي أسعار السوق اليوم؟",
