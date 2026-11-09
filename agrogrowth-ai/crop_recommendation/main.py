@@ -586,76 +586,14 @@ async def recommend_crops(request: CropRecommendationRequest):
         },
     )
 
-    try:
-        logger.info(
-            "Crop recommendation request: temperature=%s, rainfall=%s, pH=%s",
-            request.temperature,
-            request.annual_rainfall,
-            request.soil_ph,
-        )
-
-        input_data = request.model_dump()
-
-        result = crop_recommender.recommend_crops(input_data)
-
-        # Preserve truthful provenance.
-        recommender_source = get_crop_recommender_source()
-
-        result["data_source"] = recommender_source
-        result["is_real_data"] = False
-        result["model_source"] = recommender_source
-
-        # Advisory is optional: a provider failure must not
-        # make the numeric recommendation endpoint fail.
-        try:
-            advisory = narrate(
-                result,
-                task=(
-                    "Explain these crop recommendations and "
-                    "the reasoning behind them. Clearly distinguish "
-                    "indicative estimates from verified facts."
-                ),
-                language=request.language,
-                context={
-                    "temperature": request.temperature,
-                    "annual_rainfall": request.annual_rainfall,
-                    "soil_ph": request.soil_ph,
-                    "farm_size": request.farm_size,
-                    "location": request.location,
-                },
-            )
-
-            if advisory:
-                result["advisory"] = advisory
-
-        except Exception as advisory_error:
-            logger.warning(
-                "Optional crop advisory unavailable: %s",
-                advisory_error,
-            )
-
-            result["advisory"] = {
-                "status": "unavailable",
-                "message": "Advisory provider is temporarily unavailable.",
-            }
-
-        return CropRecommendationResponse(**result)
-
-    except ValueError as exc:
-        logger.warning("Invalid crop recommendation input: %s", exc)
-        raise HTTPException(status_code=400, detail=str(exc))
-
-    except Exception as exc:
-        logger.exception("Crop recommendation failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Crop recommendation failed.",
-        )
-
-
-# ---------------------------------------------------------
-# Profit estimation
-# ---------------------------------------------------------
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CROP_MODEL_NOT_VALIDATED",
+            "message": "The crop recommender was trained on synthetic samples. Production recommendations are disabled until a documented real dataset and independent evaluation are available.",
+            "production_ready": False,
+        },
+    )
 
 @app.post(
     "/estimate-profit",
@@ -672,42 +610,14 @@ async def estimate_profit(request: ProfitEstimationRequest):
         },
     )
 
-    try:
-        logger.info(
-            "Profit estimation request: crop=%s, farm_size=%s",
-            request.crop_name,
-            request.farm_size,
-        )
-
-        # Important: do not send empty optional values.
-        # This allows the engine to distinguish omitted inputs
-        # from values explicitly supplied by the farmer.
-        crop_data = request.model_dump(exclude_none=True)
-
-        result = profit_estimator.estimate_crop_profitability(
-            crop_data
-        )
-
-        return ProfitEstimationResponse(**result)
-
-    except ValueError as exc:
-        logger.warning("Invalid profit estimation input: %s", exc)
-        raise HTTPException(
-            status_code=400,
-            detail=str(exc),
-        )
-
-    except Exception:
-        logger.exception("Profit estimation failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Profit estimation failed.",
-        )
-
-
-# ---------------------------------------------------------
-# Crop comparison
-# ---------------------------------------------------------
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "FINANCIAL_REFERENCE_DATA_NOT_VERIFIED",
+            "message": "The profitability engine uses unverified reference prices and cost assumptions. Financial estimates are disabled until source, region, currency, date, and units are verified.",
+            "production_ready": False,
+        },
+    )
 
 @app.post(
     "/compare-crops",
@@ -724,41 +634,14 @@ async def compare_crops(request: CropComparisonRequest):
         },
     )
 
-    try:
-        logger.info(
-            "Crop comparison request: %s crops",
-            len(request.crops_data),
-        )
-
-        crops_data = [
-            crop.model_dump(exclude_none=True)
-            for crop in request.crops_data
-        ]
-
-        result = profit_estimator.compare_crop_profitability(
-            crops_data
-        )
-
-        return CropComparisonResponse(**result)
-
-    except ValueError as exc:
-        logger.warning("Invalid crop comparison input: %s", exc)
-        raise HTTPException(
-            status_code=400,
-            detail=str(exc),
-        )
-
-    except Exception:
-        logger.exception("Crop comparison failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Crop comparison failed.",
-        )
-
-
-# ---------------------------------------------------------
-# Supported crops
-# ---------------------------------------------------------
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "FINANCIAL_REFERENCE_DATA_NOT_VERIFIED",
+            "message": "Crop comparisons depend on unverified reference prices and cost assumptions and are disabled until verified inputs are available.",
+            "production_ready": False,
+        },
+    )
 
 @app.get("/supported-crops")
 async def get_supported_crops():
@@ -868,51 +751,14 @@ async def get_market_data(crop_name: str):
         },
     )
 
-    try:
-        normalized_name = crop_name.strip().lower()
-
-        if normalized_name not in profit_estimator.market_data:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Market reference for '{crop_name}' not found.",
-            )
-
-        market_info = profit_estimator.market_data[normalized_name]
-
-        return {
-            "status": "success",
-            "market_data": {
-                "crop_name": normalized_name,
-                "name_ar": market_info["name_ar"],
-                "base_price_per_kg": market_info["base_price_per_kg"],
-                "price_volatility": market_info["price_volatility"],
-                "seasonal_factors": market_info["seasonal_factors"],
-                "demand_trend": market_info["demand_trend"],
-                "export_potential": market_info["export_potential"],
-            },
-            "data_source": "indicative_reference_values",
-            "live_market_data": False,
-            "field_validated": False,
-            "disclaimer": (
-                "These values are indicative references, "
-                "not verified live market prices."
-            ),
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception:
-        logger.exception("Getting market data failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to retrieve market reference data.",
-        )
-
-
-# ---------------------------------------------------------
-# Quick crop recommendation
-# ---------------------------------------------------------
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "LIVE_MARKET_DATA_NOT_CONFIGURED",
+            "message": "The stored crop prices are indicative placeholders, not verified market observations. They are not exposed as market data.",
+            "production_ready": False,
+        },
+    )
 
 @app.post("/quick-recommendation")
 async def quick_recommendation(
@@ -949,73 +795,14 @@ async def quick_recommendation(
         },
     )
 
-    try:
-        input_data = {
-            "temperature": temperature,
-            "annual_rainfall": rainfall,
-            "soil_ph": soil_ph,
-            "farm_size": farm_size,
-            "soil_quality_score": 0.7,
-            "water_availability": 0.8,
-            "farmer_experience_years": 5,
-            "available_capital": 10000,
-            "risk_tolerance": 0.5,
-        }
-
-        result = crop_recommender.recommend_crops(input_data)
-
-        top_crops = result.get("recommendations", [])[:3]
-
-        simplified_crops = []
-
-        for crop in top_crops:
-
-            risk_assessment = crop.get("risk_assessment", {})
-            overall_risk = risk_assessment.get("overall_risk", {})
-
-            simplified_crops.append({
-                "crop_name": crop.get("crop"),
-                "crop_name_ar": crop.get("name_ar"),
-                "suitability_score": crop.get("suitability_score"),
-                "risk_level": overall_risk.get(
-                    "level", "غير محدد"
-                ),
-                "growing_season": crop.get("growing_season"),
-            })
-
-        return {
-            "status": "success",
-            "quick_recommendations": simplified_crops,
-            "best_crop": (
-                simplified_crops[0]
-                if simplified_crops else None
-            ),
-            "model_source": get_crop_recommender_source(),
-            "field_validated": False,
-            "disclaimer": (
-                "Suitability scores are indicative and not "
-                "field-validated. This endpoint does not estimate profit."
-            ),
-            "analysis_timestamp": datetime.now().isoformat(),
-        }
-
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=str(exc),
-        )
-
-    except Exception:
-        logger.exception("Quick recommendation failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Quick recommendation failed.",
-        )
-
-
-# ---------------------------------------------------------
-# Error handlers
-# ---------------------------------------------------------
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CROP_MODEL_NOT_VALIDATED",
+            "message": "The quick recommender calls the same synthetic-trained crop model and injects default soil, water, capital, and experience values. It is disabled for production.",
+            "production_ready": False,
+        },
+    )
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
