@@ -131,6 +131,40 @@ CREATE TRIGGER prevent_self_role_escalation
   BEFORE INSERT OR UPDATE OF role ON public.users
   FOR EACH ROW EXECUTE FUNCTION public.prevent_self_role_escalation();
 
+-- Create the application user row from the trusted Supabase Auth identity.
+-- Client-supplied role metadata is intentionally ignored: every new account
+-- starts as a farmer until an administrator approves a role change.
+CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $
+BEGIN
+  INSERT INTO public.users (
+    id, email, full_name, role, email_verified, is_active
+  ) VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(
+      NULLIF(NEW.raw_user_meta_data ->> 'full_name', ''),
+      split_part(COALESCE(NEW.email, ''), '@', 1)
+    ),
+    'farmer',
+    NEW.email_confirmed_at IS NOT NULL,
+    true
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created_agrogrowth ON auth.users;
+CREATE TRIGGER on_auth_user_created_agrogrowth
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
+
 DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
 CREATE POLICY "Admins can manage users" ON public.users
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
