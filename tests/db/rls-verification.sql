@@ -105,6 +105,34 @@ SELECT public.assert_true((SELECT count(*) FROM public.farm_sections) = 1,
   'farmer A sees own farm section');
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 1,
   'farmer A sees own soil analysis');
+
+-- The same owner-scoped policy must allow a real soil report insert.
+INSERT INTO public.soil_analyses (farm_id, section_id, analysis_type, sensor_data, analysis_result)
+VALUES (
+  'f0000000-0000-0000-0000-0000000000a1',
+  '50000000-0000-0000-0000-0000000000a1',
+  'lab',
+  '{"ph":6.5,"moisture":45}'::jsonb,
+  '{"executiveSummary":"RLS insert test"}'::jsonb
+);
+SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 2,
+  'farmer A can insert a soil analysis for their own farm');
+
+-- A valid JWT must not permit a write to another farmer's farm.
+DO $
+BEGIN
+  BEGIN
+    INSERT INTO public.soil_analyses (farm_id, analysis_type, sensor_data)
+    VALUES (
+      'f0000000-0000-0000-0000-0000000000b1',
+      'lab',
+      '{"ph":6.5}'::jsonb
+    );
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A inserted a soil analysis for farmer B';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot insert soil analysis for farmer B (RLS denied)';
+  END;
+END $;
 SELECT public.assert_true((SELECT count(*) FROM public.notifications) = 1,
   'farmer A sees own notifications');
 SELECT public.assert_true((SELECT count(*) FROM public.user_analytics) = 1,
