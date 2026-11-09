@@ -160,10 +160,15 @@ const EnhancedAnalysis: React.FC = () => {
       setReport(result);
       const timestamp = new Date().toISOString();
       setSavedAt(timestamp);
-      const history = JSON.parse(localStorage.getItem("agrogrowth.soilReports") || "[]");
-      const entry = { id: result.analysisId || `soil-${Date.now()}`, createdAt: timestamp, input: numericPayload, envelope: result };
-      localStorage.setItem("agrogrowth.soilReports", JSON.stringify([entry, ...history].slice(0, 20)));
-      localStorage.setItem("agrogrowth.latestSoilReport", JSON.stringify(entry));
+      try {
+        const stored = JSON.parse(localStorage.getItem("agrogrowth.soilReports") || "[]");
+        const history = Array.isArray(stored) ? stored : [];
+        const entry = { id: result.analysisId || `soil-${Date.now()}`, createdAt: timestamp, input: numericPayload, envelope: result };
+        localStorage.setItem("agrogrowth.soilReports", JSON.stringify([entry, ...history].slice(0, 20)));
+        localStorage.setItem("agrogrowth.latestSoilReport", JSON.stringify(entry));
+      } catch (storageError) {
+        console.warn("Soil report was generated but browser-local caching failed:", storageError);
+      }
       if (result.persistence?.persisted) soilAnalysisService.listReports(10).then(setHistoryReports).catch(() => undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذّر إكمال التحليل. حاول مجدداً.");
