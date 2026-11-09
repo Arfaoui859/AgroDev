@@ -182,6 +182,22 @@ const EnhancedAnalysis: React.FC = () => {
         const entry = { id: result.analysisId || `soil-${Date.now()}`, createdAt: timestamp, input: numericPayload, envelope: result };
         localStorage.setItem("agrogrowth.soilReports", JSON.stringify([entry, ...history].slice(0, 20)));
         localStorage.setItem("agrogrowth.latestSoilReport", JSON.stringify(entry));
+        const legacyEntry = {
+          id: entry.id,
+          location: String(numericPayload.location || numericPayload.region || ""),
+          area: numericPayload.farmAreaHectares === undefined ? "" : String(numericPayload.farmAreaHectares),
+          cropType: String(numericPayload.targetCrop || numericPayload.currentCrop || "other"),
+          ph: String(numericPayload.ph),
+          timestamp,
+          moisture: String(numericPayload.moisture),
+          nitrogen: numericPayload.nitrogen === undefined ? "" : String(numericPayload.nitrogen),
+          phosphorus: numericPayload.phosphorus === undefined ? "" : String(numericPayload.phosphorus),
+          potassium: numericPayload.potassium === undefined ? "" : String(numericPayload.potassium),
+          notes: String(numericPayload.notes || ""),
+        };
+        const previousHistory = JSON.parse(localStorage.getItem("soilHistory") || "[]");
+        const safeHistory = Array.isArray(previousHistory) ? previousHistory : [];
+        localStorage.setItem("soilHistory", JSON.stringify([legacyEntry, ...safeHistory.filter((item: any) => item?.id !== legacyEntry.id)].slice(0, 100)));
       } catch (storageError) {
         console.warn("Soil report was generated but browser-local caching failed:", storageError);
       }
