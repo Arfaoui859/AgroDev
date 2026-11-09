@@ -259,30 +259,91 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       }]);
       return;
     }
+
+    const imageContext = input.trim();
+    const cropPatterns: Array<[RegExp, string]> = [
+      [/طماطم|بندورة|tomato/i, "tomato"],
+      [/قمح|wheat/i, "wheat"],
+      [/زيتون|olive/i, "olive"],
+      [/شعير|barley/i, "barley"],
+      [/بطاطا|بطاطس|potato/i, "potato"],
+      [/فلفل|pepper/i, "pepper"],
+      [/بصل|onion/i, "onion"],
+      [/عنب|grape/i, "grape"],
+      [/تفاح|apple/i, "apple"],
+    ];
+    const cropType = cropPatterns.find(([pattern]) => pattern.test(imageContext))?.[1];
+
     setImageUploading(true);
+    setInput("");
     setMessages(prev => [...prev, {
       id: "image-user-" + Date.now(),
       type: "user",
-      content: (language === "ar" ? "صورة للتحليل: " : "Image for analysis: ") + file.name,
+      content: (imageContext ? imageContext + "\n" : "") +
+        (language === "ar" ? "صورة للتحليل: " : "Image for analysis: ") + file.name,
       timestamp: new Date().toISOString(),
       language,
       category: "agriculture"
     }]);
+
     try {
       const form = new FormData();
       form.append("file", file);
+      if (cropType) form.append("plant_type", cropType);
+      if (imageContext) form.append("symptoms", imageContext);
+
       const response = await fetch("/api/ai/images/detect-disease", { method: "POST", body: form });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message || payload.error || ("HTTP " + response.status));
-      const diagnosis = payload.diagnosis || payload.primary_disease || payload.disease || payload.result || payload;
+      if (!response.ok) throw new Error(payload.message || payload.error || payload.detail?.message || ("HTTP " + response.status));
+
+      const primary = payload.disease_detection?.primary_disease || payload.primary_disease || {};
+      const severity = payload.severity_assessment?.severity_level || primary.severity_level || primary.severity;
+      const symptoms = primary.symptoms || payload.disease_detection?.symptoms || [];
+      const treatment = payload.treatment_plan?.immediate_treatment || payload.treatment?.immediate_treatment || [];
+      const prevention = payload.treatment_plan?.prevention_measures || [];
+      const confidence = Number(primary.probability ?? payload.confidence ?? NaN);
+      const modelSource = payload.modelSource || payload.model_source || payload.provider || "غير معلن";
+      const diseaseName = primary.disease_name_ar || primary.disease || payload.disease || "غير محدد";
+      const lines = language === "ar"
+        ? [
+            "تحليل بصري أولي للصورة — موش تشخيص مخبري.",
+            "المحصول: " + (cropType || "غير محدد"),
+            "الاشتباه: " + diseaseName,
+            severity ? "مستوى الشدة المقدّر: " + severity : "",
+            Number.isFinite(confidence) && confidence > 0 ? "ثقة النموذج: " + Math.round(confidence * 100) + "% (تقدير آلي، موش نسبة إصابة مؤكدة)." : "",
+            primary.description || "",
+            Array.isArray(symptoms) && symptoms.length ? "الملاحظات البصرية:\n• " + symptoms.join("\n• ") : "",
+            Array.isArray(treatment) && treatment.length ? "خطوات أولية مقترحة:\n• " + treatment.join("\n• ") : "",
+            Array.isArray(prevention) && prevention.length ? "الوقاية والمتابعة:\n• " + prevention.join("\n• ") : "",
+            "ما تمش قياس صحة النبتة العامة أو العناصر الغذائية من الصورة. قبل استعمال مبيد أو تسميد، يلزم تثبّت مختص ومراعاة المحصول ومرحلة النمو.",
+            cropType ? "" : "باش نفسّر النتيجة بدقة أكثر: شنوّة نوع المحصول؟"
+          ].filter(Boolean).join("\n\n")
+        : [
+            "Preliminary visual assessment — not a laboratory diagnosis.",
+            "Crop: " + (cropType || "not specified"),
+            "Suspected condition: " + diseaseName,
+            severity ? "Estimated severity: " + severity : "",
+            Number.isFinite(confidence) && confidence > 0 ? "Model confidence: " + Math.round(confidence * 100) + "% (model estimate, not confirmed infection prevalence)." : "",
+            primary.description || "",
+            Array.isArray(symptoms) && symptoms.length ? "Visible observations:\n• " + symptoms.join("\n• ") : "",
+            Array.isArray(treatment) && treatment.length ? "Initial suggestions:\n• " + treatment.join("\n• ") : "",
+            Array.isArray(prevention) && prevention.length ? "Prevention and follow-up:\n• " + prevention.join("\n• ") : "",
+            "The image does not measure overall plant health or nutrient levels. Verify with an agronomist before pesticide or fertilizer decisions.",
+            cropType ? "" : "What crop is shown? I can refine the interpretation with that context."
+          ].filter(Boolean).join("\n\n");
+
       setMessages(prev => [...prev, {
         id: "image-result-" + Date.now(),
         type: "assistant",
-        content: (language === "ar" ? "نتيجة تحليل الصورة (يلزم التثبت ميدانياً):\n" : "Image analysis result (verify in the field):\n") +
-          (typeof diagnosis === "string" ? diagnosis : JSON.stringify(diagnosis, null, 2)),
+        content: lines,
         timestamp: new Date().toISOString(),
         language,
-        metadata: { sources: [payload.model_source || payload.modelSource || "Image diagnosis service"] },
+        metadata: {
+          dataSource: payload.dataSource === "llm" || payload.data_source === "vision-model" ? "llm" : undefined,
+          modelSource,
+          sources: [modelSource],
+          suggestions: cropType ? ["شنوّة نعمل توا؟", "كيفاش نمنع انتشار المرض؟"] : ["المحصول طماطم", "المحصول زيتون"]
+        },
         category: "agriculture"
       }]);
     } catch (error) {
@@ -291,8 +352,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         id: "image-error-" + Date.now(),
         type: "assistant",
         content: language === "ar"
-          ? "تعذّر تحليل الصورة حالياً: " + reason + ". تنجم تفتح صفحة تشخيص الصور: /disease-upload"
-          : "Image analysis unavailable: " + reason + ". Open /disease-upload.",
+          ? "تعذّر تحليل الصورة حالياً: " + reason + ". ما عطيتكش تشخيص تخميني. تنجم تعاود وقت ترجع الخدمة."
+          : "Image analysis is unavailable: " + reason + ". No guessed diagnosis was substituted.",
         timestamp: new Date().toISOString(),
         language,
         category: "general"
