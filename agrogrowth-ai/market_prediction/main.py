@@ -97,14 +97,14 @@ async def forecast_price(request: PriceForecastRequest):
     - Risk assessment
     - Market timing recommendations
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "LIVE_MARKET_FEED_NOT_CONFIGURED",
-                "message": "No licensed, timestamped market-price feed is configured. Synthetic forecasts are disabled.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "LIVE_MARKET_FEED_NOT_CONFIGURED",
+            "message": "No licensed, timestamped market-price feed is configured. Synthetic forecasts are disabled.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(f"Generating price forecast for {request.crop_type}")
@@ -170,14 +170,14 @@ async def analyze_supply_demand(request: SupplyDemandRequest):
     - Market equilibrium prediction
     - Policy recommendations
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "VERIFIED_MARKET_DATA_NOT_CONFIGURED",
-                "message": "Verified regional production and consumption data are not configured. Synthetic analysis is disabled.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "VERIFIED_MARKET_DATA_NOT_CONFIGURED",
+            "message": "Verified regional production and consumption data are not configured. Synthetic analysis is disabled.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(f"Analyzing supply-demand for {request.crop_type}")
@@ -235,14 +235,14 @@ async def get_market_conditions(
     - Market efficiency metrics
     - Short-term outlook
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "VERIFIED_MARKET_DATA_NOT_CONFIGURED",
-                "message": "Current market conditions cannot be reported without verified market data.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "VERIFIED_MARKET_DATA_NOT_CONFIGURED",
+            "message": "Current market conditions cannot be reported without verified market data.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(f"Getting market conditions for {crop_type}")
@@ -337,14 +337,14 @@ async def get_historical_performance(
     - Seasonal patterns
     - Volatility analysis
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "HISTORICAL_MARKET_DATA_NOT_CONFIGURED",
-                "message": "No verified historical market-price series is configured.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "HISTORICAL_MARKET_DATA_NOT_CONFIGURED",
+            "message": "No verified historical market-price series is configured.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(f"Getting historical data for {crop_type}")
@@ -445,14 +445,14 @@ async def create_price_alert(request: PriceAlertRequest, background_tasks: Backg
     Note: This is a placeholder for price alert functionality
     In production, this would integrate with notification systems
     """
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "PRICE_ALERTS_NOT_IMPLEMENTED",
-                "message": "Price alerts are not connected to persistent storage and a notification provider.",
-                "production_ready": False,
-            },
-        )
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "PRICE_ALERTS_NOT_IMPLEMENTED",
+            "message": "Price alerts are not connected to persistent storage and a notification provider.",
+            "production_ready": False,
+        },
+    )
 
     try:
         logger.info(f"Creating price alert for {request.crop_type}")
