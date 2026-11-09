@@ -328,6 +328,15 @@ def get_crop_yield_database():
     """
     الحصول على قاعدة بيانات عوائد المحاصيل
     """
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "YIELD_REFERENCE_DATA_NOT_VERIFIED",
+            "message": "The bundled yield reference values have no verified source, region, or observation period and are not exposed.",
+            "production_ready": False,
+        },
+    )
+
     try:
         return {
             'success': True,
