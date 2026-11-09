@@ -86,6 +86,7 @@ function validateSoilData(data: RawSoilData): string[] {
   const errors: string[] = [];
   if (data.sampleDepth !== undefined && (!Number.isFinite(data.sampleDepth) || !Number.isInteger(data.sampleDepth) || data.sampleDepth <= 0 || data.sampleDepth > 300)) errors.push("sampleDepth must be a whole number of centimeters greater than 0 and no more than 300 cm");
   if (data.electricalConductivity !== undefined && !data.electricalConductivityUnit?.trim()) errors.push("electricalConductivityUnit is required when electrical conductivity is supplied");
+  if (data.waterElectricalConductivity !== undefined && !data.waterElectricalConductivityUnit?.trim()) errors.push("waterElectricalConductivityUnit is required when irrigation water EC is supplied");
   if (!Number.isFinite(data.ph) || data.ph < 0 || data.ph > 14) errors.push("pH must be a finite number between 0 and 14");
   if (!Number.isFinite(data.moisture) || data.moisture < 0 || data.moisture > 100) errors.push("moisture must be a finite percentage between 0 and 100");
   const optional: Array<[keyof RawSoilData, number, number]> = [
@@ -95,6 +96,10 @@ function validateSoilData(data: RawSoilData): string[] {
     ["iron",0,1000000],["zinc",0,1000000],["manganese",0,1000000],
     ["copper",0,1000000],["boron",0,1000000],
     ["sandPercent",0,100],["siltPercent",0,100],["clayPercent",0,100],
+    ["calciumCarbonateTotal",0,100],["calciumCarbonateActive",0,100],["cec",0,200],
+    ["sodium",0,1000000],["sodiumAdsorptionRatio",0,1000],["exchangeableSodiumPercentage",0,100],
+    ["waterElectricalConductivity",0,100],["waterPh",0,14],["slopePercent",0,100],
+    ["targetYield",0,1000000],["farmAreaHectares",0,10000000],
   ];
   for (const [key,min,max] of optional) {
     const value = data[key];
@@ -122,7 +127,11 @@ function formatSoilDataForAI(data: RawSoilData): string {
     ["Copper",data.copper,data.nutrientUnit || "unit not supplied"],["Boron",data.boron,data.nutrientUnit || "unit not supplied"],
     ["Electrical conductivity",data.electricalConductivity,[data.electricalConductivityUnit || "unit not supplied","method: "+(data.electricalConductivityMethod || "not supplied")].join("; ")],
     ["Texture (user reported)",data.soilTexture,""],["Sand",data.sandPercent,"%"],["Silt",data.siltPercent,"%"],["Clay",data.clayPercent,"%"],
-    ["Nutrient laboratory method",data.nutrientMethod,""],["Current crop",data.currentCrop,""],["Season",data.season,""],["Notes",data.notes,""],
+    ["Nutrient laboratory method",data.nutrientMethod,""],["Total CaCO3",data.calciumCarbonateTotal,"%"],["Active CaCO3",data.calciumCarbonateActive,"%"],
+    ["CEC",data.cec,"unit not supplied"],["Sodium",data.sodium,data.nutrientUnit || "unit not supplied"],["SAR",data.sodiumAdsorptionRatio,""],["ESP",data.exchangeableSodiumPercentage,"%"],
+    ["Irrigation water EC",data.waterElectricalConductivity,data.waterElectricalConductivityUnit || "unit not supplied"],["Irrigation water pH",data.waterPh,""],["Slope",data.slopePercent,"%"],["Drainage",data.drainage,""],
+    ["Previous crop",data.previousCrop,""],["Target crop",data.targetCrop,""],["Target yield",data.targetYield,"unit not supplied"],["Farm area",data.farmAreaHectares,"ha"],["Irrigation method",data.irrigationMethod,""],["Region",data.region,""],["Crop mode",data.cropMode,""],
+    ["Current crop",data.currentCrop,""],["Season",data.season,""],["Notes",data.notes,""],
   ];
   return JSON.stringify({notice:"Treat absent fields as unknown. Do not infer units or methods.",measurements:values.filter(([,v])=>v!==undefined&&v!==null&&v!=="").map(([name,value,unit])=>({name,value,unit}))},null,2);
 }
@@ -154,6 +163,11 @@ function buildProvidedMeasurements(data: RawSoilData): Array<{
     ["الغرين", data.siltPercent, "%"],
     ["الطين", data.clayPercent, "%"],
     ["عمق العينة", data.sampleDepth, "cm"],
+    ["كربونات الكالسيوم الكلية", data.calciumCarbonateTotal, "%"], ["كربونات الكالسيوم النشطة", data.calciumCarbonateActive, "%"],
+    ["السعة التبادلية CEC", data.cec, "الوحدة غير محددة"], ["الصوديوم", data.sodium, data.nutrientUnit || "الوحدة غير محددة"],
+    ["SAR", data.sodiumAdsorptionRatio, "بدون وحدة"], ["ESP", data.exchangeableSodiumPercentage, "%"],
+    ["EC ماء الري", data.waterElectricalConductivity, data.waterElectricalConductivityUnit || "الوحدة غير محددة"], ["pH ماء الري", data.waterPh, "بدون وحدة"],
+    ["الانحدار", data.slopePercent, "%"], ["مردودية الهدف", data.targetYield, "الوحدة غير محددة"], ["مساحة المزرعة", data.farmAreaHectares, "ha"],
   ];
 
   return values
