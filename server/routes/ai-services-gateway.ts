@@ -908,7 +908,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               .is("archived_at", null).order("created_at", { ascending: false }).limit(8),
             db.from("farm_sections")
               .select("id,farm_id,name,area_hectares,soil_type,current_crop,planted_date,expected_harvest_date")
-              .in("farm_id", farmIds).limit(30),
+              .in("farm_id", farmIds).limit(15),
             db.from("plant_disease_detections")
               .select("farm_id,cultivation_id,plant_type,primary_disease,severity_level,recovery_status,disease_confidence,detected_at")
               .in("farm_id", farmIds).order("detected_at", { ascending: false }).limit(8),
@@ -917,13 +917,13 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               .in("farm_id", farmIds).order("record_date", { ascending: false }).limit(5),
             db.from("weather_forecasts")
               .select("farm_id,forecast_date,forecast_period,forecast_data,accuracy_score,source")
-              .in("farm_id", farmIds).order("forecast_date", { ascending: true }).limit(10),
+              .in("farm_id", farmIds).gte("forecast_date", new Date().toISOString().slice(0, 10)).order("forecast_date", { ascending: true }).limit(5),
             db.from("sensor_devices")
               .select("id,farm_id,section_id,device_type,status,battery_level,last_maintenance_date,updated_at")
-              .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(20),
+              .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(10),
             db.from("satellite_observations")
               .select("farm_id,index_name,mean_value,min_value,max_value,observed_from,observed_to,provider,sample_count,no_data_count")
-              .in("farm_id", farmIds).order("observed_to", { ascending: false }).limit(12),
+              .in("farm_id", farmIds).order("observed_to", { ascending: false }).limit(10),
           ]);
           const sensorIds = (sensorResult.data ?? []).map((sensor: any) => sensor.id).filter(Boolean);
           const sensorReadingsResult = sensorIds.length
@@ -931,7 +931,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .select("device_id,reading_type,value,unit,quality_indicator,recorded_at")
                 .in("device_id", sensorIds)
                 .order("recorded_at", { ascending: false })
-                .limit(20)
+                .limit(12)
             : { data: [], error: null };
 
           if (cropResult.error || soilResult.error) {
@@ -983,6 +983,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             for (const detection of diseaseResult.data ?? []) {
               platformRecords.push("Saved plant-health record [crop=" + (detection.plant_type || "unknown") + "; suspected condition=" + (detection.primary_disease || "not classified") + "; severity=" + (detection.severity_level || "not recorded") + "; recovery=" + (detection.recovery_status || "pending") + "; confidence=" + (detection.disease_confidence ?? "not reported") + "; detected=" + detection.detected_at + "; farm_id=" + detection.farm_id + "; cultivation_id=" + (detection.cultivation_id || "not linked") + "]. Saved model/inspection result, not a confirmed field diagnosis.");
             }
+            for (const observation of (satelliteResult.error ? [] : satelliteResult.data ?? [])) {
+              platformRecords.push("Saved satellite observation [index=" + observation.index_name + "; mean=" + observation.mean_value + "; min=" + observation.min_value + "; max=" + observation.max_value + "; interval=" + observation.observed_from + " to " + observation.observed_to + "; provider=" + observation.provider + "; valid_pixels=" + observation.sample_count + "; no_data_pixels=" + observation.no_data_count + "]. Periodic satellite vegetation index, not live telemetry or a disease diagnosis.");
+            }
             for (const price of marketResult.data ?? []) {
               platformRecords.push("Recorded market price [crop=" + price.crop_name + "; price=" + price.price_per_kg + " " + (price.currency || "TND") + "/kg; market=" + price.market_location + "; date=" + price.price_date + "; source=" + (price.source || "unreported") + "]. Historical recorded quote, not a guaranteed live market price.");
             }
@@ -992,7 +995,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             for (const forecast of (forecastResult.error ? [] : forecastResult.data ?? [])) {
               const compactForecast = typeof forecast.forecast_data === "string"
                 ? forecast.forecast_data.slice(0, 600)
-                : JSON.stringify(forecast.forecast_data ?? {}).slice(0, 600);
+                : JSON.stringify(forecast.forecast_data ?? {}).slice(0, 300);
               platformRecords.push("Stored weather forecast [date=" + forecast.forecast_date + "; period=" + (forecast.forecast_period || "unreported") + "; source=" + (forecast.source || "unreported") + "; accuracy=" + (forecast.accuracy_score ?? "unreported") + "; forecast_data=" + compactForecast + "]. Forecast record, not a live observation.");
             }
             for (const sensor of sensorResult.data ?? []) {
@@ -1001,9 +1004,6 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             for (const reading of (sensorReadingsResult.error ? [] : sensorReadingsResult.data ?? [])) {
               const device = (sensorResult.data ?? []).find((item: any) => item.id === reading.device_id);
               platformRecords.push("Stored sensor reading [sensor_type=" + (device?.device_type || "unknown") + "; reading=" + reading.reading_type + "; value=" + reading.value + " " + reading.unit + "; quality=" + (reading.quality_indicator || "unreported") + "; recorded_at=" + reading.recorded_at + "; farm_id=" + (device?.farm_id || "unknown") + "; section_id=" + (device?.section_id || "unlinked") + "]. Stored telemetry record; not necessarily current.");
-            }
-            for (const observation of (satelliteResult.error ? [] : satelliteResult.data ?? [])) {
-              platformRecords.push("Saved satellite observation [index=" + observation.index_name + "; mean=" + observation.mean_value + "; min=" + observation.min_value + "; max=" + observation.max_value + "; interval=" + observation.observed_from + " to " + observation.observed_to + "; provider=" + observation.provider + "; valid_pixels=" + observation.sample_count + "; no_data_pixels=" + observation.no_data_count + "]. Periodic satellite vegetation index, not live telemetry or a disease diagnosis.");
             }
             farmContext = {
               governorate: typeof firstLocation?.region === "string" ? firstLocation.region : undefined,
