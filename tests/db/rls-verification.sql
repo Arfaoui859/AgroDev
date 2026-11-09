@@ -315,6 +315,46 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN
     RAISE NOTICE 'ok - user cannot update own role';
   END;
+
+  BEGIN
+    UPDATE public.users SET email = 'attacker@rls.test'
+    WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    RAISE EXCEPTION 'RLS CHECK FAILED: user changed own email';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - user cannot change own email';
+  END;
+
+  BEGIN
+    UPDATE public.users SET is_active = false
+    WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    RAISE EXCEPTION 'RLS CHECK FAILED: user changed own active status';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - user cannot change own active status';
+  END;
+
+  BEGIN
+    UPDATE public.users SET email_verified = true
+    WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    RAISE EXCEPTION 'RLS CHECK FAILED: user changed own email verification';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - user cannot change own email verification';
+  END;
+
+  BEGIN
+    UPDATE public.users SET password_hash = 'attacker-controlled'
+    WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    RAISE EXCEPTION 'RLS CHECK FAILED: user changed own password hash';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - user cannot change own password hash';
+  END;
+
+  BEGIN
+    UPDATE public.users SET id = 'dddddddd-dddd-dddd-dddd-ddddddddddde'
+    WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    RAISE EXCEPTION 'RLS CHECK FAILED: user changed own identity id';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - user cannot change own identity id';
+  END;
 END $rls$;
 
 
