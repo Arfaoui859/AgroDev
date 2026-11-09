@@ -14,6 +14,8 @@ router.use((_req, res) => {
     code: "IRRIGATION_ANALYTICS_NOT_VERIFIED",
     message: "Irrigation analytics are unavailable until crop-water coefficients and farm data are verified.",
     data: null,
+    dataAvailable: false,
+    isRealData: false,
     provenance: { source: null, verified: false },
   });
 });
