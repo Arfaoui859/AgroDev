@@ -115,6 +115,24 @@ describe("answerAgriculturalQuestion", () => {
     expect(result.contextSummary.join(" ")).toContain("التربة");
   });
 
+  test("passes persisted platform records into the advisor context without inventing values", async () => {
+    const result = await answerAgriculturalQuestion({
+      question: "شنوّة وضع الحقول متاعي؟",
+      context: {
+        platformRecords: [
+          "Farm North Plot · 2 ha",
+          "Cultivation tomato [status=active; cultivation_id=real-record-id]",
+          "Saved plant-health record [suspected condition=early blight; recovery=pending]",
+          "Recorded weather [date=2026-11-08; source=Open-Meteo]",
+          "Registered sensor [status=maintenance]. Registry data, not live telemetry.",
+        ],
+      },
+    });
+    expect(result.contextSummary.join(" ")).toContain("سجلات AgroGrowth الفعلية");
+    expect(result.contextSummary.join(" ")).toContain("cultivation_id=real-record-id");
+    expect(result.contextSummary.join(" ")).toContain("not live telemetry");
+  });
+
   test("does not invent market prices in rule-based mode", async () => {
     const result = await answerAgriculturalQuestion({
       question: "ما هي أسعار السوق اليوم؟",
