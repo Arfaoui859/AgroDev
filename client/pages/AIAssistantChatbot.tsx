@@ -277,6 +277,15 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       [/بصل|onion|bsal|basal/i, "onion"],
       [/عنب|grape|3neb|3nab/i, "grape"],
       [/تفاح|apple|tfah|teffah/i, "apple"],
+      [/حمضيات|قوارص|برتقال|ليمون|citrus|orange|lemon|limoun/i, "citrus"],
+      [/نخيل|نخلة|تمر|دقلة|date palm|dates|nakhl|degla/i, "date_palm"],
+      [/لوز|almond|louz/i, "almond"],
+      [/حمص|chickpea|hommos|7oms/i, "chickpea"],
+      [/فول|fava|broad bean|foul/i, "fava_bean"],
+      [/ذرة|درة|maize|corn|dorra/i, "maize"],
+      [/فراولة|فريز|strawberry|fraise|frez/i, "strawberry"],
+      [/دلاع|بطيخ|watermelon|dellah/i, "watermelon"],
+      [/شمام|melon|battikh/i, "melon"],
     ];
     const cropType = cropPatterns.find(([pattern]) => pattern.test(imageContext))?.[1];
 
@@ -420,7 +429,16 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       [/شعير|barley|cha3ir|cha3er/i, "شعير"],
       [/بطاطا|بطاطس|potato|batata/i, "بطاطا"],
       [/فلفل|pepper|felfel|filfil/i, "فلفل"],
-      [/بصل|onion/i, "بصل"]
+      [/بصل|onion|bsal|basal/i, "بصل"],
+      [/حمضيات|قوارص|برتقال|ليمون|citrus|orange|lemon|limoun/i, "حمضيات"],
+      [/نخيل|نخلة|تمر|دقلة|date palm|dates|nakhl|degla/i, "نخيل تمر"],
+      [/لوز|almond|louz/i, "لوز"],
+      [/حمص|chickpea|hommos|7oms/i, "حمص"],
+      [/فول|fava|broad bean|foul/i, "فول"],
+      [/ذرة|درة|maize|corn|dorra/i, "ذرة"],
+      [/فراولة|فريز|strawberry|fraise|frez/i, "فراولة"],
+      [/دلاع|بطيخ|watermelon|dellah/i, "دلاع"],
+      [/شمام|melon|battikh/i, "شمام"]
     ];
     const found = crops.find(([pattern]) => pattern.test(message));
     if (!found) return;
@@ -528,6 +546,15 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       onion: /onion|بصل|oignon|bsal|basal/i,
       grape: /grape|عنب|raisin|3neb|3nab/i,
       apple: /apple|تفاح|pomme|tfah|teffah/i,
+      citrus: /citrus|orange|lemon|حمضيات|قوارص|برتقال|ليمون|limoun/i,
+      date_palm: /date palm|dates|نخيل|نخلة|تمر|دقلة|nakhl|degla/i,
+      almond: /almond|لوز|louz/i,
+      chickpea: /chickpea|حمص|hommos|7oms/i,
+      fava_bean: /fava|broad bean|فول|foul/i,
+      maize: /maize|corn|ذرة|درة|dorra/i,
+      strawberry: /strawberry|fraise|فراولة|فريز|frez/i,
+      watermelon: /watermelon|دلاع|بطيخ|dellah/i,
+      melon: /melon|شمام|battikh/i,
     };
     const currentCrop = cropTypeOverride || pendingDiseaseSave?.cropType || "";
     const matcher = cropMatchers[currentCrop];
