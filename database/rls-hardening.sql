@@ -423,3 +423,241 @@ DROP POLICY IF EXISTS "Admins manage system_settings" ON public.system_settings;
 CREATE POLICY "Admins manage system_settings" ON public.system_settings
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+-- ---------------------------------------------------------------------------
+-- 9. Supabase Storage: private objects are scoped to the owning account/farm.
+--
+-- Storage object names for farm-linked buckets use the farm UUID as the first
+-- path segment: <farm-id>/<filename>. Avatar paths use <auth-user-id>/...
+-- The documents bucket intentionally remains deny-all until a document
+-- ownership table and upload contract are defined.
+-- ---------------------------------------------------------------------------
+
+-- Remove legacy policy names so permissive policies cannot OR-bypass these.
+DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Farm images are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Farm owners can upload farm images" ON storage.objects;
+DROP POLICY IF EXISTS "Users can view their own soil images" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload soil images to their farms" ON storage.objects;
+DROP POLICY IF EXISTS "Users can view their own plant images" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload plant images to their farms" ON storage.objects;
+
+CREATE POLICY "AgroGrowth public avatar read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'avatars');
+
+CREATE POLICY "AgroGrowth owner avatar insert" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'avatars'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "AgroGrowth owner avatar update" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'avatars'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  )
+  WITH CHECK (
+    bucket_id = 'avatars'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "AgroGrowth owner avatar delete" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'avatars'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "AgroGrowth public farm image read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'farm-images');
+
+CREATE POLICY "AgroGrowth farm owner insert" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'farm-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth farm owner update" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'farm-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'farm-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth farm owner delete" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'farm-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth soil image owner access" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'soil-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth soil image owner insert" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'soil-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth soil image owner update" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'soil-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'soil-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth soil image owner delete" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'soil-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth plant image owner access" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'plant-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth plant image owner insert" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'plant-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth plant image owner update" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'plant-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'plant-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "AgroGrowth plant image owner delete" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'plant-images'
+    AND (
+      public.is_admin()
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id::text = (storage.foldername(name))[1]
+          AND f.owner_id = auth.uid()
+      )
+    )
+  );
+
