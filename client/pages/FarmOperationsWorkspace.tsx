@@ -19,6 +19,11 @@ export default function FarmOperationsWorkspace(){
   const [cropName,setCropName]=useState("");
   const [plantingDate,setPlantingDate]=useState(new Date().toISOString().slice(0,10));
   const [area,setArea]=useState("");
+  const [farmName,setFarmName]=useState("");
+  const [farmRegion,setFarmRegion]=useState("");
+  const [farmArea,setFarmArea]=useState("");
+  const [farmSoilType,setFarmSoilType]=useState("");
+  const [farmSaving,setFarmSaving]=useState(false);
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState<string|null>(null);
@@ -40,6 +45,25 @@ export default function FarmOperationsWorkspace(){
     finally{setLoading(false);}
   };
   useEffect(()=>{void load();},[]);
+
+  const addFarm=async(e:React.FormEvent)=>{
+    e.preventDefault();setFarmSaving(true);setError(null);setNotice(null);
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      if(!session?.access_token)throw new Error("يلزم تسجيل الدخول.");
+      const response=await fetch("/api/farms",{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},
+        body:JSON.stringify({name:farmName,region:farmRegion,size_hectares:Number(farmArea),soil_type:farmSoilType||null})
+      });
+      const payload=await response.json();
+      if(!response.ok||payload.success!==true)throw new Error(payload.message||payload.code||"تعذّر حفظ المزرعة.");
+      setNotice("تم حفظ المزرعة في قاعدة البيانات.");
+      setFarmName("");setFarmRegion("");setFarmArea("");setFarmSoilType("");
+      await load();
+    }catch(e){setError(e instanceof Error?e.message:"تعذّر حفظ المزرعة.");}
+    finally{setFarmSaving(false);}
+  };
 
   const addCrop=async(e:React.FormEvent)=>{
     e.preventDefault();setSaving(true);setError(null);setNotice(null);
@@ -67,6 +91,15 @@ export default function FarmOperationsWorkspace(){
     <Tabs defaultValue="crops" dir="rtl">
       <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="crops">المحاصيل والغراسة</TabsTrigger><TabsTrigger value="expenses">المصاريف</TabsTrigger></TabsList>
       <TabsContent value="crops" className="space-y-4">
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Plus className="h-4 w-4"/>تسجيل مزرعة جديدة</CardTitle></CardHeader><CardContent>
+          <form onSubmit={addFarm} className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1"><label className="text-sm">اسم المزرعة</label><Input required value={farmName} onChange={e=>setFarmName(e.target.value)} placeholder="اسم المزرعة"/></div>
+            <div className="space-y-1"><label className="text-sm">الولاية / المنطقة</label><Input required value={farmRegion} onChange={e=>setFarmRegion(e.target.value)} placeholder="مثال: القصرين"/></div>
+            <div className="space-y-1"><label className="text-sm">المساحة (هكتار)</label><Input required type="number" min="0.01" step="0.01" value={farmArea} onChange={e=>setFarmArea(e.target.value)} placeholder="المساحة الفعلية"/></div>
+            <div className="space-y-1"><label className="text-sm">نوع التربة (اختياري)</label><Input value={farmSoilType} onChange={e=>setFarmSoilType(e.target.value)} placeholder="غير معروف إذا لم يتم تحليله"/></div>
+            <div className="md:col-span-2"><Button type="submit" disabled={farmSaving||!farmName.trim()||!farmRegion.trim()||!farmArea||Number(farmArea)<=0}>{farmSaving?"جاري الحفظ...":"حفظ المزرعة"}</Button></div>
+          </form>
+        </CardContent></Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Plus className="h-4 w-4"/>إضافة محصول جديد</CardTitle></CardHeader><CardContent>
           {farms.length===0?<p className="text-sm text-muted-foreground">لا توجد مزرعة مسجلة. أضف مزرعة أولاً قبل إضافة محصول.</p>:<form onSubmit={addCrop} className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1"><label className="text-sm">المزرعة</label><Select value={farmId} onValueChange={setFarmId}><SelectTrigger><SelectValue placeholder="اختر المزرعة"/></SelectTrigger><SelectContent>{farms.map(f=><SelectItem key={f.id} value={f.id}>{f.name} · {f.size_hectares} ha</SelectItem>)}</SelectContent></Select></div>
