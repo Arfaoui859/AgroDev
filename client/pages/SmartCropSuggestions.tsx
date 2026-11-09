@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -228,7 +229,10 @@ export default function SmartCropSuggestions() {
   const loadIoTData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/sensors');
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/sensors', {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
       if (!response.ok) {
         throw new Error(`فشل تحميل بيانات المستشعرات (رمز ${response.status})`);
       }
