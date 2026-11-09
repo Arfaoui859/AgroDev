@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase";
-import { Sprout, Tractor, Wallet, TrendingUp, RefreshCw } from "lucide-react";
+import { Sprout, Tractor, Wallet, RefreshCw } from "lucide-react";
 
 type Farm = { id:string; name:string; size_hectares:number; location?:unknown };
 type Cultivation = { id:string; farm_id:string; crop_name:string; planting_date:string; area_hectares:number; status:string };
