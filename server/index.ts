@@ -415,7 +415,7 @@ export function createServer() {
   app.use("/api/smart-crop-suggestions", smartCropSuggestionsRoutes);
 
   // Smart Crop Alerts routes
-  app.use("/api", smartCropAlertsRoutes);
+  app.use("/api/smart-crop-alerts", smartCropAlertsRoutes);
 
   // Disease Treatment routes
   app.use("/api/disease-treatment", diseaseTreatmentRoutes);
