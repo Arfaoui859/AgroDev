@@ -359,7 +359,7 @@ export default function CropRotationPlanner() {
                         size="sm"
                         onClick={() => {
                           setSelectedPlan(plan);
-                          setSoilImpact(generateSoilImpactAnalysis(plan));
+                          setSoilImpact(null);
                         }}
                         className="flex-1"
                       >
@@ -519,7 +519,7 @@ export default function CropRotationPlanner() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={getPlanComparison()}>
+                <BarChart data={[]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
