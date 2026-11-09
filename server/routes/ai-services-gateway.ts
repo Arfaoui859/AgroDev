@@ -35,7 +35,7 @@ export function localServiceFallback(port: number): string {
   return process.env.NODE_ENV === "production" ? "" : `http://localhost:${port}`;
 }
 
-function normalizeServiceUrl(raw: string | undefined, fallback: string): string {
+export function normalizeServiceUrl(raw: string | undefined, fallback: string): string {
   const value = (raw && raw.trim()) || fallback;
   if (!value) return "";
   const withScheme = /^https?:\/\//i.test(value) ? value : `http://${value}`;
