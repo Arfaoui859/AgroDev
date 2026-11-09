@@ -1,6 +1,13 @@
 """Fail-closed regression tests for services with unvalidated synthetic models."""
 
+import pathlib
+import sys
+
 from fastapi.testclient import TestClient
+
+AI_ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(AI_ROOT) not in sys.path:
+    sys.path.insert(0, str(AI_ROOT))
 
 from pest_control.main import app as pest_app
 from weather_yield_intelligence.main import app as weather_app
