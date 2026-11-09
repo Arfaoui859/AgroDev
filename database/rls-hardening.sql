@@ -77,7 +77,6 @@ ALTER TABLE public.sensor_readings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.soil_images            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_analytics         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.weather_data           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weather_forecasts      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weather_records        ENABLE ROW LEVEL SECURITY;
 
@@ -88,21 +87,57 @@ ALTER TABLE public.weather_records        ENABLE ROW LEVEL SECURITY;
 -- INSERT policy scoped to auth.uid() = id is required.
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
-CREATE POLICY "Users can insert own profile" ON public.users
-  FOR INSERT WITH CHECK (auth.uid() = id);
-
 DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+CREATE POLICY "Users can insert own profile" ON public.users
+  FOR INSERT WITH CHECK (auth.uid() = id AND role = 'farmer');
+
 CREATE POLICY "Users can view own profile" ON public.users
   FOR SELECT USING (auth.uid() = id);
 
-DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 CREATE POLICY "Users can update own profile" ON public.users
   FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Prevent authenticated users from assigning or changing privileged roles.
+-- Elevated roles are provisioned only by trusted server-side administration.
+CREATE OR REPLACE FUNCTION public.prevent_self_role_escalation()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $
+BEGIN
+  IF auth.uid() IS NOT NULL
+     AND auth.role() = 'authenticated'
+     AND NOT public.is_admin() THEN
+    IF TG_OP = 'INSERT' AND NEW.role IS DISTINCT FROM 'farmer' THEN
+      RAISE EXCEPTION 'New accounts must start with the farmer role'
+        USING ERRCODE = '42501';
+    END IF;
+
+    IF TG_OP = 'UPDATE' AND NEW.role IS DISTINCT FROM OLD.role THEN
+      RAISE EXCEPTION 'Users cannot change their own role'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS prevent_self_role_escalation ON public.users;
+CREATE TRIGGER prevent_self_role_escalation
+  BEFORE INSERT OR UPDATE OF role ON public.users
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_self_role_escalation();
 
 DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
 CREATE POLICY "Admins can manage users" ON public.users
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Users can view all public profiles" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.user_profiles;
 DROP POLICY IF EXISTS "Users can view own user_profiles" ON public.user_profiles;
 CREATE POLICY "Users can view own user_profiles" ON public.user_profiles
   FOR SELECT USING (user_id = auth.uid());
@@ -119,10 +154,6 @@ DROP POLICY IF EXISTS "Users can delete own user_profiles" ON public.user_profil
 CREATE POLICY "Users can delete own user_profiles" ON public.user_profiles
   FOR DELETE USING (user_id = auth.uid());
 
-DROP POLICY IF EXISTS "Experts can view user_profiles" ON public.user_profiles;
-CREATE POLICY "Experts can view user_profiles" ON public.user_profiles
-  FOR SELECT USING (public.is_expert());
-
 DROP POLICY IF EXISTS "Admins can manage user_profiles" ON public.user_profiles;
 CREATE POLICY "Admins can manage user_profiles" ON public.user_profiles
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
@@ -134,62 +165,62 @@ CREATE POLICY "Admins can manage user_profiles" ON public.user_profiles
 -- a farmer can only ever see their own farm's data. Experts get read-only
 -- access; admins get full access.
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view own farms" ON public.farms;
+DROP POLICY IF EXISTS "Users can manage own farms" ON public.farms;
 DROP POLICY IF EXISTS "Owners manage own farms" ON public.farms;
 CREATE POLICY "Owners manage own farms" ON public.farms
   FOR ALL USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
 
 DROP POLICY IF EXISTS "Experts can view farms" ON public.farms;
-CREATE POLICY "Experts can view farms" ON public.farms
-  FOR SELECT USING (public.is_expert());
 
 DROP POLICY IF EXISTS "Admins can manage farms" ON public.farms;
 CREATE POLICY "Admins can manage farms" ON public.farms
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- farm_sections
+DROP POLICY IF EXISTS "Users can view sections of their own farms" ON public.farm_sections;
+DROP POLICY IF EXISTS "Users can manage sections of their own farms" ON public.farm_sections;
 DROP POLICY IF EXISTS "Owners manage own farm_sections" ON public.farm_sections;
 CREATE POLICY "Owners manage own farm_sections" ON public.farm_sections
   FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
 
 DROP POLICY IF EXISTS "Experts can view farm_sections" ON public.farm_sections;
-CREATE POLICY "Experts can view farm_sections" ON public.farm_sections
-  FOR SELECT USING (public.is_expert());
 
 -- soil_analyses
+DROP POLICY IF EXISTS "Users can view soil analyses of their own farms" ON public.soil_analyses;
+DROP POLICY IF EXISTS "Users can insert soil analyses for their own farms" ON public.soil_analyses;
 DROP POLICY IF EXISTS "Owners manage own soil_analyses" ON public.soil_analyses;
 CREATE POLICY "Owners manage own soil_analyses" ON public.soil_analyses
   FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
 
 DROP POLICY IF EXISTS "Experts can view soil_analyses" ON public.soil_analyses;
-CREATE POLICY "Experts can view soil_analyses" ON public.soil_analyses
-  FOR SELECT USING (public.is_expert());
 
 -- crop_recommendations
+DROP POLICY IF EXISTS "Users can view crop recommendations for their own farms" ON public.crop_recommendations;
+DROP POLICY IF EXISTS "Users can insert crop recommendations for their own farms" ON public.crop_recommendations;
 DROP POLICY IF EXISTS "Owners manage own crop_recommendations" ON public.crop_recommendations;
 CREATE POLICY "Owners manage own crop_recommendations" ON public.crop_recommendations
   FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
 
 DROP POLICY IF EXISTS "Experts can view crop_recommendations" ON public.crop_recommendations;
-CREATE POLICY "Experts can view crop_recommendations" ON public.crop_recommendations
-  FOR SELECT USING (public.is_expert());
 
 -- crop_cultivations
+DROP POLICY IF EXISTS "Users can view cultivations of their own farms" ON public.crop_cultivations;
+DROP POLICY IF EXISTS "Users can manage cultivations of their own farms" ON public.crop_cultivations;
 DROP POLICY IF EXISTS "Owners manage own crop_cultivations" ON public.crop_cultivations;
 CREATE POLICY "Owners manage own crop_cultivations" ON public.crop_cultivations
   FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
 
 DROP POLICY IF EXISTS "Experts can view crop_cultivations" ON public.crop_cultivations;
-CREATE POLICY "Experts can view crop_cultivations" ON public.crop_cultivations
-  FOR SELECT USING (public.is_expert());
 
 -- plant_disease_detections
+DROP POLICY IF EXISTS "Users can view disease detections of their own farms" ON public.plant_disease_detections;
+DROP POLICY IF EXISTS "Users can insert disease detections for their own farms" ON public.plant_disease_detections;
 DROP POLICY IF EXISTS "Owners manage own plant_disease_detections" ON public.plant_disease_detections;
 CREATE POLICY "Owners manage own plant_disease_detections" ON public.plant_disease_detections
   FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
 
 DROP POLICY IF EXISTS "Experts can view plant_disease_detections" ON public.plant_disease_detections;
-CREATE POLICY "Experts can view plant_disease_detections" ON public.plant_disease_detections
-  FOR SELECT USING (public.is_expert());
 
 -- ---------------------------------------------------------------------------
 -- 5. Child tables whose owner is reached through a parent row.
@@ -224,10 +255,13 @@ CREATE POLICY "Owners manage own leaf_health_analyses" ON public.leaf_health_ana
     )
   );
 
+DROP POLICY IF EXISTS "Users can view sensors of their own farms" ON public.sensor_devices;
+DROP POLICY IF EXISTS "Users can manage sensors of their own farms" ON public.sensor_devices;
 DROP POLICY IF EXISTS "Owners manage own sensor_devices" ON public.sensor_devices;
 CREATE POLICY "Owners manage own sensor_devices" ON public.sensor_devices
   FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
 
+DROP POLICY IF EXISTS "Users can view sensor readings from their own devices" ON public.sensor_readings;
 DROP POLICY IF EXISTS "Owners read own sensor_readings" ON public.sensor_readings;
 CREATE POLICY "Owners read own sensor_readings" ON public.sensor_readings
   FOR ALL USING (
@@ -246,6 +280,8 @@ CREATE POLICY "Owners read own sensor_readings" ON public.sensor_readings
 -- ---------------------------------------------------------------------------
 -- 6. User-scoped tables (previously RLS-disabled => world readable).
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view their own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can update their own notifications" ON public.notifications;
 DROP POLICY IF EXISTS "Users manage own notifications" ON public.notifications;
 CREATE POLICY "Users manage own notifications" ON public.notifications
   FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
@@ -265,6 +301,7 @@ CREATE POLICY "Users manage own push_subscriptions" ON public.push_subscriptions
 -- ---------------------------------------------------------------------------
 -- 7. AI service logs: a user sees their own calls; admins see everything.
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view their own AI service logs" ON public.ai_service_logs;
 DROP POLICY IF EXISTS "Users read own ai_service_logs" ON public.ai_service_logs;
 CREATE POLICY "Users read own ai_service_logs" ON public.ai_service_logs
   FOR SELECT USING (user_id = auth.uid());
@@ -300,17 +337,18 @@ DROP POLICY IF EXISTS "Admins manage market_predictions" ON public.market_predic
 CREATE POLICY "Admins manage market_predictions" ON public.market_predictions
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "All users can view weather records" ON public.weather_records;
 DROP POLICY IF EXISTS "Anyone can read weather_records" ON public.weather_records;
-CREATE POLICY "Anyone can read weather_records" ON public.weather_records
-  FOR SELECT USING (true);
+CREATE POLICY "Owners read own weather_records" ON public.weather_records
+  FOR SELECT USING (public.owns_farm(farm_id));
 
 DROP POLICY IF EXISTS "Admins manage weather_records" ON public.weather_records;
 CREATE POLICY "Admins manage weather_records" ON public.weather_records
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 DROP POLICY IF EXISTS "Anyone can read weather_forecasts" ON public.weather_forecasts;
-CREATE POLICY "Anyone can read weather_forecasts" ON public.weather_forecasts
-  FOR SELECT USING (true);
+CREATE POLICY "Owners read own weather_forecasts" ON public.weather_forecasts
+  FOR SELECT USING (public.owns_farm(farm_id));
 
 DROP POLICY IF EXISTS "Admins manage weather_forecasts" ON public.weather_forecasts;
 CREATE POLICY "Admins manage weather_forecasts" ON public.weather_forecasts
@@ -323,12 +361,3 @@ DROP POLICY IF EXISTS "Admins manage system_settings" ON public.system_settings;
 CREATE POLICY "Admins manage system_settings" ON public.system_settings
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- weather_data is farm-scoped (farm_id), so it is owner-managed like the other
--- agronomic records rather than public-read.
-DROP POLICY IF EXISTS "Owners manage own weather_data" ON public.weather_data;
-CREATE POLICY "Owners manage own weather_data" ON public.weather_data
-  FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
-
-DROP POLICY IF EXISTS "Experts can view weather_data" ON public.weather_data;
-CREATE POLICY "Experts can view weather_data" ON public.weather_data
-  FOR SELECT USING (public.is_expert());
