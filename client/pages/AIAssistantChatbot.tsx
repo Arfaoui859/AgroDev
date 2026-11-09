@@ -1093,6 +1093,12 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                         <div className="whitespace-pre-wrap text-sm">
                           {message.content}
                         </div>
+                        {message.attachments?.filter(attachment => attachment.type === "image").map((attachment, index) => (
+                          <a key={index} href={attachment.url} target="_blank" rel="noreferrer" className="block">
+                            <img src={attachment.url} alt={attachment.name} loading="lazy" className="max-h-64 max-w-full rounded-lg border object-contain" />
+                            <span className="text-xs text-blue-700 underline">{attachment.name}</span>
+                          </a>
+                        ))}
 
                         {/* Metadata for AI messages */}
                         {message.type === 'assistant' && message.metadata && (
