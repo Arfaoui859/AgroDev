@@ -50,6 +50,10 @@ services:
 
       - key: SESSION_SECRET
         generateValue: true
+      - key: AGRO_AGENT_MONITOR_TOKEN
+        sync: false
+      - key: AGRO_AGENT_SOIL_REVIEW_DAYS
+        value: "180"
 
       # --- Internal Python services (private network, value = host:port) ---
       - key: SOIL_ANALYSIS_URL
