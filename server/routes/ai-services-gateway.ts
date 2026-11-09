@@ -31,8 +31,13 @@ const HEURISTIC_MODEL_SOURCE_RE =
  * "host:port" with no scheme, and Docker/Render sometimes supply a trailing slash.
  * Axios needs an absolute URL, so we prepend http:// when the scheme is missing.
  */
-export function normalizeServiceUrl(raw: string | undefined, fallback: string): string {
+export function localServiceFallback(port: number): string {
+  return process.env.NODE_ENV === "production" ? "" : `http://localhost:${port}`;
+}
+
+function normalizeServiceUrl(raw: string | undefined, fallback: string): string {
   const value = (raw && raw.trim()) || fallback;
+  if (!value) return "";
   const withScheme = /^https?:\/\//i.test(value) ? value : `http://${value}`;
   return withScheme.replace(/\/+$/, "");
 }
@@ -47,40 +52,40 @@ export function normalizeServiceUrl(raw: string | undefined, fallback: string): 
  */
 const AI_SERVICES = {
   get SOIL_ANALYSIS() {
-    return normalizeServiceUrl(process.env.SOIL_ANALYSIS_URL, "http://localhost:8001");
+    return normalizeServiceUrl(process.env.SOIL_ANALYSIS_URL, localServiceFallback(8001));
   },
   get CROP_RECOMMENDATION() {
-    return normalizeServiceUrl(process.env.CROP_RECOMMENDATION_URL, "http://localhost:8002");
+    return normalizeServiceUrl(process.env.CROP_RECOMMENDATION_URL, localServiceFallback(8002));
   },
   get IMAGE_DIAGNOSIS() {
-    return normalizeServiceUrl(process.env.IMAGE_DIAGNOSIS_URL, "http://localhost:8003");
+    return normalizeServiceUrl(process.env.IMAGE_DIAGNOSIS_URL, localServiceFallback(8003));
   },
   get MARKET_FORECAST() {
     return normalizeServiceUrl(
       firstEnv("MARKET_FORECAST_URL", "MARKET_PREDICTION_URL"),
-      "http://localhost:8004",
+      localServiceFallback(8004),
     );
   },
   get SMART_ASSISTANT() {
     return normalizeServiceUrl(
       firstEnv("SMART_ASSISTANT_URL", "INTELLIGENT_AGENT_URL"),
-      "http://localhost:8005",
+      localServiceFallback(8005),
     );
   },
   get SMART_MARKETPLACE() {
     return normalizeServiceUrl(
       process.env.WEATHER_YIELD_INTELLIGENCE_URL ??
         process.env.SMART_MARKETPLACE_URL,
-      "http://localhost:8006",
+      localServiceFallback(8006),
     );
   },
   get PEST_CONTROL() {
-    return normalizeServiceUrl(process.env.PEST_CONTROL_URL, "http://localhost:8007");
+    return normalizeServiceUrl(process.env.PEST_CONTROL_URL, localServiceFallback(8007));
   },
   get IRRIGATION_OPTIMIZATION() {
     return normalizeServiceUrl(
       process.env.IRRIGATION_OPTIMIZATION_URL,
-      "http://localhost:8008",
+      localServiceFallback(8008),
     );
   },
 };
@@ -140,6 +145,11 @@ const callAIService = async (
   data?: any,
   headers?: any,
 ) => {
+  if (!serviceUrl) {
+    const error = new Error("SERVICE_URL_NOT_CONFIGURED") as AxiosError;
+    error.request = {};
+    throw error;
+  }
   const url = `${serviceUrl}${endpoint}`;
   const config = {
     method,
@@ -1039,6 +1049,15 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     const healthChecks = await Promise.allSettled(
       services.map(async (service) => {
         const checkStart = Date.now();
+        if (!service.url) {
+          return {
+            ...service,
+            status: "not_configured",
+            responseTime: 0,
+            lastChecked: new Date().toISOString(),
+            error: "SERVICE_URL_NOT_CONFIGURED",
+          };
+        }
         try {
           const response = await axios.get(`${service.url}/health`, { timeout: 3000 });
           // A reachable service is not evidence of a trained model: the bundled
@@ -1086,7 +1105,8 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     });
 
     const availableCount = serviceResults.filter(s => s.status === "available").length;
-    const unavailableCount = serviceResults.length - availableCount;
+    const unavailableCount = serviceResults.filter(s => s.status === "unavailable").length;
+    const notConfiguredCount = serviceResults.filter(s => s.status === "not_configured").length;
     // Services that answer /health but self-declare synthetic/heuristic models.
     const syntheticCount = serviceResults.filter(
       (s: any) => s.modelTrainedOnSyntheticData === true,
@@ -1096,7 +1116,8 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
       overview: {
         totalServices: serviceResults.length,
         availableServices: availableCount,
-        unavailableServices: unavailableCount,
+        unavailableServices: unavailableCount + notConfiguredCount,
+        notConfiguredServices: notConfiguredCount,
         /** Reachable services whose own /health reports a synthetic/heuristic model. */
         syntheticModelServices: syntheticCount,
         lastUpdated: new Date().toISOString(),
@@ -1111,8 +1132,8 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           "محرك قواعد زراعية محلي يوفر تحليلاً بديلاً عند تعذّر الخدمات (بدون تقديم نتائج كنموذج ذكاء اصطناعي).",
       },
       note:
-        unavailableCount > 0 || syntheticCount > 0
-          ? "بعض خدمات الذكاء الاصطناعي غير متاحة أو غير موثّقة؛ لا يتم استخدام نتائج اصطناعية أو بدائل مخمّنة."
+        unavailableCount > 0 || notConfiguredCount > 0 || syntheticCount > 0
+          ? "بعض خدمات الذكاء الاصطناعي غير متاحة أو غير مضبوطة أو غير موثّقة؛ لا يتم استخدام نتائج اصطناعية أو بدائل مخمّنة."
           : "كل الخدمات التي اجتازت فحص المصدر متاحة؛ يلزم التحقق الميداني لكل قدرة قبل اعتمادها زراعياً.",
     };
 
