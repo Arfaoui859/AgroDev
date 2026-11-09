@@ -5,7 +5,6 @@ import type {
   User as AppUser,
   UserProfile as AppUserProfile,
 } from "../lib/supabase";
-import { safeInsert } from "../lib/supabaseHelpers";
 import { retryWithBackoff } from "../lib/retry";
 import { Session } from "@supabase/supabase-js";
 
@@ -251,7 +250,7 @@ Row Level Security (RLS) policies are blocking access.
               user.email?.split("@")[0] ||
               "User",
             full_name_ar: user.user_metadata?.full_name_ar || "مستخدم",
-            role: user.user_metadata?.role || "farmer",
+            role: "farmer",
             verified: user.email_confirmed_at ? true : false,
             created_at: user.created_at,
             updated_at: user.updated_at || user.created_at,
@@ -326,11 +325,17 @@ Row Level Security (RLS) policies are blocking access.
     try {
       console.log("🔄 Starting Supabase Auth signup for:", email);
 
+      const requestedRole = userData.role;
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userData,
+          data: {
+            full_name: userData.full_name,
+            full_name_ar: userData.full_name_ar,
+            phone: userData.phone,
+            requested_role: requestedRole,
+          },
         },
       });
 
@@ -361,111 +366,13 @@ Row Level Security (RLS) policies are blocking access.
           );
         }
 
-        // Try to create user record in our custom table
-        try {
-          // Use safeInsert helper to tolerate missing columns in DB schema
-          const { error: userError } = await safeInsert(supabase, "users", {
-            id: data.user.id,
-            email: data.user.email,
-            ...userData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-
-          if (userError) {
-            console.error("⚠️ Error creating user record (continuing anyway):");
-            console.error("Message:", userError.message);
-            console.error("Code:", userError.code);
-            console.error("Details:", userError.details);
-            console.error("Hint:", userError.hint);
-            console.error(
-              "Full error object:",
-              JSON.stringify(userError, null, 2),
-            );
-
-            // If it's RLS error, try server-side creation
-            if (userError.code === "42501") {
-              console.log(
-                "🔄 RLS blocking client insert, trying server-side creation...",
-              );
-              try {
-                const response = await fetch("/api/auth/create-user-profile", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    userId: data.user.id,
-                    email: data.user.email,
-                    userData: userData,
-                  }),
-                });
-
-                if (response.ok) {
-                  const serverResult = await response.json();
-                  console.log(
-                    "✅ User record created via server (bypassed RLS)",
-                  );
-                } else {
-                  console.log(
-                    "⚠️ Server-side creation also failed, user can still use basic auth",
-                  );
-                }
-              } catch (serverError) {
-                console.log(
-                  "⚠️ Server-side creation failed, user can still use basic auth",
-                );
-              }
-            } else {
-              console.log(
-                "User can still login with Supabase Auth, custom profile creation skipped",
-              );
-            }
-          } else {
-            console.log("✅ User record created in custom table");
-
-            // Only try to create profile if user record succeeded
-            const { error: profileError } = await safeInsert(
-              supabase,
-              "user_profiles",
-              {
-                user_id: data.user.id,
-                preferences: {
-                  language: "ar",
-                  notifications: true,
-                  weather_alerts: true,
-                  market_alerts: true,
-                },
-              },
-            );
-
-            if (profileError) {
-              console.error(
-                "⚠️ Error creating user profile (continuing anyway):",
-              );
-              console.error("Message:", profileError.message);
-              console.error("Code:", profileError.code);
-              console.error("Details:", profileError.details);
-              console.error("Hint:", profileError.hint);
-              console.error(
-                "Full error object:",
-                JSON.stringify(profileError, null, 2),
-              );
-            } else {
-              console.log("✅ User profile created successfully");
-            }
-          }
-        } catch (error) {
-          console.error(
-            "⚠️ Database table error (user can still use basic auth):",
-            error,
-          );
+        // public.users is provisioned by the trusted auth.users database trigger.
+        // Never accept a role or create privileged profile records from the browser.
+        if (data.session) {
+          await loadUserData(data.user.id);
         }
 
-        // Always show success message regardless of custom table creation
-        console.log(
-          "✅ Signup process completed. User can now login with Supabase Auth.",
-        );
+
       }
     } catch (error) {
       console.error("Sign up error:", error);
