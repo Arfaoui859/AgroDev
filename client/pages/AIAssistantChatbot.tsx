@@ -375,11 +375,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
             analysisResult: payload,
           });
           if (farmPayload.data.length === 1) {
-            const cultivationResponse = await fetch("/api/assistant/cultivations?farm_id=" + encodeURIComponent(farmPayload.data[0].id), {
-              headers: { Authorization: "Bearer " + session.access_token }
-            });
-            const cultivationPayload = await cultivationResponse.json();
-            setAssistantCultivations(cultivationResponse.ok && cultivationPayload.success === true ? cultivationPayload.data || [] : []);
+            await loadAssistantCultivations(farmPayload.data[0].id);
           }
         } else {
           setMessages(prev => [...prev, {
@@ -517,7 +513,27 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       headers: { Authorization: "Bearer " + session.access_token }
     });
     const payload = await response.json();
-    setAssistantCultivations(response.ok && payload.success === true ? payload.data || [] : []);
+    const rows = response.ok && payload.success === true ? payload.data || [] : [];
+    setAssistantCultivations(rows);
+    const cropMatchers: Record<string, RegExp> = {
+      tomato: /tomato|طماطم|بندورة|tomate/i,
+      wheat: /wheat|قمح|blé/i,
+      olive: /olive|زيتون|olivier/i,
+      barley: /barley|شعير|orge/i,
+      potato: /potato|بطاطا|بطاطس|pomme de terre/i,
+      pepper: /pepper|فلفل|poivron/i,
+      onion: /onion|بصل|oignon/i,
+      grape: /grape|عنب|raisin/i,
+      apple: /apple|تفاح|pomme/i,
+    };
+    const currentCrop = pendingDiseaseSave?.cropType || "";
+    const matcher = cropMatchers[currentCrop];
+    const matchingCultivations = matcher ? rows.filter((row: any) => matcher.test(String(row.crop_name || ""))) : [];
+    if (matchingCultivations.length === 1) {
+      setPendingDiseaseSave(current => current && current.farmId === farmId
+        ? { ...current, cultivationId: matchingCultivations[0].id }
+        : current);
+    }
   };
 
   const confirmDiseaseSave = async () => {
