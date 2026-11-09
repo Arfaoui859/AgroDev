@@ -50,7 +50,7 @@ interface CropRecommendation {
   name: string;
   nameEn: string;
   category: string;
-  suitabilityScore: number;
+  suitabilityScore: number | null;
   profitability: number | null;
   riskLevel: 'low' | 'medium' | 'high' | 'unknown';
   plantingSeason: string;
@@ -158,7 +158,7 @@ export default function Recommendations() {
           name: String(r.name_ar ?? r.crop ?? ''),
           nameEn: String(r.crop ?? ''),
           category: String(r.category ?? ''),
-          suitabilityScore: Math.round(Number(r.suitability_score ?? 0) * 100),
+          suitabilityScore: optionalNumber(r.suitability_score) === null ? null : Math.round((optionalNumber(r.suitability_score) as number) * 100),
           profitability: optionalNumber(profit.profit_margin_percent),
           riskLevel,
           plantingSeason: String(r.season ?? ''),
@@ -175,7 +175,7 @@ export default function Recommendations() {
         };
       });
 
-      mapped.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
+      mapped.sort((a, b) => (b.suitabilityScore ?? -1) - (a.suitabilityScore ?? -1));
       setRecommendations(mapped);
       setProvenance({
         dataSource: data.dataSource ?? 'rule-based',
@@ -256,7 +256,7 @@ export default function Recommendations() {
           جاري تحليل بيانات الموقع والمناخ والسوق لإنتاج أفضل التوصيات لك...
         </p>
         <div className="w-64">
-          <Progress value={undefined} className="h-2" />
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted"><div className="h-full w-1/3 animate-pulse rounded-full bg-primary" /></div>
           <p className="text-sm text-center mt-2">ننتظر استجابة خدمة التوصيات؛ لا نعرض نسبة تقدّم غير مقاسة.</p>
         </div>
       </div>
@@ -366,10 +366,8 @@ export default function Recommendations() {
           <strong>
             {provenance?.isRealData ? 'تحليل نموذج مدرّب:' : 'ترتيب بمحرك قواعد:'}
           </strong>{' '}
-          تم ترتيب {recommendations.length} محصول محتمل بناءً على مطابقة معايير التربة
-          والمناخ مع جدول مرجعي للمحاصيل التونسية. أعلى توصية لك هي{' '}
-          <strong>{recommendations[0]?.name}</strong> بدرجة ملاءمة{' '}
-          {recommendations[0]?.suitabilityScore}%.
+          تم ترتيب {recommendations.length} محصول محتمل حسب بيانات الموقع والمناخ المتاحة وجدول مرجعي للمحاصيل. أعلى نتيجة معروضة هي{' '}
+          <strong>{recommendations[0]?.name}</strong>{recommendations[0]?.suitabilityScore !== null ? <> بدرجة ملاءمة {recommendations[0]?.suitabilityScore}%.</> : '، دون درجة ملاءمة موثقة من الخدمة.'}
         </AlertDescription>
       </Alert>
 
@@ -449,7 +447,7 @@ export default function Recommendations() {
                   {/* Metrics */}
                   <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="text-center p-2 border rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{Number.isFinite(crop.suitabilityScore) ? `${crop.suitabilityScore}%` : 'غير متاح'}</div>
+                      <div className="text-2xl font-bold text-primary">{crop.suitabilityScore === null ? 'غير متاح' : `${crop.suitabilityScore}%`}</div>
                       <div className="text-xs text-muted-foreground">درجة الملاءمة</div>
                     </div>
                     
