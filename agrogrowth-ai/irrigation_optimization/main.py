@@ -96,19 +96,15 @@ async def calculate_water_requirements(request: WaterRequirementRequest):
 
 @app.get("/crop-water-database")
 async def get_crop_water_database():
-    """
-    الحصول على قاعدة بيانات الاحتياجات المائية للمحاصيل
-    """
-    try:
-        return {
-            'success': True,
-            'data': irrigation_optimizer.crop_water_requirements,
-            'message': 'تم جلب قاعدة البيانات بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching crop database: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CROP_WATER_CATALOGUE_NOT_VERIFIED",
+            "message": "Crop water coefficients and requirements are not backed by a verified source registry in this deployment.",
+            "production_ready": False,
+        },
+    )
+
 
 @app.get("/irrigation-methods")
 async def get_irrigation_methods():
