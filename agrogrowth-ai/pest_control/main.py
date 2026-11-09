@@ -346,7 +346,13 @@ async def health_check():
     فحص صحة الخدمة
     """
     return {
-        'status': 'healthy',
+        'status': 'degraded',
+        'production_ready': False,
+        'disabled_features': [
+            'pest_analysis',
+            'treatment_recommendations',
+            'treatment_schedules',
+        ],
         'service': 'Pest Control Recommender',
         # Trained on synthetic samples generated in-process.
         'model_source': 'synthetic-demo',
