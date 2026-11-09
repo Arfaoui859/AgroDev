@@ -74,6 +74,49 @@ describe("Autonomous Farm Agent event evaluation", () => {
     expect(events.find((event) => event.type === "agent_sensor_battery_low")?.evidence.battery_level_percent).toBe(8);
   });
 
+  test("creates a verification reminder for a recorded high-severity plant detection", () => {
+    const events = buildFarmAgentEvents({
+      farms: [{ id: "farm-1", name: "North field" }],
+      cultivations: [],
+      soilAnalyses: [],
+      sensors: [],
+      diseaseDetections: [{
+        id: "disease-1",
+        farm_id: "farm-1",
+        plant_type: "tomato",
+        primary_disease: "late blight",
+        detection_method: "image_ai",
+        disease_confidence: 0.82,
+        severity_level: "high",
+        treatment_applied: false,
+        recovery_status: "pending",
+        detected_at: "2026-11-09T10:00:00Z",
+      }],
+      now,
+    });
+    const event = events.find((item) => item.type === "agent_disease_followup");
+    expect(event?.priority).toBe("high");
+    expect(event?.evidence.diagnosis_requires_field_verification).toBe(true);
+    expect(event?.message).toContain("ليست تأكيداً مستقلاً للتشخيص");
+  });
+
+  test("does not reopen a plant detection already marked recovered", () => {
+    const events = buildFarmAgentEvents({
+      farms: [{ id: "farm-1", name: "North field" }],
+      cultivations: [],
+      soilAnalyses: [],
+      sensors: [],
+      diseaseDetections: [{
+        id: "disease-2",
+        farm_id: "farm-1",
+        severity_level: "critical",
+        recovery_status: "recovered",
+      }],
+      now,
+    });
+    expect(events.some((item) => item.type === "agent_disease_followup")).toBe(false);
+  });
+
   test("does not invent harvest or sensor alerts when records are missing", () => {
     const events = buildFarmAgentEvents({
       farms: [{ id: "farm-1", name: "North field" }],
