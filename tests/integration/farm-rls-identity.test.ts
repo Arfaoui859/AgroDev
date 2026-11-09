@@ -21,7 +21,10 @@ type CreateClientArgs = [string, string, any?];
 function fakeBuilder(): any {
   const builder: any = {
     select: () => builder,
-    insert: () => builder,
+    insert: (payload: any) => {
+      ((globalThis as any).__supabaseInsertPayloads ??= []).push(payload);
+      return builder;
+    },
     update: () => builder,
     delete: () => builder,
     eq: () => builder,
@@ -38,6 +41,7 @@ function fakeBuilder(): any {
 // push into it before this module's const declarations have run.
 jest.mock("@supabase/supabase-js", () => {
   (globalThis as any).__createClientCalls = [];
+  (globalThis as any).__supabaseInsertPayloads = [];
   return {
     createClient: jest.fn((...args: CreateClientArgs[]) => {
       (globalThis as any).__createClientCalls.push(args[2]);
@@ -79,6 +83,7 @@ describe("🏡 Farm/field routes forward the caller's JWT to Supabase", () => {
 
   beforeEach(() => {
     createClientCalls().length = 0;
+    (globalThis as any).__supabaseInsertPayloads = [];
     (createClient as jest.Mock).mockClear();
   });
 
@@ -133,6 +138,30 @@ describe("🏡 Farm/field routes forward the caller's JWT to Supabase", () => {
     } finally {
       process.env.NODE_ENV = prev;
     }
+  });
+
+  test("POST /api/farms derives owner_id from the verified JWT, not the request body", async () => {
+    const res = await request(app)
+      .post("/api/farms")
+      .set("authorization", "Bearer farmer-jwt")
+      .send({
+        name: "Siliana test farm",
+        region: "Siliana",
+        size_hectares: 3,
+        owner_id: "attacker-controlled-user",
+      });
+    expect(res.status).toBe(201);
+    const inserts = (globalThis as any).__supabaseInsertPayloads as any[];
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0]).toMatchObject({
+      owner_id: "farmer-1",
+      name: "Siliana test farm",
+      size_hectares: 3,
+    });
+    expect(inserts[0].owner_id).not.toBe("attacker-controlled-user");
+    expect(
+      createClientCalls().some((opts) => authHeaderOf(opts) === "Bearer farmer-jwt"),
+    ).toBe(true);
   });
 
   test("field alerts are explicitly empty until a real alert source is connected", async () => {
