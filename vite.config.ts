@@ -57,10 +57,17 @@ export default defineConfig(({ command }) => {
 
             const packagePath = id.split("/node_modules/")[1] ?? "";
 
-            if (/^(react|react-dom|scheduler)\\//.test(packagePath)) {
+            if (
+              packagePath.startsWith("react/") ||
+              packagePath.startsWith("react-dom/") ||
+              packagePath.startsWith("scheduler/")
+            ) {
               return "vendor-react";
             }
-            if (/^(react-router-dom|@remix-run\\/router)\\//.test(packagePath)) {
+            if (
+              packagePath.startsWith("react-router-dom/") ||
+              packagePath.startsWith("@remix-run/router/")
+            ) {
               return "vendor-router";
             }
             if (packagePath.startsWith("@supabase/")) return "vendor-supabase";
