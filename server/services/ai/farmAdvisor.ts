@@ -292,7 +292,13 @@ function detectRelevantAgents(question: string): string[] {
     agents.push("disease");
   if (/(سعر|سوق|تصدير|price|marché|market|sou9|souq|sou9|sou3|souma|prix)/i.test(question) || /price|market|souq|sou9/.test(q))
     agents.push("market");
-  return agents.length ? agents : ["general"];
+  if (/(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|profit|profitable|cost|expense|budget|investment|finance|financial|rentabilité|coût|dépense|investissement|masrouf|rb7|rbe7|istithmar|tamwil)/i.test(question))
+    agents.push("finance");
+  if (/(حصاد|جني|موعد الجمع|مهام|عملية زراعية|harvest|farm task|field operation|récolte|tâche agricole|operations)/i.test(question))
+    agents.push("operations");
+  if (/(ماشية|مواشي|أبقار|أغنام|ماعز|دواجن|بيطري|حيوان|livestock|cattle|sheep|goat|poultry|veterinary|animal health|élevage|bétail|vétérinaire)/i.test(question))
+    agents.push("livestock");
+  return agents.length ? Array.from(new Set(agents)) : ["general"];
 }
 
 function buildRuleBasedAnswer(
@@ -396,7 +402,9 @@ function buildRuleBasedAnswer(
         (agents.includes("market") && /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(record)) ||
         (agents.includes("soil") && /^Verified soil analysis/.test(record)) ||
         (agents.includes("disease") && /^(Saved plant-health record|Saved leaf-health analysis)/.test(record)) ||
-        (agents.includes("crop") && /^(Farm |Plot |Cultivation )/.test(record))
+        (agents.includes("crop") && /^(Farm |Plot |Cultivation )/.test(record)) ||
+        (agents.includes("finance") && /^Cultivation /.test(record)) ||
+        (agents.includes("operations") && /^(Farm |Plot |Cultivation |Registered sensor|Stored sensor reading)/.test(record))
       );
     });
     const selectedRecords = (relevantRecords.length ? relevantRecords : storedRecords).slice(-8);
@@ -422,6 +430,40 @@ function buildRuleBasedAnswer(
       ar: "لتشخيص الأمراض بدقة، ارفع صورة واضحة للنبات في صفحة تشخيص الأمراض. ستعرض لك المنصة النتائج ومستوى الثقة عند توفر خدمة التشخيص.",
       fr: "Pour un diagnostic précis, téléversez une image nette de la plante dans la page de diagnostic. La plateforme affiche les résultats et le niveau de confiance lorsque le service est disponible.",
       en: "For an accurate diagnosis, upload a clear plant image in the disease diagnosis page. The platform shows results and a confidence level when the service is available.",
+    }[lang]);
+  }
+
+  if (agents.includes("finance")) {
+    const financialRecords = storedRecords.filter(record =>
+      /^Cultivation /.test(record) &&
+      /(?:total_cost|revenue|profit)=(-?\\d+(?:\\.\\d+)?)(?:;|\\])/i.test(record)
+    );
+    sections.push(financialRecords.length
+      ? ({
+          ar: "المعطيات المالية المسجلة (ليست تدقيقاً محاسبياً ولا توقعاً مضموناً):\\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\\n") + "\\nالأرقام من سجلات المستخدم؛ العملة والفترة وطريقة الاحتساب يلزم التثبت منها قبل قرار استثماري.",
+          fr: "Données financières enregistrées (ni audit comptable ni prévision garantie) :\\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\\n") + "\\nLes montants proviennent des enregistrements utilisateur; vérifiez devise, période et méthode de calcul avant toute décision.",
+          en: "Recorded financial figures (not an accounting audit or guaranteed forecast):\\n" + financialRecords.slice(0, 6).map(record => "• " + record).join("\\n") + "\\nFigures come from user records; verify currency, period and calculation method before investment decisions.",
+        }[lang])
+      : ({
+          ar: "ما لقيتش تكاليف أو مداخيل أو أرباح رقمية مسجلة للمحاصيل في سياق الإجابة. ما باش نخترعش أرقام؛ سجّل المصاريف والمبيعات والمساحة والفترة باش نحسبوا الهامش والمردودية.",
+          fr: "Aucun coût, revenu ou bénéfice chiffré n'est enregistré dans le contexte. Je n'invente pas de chiffres; ajoutez dépenses, ventes, surface et période pour calculer marge et rentabilité.",
+          en: "No numeric costs, revenue or profit figures are recorded in this context. I will not invent figures; record expenses, sales, area and period to calculate margin and profitability.",
+        }[lang]));
+  }
+
+  if (agents.includes("operations")) {
+    sections.push({
+      ar: "لجدولة الحصاد والمهام، نعتمد فقط على تاريخ الزراعة ومرحلة النمو وموعد الحصاد المسجلين. ثبّت الحقول الناقصة في سجل الزراعة قبل اعتماد موعد نهائي.",
+      fr: "Pour planifier récolte et opérations, utilisez uniquement la date de plantation, le stade de croissance et la date de récolte enregistrés. Complétez les champs manquants avant de fixer une échéance.",
+      en: "Harvest and field-operation planning must use recorded planting date, growth stage and expected harvest date. Complete missing cultivation records before setting a firm date.",
+    }[lang]);
+  }
+
+  if (agents.includes("livestock")) {
+    sections.push({
+      ar: "نجم نعاونك في تنظيم معلومات التربية والصحة الحيوانية، أما ما عنديش في سياق الإجابة سجلّ بيطري موثّق. اذكر النوع والعمر والأعراض ومدة ظهورها، واستشر بيطرياً فوراً في حالات صعوبة التنفس أو النزيف أو النفوق.",
+      fr: "Je peux structurer les informations d'élevage et de santé animale, mais aucun dossier vétérinaire vérifié n'est disponible ici. Précisez espèce, âge, symptômes et durée; contactez rapidement un vétérinaire en cas de détresse respiratoire, saignement ou mortalité.",
+      en: "I can help organize livestock and animal-health information, but no verified veterinary record is available in this context. Provide species, age, symptoms and duration; seek urgent veterinary care for breathing distress, bleeding or sudden deaths.",
     }[lang]);
   }
 
