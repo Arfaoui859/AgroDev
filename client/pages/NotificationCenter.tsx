@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -311,7 +311,7 @@ export default function NotificationCenter() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
       setNotifications([]);
@@ -360,7 +360,7 @@ export default function NotificationCenter() {
       };
     }));
     setLastUpdated(new Date().toISOString());
-  };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -374,7 +374,7 @@ export default function NotificationCenter() {
     void refresh();
     const interval = window.setInterval(refresh, 60_000);
     return () => { active = false; window.clearInterval(interval); };
-  }, []);
+  }, [loadNotifications]);
 
   // Filter notifications
   const filteredNotifications = notifications.filter(notification => {
