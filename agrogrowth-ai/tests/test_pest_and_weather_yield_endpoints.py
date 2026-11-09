@@ -72,10 +72,10 @@ def test_symptom_keyword_identification_is_not_misrepresented_as_ml():
     assert body["field_validated"] is False
 
 
-def test_pest_reference_database_remains_available():
+def test_unverified_pest_reference_catalogue_is_disabled():
     database = pest_client.get("/pest-database")
-    assert database.status_code == 200
-    assert database.json()["data"]
+    assert database.status_code == 503
+    assert database.json()["detail"]["code"] == "PEST_CATALOGUE_NOT_VERIFIED"
 
 
 def test_weather_and_yield_synthetic_predictions_are_disabled():
