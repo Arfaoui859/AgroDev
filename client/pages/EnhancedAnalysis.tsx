@@ -42,7 +42,7 @@ const BulletList: React.FC<{items: string[]}> = ({items}) => items.length ? (
 ) : <p className="text-sm text-slate-500">لا توجد معطيات كافية في هذا القسم.</p>;
 
 const EnhancedAnalysis: React.FC = () => {
-  const [form, setForm] = useState<FormState>({ ph: "", moisture: "", organicMatter: "", electricalConductivity: "", nitrogen: "", phosphorus: "", potassium: "", sandPercent: "", siltPercent: "", clayPercent: "", fieldId: "", location: "", samplingDate: "", sampleDepth: "", currentCrop: "", season: "", nutrientUnit: "", nutrientMethod: "", electricalConductivityMethod: "", notes: "" });
+  const [form, setForm] = useState<FormState>({ ph: "", moisture: "", organicMatter: "", electricalConductivity: "", electricalConductivityUnit: "", nitrogen: "", phosphorus: "", potassium: "", sandPercent: "", siltPercent: "", clayPercent: "", fieldId: "", location: "", samplingDate: "", sampleDepth: "", currentCrop: "", season: "", nutrientUnit: "", nutrientMethod: "", electricalConductivityMethod: "", notes: "" });
   const [report, setReport] = useState<SoilAnalysisEnvelope | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
