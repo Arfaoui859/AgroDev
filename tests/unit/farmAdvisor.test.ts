@@ -83,6 +83,28 @@ describe("answerAgriculturalQuestion", () => {
     });
   });
 
+  test("sends irrigation, NPK-unit and market-provenance safeguards to the LLM", async () => {
+    process.env.AI_BASE_URL = "https://llm.test/v1";
+    process.env.AI_API_KEY = "test-key";
+    let sentMessages: Array<{ role: string; content: string }> = [];
+    mockFetch(async (_url, init) => {
+      const body = JSON.parse(String(init?.body || "{}"));
+      sentMessages = body.messages || [];
+      return new Response(
+        JSON.stringify({ choices: [{ message: { content: "Check the latest measured soil moisture first." } }] }),
+        { status: 200 },
+      );
+    });
+    await answerAgriculturalQuestion({
+      question: "How much should I irrigate?",
+      language: "en",
+    });
+    const systemPrompt = sentMessages.filter(message => message.role === "system").map(message => message.content).join("\n");
+    expect(systemPrompt).toContain("never prescribe an exact water volume");
+    expect(systemPrompt).toContain("never assume NPK units");
+    expect(systemPrompt).toContain("price prediction");
+  });
+
   test("falls back to rule-based and explains why when the LLM fails", async () => {
     process.env.AI_BASE_URL = "https://llm.test/v1";
     process.env.AI_API_KEY = "test-key";
