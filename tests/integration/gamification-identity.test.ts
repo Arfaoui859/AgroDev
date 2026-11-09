@@ -90,19 +90,18 @@ describe("🔐 Gamification identity", () => {
       process.env = ORIGINAL;
     });
 
-    test("demo caller without a token still gets a profile (demo identity)", async () => {
+    test("demo identity cannot create a non-persistent XP profile", async () => {
       const res = await request(app)
         .get("/api/gamification/profile")
         .set("x-demo-user", "demo-user");
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.userId).toBe("demo-user");
+      expect(res.status).toBe(503);
+      expect(res.body.code).toBe("GAMIFICATION_STORE_NOT_CONNECTED");
     });
 
-    test("leaderboard stays public", async () => {
+    test("public leaderboard stays unavailable without persisted ranking data", async () => {
       const res = await request(app).get("/api/gamification/leaderboard?limit=5");
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(res.status).toBe(503);
+      expect(res.body.code).toBe("GAMIFICATION_STORE_NOT_CONNECTED");
     });
   });
 });
