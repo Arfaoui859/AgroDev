@@ -256,7 +256,13 @@ function summariseContext(context?: FarmContext, lang: Language = "ar"): string[
   }
   if (context.platformRecords?.length) {
     const label = lang === "ar" ? "سجلات AgroGrowth الفعلية" : lang === "fr" ? "Enregistrements AgroGrowth" : "AgroGrowth persisted records";
-    parts.push(`${label}: ${context.platformRecords.slice(0, 45).join(" | ")}`);
+    // Preserve account/farm identity from the start and the latest operational,
+    // market, weather, sensor and satellite records from the end of the context.
+    const selectedRecords = Array.from(new Set([
+      ...context.platformRecords.slice(0, 8),
+      ...context.platformRecords.slice(-37),
+    ])).slice(0, 45);
+    parts.push(`${label}: ${selectedRecords.join(" | ")}`);
   }
   return parts;
 }
