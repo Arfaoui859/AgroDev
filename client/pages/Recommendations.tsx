@@ -51,19 +51,19 @@ interface CropRecommendation {
   nameEn: string;
   category: string;
   suitabilityScore: number;
-  profitability: number;
-  riskLevel: 'low' | 'medium' | 'high';
+  profitability: number | null;
+  riskLevel: 'low' | 'medium' | 'high' | 'unknown';
   plantingSeason: string;
   harvestTime: string;
-  estimatedProfit: number;
-  marketDemand: 'high' | 'medium' | 'low';
-  waterRequirement: 'low' | 'medium' | 'high';
+  estimatedProfit: number | null;
+  marketDemand: 'high' | 'medium' | 'low' | 'unknown';
+  waterRequirement: 'low' | 'medium' | 'high' | 'unknown';
   description: string;
   advantages: string[];
   challenges: string[];
   marketPrice: number;
-  estimatedYield: number;
-  growthDuration: number;
+  estimatedYield: number | null;
+  growthDuration: number | null;
 }
 
 interface RecommendationResponse {
@@ -137,35 +137,41 @@ export default function Recommendations() {
         const r = raw as Record<string, any>;
         const profit = r.profit_analysis ?? {};
         const risk = r.risk_assessment ?? {};
-        const riskLevel: 'low' | 'medium' | 'high' =
-          risk.overall_risk_level === 'منخفض'
-            ? 'low'
-            : risk.overall_risk_level === 'عالٍ' || risk.overall_risk_level === 'مرتفع'
-              ? 'high'
-              : 'medium';
-        const water: 'low' | 'medium' | 'high' =
-          r.water_need === 'منخفض' ? 'low' : r.water_need === 'مرتفع' ? 'high' : 'medium';
-        const netProfit = Number(profit.net_profit ?? 0);
+        const optionalNumber = (value: unknown): number | null => {
+          if (value === null || value === undefined || value === '') return null;
+          const parsed = Number(value);
+          return Number.isFinite(parsed) ? parsed : null;
+        };
+        const riskLabel = String(risk.overall_risk_level ?? '').toLowerCase();
+        const riskLevel: CropRecommendation['riskLevel'] =
+          ['منخفض', 'low'].includes(riskLabel) ? 'low' :
+          ['عالٍ', 'مرتفع', 'high'].includes(riskLabel) ? 'high' :
+          ['متوسط', 'medium'].includes(riskLabel) ? 'medium' : 'unknown';
+        const waterLabel = String(r.water_need ?? '').toLowerCase();
+        const water: CropRecommendation['waterRequirement'] =
+          ['منخفض', 'low'].includes(waterLabel) ? 'low' :
+          ['مرتفع', 'high'].includes(waterLabel) ? 'high' :
+          ['متوسط', 'medium'].includes(waterLabel) ? 'medium' : 'unknown';
+        const reasoning = Array.isArray(r.reasoning) ? r.reasoning.filter((item): item is string => typeof item === 'string') : [];
         return {
           id: String(r.crop ?? `crop-${index}`),
           name: String(r.name_ar ?? r.crop ?? ''),
           nameEn: String(r.crop ?? ''),
           category: String(r.category ?? ''),
           suitabilityScore: Math.round(Number(r.suitability_score ?? 0) * 100),
-          profitability: Math.round(Number(profit.profit_margin_percent ?? 0)),
+          profitability: optionalNumber(profit.profit_margin_percent),
           riskLevel,
           plantingSeason: String(r.season ?? ''),
-          harvestTime: String(r.season ?? ''),
-          estimatedProfit: netProfit,
-          marketDemand:
-            Number(profit.roi_percent ?? 0) >= 100 ? 'high' : 'medium',
+          harvestTime: String(r.harvest_season ?? r.harvest_time ?? ''),
+          estimatedProfit: optionalNumber(profit.net_profit),
+          marketDemand: ['high', 'medium', 'low'].includes(String(r.market_demand_level ?? '').toLowerCase()) ? String(r.market_demand_level).toLowerCase() as 'high' | 'medium' | 'low' : 'unknown',
           waterRequirement: water,
-          description: (r.reasoning as string[] | undefined)?.join(' ') ?? '',
-          advantages: (r.reasoning as string[] | undefined) ?? [],
-          challenges: [],
-          marketPrice: 0,
-          estimatedYield: Number(r.predicted_yield_per_hectare ?? 0),
-          growthDuration: 0,
+          description: reasoning.join(' '),
+          advantages: reasoning,
+          challenges: Array.isArray(r.challenges) ? r.challenges.filter((item: unknown): item is string => typeof item === 'string') : [],
+          marketPrice: optionalNumber(r.market_price) ?? 0,
+          estimatedYield: optionalNumber(r.predicted_yield_per_hectare),
+          growthDuration: optionalNumber(r.growth_duration_days),
         };
       });
 
@@ -203,7 +209,8 @@ export default function Recommendations() {
     const config = {
       low: { label: "مخاطر منخفضة", color: "bg-green-500" },
       medium: { label: "مخاطر متوسطة", color: "bg-yellow-500" },
-      high: { label: "مخاطر عالية", color: "bg-red-500" }
+      high: { label: "مخاطر عالية", color: "bg-red-500" },
+      unknown: { label: "المخاطر غير مقيّمة", color: "bg-slate-500" }
     };
     const riskConfig = config[risk as keyof typeof config];
     return <Badge className={`${riskConfig.color} text-white`}>{riskConfig.label}</Badge>;
@@ -221,17 +228,18 @@ export default function Recommendations() {
   const getWaterIcon = (requirement: string) => {
     const colors = {
       low: "text-green-500",
-      medium: "text-yellow-500", 
-      high: "text-blue-500"
+      medium: "text-yellow-500",
+      high: "text-blue-500",
+      unknown: "text-slate-400"
     };
     return <Droplets className={`w-4 h-4 ${colors[requirement as keyof typeof colors]}`} />;
   };
 
   const filteredRecommendations = recommendations.filter(crop => {
     if (selectedFilter === "all") return true;
-    if (selectedFilter === "high-profit") return crop.profitability >= 85;
+    if (selectedFilter === "high-profit") return crop.profitability !== null && crop.profitability >= 85;
     if (selectedFilter === "low-risk") return crop.riskLevel === 'low';
-    if (selectedFilter === "quick-harvest") return crop.growthDuration <= 120;
+    if (selectedFilter === "quick-harvest") return crop.growthDuration !== null && crop.growthDuration > 0 && crop.growthDuration <= 120;
     return crop.category === selectedFilter;
   });
 
@@ -248,8 +256,8 @@ export default function Recommendations() {
           جاري تحليل بيانات الموقع والمناخ والسوق لإنتاج أفضل التوصيات لك...
         </p>
         <div className="w-64">
-          <Progress value={75} className="h-2" />
-          <p className="text-sm text-center mt-2">معالجة البيانات...</p>
+          <Progress value={undefined} className="h-2" />
+          <p className="text-sm text-center mt-2">ننتظر استجابة خدمة التوصيات؛ لا نعرض نسبة تقدّم غير مقاسة.</p>
         </div>
       </div>
     );
@@ -404,10 +412,10 @@ export default function Recommendations() {
               <Button
                 size="lg"
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                onClick={() => navigate('/ai-intelligence-dashboard?tab=crop-recommendations')}
+                onClick={() => navigate('/ai-assistant')}
               >
                 <ArrowRight className="w-5 h-5 ml-2" />
-                جرب التوصيات المتقدمة الآن
+                ناقش التوصيات مع المستشار الزراعي
               </Button>
             </div>
           </div>
@@ -441,12 +449,12 @@ export default function Recommendations() {
                   {/* Metrics */}
                   <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <div className="text-center p-2 border rounded-lg">
-                      <div className="text-2xl font-bold text-primary">{crop.suitabilityScore}%</div>
+                      <div className="text-2xl font-bold text-primary">{Number.isFinite(crop.suitabilityScore) ? `${crop.suitabilityScore}%` : 'غير متاح'}</div>
                       <div className="text-xs text-muted-foreground">درجة الملاءمة</div>
                     </div>
                     
                     <div className="text-center p-2 border rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{crop.estimatedProfit.toLocaleString()}</div>
+                      <div className="text-2xl font-bold text-green-600">{crop.estimatedProfit === null ? 'غير متاح' : crop.estimatedProfit.toLocaleString()}</div>
                       <div className="text-xs text-muted-foreground">صافي الربح المتوقع (دينار/هكتار)</div>
                     </div>
                     
@@ -465,7 +473,7 @@ export default function Recommendations() {
                     </div>
                     
                     <div className="text-center p-2 border rounded-lg">
-                      <div className="text-lg font-bold">{crop.estimatedYield}</div>
+                      <div className="text-lg font-bold">{crop.estimatedYield === null ? 'غير متاح' : crop.estimatedYield}</div>
                       <div className="text-xs text-muted-foreground">المردود المتوقع (طن/هكتار)</div>
                     </div>
                   </div>
