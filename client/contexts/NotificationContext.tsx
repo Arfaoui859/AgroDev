@@ -109,7 +109,7 @@ function mapServerNotification(raw: ServerNotification): Notification {
     titleArabic: raw.titleArabic ?? raw.title ?? '',
     message: raw.message ?? '',
     messageArabic: raw.messageArabic ?? raw.message ?? '',
-    type: CLIENT_TYPE[raw.type ?? 'info'] ?? 'info',
+    type: CLIENT_TYPE[raw.type ?? 'info'] ?? (priority === 'high' || priority === 'urgent' ? 'warning' : 'info'),
     category: (category as Notification['category']) ?? 'system',
     categoryArabic: raw.categoryArabic ?? CATEGORY_ARABIC[category] ?? 'نظام',
     priority,
@@ -166,23 +166,34 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString(),
-      isRead: false
-    };
-
-    setNotifications(prev => [newNotification, ...prev]);
-
-    // Show browser notification if permission granted
-    if (Notification.permission === 'granted') {
-      new window.Notification(notification.title, {
-        body: notification.message,
-        icon: '/placeholder.svg',
-        badge: '/placeholder.svg'
-      });
-    }
+    void (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const priority = notification.priority === 'critical' ? 'urgent' :
+          notification.priority === 'medium' ? 'normal' : notification.priority;
+        const response = await fetch('/api/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            type: notification.type,
+            title: notification.titleArabic || notification.title,
+            message: notification.messageArabic || notification.message,
+            priority,
+            category: notification.category,
+            action_url: notification.action?.url,
+            metadata: notification.metadata || {},
+          }),
+        });
+        if (!response.ok) throw new Error(`Notification create failed: HTTP ${response.status}`);
+        await refreshNotifications();
+      } catch (error) {
+        console.error('Could not persist notification:', error);
+      }
+    })();
   };
 
   const markAsRead = (id: string) => {
