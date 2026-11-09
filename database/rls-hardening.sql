@@ -432,6 +432,24 @@ CREATE POLICY "Admins manage system_settings" ON public.system_settings
 -- ownership table and upload contract are defined.
 -- ---------------------------------------------------------------------------
 
+-- Remove both legacy and current names so this migration is safely rerunnable.
+DROP POLICY IF EXISTS "AgroGrowth public avatar read" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth owner avatar insert" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth owner avatar update" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth owner avatar delete" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth public farm image read" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth farm owner insert" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth farm owner update" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth farm owner delete" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth soil image owner access" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth soil image owner insert" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth soil image owner update" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth soil image owner delete" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth plant image owner access" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth plant image owner insert" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth plant image owner update" ON storage.objects;
+DROP POLICY IF EXISTS "AgroGrowth plant image owner delete" ON storage.objects;
+
 -- Remove legacy policy names so permissive policies cannot OR-bypass these.
 DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
 DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
