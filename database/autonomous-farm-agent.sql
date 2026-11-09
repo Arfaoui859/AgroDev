@@ -2,6 +2,8 @@
 -- Apply in Supabase SQL Editor before enabling the scheduled GitHub workflow.
 -- This migration stores per-user scan preferences and makes in-app agent alerts
 -- idempotent. It does not enable push/email delivery or invent sensor data.
+--
+-- Safe to re-run: tables, columns, indexes and policies are created idempotently.
 
 CREATE TABLE IF NOT EXISTS public.farm_agent_settings (
   user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
@@ -26,15 +28,12 @@ CREATE POLICY "Users manage own farm agent settings"
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.farm_agent_settings TO authenticated;
 GRANT ALL ON public.farm_agent_settings TO service_role;
 
--- Existing accounts with farms are monitored by default. Users can disable the
--- agent from the assistant panel at any time.
 INSERT INTO public.farm_agent_settings (user_id)
 SELECT DISTINCT f.owner_id
 FROM public.farms AS f
 WHERE f.owner_id IS NOT NULL
 ON CONFLICT (user_id) DO NOTHING;
 
--- Persistent assistant conversations and messages (user-isolated).
 CREATE TABLE IF NOT EXISTS public.farm_agent_conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -68,14 +67,12 @@ CREATE POLICY "Users manage own farm agent conversations"
   WITH CHECK (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Users read own farm agent messages" ON public.farm_agent_messages;
-CREATE POLICY "Users read own farm agent messages"
-  ON public.farm_agent_messages FOR SELECT
-  USING (user_id = auth.uid());
+CREATE POLICY "Users read own farm agent messages" ON public.farm_agent_messages
+  FOR SELECT USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Users insert own farm agent messages" ON public.farm_agent_messages;
-CREATE POLICY "Users insert own farm agent messages"
-  ON public.farm_agent_messages FOR INSERT
-  WITH CHECK (
+CREATE POLICY "Users insert own farm agent messages" ON public.farm_agent_messages
+  FOR INSERT WITH CHECK (
     user_id = auth.uid()
     AND EXISTS (
       SELECT 1 FROM public.farm_agent_conversations c
@@ -84,9 +81,8 @@ CREATE POLICY "Users insert own farm agent messages"
   );
 
 DROP POLICY IF EXISTS "Users delete own farm agent messages" ON public.farm_agent_messages;
-CREATE POLICY "Users delete own farm agent messages"
-  ON public.farm_agent_messages FOR DELETE
-  USING (user_id = auth.uid());
+CREATE POLICY "Users delete own farm agent messages" ON public.farm_agent_messages
+  FOR DELETE USING (user_id = auth.uid());
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.farm_agent_conversations TO authenticated;
 GRANT SELECT, INSERT, DELETE ON public.farm_agent_messages TO authenticated;
@@ -98,10 +94,6 @@ CREATE INDEX IF NOT EXISTS farm_agent_conversations_user_updated_idx
 CREATE INDEX IF NOT EXISTS farm_agent_messages_conversation_created_idx
   ON public.farm_agent_messages (conversation_id, created_at ASC);
 
--- A stable event key prevents every scheduled run from duplicating the same
--- reminder. The event key is stored in metadata to preserve the existing
--- notifications schema and its user-scoped RLS policies.
--- The notification center supports starring and archiving persisted records.
 ALTER TABLE public.notifications
   ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE public.notifications
@@ -118,3 +110,6 @@ COMMENT ON TABLE public.farm_agent_settings IS
   'Per-user preferences and last-run state for the AgroGrowth evidence-based farm monitoring agent.';
 COMMENT ON INDEX public.notifications_agent_event_dedupe_idx IS
   'Prevents duplicate in-app notifications for the same autonomous farm-agent event.';
+
+-- Force PostgREST to refresh its schema cache after the migration commits.
+NOTIFY pgrst, 'reload schema';
