@@ -25,6 +25,8 @@ import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
  */
 const HEURISTIC_MODEL_SOURCE_RE =
   /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i;
+const RULE_BASED_MODEL_SOURCE_RE =
+  /deterministic[-_ ]?rules?|rule[-_ ]?based|knowledge[-_ ]?engine/i;
 
 /**
  * Normalize a service base URL. Render's `fromService` `hostport` property yields
@@ -1042,11 +1044,15 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           const modelSource = typeof declared === "string" ? declared : null;
           const heuristic =
             modelSource !== null && HEURISTIC_MODEL_SOURCE_RE.test(modelSource);
+          const ruleBased =
+            modelSource !== null && RULE_BASED_MODEL_SOURCE_RE.test(modelSource);
           return {
             ...service,
             status: "available",
             modelSource,
-            isRealModel: modelSource !== null && !heuristic,
+            modelKind: !modelSource ? "unknown" : heuristic ? "synthetic" : ruleBased ? "rule-based" : "model",
+            // Deterministic rules and synthetic demos are not trained ML models.
+            isRealModel: modelSource !== null && !heuristic && !ruleBased,
             modelTrainedOnSyntheticData: heuristic,
             responseTime: Date.now() - checkStart,
             lastChecked: new Date().toISOString()
@@ -1096,6 +1102,9 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     const syntheticCount = serviceResults.filter(
       (s: any) => s.modelTrainedOnSyntheticData === true,
     ).length;
+    const ruleBasedCount = serviceResults.filter(
+      (s: any) => s.modelKind === "rule-based",
+    ).length;
 
     const results = {
       overview: {
@@ -1107,6 +1116,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
         rateLimitedServices: rateLimitedCount,
         /** Reachable services whose own /health reports a synthetic/heuristic model. */
         syntheticModelServices: syntheticCount,
+        ruleBasedServices: ruleBasedCount,
         lastUpdated: new Date().toISOString(),
         checkDuration: Date.now() - startTime,
       },
@@ -1119,7 +1129,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           "محرك قواعد زراعية محلي يوفر تحليلاً بديلاً عند تعذّر الخدمات (بدون تقديم نتائج كنموذج ذكاء اصطناعي).",
       },
       note:
-        unavailableCount > 0 || notConfiguredCount > 0 || rateLimitedCount > 0 || syntheticCount > 0
+        unavailableCount > 0 || notConfiguredCount > 0 || rateLimitedCount > 0 || syntheticCount > 0 || ruleBasedCount > 0
           ? "بعض خدمات الذكاء الاصطناعي غير متاحة أو غير مضبوطة أو محدودة الطلبات أو غير موثّقة؛ لا يتم استخدام نتائج اصطناعية أو بدائل مخمّنة."
           : "كل الخدمات التي اجتازت فحص المصدر متاحة؛ يلزم التحقق الميداني لكل قدرة قبل اعتمادها زراعياً.",
     };
