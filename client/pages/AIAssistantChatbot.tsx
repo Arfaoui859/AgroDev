@@ -587,7 +587,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
 
   const prepareSatelliteAction = async (message: string) => {
     const satelliteIntent = /(ساتلايت|قمر صناعي|صور فضائية|ndvi|satellite|sentinel|remote sensing)/i.test(message);
-    const actionIntent = /(حلل|شوف|راقب|اعمل|اعمللي|جيب|ورّيني|check|analyse|analyze|monitor|get|show|look up)/i.test(message);
+    const actionIntent = /(نحب|باش|بش|حلل|شوف|راقب|اعمل|اعمللي|جيب|ورّيني|أريد|اريد|check|analyse|analyze|monitor|get|show|look up)/i.test(message);
     if (!satelliteIntent || !actionIntent) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
