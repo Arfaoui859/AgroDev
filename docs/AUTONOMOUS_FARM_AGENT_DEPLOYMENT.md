@@ -96,3 +96,18 @@ Run locally:
     npm run build
 
 Do not describe the feature as production-active until the SQL migration, Render secrets, GitHub Actions secrets, deployment and live scan verification are all complete.
+
+
+## Implementation snapshot (2026-11-09)
+
+The feature branch contains the first integrated slice:
+- Autonomous event evaluator and protected scheduled runner.
+- User-controlled scan cadence and enable/disable setting.
+- Persistent Supabase notifications with per-user ownership, read/unread, star, archive and delete operations.
+- Assistant conversation/message persistence; the chatbot no longer seeds demo conversation history.
+- Verified farm context for the advisor: registered farm location/size, active crop, latest lab/sensor soil measurements and recent agent alerts.
+- AI health dashboard distinction between reachable hosts, inference-available services, deterministic rule engines and trained-model claims; short health-probe cache with explicit force refresh.
+- Notification center no longer fabricates sensor readings, rules or contact details.
+- Service worker bypasses cache for authenticated/private API requests.
+
+**Not yet production-verified:** this editing session did not execute npm/Jest/TypeScript/Python tests, apply the SQL migration, deploy Render, or inspect live Render logs. GitHub's current Vercel checks report a build-rate-limit failure, not a passing build. Treat this branch as source changes awaiting deployment and verification.
