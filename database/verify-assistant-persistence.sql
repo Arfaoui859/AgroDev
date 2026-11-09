@@ -58,3 +58,25 @@ FROM pg_policies
 WHERE schemaname = 'public'
   AND tablename IN ('farm_expenses', 'farm_revenues')
 ORDER BY tablename, policyname;
+
+
+-- Farm persistence: verify the relation, ownership column, RLS and policies too.
+SELECT
+  to_regclass('public.farms') IS NOT NULL AS farms_present,
+  EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'farms' AND column_name = 'owner_id'
+  ) AS farms_owner_id_present;
+
+SELECT
+  tablename,
+  rowsecurity AS rls_enabled
+FROM pg_tables
+WHERE schemaname = 'public' AND tablename = 'farms';
+
+SELECT tablename, policyname, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'public' AND tablename = 'farms'
+ORDER BY policyname;
+
+NOTIFY pgrst, 'reload schema';
