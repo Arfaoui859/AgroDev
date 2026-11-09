@@ -140,6 +140,8 @@ const AIAssistantChatbot: React.FC = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const [pendingCropAction, setPendingCropAction] = useState<{cropName:string; farmId:string; plantingDate:string; areaHectares:string} | null>(null);
   const [assistantFarms, setAssistantFarms] = useState<Array<{id:string;name:string;size_hectares:number}>>([]);
+  const [assistantCultivations, setAssistantCultivations] = useState<Array<{id:string;farm_id:string;crop_name:string;status:string}>>([]);
+  const [pendingDiseaseSave, setPendingDiseaseSave] = useState<{file:File;farmId:string;cultivationId:string;cropType:string;diseaseName:string;severity:string;confidence:number|null;analysisResult:Record<string, unknown>} | null>(null);
   const [actionSaving, setActionSaving] = useState(false);
 
   useEffect(() => {
@@ -346,6 +348,47 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         },
         category: "agriculture"
       }]);
+      // Keep the original image and verified response available for an explicit,
+      // user-approved save into the selected farm/cultivation record.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const farmResponse = await fetch("/api/assistant/farms", {
+          headers: { Authorization: "Bearer " + session.access_token }
+        });
+        const farmPayload = await farmResponse.json();
+        if (farmResponse.ok && farmPayload.success === true && Array.isArray(farmPayload.data) && farmPayload.data.length) {
+          setAssistantFarms(farmPayload.data);
+          setPendingDiseaseSave({
+            file,
+            farmId: farmPayload.data.length === 1 ? farmPayload.data[0].id : "",
+            cultivationId: "",
+            cropType: cropType || "",
+            diseaseName,
+            severity: severity ? String(severity) : "unknown",
+            confidence: Number.isFinite(confidence) && confidence >= 0 && confidence <= 1 ? confidence : null,
+            analysisResult: payload,
+          });
+          if (farmPayload.data.length === 1) {
+            const cultivationResponse = await fetch("/api/assistant/cultivations?farm_id=" + encodeURIComponent(farmPayload.data[0].id), {
+              headers: { Authorization: "Bearer " + session.access_token }
+            });
+            const cultivationPayload = await cultivationResponse.json();
+            setAssistantCultivations(cultivationResponse.ok && cultivationPayload.success === true ? cultivationPayload.data || [] : []);
+          }
+        } else {
+          setMessages(prev => [...prev, {
+            id: "disease-save-unavailable-" + Date.now(), type: "assistant",
+            content: language === "ar" ? "التحليل حاضر، أما ما لقيتش مزرعة مسجّلة نربط بيها الصورة. سجّل مزرعتك أو عاود بعد ربط الحساب." : "The analysis is ready, but no registered farm was found to link this image to.",
+            timestamp: new Date().toISOString(), language, category: "general"
+          }]);
+        }
+      } else {
+        setMessages(prev => [...prev, {
+          id: "disease-login-required-" + Date.now(), type: "assistant",
+          content: language === "ar" ? "تنجم تشوف التحليل، ولحفظ الصورة في سجلّ المزرعة يلزمك تدخل لحسابك." : "You can view the analysis; sign in to save the image in a farm record.",
+          timestamp: new Date().toISOString(), language, category: "general"
+        }]);
+      }
     } catch (error) {
       const reason = error instanceof Error ? error.message : "IMAGE_ANALYSIS_UNAVAILABLE";
       setMessages(prev => [...prev, {
@@ -453,6 +496,63 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       setMessages(prev => [...prev, {
         id: "crop-save-error-" + Date.now(), type: "assistant",
         content: language === "ar" ? "ما تمش حفظ المحصول: " + reason + ". ما نعتبرش العملية ناجحة قبل تأكيد قاعدة البيانات." : "The crop was not saved: " + reason,
+        timestamp: new Date().toISOString(), language, category: "general"
+      }]);
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
+  const loadAssistantCultivations = async (farmId: string) => {
+    if (!farmId) { setAssistantCultivations([]); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    const response = await fetch("/api/assistant/cultivations?farm_id=" + encodeURIComponent(farmId), {
+      headers: { Authorization: "Bearer " + session.access_token }
+    });
+    const payload = await response.json();
+    setAssistantCultivations(response.ok && payload.success === true ? payload.data || [] : []);
+  };
+
+  const confirmDiseaseSave = async () => {
+    if (!pendingDiseaseSave?.farmId) return;
+    setActionSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const form = new FormData();
+      form.append("file", pendingDiseaseSave.file);
+      form.append("farm_id", pendingDiseaseSave.farmId);
+      if (pendingDiseaseSave.cultivationId && pendingDiseaseSave.cultivationId !== "none") {
+        form.append("cultivation_id", pendingDiseaseSave.cultivationId);
+      }
+      form.append("plant_type", pendingDiseaseSave.cropType);
+      form.append("primary_disease", pendingDiseaseSave.diseaseName);
+      form.append("severity_level", pendingDiseaseSave.severity);
+      if (pendingDiseaseSave.confidence !== null) form.append("disease_confidence", String(pendingDiseaseSave.confidence));
+      form.append("analysis_result", JSON.stringify(pendingDiseaseSave.analysisResult));
+      const response = await fetch("/api/assistant/actions/disease-detections", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + session.access_token },
+        body: form
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || "DISEASE_RECORD_SAVE_FAILED");
+      setMessages(prev => [...prev, {
+        id: "disease-saved-" + Date.now(), type: "assistant",
+        content: language === "ar"
+          ? "تم حفظ الصورة وسجلّ المتابعة وربطهما بالمزرعة" + (payload.data?.cultivation_id ? " والمحصول المسجّل" : "") + ". رقم السجل: " + payload.data.id + ". النتيجة تتطلب تثبّتاً ميدانياً."
+          : "The image and follow-up record were saved and linked to the farm. Record ID: " + payload.data.id + ". Field verification is still required.",
+        timestamp: new Date().toISOString(), language,
+        metadata: { sources: ["Supabase · plant_disease_detections", "Supabase Storage · private evidence bucket"] },
+        category: "agriculture"
+      }]);
+      setPendingDiseaseSave(null);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "DISEASE_RECORD_SAVE_FAILED";
+      setMessages(prev => [...prev, {
+        id: "disease-save-error-" + Date.now(), type: "assistant",
+        content: language === "ar" ? "ما تمش حفظ الصورة والسجل: " + reason + ". ما نعتبرش العملية ناجحة قبل تأكيد قاعدة البيانات." : "The image and record were not saved: " + reason,
         timestamp: new Date().toISOString(), language, category: "general"
       }]);
     } finally {
@@ -1039,6 +1139,54 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                     </div>
                     <p className="mt-2 text-xs text-emerald-900/80">
                       {language === "ar" ? "يتم التثبت من ملكية المزرعة والمساحة قبل الحفظ." : "Farm ownership and available area are checked before saving."}
+                    </p>
+                  </div>
+                )}
+
+                {pendingDiseaseSave && (
+                  <div className="mx-2 mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-right">
+                    <div className="mb-2 font-semibold text-amber-950">
+                      {language === "ar" ? "ربط الصورة بسجلّ المزرعة" : "Link image to a farm record"}
+                    </div>
+                    <p className="mb-3 text-xs text-amber-950/80">
+                      {language === "ar" ? "اختار المزرعة والمحصول الصحيحين. الصورة لن تُحفظ إلا بعد ضغطك على تأكيد." : "Choose the correct farm and cultivation. The image is only saved after you confirm."}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "المزرعة" : "Farm"}</label>
+                        <Select value={pendingDiseaseSave.farmId} onValueChange={farmId => {
+                          setPendingDiseaseSave(current => current ? { ...current, farmId, cultivationId: "" } : current);
+                          void loadAssistantCultivations(farmId);
+                        }}>
+                          <SelectTrigger><SelectValue placeholder={language === "ar" ? "اختار المزرعة" : "Choose farm"} /></SelectTrigger>
+                          <SelectContent>
+                            {assistantFarms.map(farm => <SelectItem key={farm.id} value={farm.id}>{farm.name} · {farm.size_hectares} ha</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">{language === "ar" ? "المحصول / الحقل" : "Cultivation / plot"}</label>
+                        <Select value={pendingDiseaseSave.cultivationId || "none"} onValueChange={cultivationId => setPendingDiseaseSave(current => current ? { ...current, cultivationId } : current)}>
+                          <SelectTrigger><SelectValue placeholder={language === "ar" ? "اختار المحصول (اختياري)" : "Choose cultivation (optional)"} /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{language === "ar" ? "ربط بالمزرعة فقط" : "Farm only"}</SelectItem>
+                            {assistantCultivations.filter(c => c.farm_id === pendingDiseaseSave.farmId).map(c => (
+                              <SelectItem key={c.id} value={c.id}>{c.crop_name} · {c.status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button onClick={confirmDiseaseSave} disabled={actionSaving || !pendingDiseaseSave.farmId}>
+                        {actionSaving ? (language === "ar" ? "جاري الحفظ..." : "Saving...") : (language === "ar" ? "تأكيد حفظ الصورة والسجل" : "Confirm image and record")}
+                      </Button>
+                      <Button variant="outline" onClick={() => setPendingDiseaseSave(null)} disabled={actionSaving}>
+                        {language === "ar" ? "إلغاء" : "Cancel"}
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-amber-950/80">
+                      {language === "ar" ? "السجل يحفظ النتيجة كما وردت من التحليل، ولا يحوّلها إلى تشخيص ميداني مؤكد." : "The stored result remains an unverified image assessment, not a confirmed field diagnosis."}
                     </p>
                   </div>
                 )}
