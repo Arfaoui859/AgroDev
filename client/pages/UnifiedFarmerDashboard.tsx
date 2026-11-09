@@ -1,8 +1,8 @@
 import React from "react";
 import { Bot, LayoutDashboard, Sprout, Tractor } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import FarmerDashboard from "./FarmerDashboard";
-import ComprehensiveFarmManagement from "./ComprehensiveFarmManagement";
+import FarmOverviewPanel from "./FarmOverviewPanel";
+import FarmOperationsWorkspace from "./FarmOperationsWorkspace";
 import AIIntelligenceDashboard from "./AIIntelligenceDashboard";
 import AIAssistantChatbot from "./AIAssistantChatbot";
 
@@ -59,10 +59,10 @@ export default function UnifiedFarmerDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
-          <FarmerDashboard />
+          <FarmOverviewPanel />
         </TabsContent>
         <TabsContent value="farm" className="mt-0">
-          <ComprehensiveFarmManagement />
+          <FarmOperationsWorkspace />
         </TabsContent>
         <TabsContent value="ai" className="mt-0">
           <AIIntelligenceDashboard />
