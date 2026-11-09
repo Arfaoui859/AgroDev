@@ -108,51 +108,11 @@ export default function FeedManagement() {
       if (inventoryData.success) setInventory(inventoryData.data);
       if (optimizationData.success) setOptimizations(optimizationData.data);
       
-      // Generate feeding records
-      setFeedingRecords(generateFeedingRecords());
-      
     } catch (error) {
       console.error('Error fetching feed data:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateFeedingRecords = (): FeedingRecord[] => {
-    const records: FeedingRecord[] = [];
-    const animals = ['TN0001', 'TN0002', 'TN0003', 'TN0004', 'TN0005'];
-    const feedTypes = ['علف مركز للأبقار', 'علف الشعير', 'علف البرسيم', 'علف الذرة'];
-    const timesOfDay = ['morning', 'afternoon', 'evening'] as const;
-    
-    // Generate records for the last 30 days
-    for (let day = 0; day < 30; day++) {
-      const date = new Date();
-      date.setDate(date.getDate() - day);
-      
-      animals.forEach(earTag => {
-        // 2-3 feeding times per day per animal
-        const feedingTimes = Math.floor(Math.random() * 2) + 2;
-        
-        for (let i = 0; i < feedingTimes; i++) {
-          const feedType = feedTypes[Math.floor(Math.random() * feedTypes.length)];
-          const timeOfDay = timesOfDay[i % 3];
-          const quantity = 2 + Math.random() * 8; // 2-10 kg
-          const unitCost = 2.0 + Math.random() * 1.5; // 2-3.5 per kg
-          
-          records.push({
-            animalId: `animal_${animals.indexOf(earTag) + 1}`,
-            earTag,
-            date: date.toISOString().split('T')[0],
-            feedType,
-            quantity: Math.round(quantity * 10) / 10,
-            cost: Math.round(quantity * unitCost * 10) / 10,
-            timeOfDay
-          });
-        }
-      });
-    }
-    
-    return records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
   const getFeedStatistics = () => {
@@ -303,6 +263,17 @@ export default function FeedManagement() {
           <p className="mt-4 text-muted-foreground">جاري تحميل بيانات إدارة الأعلاف...</p>
         </div>
       </div>
+    );
+  }
+
+  if (inventory.length === 0) {
+    return (
+      <main className="mx-auto max-w-4xl p-6" dir="rtl">
+        <h1 className="mb-4 text-2xl font-bold">إدارة الأعلاف</h1>
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
+          مخزون الأعلاف وسجلات الاستهلاك غير متاحة من مصدر دائم حالياً. لم يتم توليد حيوانات أو كميات أو أسعار أو سجلات يومية افتراضية.
+        </div>
+      </main>
     );
   }
 
