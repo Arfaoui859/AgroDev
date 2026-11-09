@@ -377,8 +377,9 @@ CREATE POLICY "Admins manage ai_service_logs" ON public.ai_service_logs
 -- ---------------------------------------------------------------------------
 -- 8. Reference / public-read tables.
 --
--- These hold non-personal reference or market/weather data. Anonymous and
--- authenticated readers may SELECT them; only admins may write. RLS stays on so
+-- Market reference tables contain non-personal data. Anonymous and
+-- authenticated readers may SELECT them; only admins may write. Farm-linked
+-- weather records are owner-scoped below. RLS stays on so
 -- the default for any future sensitive table remains "deny".
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Anyone can read market_prices" ON public.market_prices;
