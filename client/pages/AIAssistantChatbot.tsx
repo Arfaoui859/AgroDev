@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import AutonomousAgentPanel from '../components/AutonomousAgentPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -736,6 +737,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
              'Votre assistant intelligent pour prendre les meilleures décisions agricoles et d\'investissement'}
           </p>
         </div>
+
+        <AutonomousAgentPanel />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar - Quick Actions & History */}
