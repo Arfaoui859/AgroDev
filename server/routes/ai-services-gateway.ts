@@ -880,7 +880,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             db.from("soil_analyses")
               .select("analysis_type,ph_level,organic_matter_percent,moisture_percent,temperature_celsius,analyzed_at")
               .in("farm_id", farmIds)
-              .in("analysis_type", ["lab", "sensor"])
+              .in("analysis_type", ["lab", "laboratory", "sensor"])
               .order("analyzed_at", { ascending: false })
               .limit(1),
             db.from("notifications")
