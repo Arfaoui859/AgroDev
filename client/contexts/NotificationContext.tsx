@@ -102,7 +102,7 @@ function mapServerNotification(raw: ServerNotification): Notification {
   const firstAction = raw.actions?.[0];
   const rawCategory = raw.category ?? 'system';
   const category = rawCategory === 'agrogrowth_agent' ? 'alert' : rawCategory;
-  const priority = raw.priority === 'normal' ? 'medium' : raw.priority ?? 'medium';
+  const priority = (raw.priority === 'normal' ? 'medium' : raw.priority ?? 'medium') as Notification['priority'];
   return {
     id: String(raw.id),
     title: raw.title ?? '',
