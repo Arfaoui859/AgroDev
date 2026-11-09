@@ -202,11 +202,20 @@ async def supported_diseases():
         }
         for key, info in db.items()
     ]
+    classifier = getattr(detector, "ml_classifier", None)
+    inference_mode = getattr(detector, "inference_mode", "heuristic")
+    model_source = (
+        getattr(classifier, "MODEL_SOURCE", "heuristic-demo")
+        if classifier is not None else "heuristic-demo"
+    )
+
     return {
         "status": "success",
         "supported_diseases": diseases,
         "total_count": len(diseases),
-        "model_source": "heuristic-demo",
+        "model_source": model_source,
+        "inference_mode": inference_mode,
+        "classifier_loaded": classifier is not None,
     }
 
 
@@ -215,38 +224,39 @@ async def health():
     provider = get_provider()
     configured = provider.is_configured()
 
+    # The disease classifier is small enough for CPU inference. Load it during
+    # the health probe so Render and the Node gateway report the engine that
+    # is actually available, rather than the old hard-coded heuristic default.
+    detector = await offload(get_disease_detector)
+    classifier = getattr(detector, "ml_classifier", None)
+    inference_mode = getattr(detector, "inference_mode", "heuristic")
+    model_source = (
+        getattr(classifier, "MODEL_SOURCE", "heuristic-demo")
+        if classifier is not None else "heuristic-demo"
+    )
+
     return {
         "status": "healthy",
         "models_loaded": {
-            "disease_detector": disease_detector is not None,
+            "disease_detector": True,
             "leaf_scanner": leaf_scanner is not None,
         },
-        "note": "Inference engines initialize lazily on first request.",
-        # Service-level default engine, NOT the source of every request.
-        "model_source": "heuristic-demo",
-        "disease_detector_inference_mode": (
-            getattr(disease_detector, "inference_mode", "unknown")
-            if disease_detector is not None else "not_loaded"
-        ),
-        "disease_classifier_loaded": (
-            getattr(disease_detector, "ml_classifier", None) is not None
-            if disease_detector is not None else False
-        ),
+        "note": "Disease classifier is initialized by the health probe; leaf analysis remains lazy-loaded.",
+        "model_source": model_source,
+        "disease_detector_inference_mode": inference_mode,
+        "disease_classifier_loaded": classifier is not None,
         "disease_classifier_source": (
-            getattr(
-                getattr(disease_detector, "ml_classifier", None),
-                "MODEL_SOURCE",
-                None,
-            )
-            if disease_detector is not None else None
+            getattr(classifier, "MODEL_SOURCE", None)
+            if classifier is not None else None
         ),
         "vision_provider_configured": configured,
         # Kept for backward compatibility. Configuration does not prove usage.
         "vision_configured": configured,
         "disclaimer": (
-            "Disease detection may use the configured vision provider per request. "
-            "Leaf and quick health checks use heuristic analysis. "
-            "No scientific validation is implied."
+            "Disease classification uses the trained PlantVillage ONNX model "
+            "when its artifact and runtime are available; otherwise it falls "
+            "back to feature heuristics. Leaf and quick health checks remain "
+            "heuristic. No Tunisia field validation is implied."
         ),
     }
 # =========================================================
