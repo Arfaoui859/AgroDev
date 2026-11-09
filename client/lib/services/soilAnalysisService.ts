@@ -95,6 +95,8 @@ class SoilAnalysisService {
     const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
     if (!finite(data.ph) || data.ph < 0 || data.ph > 14) errors.push("pH مطلوب ويجب أن يكون بين 0 و14");
     if (!finite(data.moisture) || data.moisture < 0 || data.moisture > 100) errors.push("الرطوبة مطلوبة ويجب أن تكون بين 0 و100%");
+    if (data.sampleDepth !== undefined && (!finite(data.sampleDepth) || data.sampleDepth <= 0 || data.sampleDepth > 300)) errors.push("عمق العينة يجب أن يكون أكبر من 0 ولا يتجاوز 300 سم");
+    if (data.electricalConductivity !== undefined && !data.electricalConductivityUnit?.trim()) errors.push("أدخل وحدة EC عند إدخال قيمة التوصيل الكهربائي");
     const ranges: Array<[keyof RawSoilData, number, number, string]> = [
       ["organicMatter", 0, 100, "المادة العضوية"],
       ["electricalConductivity", 0, 100, "التوصيل الكهربائي"],
