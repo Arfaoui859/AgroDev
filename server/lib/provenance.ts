@@ -59,6 +59,27 @@ export function withSimulatedProvenance(source = "simulated"): RequestHandler {
   };
 }
 
+
+/**
+ * Fail closed for router groups whose current implementation is fixture-backed.
+ * A provenance header alone is not sufficient protection: the UI can still
+ * display synthetic numbers and users can act on them. Keep these routes
+ * unavailable until their real persistence/data provider is connected.
+ */
+export function blockSimulatedData(): RequestHandler {
+  return (_req: Request, res: Response) => {
+    markSimulated(res, "simulated-disabled");
+    return res.status(503).json({
+      success: false,
+      code: "SIMULATED_DATA_DISABLED",
+      message: "This feature is unavailable because its current data source is simulated or fixture-backed. It will be enabled after verified production data is connected.",
+      dataSource: "simulated",
+      isRealData: false,
+      productionReady: false,
+    });
+  };
+}
+
 /** Attach in-body provenance fields to a JSON object payload. */
 export function simulatedPayload<T extends Record<string, unknown>>(
   payload: T,
