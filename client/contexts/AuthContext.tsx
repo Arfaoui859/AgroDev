@@ -68,18 +68,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Initialize auth state
+  // Initialize auth and subscribe to subsequent Supabase auth changes.
   useEffect(() => {
     let mounted = true;
 
+    const fallbackTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn("Auth initialization fallback timeout triggered");
+        setIsLoading(false);
+      }
+    }, 15000);
+
+    // Register the listener before starting async initialization. Previously
+    // this code was placed after an early return and never ran.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted || event === "INITIAL_SESSION") return;
+
+      setSession(nextSession);
+      setIsLoading(false);
+
+      if (!nextSession?.user) {
+        setUser(null);
+        setUserProfile(null);
+      } else if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        // Defer database reads until the auth callback has returned to avoid
+        // re-entering Supabase Auth while it is notifying listeners.
+        window.setTimeout(() => {
+          if (mounted) {
+            void loadUserData(nextSession.user.id).catch((error) => {
+              console.error("Error loading user data after auth change:", error);
+            });
+          }
+        }, 0);
+      }
+
+      if (event === "SIGNED_OUT") {
+        navigate("/login");
+      } else if (event === "SIGNED_IN") {
+        navigate("/");
+      }
+    });
+
     const initializeAuth = async () => {
       try {
-        // Add timeout to prevent hanging. Increased to 30s and wrapped in retry logic
-        const timeoutMs = 30000; // 30 seconds
+        const timeoutMs = 30000;
         const authPromise = supabase.auth.getSession();
-
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(
+          window.setTimeout(
             () => reject(new Error("Auth initialization timeout")),
             timeoutMs,
           );
@@ -89,74 +126,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           data: { session: initialSession },
         } = (await Promise.race([authPromise, timeoutPromise])) as any;
 
-        if (mounted) {
-          setSession(initialSession);
-          if (initialSession?.user) {
-            try {
-              await loadUserData(initialSession.user.id);
-            } catch (userDataError) {
-              console.error("Error loading user data:", userDataError);
-              // Continue anyway, don't block on user data loading
-            }
+        if (!mounted) return;
+        setSession(initialSession);
+        if (initialSession?.user) {
+          try {
+            await loadUserData(initialSession.user.id);
+          } catch (userDataError) {
+            console.error("Error loading user data:", userDataError);
           }
-          setIsLoading(false);
+        } else {
+          setUser(null);
+          setUserProfile(null);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
-        if (mounted) {
-          setIsLoading(false);
-        }
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     };
 
-    // Also add a fallback timeout
-    const fallbackTimeout = setTimeout(() => {
-      if (mounted) {
-        console.warn("Auth initialization fallback timeout triggered");
-        setIsLoading(false);
-      }
-    }, 15000); // 15 second fallback
-
-    initializeAuth();
+    void initializeAuth();
 
     return () => {
       mounted = false;
-      clearTimeout(fallbackTimeout);
-    };
-
-    // Listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      setSession(session);
-
-      if (session?.user) {
-        try {
-          await loadUserData(session.user.id);
-        } catch (error) {
-          console.error("Error loading user data in auth state change:", error);
-          // Continue anyway
-        }
-      } else {
-        setUser(null);
-        setUserProfile(null);
-      }
-
-      setIsLoading(false);
-
-      // Handle auth events
-      if (event === "SIGNED_OUT") {
-        navigate("/login");
-      } else if (event === "SIGNED_IN") {
-        navigate("/");
-      }
-    });
-
-    return () => {
-      mounted = false;
-      clearTimeout(fallbackTimeout);
+      window.clearTimeout(fallbackTimeout);
       subscription.unsubscribe();
     };
   }, [navigate]);
