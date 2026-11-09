@@ -442,7 +442,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       }
       setPendingCropAction({
         cropName: found[1],
-        farmId: farms[0].id,
+        farmId: farms.length === 1 ? farms[0].id : "",
         plantingDate: new Date().toISOString().slice(0,10),
         areaHectares: ""
       });
@@ -546,6 +546,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           : "The image and follow-up record were saved and linked to the farm. Record ID: " + payload.data.id + ". Field verification is still required.",
         timestamp: new Date().toISOString(), language,
         metadata: { sources: ["Supabase · plant_disease_detections", "Supabase Storage · private evidence bucket"] },
+        attachments: payload.data?.image_signed_url ? [{ type: "image", url: payload.data.image_signed_url, name: pendingDiseaseSave.file.name }] : undefined,
         category: "agriculture"
       }]);
       setPendingDiseaseSave(null);
@@ -625,7 +626,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         id: "satellite-result-" + Date.now(), type: "assistant",
         content: (language === "ar" ? "تم جلب وحفظ نتائج Sentinel-2 للمزرعة " : "Sentinel-2 results retrieved and saved for farm ") + payload.farm.name + ":\n" + summary + "\n\n" + (language === "ar" ? "NDVI يقيس خضرة الغطاء النباتي، موش تشخيص مرض ولا قياس مباشر للمردودية. النتائج دورية وتتأثر بالسحب وعدد البكسلات الصالحة." : "NDVI measures vegetation greenness, not disease or direct yield. Observations are periodic and affected by clouds and valid-pixel count."),
         timestamp: new Date().toISOString(), language,
-        metadata: { sources: [payload.provenance?.provider || "Copernicus Data Space Ecosystem · Sentinel Hub"], dataSource: "llm" },
+        metadata: { sources: [payload.provenance?.provider || "Copernicus Data Space Ecosystem · Sentinel Hub"] },
         category: "agriculture"
       }]);
       setPendingSatelliteRequest(null);
