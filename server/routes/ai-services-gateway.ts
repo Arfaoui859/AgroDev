@@ -32,7 +32,8 @@ const HEURISTIC_MODEL_SOURCE_RE =
  * Axios needs an absolute URL, so we prepend http:// when the scheme is missing.
  */
 export function localServiceFallback(port: number): string {
-  return process.env.NODE_ENV === "production" ? "" : `http://localhost:${port}`;
+  const hostedRuntime = process.env.NODE_ENV === "production" || process.env.RENDER === "true" || Boolean(process.env.RENDER_SERVICE_ID);
+  return hostedRuntime ? "" : `http://localhost:${port}`;
 }
 
 export function normalizeServiceUrl(raw: string | undefined, fallback: string): string {
@@ -1079,12 +1080,13 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
             lastChecked: new Date().toISOString()
           };
         } catch (error) {
+          const statusCode = (error as AxiosError)?.response?.status;
           return {
             ...service,
-            status: "unavailable",
+            status: statusCode === 429 ? "rate_limited" : "unavailable",
             responseTime: Date.now() - checkStart,
             lastChecked: new Date().toISOString(),
-            error: error.message
+            error: statusCode === 429 ? "HTTP 429: provider rate limit; reachability is inconclusive" : (error as Error).message
           };
         }
       })
@@ -1107,6 +1109,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     const availableCount = serviceResults.filter(s => s.status === "available").length;
     const unavailableCount = serviceResults.filter(s => s.status === "unavailable").length;
     const notConfiguredCount = serviceResults.filter(s => s.status === "not_configured").length;
+    const rateLimitedCount = serviceResults.filter(s => s.status === "rate_limited").length;
     // Services that answer /health but self-declare synthetic/heuristic models.
     const syntheticCount = serviceResults.filter(
       (s: any) => s.modelTrainedOnSyntheticData === true,
@@ -1118,6 +1121,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
         availableServices: availableCount,
         unavailableServices: unavailableCount + notConfiguredCount,
         notConfiguredServices: notConfiguredCount,
+        rateLimitedServices: rateLimitedCount,
         /** Reachable services whose own /health reports a synthetic/heuristic model. */
         syntheticModelServices: syntheticCount,
         lastUpdated: new Date().toISOString(),
@@ -1132,8 +1136,8 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           "محرك قواعد زراعية محلي يوفر تحليلاً بديلاً عند تعذّر الخدمات (بدون تقديم نتائج كنموذج ذكاء اصطناعي).",
       },
       note:
-        unavailableCount > 0 || notConfiguredCount > 0 || syntheticCount > 0
-          ? "بعض خدمات الذكاء الاصطناعي غير متاحة أو غير مضبوطة أو غير موثّقة؛ لا يتم استخدام نتائج اصطناعية أو بدائل مخمّنة."
+        unavailableCount > 0 || notConfiguredCount > 0 || rateLimitedCount > 0 || syntheticCount > 0
+          ? "بعض خدمات الذكاء الاصطناعي غير متاحة أو غير مضبوطة أو محدودة الطلبات أو غير موثّقة؛ لا يتم استخدام نتائج اصطناعية أو بدائل مخمّنة."
           : "كل الخدمات التي اجتازت فحص المصدر متاحة؛ يلزم التحقق الميداني لكل قدرة قبل اعتمادها زراعياً.",
     };
 
