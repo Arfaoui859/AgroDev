@@ -229,6 +229,7 @@ interface Notification {
     weatherConditions?: any;
     marketData?: any;
     sensorData?: any;
+    recommendedActions?: string[];
   };
 }
 
@@ -357,6 +358,7 @@ export default function NotificationCenter() {
         isRead: Boolean(raw.read_at),
         isArchived: Boolean(raw.archived_at),
         isStarred: Boolean(raw.is_starred),
+        metadata: { recommendedActions: Array.isArray(raw.metadata?.recommended_actions) ? raw.metadata.recommended_actions.filter((item: unknown): item is string => typeof item === "string") : [] },
       };
     }));
     setLastUpdated(new Date().toISOString());
@@ -817,6 +819,14 @@ export default function NotificationCenter() {
                         <p className="text-sm text-muted-foreground mb-2">
                           {isArabic ? notification.messageArabic : notification.message}
                         </p>
+                        {notification.metadata?.recommendedActions?.length ? (
+                          <div className="mb-3 rounded-md bg-muted/50 p-3">
+                            <p className="mb-2 text-xs font-semibold">{isArabic ? "الخطوات المقترحة" : "Recommended verification steps"}</p>
+                            <ol className="list-decimal space-y-1 pr-5 text-xs text-muted-foreground">
+                              {notification.metadata.recommendedActions.map((action, index) => <li key={index}>{action}</li>)}
+                            </ol>
+                          </div>
+                        ) : null}
                         
                         <div className="flex items-center space-x-4 rtl:space-x-reverse text-xs text-muted-foreground">
                           <span>{new Date(notification.timestamp).toLocaleString()}</span>
