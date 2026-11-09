@@ -12,8 +12,11 @@ export const adminSetPassword: RequestHandler = async (req, res) => {
   }
 
   const { email, password } = req.body || {};
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Missing email or password in request body' });
+  if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || password.length < 12) {
+    return res.status(400).json({
+      success: false,
+      error: 'A valid email and a password of at least 12 characters are required',
+    });
   }
 
   try {
