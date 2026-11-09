@@ -348,7 +348,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className }) =>
                     variant="ghost"
                     size="sm"
                     className="text-xs"
-                    onClick={() => navigate('/user-settings')}
+                    onClick={() => navigate('/settings')}
                   >
                     <Settings className="h-3 w-3 mr-1 rtl:ml-1 rtl:mr-0" />
                     {isArabic ? 'الإعدادات' : 'Settings'}
