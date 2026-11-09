@@ -964,9 +964,20 @@ export const getSupportedDiseases = async (req: Request, res: Response) => {
   }
 };
 
+const AI_SERVICES_HEALTH_CACHE_TTL_MS = 30_000;
+let aiServicesHealthCache: { payload: Record<string, any>; checkedAt: number } | null = null;
+
 export const getAIServicesHealth = async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
+    const cacheAgeMs = aiServicesHealthCache ? startTime - aiServicesHealthCache.checkedAt : Infinity;
+    if (aiServicesHealthCache && cacheAgeMs < AI_SERVICES_HEALTH_CACHE_TTL_MS) {
+      return res.json({
+        ...aiServicesHealthCache.payload,
+        cached: true,
+        cacheAgeMs,
+      });
+    }
 
     // Define services with Arabic names
     const services = [
@@ -1137,8 +1148,11 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           : "كل الخدمات التي اجتازت فحص المصدر متاحة؛ يلزم التحقق الميداني لكل قدرة قبل اعتمادها زراعياً.",
     };
 
+    // Cache the whole health snapshot briefly: the dashboard can be opened by
+    // multiple components and repeated probes can trigger upstream/host 429s.
+    aiServicesHealthCache = { payload: results, checkedAt: Date.now() };
     // Always return 200 status since unavailable services are expected in development
-    res.json(results);
+    res.json({ ...results, cached: false, cacheAgeMs: 0 });
   } catch (error) {
     // Return a 200 response with unavailable status instead of 500 error
     console.warn("AI services health check failed:", error);
