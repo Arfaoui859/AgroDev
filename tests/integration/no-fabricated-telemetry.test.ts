@@ -13,7 +13,7 @@ beforeAll(() => { app = createServer(); });
 describe("Telemetry does not fabricate sensor readings", () => {
   test.each(["/api/sensors", "/api/real-time-data"])("%s stays unavailable without connected devices", async (path) => {
     const response = await request(app).get(path).expect(503);
-    expect(response.body.code).toBe("NOTIFICATION_STORE_NOT_CONNECTED");
+    expect(response.body.code).toBe(path === "/api/sensors" ? "SENSOR_REGISTRY_NOT_CONNECTED" : "SENSOR_STREAM_NOT_CONNECTED");
     expect(response.body.dataAvailable).toBe(false);
     expect(response.body.isRealData).toBe(false);
     expect(response.headers["x-data-provenance"]).toBe("unavailable");
