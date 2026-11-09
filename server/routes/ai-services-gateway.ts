@@ -6,7 +6,6 @@ import FormData from "form-data";
 import multer from "multer";
 import { uploadError, requireRealImages } from "../middleware/upload";
 import {
-  analyzeSoilForUI,
   recommendCropsForUI,
   CROP_REFERENCE,
 } from "../services/ai/cropAdvisor";
