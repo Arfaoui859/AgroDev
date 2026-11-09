@@ -30,9 +30,16 @@ describe("🗂  Fixture-backed data is disabled", () => {
     "/api/public/weather",
     "/api/public/stats",
     "/api/public/key-info",
-    "/api/public/create-key",
   ])("%s is unavailable without a verified public data source", async (path) => {
     const res = await request(app).get(path);
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("PUBLIC_DATA_SOURCE_NOT_CONNECTED");
+    expect(res.headers["x-data-provenance"]).toBe("unavailable");
+    expect(res.headers["x-is-real-data"]).toBe("false");
+  });
+
+  test("POST /api/public/create-key is unavailable without persisted key storage", async () => {
+    const res = await request(app).post("/api/public/create-key").send({ name: "test" });
     expect(res.status).toBe(503);
     expect(res.body.code).toBe("PUBLIC_DATA_SOURCE_NOT_CONNECTED");
     expect(res.headers["x-data-provenance"]).toBe("unavailable");
