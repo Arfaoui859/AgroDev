@@ -52,6 +52,8 @@ describe("Detailed soil analysis with a configured provider",()=>{
     expect(res.body.dataSource).toBe("ai-advisory");
     expect(res.body.provenance.advisory).toBe("llm-generated");
     expect(res.body.provenance.mlPrediction).toBe("not-available");
+    expect(res.body.persistence).toEqual({ persisted: false, reason: "FIELD_NOT_SELECTED" });
+    expect(res.body.analysisId).toBeUndefined();
     expect(res.body.data.executiveSummary).toContain("القياسات");
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
@@ -67,5 +69,12 @@ describe("Detailed soil analysis with a configured provider",()=>{
     stubProviderJson({soilAnalysis:{currentStatus:{overallGrade:{grade:"جيد"}}}});
     const res=await request(app).post("/api/soil-analysis/analyze").send({ph:6.9,moisture:30}).expect(502);
     expect(res.body.error).toBe("INVALID_AI_REPORT");
+  });
+
+  test("requires an explicit EC unit and rejects implausible sample depth",async()=>{
+    await request(app).post("/api/soil-analysis/analyze")
+      .send({ph:6.9,moisture:30,electricalConductivity:1.2}).expect(400);
+    await request(app).post("/api/soil-analysis/analyze")
+      .send({ph:6.9,moisture:30,sampleDepth:301}).expect(400);
   });
 });
