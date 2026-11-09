@@ -195,9 +195,13 @@ const EnhancedAnalysis: React.FC = () => {
           potassium: numericPayload.potassium === undefined ? "" : String(numericPayload.potassium),
           notes: String(numericPayload.notes || ""),
         };
-        const previousHistory = JSON.parse(localStorage.getItem("soilHistory") || "[]");
-        const safeHistory = Array.isArray(previousHistory) ? previousHistory : [];
-        localStorage.setItem("soilHistory", JSON.stringify([legacyEntry, ...safeHistory.filter((item: any) => item?.id !== legacyEntry.id)].slice(0, 100)));
+        try {
+          const previousHistory = JSON.parse(localStorage.getItem("soilHistory") || "[]");
+          const safeHistory = Array.isArray(previousHistory) ? previousHistory : [];
+          localStorage.setItem("soilHistory", JSON.stringify([legacyEntry, ...safeHistory.filter((item: any) => item?.id !== legacyEntry.id)].slice(0, 100)));
+        } catch (historyStorageError) {
+          console.warn("Analysis completed, but legacy history synchronization failed:", historyStorageError);
+        }
       } catch (storageError) {
         console.warn("Soil report was generated but browser-local caching failed:", storageError);
       }
