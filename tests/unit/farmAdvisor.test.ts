@@ -39,6 +39,11 @@ describe("detectLanguage", () => {
   test("defaults to English otherwise", () => {
     expect(detectLanguage("How do I grow wheat?")).toBe("en");
   });
+
+  test("detects Tunisian Arabic written in Latin characters", () => {
+    expect(detectLanguage("kifeh n7eb ns9i tmatem?")).toBe("ar");
+    expect(detectLanguage("chnowa na3mel fi torba?")).toBe("ar");
+  });
 });
 
 describe("answerAgriculturalQuestion", () => {
@@ -131,6 +136,23 @@ describe("answerAgriculturalQuestion", () => {
     expect(result.contextSummary.join(" ")).toContain("سجلات AgroGrowth الفعلية");
     expect(result.contextSummary.join(" ")).toContain("cultivation_id=real-record-id");
     expect(result.contextSummary.join(" ")).toContain("not live telemetry");
+  });
+
+  test("routes Tunisian Arabizi crop, soil and irrigation questions to relevant agents", async () => {
+    const result = await answerAgriculturalQuestion({
+      question: "nheb nzra3 tmatem fi torba w kifeh ns9i?",
+    });
+    expect(result.language).toBe("ar");
+    expect(result.usedAgents).toContain("crop");
+    expect(result.usedAgents).toContain("soil");
+    expect(result.usedAgents).toContain("weather");
+  });
+
+  test("routes transliterated Tunisian disease and market questions", async () => {
+    const disease = await answerAgriculturalQuestion({ question: "famma mardh fi tmatem?" });
+    const market = await answerAgriculturalQuestion({ question: "ch9adeh sou9 tmatem?" });
+    expect(disease.usedAgents).toContain("disease");
+    expect(market.usedAgents).toContain("market");
   });
 
   test("does not invent market prices in rule-based mode", async () => {
