@@ -24,7 +24,6 @@ import {
   getMarketTrends,
   getRegionalPrices,
 } from "./routes/market";
-import { generateCropRecommendations } from "./routes/ai-recommender";
 import {
   analyzePlantImages,
   uploadMiddleware,
@@ -396,7 +395,6 @@ export function createServer() {
   app.get("/api/market/regional/:cropId", getRegionalPrices);
 
   // AI Recommendation routes
-  app.post("/api/ai/recommend", generateCropRecommendations);
 
   // Disease Detection routes
   app.post("/api/disease/analyze", uploadMiddleware, analyzePlantImages);
