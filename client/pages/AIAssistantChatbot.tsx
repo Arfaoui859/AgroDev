@@ -318,7 +318,10 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       const symptoms = primary.symptoms || payload.disease_detection?.symptoms || [];
       const treatment = payload.treatment_plan?.immediate_treatment || payload.treatment?.immediate_treatment || [];
       const prevention = payload.treatment_plan?.prevention_measures || [];
-      const confidence = Number(primary.probability ?? payload.confidence ?? NaN);
+      const rawConfidence = Number(primary.probability ?? payload.confidence ?? NaN);
+      const confidence = Number.isFinite(rawConfidence)
+        ? rawConfidence > 1 && rawConfidence <= 100 ? rawConfidence / 100 : rawConfidence
+        : NaN;
       const modelSource = payload.modelSource || payload.model_source || payload.provider || "غير معلن";
       const diseaseName = primary.disease_name_ar || primary.disease || payload.disease || "غير محدد";
       const lines = language === "ar"
