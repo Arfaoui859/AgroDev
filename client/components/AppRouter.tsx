@@ -138,7 +138,11 @@ export default function AppRouter() {
 
   // If not authenticated and trying to access protected route, redirect to login
   if (!isAuthenticated) {
-    return <Login />;
+    return (
+      <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center" role="status" aria-live="polite"><span className="text-sm text-gray-500">Loading page…</span></div>}>
+        <Login />
+      </Suspense>
+    );
   }
 
   // Authenticated user accessing protected routes - render with Layout
