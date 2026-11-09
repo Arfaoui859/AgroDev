@@ -128,7 +128,7 @@ describe("🏡 Farm/field routes forward the caller's JWT to Supabase", () => {
         size_hectares: 2,
       });
       expect(res.status).toBe(401);
-      expect(res.body.code).toBe("UNAUTHORIZED");
+      expect(res.body.error).toBe("Unauthorized");
       expect(createClientCalls().length).toBe(0);
     } finally {
       process.env.NODE_ENV = prev;
