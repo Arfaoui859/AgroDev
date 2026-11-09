@@ -29,9 +29,23 @@ describe("Detailed soil analysis provenance",()=>{
     await request(app).post("/api/soil-analysis/batch").send({soils:[]}).expect(400);
     await request(app).post("/api/soil-analysis/batch").send({soils:"no"}).expect(400);
   });
-  test("report lookup does not fake success for an unstored id",async()=>{
-    const res=await request(app).get("/api/soil-analysis/report/never-stored").expect(501);
+  test("report lookup fails clearly when no authenticated database session is available",async()=>{
+    const res=await request(app).get("/api/soil-analysis/report/never-stored").expect(503);
     expect(res.body.success).toBe(false);
-    expect(res.body.error).toMatch(/not implemented/i);
+    expect(res.body.error).toBe("DATABASE_OR_SESSION_UNAVAILABLE");
+  });
+
+  test("soil analysis endpoints reject anonymous production requests",async()=>{
+    const previousEnv=process.env.NODE_ENV;
+    const previousDemo=process.env.ENABLE_DEMO_ENDPOINTS;
+    process.env.NODE_ENV="production";
+    delete process.env.ENABLE_DEMO_ENDPOINTS;
+    try {
+      await request(app).post("/api/soil-analysis/analyze").send({ph:7,moisture:30}).expect(401);
+      await request(app).get("/api/soil-analysis/report/never-stored").expect(401);
+    } finally {
+      if(previousEnv===undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV=previousEnv;
+      if(previousDemo===undefined) delete process.env.ENABLE_DEMO_ENDPOINTS; else process.env.ENABLE_DEMO_ENDPOINTS=previousDemo;
+    }
   });
 });
