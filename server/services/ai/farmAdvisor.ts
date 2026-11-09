@@ -282,7 +282,7 @@ function summariseContext(context?: FarmContext, lang: Language = "ar"): string[
 function detectRelevantAgents(question: string): string[] {
   const q = question.toLowerCase();
   const agents: string[] = [];
-  if (/(تربة|ph|آزوت|فوسفور|بوتاس|ملوحة|soil|sol)/i.test(question) || /soil|sol\b/.test(q))
+  if (/(تربة|ph|آزوت|فوسفور|بوتاس|ملوحة|soil|sol|torba|trab|mlou7a|azot|fosfor)/i.test(question) || /soil|sol\b/.test(q))
     agents.push("soil");
   if (/(محصول|بذور|زراعة|crop|semis|culture|ma7soul|gharsa|ghars|zra3a|nzra3|tmatem|tomat|zitoun|9amh|felfel)/i.test(question) || /crop|culture/.test(q))
     agents.push("crop");
