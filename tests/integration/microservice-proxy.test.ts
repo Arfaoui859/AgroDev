@@ -78,7 +78,7 @@ describe("🛡️ Real microservice proxies (no mock payloads)", () => {
     resetServiceProbeCache();
   });
 
-  test("pest analyze-problem is served by the microservice and tagged heuristic", async () => {
+  test("pest analyze-problem refuses synthetic service output", async () => {
     const fake = await startFakeService((path) => ({
       body: { success: true, data: { pest_identification: { identified_pest: "aphids" }, marker: path } },
     }));
@@ -88,21 +88,16 @@ describe("🛡️ Real microservice proxies (no mock payloads)", () => {
     const res = await request(app)
       .post("/api/pest-control/analyze-problem")
       .send({ crop_type: "tomato", symptoms: ["أوراق مجعدة"] })
-      .expect(200);
+      .expect(503);
 
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.pest_identification.identified_pest).toBe("aphids");
-    // Provenance from the fake /health must be surfaced.
-    expect(res.body.modelSource).toBe("synthetic-demo");
-    expect(res.body.isRealData).toBe(false);
-    expect(res.body.dataSource).toBe("heuristic");
-    // Proof the request actually reached the microservice.
-    expect(fake.calls).toContain("/analyze-pest-problem");
+    expect(res.body.success).toBe(false);
+    expect(res.body.data).toBeNull();
+    expect(fake.calls).not.toContain("/analyze-pest-problem");
 
     await fake.close();
   });
 
-  test("pest severity body is translated to the microservice's query params", async () => {
+  test("pest severity does not proxy an unvalidated rule service", async () => {
     const fake = await startFakeService((path) => ({
       body: { success: true, data: { received_path: path } },
     }));
@@ -112,16 +107,15 @@ describe("🛡️ Real microservice proxies (no mock payloads)", () => {
     const res = await request(app)
       .post("/api/pest-control/assess-severity")
       .send({ pest_name: "aphids", affected_area_percentage: 40 })
-      .expect(200);
+      .expect(503);
 
-    expect(fake.calls.some((c) => c.startsWith("/assess-severity?"))).toBe(true);
-    expect(res.body.data.received_path).toContain("pest_name=aphids");
-    expect(res.body.data.received_path).toContain("affected_area_percentage=40");
+    expect(res.body.success).toBe(false);
+    expect(fake.calls.some((c) => c.startsWith("/assess-severity?"))).toBe(false);
 
     await fake.close();
   });
 
-  test("irrigation optimize is forwarded to the microservice", async () => {
+  test("irrigation optimize refuses unvalidated crop-water model output", async () => {
     const fake = await startFakeService(() => ({
       body: { success: true, data: { schedule: "real" } },
     }));
@@ -131,16 +125,15 @@ describe("🛡️ Real microservice proxies (no mock payloads)", () => {
     const res = await request(app)
       .post("/api/irrigation-optimization/optimize")
       .send({ crop_type: "wheat", growth_stage: "vegetative" })
-      .expect(200);
+      .expect(503);
 
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.schedule).toBe("real");
-    expect(fake.calls).toContain("/optimize-irrigation");
+    expect(res.body.success).toBe(false);
+    expect(fake.calls).not.toContain("/optimize-irrigation");
 
     await fake.close();
   });
 
-  test("weather-plan is forwarded to the weather/yield microservice", async () => {
+  test("weather-plan refuses unvalidated yield model output", async () => {
     const fake = await startFakeService(() => ({
       body: { success: true, data: { seasonal_plan: "real" } },
     }));
@@ -150,10 +143,10 @@ describe("🛡️ Real microservice proxies (no mock payloads)", () => {
     const res = await request(app)
       .post("/api/weather-yield-intelligence/weather-plan")
       .send({ crop_options: ["wheat"] })
-      .expect(200);
+      .expect(503);
 
-    expect(res.body.data.seasonal_plan).toBe("real");
-    expect(fake.calls).toContain("/create-weather-plan");
+    expect(res.body.success).toBe(false);
+    expect(fake.calls).not.toContain("/create-weather-plan");
 
     await fake.close();
   });
