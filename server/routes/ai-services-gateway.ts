@@ -242,7 +242,7 @@ const respondFromImageMicroservice = (
     !source || /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i.test(source);
 
   const validVisionSource =
-    rawDataSource === "vision-model" || rawDataSource === "llm";
+    rawDataSource === "vision-model" || rawDataSource === "llm" || rawDataSource === "trained-ml" || rawDataSource === "trained-model-inference";
 
   if (!allowVisionModel || syntheticSource || !validVisionSource) {
     return res.status(503).json({
@@ -257,7 +257,7 @@ const respondFromImageMicroservice = (
   }
 
   // A genuine model inference is still a prediction, not a verified diagnosis.
-  const dataSource = rawDataSource === "llm"
+  const dataSource = rawDataSource === "llm" || rawDataSource === "vision-model"
     ? "llm-generated"
     : "trained-model-inference";
 
