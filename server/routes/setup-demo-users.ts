@@ -1,12 +1,12 @@
-import { RequestHandler } from "express";
+import { RequestHandler, Response } from "express";
 import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
 
 const demoUsers = [
-  { email: "farmer@demo.local", fullName: "أحمد المزارع", role: "farmer" },
-  { email: "agronomist@demo.local", fullName: "دكتور سارة الخبيرة", role: "agronomist" },
-  { email: "trader@demo.local", fullName: "محمد التاجر", role: "trader" },
-  { email: "veterinarian@demo.local", fullName: "دكتور فاطمة البيطارة", role: "veterinarian" },
-  { email: "inspector@demo.local", fullName: "مراقب الحقول", role: "inspector" },
+  { email: "farmer@example.com", fullName: "أحمد المزارع", role: "farmer" },
+  { email: "agronomist@example.com", fullName: "دكتور سارة الخبيرة", role: "agronomist" },
+  { email: "trader@example.com", fullName: "محمد التاجر", role: "trader" },
+  { email: "veterinarian@example.com", fullName: "دكتور فاطمة البيطارة", role: "veterinarian" },
+  { email: "inspector@example.com", fullName: "مراقب الحقول", role: "inspector" },
 ] as const;
 
 function demoEnabled(): boolean {
@@ -14,7 +14,7 @@ function demoEnabled(): boolean {
     process.env.ENABLE_DEMO_ENDPOINTS === "true";
 }
 
-function rejectIfDemoDisabled(res: Parameters<RequestHandler>[1]): boolean {
+function rejectIfDemoDisabled(res: Response): boolean {
   if (demoEnabled()) return false;
   res.status(404).json({ success: false, error: "Demo provisioning is disabled" });
   return true;
@@ -152,9 +152,9 @@ export const deleteDemoUsers: RequestHandler = async (_req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 
-  const demoEmails = new Set(demoUsers.map((user) => user.email));
-  const targets = data.users.filter((user) =>
-    user.email && demoEmails.has(user.email.toLowerCase() as (typeof demoUsers)[number]["email"]),
+  const demoEmails = new Set<string>(demoUsers.map((user) => user.email));
+  const targets = data.users.filter(
+    (user) => Boolean(user.email && demoEmails.has(user.email.toLowerCase())),
   );
 
   const results = [];
