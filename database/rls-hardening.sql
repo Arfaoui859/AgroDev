@@ -24,18 +24,18 @@
 -- without triggering Postgres' "infinite recursion detected in policy" error.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.current_user_role() RETURNS text
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT role FROM public.users WHERE id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT COALESCE(public.current_user_role() IN ('admin', 'administrator'), false)
 $$;
 
 -- Experts (agronomists) may read a farmer's agronomic records for consultation.
 CREATE OR REPLACE FUNCTION public.is_expert() RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT COALESCE(
     public.current_user_role() IN ('expert', 'agronomist', 'admin', 'administrator'),
     false
@@ -43,14 +43,14 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
 $$;
 
 CREATE OR REPLACE FUNCTION public.owns_farm(farm uuid) RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.farms f WHERE f.id = farm AND f.owner_id = auth.uid()
   )
 $$;
 
 CREATE OR REPLACE FUNCTION public.owns_section(section uuid) RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.farm_sections s
     JOIN public.farms f ON f.id = s.farm_id
@@ -58,11 +58,16 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   )
 $$;
 
-GRANT EXECUTE ON FUNCTION public.current_user_role() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_expert() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.current_user_role() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.is_expert() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.owns_farm(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.owns_section(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_expert() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 2. Turn RLS on for every table that lacked it.
