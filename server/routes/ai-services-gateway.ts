@@ -863,7 +863,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         const [userResult, profileResult, farmsResult, publicMarketResult] = await Promise.all([
           db.from("users").select("role,language_preference").eq("id", userId).maybeSingle(),
           db.from("user_profiles").select("experience_years,farming_specializations,preferred_crops,location").eq("user_id", userId).maybeSingle(),
-          db.from("farms").select("id,name,location,size_hectares").eq("owner_id", userId).limit(20),
+          db.from("farms").select("id,name,location,size_hectares,soil_type,climate_zone,elevation_meters,water_source,irrigation_type,organic_certified").eq("owner_id", userId).limit(20),
           db.from("market_prices").select("crop_name,price_per_kg,currency,market_location,price_date,source").order("price_date", { ascending: false }).limit(10),
         ]);
         const basePlatformRecords: string[] = [];
@@ -896,10 +896,10 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           const farmIds = farms.map((farm: any) => farm.id);
           const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, forecastResult, sensorResult, satelliteResult] = await Promise.all([
             db.from("crop_cultivations")
-              .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,updated_at")
+              .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,irrigation_method,fertilizer_plan,pesticide_plan,area_hectares,estimated_yield,total_cost,revenue,profit,updated_at")
               .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(12),
             db.from("soil_analyses")
-              .select("analysis_type,ph_level,organic_matter_percent,moisture_percent,temperature_celsius,analyzed_at")
+              .select("analysis_type,ph_level,nitrogen_level,phosphorus_level,potassium_level,organic_matter_percent,moisture_percent,temperature_celsius,health_score,fertility_level,sample_depth_cm,analyzed_at")
               .in("farm_id", farmIds).in("analysis_type", ["lab", "laboratory", "sensor"])
               .order("analyzed_at", { ascending: false }).limit(5),
             db.from("notifications")
@@ -913,7 +913,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               .select("farm_id,cultivation_id,plant_type,primary_disease,severity_level,recovery_status,disease_confidence,detected_at")
               .in("farm_id", farmIds).order("detected_at", { ascending: false }).limit(8),
             db.from("weather_records")
-              .select("farm_id,temperature_celsius,humidity_percent,rainfall_mm,weather_conditions,record_date,source")
+              .select("farm_id,temperature_celsius,humidity_percent,rainfall_mm,wind_speed_kmh,uv_index,cloud_cover_percent,weather_conditions,record_date,source")
               .in("farm_id", farmIds).order("record_date", { ascending: false }).limit(5),
             db.from("weather_forecasts")
               .select("farm_id,forecast_date,forecast_period,forecast_data,accuracy_score,source")
@@ -965,32 +965,56 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .order("price_date", { ascending: false })
                 .limit(12)
             : { data: [], error: null };
+          const marketPredictionsResult = marketCropNames.length
+            ? await db.from("market_predictions")
+                .select("crop_name,prediction_period,prediction_data,predicted_price_range,confidence_level,influencing_factors,valid_from,valid_until,created_at")
+                .in("crop_name", marketCropNames)
+                .gte("valid_until", new Date().toISOString().slice(0, 10))
+                .order("valid_from", { ascending: true })
+                .limit(8)
+            : { data: [], error: null };
+          const cultivationIds = (cropResult.data ?? []).map((item: any) => item.id).filter(Boolean);
+          const leafHealthResult = cultivationIds.length
+            ? await db.from("leaf_health_analyses")
+                .select("cultivation_id,plant_type,growth_stage,nutrition_deficiency,health_score,quality_grade,recommendations,analyzed_at")
+                .in("cultivation_id", cultivationIds)
+                .order("analyzed_at", { ascending: false })
+                .limit(8)
+            : { data: [], error: null };
           const platformRecords: string[] = [...basePlatformRecords];
             for (const farm of farms) {
               const farmName = typeof farm.name === "string" ? farm.name : "Farm";
-              platformRecords.push("Farm " + farmName + " · " + (Number(farm.size_hectares) || 0) + " ha");
+              platformRecords.push("Farm " + farmName + " · " + (Number(farm.size_hectares) || 0) + " ha; soil_type=" + (farm.soil_type || "not recorded") + "; climate_zone=" + (farm.climate_zone || "not recorded") + "; elevation_m=" + (farm.elevation_meters ?? "not recorded") + "; water_source=" + (farm.water_source || "not recorded") + "; irrigation_type=" + (farm.irrigation_type || "not recorded") + "; organic_certified=" + (farm.organic_certified === true ? "yes" : farm.organic_certified === false ? "no" : "not recorded"));
               for (const section of (sectionsResult.data ?? []).filter((item: any) => item.farm_id === farm.id)) {
                 platformRecords.push("Plot " + section.name + " in " + farmName + ": " + section.area_hectares + " ha; crop=" + (section.current_crop || "not recorded") + "; soil=" + (section.soil_type || "not recorded") + "; planted=" + (section.planted_date || "unknown") + "; expected harvest=" + (section.expected_harvest_date || "unknown"));
               }
             }
             for (const crop of cropResult.data ?? []) {
               const farm = farms.find((item: any) => item.id === crop.farm_id);
-              platformRecords.push("Cultivation " + crop.crop_name + " [status=" + crop.status + "; stage=" + (crop.current_growth_stage || "not recorded") + "; planted=" + crop.planting_date + "; expected harvest=" + (crop.expected_harvest_date || "unknown") + "; farm=" + (farm?.name || crop.farm_id) + "; cultivation_id=" + crop.id + "]");
+              platformRecords.push("Cultivation " + crop.crop_name + " [status=" + crop.status + "; variety=" + (crop.crop_variety || "not recorded") + "; stage=" + (crop.current_growth_stage || "not recorded") + "; planted=" + crop.planting_date + "; expected harvest=" + (crop.expected_harvest_date || "unknown") + "; area_ha=" + (crop.area_hectares ?? "not recorded") + "; irrigation_method=" + (crop.irrigation_method || "not recorded") + "; estimated_yield=" + (crop.estimated_yield ?? "not recorded") + "; total_cost=" + (crop.total_cost ?? "not recorded") + "; revenue=" + (crop.revenue ?? "not recorded") + "; profit=" + (crop.profit ?? "not recorded") + "; farm=" + (farm?.name || crop.farm_id) + "; cultivation_id=" + crop.id + "]. Financial and yield values are user-recorded estimates/results, not independently audited.");
             }
             for (const soilRecord of soilResult.data ?? []) {
-              platformRecords.push("Verified soil analysis [type=" + soilRecord.analysis_type + "; pH=" + (soilRecord.ph_level ?? "not recorded") + "; organic matter=" + (soilRecord.organic_matter_percent ?? "not recorded") + "%; moisture=" + (soilRecord.moisture_percent ?? "not recorded") + "%; temperature=" + (soilRecord.temperature_celsius ?? "not recorded") + " C; analyzed=" + soilRecord.analyzed_at + "]. Only lab/laboratory/sensor records are included as verified baselines.");
+              platformRecords.push("Verified soil analysis [type=" + soilRecord.analysis_type + "; pH=" + (soilRecord.ph_level ?? "not recorded") + "; N=" + (soilRecord.nitrogen_level ?? "not recorded") + "; P=" + (soilRecord.phosphorus_level ?? "not recorded") + "; K=" + (soilRecord.potassium_level ?? "not recorded") + "; organic matter=" + (soilRecord.organic_matter_percent ?? "not recorded") + "%; moisture=" + (soilRecord.moisture_percent ?? "not recorded") + "%; temperature=" + (soilRecord.temperature_celsius ?? "not recorded") + " C; health_score=" + (soilRecord.health_score ?? "not recorded") + "; fertility=" + (soilRecord.fertility_level || "not recorded") + "; sample_depth_cm=" + (soilRecord.sample_depth_cm ?? "not recorded") + "; analyzed=" + soilRecord.analyzed_at + "]. Only lab/laboratory/sensor records are included as verified baselines; sensor measurements are not laboratory nutrient tests.");
             }
             for (const detection of diseaseResult.data ?? []) {
-              platformRecords.push("Saved plant-health record [crop=" + (detection.plant_type || "unknown") + "; suspected condition=" + (detection.primary_disease || "not classified") + "; severity=" + (detection.severity_level || "not recorded") + "; recovery=" + (detection.recovery_status || "pending") + "; confidence=" + (detection.disease_confidence ?? "not reported") + "; detected=" + detection.detected_at + "; farm_id=" + detection.farm_id + "; cultivation_id=" + (detection.cultivation_id || "not linked") + "]. Saved model/inspection result, not a confirmed field diagnosis.");
+              platformRecords.push("Saved plant-health record [method=" + (detection.detection_method || "not recorded") + "; crop=" + (detection.plant_type || "unknown") + "; suspected condition=" + (detection.primary_disease || "not classified") + "; severity=" + (detection.severity_level || "not recorded") + "; affected_area_percent=" + (detection.affected_area_percentage ?? "not recorded") + "; treatment_applied=" + (detection.treatment_applied === true ? "yes" : "no/not recorded") + "; recovery=" + (detection.recovery_status || "pending") + "; confidence=" + (detection.disease_confidence ?? "not reported") + "; detected=" + detection.detected_at + "; farm_id=" + detection.farm_id + "; cultivation_id=" + (detection.cultivation_id || "not linked") + "]. Saved model/inspection result, not a confirmed field diagnosis.");
             }
             for (const observation of (satelliteResult.error ? [] : satelliteResult.data ?? [])) {
               platformRecords.push("Saved satellite observation [index=" + observation.index_name + "; mean=" + observation.mean_value + "; min=" + observation.min_value + "; max=" + observation.max_value + "; interval=" + observation.observed_from + " to " + observation.observed_to + "; provider=" + observation.provider + "; valid_pixels=" + observation.sample_count + "; no_data_pixels=" + observation.no_data_count + "]. Periodic satellite vegetation index, not live telemetry or a disease diagnosis.");
+            }
+            for (const prediction of (marketPredictionsResult.error ? [] : marketPredictionsResult.data ?? [])) {
+              const range = JSON.stringify(prediction.predicted_price_range ?? {}).slice(0, 250);
+              const data = JSON.stringify(prediction.prediction_data ?? {}).slice(0, 350);
+              platformRecords.push("Stored market prediction [crop=" + prediction.crop_name + "; period=" + (prediction.prediction_period || "unreported") + "; price_range=" + range + "; confidence=" + (prediction.confidence_level ?? "unreported") + "; valid=" + prediction.valid_from + " to " + prediction.valid_until + "; created=" + prediction.created_at + "; prediction_data=" + data + "]. This is a saved forecast, not a verified current market quote.");
+            }
+            for (const leaf of (leafHealthResult.error ? [] : leafHealthResult.data ?? [])) {
+              platformRecords.push("Saved leaf-health analysis [crop=" + (leaf.plant_type || "unreported") + "; growth_stage=" + (leaf.growth_stage || "unreported") + "; nutrition_deficiency=" + (leaf.nutrition_deficiency || "not detected/reported") + "; health_score=" + (leaf.health_score ?? "unreported") + "; quality_grade=" + (leaf.quality_grade || "unreported") + "; analyzed=" + leaf.analyzed_at + "; cultivation_id=" + leaf.cultivation_id + "; recommendations=" + JSON.stringify(leaf.recommendations ?? {}).slice(0, 300) + "]. Saved assessment; verify against field conditions.");
             }
             for (const price of marketResult.data ?? []) {
               platformRecords.push("Recorded market price [crop=" + price.crop_name + "; price=" + price.price_per_kg + " " + (price.currency || "TND") + "/kg; market=" + price.market_location + "; date=" + price.price_date + "; source=" + (price.source || "unreported") + "]. Historical recorded quote, not a guaranteed live market price.");
             }
             for (const weather of weatherResult.data ?? []) {
-              platformRecords.push("Recorded weather [date=" + weather.record_date + "; temperature=" + (weather.temperature_celsius ?? "unknown") + " C; humidity=" + (weather.humidity_percent ?? "unknown") + "%; rainfall=" + (weather.rainfall_mm ?? "unknown") + " mm; conditions=" + (weather.weather_conditions || "unknown") + "; source=" + (weather.source || "unreported") + "]");
+              platformRecords.push("Recorded weather [date=" + weather.record_date + "; temperature=" + (weather.temperature_celsius ?? "unknown") + " C; humidity=" + (weather.humidity_percent ?? "unknown") + "%; rainfall=" + (weather.rainfall_mm ?? "unknown") + " mm; wind_speed=" + (weather.wind_speed_kmh ?? "unknown") + " km/h; UV=" + (weather.uv_index ?? "unknown") + "; cloud_cover=" + (weather.cloud_cover_percent ?? "unknown") + "%; conditions=" + (weather.weather_conditions || "unknown") + "; source=" + (weather.source || "unreported") + "]. Historical observation, not current weather.");
             }
             for (const forecast of (forecastResult.error ? [] : forecastResult.data ?? [])) {
               const compactForecast = typeof forecast.forecast_data === "string"
