@@ -28,6 +28,9 @@ from ai_common.offload import offload
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Safe provenance when the trained ONNX artifact/runtime cannot be loaded.
+DEFAULT_DISEASE_MODEL_SOURCE = "heuristic-demo"
+
 MAX_UPLOAD_SIZE = int(os.getenv("MAX_UPLOAD_SIZE", str(10 * 1024 * 1024)))
 if MAX_UPLOAD_SIZE <= 0:
     raise RuntimeError("MAX_UPLOAD_SIZE must be a positive integer")
@@ -205,8 +208,8 @@ async def supported_diseases():
     classifier = getattr(detector, "ml_classifier", None)
     inference_mode = getattr(detector, "inference_mode", "heuristic")
     model_source = (
-        getattr(classifier, "MODEL_SOURCE", "heuristic-demo")
-        if classifier is not None else "heuristic-demo"
+        getattr(classifier, "MODEL_SOURCE", DEFAULT_DISEASE_MODEL_SOURCE)
+        if classifier is not None else DEFAULT_DISEASE_MODEL_SOURCE
     )
 
     return {
