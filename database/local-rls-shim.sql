@@ -36,9 +36,6 @@ AS $
   END
 $;
 
-GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO anon, authenticated, service_role;
-
 CREATE SCHEMA IF NOT EXISTS auth;
 
 -- Minimal auth.users table for exercising the production signup trigger in CI.
@@ -94,7 +91,10 @@ BEGIN
     CREATE ROLE service_role NOLOGIN NOINHERIT BYPASSRLS;
   END IF;
 END
-$$;
+$;
+
+GRANT USAGE ON SCHEMA storage TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO anon, authenticated, service_role;
 
 -- Supabase grants anon/authenticated table privileges by default and relies on
 -- RLS to restrict rows. Mirror that so a missing policy is what fails a test,
