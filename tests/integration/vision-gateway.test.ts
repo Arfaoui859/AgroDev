@@ -209,7 +209,7 @@ describe("🌿 legacy /api/disease routes do not return hard-coded diagnosis", (
   });
 
   test("legacy disease catalogue is unavailable until its source is verified", async () => {
-    const res = await request(app).get("/api/disease/catalogue").expect(503);
+    const res = await request(app).get("/api/disease/all").expect(503);
     expect(res.body.code).toBe("DISEASE_REFERENCE_NOT_VERIFIED");
   });
 });
