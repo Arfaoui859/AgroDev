@@ -77,4 +77,19 @@ describe("Detailed soil analysis with a configured provider",()=>{
     await request(app).post("/api/soil-analysis/analyze")
       .send({ph:6.9,moisture:30,sampleDepth:301}).expect(400);
   });
+
+  test("rejects a report that invents a fertilizer quantity",async()=>{
+    const unsafeReport = {
+      ...validReport,
+      recommendations: [{
+        priority:"now",action:"Apply fertilizer",reason:"Unsupported",
+        evidence:"No lab method provided",howTo:"Apply",when:"Now",
+        verification:"Retest",quantity:"50 kg/ha",
+      }],
+    };
+    stubProviderJson(unsafeReport);
+    const res=await request(app).post("/api/soil-analysis/analyze")
+      .send({ph:6.9,moisture:30}).expect(502);
+    expect(res.body.error).toBe("INVALID_AI_REPORT");
+  });
 });
