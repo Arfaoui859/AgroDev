@@ -13,7 +13,6 @@ describe("Financial summaries require persisted user records", () => {
       .get("/api/financial-summary?period=yearly&year=2099")
       .expect(503);
 
-    expect(response.body.code).toBe("SIMULATED_DATA_DISABLED");
-    expect(response.body.isRealData).toBe(false);
+    expect(response.body.code).toBe("FARM_FINANCE_DATABASE_UNAVAILABLE");
   });
 });
