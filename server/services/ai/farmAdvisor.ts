@@ -70,7 +70,7 @@ export interface AdvisorResponse {
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
 
-/** Detect the response language. Tunisian Arabic is written in Arabic script, so it maps to "ar". */
+/** Detect Arabic, French, English and common Tunisian Arabic written in Latin characters (Arabizi). */
 export function detectLanguage(text: string, fallback: Language = "ar"): Language {
   if (!text) return fallback;
   if (ARABIC_RE.test(text)) return "ar";
