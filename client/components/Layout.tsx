@@ -106,160 +106,20 @@ interface QuickActionItem {
 }
 
 // Define role-based quick actions
-const quickActions: QuickActionItem[] = [
-  {
-    name: "Farmer Dashboard",
-    nameArabic: "لوحة الفلاح",
-    href: "/farmer-dashboard",
-    icon: User,
-    color: "text-green-600",
-    allowedRoles: ["farmer", "admin"],
-  },
-  {
-    name: "Agronomist Dashboard",
-    nameArabic: "لوحة الخبير",
-    href: "/agronomist-dashboard",
-    icon: Award,
-    color: "text-blue-600",
-    allowedRoles: ["agronomist", "admin"],
-  },
-  {
-    name: "Trader Dashboard",
-    nameArabic: "لوحة التاجر",
-    href: "/trader-dashboard",
-    icon: ShoppingCart,
-    color: "text-purple-600",
-    allowedRoles: ["trader", "admin"],
-  },
-  {
-    name: "Veterinarian Dashboard",
-    nameArabic: "لوحة البيطري",
-    href: "/veterinarian-dashboard",
-    icon: Stethoscope,
-    color: "text-teal-600",
-    allowedRoles: ["veterinarian", "admin"],
-  },
-  {
-    name: "Farm Management",
-    nameArabic: "الإدارة الشاملة",
-    href: "/comprehensive-farm-management",
-    icon: Home,
-    color: "text-green-600",
-    allowedRoles: ["farmer", "admin", "supervisor"],
-  },
-  {
-    name: "Field Inspector",
-    nameArabic: "مراقب الحقول",
-    href: "/field-inspector-dashboard",
-    icon: Eye,
-    color: "text-blue-600",
-    allowedRoles: ["inspector", "admin"],
-  },
-  {
-    name: "Admin Panel",
-    nameArabic: "مدير المنصة",
-    href: "/admin-panel",
-    icon: Settings,
-    color: "text-red-600",
-    allowedRoles: ["admin"],
-  },
-  {
-    name: "Government Panel",
-    nameArabic: "مسؤول حكومي",
-    href: "/government-dashboard",
-    icon: Flag,
-    color: "text-purple-600",
-    allowedRoles: ["government", "admin"],
-  },
-];
-
 // Define role-based navigation categories
 const navigationCategories: NavigationCategory[] = [
   {
     name: "Dashboards",
-    nameArabic: "لوحات التحكم",
+    nameArabic: "لوحة التحكم",
     icon: BarChart3,
-    allowedRoles: [
-      "farmer",
-      "agronomist",
-      "trader",
-      "veterinarian",
-      "inspector",
-      "admin",
-      "government",
-    ],
+    allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government"],
     items: [
       {
-        name: "Farmer Dashboard",
-        nameArabic: "لوحة تحكم الفلاح",
+        name: "Dashboard",
+        nameArabic: "لوحة التحكم",
         href: "/farmer-dashboard",
-        icon: User,
-        badge: "New",
-        allowedRoles: ["farmer", "admin"],
-      },
-      {
-        name: "Agronomist Dashboard",
-        nameArabic: "لوحة تحكم الخبير الزراعي",
-        href: "/agronomist-dashboard",
-        icon: Award,
-        badge: "New",
-        allowedRoles: ["agronomist", "admin"],
-      },
-      {
-        name: "Trader Dashboard",
-        nameArabic: "لوحة تحكم التاجر",
-        href: "/trader-dashboard",
-        icon: ShoppingCart,
-        badge: "New",
-        allowedRoles: ["trader", "admin"],
-      },
-      {
-        name: "Veterinarian Dashboard",
-        nameArabic: "لوحة تحكم الطبيب البيطري",
-        href: "/veterinarian-dashboard",
-        icon: Stethoscope,
-        badge: "New",
-        allowedRoles: ["veterinarian", "admin"],
-      },
-      {
-        name: "Comprehensive Farm Management",
-        nameArabic: "إدارة المزرعة الشاملة",
-        href: "/comprehensive-farm-management",
-        icon: Home,
-        badge: "NEW",
-        allowedRoles: ["farmer", "admin", "supervisor"],
-      },
-      {
-        name: "Field Inspector Dashboard",
-        nameArabic: "لوحة تحكم مراقب الحقول",
-        href: "/field-inspector-dashboard",
-        icon: Eye,
-        badge: "NEW",
-        allowedRoles: ["inspector", "admin"],
-      },
-      {
-        name: "AI Intelligence",
-        nameArabic: "لوحة الذكاء الاصطناعي",
-        href: "/ai-intelligence",
-        icon: Brain,
-        badge: "AI",
-        allowedRoles: ["farmer", "agronomist", "admin"],
-      },
-      {
-        name: "Admin Panel",
-        nameArabic: "لوحة تحكم مدير المنصة",
-        href: "/admin-panel",
-        icon: Settings,
-        badge: "ADMIN",
-        allowedRoles: ["admin"],
-      },
-      {
-        name: "Government Official",
-        nameArabic: "مسؤول الجهة الحكومية",
-        href: "/government-dashboard",
-        icon: Flag,
-        badge: "GOV",
-        allowedRoles: ["government", "admin"],
+        icon: BarChart3,
+        allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government"],
       },
     ],
   },
@@ -750,18 +610,28 @@ export default function Layout({ children }: LayoutProps) {
       if (!isAuthenticated || !user) return false;
       return category.allowedRoles.includes(user.role);
     })
-    .map((category) => ({
-      ...category,
-      items: category.items.filter((item) =>
-        item.allowedRoles.includes(user?.role || ""),
-      ),
-    }));
-
-  // Filter quick actions based on user role
-  const filteredQuickActions = quickActions.filter((action) => {
-    if (!isAuthenticated || !user) return false;
-    return action.allowedRoles.includes(user.role);
-  });
+    .map((category) => {
+      if (category.name === "Dashboards") {
+        const dashboardByRole: Record<string, { href: string; name: string; nameArabic: string }> = {
+          farmer: { href: "/farmer-dashboard", name: "Farmer Dashboard", nameArabic: "لوحة الفلاح" },
+          agronomist: { href: "/agronomist-dashboard", name: "Agronomist Dashboard", nameArabic: "لوحة الخبير الزراعي" },
+          trader: { href: "/trader-dashboard", name: "Trader Dashboard", nameArabic: "لوحة التاجر" },
+          veterinarian: { href: "/veterinarian-dashboard", name: "Veterinarian Dashboard", nameArabic: "لوحة البيطري" },
+          inspector: { href: "/field-inspector-dashboard", name: "Field Inspector Dashboard", nameArabic: "لوحة مراقب الحقول" },
+          admin: { href: "/admin-panel", name: "Admin Dashboard", nameArabic: "لوحة المدير" },
+          government: { href: "/government-dashboard", name: "Government Dashboard", nameArabic: "لوحة الجهة الحكومية" },
+        };
+        const dashboard = dashboardByRole[user?.role || ""] || dashboardByRole.farmer;
+        return {
+          ...category,
+          items: [{ ...category.items[0], ...dashboard, allowedRoles: [user?.role || ""] }],
+        };
+      }
+      return {
+        ...category,
+        items: category.items.filter((item) => item.allowedRoles.includes(user?.role || "")),
+      };
+    });
 
   // Layout now assumes user is authenticated (handled by AppRouter)
 
@@ -833,36 +703,6 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
           </div>
-
-          {/* Role-based Quick Actions */}
-          {filteredQuickActions.length > 0 && (
-            <div className="p-6 border-b bg-gradient-to-r from-green-50 to-blue-50">
-              <div
-                className={cn(
-                  "grid gap-1",
-                  filteredQuickActions.length <= 4
-                    ? "grid-cols-4"
-                    : "grid-cols-6",
-                )}
-              >
-                {filteredQuickActions.map((action) => (
-                  <Link
-                    key={action.href}
-                    to={action.href}
-                    className="flex flex-col items-center p-2 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <action.icon className={`h-5 w-5 ${action.color} mb-1`} />
-                    <span
-                      className="text-xs font-medium text-center"
-                      style={{ fontFamily: "Cairo, sans-serif" }}
-                    >
-                      {isArabic ? action.nameArabic : action.name}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Role-based Navigation */}
           <ScrollArea className="flex-1 px-4">
