@@ -29,6 +29,9 @@
 | Irrigation optimization | Synthetic optimizer; fixed weather values and mock context existed | Synthetic schedule, water calculations, soil-moisture assessment and mock tips disabled with HTTP 503 |
 | Water-use analytics | No metered irrigation telemetry; figures were fixed illustrative baselines | Endpoint disabled; require real meter/sensor records |
 | Fixture-backed business modules | Seeded in-memory records for dashboards, investor/trader, logistics, marketplace, SaaS, supply-chain, alerts/tasks, livestock, gamification, and other modules | Router groups blocked with HTTP 503 until real persistence/data sources are connected |
+| Notifications and sensor fleet | Static notification/rule arrays and fixed demo sensor readings | Notifications, rules, stats, send, sensors and real-time telemetry endpoints blocked with HTTP 503 until persistent records or a real device broker exist |
+| Public data API | Seeded demo API key and generated market, production, export, weather and statistics values | Public generated datasets and demo key-info endpoint blocked with HTTP 503; real public weather remains separately sourced |
+| Adaptive AI dashboards | Static model catalogue, insights, behavior events, personalized recommendations and feedback | Mock-backed model/insight/behavior/recommendation/feedback APIs blocked with HTTP 503; no fake training endpoint is exposed |
 | Fertilizer / pesticide catalogue | Hard-coded supplier names, prices, product composition, dosage, and safety claims without verified catalogue provenance | Fertilizer endpoints blocked with HTTP 503; require official product registrations, labels, sources, and dates |
 | Financial management | In-memory sample expenses, revenues, and budget records | Expense/revenue/profitability/summary/budget routes blocked with HTTP 503 until user-scoped database persistence exists |
 | Smart advisor / treatment history | Mock recommendation generation and in-memory treatment history | Routes blocked with HTTP 503 until evidence-backed data and persistent storage exist |
@@ -43,7 +46,8 @@
 - Changed the generic AI gateway so unreachable, unknown-provenance, and synthetic services cannot be labelled as real model output.
 - Kept symptom keyword matching only as an explicitly labelled rules-based helper; it is not a trained classifier or confirmed diagnosis.
 - Removed obsolete Express demo and demo-user provisioning routes, plus scripts that inserted random market prices and created accounts with fixed demo passwords.
-- Blocked mock-backed fertilizer, financial, livestock, gamification, smart-advisor, and treatment-history routes.
+- Blocked mock-backed fertilizer, financial, livestock, gamification, smart-advisor, treatment-history, notification, sensor, public-data, and adaptive-AI routes.
+- Admin dashboard endpoints now authenticate first and then return an explicit unavailable response; authentication is not bypassed by the simulated-data guard.
 - Removed fabricated zeroes and epoch timestamps from missing crop reference metadata; unknown numeric fields are now omitted.
 - Replaced tests that expected demo payloads with fail-closed contract tests.
 
