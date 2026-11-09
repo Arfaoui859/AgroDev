@@ -110,7 +110,6 @@ const LivestockDiseasePredictor: React.FC = () => {
 
   useEffect(() => {
     fetchAnimals();
-    generateMockData();
   }, [selectedSpecies, selectedRiskLevel]);
 
   const fetchAnimals = async () => {
@@ -131,123 +130,6 @@ const LivestockDiseasePredictor: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateMockData = () => {
-    // Mock risk assessments
-    const mockRiskAssessments: DiseaseRiskAssessment[] = [
-      {
-        animalId: '1',
-        diseaseType: 'التهاب الضرع',
-        riskLevel: 'high',
-        probability: 75,
-        symptoms: ['انتفاخ الضرع', 'حرارة مرتفعة', 'تغير لون الحليب'],
-        riskFactors: ['عمر متقدم', 'موسم رطب', 'إنتاج حليب عالي'],
-        preventionMeasures: ['تطهير منطقة الحلب', 'تحسين التهوية', 'مراقبة درجة الحرارة'],
-        recommendedActions: ['فحص فوري', 'تحليل الحليب', 'استشارة بيطرية'],
-        aiConfidence: 0.85,
-        lastAssessment: new Date().toISOString(),
-        weatherImpact: 60,
-        seasonalRisk: 70,
-        groupRisk: 45
-      },
-      {
-        animalId: '2',
-        diseaseType: 'الإسهال المعدي',
-        riskLevel: 'medium',
-        probability: 45,
-        symptoms: ['إسهال', 'فقدان شهية', 'جفاف'],
-        riskFactors: ['تغيير في النظام الغذائي', 'إجهاد', 'مياه ملوثة'],
-        preventionMeasures: ['تحسين جودة المياه', 'نظافة العلف', 'تقليل الإجهاد'],
-        recommendedActions: ['مراقبة الأعراض', 'تحسين النظافة', 'فحص دوري'],
-        aiConfidence: 0.72,
-        lastAssessment: new Date().toISOString(),
-        weatherImpact: 35,
-        seasonalRisk: 50,
-        groupRisk: 30
-      }
-    ];
-
-    // Mock predictions
-    const mockPredictions: DiseasePrediction[] = [
-      {
-        id: '1',
-        animalId: '1',
-        predictedDisease: 'التهاب المفاصل',
-        probability: 68,
-        earlyWarningDays: 7,
-        severity: 'moderate',
-        symptoms: ['عرج طفيف', 'تيبس في المشي', 'تجنب الحركة'],
-        preventionPlan: [
-          'تحسين فراش الحيوان',
-          'إضافة مكملات غذائية للمفاصل',
-          'تقليل الحمولة الزائدة',
-          'تمارين خفيفة منتظمة'
-        ],
-        treatmentSuggestions: [
-          'مضادات الالتهاب الطبيعية',
-          'تدليك المفاصل',
-          'كمادات دافئة',
-          'استشارة بيطرية متخصصة'
-        ],
-        monitoringRequired: [
-          'مراقبة طريقة المشي يومياً',
-          'قياس درجة الحرارة',
-          'تسجيل مستوى النشاط',
-          'فحص المفاصل أسبوعياً'
-        ],
-        createdAt: new Date().toISOString(),
-        status: 'active'
-      }
-    ];
-
-    // Mock prevention plans
-    const mockPreventionPlans: PreventionPlan[] = [
-      {
-        id: '1',
-        title: 'برنامج الوقاية من التهاب الضرع',
-        targetDisease: 'التهاب الضرع',
-        species: ['cattle'],
-        duration: 30,
-        actions: [
-          {
-            day: 1,
-            action: 'تطهير منطقة الحلب بمحلول اليود',
-            type: 'hygiene',
-            cost: 5,
-            priority: 'high'
-          },
-          {
-            day: 7,
-            action: 'فحص شامل للضرع',
-            type: 'monitoring',
-            cost: 20,
-            priority: 'high'
-          },
-          {
-            day: 14,
-            action: 'تحليل عينة حليب',
-            type: 'monitoring',
-            cost: 15,
-            priority: 'medium'
-          },
-          {
-            day: 21,
-            action: 'تطعيم وقائي',
-            type: 'vaccination',
-            cost: 25,
-            priority: 'high'
-          }
-        ],
-        effectiveness: 85,
-        cost: 65,
-        notes: 'يُطبق هذا البرنامج على الأبقار المرضعة في المواسم الرطبة'
-      }
-    ];
-
-    setRiskAssessments(mockRiskAssessments);
-    setPredictions(mockPredictions);
-    setPreventionPlans(mockPreventionPlans);
   };
 
   const calculateAge = (birthDate: string) => {
@@ -350,6 +232,17 @@ const LivestockDiseasePredictor: React.FC = () => {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (animals.length === 0) {
+    return (
+      <main className="mx-auto max-w-4xl p-6" dir="rtl">
+        <h1 className="mb-4 text-2xl font-bold">مراقبة صحة الثروة الحيوانية</h1>
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
+          لا توجد سجلات حيوانات موثقة متاحة. تم تعطيل تقييم المخاطر والتنبؤات وخطط الوقاية الوهمية؛ يلزم ربط سجلات بيطرية فعلية ونموذج تم التحقق منه ميدانياً.
+        </div>
+      </main>
     );
   }
 
