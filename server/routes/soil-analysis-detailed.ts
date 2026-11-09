@@ -177,6 +177,49 @@ async function persistSoilReport(req: import("express").Request, soilData: RawSo
   return { persisted: true as const, analysisId: saved.id };
 }
 
+function isObject(value: unknown): value is Record<string, any> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+function isValidProfessionalReport(value: unknown): value is Record<string, any> {
+  if (!isObject(value) || value.schemaVersion !== "1.0" || value.reportLanguage !== "ar-TN" || typeof value.executiveSummary !== "string") return false;
+  const quality = value.dataQuality;
+  const soil = value.soilCharacterization;
+  const crop = value.cropSuitability;
+  const review = value.professionalReview;
+  if (!isObject(quality) || !Array.isArray(quality.providedMeasurements) ||
+      !quality.providedMeasurements.every((item: unknown) => isObject(item) &&
+        typeof item.name === "string" && (typeof item.value === "string" || typeof item.value === "number") &&
+        typeof item.unit === "string" && typeof item.source === "string") ||
+      !isStringArray(quality.missingMeasurements) || !isStringArray(quality.limitations)) return false;
+  if (!isObject(soil) || !isObject(soil.texture) ||
+      typeof soil.texture.classification !== "string" || typeof soil.texture.basis !== "string" ||
+      typeof soil.texture.confidence !== "string" || !isStringArray(soil.chemical) ||
+      !isStringArray(soil.physical)) return false;
+  if (!Array.isArray(value.findings) || !value.findings.every((item: unknown) => isObject(item) &&
+      ["parameter","observedValue","unit","interpretation","importance","evidence"].every((key) => typeof item[key] === "string") &&
+      ["informational","low","moderate","high","not_assessed"].includes(item.severity))) return false;
+  if (!isStringArray(value.strengths) || !isStringArray(value.constraints)) return false;
+  if (!isObject(crop) || !["qualitative","not_assessed"].includes(crop.status) ||
+      !Array.isArray(crop.candidates) || !crop.candidates.every((item: unknown) => isObject(item) &&
+        typeof item.crop === "string" && typeof item.why_it_may_fit === "string" &&
+        isStringArray(item.conditions_to_check) && typeof item.limitations === "string") ||
+      !isStringArray(crop.caveats)) return false;
+  if (!Array.isArray(value.recommendations) || !value.recommendations.every((item: unknown) => isObject(item) &&
+      ["now","before_planting","during_season","follow_up"].includes(item.priority) &&
+      ["action","reason","evidence","howTo","when","verification"].every((key) => typeof item[key] === "string") &&
+      Object.prototype.hasOwnProperty.call(item,"quantity") && item.quantity === null)) return false;
+  if (!Array.isArray(value.followUpPlan) || !value.followUpPlan.every((item: unknown) => isObject(item) &&
+      Number.isInteger(item.step) && item.step > 0 &&
+      ["when","whatToDo","whatToMeasure","why"].every((key) => typeof item[key] === "string"))) return false;
+  if (!isStringArray(value.additionalInformationNeeded) || !isObject(review) ||
+      typeof review.required !== "boolean" || typeof review.reason !== "string" ||
+      !isStringArray(review.bringToAgronomist) || !isStringArray(value.disclaimers)) return false;
+  return true;
+}
+
 function extractAndValidateReport(raw:string):Record<string,any> {
   const trimmed=raw.trim();
   const fenced=trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -184,11 +227,7 @@ function extractAndValidateReport(raw:string):Record<string,any> {
   for(const candidate of candidates){
     try {
       const value=JSON.parse(candidate);
-      if(value && typeof value==="object" && !Array.isArray(value) &&
-        typeof value.executiveSummary==="string" &&
-        Array.isArray(value.findings) && Array.isArray(value.recommendations) &&
-        value.dataQuality && value.soilCharacterization && value.cropSuitability &&
-        Array.isArray(value.followUpPlan)) return value;
+      if(isValidProfessionalReport(value)) return value;
     } catch { /* Try next candidate. */ }
   }
   throw new Error("AI provider returned a report that does not match the required professional report schema");
