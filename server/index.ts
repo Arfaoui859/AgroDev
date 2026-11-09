@@ -274,6 +274,7 @@ import {
 } from "./routes/farmer-segmentation";
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { listAssistantFarms, createAssistantCultivation, listAssistantCultivations } from "./routes/assistant-actions";
+import { createAssistantDiseaseDetection } from "./routes/assistant-disease-records";
 import { getAutonomousAgentStatus, updateAutonomousAgentSettings, runAutonomousAgentNow, runScheduledAutonomousAgent } from "./routes/autonomous-farm-agent";
 import { listAgentConversations, createAgentConversation, listAgentConversationMessages, addAgentConversationMessage, deleteAgentConversation } from "./routes/assistant-conversations";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
@@ -475,6 +476,7 @@ export function createServer() {
   app.get("/api/assistant/farms", requireAuth, listAssistantFarms);
   app.get("/api/assistant/cultivations", requireAuth, listAssistantCultivations);
   app.post("/api/assistant/actions/cultivations", requireAuth, createAssistantCultivation);
+  app.post("/api/assistant/actions/disease-detections", requireAuth, ...createAssistantDiseaseDetection);
 
   // Advanced Livestock Management routes
   app.get("/api/animals", getAnimals);
