@@ -882,7 +882,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                   
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
-                      {language === 'ar' ? 'متصل' : language === 'en' ? 'Online' : 'En Ligne'}
+                      {language === 'ar' ? 'مصدر الإجابة موضّح' : language === 'en' ? 'Answer source disclosed' : 'Source de réponse indiquée'}
                     </Badge>
                     <Button variant="ghost" size="sm" onClick={() => { setMessages([]); setActiveConversation(null); }}>
                       <RefreshCw className="h-4 w-4" />
