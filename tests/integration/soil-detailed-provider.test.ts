@@ -21,12 +21,18 @@ function stubProviderJson(payload: unknown) {
   }),{status:200,headers:{"Content-Type":"application/json"}})) as unknown as typeof fetch;
 }
 const validReport = {
-  schemaVersion:"1.0",reportLanguage:"ar-TN",executiveSummary:"تفسير مبني على القياسات المقدمة.",
-  dataQuality:{providedMeasurements:[],missingMeasurements:[],limitations:[]},
+  schemaVersion:"2.0",reportLanguage:"ar-TN",executiveSummary:"تفسير مبني على القياسات المقدمة.",
+  confidence:{level:"low",reasons:["المعطيات المخبرية محدودة"]},
+  dataQuality:{providedMeasurements:[],missingMeasurements:[],limitations:[],consistencyChecks:[]},
+  indicatorTable:[],
   soilCharacterization:{texture:{classification:"غير محدد",basis:"not assessed",confidence:"qualitative only"},chemical:[],physical:[]},
-  findings:[],strengths:[],constraints:[],
-  cropSuitability:{status:"not_assessed",candidates:[],caveats:["المعطيات غير كافية"]},
-  recommendations:[],followUpPlan:[],additionalInformationNeeded:[],
+  findings:[],rankedConstraints:[],strengths:[],constraints:[],
+  cropSuitability:{status:"not_assessed",candidates:[],avoid:[],caveats:["المعطيات غير كافية"]},
+  targetCropPlan:{targetCrop:"غير محدد",feasibility:"not_assessed",reasons:[],gaps:[],actions:[],firstAction:"اطلب تحليلاً مخبرياً",retestWhen:"بعد استكمال القياسات"},
+  fertilizationPlan:{status:"not_assessed",stages:[],organicOptions:[],withheldDosesReason:"لا تتوفر بيانات كافية لتحديد الجرعات."},
+  waterAndIrrigation:{status:"not_assessed",method:"غير متاح",frequency:"غير متاح",amount:"غير متاح",waterQuality:"غير متاحة",salinityAndLeaching:"غير مقيّم",drainage:"غير معروف",limitations:["تحليل ماء الري غير متوفر"]},
+  twelveWeekCalendar:Array.from({length:12},(_,i)=>({week:i+1,actions:["جمع القياسات الناقصة"],check:"تأكيد مصدر القياس"})),
+  riskAlerts:[],recommendations:[],followUpPlan:[],additionalInformationNeeded:[],
   professionalReview:{required:true,reason:"يلزم التثبت المخبري",bringToAgronomist:[]},disclaimers:[],
 };
 
