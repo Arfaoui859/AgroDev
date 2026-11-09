@@ -324,7 +324,6 @@ export function createServer() {
       "/api/investor-dashboard",
       "/api/veterinarian-dashboard",
       "/api/segmentation",
-      "/api/farm-management",
       "/api/smart-crop-suggestions",
       "/api/alerts",
       "/api/tasks",
@@ -333,13 +332,6 @@ export function createServer() {
       "/api/collaboration",
       "/api/digital-transformation",
       "/api/disease-treatment",
-      "/api/animals",
-      "/api/animal-health",
-      "/api/breeding-recommendations",
-      "/api/feed-recommendations",
-      "/api/optimize-feed-budget",
-      "/api/health-alerts",
-      "/api/livestock-dashboard",
       // SaaS / logistics / supply-chain modules are served from fixed in-memory
       // fixtures (mock vehicles, orders, plans, tracking records). Stamp them so
       // the SPA can disclose that these are illustrative, not live records.
@@ -348,7 +340,6 @@ export function createServer() {
       "/api/supply-chain",
       "/api/logistics",
       "/api/marketplace",
-      "/api/ai/recommendations",
       "/api/ai/assistant/alerts",
       "/api/soil-ai-detector",
       // Further fixture-backed modules: the routers below build their records
@@ -540,13 +531,13 @@ export function createServer() {
   // requireAdminAccess(): an x-admin-token, or a verified JWT whose role is
   // admin/administrator. Anonymous callers get 401; non-admin JWTs get 403.
   // (The non-production demo fallback still applies for local development.)
-  app.get("/api/admin/overview", requireAdminAccess, blockSimulatedData(), getAdminDashboard);
+  app.get("/api/admin/overview", requireAdminAccess, getAdminDashboard);
   app.get("/api/admin/users", requireAdminAccess, getAdminUsers);
-  app.get("/api/admin/system-metrics", requireAdminAccess, blockSimulatedData(), getAdminSystemMetrics);
-  app.get("/api/admin/usage-analytics", requireAdminAccess, blockSimulatedData(), getAdminUsageAnalytics);
-  app.get("/api/admin/security-events", requireAdminAccess, blockSimulatedData(), getAdminSecurityEvents);
-  app.get("/api/admin/activity-logs", requireAdminAccess, blockSimulatedData(), getAdminActivityLogs);
-  app.get("/api/admin/subscriptions", requireAdminAccess, blockSimulatedData(), getAdminSubscriptions);
+  app.get("/api/admin/system-metrics", requireAdminAccess, getAdminSystemMetrics);
+  app.get("/api/admin/usage-analytics", requireAdminAccess, getAdminUsageAnalytics);
+  app.get("/api/admin/security-events", requireAdminAccess, getAdminSecurityEvents);
+  app.get("/api/admin/activity-logs", requireAdminAccess, getAdminActivityLogs);
+  app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
 
   // Government Dashboard routes
   app.use("/api/government-dashboard", governmentDashboardRoutes);
