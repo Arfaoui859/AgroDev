@@ -226,7 +226,7 @@ export function requireAdminToken(): RequestHandler {
     }
 
     const demoAllowed =
-      !isProd && process.env.ENABLE_DEMO_ENDPOINTS !== "false";
+      !isProd && process.env.ENABLE_DEMO_ENDPOINTS === "true";
     if (demoAllowed) {
       return next();
     }
