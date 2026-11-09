@@ -193,40 +193,23 @@ describe("🔎 Vision gateway forwarding", () => {
  * provenance through, falling back to the transparent reference-table heuristic
  * only when no service answers.
  */
-describe("🌿 /api/disease/analyze prefers the image-diagnosis service", () => {
+describe("🌿 legacy /api/disease routes do not return hard-coded diagnosis", () => {
   let app: express.Application;
-  beforeAll(() => {
-    app = createServer();
-  });
+  beforeAll(() => { app = createServer(); });
 
-  test("maps the service payload and keeps its heuristic provenance", async () => {
-    resetServiceProbeCache();
-    process.env.IMAGE_DIAGNOSIS_URL = visionUrl;
+  test("image diagnosis legacy route fails closed instead of using a reference-table fallback", async () => {
     const res = await request(app)
       .post("/api/disease/analyze")
       .field("cropType", "tomato")
       .field("plantPart", "leaves")
       .attach("images", PNG, { filename: "leaf.png", contentType: "image/png" })
-      .expect(200);
-    expect(res.body.diagnosis.diseaseId).toBe("early_blight");
-    expect(res.body.metadata.dataSource).toBe("microservice");
-    expect(res.body.metadata.model).toBe("heuristic-demo");
-    // The service self-reports heuristic-demo, so this is not real model data.
-    expect(res.body.metadata.isRealData).toBe(false);
+      .expect(503);
+    expect(res.body.code).toBe("DISEASE_REFERENCE_NOT_VERIFIED");
+    expect(res.body.data).toBeNull();
   });
 
-  test("falls back to the reference-table heuristic when the service is down", async () => {
-    process.env.IMAGE_DIAGNOSIS_URL = "http://127.0.0.1:1";
-    resetServiceProbeCache();
-    const res = await request(app)
-      .post("/api/disease/analyze")
-      .field("cropType", "tomato")
-      .field("plantPart", "leaves")
-      .attach("images", PNG, { filename: "leaf.png", contentType: "image/png" })
-      .expect(200);
-    expect(res.body.metadata.dataSource).toBe("simulated");
-    expect(res.body.metadata.isRealData).toBe(false);
-    expect(res.body.metadata.model).toBe("heuristic-reference-table");
-    process.env.IMAGE_DIAGNOSIS_URL = visionUrl;
+  test("legacy disease catalogue is unavailable until its source is verified", async () => {
+    const res = await request(app).get("/api/disease/catalogue").expect(503);
+    expect(res.body.code).toBe("DISEASE_REFERENCE_NOT_VERIFIED");
   });
 });
