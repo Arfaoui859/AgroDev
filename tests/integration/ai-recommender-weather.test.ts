@@ -10,16 +10,6 @@ import request from "supertest";
 import express from "express";
 import { createServer } from "../../server/index";
 
-jest.mock("../../server/services/providers/weatherProvider", () => {
-  const actual = jest.requireActual("../../server/services/providers/weatherProvider");
-  return { ...actual, getWeatherFromOpenMeteo: jest.fn() };
-});
-
-import { getWeatherFromOpenMeteo } from "../../server/services/providers/weatherProvider";
-import { ProviderError } from "../../server/services/providers/http";
-
-const mockedWeather = getWeatherFromOpenMeteo as jest.Mock;
-
 const validBody = {
   temperature: 24,
   annual_rainfall: 450,
@@ -34,7 +24,6 @@ beforeAll(() => {
   app = createServer();
 });
 
-beforeEach(() => mockedWeather.mockReset());
 
 describe("🌱 AI crop recommender refuses unvalidated model output", () => {
   test("does not return crop recommendations from an unvalidated model", async () => {
