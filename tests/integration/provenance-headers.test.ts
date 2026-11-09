@@ -113,6 +113,7 @@ describe("🗂  Fixture-backed data is disabled", () => {
     "/api/public/weather",
     "/api/public/stats",
     "/api/public/key-info",
+    "/api/public/create-key",
     "/api/ai/models",
     "/api/ai/insights",
     "/api/ai/behavior-data",
