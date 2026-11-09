@@ -278,15 +278,15 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
     };
   }, []);
 
-  // Route the global search into the assistant so it can interpret the
-  // request against the user's permitted AgroGrowth context.
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim()) {
-      navigate("/ai-assistant", { state: { initialPrompt: query.trim() } });
-      setSearchQuery("");
-      setSidebarOpen(false);
-    }
+  const handleSearch = (query: string) => setSearchQuery(query);
+
+  // Submit only on Enter; typing must never trigger navigation.
+  const submitSearch = () => {
+    const query = searchQuery.trim();
+    if (!query) return;
+    navigate("/ai-assistant", { state: { initialPrompt: query } });
+    setSearchQuery("");
+    setSidebarOpen(false);
   };
 
   // Get current page title
@@ -500,6 +500,7 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
                     }
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); }}
                     className="pl-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
                   />
                 </div>
