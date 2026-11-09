@@ -56,7 +56,9 @@ def test_render_installs_image_diagnosis_runtime_requirements():
     render_config = (Path(__file__).resolve().parents[2] / "render.yaml").read_text(
         encoding="utf-8"
     )
-    service_block = render_config.split("name: agrogrowth-image-diagnosis", 1)[1]
+    service_marker = "\n    name: agrogrowth-image-diagnosis\n"
+    assert service_marker in render_config
+    service_block = render_config.split(service_marker, 1)[1]
     service_block = service_block.split("\n  - type:", 1)[0]
 
     assert "pip install -r image_diagnosis/requirements.txt" in service_block
