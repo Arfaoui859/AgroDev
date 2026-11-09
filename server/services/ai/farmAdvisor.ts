@@ -390,12 +390,14 @@ function buildRuleBasedAnswer(
 
   if (storedRecords.length) {
     const relevantRecords = storedRecords.filter(record => {
-      if (agents.includes("weather")) return /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast|Registered sensor|Stored sensor reading|Saved satellite observation)/.test(record);
-      if (agents.includes("market")) return /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(record);
-      if (agents.includes("soil")) return /^Verified soil analysis/.test(record);
-      if (agents.includes("disease")) return /^(Saved plant-health record|Saved leaf-health analysis)/.test(record);
-      if (agents.includes("crop")) return /^(Farm |Plot |Cultivation )/.test(record);
-      return true;
+      if (agents.includes("general")) return true;
+      return (
+        (agents.includes("weather") && /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast|Registered sensor|Stored sensor reading|Saved satellite observation)/.test(record)) ||
+        (agents.includes("market") && /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(record)) ||
+        (agents.includes("soil") && /^Verified soil analysis/.test(record)) ||
+        (agents.includes("disease") && /^(Saved plant-health record|Saved leaf-health analysis)/.test(record)) ||
+        (agents.includes("crop") && /^(Farm |Plot |Cultivation )/.test(record))
+      );
     });
     const selectedRecords = (relevantRecords.length ? relevantRecords : storedRecords).slice(-8);
     const recordLines = selectedRecords.map(record => "• " + record).join("\n");
