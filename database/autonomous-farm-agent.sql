@@ -34,6 +34,70 @@ FROM public.farms AS f
 WHERE f.owner_id IS NOT NULL
 ON CONFLICT (user_id) DO NOTHING;
 
+-- Persistent assistant conversations and messages (user-isolated).
+CREATE TABLE IF NOT EXISTS public.farm_agent_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  title VARCHAR(200) NOT NULL,
+  language VARCHAR(5) NOT NULL DEFAULT 'ar' CHECK (language IN ('ar', 'fr', 'en')),
+  category VARCHAR(50) NOT NULL DEFAULT 'general',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.farm_agent_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES public.farm_agent_conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL CHECK (length(content) <= 20000),
+  language VARCHAR(5) NOT NULL DEFAULT 'ar' CHECK (language IN ('ar', 'fr', 'en')),
+  data_source VARCHAR(30),
+  model_source VARCHAR(200),
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.farm_agent_conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.farm_agent_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users manage own farm agent conversations" ON public.farm_agent_conversations;
+CREATE POLICY "Users manage own farm agent conversations"
+  ON public.farm_agent_conversations FOR ALL
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users read own farm agent messages" ON public.farm_agent_messages;
+CREATE POLICY "Users read own farm agent messages"
+  ON public.farm_agent_messages FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users insert own farm agent messages" ON public.farm_agent_messages;
+CREATE POLICY "Users insert own farm agent messages"
+  ON public.farm_agent_messages FOR INSERT
+  WITH CHECK (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM public.farm_agent_conversations c
+      WHERE c.id = conversation_id AND c.user_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Users delete own farm agent messages" ON public.farm_agent_messages;
+CREATE POLICY "Users delete own farm agent messages"
+  ON public.farm_agent_messages FOR DELETE
+  USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.farm_agent_conversations TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.farm_agent_messages TO authenticated;
+GRANT ALL ON public.farm_agent_conversations TO service_role;
+GRANT ALL ON public.farm_agent_messages TO service_role;
+
+CREATE INDEX IF NOT EXISTS farm_agent_conversations_user_updated_idx
+  ON public.farm_agent_conversations (user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS farm_agent_messages_conversation_created_idx
+  ON public.farm_agent_messages (conversation_id, created_at ASC);
+
 -- A stable event key prevents every scheduled run from duplicating the same
 -- reminder. The event key is stored in metadata to preserve the existing
 -- notifications schema and its user-scoped RLS policies.
