@@ -47,6 +47,7 @@
 - Kept symptom keyword matching only as an explicitly labelled rules-based helper; it is not a trained classifier or confirmed diagnosis.
 - Removed obsolete Express demo and demo-user provisioning routes, plus scripts that inserted random market prices and created accounts with fixed demo passwords.
 - Blocked mock-backed fertilizer, financial, livestock, gamification, smart-advisor, treatment-history, notification, sensor, public-data, and adaptive-AI routes.
+- Removed the in-memory notification/sensor implementation, generated public market/production/export/weather datasets, demo API key, ephemeral API-key creation, and static adaptive-AI catalogue/insights/behavior/feedback stores. Their route contracts now fail closed.
 - Admin dashboard endpoints now authenticate first and then return an explicit unavailable response; authentication is not bypassed by the simulated-data guard.
 - Removed fabricated zeroes and epoch timestamps from missing crop reference metadata; unknown numeric fields are now omitted.
 - Replaced tests that expected demo payloads with fail-closed contract tests.
