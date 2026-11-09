@@ -76,6 +76,8 @@ describe("Detailed soil analysis with a configured provider",()=>{
       .send({ph:6.9,moisture:30,electricalConductivity:1.2}).expect(400);
     await request(app).post("/api/soil-analysis/analyze")
       .send({ph:6.9,moisture:30,sampleDepth:301}).expect(400);
+    await request(app).post("/api/soil-analysis/analyze")
+      .send({ph:6.9,moisture:30,sampleDepth:12.5}).expect(400);
   });
 
   test("rejects a report that invents a fertilizer quantity",async()=>{
