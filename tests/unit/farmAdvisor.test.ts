@@ -43,6 +43,7 @@ describe("detectLanguage", () => {
   test("detects Tunisian Arabic written in Latin characters", () => {
     expect(detectLanguage("kifeh n7eb ns9i tmatem?", "en")).toBe("ar");
     expect(detectLanguage("chnowa na3mel fi torba?", "en")).toBe("ar");
+    expect(detectLanguage("kifeh el jaw ghodwa?", "en")).toBe("ar");
   });
 });
 
