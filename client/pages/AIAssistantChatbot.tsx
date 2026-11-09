@@ -513,9 +513,13 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       role: m.type === 'user' ? 'user' : 'assistant',
       content: m.content
     }));
+    const { data: { session } } = await supabase.auth.getSession();
     const response = await fetch('/api/ai/assistant/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
       body: JSON.stringify({ message: messageContent, language, history })
     });
     if (!response.ok) {
