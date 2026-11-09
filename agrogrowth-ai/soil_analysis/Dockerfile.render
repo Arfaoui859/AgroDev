@@ -9,16 +9,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Use the exact ML runtime stack used to produce the committed model artifacts.
-# The repository-wide requirements.txt pins older sklearn/joblib versions and
-# installs unrelated heavyweight frameworks that this service does not need.
+# Use the same ML runtime stack as the committed production model artifacts.
+# Do not install the repository-wide requirements.txt here: it pins older
+# sklearn/joblib versions and pulls unrelated heavyweight frameworks.
 COPY soil_analysis/requirements-ml.txt ./requirements-ml.txt
 RUN pip install --no-cache-dir -r requirements-ml.txt
 
 # Shared LLM provider and advisory modules.
 COPY ai_common ./ai_common
 
-# Includes the production manifest and trained model artifacts.
+# Includes the model manifest and production model artifacts.
 COPY soil_analysis ./soil_analysis
 
 ENV PYTHONPATH=/app
