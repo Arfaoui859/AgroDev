@@ -146,6 +146,7 @@ const AIAssistantChatbot: React.FC = () => {
   const [assistantCultivations, setAssistantCultivations] = useState<Array<{id:string;farm_id:string;crop_name:string;status:string}>>([]);
   const [pendingDiseaseSave, setPendingDiseaseSave] = useState<{file:File;farmId:string;cultivationId:string;cropType:string;diseaseName:string;severity:string;confidence:number|null;analysisResult:Record<string, unknown>} | null>(null);
   const [pendingSatelliteRequest, setPendingSatelliteRequest] = useState<{farmId:string;periodDays:string} | null>(null);
+  const [pendingFarmScan, setPendingFarmScan] = useState(false);
   const [actionSaving, setActionSaving] = useState(false);
 
   useEffect(() => {
@@ -615,6 +616,78 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
+  const prepareFarmScanAction = async (message: string) => {
+    const scanIntent = /(scan|اسكان|فحص شامل|افحص مزرعتي|راقب مزرعتي|اعمل.*فحص|check my farm|inspect my farm|farm health|farm briefing|choufli.*mazra3|chouf.*7ala.*mazra3|3mli.*scan|a3mli.*scan)/i.test(message);
+    if (!scanIntent) return;
+    setPendingFarmScan(true);
+    setMessages(prev => [...prev, {
+      id: "farm-scan-proposal-" + Date.now(),
+      type: "assistant",
+      content: language === "ar"
+        ? "نجم نعمل تفقّد للسجلات الفعلية متاع مزارعك: مواعيد الحصاد، تحاليل التربة، الحساسات، ونتائج المتابعة النباتية. التفقّد ينجم يضيف تنبيهات داخل المنصة. أكّد باش نبدأ."
+        : "I can scan your saved farm records for harvest dates, soil baselines, sensor status and plant-health follow-ups. The scan may create in-app notifications. Confirm to run it.",
+      timestamp: new Date().toISOString(),
+      language,
+      category: "agriculture"
+    }]);
+  };
+
+  const confirmFarmScan = async () => {
+    if (!pendingFarmScan) return;
+    setActionSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const response = await fetch("/api/assistant/agent/scan", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + session.access_token },
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || payload.message || "FARM_SCAN_FAILED");
+      const result = payload.data || {};
+      const eventLines = Array.isArray(result.events) && result.events.length
+        ? result.events.slice(0, 8).map((event: any, index: number) =>
+            (index + 1) + ". " + event.title + "\n" + event.message +
+            (Array.isArray(event.recommendedActions) && event.recommendedActions.length
+              ? "\n" + event.recommendedActions.slice(0, 3).map((action: string) => "   • " + action).join("\n")
+              : "")
+          ).join("\n\n")
+        : (language === "ar" ? "ما لقيتش تنبيهات جديدة مبنية على السجلات الحالية." : "No new alerts were found in the currently saved records.");
+      const scanMessage: ChatMessage = {
+        id: "farm-scan-result-" + Date.now(),
+        type: "assistant",
+        content: (language === "ar"
+          ? "نتيجة تفقّد AgroGrowth\nالمزارع: " + (result.farmsScanned ?? 0) + " | التنبيهات المكتشفة: " + (result.eventsDetected ?? 0) + " | إشعارات جديدة: " + (result.notificationsCreated ?? 0) + "\n\n"
+          : "AgroGrowth farm scan\nFarms: " + (result.farmsScanned ?? 0) + " | Events: " + (result.eventsDetected ?? 0) + " | New notifications: " + (result.notificationsCreated ?? 0) + "\n\n") +
+          eventLines + "\n\n" +
+          (language === "ar"
+            ? "هذا التفقّد مبني على السجلات المحفوظة، موش مراقبة حساسات مباشرة ولا تشخيص ميداني. الإشعارات داخل المنصة فقط."
+            : "This scan uses saved records; it is not live sensor monitoring or a field diagnosis. Notifications are in-app only."),
+        timestamp: result.scannedAt || new Date().toISOString(),
+        language,
+        metadata: { sources: Array.isArray(result.sources) ? result.sources : ["AgroGrowth autonomous farm agent"] },
+        category: "agriculture"
+      };
+      setMessages(prev => [...prev, scanMessage]);
+      await persistAssistantMessage(scanMessage);
+      setPendingFarmScan(false);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "FARM_SCAN_FAILED";
+      setMessages(prev => [...prev, {
+        id: "farm-scan-error-" + Date.now(),
+        type: "assistant",
+        content: language === "ar"
+          ? "ما تمش التفقّد: " + reason + ". ما نعرض حتى نتيجة قبل ما الخادم يأكد نجاح العملية."
+          : "The farm scan did not complete: " + reason + ". No result was reported as successful.",
+        timestamp: new Date().toISOString(),
+        language,
+        category: "general"
+      }]);
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
   const prepareSatelliteAction = async (message: string) => {
     const satelliteIntent = /(ساتلايت|قمر صناعي|صور فضائية|ndvi|satellite|satelite|satelit|sentinel|remote sensing)/i.test(message);
     const actionIntent = /(نحب|باش|بش|حلل|شوف|راقب|اعمل|اعمللي|جيب|ورّيني|أريد|اريد|nheb|n7eb|3mli|a3mli|bech|besh|check|analyse|analyze|monitor|get|show|look up)/i.test(message);
@@ -717,6 +790,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     try {
       const aiResponse = await generateAIResponse(messageContent);
       setMessages(prev => [...prev, aiResponse]);
+      await prepareFarmScanAction(messageContent);
       await prepareCropAction(messageContent);
       await prepareSatelliteAction(messageContent);
 
@@ -1383,6 +1457,27 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                     <p className="mt-2 text-xs text-amber-950/80">
                       {language === "ar" ? "السجل يحفظ النتيجة كما وردت من التحليل، ولا يحوّلها إلى تشخيص ميداني مؤكد." : "The stored result remains an unverified image assessment, not a confirmed field diagnosis."}
                     </p>
+                  </div>
+                )}
+
+                {pendingFarmScan && (
+                  <div className="mx-2 mb-4 rounded-xl border border-violet-200 bg-violet-50 p-4 text-right">
+                    <div className="mb-2 font-semibold text-violet-950">
+                      {language === "ar" ? "تفقّد شامل لسجلات المزرعة" : "Run a farm-record scan"}
+                    </div>
+                    <p className="mb-3 text-xs text-violet-950/80">
+                      {language === "ar"
+                        ? "باش نراجع مواعيد الحصاد، تحاليل التربة، حالة الحساسات ونتائج المتابعة النباتية. ينجم يتسجلوا تنبيهات جديدة داخل حسابك."
+                        : "This checks harvest dates, soil records, sensor status and plant-health follow-ups. New in-app alerts may be created."}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button onClick={confirmFarmScan} disabled={actionSaving}>
+                        {actionSaving ? (language === "ar" ? "جاري التفقّد..." : "Scanning...") : (language === "ar" ? "أكد التفقّد" : "Confirm scan")}
+                      </Button>
+                      <Button variant="outline" onClick={() => setPendingFarmScan(false)} disabled={actionSaving}>
+                        {language === "ar" ? "إلغاء" : "Cancel"}
+                      </Button>
+                    </div>
                   </div>
                 )}
 
