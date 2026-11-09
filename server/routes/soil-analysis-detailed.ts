@@ -258,39 +258,49 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 function isValidProfessionalReport(value: unknown): value is Record<string, any> {
-  if (!isObject(value) || value.schemaVersion !== "1.0" || value.reportLanguage !== "ar-TN" || typeof value.executiveSummary !== "string") return false;
-  const quality = value.dataQuality;
-  const soil = value.soilCharacterization;
-  const crop = value.cropSuitability;
-  const review = value.professionalReview;
-  if (!isObject(quality) || !Array.isArray(quality.providedMeasurements) ||
-      !quality.providedMeasurements.every((item: unknown) => isObject(item) &&
-        typeof item.name === "string" && (typeof item.value === "string" || typeof item.value === "number") &&
-        typeof item.unit === "string" && typeof item.source === "string") ||
-      !isStringArray(quality.missingMeasurements) || !isStringArray(quality.limitations)) return false;
-  if (!isObject(soil) || !isObject(soil.texture) ||
-      typeof soil.texture.classification !== "string" || typeof soil.texture.basis !== "string" ||
-      typeof soil.texture.confidence !== "string" || !isStringArray(soil.chemical) ||
-      !isStringArray(soil.physical)) return false;
-  if (!Array.isArray(value.findings) || !value.findings.every((item: unknown) => isObject(item) &&
-      ["parameter","observedValue","unit","interpretation","importance","evidence"].every((key) => typeof item[key] === "string") &&
-      ["informational","low","moderate","high","not_assessed"].includes(item.severity))) return false;
-  if (!isStringArray(value.strengths) || !isStringArray(value.constraints)) return false;
+  if (!isObject(value) || value.schemaVersion !== "2.0" || value.reportLanguage !== "ar-TN" || typeof value.executiveSummary !== "string") return false;
+  const stringArray = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");
+  const objectArray = (v: unknown, required: string[]) => Array.isArray(v) && v.every((x) => isObject(x) && required.every((key) => Object.prototype.hasOwnProperty.call(x,key)));
+  const quality = value.dataQuality, soil = value.soilCharacterization, crop = value.cropSuitability;
+  if (!isObject(value.confidence) || !["low","moderate","high","not_assessed"].includes(value.confidence.level) || !stringArray(value.confidence.reasons)) return false;
+  if (!isObject(quality) || !objectArray(quality.providedMeasurements,["name","value","unit","source"]) ||
+      !quality.providedMeasurements.every((x:any)=>typeof x.name==="string"&&(typeof x.value==="string"||typeof x.value==="number")&&typeof x.unit==="string"&&typeof x.source==="string") ||
+      !stringArray(quality.missingMeasurements) || !stringArray(quality.limitations) || !stringArray(quality.consistencyChecks)) return false;
+  if (!isObject(soil) || !isObject(soil.texture) || typeof soil.texture.classification!=="string" || typeof soil.texture.basis!=="string" || typeof soil.texture.confidence!=="string" || !stringArray(soil.chemical) || !stringArray(soil.physical)) return false;
+  if (!objectArray(value.indicatorTable,["parameter","value","unit","classification","cropEffect","evidence"])) return false;
+  if (!objectArray(value.findings,["parameter","observedValue","unit","interpretation","importance","severity","evidence"]) ||
+      !value.findings.every((x:any)=>["informational","low","moderate","high","not_assessed"].includes(x.severity))) return false;
+  if (!objectArray(value.rankedConstraints,["rank","constraint","severity","evidence","cropImpact","whatToConfirm"])) return false;
+  if (!stringArray(value.strengths) || !stringArray(value.constraints)) return false;
   if (!isObject(crop) || !["qualitative","not_assessed"].includes(crop.status) ||
-      !Array.isArray(crop.candidates) || !crop.candidates.every((item: unknown) => isObject(item) &&
-        typeof item.crop === "string" && typeof item.why_it_may_fit === "string" &&
-        isStringArray(item.conditions_to_check) && typeof item.limitations === "string") ||
-      !isStringArray(crop.caveats)) return false;
-  if (!Array.isArray(value.recommendations) || !value.recommendations.every((item: unknown) => isObject(item) &&
-      ["now","before_planting","during_season","follow_up"].includes(item.priority) &&
-      ["action","reason","evidence","howTo","when","verification"].every((key) => typeof item[key] === "string") &&
-      Object.prototype.hasOwnProperty.call(item,"quantity") && item.quantity === null)) return false;
-  if (!Array.isArray(value.followUpPlan) || !value.followUpPlan.every((item: unknown) => isObject(item) &&
-      Number.isInteger(item.step) && item.step > 0 &&
-      ["when","whatToDo","whatToMeasure","why"].every((key) => typeof item[key] === "string"))) return false;
-  if (!isStringArray(value.additionalInformationNeeded) || !isObject(review) ||
-      typeof review.required !== "boolean" || typeof review.reason !== "string" ||
-      !isStringArray(review.bringToAgronomist) || !isStringArray(value.disclaimers)) return false;
+      !objectArray(crop.candidates,["crop","status","why_it_may_fit","risk","sowingWindow","conditions_to_check","limitations"]) ||
+      !crop.candidates.every((x:any)=>stringArray(x.conditions_to_check)) ||
+      !objectArray(crop.avoid,["crop","reason","evidence"]) || !stringArray(crop.caveats)) return false;
+  const target=value.targetCropPlan;
+  if (!isObject(target) || !["feasible","feasible_with_correction","not_recommended","not_assessed"].includes(target.feasibility) ||
+      !stringArray(target.reasons) || !objectArray(target.gaps,["parameter","current","required","gap","evidence"]) ||
+      !objectArray(target.actions,["priority","action","why","when","quantity","cost","verification"]) ||
+      !target.actions.every((x:any)=>x.quantity===null&&typeof x.cost==="string") ||
+      !["targetCrop","firstAction","retestWhen"].every((k)=>typeof target[k]==="string")) return false;
+  const fert=value.fertilizationPlan;
+  if (!isObject(fert) || !["guidance_only","not_assessed"].includes(fert.status) ||
+      !objectArray(fert.stages,["stage","strategy","productExamples","rate","timing","basis","verification"]) ||
+      !fert.stages.every((x:any)=>x.rate===null&&stringArray(x.productExamples)) ||
+      !stringArray(fert.organicOptions) || typeof fert.withheldDosesReason!=="string") return false;
+  const water=value.waterAndIrrigation;
+  if (!isObject(water) || !["guidance_only","not_assessed"].includes(water.status) ||
+      !["method","frequency","amount","waterQuality","salinityAndLeaching","drainage"].every((k)=>typeof water[k]==="string") ||
+      !stringArray(water.limitations)) return false;
+  if (!Array.isArray(value.twelveWeekCalendar) || value.twelveWeekCalendar.length!==12 ||
+      !value.twelveWeekCalendar.every((x:any,i:number)=>isObject(x)&&x.week===i+1&&stringArray(x.actions)&&typeof x.check==="string")) return false;
+  if (!objectArray(value.riskAlerts,["risk","severity","trigger","symptomsToMonitor","safeResponse"]) ||
+      !value.riskAlerts.every((x:any)=>["low","moderate","high","not_assessed"].includes(x.severity)&&stringArray(x.symptomsToMonitor))) return false;
+  if (!objectArray(value.recommendations,["priority","action","reason","evidence","howTo","when","verification","quantity"]) ||
+      !value.recommendations.every((x:any)=>["now","before_planting","during_season","follow_up"].includes(x.priority)&&x.quantity===null)) return false;
+  if (!objectArray(value.followUpPlan,["step","when","whatToDo","whatToMeasure","why"]) ||
+      !value.followUpPlan.every((x:any)=>Number.isInteger(x.step)&&x.step>0&&["when","whatToDo","whatToMeasure","why"].every((k)=>typeof x[k]==="string"))) return false;
+  const review=value.professionalReview;
+  if (!stringArray(value.additionalInformationNeeded) || !isObject(review) || typeof review.required!=="boolean" || typeof review.reason!=="string" || !stringArray(review.bringToAgronomist) || !stringArray(value.disclaimers)) return false;
   return true;
 }
 
