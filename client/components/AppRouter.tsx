@@ -94,7 +94,7 @@ const QualityInventoryManagement = React.lazy(() => import("../pages/QualityInve
 const DynamicPricing = React.lazy(() => import("../pages/DynamicPricing"));
 const AIServicesTest = React.lazy(() => import("../pages/AIServicesTest"));
 const AIAssistantChatbot = React.lazy(() => import("../pages/AIAssistantChatbot"));
-const SmartAdvisor = React.lazy(() => import("../pages/SmartAdvisor"));
+
 const DatabaseDiagnostics = React.lazy(() => import("../pages/DatabaseDiagnostics"));
 const DatabaseStatus = React.lazy(() => import("../pages/DatabaseStatus"));
 const ServiceStatus = React.lazy(() => import("../pages/ServiceStatus"));
@@ -313,7 +313,7 @@ export default function AppRouter() {
           />
           <Route path="/ai-assistant" element={<AIAssistantChatbot />} />
           <Route path="/ai-chatbot" element={<AIAssistantChatbot />} />
-          <Route path="/smart-advisor" element={<SmartAdvisor />} />
+          <Route path="/smart-advisor" element={<Navigate to="/ai-assistant" replace />} />
           <Route
             path="/irrigation-optimization"
             element={<IrrigationOptimization />}
