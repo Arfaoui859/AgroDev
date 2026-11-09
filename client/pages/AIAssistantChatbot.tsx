@@ -545,7 +545,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           ? "تم حفظ الصورة وسجلّ المتابعة وربطهما بالمزرعة" + (payload.data?.cultivation_id ? " والمحصول المسجّل" : "") + ". رقم السجل: " + payload.data.id + ". النتيجة تتطلب تثبّتاً ميدانياً."
           : "The image and follow-up record were saved and linked to the farm. Record ID: " + payload.data.id + ". Field verification is still required.",
         timestamp: new Date().toISOString(), language,
-        metadata: { sources: ["Supabase · plant_disease_detections", "Supabase Storage · private evidence bucket"] },
+        metadata: { sources: ["Supabase · plant_disease_detections", "Supabase Storage · private evidence bucket"], diseaseRecordId: payload.data.id },
         attachments: payload.data?.image_signed_url ? [{ type: "image", url: payload.data.image_signed_url, name: pendingDiseaseSave.file.name }] : undefined,
         category: "agriculture"
       }]);
@@ -839,8 +839,23 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         },
         category: "general",
       }));
+      // Re-issue short-lived private image URLs when opening historical chats.
+      const withEvidence = await Promise.all(loaded.map(async message => {
+        const recordId = message.metadata?.diseaseRecordId;
+        if (message.type !== "assistant" || typeof recordId !== "string") return message;
+        try {
+          const evidenceResponse = await fetch("/api/assistant/disease-detections/" + encodeURIComponent(recordId) + "/evidence-url", {
+            headers: { Authorization: "Bearer " + session.access_token }
+          });
+          const evidencePayload = await evidenceResponse.json();
+          if (!evidenceResponse.ok || evidencePayload.success !== true || !evidencePayload.data?.signedUrl) return message;
+          return { ...message, attachments: [{ type: "image" as const, url: evidencePayload.data.signedUrl, name: "Saved plant image" }] };
+        } catch {
+          return message;
+        }
+      }));
       setActiveConversation(conversationId);
-      setMessages(loaded);
+      setMessages(withEvidence);
     } catch (error) {
       console.error("Could not open assistant conversation:", error);
     } finally {
