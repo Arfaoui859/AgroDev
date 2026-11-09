@@ -75,7 +75,7 @@ export function detectLanguage(text: string, fallback: Language = "ar"): Languag
   if (!text) return fallback;
   if (ARABIC_RE.test(text)) return "ar";
   // Common Tunisian Arabic written in Latin characters / Arabizi.
-  if (/\b(chnowa|chneya|kifeh|kifach|nheb|n7eb|3andi|3andek|3andou|famma|mafamach|win|wa9tech|tawa|ghodwa|lyoum|mouch|moch|bech|besh|najem|najjem|a3tini|3tini|falla7|fella7|torba|trab|mra|mrat|mardh|maradh|sou9|souq|meteo|matar|ns9i|s9i|zra3a|gharsa)\b/i.test(text)) return "ar";
+  if (/\b(chnowa|chneya|kifeh|kifach|nheb|n7eb|3andi|3andek|3andou|famma|mafamach|win|wa9tech|tawa|ghodwa|lyoum|mouch|moch|bech|besh|najem|najjem|a3tini|3tini|falla7|fella7|torba|trab|mra|mrat|mardh|maradh|sou9|souq|meteo|matar|ns9i|s9i|jaw|jew|ri7|rri7|nrawi|zra3a|gharsa)\b/i.test(text)) return "ar";
   const frenchMarkers = /\b(le|la|les|des|du|une|un|est|pour|avec|comment|quel|quelle|mon|ma|mes|je|nous)\b/i;
   if (frenchMarkers.test(text)) return "fr";
   return "en";
@@ -286,7 +286,7 @@ function detectRelevantAgents(question: string): string[] {
     agents.push("soil");
   if (/(محصول|بذور|زراعة|crop|semis|culture|ma7soul|gharsa|ghars|zra3a|nzra3|tmatem|tomat|zitoun|9amh|felfel)/i.test(question) || /crop|culture/.test(q))
     agents.push("crop");
-  if (/(طقس|مطر|حرارة|ري|weather|météo|irrigation|arrosage|meteo|matar|skhouna|bard|ns9i|s9i|satellite|ndvi|الساتلايت|قمر صناعي)/i.test(question) || /weather|irrigation|satellite|ndvi/.test(q))
+  if (/(طقس|مطر|حرارة|ري|weather|météo|irrigation|arrosage|meteo|matar|skhouna|bard|ns9i|s9i|jaw|jew|ri7|rri7|nrawi|satellite|ndvi|الساتلايت|قمر صناعي)/i.test(question) || /weather|irrigation|satellite|ndvi/.test(q))
     agents.push("weather");
   if (/(مرض|حشرة|آفة|disease|maladie|pest|ravageur|mardh|maradh|7achra|doud)/i.test(question) || /disease|pest/.test(q))
     agents.push("disease");
