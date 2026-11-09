@@ -29,7 +29,7 @@ Set these on the **main AgroGrowth web service** only after confirming the actua
 | Pest Control | `PEST_CONTROL_URL` |
 | Irrigation Optimization | `IRRIGATION_OPTIMIZATION_URL` |
 
-Do not substitute guessed hostnames. The repository's `render.yaml` contains Blueprint service references, but the runtime dashboard showed these four values as unconfigured; verify that the referenced Render services actually exist and that the Blueprint environment links were applied.
+Do not substitute guessed hostnames. The repository's `render.yaml` contains Blueprint service references, but the runtime dashboard showed these four values as unconfigured; verify that the referenced Render services actually exist and that the Blueprint environment links were applied. The main web service branch was subsequently changed to `feat/soil-analysis-professional-report`; this config change still requires a Render Blueprint sync and successful deployment.
 
 The four configured endpoints observed in the dashboard on this date were:
 - `https://ai-soil-analysis.onrender.com`
