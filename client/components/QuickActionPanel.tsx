@@ -148,36 +148,6 @@ const quickActions: QuickAction[] = [
   }
 ];
 
-const emergencyContacts = [
-  {
-    id: 'agronomist',
-    name: 'Dr. Ahmed Ben Salem',
-    nameArabic: 'د. أحمد بن سالم',
-    role: 'Agricultural Engineer',
-    roleArabic: 'مهندس ز��اعي',
-    phone: '+216 98 123 456',
-    status: 'online'
-  },
-  {
-    id: 'veterinarian',
-    name: 'Dr. Fatma Karoui',
-    nameArabic: 'د. فاطمة الكروي',
-    role: 'Veterinarian',
-    roleArabic: 'طبيبة بيطرية',
-    phone: '+216 97 234 567',
-    status: 'busy'
-  },
-  {
-    id: 'technician',
-    name: 'Eng. Mohamed Trabelsi',
-    nameArabic: 'م. محمد الطرابلسي',
-    role: 'Equipment Technician',
-    roleArabic: 'فني معدات',
-    phone: '+216 96 345 678',
-    status: 'offline'
-  }
-];
-
 const QuickActionPanel: React.FC<QuickActionPanelProps> = ({ 
   isArabic = false, 
   onActionExecute 
@@ -221,15 +191,6 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online': return 'bg-green-500';
-      case 'busy': return 'bg-yellow-500';
-      case 'offline': return 'bg-gray-500';
-      default: return 'bg-gray-500';
     }
   };
 
@@ -322,16 +283,9 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
                           onChange={(e) => setActionData({...actionData, description: e.target.value})}
                           rows={3}
                         />
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" className="flex-1">
-                            <Image className="h-4 w-4 mr-2" />
-                            {isArabic ? 'إضافة صورة' : 'Add photo'}
-                          </Button>
-                          <Button variant="outline" size="sm" className="flex-1">
-                            <Mic className="h-4 w-4 mr-2" />
-                            {isArabic ? 'تسجيل صوتي' : 'Voice note'}
-                          </Button>
-                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {isArabic ? 'لرفع صورة، افتح صفحة تشخيص الأمراض؛ رفع الصور غير متاح من هذا الاختصار.' : 'To upload an image, open Disease Diagnosis; image upload is not available in this shortcut.'}
+                        </p>
                       </div>
                     )}
 
