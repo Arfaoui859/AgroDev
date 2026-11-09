@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -47,7 +48,8 @@ import {
   ThumbsDown,
   MoreHorizontal,
   Bookmark,
-  Tag
+  Tag,
+  Paperclip
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -133,6 +135,8 @@ const AIAssistantChatbot: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [quickActions, setQuickActions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => {
     initializeChatbot();
