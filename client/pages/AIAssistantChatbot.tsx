@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import AutonomousAgentPanel from '../components/AutonomousAgentPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -166,7 +166,7 @@ const AIAssistantChatbot: React.FC = () => {
     if (typeof routeState?.initialPrompt === "string" && routeState.initialPrompt.trim()) {
       setInput(routeState.initialPrompt.trim());
       // Consume the one-shot prompt so browser back/forward does not replay it.
-      window.history.replaceState({}, document.title, window.location.pathname);
+      navigate(routeLocation.pathname, { replace: true, state: null });
     }
   }, [routeLocation.key]);
 
