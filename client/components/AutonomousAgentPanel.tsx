@@ -182,6 +182,9 @@ export default function AutonomousAgentPanel() {
           </div>
         )}
         <p className="text-xs text-muted-foreground">
+          هذا المفتاح يحفظ تفضيل المراقبة ولا يثبت وحده أن الجدولة تعمل. يلزم تطبيق ملف SQL وإعداد أسرار Render وGitHub وتشغيل Workflow من الفرع الافتراضي.
+        </p>
+        <p className="text-xs text-muted-foreground">
           حدود النسخة الحالية: الفحص يعتمد على سجلات المزارع والمحاصيل وتحاليل التربة والحساسات المسجلة. لا يدّعي مراقبة بث حي أو الطقس أو الأمراض أو السوق بعد. التنبيهات داخل المنصة فقط؛ البريد وSMS وPush غير مفعّلة.
         </p>
       </CardContent>
