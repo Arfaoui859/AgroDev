@@ -498,7 +498,15 @@ async def create_price_alert(request: PriceAlertRequest, background_tasks: Backg
 async def health_check():
     """Health check endpoint"""
     return {
-        "status": "healthy",
+        "status": "degraded",
+        "production_ready": False,
+        "disabled_features": [
+            "price_forecast",
+            "supply_demand_analysis",
+            "market_conditions",
+            "historical_prices",
+            "price_alerts",
+        ],
         "service": "Market Prediction AI",
         "version": "1.0.0",
         # No licensed market feed is configured; forecasts come from a synthetic
