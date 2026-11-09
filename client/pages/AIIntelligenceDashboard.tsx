@@ -33,6 +33,7 @@ function classify(service:AIService) {
 
 export default function AIIntelligenceDashboard(){
   const [health,setHealth]=useState<HealthPayload|null>(null);
+  const [lastSuccessAt,setLastSuccessAt]=useState<string|null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState<string|null>(null);
 
@@ -42,7 +43,7 @@ export default function AIIntelligenceDashboard(){
       const response=await fetch("/api/ai/health?force=true",{headers:{Accept:"application/json"}});
       const payload=await response.json();
       if(!response.ok)throw new Error(payload.message||"تعذّر فحص خدمات الذكاء الاصطناعي.");
-      setHealth(payload);
+      setHealth(payload);setLastSuccessAt(new Date().toISOString());
     }catch(e){setError(e instanceof Error?e.message:"تعذّر الاتصال بخادم AgroGrowth.");}
     finally{setLoading(false);}
   },[]);
@@ -56,7 +57,7 @@ export default function AIIntelligenceDashboard(){
   const misconfigured=services.filter(s=>classify(s).label==="عنوان الخدمة غير مضبوط"||classify(s).label==="إعداد عنوان خاطئ").length;
   const validatedModels=services.filter(s=>s.status==="available"&&s.isRealModel===true&&s.modelTrainedOnSyntheticData!==true).length;
 
-  return <main className="space-y-6" dir="rtl">
+  return <main className="space-y-6" dir="auto">
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="text-2xl font-bold">مركز الذكاء الاصطناعي</h2><p className="text-sm text-muted-foreground">حالة الخدمات الفعلية ومصادر النماذج، دون أرقام أداء أو توصيات تجريبية.</p></div>
       <Button onClick={()=>void refresh()} disabled={loading}><RefreshCw className={"ml-2 h-4 w-4 "+(loading?"animate-spin":"")}/>فحص الخدمات الآن</Button>
@@ -107,11 +108,11 @@ export default function AIIntelligenceDashboard(){
       </CardContent></Card>
     </div>
     <Card><CardHeader><CardTitle className="flex items-center gap-2"><Sprout className="h-5 w-5"/>الخدمات الزراعية</CardTitle></CardHeader><CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-      <Button asChild variant="outline"><Link to="/enhanced-analysis">تحليل التربة</Link></Button>
+      <Button asChild variant="outline"><Link to="/data-input">إدخال وتحليل بيانات التربة</Link></Button>
       <Button asChild variant="outline"><Link to="/smart-crop-suggestions">توصيات المحاصيل</Link></Button>
       <Button asChild variant="outline"><Link to="/disease-upload">تشخيص الصور</Link></Button>
       <Button asChild variant="outline"><Link to="/ai-assistant">المساعد الذكي</Link></Button>
     </CardContent></Card>
-    <p className="flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="h-3 w-3"/>آخر فحص: {health?.overview?.lastUpdated?new Date(health.overview.lastUpdated).toLocaleString():"لم يتم الفحص بعد"}</p>
+    <p className="flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="h-3 w-3"/>آخر فحص ناجح من الواجهة: {lastSuccessAt?new Date(lastSuccessAt).toLocaleString():"لم يكتمل الفحص بعد"}</p>
   </main>;
 }
