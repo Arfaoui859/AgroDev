@@ -146,7 +146,7 @@ $$;
 
 DROP TRIGGER IF EXISTS prevent_self_role_escalation ON public.users;
 CREATE TRIGGER prevent_self_role_escalation
-  BEFORE INSERT OR UPDATE OF role ON public.users
+  BEFORE INSERT OR UPDATE ON public.users
   FOR EACH ROW EXECUTE FUNCTION public.prevent_self_role_escalation();
 
 -- Create the application user row from the trusted Supabase Auth identity.
