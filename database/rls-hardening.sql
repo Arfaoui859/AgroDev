@@ -316,10 +316,9 @@ DROP POLICY IF EXISTS "Admins manage weather_forecasts" ON public.weather_foreca
 CREATE POLICY "Admins manage weather_forecasts" ON public.weather_forecasts
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+-- System settings may contain internal configuration.
+-- Restrict all access to administrators; never expose this table publicly.
 DROP POLICY IF EXISTS "Anyone can read system_settings" ON public.system_settings;
-CREATE POLICY "Anyone can read system_settings" ON public.system_settings
-  FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "Admins manage system_settings" ON public.system_settings;
 CREATE POLICY "Admins manage system_settings" ON public.system_settings
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
