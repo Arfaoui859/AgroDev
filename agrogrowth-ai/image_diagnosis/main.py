@@ -211,11 +211,29 @@ async def supported_diseases():
         getattr(classifier, "MODEL_SOURCE", DEFAULT_DISEASE_MODEL_SOURCE)
         if classifier is not None else DEFAULT_DISEASE_MODEL_SOURCE
     )
+    model_classes = []
+    if classifier is not None:
+        model_classes = [
+            {
+                "index": int(index),
+                "class_name": class_name,
+                "crop": class_name.split("___", 1)[0],
+                "condition": (
+                    class_name.split("___", 1)[1]
+                    if "___" in class_name else class_name
+                ),
+            }
+            for index, class_name in sorted(
+                classifier.idx_to_class.items(), key=lambda item: item[0]
+            )
+        ]
 
     return {
         "status": "success",
         "supported_diseases": diseases,
         "total_count": len(diseases),
+        "model_classes": model_classes,
+        "model_class_count": len(model_classes),
         "model_source": model_source,
         "inference_mode": inference_mode,
         "classifier_loaded": classifier is not None,
