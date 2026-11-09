@@ -830,6 +830,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
+      const accessToken = session.access_token;
       const response = await fetch(`/api/assistant/conversations/${encodeURIComponent(conversationId)}/messages`, {
         headers: { Authorization: "Bearer " + session.access_token },
       });
