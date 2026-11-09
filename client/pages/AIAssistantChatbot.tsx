@@ -1278,7 +1278,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <Button onClick={confirmCropAction} disabled={actionSaving || !pendingCropAction.areaHectares || Number(pendingCropAction.areaHectares) <= 0}>
+                      <Button onClick={confirmCropAction} disabled={actionSaving || !pendingCropAction.farmId || !pendingCropAction.areaHectares || Number(pendingCropAction.areaHectares) <= 0}>
                         {actionSaving ? (language === "ar" ? "جاري الحفظ..." : "Saving...") : (language === "ar" ? "تأكيد الإضافة" : "Confirm")}
                       </Button>
                       <Button variant="outline" onClick={() => setPendingCropAction(null)} disabled={actionSaving}>
