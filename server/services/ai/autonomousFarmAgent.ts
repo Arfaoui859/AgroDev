@@ -15,6 +15,13 @@ function utcDay(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
+function utcWeekStart(value: Date): string {
+  const date = new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+  const weekday = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - weekday);
+  return date.toISOString().slice(0, 10);
+}
+
 function daysBetween(from: Date, to: Date): number {
   return Math.floor((Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()) -
     Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate())) / 86_400_000);
@@ -59,7 +66,7 @@ export function buildFarmAgentEvents(input: {
       const soilDate = new Date(latestSoil.analyzed_at || latestSoil.created_at);
       if (Number.isFinite(soilDate.getTime()) && daysBetween(soilDate, now) >= soilReviewDays) {
         events.push({
-          key: `soil-review:${farm.id}:${today}`,
+          key: `soil-review:${farm.id}:${utcWeekStart(now)}`,
           farmId: farm.id,
           type: "agent_soil_review_due",
           title: "مراجعة بيانات التربة",
@@ -82,11 +89,11 @@ export function buildFarmAgentEvents(input: {
     const farmName = String(farm?.name || "المزرعة");
     if (delta >= 0 && delta <= 7) {
       events.push({
-        key: `harvest-upcoming:${cultivation.id}:${cultivation.expected_harvest_date}`,
+        key: `harvest-upcoming-${delta <= 2 ? "48h" : "7d"}:${cultivation.id}:${cultivation.expected_harvest_date}`,
         farmId: cultivation.farm_id,
         type: "agent_harvest_upcoming",
         title: "موعد حصاد مسجل يقترب",
-        message: `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» بعد ${delta} يوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`,
+        message: delta === 0\n          ? `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» هو اليوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`\n          : `موعد الحصاد المتوقع المسجل لمحصول «${crop}» في «${farmName}» بعد ${delta} يوم. راجع النضج والظروف الميدانية قبل تحديد موعد الحصاد النهائي.`,
         priority: delta <= 2 ? "high" : "normal",
         actionUrl: "/crop-management",
         evidence: { cultivation_id: cultivation.id, expected_harvest_date: cultivation.expected_harvest_date, days_until_harvest: delta },
@@ -121,7 +128,7 @@ export function buildFarmAgentEvents(input: {
       });
     }
     const battery = Number(sensor.battery_level);
-    if (sensor.battery_level !== null && sensor.battery_level !== undefined && Number.isFinite(battery) && battery <= 20) {
+    if (sensor.battery_level !== null && sensor.battery_level !== undefined && Number.isFinite(battery) && battery >= 0 && battery <= 20) {
       events.push({
         key: `sensor-battery:${sensor.id}:${today}`,
         farmId: sensor.farm_id,
