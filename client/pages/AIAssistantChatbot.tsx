@@ -617,8 +617,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   };
 
   const prepareFarmScanAction = async (message: string) => {
-    const scanIntent = /(scan|اسكان|فحص شامل|افحص مزرعتي|راقب مزرعتي|اعمل.*فحص|check my farm|inspect my farm|farm health|farm briefing|choufli.*mazra3|chouf.*7ala.*mazra3|3mli.*scan|a3mli.*scan)/i.test(message);
-    if (!scanIntent) return;
+    const satelliteIntent = /(ساتلايت|قمر صناعي|صور فضائية|ndvi|satellite|satelite|satelit|sentinel|remote sensing)/i.test(message);
+    const scanIntent = !satelliteIntent && /(scan|اسكان|فحص شامل|افحص مزرعتي|راقب مزرعتي|اعمل.*فحص|check my farm|inspect my farm|farm health|farm briefing|choufli.*mazra3|chouf.*7ala.*mazra3|3mli.*scan|a3mli.*scan)/i.test(message);
+    if (!scanIntent) return false;
     setPendingFarmScan(true);
     setMessages(prev => [...prev, {
       id: "farm-scan-proposal-" + Date.now(),
@@ -630,6 +631,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       language,
       category: "agriculture"
     }]);
+    return true;
   };
 
   const confirmFarmScan = async () => {
@@ -790,9 +792,11 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     try {
       const aiResponse = await generateAIResponse(messageContent);
       setMessages(prev => [...prev, aiResponse]);
-      await prepareFarmScanAction(messageContent);
-      await prepareCropAction(messageContent);
-      await prepareSatelliteAction(messageContent);
+      const farmScanPrepared = await prepareFarmScanAction(messageContent);
+      if (!farmScanPrepared) {
+        await prepareCropAction(messageContent);
+        await prepareSatelliteAction(messageContent);
+      }
 
       // Update conversation
       await updateActiveConversation(userMessage, aiResponse);
