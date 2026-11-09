@@ -116,16 +116,27 @@ export function buildFarmAgentEvents(input: {
   for (const sensor of input.sensors) {
     const farm = input.farms.find((row) => row.id === sensor.farm_id);
     const farmName = String(farm?.name || "المزرعة");
-    if (sensor.status && sensor.status !== "active") {
+    if (sensor.status === "inactive") {
       events.push({
         key: `sensor-inactive:${sensor.id}:${today}`,
         farmId: sensor.farm_id,
         type: "agent_sensor_inactive",
-        title: "حساس غير نشط",
-        message: `الحساس «${sensor.device_id || sensor.id}» المسجل في «${farmName}» حالته «${sensor.status}». تحقق من الطاقة والاتصال قبل الاعتماد على قراءاته.`,
+        title: "حساس مسجل كغير نشط",
+        message: `آخر حالة مسجلة للحساس «${sensor.device_id || sensor.id}» في «${farmName}» هي «inactive». تحقق من الطاقة والاتصال قبل الاعتماد على قراءاته.`,
         priority: "high",
         actionUrl: "/notifications",
-        evidence: { sensor_id: sensor.id, device_status: sensor.status },
+        evidence: { sensor_id: sensor.id, device_status: sensor.status, sensor_record_updated_at: sensor.updated_at ?? null },
+      });
+    } else if (sensor.status === "maintenance") {
+      events.push({
+        key: `sensor-maintenance:${sensor.id}:${today}`,
+        farmId: sensor.farm_id,
+        type: "agent_sensor_maintenance",
+        title: "حساس في وضع الصيانة",
+        message: `الحساس «${sensor.device_id || sensor.id}» في «${farmName}» مسجل بحالة صيانة. تأكد من تحديث حالته بعد إكمال التدخل.`,
+        priority: "normal",
+        actionUrl: "/notifications",
+        evidence: { sensor_id: sensor.id, device_status: sensor.status, sensor_record_updated_at: sensor.updated_at ?? null },
       });
     }
     const battery = Number(sensor.battery_level);
@@ -134,11 +145,11 @@ export function buildFarmAgentEvents(input: {
         key: `sensor-battery:${sensor.id}:${today}`,
         farmId: sensor.farm_id,
         type: "agent_sensor_battery_low",
-        title: "بطارية الحساس منخفضة",
-        message: `بطارية الحساس «${sensor.device_id || sensor.id}» في «${farmName}» مسجلة عند ${battery}%. خطط لفحصه أو شحنه.`,
+        title: "بطارية الحساس منخفضة حسب السجل",
+        message: `آخر مستوى بطارية مسجل للحساس «${sensor.device_id || sensor.id}» في «${farmName}» هو ${battery}%. تحقق من الجهاز؛ هذه ليست قراءة بث حي.`,
         priority: battery <= 10 ? "high" : "normal",
         actionUrl: "/notifications",
-        evidence: { sensor_id: sensor.id, battery_level_percent: battery },
+        evidence: { sensor_id: sensor.id, battery_level_percent: battery, sensor_record_updated_at: sensor.updated_at ?? null },
       });
     }
   }
@@ -185,7 +196,7 @@ export async function runFarmAgentScan(
   const [cultivationResult, soilResult, sensorResult, profileResult] = await Promise.all([
     db.from("crop_cultivations").select("id,farm_id,crop_name,expected_harvest_date,status").in("farm_id", farmIds),
     db.from("soil_analyses").select("id,farm_id,analysis_type,analyzed_at,created_at").in("farm_id", farmIds).in("analysis_type", ["lab", "sensor"]).order("analyzed_at", { ascending: false }),
-    db.from("sensor_devices").select("id,farm_id,device_id,status,battery_level").in("farm_id", farmIds),
+    db.from("sensor_devices").select("id,farm_id,device_id,status,battery_level,updated_at").in("farm_id", farmIds),
     db.from("user_profiles").select("preferences").eq("user_id", userId).maybeSingle(),
   ]);
   for (const [name, result] of [["crop_cultivations", cultivationResult], ["soil_analyses", soilResult], ["sensor_devices", sensorResult], ["user_profiles", profileResult]] as const) {
