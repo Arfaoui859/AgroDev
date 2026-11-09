@@ -75,7 +75,7 @@ export function detectLanguage(text: string, fallback: Language = "ar"): Languag
   if (!text) return fallback;
   if (ARABIC_RE.test(text)) return "ar";
   // Common Tunisian Arabic written in Latin characters / Arabizi.
-  if (/\\b(chnowa|chneya|kifeh|kifach|nheb|n7eb|3andi|3andek|3andou|famma|mafamach|win|wa9tech|tawa|ghodwa|lyoum|mouch|moch|bech|besh|najem|najjem|a3tini|3tini|falla7|fella7|torba|trab|mra|mrat|mardh|maradh|sou9|souq|meteo|matar|ns9i|s9i|zra3a|gharsa)\\b/i.test(text)) return "ar";
+  if (/\b(chnowa|chneya|kifeh|kifach|nheb|n7eb|3andi|3andek|3andou|famma|mafamach|win|wa9tech|tawa|ghodwa|lyoum|mouch|moch|bech|besh|najem|najjem|a3tini|3tini|falla7|fella7|torba|trab|mra|mrat|mardh|maradh|sou9|souq|meteo|matar|ns9i|s9i|zra3a|gharsa)\b/i.test(text)) return "ar";
   const frenchMarkers = /\b(le|la|les|des|du|une|un|est|pour|avec|comment|quel|quelle|mon|ma|mes|je|nous)\b/i;
   if (frenchMarkers.test(text)) return "fr";
   return "en";
