@@ -576,7 +576,6 @@ async def health_check():
     response_model=CropRecommendationResponse,
 )
 async def recommend_crops(request: CropRecommendationRequest):
-
     raise HTTPException(
         status_code=503,
         detail={
@@ -585,22 +584,11 @@ async def recommend_crops(request: CropRecommendationRequest):
             "production_ready": False,
         },
     )
-
-    raise HTTPException(
-        status_code=503,
-        detail={
-            "code": "CROP_MODEL_NOT_VALIDATED",
-            "message": "The crop recommender was trained on synthetic samples. Production recommendations are disabled until a documented real dataset and independent evaluation are available.",
-            "production_ready": False,
-        },
-    )
-
 @app.post(
     "/estimate-profit",
     response_model=ProfitEstimationResponse,
 )
 async def estimate_profit(request: ProfitEstimationRequest):
-
     raise HTTPException(
         status_code=503,
         detail={
@@ -609,22 +597,11 @@ async def estimate_profit(request: ProfitEstimationRequest):
             "production_ready": False,
         },
     )
-
-    raise HTTPException(
-        status_code=503,
-        detail={
-            "code": "FINANCIAL_REFERENCE_DATA_NOT_VERIFIED",
-            "message": "The profitability engine uses unverified reference prices and cost assumptions. Financial estimates are disabled until source, region, currency, date, and units are verified.",
-            "production_ready": False,
-        },
-    )
-
 @app.post(
     "/compare-crops",
     response_model=CropComparisonResponse,
 )
 async def compare_crops(request: CropComparisonRequest):
-
     raise HTTPException(
         status_code=503,
         detail={
@@ -633,16 +610,6 @@ async def compare_crops(request: CropComparisonRequest):
             "production_ready": False,
         },
     )
-
-    raise HTTPException(
-        status_code=503,
-        detail={
-            "code": "FINANCIAL_REFERENCE_DATA_NOT_VERIFIED",
-            "message": "Crop comparisons depend on unverified reference prices and cost assumptions and are disabled until verified inputs are available.",
-            "production_ready": False,
-        },
-    )
-
 @app.get("/supported-crops")
 async def get_supported_crops():
 
@@ -673,6 +640,7 @@ async def get_supported_crops():
             "total_count": len(crops),
             "data_source": "static_crop_reference_database",
             "field_validated": False,
+            "source_verified": False,
         }
 
     except Exception:
@@ -689,59 +657,16 @@ async def get_supported_crops():
 
 @app.get("/crop-details/{crop_name}")
 async def get_crop_details(crop_name: str):
-
-    try:
-        normalized_name = crop_name.strip().lower()
-
-        if normalized_name not in crop_recommender.crop_database:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Crop '{crop_name}' not found.",
-            )
-
-        crop_info = crop_recommender.crop_database[normalized_name]
-
-        return {
-            "status": "success",
-            "crop_details": {
-                "name": normalized_name,
-                "name_ar": crop_info.get("name_ar"),
-                "category": crop_info.get("category"),
-                "optimal_conditions": crop_info.get(
-                    "optimal_conditions", {}
-                ),
-                "economic_data": crop_info.get(
-                    "economic_data", {}
-                ),
-                "cultivation_info": crop_info.get(
-                    "cultivation_info", {}
-                ),
-                "risk_factors": crop_info.get(
-                    "risk_factors", {}
-                ),
-            },
-            "data_source": "static_crop_reference_database",
-            "field_validated": False,
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception:
-        logger.exception("Getting crop details failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to retrieve crop details.",
-        )
-
-
-# ---------------------------------------------------------
-# Market reference data
-# ---------------------------------------------------------
-
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CROP_REFERENCE_NOT_VERIFIED",
+            "message": "Detailed crop economics, yield, cultivation and risk values are not backed by a verified source catalogue and are not exposed.",
+            "production_ready": False,
+        },
+    )
 @app.get("/market-data/{crop_name}")
 async def get_market_data(crop_name: str):
-
     raise HTTPException(
         status_code=503,
         detail={
@@ -750,16 +675,6 @@ async def get_market_data(crop_name: str):
             "production_ready": False,
         },
     )
-
-    raise HTTPException(
-        status_code=503,
-        detail={
-            "code": "LIVE_MARKET_DATA_NOT_CONFIGURED",
-            "message": "The stored crop prices are indicative placeholders, not verified market observations. They are not exposed as market data.",
-            "production_ready": False,
-        },
-    )
-
 @app.post("/quick-recommendation")
 async def quick_recommendation(
     temperature: float = Query(
@@ -785,7 +700,6 @@ async def quick_recommendation(
         gt=0,
     ),
 ):
-
     raise HTTPException(
         status_code=503,
         detail={
@@ -794,16 +708,6 @@ async def quick_recommendation(
             "production_ready": False,
         },
     )
-
-    raise HTTPException(
-        status_code=503,
-        detail={
-            "code": "CROP_MODEL_NOT_VALIDATED",
-            "message": "The quick recommender calls the same synthetic-trained crop model and injects default soil, water, capital, and experience values. It is disabled for production.",
-            "production_ready": False,
-        },
-    )
-
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
 
