@@ -2,7 +2,7 @@ import request from "supertest";
 import express from "express";
 import { createServer } from "../../server/index";
 
-describe("Financial routes fail closed until persistent storage is connected", () => {
+describe("Financial routes require a verified session and persistent storage", () => {
   let app: express.Application;
   beforeAll(() => {
     app = createServer();
@@ -21,8 +21,12 @@ describe("Financial routes fail closed until persistent storage is connected", (
     const response = method === "POST"
       ? await request(app).post(path).send({})
       : await request(app).get(path);
-    expect(response.status).toBe(503);
-    expect(response.body.code).toBe("SIMULATED_DATA_DISABLED");
-    expect(response.body.isRealData).toBe(false);
+    if (path.includes("budget-plans")) {
+      expect(response.status).toBe(501);
+      expect(response.body.code).toBe("BUDGET_PLAN_NOT_IMPLEMENTED");
+    } else {
+      expect(response.status).toBe(503);
+      expect(response.body.code).toBe("FARM_FINANCE_DATABASE_UNAVAILABLE");
+    }
   });
 });
