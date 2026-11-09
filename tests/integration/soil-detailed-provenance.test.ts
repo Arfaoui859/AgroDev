@@ -35,6 +35,12 @@ describe("Detailed soil analysis provenance",()=>{
     expect(res.body.error).toBe("DATABASE_OR_SESSION_UNAVAILABLE");
   });
 
+  test("cloud history fails clearly when no authenticated database session is available",async()=>{
+    const res=await request(app).get("/api/soil-analysis/reports").expect(503);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe("DATABASE_OR_SESSION_UNAVAILABLE");
+  });
+
   test("soil analysis endpoints reject anonymous production requests",async()=>{
     const previousEnv=process.env.NODE_ENV;
     const previousDemo=process.env.ENABLE_DEMO_ENDPOINTS;
