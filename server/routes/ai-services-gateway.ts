@@ -243,8 +243,9 @@ const respondFromImageMicroservice = (
 
   const validVisionSource =
     rawDataSource === "vision-model" || rawDataSource === "llm" || rawDataSource === "trained-ml" || rawDataSource === "trained-model-inference";
+  const modelClaimVerified = payload.is_real_data === true || payload.isRealData === true;
 
-  if (!allowVisionModel || syntheticSource || !validVisionSource) {
+  if (!allowVisionModel || syntheticSource || !validVisionSource || !modelClaimVerified) {
     return res.status(503).json({
       success: false,
       code: syntheticSource ? "VISION_MODEL_PROVENANCE_UNAVAILABLE" : "VISION_MODEL_NOT_APPROVED",
