@@ -297,7 +297,7 @@ describe("specialist routing and grounded financial answers", () => {
     });
     expect(result.usedAgents).toContain("finance");
     expect(result.answer).toContain("No numeric costs, revenue or profit figures");
-    expect(result.answer).not.toMatch(/\\d+\\s*(TND|DT|USD)/);
+    expect(result.answer).not.toMatch(/[0-9]+ (TND|DT|USD)/);
   });
 
   test("routes livestock and harvest questions to their specialist domains", async () => {
