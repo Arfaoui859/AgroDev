@@ -10,6 +10,7 @@ The chatbot is the conversational control surface for AgroGrowth, not a standalo
 
 `POST /api/ai/assistant/chat` now builds context from the authenticated user's own records:
 
+- Authenticated account role, language preference, recorded farming experience, specializations and preferred crops (used only to adapt answer depth; never to grant cross-user access).
 - Farms and their saved GeoJSON boundaries (boundary data is not sent to the LLM).
 - Farm sections/plots and their crop, soil type, area and planting/harvest dates.
 - Crop cultivation records and growth stages.
@@ -33,6 +34,7 @@ Endpoint: `POST /api/assistant/actions/disease-detections` (authenticated multip
 - Creates a `plant_disease_detections` record with `detection_method=image_ai`, crop, severity, confidence, pending recovery status and a pointer to the private image.
 - Tags the record as requiring field verification; saving a model output does not turn it into a confirmed diagnosis.
 - Returns a short-lived signed image URL for the chat.
+- Historical chats store the disease-record ID and request a fresh, owner-checked signed URL when the conversation is reopened via `GET /api/assistant/disease-detections/:recordId/evidence-url`.
 
 Required migration: `database/assistant-disease-evidence.sql`
 
@@ -57,7 +59,7 @@ Required Render environment variables:
 
 Create the OAuth client in the Copernicus/Sentinel Hub dashboard. Do not put these values in any `VITE_*` variable or commit them to Git.
 
-The assistant UI recognises requests such as “حلللي بالساتلايت” / “analyze satellite” and asks the user to select a farm and period before it calls the endpoint.
+The assistant UI recognises requests such as “حلللي بالساتلايت” / “analyze satellite” and asks the user to select a farm and period before it calls the endpoint. Saved observations are also supplied to later authenticated assistant conversations.
 
 ## Deployment order
 
