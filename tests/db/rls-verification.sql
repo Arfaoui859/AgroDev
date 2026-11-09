@@ -119,7 +119,7 @@ SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 2,
   'farmer A can insert a soil analysis for their own farm');
 
 -- A valid JWT must not permit a write to another farmer's farm.
-DO $
+DO $rls$
 BEGIN
   BEGIN
     INSERT INTO public.soil_analyses (farm_id, analysis_type, sensor_data)
@@ -132,7 +132,7 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN
     RAISE NOTICE 'ok - farmer A cannot insert soil analysis for farmer B (RLS denied)';
   END;
-END $;
+END $rls$;
 SELECT public.assert_true((SELECT count(*) FROM public.notifications) = 1,
   'farmer A sees own notifications');
 SELECT public.assert_true((SELECT count(*) FROM public.user_analytics) = 1,
