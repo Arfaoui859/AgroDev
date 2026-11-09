@@ -56,4 +56,23 @@ describe("🧪 AI health model provenance", () => {
     expect(res.body.overview.syntheticModelServices).toBeGreaterThan(0);
     expect(res.body.note).toContain("اصطناعية");
   });
+
+  test("counts HTTP 429 as reachable but not inference-available", async () => {
+    const axios = require("axios");
+    (axios.get as jest.Mock).mockImplementationOnce(async () => {
+      const error: any = new Error("rate limited");
+      error.response = { status: 429 };
+      throw error;
+    });
+
+    const res = await request(app).get("/api/ai/health").expect(200);
+    const soil = res.body.services.find((s: any) => s.key === "soil_analysis");
+
+    expect(soil.status).toBe("rate_limited");
+    expect(soil.reachable).toBe(true);
+    expect(soil.error).toContain("host responded");
+    expect(res.body.overview.reachableServices).toBe(8);
+    expect(res.body.overview.availableServices).toBe(7);
+    expect(res.body.overview.rateLimitedServices).toBe(1);
+  });
 });
