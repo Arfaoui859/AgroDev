@@ -9,45 +9,52 @@ describe("Fixture-backed API groups fail closed", () => {
     app = createServer();
   });
 
-  const expectDisabled = async (response: any) => {
+  const expectUnavailable = async (response: any, code: string) => {
     expect(response.status).toBe(503);
-    expect(["MARKET_SOURCE_NOT_CONNECTED", "PUBLIC_DATA_SOURCE_NOT_CONNECTED"]).toContain(response.body.code);
+    expect(response.body.code).toBe(code);
     expect(response.body.isRealData).toBe(false);
-    expect(response.headers["x-data-provenance"]).toBe("simulated-disabled");
+    expect(response.body.data).toBeNull();
   };
 
   test("soil AI detector fixture data is not exposed", async () => {
-    await expectDisabled(
+    await expectUnavailable(
       await request(app).get("/api/soil-ai-detector/history/field-42"),
+      "LEGACY_SOIL_DETECTOR_DISABLED",
     );
-    await expectDisabled(
+    await expectUnavailable(
       await request(app).get("/api/soil-ai-detector/alerts"),
+      "LEGACY_SOIL_DETECTOR_DISABLED",
     );
   });
 
   test("rule-based crop suggestions with hard-coded economics are disabled", async () => {
-    await expectDisabled(
+    await expectUnavailable(
       await request(app).post("/api/smart-crop-suggestions/recommendations").send({}),
+      "SIMULATED_DATA_DISABLED",
     );
-    await expectDisabled(
+    await expectUnavailable(
       await request(app).get("/api/smart-crop-suggestions/market-analysis/olive"),
+      "SIMULATED_DATA_DISABLED",
     );
   });
 
   test("synthetic market analysis series are not exposed", async () => {
-    await expectDisabled(
+    await expectUnavailable(
       await request(app).get("/api/market-analysis/prices/current"),
+      "MARKET_SOURCE_NOT_CONNECTED",
     );
-    await expectDisabled(
+    await expectUnavailable(
       await request(app).get("/api/market-analysis/predictions/olive"),
+      "MARKET_SOURCE_NOT_CONNECTED",
     );
   });
 
   test("public market prices cannot be mistaken for live quotes", async () => {
-    await expectDisabled(
+    await expectUnavailable(
       await request(app)
         .get("/api/public/market-prices")
         .set("X-API-Key", "public_demo_key_12345"),
+      "PUBLIC_DATA_SOURCE_NOT_CONNECTED",
     );
   });
 });
