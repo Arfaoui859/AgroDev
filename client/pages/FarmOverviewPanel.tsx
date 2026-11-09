@@ -27,7 +27,7 @@ export default function FarmOverviewPanel() {
       farmsTitle: "مزارعي", farmsDesc: "المزارع المرتبطة بحسابك", cropsTitle: "أحدث المحاصيل", cropsDesc: "آخر سجلات الغراسة المحفوظة",
       expenses: "المصاريف المسجلة", revenue: "المداخيل المسجلة", profit: "الصافي المسجل", unavailable: "غير متاح",
       noFarms: "ما فما حتى مزرعة مسجلة في الحساب.", addFarm: "إضافة مزرعة", noCrops: "ما فما حتى محصول مسجل بعد.",
-      addCrop: "إضافة محصول", viewAll: "إدارة المحاصيل", noFinance: "لا توجد بيانات مالية متاحة حالياً.",
+      addCrop: "إضافة محصول", viewAll: "إدارة المحاصيل", noFinance: "لا توجد بيانات مالية متاحة حالياً.", financeDesc: "القيم التالية مأخوذة من القيود المالية المحفوظة فقط.",
       login: "يلزم تسجيل الدخول.", loadError: "تعذّر تحميل المزارع.", unknown: "الموقع غير محدد",
       status: "السجل", loading: "جاري تحميل بياناتك..."
     },
@@ -37,7 +37,7 @@ export default function FarmOverviewPanel() {
       farmsTitle: "Mes exploitations", farmsDesc: "Exploitations liées à votre compte", cropsTitle: "Cultures récentes", cropsDesc: "Dernières plantations enregistrées",
       expenses: "Dépenses enregistrées", revenue: "Revenus enregistrés", profit: "Solde enregistré", unavailable: "Indisponible",
       noFarms: "Aucune exploitation n’est encore enregistrée.", addFarm: "Ajouter une exploitation", noCrops: "Aucune culture enregistrée.",
-      addCrop: "Ajouter une culture", viewAll: "Gérer les cultures", noFinance: "Aucune donnée financière disponible.",
+      addCrop: "Ajouter une culture", viewAll: "Gérer les cultures", noFinance: "Aucune donnée financière disponible.", financeDesc: "Valeurs issues uniquement des écritures financières enregistrées.",
       login: "Connexion requise.", loadError: "Impossible de charger les exploitations.", unknown: "Emplacement non précisé",
       status: "Statut", loading: "Chargement de vos données..."
     },
@@ -47,7 +47,7 @@ export default function FarmOverviewPanel() {
       farmsTitle: "My farms", farmsDesc: "Farms linked to your account", cropsTitle: "Recent crops", cropsDesc: "Latest saved planting records",
       expenses: "Recorded expenses", revenue: "Recorded revenue", profit: "Recorded net balance", unavailable: "Unavailable",
       noFarms: "No farm has been registered yet.", addFarm: "Add a farm", noCrops: "No crop has been recorded yet.",
-      addCrop: "Add a crop", viewAll: "Manage crops", noFinance: "Financial data is not available yet.",
+      addCrop: "Add a crop", viewAll: "Manage crops", noFinance: "Financial data is not available yet.", financeDesc: "Figures below come only from saved financial entries.",
       login: "Sign in is required.", loadError: "Could not load farms.", unknown: "Location not specified",
       status: "Status", loading: "Loading your data..."
     }
@@ -197,7 +197,7 @@ export default function FarmOverviewPanel() {
       </div>
 
       <Card className="border-slate-200/80 shadow-sm">
-        <CardHeader><CardTitle>{language === "ar" ? "الملخص المالي" : language === "fr" ? "Résumé financier" : "Financial summary"}</CardTitle><CardDescription>{t.noFinance}</CardDescription></CardHeader>
+        <CardHeader><CardTitle>{language === "ar" ? "الملخص المالي" : language === "fr" ? "Résumé financier" : "Financial summary"}</CardTitle><CardDescription>{finance ? t.financeDesc : t.noFinance}</CardDescription></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
           {[{ label: t.expenses, value: finance ? money(Number(finance.totalExpenses) || 0) : t.unavailable }, { label: t.revenue, value: finance ? money(Number(finance.totalRevenue) || 0) : t.unavailable }, { label: t.profit, value: finance ? money(Number(finance.netProfit) || 0) : t.unavailable }].map((item) => (
             <div key={item.label} className="rounded-xl border bg-slate-50/70 p-4">
