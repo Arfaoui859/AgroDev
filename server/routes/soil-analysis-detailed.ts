@@ -6,6 +6,7 @@ import path from "path";
 import type { RawSoilData } from "@shared/api";
 import { markAdvisory } from "../lib/provenance";
 import { chatCompleteDetailed, isLLMConfigured } from "../services/providers/llmProvider";
+import { scopedClientFromAuthHeader } from "../lib/supabase";
 
 const projectRoot = process.cwd();
 const AI_SERVICE_URL = process.env.AI_SOIL_ANALYSIS_SERVICE || process.env.OPENAI_API_URL || "";
@@ -133,6 +134,47 @@ async function callAIService(systemPrompt:string,userMessage:string):Promise<str
   throw new AIProviderUnavailableError();
 }
 
+
+async function persistSoilReport(req: import("express").Request, soilData: RawSoilData, report: Record<string, any>) {
+  if (!soilData.fieldId) return { persisted: false as const, reason: "FIELD_NOT_SELECTED" as const };
+  const db = scopedClientFromAuthHeader(req.header("authorization"));
+  if (!db) return { persisted: false as const, reason: "DATABASE_OR_SESSION_UNAVAILABLE" as const };
+
+  // Resolve the farm through the caller-scoped RLS client. Never trust a farmId
+  // supplied by the browser and never write an orphaned record.
+  const { data: section, error: sectionError } = await db
+    .from("farm_sections")
+    .select("id,farm_id")
+    .eq("id", soilData.fieldId)
+    .maybeSingle();
+  if (sectionError) throw sectionError;
+  if (!section?.farm_id) return { persisted: false as const, reason: "FIELD_NOT_FOUND_OR_NOT_OWNED" as const };
+
+  const { data: saved, error } = await db
+    .from("soil_analyses")
+    .insert({
+      farm_id: section.farm_id,
+      section_id: section.id,
+      analysis_type: "lab",
+      sensor_data: soilData,
+      analysis_result: report,
+      recommendations: Array.isArray(report.recommendations) ? report.recommendations : [],
+      ph_level: soilData.ph,
+      moisture_percent: soilData.moisture,
+      organic_matter_percent: soilData.organicMatter ?? null,
+      nitrogen_level: soilData.nitrogen ?? null,
+      phosphorus_level: soilData.phosphorus ?? null,
+      potassium_level: soilData.potassium ?? null,
+      sample_depth_cm: soilData.sampleDepth ?? null,
+      location: soilData.location ? { label: soilData.location } : null,
+      analyzed_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { persisted: true as const, analysisId: saved.id };
+}
+
 function extractAndValidateReport(raw:string):Record<string,any> {
   const trimmed=raw.trim();
   const fenced=trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -158,9 +200,18 @@ export const analyzeSoilDetailed: RequestHandler = async (req,res) => {
     if(!hasSoilAIProvider()) throw new AIProviderUnavailableError();
     const prompt=await loadSoilAnalysisPrompt();
     const report=extractAndValidateReport(await callAIService(prompt,formatSoilDataForAI(soilData)));
+    let persistence: { persisted: boolean; reason?: string; analysisId?: string };
+    try {
+      persistence = await persistSoilReport(req, soilData, report);
+    } catch (persistenceError) {
+      console.error("Soil report persistence failed:", persistenceError);
+      persistence = { persisted: false, reason: "PERSISTENCE_FAILED" };
+    }
     markAdvisory(res,"ai-advisory");
     return res.status(200).json({
       success:true,data:report,dataSource:"ai-advisory",isRealData:false,
+      ...(persistence.analysisId ? { analysisId: persistence.analysisId } : {}),
+      persistence,
       provenance:{
         measurements:"user-provided-unverified",advisory:"llm-generated",
         mlPrediction:"not-available",modelTraining:"not-claimed",
@@ -199,8 +250,22 @@ export const analyzeSoilBatch: RequestHandler = async(req,res)=>{
   }
 };
 
-export const getSoilAnalysisReport: RequestHandler = async(_req,res)=>{
-  return res.status(501).json({success:false,error:"REPORT_NOT_IMPLEMENTED",message:"التخزين السحابي للتقارير غير مفعّل بعد. التقرير الحالي يُحفظ محلياً في هذا المتصفح."});
+export const getSoilAnalysisReport: RequestHandler = async(req,res)=>{
+  try {
+    const db = scopedClientFromAuthHeader(req.header("authorization"));
+    if (!db) return res.status(503).json({success:false,error:"DATABASE_OR_SESSION_UNAVAILABLE",message:"يلزم تسجيل الدخول والاتصال بقاعدة البيانات لاسترجاع التقرير."});
+    const { data, error } = await db
+      .from("soil_analyses")
+      .select("id,sensor_data,analysis_result,recommendations,analyzed_at,created_at")
+      .eq("id", req.params.analysisId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({success:false,error:"REPORT_NOT_FOUND",message:"التقرير غير موجود أو لا تملك صلاحية الوصول إليه."});
+    return res.json({success:true,data:{analysisId:data.id,input:data.sensor_data,report:data.analysis_result,recommendations:data.recommendations,analyzedAt:data.analyzed_at,createdAt:data.created_at},persistence:{persisted:true}});
+  } catch(error) {
+    console.error("Soil report retrieval failed:",error);
+    return res.status(500).json({success:false,error:"REPORT_RETRIEVAL_FAILED",message:"تعذّر استرجاع التقرير حالياً."});
+  }
 };
 
 export default {analyzeSoilDetailed,analyzeSoilBatch,getSoilAnalysisReport};
