@@ -12,119 +12,115 @@ interface UserSetupRequest {
 
 export const setupInspectorUser: RequestHandler = async (req, res) => {
   if (!isSupabaseConfigured || !supabaseAdmin) {
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Supabase admin client not configured' 
+    return res.status(503).json({
+      success: false,
+      error: "Supabase admin client is not configured",
     });
   }
 
   const body = req.body as UserSetupRequest;
-  
-  if (!body.email || !body.password) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Email and password are required' 
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const password = typeof body?.password === "string" ? body.password : "";
+  const fullName = typeof body?.full_name === "string" && body.full_name.trim()
+    ? body.full_name.trim()
+    : "مراقب الحقول";
+
+  if (!email || !password || password.length < 12) {
+    return res.status(400).json({
+      success: false,
+      error: "A valid email and a password of at least 12 characters are required",
     });
   }
 
-  const email = body.email;
-  const password = body.password;
-  const fullName = body.full_name || 'مستخدم';
-  const fullNameAr = body.full_name_ar || fullName;
-  const role = body.role || 'inspector';
-
   try {
-    // Try to create user in Supabase Auth
-    let userId: string;
-    
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: fullName,
-        full_name_ar: fullNameAr,
-        role,
-      },
-    });
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
 
+    let userId = authData.user?.id;
     if (authError) {
-      // If user already exists, try to get existing user
-      if (authError.message?.includes('already registered')) {
-        const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = (listData?.users as any[])?.find(u => u.email === email);
-        
-        if (!existingUser) {
-          return res.status(400).json({ 
-            success: false, 
-            error: 'User already registered but cannot be found' 
-          });
-        }
-        
-        userId = existingUser.id;
-      } else {
-        return res.status(400).json({ 
-          success: false, 
-          error: authError.message || 'Failed to create auth user' 
+      if (!authError.message.toLowerCase().includes("already registered")) {
+        return res.status(400).json({
+          success: false,
+          error: authError.message,
         });
       }
-    } else {
-      userId = authData.user?.id || '';
+
+      const { data: listed, error: listError } =
+        await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (listError) throw listError;
+      userId = listed.users.find((user) => user.email?.toLowerCase() === email)?.id;
     }
 
     if (!userId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Failed to get user ID' 
+      return res.status(409).json({
+        success: false,
+        error: "Auth identity could not be resolved",
       });
     }
 
-    // Try to create/update user record in custom table
-    const { error: userError } = await safeInsert(supabaseAdmin, 'users', {
-      id: userId,
-      email,
-      full_name: fullName,
-      full_name_ar: fullNameAr,
-      role,
-      verified: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
+    const { data: persisted, error: userError } = await supabaseAdmin
+      .from("users")
+      .upsert({
+        id: userId,
+        email,
+        full_name: fullName,
+        role: "inspector",
+        email_verified: true,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "id" })
+      .select("id, email, role")
+      .single();
 
-    if (userError) {
-      console.log('User record error (continuing):', userError.message);
+    if (userError || persisted?.role !== "inspector") {
+      console.error("Inspector user persistence failed:", userError);
+      return res.status(500).json({
+        success: false,
+        error: "Inspector role was not persisted",
+      });
     }
 
-    // Try to create user profile
-    const { error: profileError } = await safeInsert(supabaseAdmin, 'user_profiles', {
-      user_id: userId,
-      preferences: {
-        language: 'ar',
-        notifications: true,
-        weather_alerts: true,
-        market_alerts: true,
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
+    const { data: profile, error: profileLookupError } = await supabaseAdmin
+      .from("user_profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    if (profileError) {
-      console.log('Profile creation error (continuing):', profileError.message);
+    if (profileLookupError) {
+      return res.status(500).json({
+        success: false,
+        error: "Unable to verify inspector profile",
+      });
     }
 
-    return res.json({ 
-      success: true, 
-      message: `User '${email}' (${role}) has been set up successfully`,
+    if (!profile) {
+      const { error: profileError } = await supabaseAdmin
+        .from("user_profiles")
+        .insert({ user_id: userId });
+      if (profileError) {
+        return res.status(500).json({
+          success: false,
+          error: "Inspector account was created but profile persistence failed",
+        });
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `Inspector account '${email}' has been configured`,
       userId,
       email,
-      role,
+      role: "inspector",
     });
-  } catch (error: any) {
-    console.error('Setup inspector user error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: error.message || 'Failed to set up user' 
-    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to set up inspector";
+    console.error("Setup inspector user error:", message);
+    return res.status(500).json({ success: false, error: message });
   }
 };
 
