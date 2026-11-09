@@ -71,43 +71,17 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
     });
   });
 
-  describe("🌾 Crop recommendations (rule-based fallback)", () => {
-    test("POST /api/ai/crops/recommend returns ranked recommendations", async () => {
+  describe("🌾 Crop recommendations fail closed without a validated model", () => {
+    test.each([
+      { ph: 6.5, temperature: 24, rainfall: 450, area_hectares: 3, soil_type: "تربة طينية" },
+      { ph: 7.5, temperature: 38, rainfall: 150 },
+    ])("does not return generated crop rankings", async (payload) => {
       const response = await request(app)
         .post("/api/ai/crops/recommend")
-        .send({
-          ph: 6.5,
-          temperature: 24,
-          rainfall: 450,
-          area_hectares: 3,
-          soil_type: "تربة طينية",
-        })
-        .expect(200);
-
-      expect(Array.isArray(response.body.recommendations)).toBe(true);
-      expect(response.body.recommendations.length).toBeGreaterThan(0);
-
-      const first = response.body.recommendations[0];
-      expect(first).toHaveProperty("name_ar");
-      expect(first).toHaveProperty("suitability_score");
-      expect(first).toHaveProperty("profit_analysis");
-      expect(first.profit_analysis).toHaveProperty("net_profit");
-      expect(first.profit_analysis.isEstimate).toBe(true);
-      expect(response.body.best_recommendation).toBeTruthy();
-      expect(response.body.dataSource).toBe("rule-based");
-    });
-
-    test("POST /api/ai/crops/recommend ranks higher-suitability crops first", async () => {
-      const response = await request(app)
-        .post("/api/ai/crops/recommend")
-        .send({ ph: 7.5, temperature: 38, rainfall: 150 })
-        .expect(200);
-
-      const scores = response.body.recommendations.map(
-        (r: any) => r.suitability_score,
-      );
-      const sorted = [...scores].sort((a: number, b: number) => b - a);
-      expect(scores).toEqual(sorted);
+        .send(payload)
+        .expect(503);
+      expect(response.body.success).toBe(false);
+      expect(response.body.recommendations).toBeUndefined();
     });
   });
 
@@ -213,39 +187,24 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
       expect(response.status).toBe(200);
     });
 
-    describe("Synthetic data is never presented as real", () => {
-      test("market-analysis prices keep the array contract but flag provenance", async () => {
-        const response = await request(app)
-          .get("/api/market-analysis/prices/current")
-          .expect(200);
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.headers["x-data-provenance"]).toBe("simulated");
-        expect(response.headers["x-is-real-data"]).toBe("false");
+    describe("Unverified market data is not presented as live", () => {
+      test.each([
+        "/api/market-analysis/prices/current",
+        "/api/market-analysis/alerts",
+        "/api/market-analysis/predictions/olive",
+      ])("%s returns an explicit unavailable response", async (path) => {
+        const response = await request(app).get(path).expect(503);
+        expect(response.body.code).toBe("MARKET_SOURCE_NOT_CONNECTED");
+        expect(response.body.data).toBeNull();
       });
 
-      test("market-analysis alerts keep the array contract but flag provenance", async () => {
-        const response = await request(app)
-          .get("/api/market-analysis/alerts")
-          .expect(200);
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.headers["x-data-provenance"]).toBe("simulated");
-      });
-
-      test("market-analysis predictions carry simulated provenance", async () => {
-        const response = await request(app)
-          .get("/api/market-analysis/predictions/olive")
-          .expect(200);
-        expect(response.body.dataSource).toBe("simulated");
-        expect(response.body.isRealData).toBe(false);
-      });
-
-      test("public market prices are labelled simulated, not real", async () => {
+      test("public market prices are unavailable without a licensed source", async () => {
         const response = await request(app)
           .get("/api/public/market-prices?limit=2")
           .set("x-api-key", "public_demo_key_12345")
-          .expect(200);
-        expect(response.body.meta.dataSource).toBe("simulated");
-        expect(response.body.meta.isRealData).toBe(false);
+          .expect(503);
+        expect(response.body.code).toBe("PUBLIC_DATA_SOURCE_NOT_CONNECTED");
+        expect(response.body.dataAvailable).toBe(false);
       });
 
       test("weather responses declare a real provider source", async () => {
