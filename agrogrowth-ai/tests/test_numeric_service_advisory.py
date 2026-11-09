@@ -91,22 +91,22 @@ def test_soil_advisory_failure_does_not_break_analysis(monkeypatch):
     assert result.health_score is not None
 
 
-def test_crop_without_provider_is_labelled_synthetic():
-    result = asyncio.run(crop_main.recommend_crops(_crop_request()))
-    assert result.data_source == crop_main.get_crop_recommender_source()
-    assert result.is_real_data is False
-    assert result.advisory is None
-    assert result.recommendations
+def test_crop_without_provider_fails_closed_for_synthetic_model():
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(crop_main.recommend_crops(_crop_request()))
+    assert exc.value.status_code == 503
+    assert exc.value.detail["code"] == "CROP_MODEL_NOT_VALIDATED"
 
 
-def test_crop_with_provider_adds_labelled_advisory(monkeypatch):
+def test_crop_with_provider_still_fails_closed_for_synthetic_model(monkeypatch):
     monkeypatch.setenv("AI_API_KEY", "k")
     monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
     monkeypatch.setattr(llm.LLMProvider, "chat", lambda self, *a, **k: "نصيحة محاصيل.")
 
-    result = asyncio.run(crop_main.recommend_crops(_crop_request(language="ar")))
-    assert result.is_real_data is False
-    assert result.advisory["text"] == "نصيحة محاصيل."
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(crop_main.recommend_crops(_crop_request(language="ar")))
+    assert exc.value.status_code == 503
+    assert exc.value.detail["code"] == "CROP_MODEL_NOT_VALIDATED"
 
 
 def test_soil_health_reports_advisory_configured(monkeypatch):
