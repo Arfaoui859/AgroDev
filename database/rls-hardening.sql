@@ -58,16 +58,16 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   )
 $$;
 
-REVOKE ALL ON FUNCTION public.current_user_role() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.is_expert() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.owns_farm(uuid) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.owns_section(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_expert() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.current_user_role() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_expert() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.owns_farm(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.owns_section(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_user_role() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_expert() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 2. Turn RLS on for every table that lacked it.
