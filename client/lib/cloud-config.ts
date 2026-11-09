@@ -20,22 +20,18 @@ const getCloudConfig = (): CloudConfig => {
       import.meta.env.VITE_API_URL ||
       (isDevelopment ? "http://localhost:8080/api" : "/api"),
     soilAnalysisUrl:
-      import.meta.env.VITE_SOIL_ANALYSIS_URL ||
-      "https://agrogrowth-soil-analysis.railway.app",
+      import.meta.env.VITE_SOIL_ANALYSIS_URL || "",
     cropRecommendationUrl:
-      import.meta.env.VITE_CROP_RECOMMENDATION_URL ||
-      "https://agrogrowth-crop-recommendation.railway.app",
+      import.meta.env.VITE_CROP_RECOMMENDATION_URL || "",
     imageDiagnosisUrl:
-      import.meta.env.VITE_IMAGE_DIAGNOSIS_URL ||
-      "https://agrogrowth-image-diagnosis.railway.app",
+      import.meta.env.VITE_IMAGE_DIAGNOSIS_URL || "",
     marketPredictionUrl:
-      import.meta.env.VITE_MARKET_PREDICTION_URL ||
-      "https://agrogrowth-market-prediction.railway.app",
+      import.meta.env.VITE_MARKET_PREDICTION_URL || "",
     intelligentAgentUrl:
-      import.meta.env.VITE_INTELLIGENT_AGENT_URL ||
-      "https://agrogrowth-intelligent-agent.railway.app",
+      import.meta.env.VITE_INTELLIGENT_AGENT_URL || "",
     useCloudServices: useCloud && !isDevelopment,
-    fallbackToMock: import.meta.env.VITE_FALLBACK_TO_MOCK !== "false",
+    // Mock output is opt-in for local demos only; production defaults to off.
+    fallbackToMock: import.meta.env.VITE_FALLBACK_TO_MOCK === "true",
   };
 };
 
@@ -45,6 +41,7 @@ export const cloudConfig = getCloudConfig();
 export const checkServiceHealth = async (
   serviceUrl: string,
 ): Promise<boolean> => {
+  if (!serviceUrl || !/^https?:\/\//i.test(serviceUrl)) return false;
   try {
     const response = await fetch(`${serviceUrl}/health`, {
       method: "GET",
