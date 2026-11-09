@@ -267,15 +267,15 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
 
     const imageContext = input.trim();
     const cropPatterns: Array<[RegExp, string]> = [
-      [/طماطم|بندورة|tomato/i, "tomato"],
-      [/قمح|wheat/i, "wheat"],
-      [/زيتون|olive/i, "olive"],
-      [/شعير|barley/i, "barley"],
-      [/بطاطا|بطاطس|potato/i, "potato"],
-      [/فلفل|pepper/i, "pepper"],
-      [/بصل|onion/i, "onion"],
-      [/عنب|grape/i, "grape"],
-      [/تفاح|apple/i, "apple"],
+      [/طماطم|بندورة|tomato|tmatem|tomat/i, "tomato"],
+      [/قمح|wheat|9amh|gmah/i, "wheat"],
+      [/زيتون|olive|zitoun|zaytoun/i, "olive"],
+      [/شعير|barley|cha3ir|cha3er/i, "barley"],
+      [/بطاطا|بطاطس|potato|batata/i, "potato"],
+      [/فلفل|pepper|felfel|filfil/i, "pepper"],
+      [/بصل|onion|bsal|basal/i, "onion"],
+      [/عنب|grape|3neb|3nab/i, "grape"],
+      [/تفاح|apple|tfah|teffah/i, "apple"],
     ];
     const cropType = cropPatterns.find(([pattern]) => pattern.test(imageContext))?.[1];
 
@@ -410,15 +410,15 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   };
 
   const prepareCropAction = async (message: string) => {
-    const plantingIntent = /نحب|باش|بش|راني|نزرع|نغرس|سنية|نضيف|ازرع|أزرع|plant|grow|sow|add crop|cultivate/i.test(message);
+    const plantingIntent = /نحب|باش|بش|راني|نزرع|نغرس|سنية|نضيف|ازرع|أزرع|nheb|n7eb|bech|besh|nzra3|nghars|nghares|zra3|ghars|plant|grow|sow|add crop|cultivate/i.test(message);
     if (!plantingIntent) return;
     const crops: Array<[RegExp,string]> = [
-      [/طماطم|بندورة|tomato/i, "طماطم"],
-      [/قمح|wheat/i, "قمح"],
-      [/زيتون|olive/i, "زيتون"],
-      [/شعير|barley/i, "شعير"],
-      [/بطاطا|بطاطس|potato/i, "بطاطا"],
-      [/فلفل|pepper/i, "فلفل"],
+      [/طماطم|بندورة|tomato|tmatem|tomat/i, "طماطم"],
+      [/قمح|wheat|9amh|gmah/i, "قمح"],
+      [/زيتون|olive|zitoun|zaytoun/i, "زيتون"],
+      [/شعير|barley|cha3ir|cha3er/i, "شعير"],
+      [/بطاطا|بطاطس|potato|batata/i, "بطاطا"],
+      [/فلفل|pepper|felfel|filfil/i, "فلفل"],
       [/بصل|onion/i, "بصل"]
     ];
     const found = crops.find(([pattern]) => pattern.test(message));
@@ -516,15 +516,15 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     const rows = response.ok && payload.success === true ? payload.data || [] : [];
     setAssistantCultivations(rows);
     const cropMatchers: Record<string, RegExp> = {
-      tomato: /tomato|طماطم|بندورة|tomate/i,
-      wheat: /wheat|قمح|blé/i,
-      olive: /olive|زيتون|olivier/i,
-      barley: /barley|شعير|orge/i,
-      potato: /potato|بطاطا|بطاطس|pomme de terre/i,
-      pepper: /pepper|فلفل|poivron/i,
-      onion: /onion|بصل|oignon/i,
-      grape: /grape|عنب|raisin/i,
-      apple: /apple|تفاح|pomme/i,
+      tomato: /tomato|طماطم|بندورة|tomate|tmatem|tomat/i,
+      wheat: /wheat|قمح|blé|9amh|gmah/i,
+      olive: /olive|زيتون|olivier|zitoun|zaytoun/i,
+      barley: /barley|شعير|orge|cha3ir|cha3er/i,
+      potato: /potato|بطاطا|بطاطس|pomme de terre|batata/i,
+      pepper: /pepper|فلفل|poivron|felfel|filfil/i,
+      onion: /onion|بصل|oignon|bsal|basal/i,
+      grape: /grape|عنب|raisin|3neb|3nab/i,
+      apple: /apple|تفاح|pomme|tfah|teffah/i,
     };
     const currentCrop = cropTypeOverride || pendingDiseaseSave?.cropType || "";
     const matcher = cropMatchers[currentCrop];
@@ -586,8 +586,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   };
 
   const prepareSatelliteAction = async (message: string) => {
-    const satelliteIntent = /(ساتلايت|قمر صناعي|صور فضائية|ndvi|satellite|sentinel|remote sensing)/i.test(message);
-    const actionIntent = /(نحب|باش|بش|حلل|شوف|راقب|اعمل|اعمللي|جيب|ورّيني|أريد|اريد|check|analyse|analyze|monitor|get|show|look up)/i.test(message);
+    const satelliteIntent = /(ساتلايت|قمر صناعي|صور فضائية|ndvi|satellite|satelite|satelit|sentinel|remote sensing)/i.test(message);
+    const actionIntent = /(نحب|باش|بش|حلل|شوف|راقب|اعمل|اعمللي|جيب|ورّيني|أريد|اريد|nheb|n7eb|3mli|a3mli|bech|besh|check|analyse|analyze|monitor|get|show|look up)/i.test(message);
     if (!satelliteIntent || !actionIntent) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
