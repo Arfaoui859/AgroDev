@@ -504,11 +504,18 @@ export const createFarm: RequestHandler = async (req, res) => {
     }).select("id,name,size_hectares,location,soil_type,created_at").single();
 
     if (error) {
-      console.error("Farm creation failed:", error.code);
+      const missingTable = error.code === "PGRST205" || /Could not find the table/i.test(error.message || "");
+      const denied = error.code === "42501";
+      console.error("Farm creation failed:", { code: error.code, details: error.details });
       return res.status(503).json({
         success: false,
-        code: "FARM_PERSISTENCE_FAILED",
-        message: "لم يتم حفظ المزرعة في قاعدة البيانات.",
+        code: missingTable ? "FARM_MIGRATION_REQUIRED" : denied ? "FARM_RLS_DENIED" : "FARM_PERSISTENCE_FAILED",
+        databaseCode: error.code,
+        message: missingTable
+          ? "جدول المزارع غير ظاهر في Supabase schema cache. تحقق من migration ثم حدّث schema cache."
+          : denied
+            ? "قاعدة البيانات رفضت إنشاء المزرعة بسبب RLS أو عدم تطابق ملكية المستخدم."
+            : "لم يتم حفظ المزرعة في قاعدة البيانات. لم يتم تسجيل العملية كنجاح.",
       });
     }
 
