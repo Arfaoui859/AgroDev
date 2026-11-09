@@ -140,6 +140,15 @@ def create_weather_based_plan(request: WeatherPlanningRequest):
     """
     إنشاء خطة زراعة ذكية حسب الطقس والمناخ
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "WEATHER_MODEL_NOT_VALIDATED",
+                "message": "The current crop-planning model uses synthetic training data and is disabled for production recommendations.",
+                "production_ready": False,
+            },
+        )
+
     try:
         logger.info(f"Creating weather-based plan for location: {request.location.region}")
         
@@ -174,6 +183,15 @@ def predict_crop_yield(request: YieldPredictionRequest):
     """
     التنبؤ بمردودية المحصول بناءً على الظروف الحالية
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "YIELD_MODEL_NOT_VALIDATED",
+                "message": "The current yield model uses synthetic training data and is disabled for production predictions.",
+                "production_ready": False,
+            },
+        )
+
     try:
         logger.info(f"Predicting yield for crop: {request.crop_type}")
         
@@ -208,6 +226,15 @@ def comprehensive_analysis(request: CombinedAnalysisRequest):
     """
     تحليل شامل يدمج التخطيط المناخي والتنبؤ بالمردودية
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "WEATHER_YIELD_MODELS_NOT_VALIDATED",
+                "message": "Combined weather/yield analysis is disabled until both models are trained and validated on documented real observations.",
+                "production_ready": False,
+            },
+        )
+
     try:
         logger.info("Performing comprehensive weather and yield analysis")
         
@@ -312,6 +339,15 @@ def assess_crop_climate_suitability(
     """
     تقييم ملائمة المحصول للظروف المناخية
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "CLIMATE_OBSERVATIONS_NOT_CONFIGURED",
+                "message": "Climate suitability currently relies on hard-coded simulated climate values; verified observations are required.",
+                "production_ready": False,
+            },
+        )
+
     try:
         input_data = {
             'crop_options': [crop_type],
@@ -348,6 +384,15 @@ def optimize_planting_schedule(
     """
     تحسين جدولة الزراعة للمحاصيل المختلفة
     """
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "CLIMATE_OBSERVATIONS_NOT_CONFIGURED",
+                "message": "Planting schedules currently rely on hard-coded simulated climate values; verified observations are required.",
+                "production_ready": False,
+            },
+        )
+
     try:
         input_data = {
             'crop_options': crop_types,
