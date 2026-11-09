@@ -258,17 +258,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const subscribeToRealTimeNotifications = () => {
-    // Request notification permission
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-
-    // Poll the real endpoint. The previous implementation fabricated farm
-    // alerts with Math.random(), presenting invented data as real.
-    const interval = setInterval(() => {
+    // This is authenticated in-app polling, not browser push or a live sensor stream.
+    const interval = window.setInterval(() => {
       void refreshNotifications();
-    }, 60000); // Refresh every minute
-
+    }, 60000);
     setRealtimeSubscription(interval);
   };
 
