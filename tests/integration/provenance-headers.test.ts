@@ -104,6 +104,23 @@ describe("🗂  Fixture-backed data is disabled", () => {
     "/api/alerts/user/user-123",
     "/api/alerts/user/user-123/stats",
     "/api/tasks/user/user-123/today",
+    "/api/notifications",
+    "/api/notification-rules",
+    "/api/notification-stats",
+    "/api/send-notification",
+    "/api/public/production",
+    "/api/public/exports",
+    "/api/public/weather",
+    "/api/public/stats",
+    "/api/public/key-info",
+    "/api/ai/models",
+    "/api/ai/insights",
+    "/api/ai/behavior-data",
+    "/api/ai/recommendations",
+    "/api/ai/feedback",
+    "/api/ai/market/forecast-prices",
+    "/api/ai/market/supply-demand",
+    "/api/ai/assistant/alerts",
   ];
 
   test.each(simulatedPaths)(
