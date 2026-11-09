@@ -37,6 +37,12 @@ ON CONFLICT (user_id) DO NOTHING;
 -- A stable event key prevents every scheduled run from duplicating the same
 -- reminder. The event key is stored in metadata to preserve the existing
 -- notifications schema and its user-scoped RLS policies.
+-- The notification center supports starring and archiving persisted records.
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS is_starred BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE public.notifications
+  ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+
 CREATE UNIQUE INDEX IF NOT EXISTS notifications_agent_event_dedupe_idx
   ON public.notifications (user_id, ((metadata ->> 'agent_event_key')))
   WHERE metadata ? 'agent_event_key';
