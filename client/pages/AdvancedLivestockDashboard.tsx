@@ -100,6 +100,7 @@ const AdvancedLivestockDashboard: React.FC = () => {
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [healthAlerts, setHealthAlerts] = useState<HealthAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [selectedSpecies, setSelectedSpecies] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
@@ -113,13 +114,22 @@ const AdvancedLivestockDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const response = await fetch('/api/livestock-dashboard');
+      if (!response.ok) {
+        setServiceUnavailable(true);
+        setDashboardData(null);
+        return;
+      }
       const data = await response.json();
-      
-      if (data.success) {
+      if (data.success && data.provenance?.verified === true) {
         setDashboardData(data.data);
+      } else {
+        setServiceUnavailable(true);
+        setDashboardData(null);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setServiceUnavailable(true);
+      setDashboardData(null);
     }
   };
 
@@ -131,13 +141,22 @@ const AdvancedLivestockDashboard: React.FC = () => {
       if (selectedStatus) params.append('status', selectedStatus);
       
       const response = await fetch(`/api/animals?${params}`);
+      if (!response.ok) {
+        setServiceUnavailable(true);
+        setAnimals([]);
+        return;
+      }
       const data = await response.json();
-      
-      if (data.success) {
+      if (data.success && data.provenance?.verified === true) {
         setAnimals(data.data);
+      } else {
+        setServiceUnavailable(true);
+        setAnimals([]);
       }
     } catch (error) {
       console.error('Error fetching animals:', error);
+      setServiceUnavailable(true);
+      setAnimals([]);
     } finally {
       setLoading(false);
     }
@@ -146,13 +165,22 @@ const AdvancedLivestockDashboard: React.FC = () => {
   const fetchHealthAlerts = async () => {
     try {
       const response = await fetch('/api/health-alerts');
+      if (!response.ok) {
+        setServiceUnavailable(true);
+        setHealthAlerts([]);
+        return;
+      }
       const data = await response.json();
-      
-      if (data.success) {
+      if (data.success && data.provenance?.verified === true) {
         setHealthAlerts(data.data);
+      } else {
+        setServiceUnavailable(true);
+        setHealthAlerts([]);
       }
     } catch (error) {
       console.error('Error fetching health alerts:', error);
+      setServiceUnavailable(true);
+      setHealthAlerts([]);
     }
   };
 
@@ -237,6 +265,31 @@ const AdvancedLivestockDashboard: React.FC = () => {
       return remainingMonths > 0 ? `${years} سنة و ${remainingMonths} شهر` : `${years} سنة`;
     }
   };
+
+  if (serviceUnavailable) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto" dir="rtl">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            بيانات الثروة الحيوانية غير متاحة حالياً: لم يتم ربط مصدر بيانات موثّق ومخزّن للمزرعة.
+            لم نعرض أعداد حيوانات أو مؤشرات صحة أو إنتاج أو تنبيهات افتراضية.
+            أعد المحاولة بعد ربط قاعدة البيانات والتحقق من صلاحيات المزرعة.
+          </AlertDescription>
+        </Alert>
+        <Button variant="outline" onClick={() => {
+          setServiceUnavailable(false);
+          setLoading(true);
+          void fetchDashboardData();
+          void fetchAnimals();
+          void fetchHealthAlerts();
+        }} className="mt-4 gap-2">
+          <RefreshCw className="h-4 w-4" />
+          إعادة المحاولة
+        </Button>
+      </div>
+    );
+  }
 
   if (loading && !dashboardData) {
     return (
