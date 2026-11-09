@@ -175,76 +175,12 @@ class SmartIrrigationOptimizer:
         self.model_source = "synthetic-demo-disabled"
     
     def optimize_irrigation_schedule(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """تحسين جدولة الري بناءً على البيانات المدخلة"""
-        try:
-            if not self.is_trained:
-                raise ValueError("Models not trained")
-            
-            # استخراج المعطيات
-            crop_type = input_data.get('crop_type', 'wheat')
-            current_stage = input_data.get('growth_stage', 'vegetative')
-            weather_data = input_data.get('weather_data', {})
-            soil_data = input_data.get('soil_data', {})
-            
-            # تحليل الوضع الحالي
-            current_analysis = self._analyze_current_conditions(
-                weather_data, soil_data, crop_type, current_stage
-            )
-            
-            # حساب الاحتياجات المائية
-            water_requirements = self._calculate_water_requirements(
-                crop_type, current_stage, weather_data
-            )
-            
-            # تحديد كمية الري المطلوبة
-            irrigation_amount = self._determine_irrigation_amount(
-                current_analysis, water_requirements, soil_data
-            )
-            
-            # إنشاء جدولة الري
-            irrigation_schedule = self._create_irrigation_schedule(
-                crop_type, irrigation_amount, weather_data, input_data.get('days_ahead', 7)
-            )
-            
-            # اختيار طريقة الري المثلى
-            irrigation_method = self._recommend_irrigation_method(
-                crop_type, soil_data, input_data.get('farm_size', 1.0)
-            )
-            
-            # تحليل كفاءة الري
-            efficiency_analysis = self._analyze_irrigation_efficiency(
-                irrigation_method, current_analysis
-            )
-            
-            # توصيات لتوفير المياه
-            water_conservation = self._generate_water_conservation_tips(
-                crop_type, irrigation_method, current_analysis
-            )
-            
-            # تنبيهات ذكية
-            smart_alerts = self._generate_smart_alerts(
-                current_analysis, irrigation_schedule, weather_data
-            )
-            
-            return {
-                'current_analysis': current_analysis,
-                'water_requirements': water_requirements,
-                'irrigation_amount': irrigation_amount,
-                'irrigation_schedule': irrigation_schedule,
-                'recommended_method': irrigation_method,
-                'efficiency_analysis': efficiency_analysis,
-                'water_conservation_tips': water_conservation,
-                'smart_alerts': smart_alerts,
-                'cost_analysis': self._calculate_irrigation_costs(
-                    irrigation_method, irrigation_amount, input_data.get('farm_size', 1.0)
-                ),
-                'analysis_timestamp': datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in irrigation optimization: {e}")
-            raise
-    
+        """Disabled: no validated irrigation model or verified ET/weather feed."""
+        raise RuntimeError(
+            "Irrigation optimization is disabled until a real, validated model "
+            "and verified weather/ET0 inputs are configured."
+        )
+
     def _analyze_current_conditions(self, weather_data: Dict, soil_data: Dict, 
                                   crop_type: str, growth_stage: str) -> Dict[str, Any]:
         """تحليل الظروف الحالية"""
@@ -400,64 +336,6 @@ class SmartIrrigationOptimizer:
                 'soil_type_factor': soil_data.get('soil_type_factor', 1.0)
             }
         }
-    
-    def _create_irrigation_schedule(self, crop_type: str, irrigation_amount: Dict, 
-                                  weather_data: Dict, days_ahead: int) -> List[Dict[str, Any]]:
-        """إنشاء جدولة الري للأيام القادمة"""
-        schedule = []
-        current_date = datetime.now()
-        
-        irrigation_frequency = irrigation_amount['frequency_days']
-        amount_per_irrigation = irrigation_amount['amount_mm']
-        
-        # توقع الطقس (محاكاة بيانات)
-        for day in range(days_ahead):
-            date = current_date + timedelta(days=day)
-            
-            # تحديد ما إذا كان هناك حاجة للري في هذا اليوم
-            needs_irrigation = (day % max(1, int(irrigation_frequency))) == 0
-            
-            # توقع الطقس لهذا اليوم (محاكاة)
-            forecast_temp = weather_data.get('temperature', 25) + np.random.normal(0, 3)
-            forecast_humidity = weather_data.get('humidity', 60) + np.random.normal(0, 10)
-            forecast_rain_prob = min(100, max(0, np.random.uniform(0, 40)))
-            forecast_rain_amount = np.random.uniform(0, 10) if forecast_rain_prob > 60 else 0
-            
-            # تعديل كمية الري بناءً على توقعات الطقس
-            adjusted_amount = amount_per_irrigation
-            if forecast_rain_amount > 5:
-                adjusted_amount *= 0.5  # تقليل الري إذا كان هناك أمطار متوقعة
-            elif forecast_temp > 35:
-                adjusted_amount *= 1.2  # زيادة الري في الطقس الحار
-            
-            # تحديد أفضل وقت للري
-            best_time = self._determine_best_irrigation_time(
-                forecast_temp, forecast_humidity, season=date.month
-            )
-            
-            schedule_entry = {
-                'date': date.strftime('%Y-%m-%d'),
-                'day_number': day + 1,
-                'needs_irrigation': needs_irrigation,
-                'irrigation_amount_mm': float(adjusted_amount) if needs_irrigation else 0.0,
-                'best_time': best_time,
-                'weather_forecast': {
-                    'temperature': float(forecast_temp),
-                    'humidity': float(forecast_humidity),
-                    'rain_probability': float(forecast_rain_prob),
-                    'expected_rainfall': float(forecast_rain_amount)
-                },
-                'priority': self._get_irrigation_priority_for_day(
-                    needs_irrigation, forecast_temp, forecast_rain_prob
-                ),
-                'notes': self._generate_daily_irrigation_notes(
-                    needs_irrigation, forecast_temp, forecast_rain_amount
-                )
-            }
-            
-            schedule.append(schedule_entry)
-        
-        return schedule
     
     def _recommend_irrigation_method(self, crop_type: str, soil_data: Dict, 
                                    farm_size: float) -> Dict[str, Any]:
