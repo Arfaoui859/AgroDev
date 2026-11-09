@@ -3,8 +3,8 @@
  *
  * The privileged maintenance endpoints (admin user provisioning, password reset,
  * auth debug) accept an `x-admin-token` header. Verification must be
- * constant-time and must prefer the dedicated ADMIN_API_TOKEN, while still
- * accepting the legacy SUPABASE_SERVICE_ROLE_KEY for existing clients.
+ * constant-time and must accept only the dedicated ADMIN_API_TOKEN. The
+ * Supabase service-role key must never be accepted as an HTTP credential.
  */
 import { verifyAdminToken, timingSafeEqualStr } from "../../server/lib/adminAuth";
 
@@ -40,16 +40,16 @@ describe("🔐 verifyAdminToken", () => {
     expect(verifyAdminToken(fakeReq("wrong"))).toBe(false);
   });
 
-  test("accepts SUPABASE_SERVICE_ROLE_KEY as a legacy fallback", () => {
+  test("rejects SUPABASE_SERVICE_ROLE_KEY as an HTTP credential", () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
-    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(true);
+    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(false);
   });
 
-  test("ADMIN_API_TOKEN matches independently of the service-role key", () => {
+  test("ADMIN_API_TOKEN is independent of the service-role key", () => {
     process.env.ADMIN_API_TOKEN = "admin-only";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
     expect(verifyAdminToken(fakeReq("admin-only"))).toBe(true);
-    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(true);
+    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(false);
     expect(verifyAdminToken(fakeReq("neither"))).toBe(false);
   });
 
