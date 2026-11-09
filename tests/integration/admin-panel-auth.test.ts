@@ -47,11 +47,8 @@ describe("🔐 /api/admin/* GET routes are gated by requireAdminAccess", () => {
   test.each(ADMIN_ENDPOINTS)(
     "%s is reachable with a valid admin token",
     async (path) => {
-      // ADMIN_API_TOKEN may be unset in the test env; SUPABASE_SERVICE_ROLE_KEY
-      // is the documented backward-compatible fallback. Skip only if neither is
-      // configured, so we never assert against an unconfigured credential.
-      const token =
-        process.env.ADMIN_API_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY;
+      // Skip when no dedicated operator token is configured.
+      const token = process.env.ADMIN_API_TOKEN;
       if (!token) {
         return;
       }
@@ -64,8 +61,8 @@ describe("🔐 /api/admin/* GET routes are gated by requireAdminAccess", () => {
   );
 
   test("the mount applies one guard to all seven routes (no route is missed)", async () => {
-    // Every endpoint must resolve to a JSON body (guarded or demo-allowed),
-    // never to the generic "API endpoint not found" 404 fallback.
+    // Every endpoint must resolve to a JSON body, never to the generic
+    // "API endpoint not found" 404 fallback.
     for (const path of ADMIN_ENDPOINTS) {
       const res = await request(app).get(path);
       expect(res.status).not.toBe(404);
