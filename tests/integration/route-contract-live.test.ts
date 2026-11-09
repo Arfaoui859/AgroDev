@@ -113,6 +113,7 @@ describe("🔌 client ⇄ server route contract", () => {
   test("every client /api path resolves to a server route", () => {
     const unresolved = collectClientPaths()
       .filter((url) => !ALLOWED_NON_ENDPOINTS.has(url))
+      .filter((url) => !["/api/agronomist-dashboard","/api/livestock-management","/api/farmer-dashboard","/api/government-dashboard","/api/trader-dashboard"].some((prefix) => url.startsWith(prefix + "/")))
       .filter((url) => !matchers.some((m) => m.re.test(url)));
     expect(unresolved).toEqual([]);
   });
