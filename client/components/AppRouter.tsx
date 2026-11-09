@@ -1,106 +1,106 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Layout from "./Layout";
 import ErrorBoundary from "./ErrorBoundary";
 import ProtectedRoute from "./ProtectedRoute";
-import Login from "../pages/Login";
-import Signup from "../pages/Signup";
+const Login = React.lazy(() => import("../pages/Login"));
+const Signup = React.lazy(() => import("../pages/Signup"));
 
 // Import all the page components
-import Index from "../pages/Index";
-import Analysis from "../pages/Analysis";
-import EnhancedAnalysis from "../pages/EnhancedAnalysis";
-import History from "../pages/History";
-import Location from "../pages/Location";
-import Recommendations from "../pages/Recommendations";
-import CropDetails from "../pages/CropDetails";
-import CropHistory from "../pages/CropHistory";
-import DiseaseUpload from "../pages/DiseaseUpload";
-import DiseaseDiagnosis from "../pages/DiseaseDiagnosis";
-import DiseaseHistory from "../pages/DiseaseHistory";
-import DiseaseGuide from "../pages/DiseaseGuide";
-import MarketDashboard from "../pages/MarketDashboard";
-import EnhancedMarketDashboard from "../pages/EnhancedMarketDashboard";
-import MarketIntelligence from "../pages/MarketIntelligence";
-import PriceForecasts from "../pages/PriceForecasts";
-import MarketAlerts from "../pages/MarketAlerts";
-import FertilizerRecommendations from "../pages/FertilizerRecommendations";
-import TreatmentSchedule from "../pages/TreatmentSchedule";
-import EffectivenessReports from "../pages/EffectivenessReports";
-import IrrigationScheduler from "../pages/IrrigationScheduler";
-import CropPlanner from "../pages/CropPlanner";
-import WeatherAlerts from "../pages/WeatherAlerts";
-import WaterAnalytics from "../pages/WaterAnalytics";
-import WeatherCropPlanner from "../pages/WeatherCropPlanner";
-import LivestockDashboard from "../pages/LivestockDashboard";
-import AnimalHealthMonitoring from "../pages/AnimalHealthMonitoring";
-import BreedingManagement from "../pages/BreedingManagement";
-import FeedManagement from "../pages/FeedManagement";
-import SoilProblemDetection from "../pages/SoilProblemDetection";
-import IdealSoilComparison from "../pages/IdealSoilComparison";
-import SoilAlertSystem from "../pages/SoilAlertSystem";
-import SoilAnalysisDetailedReport from "../pages/SoilAnalysisDetailedReport";
-import SmartCropSuggestions from "../pages/SmartCropSuggestions";
-import CropRotationPlanner from "../pages/CropRotationPlanner";
-import AlertHistory from "../pages/AlertHistory";
-import MyTasks from "../pages/MyTasks";
-import TreatmentRecommendations from "../pages/TreatmentRecommendations";
-import TreatmentProgress from "../pages/TreatmentProgress";
-import TreatmentHistory from "../pages/TreatmentHistory";
-import SmartIrrigationDashboard from "../pages/SmartIrrigationDashboard";
-import IrrigationOptimization from "../pages/IrrigationOptimization";
-import PestControl from "../pages/PestControl";
-import WeatherYieldPlanner from "../pages/WeatherYieldPlanner";
-import WaterConservationAnalytics from "../pages/WaterConservationAnalytics";
-import FinancialDashboard from "../pages/FinancialDashboard";
-import ExpenseTracker from "../pages/ExpenseTracker";
-import RevenueAnalysis from "../pages/RevenueAnalysis";
-import ProfitabilityReports from "../pages/ProfitabilityReports";
-import BudgetPlanning from "../pages/BudgetPlanning";
-import AdvancedLivestockDashboard from "../pages/AdvancedLivestockDashboard";
-import IntelligentBreedingManager from "../pages/IntelligentBreedingManager";
-import SmartFeedManager from "../pages/SmartFeedManager";
-import LivestockDiseasePredictor from "../pages/LivestockDiseasePredictor";
-import LivestockProductionAnalytics from "../pages/LivestockProductionAnalytics";
-import FarmerDashboard from "../pages/FarmerDashboard";
-import AgronomistDashboard from "../pages/AgronomistDashboard";
-import EnhancedAgronomistDashboard from "../pages/EnhancedAgronomistDashboard";
-import TraderDashboard from "../pages/TraderDashboard";
-import VeterinarianDashboard from "../pages/VeterinarianDashboard";
-import ComprehensiveFarmManagement from "../pages/ComprehensiveFarmManagement";
-import FieldInspectorDashboard from "../pages/FieldInspectorDashboard";
-import AdminPanel from "../pages/AdminPanel";
-import GovernmentDashboard from "../pages/GovernmentDashboard";
-import UserSettings from "../pages/UserSettings";
-import FieldManagement from "../pages/FieldManagement";
-import AIIntelligenceDashboard from "../pages/AIIntelligenceDashboard";
-import GamificationDashboard from "../pages/GamificationDashboard";
-import InvestorDashboard from "../pages/InvestorDashboard";
-import PublicDataDashboard from "../pages/PublicDataDashboard";
-import FarmerCollaboration from "../pages/FarmerCollaboration";
-import FarmerSegmentation from "../pages/FarmerSegmentation";
-import OfflineManager from "../pages/OfflineManager";
-import NotificationCenter from "../pages/NotificationCenter";
-import CloudServicesStatus from "../pages/CloudServicesStatus";
-import SystemTest from "../pages/SystemTest";
-import SaaSManagement from "../pages/SaaSManagement";
-import SubscriptionManagement from "../pages/SubscriptionManagement";
-import AdaptiveAI from "../pages/AdaptiveAI";
-import SmartMarketplace from "../pages/SmartMarketplace";
-import SupplyChainTracker from "../pages/SupplyChainTracker";
-import SmartLogistics from "../pages/SmartLogistics";
-import QualityInventoryManagement from "../pages/QualityInventoryManagement";
-import DynamicPricing from "../pages/DynamicPricing";
-import AIServicesTest from "../pages/AIServicesTest";
-import AIAssistantChatbot from "../pages/AIAssistantChatbot";
-import SmartAdvisor from "../pages/SmartAdvisor";
-import DatabaseDiagnostics from "../pages/DatabaseDiagnostics";
-import DatabaseStatus from "../pages/DatabaseStatus";
-import ServiceStatus from "../pages/ServiceStatus";
-import AuthTest from "../pages/AuthTest";
-import SetupDemo from "../pages/SetupDemo";
-import NotFound from "../pages/NotFound";
+const Index = React.lazy(() => import("../pages/Index"));
+const Analysis = React.lazy(() => import("../pages/Analysis"));
+const EnhancedAnalysis = React.lazy(() => import("../pages/EnhancedAnalysis"));
+const History = React.lazy(() => import("../pages/History"));
+const Location = React.lazy(() => import("../pages/Location"));
+const Recommendations = React.lazy(() => import("../pages/Recommendations"));
+const CropDetails = React.lazy(() => import("../pages/CropDetails"));
+const CropHistory = React.lazy(() => import("../pages/CropHistory"));
+const DiseaseUpload = React.lazy(() => import("../pages/DiseaseUpload"));
+const DiseaseDiagnosis = React.lazy(() => import("../pages/DiseaseDiagnosis"));
+const DiseaseHistory = React.lazy(() => import("../pages/DiseaseHistory"));
+const DiseaseGuide = React.lazy(() => import("../pages/DiseaseGuide"));
+const MarketDashboard = React.lazy(() => import("../pages/MarketDashboard"));
+const EnhancedMarketDashboard = React.lazy(() => import("../pages/EnhancedMarketDashboard"));
+const MarketIntelligence = React.lazy(() => import("../pages/MarketIntelligence"));
+const PriceForecasts = React.lazy(() => import("../pages/PriceForecasts"));
+const MarketAlerts = React.lazy(() => import("../pages/MarketAlerts"));
+const FertilizerRecommendations = React.lazy(() => import("../pages/FertilizerRecommendations"));
+const TreatmentSchedule = React.lazy(() => import("../pages/TreatmentSchedule"));
+const EffectivenessReports = React.lazy(() => import("../pages/EffectivenessReports"));
+const IrrigationScheduler = React.lazy(() => import("../pages/IrrigationScheduler"));
+const CropPlanner = React.lazy(() => import("../pages/CropPlanner"));
+const WeatherAlerts = React.lazy(() => import("../pages/WeatherAlerts"));
+const WaterAnalytics = React.lazy(() => import("../pages/WaterAnalytics"));
+const WeatherCropPlanner = React.lazy(() => import("../pages/WeatherCropPlanner"));
+const LivestockDashboard = React.lazy(() => import("../pages/LivestockDashboard"));
+const AnimalHealthMonitoring = React.lazy(() => import("../pages/AnimalHealthMonitoring"));
+const BreedingManagement = React.lazy(() => import("../pages/BreedingManagement"));
+const FeedManagement = React.lazy(() => import("../pages/FeedManagement"));
+const SoilProblemDetection = React.lazy(() => import("../pages/SoilProblemDetection"));
+const IdealSoilComparison = React.lazy(() => import("../pages/IdealSoilComparison"));
+const SoilAlertSystem = React.lazy(() => import("../pages/SoilAlertSystem"));
+const SoilAnalysisDetailedReport = React.lazy(() => import("../pages/SoilAnalysisDetailedReport"));
+const SmartCropSuggestions = React.lazy(() => import("../pages/SmartCropSuggestions"));
+const CropRotationPlanner = React.lazy(() => import("../pages/CropRotationPlanner"));
+const AlertHistory = React.lazy(() => import("../pages/AlertHistory"));
+const MyTasks = React.lazy(() => import("../pages/MyTasks"));
+const TreatmentRecommendations = React.lazy(() => import("../pages/TreatmentRecommendations"));
+const TreatmentProgress = React.lazy(() => import("../pages/TreatmentProgress"));
+const TreatmentHistory = React.lazy(() => import("../pages/TreatmentHistory"));
+const SmartIrrigationDashboard = React.lazy(() => import("../pages/SmartIrrigationDashboard"));
+const IrrigationOptimization = React.lazy(() => import("../pages/IrrigationOptimization"));
+const PestControl = React.lazy(() => import("../pages/PestControl"));
+const WeatherYieldPlanner = React.lazy(() => import("../pages/WeatherYieldPlanner"));
+const WaterConservationAnalytics = React.lazy(() => import("../pages/WaterConservationAnalytics"));
+const FinancialDashboard = React.lazy(() => import("../pages/FinancialDashboard"));
+const ExpenseTracker = React.lazy(() => import("../pages/ExpenseTracker"));
+const RevenueAnalysis = React.lazy(() => import("../pages/RevenueAnalysis"));
+const ProfitabilityReports = React.lazy(() => import("../pages/ProfitabilityReports"));
+const BudgetPlanning = React.lazy(() => import("../pages/BudgetPlanning"));
+const AdvancedLivestockDashboard = React.lazy(() => import("../pages/AdvancedLivestockDashboard"));
+const IntelligentBreedingManager = React.lazy(() => import("../pages/IntelligentBreedingManager"));
+const SmartFeedManager = React.lazy(() => import("../pages/SmartFeedManager"));
+const LivestockDiseasePredictor = React.lazy(() => import("../pages/LivestockDiseasePredictor"));
+const LivestockProductionAnalytics = React.lazy(() => import("../pages/LivestockProductionAnalytics"));
+const FarmerDashboard = React.lazy(() => import("../pages/FarmerDashboard"));
+const AgronomistDashboard = React.lazy(() => import("../pages/AgronomistDashboard"));
+const EnhancedAgronomistDashboard = React.lazy(() => import("../pages/EnhancedAgronomistDashboard"));
+const TraderDashboard = React.lazy(() => import("../pages/TraderDashboard"));
+const VeterinarianDashboard = React.lazy(() => import("../pages/VeterinarianDashboard"));
+const ComprehensiveFarmManagement = React.lazy(() => import("../pages/ComprehensiveFarmManagement"));
+const FieldInspectorDashboard = React.lazy(() => import("../pages/FieldInspectorDashboard"));
+const AdminPanel = React.lazy(() => import("../pages/AdminPanel"));
+const GovernmentDashboard = React.lazy(() => import("../pages/GovernmentDashboard"));
+const UserSettings = React.lazy(() => import("../pages/UserSettings"));
+const FieldManagement = React.lazy(() => import("../pages/FieldManagement"));
+const AIIntelligenceDashboard = React.lazy(() => import("../pages/AIIntelligenceDashboard"));
+const GamificationDashboard = React.lazy(() => import("../pages/GamificationDashboard"));
+const InvestorDashboard = React.lazy(() => import("../pages/InvestorDashboard"));
+const PublicDataDashboard = React.lazy(() => import("../pages/PublicDataDashboard"));
+const FarmerCollaboration = React.lazy(() => import("../pages/FarmerCollaboration"));
+const FarmerSegmentation = React.lazy(() => import("../pages/FarmerSegmentation"));
+const OfflineManager = React.lazy(() => import("../pages/OfflineManager"));
+const NotificationCenter = React.lazy(() => import("../pages/NotificationCenter"));
+const CloudServicesStatus = React.lazy(() => import("../pages/CloudServicesStatus"));
+const SystemTest = React.lazy(() => import("../pages/SystemTest"));
+const SaaSManagement = React.lazy(() => import("../pages/SaaSManagement"));
+const SubscriptionManagement = React.lazy(() => import("../pages/SubscriptionManagement"));
+const AdaptiveAI = React.lazy(() => import("../pages/AdaptiveAI"));
+const SmartMarketplace = React.lazy(() => import("../pages/SmartMarketplace"));
+const SupplyChainTracker = React.lazy(() => import("../pages/SupplyChainTracker"));
+const SmartLogistics = React.lazy(() => import("../pages/SmartLogistics"));
+const QualityInventoryManagement = React.lazy(() => import("../pages/QualityInventoryManagement"));
+const DynamicPricing = React.lazy(() => import("../pages/DynamicPricing"));
+const AIServicesTest = React.lazy(() => import("../pages/AIServicesTest"));
+const AIAssistantChatbot = React.lazy(() => import("../pages/AIAssistantChatbot"));
+const SmartAdvisor = React.lazy(() => import("../pages/SmartAdvisor"));
+const DatabaseDiagnostics = React.lazy(() => import("../pages/DatabaseDiagnostics"));
+const DatabaseStatus = React.lazy(() => import("../pages/DatabaseStatus"));
+const ServiceStatus = React.lazy(() => import("../pages/ServiceStatus"));
+const AuthTest = React.lazy(() => import("../pages/AuthTest"));
+const SetupDemo = React.lazy(() => import("../pages/SetupDemo"));
+const NotFound = React.lazy(() => import("../pages/NotFound"));
 
 export default function AppRouter() {
   const location = useLocation();
@@ -125,12 +125,14 @@ export default function AppRouter() {
   // If on public route, render without Layout
   if (isPublicRoute) {
     return (
+      <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center" role="status" aria-live="polite"><span className="text-sm text-gray-500">Loading page…</span></div>}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/auth-test" element={<AuthTest />} />
         <Route path="/setup-demo" element={<SetupDemo />} />
       </Routes>
+      </Suspense>
     );
   }
 
@@ -143,6 +145,7 @@ export default function AppRouter() {
   return (
     <ErrorBoundary fallbackRoute="/">
       <Layout>
+        <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center" role="status" aria-live="polite"><span className="text-sm text-gray-500">Loading page…</span></div>}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/data-input" element={<Index />} />
@@ -356,6 +359,7 @@ export default function AppRouter() {
           <Route path="/settings" element={<UserSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </Layout>
     </ErrorBoundary>
   );
