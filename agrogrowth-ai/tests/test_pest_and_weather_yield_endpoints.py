@@ -108,7 +108,7 @@ def test_simulated_climate_and_yield_reference_endpoints_are_disabled():
 
     schedule = weather_client.post(
         "/optimize-planting-schedule",
-        params={"crop_types": ["wheat", "tomato"]},
+        json={"crop_types": ["wheat", "tomato"]},
     )
     assert schedule.status_code == 503
 
