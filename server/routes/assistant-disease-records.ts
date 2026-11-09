@@ -135,3 +135,32 @@ export const createAssistantDiseaseDetection: RequestHandler[] = [
     });
   },
 ];
+
+export const getAssistantDiseaseEvidenceUrl: RequestHandler = async (req: Request, res: Response) => {
+  const userId = req.userId;
+  const db = req.identitySource === "jwt" ? scopedClientFromAuthHeader(req.header("authorization")) : null;
+  if (!userId || !db) return res.status(401).json({ success: false, code: "VERIFIED_SESSION_REQUIRED" });
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !supabaseAdmin) {
+    return res.status(503).json({ success: false, code: "EVIDENCE_STORAGE_NOT_CONFIGURED" });
+  }
+  if (!uuidPattern.test(req.params.recordId || "")) {
+    return res.status(400).json({ success: false, code: "INVALID_DISEASE_RECORD_ID" });
+  }
+  const { data: record, error } = await db.from("plant_disease_detections")
+    .select("id,farm_id,analysis_result")
+    .eq("id", req.params.recordId)
+    .maybeSingle();
+  if (error) return res.status(503).json({ success: false, code: "DISEASE_RECORD_LOOKUP_FAILED" });
+  if (!record) return res.status(404).json({ success: false, code: "DISEASE_RECORD_NOT_FOUND" });
+
+  const bucket = record.analysis_result?.image_storage_bucket;
+  const path = record.analysis_result?.image_storage_path;
+  if (bucket !== "agrogrowth-disease-evidence" || typeof path !== "string" || !path.startsWith(userId + "/")) {
+    return res.status(404).json({ success: false, code: "DISEASE_EVIDENCE_NOT_FOUND" });
+  }
+  const { data, error: signedError } = await supabaseAdmin.storage.from(bucket).createSignedUrl(path, 60 * 60);
+  if (signedError || !data?.signedUrl) {
+    return res.status(503).json({ success: false, code: "DISEASE_EVIDENCE_URL_FAILED" });
+  }
+  return res.json({ success: true, data: { signedUrl: data.signedUrl } });
+};
