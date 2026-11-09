@@ -901,9 +901,15 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         } else {
           const farms = farmsResult.data ?? [];
           const farmIds = farms.map((farm: any) => farm.id);
+          const recentUserContext = safeHistory
+            .filter((entry: any) => entry.role === "user")
+            .slice(-2)
+            .map((entry: any) => entry.content)
+            .join(" ");
+          const farmReferenceText = (userMessage + " " + recentUserContext).toLocaleLowerCase();
           const namedFarmMatches = farms.filter((farm: any) =>
             typeof farm.name === "string" && farm.name.trim().length >= 3 &&
-            userMessage.toLocaleLowerCase().includes(farm.name.trim().toLocaleLowerCase())
+            farmReferenceText.includes(farm.name.trim().toLocaleLowerCase())
           );
           const selectedFarm = farms.length === 1
             ? farms[0]
