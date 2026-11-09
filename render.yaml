@@ -130,7 +130,9 @@ services:
     region: frankfurt
     plan: standard            # TensorFlow/vision does not fit in 512 MB (starter)
     rootDir: agrogrowth-ai
-    buildCommand: pip install -r requirements.txt
+    # Install the ONNX CPU runtime and this service's bounded dependencies only;
+    # the repository-wide requirements also pull TensorFlow/PyTorch training stacks.
+    buildCommand: pip install -r image_diagnosis/requirements.txt
     startCommand: python -m uvicorn image_diagnosis.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
