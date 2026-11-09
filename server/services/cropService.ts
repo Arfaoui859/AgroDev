@@ -23,14 +23,11 @@ function referenceCrop(id: string) {
     water_requirements: ref.waterNeed,
     soil_requirements: `pH ${ref.phRange[0]}–${ref.phRange[1]}`,
     climate_requirements: `${ref.tempRange[0]}–${ref.tempRange[1]}°C`,
-    planting_depth_cm: 0,
-    spacing_cm: 0,
-    days_to_maturity: 0,
     optimal_ph_min: ref.phRange[0],
     optimal_ph_max: ref.phRange[1],
-    created_at: new Date(0).toISOString(),
-    updated_at: new Date(0).toISOString(),
     dataSource: 'reference-dataset',
+    sourceVerified: false,
+    fieldValidated: false,
   };
 }
 
@@ -43,13 +40,13 @@ export interface Crop {
   water_requirements: string;
   soil_requirements: string;
   climate_requirements: string;
-  planting_depth_cm: number;
-  spacing_cm: number;
-  days_to_maturity: number;
+  planting_depth_cm?: number | null;
+  spacing_cm?: number | null;
+  days_to_maturity?: number | null;
   optimal_ph_min: number;
   optimal_ph_max: number;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CropRecommendation {
