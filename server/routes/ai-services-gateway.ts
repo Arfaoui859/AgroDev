@@ -860,11 +860,12 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       if (!db) {
         farmContextStatus = "unavailable";
       } else {
-        const [userResult, profileResult, farmsResult, publicMarketResult] = await Promise.all([
+        const [userResult, profileResult, farmsResult, publicMarketResult, publicPredictionsResult] = await Promise.all([
           db.from("users").select("role,language_preference").eq("id", userId).maybeSingle(),
           db.from("user_profiles").select("experience_years,farming_specializations,preferred_crops,location").eq("user_id", userId).maybeSingle(),
           db.from("farms").select("id,name,location,size_hectares,soil_type,climate_zone,elevation_meters,water_source,irrigation_type,organic_certified").eq("owner_id", userId).limit(20),
           db.from("market_prices").select("crop_name,price_per_kg,currency,market_location,price_date,source").order("price_date", { ascending: false }).limit(10),
+          db.from("market_predictions").select("crop_name,prediction_period,predicted_price_range,confidence_level,valid_from,valid_until,created_at").gte("valid_until", new Date().toISOString().slice(0, 10)).order("valid_from", { ascending: true }).limit(10),
         ]);
         const basePlatformRecords: string[] = [];
         const userRole = typeof userResult.data?.role === "string" ? userResult.data.role : "unreported";
@@ -888,6 +889,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         } else if (!farmsResult.data?.length) {
           for (const price of (publicMarketResult.error ? [] : publicMarketResult.data ?? [])) {
             basePlatformRecords.push("Recorded market price [crop=" + price.crop_name + "; price=" + price.price_per_kg + " " + (price.currency || "TND") + "/kg; market=" + price.market_location + "; date=" + price.price_date + "; source=" + (price.source || "unreported") + "]. Historical recorded quote, not guaranteed live data.");
+          }
+          for (const prediction of (publicPredictionsResult.error ? [] : publicPredictionsResult.data ?? [])) {
+            basePlatformRecords.push("Public stored market prediction [crop=" + prediction.crop_name + "; period=" + (prediction.prediction_period || "unreported") + "; range=" + JSON.stringify(prediction.predicted_price_range ?? {}).slice(0, 200) + "; confidence=" + (prediction.confidence_level ?? "unreported") + "; valid=" + prediction.valid_from + " to " + prediction.valid_until + "; created=" + prediction.created_at + "]. Prediction, not a current market quote or guaranteed price.");
           }
           farmContext = { platformRecords: basePlatformRecords };
           farmContextStatus = "no_farms";
