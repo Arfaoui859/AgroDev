@@ -862,7 +862,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       } else {
         const { data: farms, error: farmsError } = await db
           .from("farms")
-          .select("id,location,size_hectares")
+          .select("id,name,location,size_hectares")
           .eq("owner_id", userId)
           .limit(20);
         if (farmsError) {
@@ -920,7 +920,15 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             const operationalAlerts = (alertsResult.error ? [] : (alertsResult.data ?? []))
               .filter((alert: any) => typeof alert.title === "string" && typeof alert.message === "string")
               .map((alert: any) => `[${alert.priority || "normal"}] ${alert.title}: ${alert.message}`);
-            const platformRecords: string[] = [];
+            const marketCropNames = Array.from(new Set((cropResult.data ?? []).map((item: any) => item.crop_name).filter((name: any): name is string => typeof name === "string" && name.length > 0)));
+          const marketResult = marketCropNames.length
+            ? await db.from("market_prices")
+                .select("crop_name,price_per_kg,currency,market_location,price_date,source")
+                .in("crop_name", marketCropNames)
+                .order("price_date", { ascending: false })
+                .limit(12)
+            : { data: [], error: null };
+          const platformRecords: string[] = [];
             for (const farm of farms) {
               const farmName = typeof farm.name === "string" ? farm.name : "Farm";
               platformRecords.push("Farm " + farmName + " · " + (Number(farm.size_hectares) || 0) + " ha");
@@ -934,6 +942,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             }
             for (const detection of diseaseResult.data ?? []) {
               platformRecords.push("Saved plant-health record [crop=" + (detection.plant_type || "unknown") + "; suspected condition=" + (detection.primary_disease || "not classified") + "; severity=" + (detection.severity_level || "not recorded") + "; recovery=" + (detection.recovery_status || "pending") + "; confidence=" + (detection.disease_confidence ?? "not reported") + "; detected=" + detection.detected_at + "; farm_id=" + detection.farm_id + "; cultivation_id=" + (detection.cultivation_id || "not linked") + "]. Saved model/inspection result, not a confirmed field diagnosis.");
+            }
+            for (const price of marketResult.data ?? []) {
+              platformRecords.push("Recorded market price [crop=" + price.crop_name + "; price=" + price.price_per_kg + " " + (price.currency || "TND") + "/kg; market=" + price.market_location + "; date=" + price.price_date + "; source=" + (price.source || "unreported") + "]. Historical recorded quote, not a guaranteed live market price.");
             }
             for (const weather of weatherResult.data ?? []) {
               platformRecords.push("Recorded weather [date=" + weather.record_date + "; temperature=" + (weather.temperature_celsius ?? "unknown") + " C; humidity=" + (weather.humidity_percent ?? "unknown") + "%; rainfall=" + (weather.rainfall_mm ?? "unknown") + " mm; conditions=" + (weather.weather_conditions || "unknown") + "; source=" + (weather.source || "unreported") + "]");
