@@ -23,8 +23,9 @@ export function classifyProvenance(result: ProvenanceInput | null | undefined): 
   if (result.isRealData === false) {
     return /estimate|client|local-compute/.test(source) ? "estimate" : "engine";
   }
-  if (/llm|vision|microservice|trained|model-api/.test(source)) return "real";
   if (/estimate|client|local-compute/.test(source)) return "estimate";
   if (/heuristic|rule|synthetic|demo|engine/.test(source)) return "engine";
+  // A source label alone does not prove that the underlying measurements
+  // were verified. Only the explicit isRealData=true contract may be "real".
   return "unknown";
 }
