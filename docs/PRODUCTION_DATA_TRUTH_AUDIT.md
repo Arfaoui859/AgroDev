@@ -28,7 +28,10 @@
 | Pest control | Synthetic model output, fabricated confidence, mock treatment and schedule existed; image path is heuristic | Diagnosis/treatment/schedule/severity/image endpoints disabled; symptom keyword match is labelled rules-only and not field validated |
 | Irrigation optimization | Synthetic optimizer; fixed weather values and mock context existed | Synthetic schedule, water calculations, soil-moisture assessment and mock tips disabled with HTTP 503 |
 | Water-use analytics | No metered irrigation telemetry; figures were fixed illustrative baselines | Endpoint disabled; require real meter/sensor records |
-| Fixture-backed business modules | Seeded in-memory records for dashboards, investor/trader, logistics, marketplace, SaaS, supply-chain, alerts/tasks, and other modules | Router groups blocked with HTTP 503 until real persistence/data sources are connected |
+| Fixture-backed business modules | Seeded in-memory records for dashboards, investor/trader, logistics, marketplace, SaaS, supply-chain, alerts/tasks, livestock, gamification, and other modules | Router groups blocked with HTTP 503 until real persistence/data sources are connected |
+| Fertilizer / pesticide catalogue | Hard-coded supplier names, prices, product composition, dosage, and safety claims without verified catalogue provenance | Fertilizer endpoints blocked with HTTP 503; require official product registrations, labels, sources, and dates |
+| Financial management | In-memory sample expenses, revenues, and budget records | Expense/revenue/profitability/summary/budget routes blocked with HTTP 503 until user-scoped database persistence exists |
+| Smart advisor / treatment history | Mock recommendation generation and in-memory treatment history | Routes blocked with HTTP 503 until evidence-backed data and persistent storage exist |
 | Open-Meteo weather | External weather provider is configured in the platform; provider limits/outages can occur | Serve provider-backed data only; return unavailable on provider failure, never substitute generated weather |
 
 ## Changes in this audit
@@ -39,7 +42,9 @@
 - Changed health responses for synthetic services to `degraded` and `production_ready: false`.
 - Changed the generic AI gateway so unreachable, unknown-provenance, and synthetic services cannot be labelled as real model output.
 - Kept symptom keyword matching only as an explicitly labelled rules-based helper; it is not a trained classifier or confirmed diagnosis.
-- Removed obsolete Express demo and demo-user provisioning routes.
+- Removed obsolete Express demo and demo-user provisioning routes, plus scripts that inserted random market prices and created accounts with fixed demo passwords.
+- Blocked mock-backed fertilizer, financial, livestock, gamification, smart-advisor, and treatment-history routes.
+- Removed fabricated zeroes and epoch timestamps from missing crop reference metadata; unknown numeric fields are now omitted.
 - Replaced tests that expected demo payloads with fail-closed contract tests.
 
 ## Remaining work before production release
