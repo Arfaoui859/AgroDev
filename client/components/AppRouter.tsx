@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Layout from "./Layout";
 import ErrorBoundary from "./ErrorBoundary";
@@ -63,18 +63,18 @@ const IntelligentBreedingManager = React.lazy(() => import("../pages/Intelligent
 const SmartFeedManager = React.lazy(() => import("../pages/SmartFeedManager"));
 const LivestockDiseasePredictor = React.lazy(() => import("../pages/LivestockDiseasePredictor"));
 const LivestockProductionAnalytics = React.lazy(() => import("../pages/LivestockProductionAnalytics"));
-const FarmerDashboard = React.lazy(() => import("../pages/FarmerDashboard"));
+const UnifiedFarmerDashboard = React.lazy(() => import("../pages/UnifiedFarmerDashboard"));
 const AgronomistDashboard = React.lazy(() => import("../pages/AgronomistDashboard"));
 const EnhancedAgronomistDashboard = React.lazy(() => import("../pages/EnhancedAgronomistDashboard"));
 const TraderDashboard = React.lazy(() => import("../pages/TraderDashboard"));
 const VeterinarianDashboard = React.lazy(() => import("../pages/VeterinarianDashboard"));
-const ComprehensiveFarmManagement = React.lazy(() => import("../pages/ComprehensiveFarmManagement"));
+
 const FieldInspectorDashboard = React.lazy(() => import("../pages/FieldInspectorDashboard"));
 const AdminPanel = React.lazy(() => import("../pages/AdminPanel"));
 const GovernmentDashboard = React.lazy(() => import("../pages/GovernmentDashboard"));
 const UserSettings = React.lazy(() => import("../pages/UserSettings"));
 const FieldManagement = React.lazy(() => import("../pages/FieldManagement"));
-const AIIntelligenceDashboard = React.lazy(() => import("../pages/AIIntelligenceDashboard"));
+
 const GamificationDashboard = React.lazy(() => import("../pages/GamificationDashboard"));
 const InvestorDashboard = React.lazy(() => import("../pages/InvestorDashboard"));
 const PublicDataDashboard = React.lazy(() => import("../pages/PublicDataDashboard"));
@@ -268,7 +268,7 @@ export default function AppRouter() {
             path="/livestock-production-analytics"
             element={<LivestockProductionAnalytics />}
           />
-          <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
+          <Route path="/farmer-dashboard" element={<UnifiedFarmerDashboard />} />
           <Route
             path="/agronomist-dashboard"
             element={<AgronomistDashboard />}
@@ -284,7 +284,7 @@ export default function AppRouter() {
           />
           <Route
             path="/comprehensive-farm-management"
-            element={<ComprehensiveFarmManagement />}
+            element={<Navigate to="/farmer-dashboard" replace />}
           />
           <Route
             path="/field-inspector-dashboard"
@@ -305,11 +305,11 @@ export default function AppRouter() {
           <Route path="/field-management" element={<FieldManagement />} />
           <Route
             path="/ai-intelligence"
-            element={<AIIntelligenceDashboard />}
+            element={<Navigate to="/farmer-dashboard" replace />}
           />
           <Route
             path="/ai-intelligence-dashboard"
-            element={<AIIntelligenceDashboard />}
+            element={<Navigate to="/farmer-dashboard" replace />}
           />
           <Route path="/ai-assistant" element={<AIAssistantChatbot />} />
           <Route path="/ai-chatbot" element={<AIAssistantChatbot />} />
