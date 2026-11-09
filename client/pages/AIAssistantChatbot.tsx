@@ -1356,7 +1356,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                                 )}
                                 {message.metadata.note && <p>{message.metadata.note}</p>}
                                 {message.metadata.disclaimer && <p>{message.metadata.disclaimer}</p>}
-                                {message.metadata.usedAgents?.length ? <p>{language === 'ar' ? 'المجالات المستعملة: ' : language === 'fr' ? 'Agents utilisés : ' : 'Agents used: '}{message.metadata.usedAgents.join(' · ')}</p> : null}
+                                {message.metadata.usedAgents?.length ? <p>{language === 'ar' ? 'مجالات السؤال التي تم توجيهها: ' : language === 'fr' ? 'Domaines détectés : ' : 'Detected question domains: '}{message.metadata.usedAgents.join(' · ')}</p> : null}
                                 {message.metadata.correlationId && <p className="font-mono text-[10px] opacity-70">{language === 'ar' ? 'مرجع التتبّع: ' : language === 'fr' ? 'Référence : ' : 'Trace ID: '}{message.metadata.correlationId}</p>}
                                 {message.metadata.contextSummary?.map((fact, index) => <p key={index}>• {fact}</p>)}
                               </div>
