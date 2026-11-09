@@ -118,6 +118,21 @@ VALUES (
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 2,
   'farmer A can insert a soil analysis for their own farm');
 
+-- pH is valid on the full 0–14 scale; DECIMAL(4,2) must store alkaline values.
+INSERT INTO public.soil_analyses (
+  farm_id, section_id, analysis_type, sensor_data, ph_level
+) VALUES (
+  'f0000000-0000-0000-0000-0000000000a1',
+  '50000000-0000-0000-0000-0000000000a1',
+  'lab',
+  '{"ph":12.5}'::jsonb,
+  12.5
+);
+SELECT public.assert_true(
+  (SELECT ph_level = 12.5 FROM public.soil_analyses WHERE ph_level = 12.5),
+  'soil_analyses stores valid alkaline pH values above 10'
+);
+
 -- A valid JWT must not permit a write to another farmer's farm.
 DO $rls$
 BEGIN
