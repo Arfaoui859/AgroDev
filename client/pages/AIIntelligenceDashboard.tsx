@@ -12,7 +12,7 @@ type AIService = {
   modelSource?:string|null; isRealModel?:boolean; modelTrainedOnSyntheticData?:boolean;
 };
 type HealthPayload = {
-  overview?:{totalServices:number;availableServices:number;unavailableServices:number;notConfiguredServices?:number;rateLimitedServices?:number;syntheticModelServices:number;lastUpdated:string;checkDuration:number};
+  overview?:{totalServices:number;availableServices:number;reachableServices?:number;unavailableServices:number;notConfiguredServices?:number;rateLimitedServices?:number;syntheticModelServices:number;lastUpdated:string;checkDuration:number};
   services?:AIService[];
   llm?:{configured:boolean;credentialAvailable:boolean;provider?:string;model?:string;textModel?:string;visionModel?:string};
   fallbackEngine?:{available:boolean;type:string;description:string};
@@ -25,7 +25,7 @@ function classify(service:AIService) {
   if(service.status==="available" && service.isRealModel!==true) return {label:"متصل · المصدر غير مثبت",tone:"warning" as const};
   if(service.status==="available") return {label:"متصل",tone:"success" as const};
   if(error.includes("service_url_not_configured")) return {label:"عنوان الخدمة غير مضبوط",tone:"danger" as const};
-  if(error.includes("429")||error.includes("too many requests")) return {label:"تحديد طلبات (429)",tone:"warning" as const};
+  if(service.status==="rate_limited"||error.includes("429")||error.includes("too many requests")) return {label:"الخادم مستجيب · فحص محدود (429)",tone:"warning" as const};
   if((service.url||"").includes("localhost")||error.includes("econnrefused")) return {label:"إعداد عنوان خاطئ",tone:"danger" as const};
   return {label:"غير متاح",tone:"danger" as const};
 }
@@ -50,6 +50,7 @@ export default function AIIntelligenceDashboard(){
   const services=health?.services||[];
   const total=health?.overview?.totalServices??services.length;
   const available=health?.overview?.availableServices??services.filter(s=>s.status==="available").length;
+  const reachable=health?.overview?.reachableServices??services.filter(s=>s.status==="available"||s.status==="rate_limited").length;
   const limited=services.filter(s=>classify(s).label.includes("429")).length;
   const misconfigured=services.filter(s=>classify(s).label==="عنوان الخدمة غير مضبوط"||classify(s).label==="إعداد عنوان خاطئ").length;
   const validatedModels=services.filter(s=>s.status==="available"&&s.isRealModel===true&&s.modelTrainedOnSyntheticData!==true).length;
@@ -60,9 +61,9 @@ export default function AIIntelligenceDashboard(){
       <Button onClick={()=>void refresh()} disabled={loading}><RefreshCw className={"ml-2 h-4 w-4 "+(loading?"animate-spin":"")}/>فحص الخدمات الآن</Button>
     </header>
     {error&&<Alert variant="destructive"><AlertTitle>تعذّر فحص الخدمات</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-    {health?.note&&<Alert><AlertTriangle className="h-4 w-4"/><AlertDescription>{health.note}</AlertDescription></Alert>}
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <Card><CardHeader className="pb-2"><CardTitle className="text-sm">الخدمات المتاحة</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":available+" / "+total}</CardContent></Card>
+    {health?.note&&<Alert><AlertTriangle className="h-4 w-4"/><AlertDescription>{health.note}</AlertDescription></Alert>}\n    {health?.overview?.rateLimitedServices ? <p className="text-xs text-muted-foreground">ملاحظة: استجابة HTTP 429 تثبت أن الخادم ردّ على الطلب، لكنها لا تثبت أن الاستدلال بالذكاء الاصطناعي متاح أو أن النموذج يعمل.</p> : null}
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <Card><CardHeader className="pb-2"><CardTitle className="text-sm">الخدمات المتاحة</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":available+" / "+total}</CardContent></Card>\n      <Card><CardHeader className="pb-2"><CardTitle className="text-sm">الخوادم المستجيبة</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":reachable+" / "+total}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">طلبات محدودة (429)</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":limited}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">خدمات بلا عنوان مضبوط</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":misconfigured}</CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm">نماذج بمصدر موثّق</CardTitle></CardHeader><CardContent className="text-2xl font-bold tabular-nums">{loading?"…":validatedModels}</CardContent></Card>
