@@ -335,6 +335,15 @@ function buildRuleBasedAnswer(
     }
   }
 
+  if (context?.operationalAlerts?.length) {
+    const alerts = context.operationalAlerts.slice(0, 8).map((alert) => `• ${alert}`).join("\n");
+    sections.push({
+      ar: `متابعة المزرعة والتنبيهات المسجلة:\n${alerts}\nراجع كل تنبيه مع الوضع الميداني قبل اتخاذ إجراء.`,
+      fr: `Suivi de l'exploitation et alertes enregistrées :\n${alerts}\nVérifiez chaque alerte sur le terrain avant toute action.`,
+      en: `Farm monitoring and recorded alerts:\n${alerts}\nVerify each alert in the field before taking action.`,
+    }[lang]);
+  }
+
   if (agents.includes("disease")) {
     sections.push({
       ar: "لتشخيص الأمراض بدقة، ارفع صورة واضحة للنبات في صفحة تشخيص الأمراض. ستعرض لك المنصة النتائج ومستوى الثقة عند توفر خدمة التشخيص.",
