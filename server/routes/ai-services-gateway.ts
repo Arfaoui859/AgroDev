@@ -1046,10 +1046,17 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
 
             const wantsLiveWeather = /(weather|météo|meteo|طقس|مطر|حرارة|ري|irrigation|arrosage|ns9i|s9i|matar|skhouna|bard)/i.test(userMessage);
             if (wantsLiveWeather) {
-              if (farms.length !== 1) {
-                platformRecords.push("Live farm-specific weather was not requested from a guessed location: the account has " + farms.length + " farms. Ask the user to select the farm before fetching its forecast.");
+              const namedFarmMatches = farms.filter((farm: any) =>
+                typeof farm.name === "string" && farm.name.trim().length >= 3 &&
+                userMessage.toLocaleLowerCase().includes(farm.name.trim().toLocaleLowerCase())
+              );
+              const selectedWeatherFarm = farms.length === 1
+                ? farms[0]
+                : namedFarmMatches.length === 1 ? namedFarmMatches[0] : null;
+              if (!selectedWeatherFarm) {
+                platformRecords.push("Live farm-specific weather was not fetched because no unique farm was selected. The account has " + farms.length + " farms. Ask the user to mention one exact saved farm name before fetching its forecast.");
               } else {
-                const farmLocation = farms[0].location && typeof farms[0].location === "object" ? farms[0].location : {};
+                const farmLocation = selectedWeatherFarm.location && typeof selectedWeatherFarm.location === "object" ? selectedWeatherFarm.location : {};
                 const lat = Number((farmLocation as any).lat);
                 const lon = Number((farmLocation as any).lng ?? (farmLocation as any).lon);
                 if (Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
@@ -1057,13 +1064,13 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                     const liveWeather = await getWeatherFromOpenMeteo({
                       lat,
                       lon,
-                      locationName: farms[0].name,
+                      locationName: selectedWeatherFarm.name,
                       governorate: typeof (farmLocation as any).region === "string" ? (farmLocation as any).region : undefined,
                     });
                     const nextDays = liveWeather.forecast.daily.slice(0, 5).map(day =>
                       day.date + ": " + day.minTemp + "–" + day.maxTemp + " C; rainfall=" + day.rainfall + " mm; humidity=" + day.humidity + "%"
                     ).join(" | ");
-                    platformRecords.push("LIVE WEATHER FROM OPEN-METEO for the single registered farm " + farms[0].name + " [observation_time=" + (liveWeather.source.observationTime || "unreported") + "; provider=" + liveWeather.source.provider + "; current_temperature=" + liveWeather.current.temperature + " C; humidity=" + liveWeather.current.humidity + "%; wind=" + liveWeather.current.windSpeed + " km/h; conditions=" + liveWeather.current.description + "; ET0=" + liveWeather.agriculturalIndices.evapotranspiration + "; gridded_soil_moisture_estimate=" + liveWeather.agriculturalIndices.soilMoisture + "; crop_stress_indicator=" + liveWeather.agriculturalIndices.cropStress + "; next_days=" + nextDays + "]. Real provider forecast for farm coordinates, not an on-farm sensor measurement; soil moisture is a gridded model estimate.");
+                    platformRecords.push("LIVE WEATHER FROM OPEN-METEO for the selected farm " + selectedWeatherFarm.name + " [observation_time=" + (liveWeather.source.observationTime || "unreported") + "; provider=" + liveWeather.source.provider + "; current_temperature=" + liveWeather.current.temperature + " C; humidity=" + liveWeather.current.humidity + "%; wind=" + liveWeather.current.windSpeed + " km/h; conditions=" + liveWeather.current.description + "; ET0=" + liveWeather.agriculturalIndices.evapotranspiration + "; gridded_soil_moisture_estimate=" + liveWeather.agriculturalIndices.soilMoisture + "; crop_stress_indicator=" + liveWeather.agriculturalIndices.cropStress + "; next_days=" + nextDays + "]. Real provider forecast for farm coordinates, not an on-farm sensor measurement; soil moisture is a gridded model estimate.");
                   } catch (weatherError) {
                     platformRecords.push("Live Open-Meteo weather request failed for the registered farm; no live values were substituted. Existing dated weather records remain historical only. Provider error=" + (weatherError instanceof Error ? weatherError.message.slice(0, 180) : "unknown"));
                   }
