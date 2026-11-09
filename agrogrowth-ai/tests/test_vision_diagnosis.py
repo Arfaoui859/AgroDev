@@ -61,12 +61,13 @@ def _detect():
     )
 
 
-def test_no_provider_labels_heuristic():
-    result = _detect()
-    assert result.data_source == "heuristic"
-    assert result.is_real_data is False
-    assert result.model_source == "feature-based-heuristics"
-    assert result.disease_detection["detection_method"] == "feature_based_heuristics"
+def test_no_provider_fails_closed_without_onnx_classifier():
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as error:
+        _detect()
+    assert error.value.status_code == 503
+    assert error.value.detail["code"] == "DISEASE_CLASSIFIER_NOT_LOADED"
 
 
 def test_configured_provider_is_used_and_labelled(monkeypatch):
@@ -95,7 +96,7 @@ def test_configured_provider_is_used_and_labelled(monkeypatch):
     assert result.disease_detection["matched_catalogue"] is True
 
 
-def test_provider_failure_falls_back_and_stays_labelled(monkeypatch):
+def test_provider_failure_fails_closed_without_onnx_classifier(monkeypatch):
     monkeypatch.setenv("AI_API_KEY", "k")
     monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
 
@@ -104,9 +105,12 @@ def test_provider_failure_falls_back_and_stays_labelled(monkeypatch):
 
     monkeypatch.setattr(llm.LLMProvider, "chat_image_json", boom)
 
-    result = _detect()
-    assert result.data_source == "heuristic"
-    assert result.is_real_data is False
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as error:
+        _detect()
+    assert error.value.status_code == 503
+    assert error.value.detail["code"] == "DISEASE_CLASSIFIER_NOT_LOADED"
 
 
 def test_hallucinated_label_is_flagged(monkeypatch):
@@ -154,7 +158,8 @@ def test_health_reports_vision_configured_without_claiming_request_usage(monkeyp
 
     health = asyncio.run(image_main.health())
 
-    assert health["status"] == "healthy"
+    assert health["status"] == "degraded"
+    assert health["production_ready"] is False
     assert health["vision_configured"] is True
     assert health["vision_provider_configured"] is True
     assert health["model_source"] == "heuristic-demo"
