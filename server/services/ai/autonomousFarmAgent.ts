@@ -37,6 +37,7 @@ export function buildFarmAgentEvents(input: {
   cultivations: any[];
   soilAnalyses: any[];
   sensors: any[];
+  diseaseDetections?: any[];
   now?: Date;
   soilReviewDays?: number;
 }): AgentEvent[] {
@@ -111,6 +112,38 @@ export function buildFarmAgentEvents(input: {
         evidence: { cultivation_id: cultivation.id, expected_harvest_date: cultivation.expected_harvest_date, days_after_expected_date: Math.abs(delta) },
       });
     }
+  }
+
+  // Persisted disease-detection records are follow-up signals, not proof of a
+  // confirmed diagnosis. Always ask the farmer/agronomist to verify the record.
+  for (const detection of input.diseaseDetections ?? []) {
+    const severity = String(detection.severity_level || "").toLowerCase();
+    const recovery = String(detection.recovery_status || "").toLowerCase();
+    if (!["high", "critical", "severe"].includes(severity) || recovery === "recovered") continue;
+    const farm = input.farms.find((row) => row.id === detection.farm_id);
+    const farmName = String(farm?.name || "المزرعة");
+    const crop = String(detection.plant_type || "المحصول");
+    const disease = String(detection.primary_disease || "حالة نباتية مسجلة");
+    const detectionDate = detection.detected_at || detection.created_at || null;
+    events.push({
+      key: `disease-followup:${detection.id}`,
+      farmId: detection.farm_id,
+      type: "agent_disease_followup",
+      title: "نتيجة كشف نباتي تستحق المتابعة",
+      message: `توجد نتيجة كشف مسجلة بدرجة خطورة «${severity}» للمحصول «${crop}» في «${farmName}» (${disease}). هذه نتيجة مسجلة وليست تأكيداً مستقلاً للتشخيص؛ افحص النبات واطلب مراجعة مختص، وتابع حالة العلاج.`,
+      priority: "high",
+      actionUrl: "/disease-detection",
+      evidence: {
+        detection_id: detection.id,
+        detection_method: detection.detection_method ?? null,
+        severity_level: severity,
+        disease_confidence: detection.disease_confidence ?? null,
+        recovery_status: detection.recovery_status ?? null,
+        treatment_applied: detection.treatment_applied ?? null,
+        detected_at: detectionDate,
+        diagnosis_requires_field_verification: true,
+      },
+    });
   }
 
   for (const sensor of input.sensors) {
@@ -193,13 +226,14 @@ export async function runFarmAgentScan(
     return { skipped: false, scannedAt: now.toISOString(), farmsScanned: 0, eventsDetected: 0, notificationsCreated: 0, note: "No farms are registered on this account." };
   }
 
-  const [cultivationResult, soilResult, sensorResult, profileResult] = await Promise.all([
+  const [cultivationResult, soilResult, sensorResult, diseaseResult, profileResult] = await Promise.all([
     db.from("crop_cultivations").select("id,farm_id,crop_name,expected_harvest_date,status").in("farm_id", farmIds),
     db.from("soil_analyses").select("id,farm_id,analysis_type,analyzed_at,created_at").in("farm_id", farmIds).in("analysis_type", ["lab", "laboratory", "sensor"]).order("analyzed_at", { ascending: false }),
     db.from("sensor_devices").select("id,farm_id,device_id,status,battery_level,updated_at").in("farm_id", farmIds),
+    db.from("plant_disease_detections").select("id,farm_id,plant_type,primary_disease,detection_method,disease_confidence,severity_level,treatment_applied,recovery_status,detected_at,created_at").in("farm_id", farmIds).order("detected_at", { ascending: false }).limit(100),
     db.from("user_profiles").select("preferences").eq("user_id", userId).maybeSingle(),
   ]);
-  for (const [name, result] of [["crop_cultivations", cultivationResult], ["soil_analyses", soilResult], ["sensor_devices", sensorResult], ["user_profiles", profileResult]] as const) {
+  for (const [name, result] of [["crop_cultivations", cultivationResult], ["soil_analyses", soilResult], ["sensor_devices", sensorResult], ["plant_disease_detections", diseaseResult], ["user_profiles", profileResult]] as const) {
     if (result.error) throw new Error(`AGENT_SOURCE_READ_FAILED:${name}:${result.error.code || result.error.message}`);
   }
 
@@ -208,6 +242,7 @@ export async function runFarmAgentScan(
     cultivations: cultivationResult.data ?? [],
     soilAnalyses: soilResult.data ?? [],
     sensors: sensorResult.data ?? [],
+    diseaseDetections: diseaseResult.data ?? [],
     now,
     soilReviewDays: Number(process.env.AGRO_AGENT_SOIL_REVIEW_DAYS) || 180,
   });
@@ -256,7 +291,7 @@ export async function runFarmAgentScan(
     notificationsCreated,
     notificationsSuppressedByPreference: !notificationsEnabled,
     events,
-    sources: ["farms", "crop_cultivations", "soil_analyses", "sensor_devices"],
+    sources: ["farms", "crop_cultivations", "soil_analyses", "sensor_devices", "plant_disease_detections"],
     limitations: ["No live sensor stream, weather forecast, disease image feed or market feed is evaluated by this scan.", "Alerts are in-app notifications only; push, SMS and email delivery are not configured."],
   };
 }
