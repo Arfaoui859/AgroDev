@@ -347,6 +347,8 @@ export function createServer() {
       "/api/market-analysis",
       "/api/public/market-prices",
       "/api/soil-ai-detector",
+      "/api/smart-irrigation",
+      "/api/ai/recommend",
       // Further fixture-backed modules: the routers below build their records
       // from fixed in-memory arrays (see the "Mock data for demonstration"
       // block at the top of each). They have no database or licensed feed
