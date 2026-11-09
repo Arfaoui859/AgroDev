@@ -31,7 +31,9 @@ export async function getNotifications(req: Request, res: Response) {
   else if (req.query.archived !== "all") query = query.is("archived_at", null);
   const { data, error } = await query;
   if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_READ_FAILED", message: error.message });
-  return res.json({ success: true, data: data ?? [], count: data?.length ?? 0, source: "supabase.notifications" });
+  res.set("X-Data-Provenance", "supabase.notifications");
+  res.set("X-Is-Real-Data", "true");
+  return res.json({ success: true, data: data ?? [], count: data?.length ?? 0, source: "supabase.notifications", isRealData: true });
 }
 
 export async function getNotificationById(req: Request, res: Response) {
