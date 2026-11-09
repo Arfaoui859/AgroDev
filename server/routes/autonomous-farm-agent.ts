@@ -106,7 +106,7 @@ export async function runScheduledAutonomousAgent(req: Request, res: Response) {
   const summary = { usersDiscovered: userIds.length, usersScanned: 0, usersSkipped: 0, usersFailed: 0, notificationsCreated: 0, eventsDetected: 0 };
   const failures: Array<{ userId: string; code: string }> = [];
 
-  for (const userId of userIds) {
+  for (const [userIndex, userId] of userIds.entries()) {
     const setting: any = settingsByUser.get(userId);
     if (setting?.enabled === false) { summary.usersSkipped += 1; continue; }
     const cadence = Number(setting?.cadence_minutes) || 60;
@@ -120,7 +120,7 @@ export async function runScheduledAutonomousAgent(req: Request, res: Response) {
       summary.eventsDetected += result.eventsDetected;
     } catch (error) {
       summary.usersFailed += 1;
-      failures.push({ userId, code: error instanceof Error ? error.message.slice(0, 120) : "UNKNOWN" });
+      failures.push({ userIndex: userIndex + 1, code: error instanceof Error ? error.message.slice(0, 120) : "UNKNOWN" });
     }
   }
 
