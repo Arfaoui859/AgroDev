@@ -73,9 +73,9 @@ const SmartCropRecommendations: React.FC = () => {
 
   // Recommendation form data
   const [inputData, setInputData] = useState<CropInputData>({
-    temperature: 25,
-    annual_rainfall: 600,
-    soil_ph: 6.5,
+    temperature: Number.NaN,
+    annual_rainfall: Number.NaN,
+    soil_ph: Number.NaN,
     soil_quality_score: 0.7,
     water_availability: 0.8,
     farmer_experience_years: 5,
@@ -128,7 +128,7 @@ const SmartCropRecommendations: React.FC = () => {
   const handleInputChange = (field: keyof CropInputData, value: string) => {
     setInputData((prev) => ({
       ...prev,
-      [field]: parseFloat(value) || 0,
+      [field]: value.trim() === "" ? Number.NaN : Number(value),
     }));
   };
 
@@ -166,6 +166,19 @@ const SmartCropRecommendations: React.FC = () => {
   }, []);
 
   const handleGetRecommendations = useCallback(async () => {
+    if (
+      !Number.isFinite(inputData.temperature) ||
+      !Number.isFinite(inputData.annual_rainfall) ||
+      !Number.isFinite(inputData.soil_ph)
+    ) {
+      toast({
+        title: "بيانات ناقصة",
+        description: "أدخل درجة الحرارة والأمطار السنوية ودرجة حموضة التربة قبل طلب التوصيات.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await postJson("/api/ai/crops/recommend", {
@@ -229,6 +242,19 @@ const SmartCropRecommendations: React.FC = () => {
   }, [profitData, postJson, toast]);
 
   const handleQuickRecommendation = useCallback(async () => {
+    if (
+      !Number.isFinite(inputData.temperature) ||
+      !Number.isFinite(inputData.annual_rainfall) ||
+      !Number.isFinite(inputData.soil_ph)
+    ) {
+      toast({
+        title: "بيانات ناقصة",
+        description: "أدخل درجة الحرارة والأمطار السنوية ودرجة حموضة التربة قبل طلب التوصية السريعة.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const query = new URLSearchParams({
@@ -421,7 +447,7 @@ const SmartCropRecommendations: React.FC = () => {
                   <Label>درجة الحرارة (°C)</Label>
                   <Input
                     type="number"
-                    value={inputData.temperature}
+                    value={Number.isFinite(inputData.temperature) ? inputData.temperature : ""}
                     onChange={(e) =>
                       handleInputChange("temperature", e.target.value)
                     }
@@ -431,7 +457,7 @@ const SmartCropRecommendations: React.FC = () => {
                   <Label>الأمطار السنوية (mm)</Label>
                   <Input
                     type="number"
-                    value={inputData.annual_rainfall}
+                    value={Number.isFinite(inputData.annual_rainfall) ? inputData.annual_rainfall : ""}
                     onChange={(e) =>
                       handleInputChange("annual_rainfall", e.target.value)
                     }
@@ -442,7 +468,7 @@ const SmartCropRecommendations: React.FC = () => {
                   <Input
                     type="number"
                     step="0.1"
-                    value={inputData.soil_ph}
+                    value={Number.isFinite(inputData.soil_ph) ? inputData.soil_ph : ""}
                     onChange={(e) =>
                       handleInputChange("soil_ph", e.target.value)
                     }
@@ -1204,7 +1230,7 @@ const SmartCropRecommendations: React.FC = () => {
                   <Label>درجة الحرارة (°C)</Label>
                   <Input
                     type="number"
-                    value={inputData.temperature}
+                    value={Number.isFinite(inputData.temperature) ? inputData.temperature : ""}
                     onChange={(e) =>
                       handleInputChange("temperature", e.target.value)
                     }
@@ -1214,7 +1240,7 @@ const SmartCropRecommendations: React.FC = () => {
                   <Label>الأمطار السنوية (mm)</Label>
                   <Input
                     type="number"
-                    value={inputData.annual_rainfall}
+                    value={Number.isFinite(inputData.annual_rainfall) ? inputData.annual_rainfall : ""}
                     onChange={(e) =>
                       handleInputChange("annual_rainfall", e.target.value)
                     }
@@ -1225,7 +1251,7 @@ const SmartCropRecommendations: React.FC = () => {
                   <Input
                     type="number"
                     step="0.1"
-                    value={inputData.soil_ph}
+                    value={Number.isFinite(inputData.soil_ph) ? inputData.soil_ph : ""}
                     onChange={(e) =>
                       handleInputChange("soil_ph", e.target.value)
                     }

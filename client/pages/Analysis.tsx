@@ -103,17 +103,19 @@ export default function Analysis() {
       
       // Get crop recommendations based on soil analysis
       const recommendationInput = {
-        ph: sensorData.ph || 7.0,
-        nitrogen: sensorData.nitrogen || 0,
-        phosphorus: sensorData.phosphorus || 0,
-        potassium: sensorData.potassium || 0,
-        temperature: sensorData.temperature || 25,
-        humidity: 65, // Default
-        rainfall: 600, // Default for Tunisia
-        area_hectares: parseFloat(originalData.area) || 2.0,
-        current_crop: originalData.cropType || 'wheat',
-        location: originalData.location || 'Tunisia',
-        soil_type: analysisResult.soil_type?.classification || 'mixed'
+        ...(sensorData.ph !== undefined ? { ph: sensorData.ph } : {}),
+        ...(sensorData.nitrogen !== undefined ? { nitrogen: sensorData.nitrogen } : {}),
+        ...(sensorData.phosphorus !== undefined ? { phosphorus: sensorData.phosphorus } : {}),
+        ...(sensorData.potassium !== undefined ? { potassium: sensorData.potassium } : {}),
+        ...(sensorData.temperature !== undefined ? { temperature: sensorData.temperature } : {}),
+        ...(Number.isFinite(Number(originalData.area)) && originalData.area.trim() !== ""
+          ? { area_hectares: Number(originalData.area) }
+          : {}),
+        ...(originalData.cropType ? { current_crop: originalData.cropType } : {}),
+        ...(originalData.location ? { location: originalData.location } : {}),
+        ...(analysisResult.soil_type?.classification
+          ? { soil_type: analysisResult.soil_type.classification }
+          : {}),
       };
       
       const recommendations = await getSmartCropRecommendations(recommendationInput);

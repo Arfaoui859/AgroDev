@@ -4,7 +4,7 @@ import axios from "axios";
 import fs from "fs/promises";
 import path from "path";
 import { RawSoilData, SoilAnalysisResponse } from "@shared/api";
-import { markSimulated, markReal } from "../lib/provenance";
+import { markAdvisory } from "../lib/provenance";
 import {
   chatCompleteDetailed,
   isLLMConfigured,
@@ -77,6 +77,21 @@ function formatSoilDataForAI(data: RawSoilData): string {
   if (data.notes) sections.push(`Notes: ${data.notes}`);
 
   return sections.join("\n");
+}
+
+class AIProviderUnavailableError extends Error {
+  constructor() {
+    super("Soil analysis AI provider is not configured");
+    this.name = "AIProviderUnavailableError";
+  }
+}
+
+function hasSoilAIProvider(): boolean {
+  return (
+    isLLMConfigured() ||
+    (AI_SERVICE_URL.includes("openai") && Boolean(AI_API_KEY)) ||
+    Boolean(AI_SERVICE_URL && AI_API_KEY)
+  );
 }
 
 // Call external AI service (OpenAI or custom service)
@@ -155,11 +170,8 @@ async function callAIService(
       return { text: response.data.result || response.data.content, real: true };
     }
 
-    // Fallback to demo mode if no external service is configured
-    console.warn(
-      "No AI service configured. Using demo analysis mode. Please set AI_SERVICE_URL and AI_API_KEY to enable real AI analysis."
-    );
-    return { text: generateDemoAnalysis(userMessage), real: false };
+    // Never fabricate a soil report when no provider is configured.
+    throw new AIProviderUnavailableError();
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("AI Service Error:", error.response?.data || error.message);
@@ -171,258 +183,48 @@ async function callAIService(
   }
 }
 
-// Demo analysis generator for testing without external AI
-function generateDemoAnalysis(soilDataStr: string): string {
-  // Extract pH from the data string to determine soil type
-  const phMatch = soilDataStr.match(/pH Level: ([\d.]+)/);
-  const ph = phMatch ? parseFloat(phMatch[1]) : 6.5;
-
-  let soilType = "تربة معتدلة";
-  let soilClassification = "Loamy";
-  if (ph < 6) {
-    soilType = "تربة حمضية";
-    soilClassification = "Acidic";
-  } else if (ph > 7.5) {
-    soilType = "تربة قلوية";
-    soilClassification = "Alkaline";
-  }
-
-  const demoResponse = {
-    soilAnalysis: {
-      fieldInfo: {
-        location: "تم التحليل",
-        analysisDate: new Date().toISOString().split("T")[0],
-        sampleDepth: "0-30",
-      },
-      soilType: {
-        classification: soilClassification,
-        texture: "Loam",
-        structure: "معتدل البنية",
-        description_ar:
-          "تربة متوسطة التحبب مع نسبة متوازنة من الرمل والطين والسلت",
-      },
-      currentStatus: {
-        overallGrade: {
-          grade: "جيد" as const,
-          score: "72/100",
-          interpretation_ar:
-            "التربة ذات جودة جيدة وقابلة للتحسين مع بعض الاهتمام",
-        },
-        detailedScoring: {
-          structure: 75,
-          fertility: 70,
-          phBalance: 65,
-          nutrientContent: 75,
-          waterRetention: 70,
-          micronutrientAvailability: 65,
-        },
-        strengths_ar: [
-          "بنية تربة معتدلة جيدة",
-          "محتوى غني بالعناصر الغذائية الأساسية",
-          "قدرة جيدة على احتفاظ الماء",
-        ],
-        limitations_ar: [
-          "توازن pH قد يحتاج تعديل",
-          "بعض نقص في العناصر الدقيقة",
-          "محتوى المادة العضوية يحتاج تحسين",
-        ],
-      },
-      cropSuitability: {
-        excellent_crops: [
-          {
-            name: "Wheat",
-            name_ar: "القمح",
-            compatibility: "95-100%",
-            reason_ar:
-              "التربة المعتدلة والمحتوى الجيد من النيتروجين يجعلها مثالية للقمح",
-            yieldPotential: "high",
-            specialCareNeeds_ar: "ري منتظم خلال فترة النمو",
-            profitability: "عالية جداً",
-          },
-          {
-            name: "Barley",
-            name_ar: "الشعير",
-            compatibility: "92-98%",
-            reason_ar: "تحمل جيد للتربة المعتدلة والجفاف النسبي",
-            yieldPotential: "high",
-            specialCareNeeds_ar: "حد أدنى من المياه مع تربة معتدلة",
-            profitability: "عالية",
-          },
-          {
-            name: "Tomato",
-            name_ar: "الطماطم",
-            compatibility: "88-95%",
-            reason_ar:
-              "تربة خصبة جيدة التصريف مناسبة لنمو الطماطم بشكل ممتاز",
-            yieldPotential: "high",
-            specialCareNeeds_ar: "ري منتظم والحماية من الأمراض الفطرية",
-            profitability: "عالية جداً",
-          },
-        ],
-        good_crops: [
-          {
-            name: "Potato",
-            name_ar: "البطاطس",
-            compatibility: "82-90%",
-            reason_ar: "تربة معتدلة توفر ظروف نمو جيدة للدرنات",
-            yieldPotential: "high",
-            specialCareNeeds_ar: "صرف جيد ومكافحة الآفات",
-            profitability: "عالية",
-          },
-          {
-            name: "Corn",
-            name_ar: "الذرة",
-            compatibility: "80-88%",
-            reason_ar: "محتوى نيتروجين جيد مناسب لنمو الذرة",
-            yieldPotential: "medium",
-            specialCareNeeds_ar: "إضافة نيتروجين إضافي في منتصف الموسم",
-            profitability: "عالية",
-          },
-        ],
-        moderate_crops: [
-          {
-            name: "Pepper",
-            name_ar: "الفلفل",
-            compatibility: "70-80%",
-            reason_ar:
-              "تربة جيدة لكن قد تحتاج تحسين درجة الحموضة والصرف",
-            yieldPotential: "medium",
-            specialCareNeeds_ar: "تحسين الصرف وإدارة الرطوبة",
-            profitability: "معتدلة إلى عالية",
-          },
-        ],
-      },
-      detailedRecommendations: {
-        amendments: {
-          recommended_ar: [
-            {
-              type: "المادة العضوية",
-              quantity: 3,
-              unit: "طن/هكتار",
-              purpose_ar:
-                "تحسين بنية التربة وزيادة قدرتها على احتفاظ الماء والعناصر الغذائية",
-              expectedImprovement_ar: "زيادة 15-20% في المادة العضوية",
-            },
-            {
-              type: "الجير",
-              quantity: 1,
-              unit: "طن/هكتار",
-              purpose_ar: "تعديل درجة حموضة التربة إن لزم الأمر",
-              expectedImprovement_ar: "استقرار درجة pH",
-            },
-          ],
-          sequence_ar:
-            "ابدأ بإضافة المادة العضوية أولاً، ثم تابع بالجير إذا كانت درجة الحموضة منخفضة",
-        },
-        fertilization: {
-          macronutrients: [
-            {
-              nutrient: "النيتروجين",
-              current: 80,
-              target: 120,
-              recommendedFertilizer: "اليوريا 46%",
-              quantity: 150,
-              unit: "كيلو/هكتار",
-              timingAndMethod_ar:
-                "تطبيق النصف الأول قبل الزراعة والنصف الثاني بعد شهر من الزراعة",
-            },
-            {
-              nutrient: "الفوسفور",
-              current: 25,
-              target: 35,
-              recommendedFertilizer: "السوبر فوسفات",
-              quantity: 200,
-              unit: "كيلو/هكتار",
-              timingAndMethod_ar: "تطبيق واحد قبل الزراعة مباشرة",
-            },
-          ],
-          micronutrients: [
-            {
-              nutrient: "الزنك",
-              deficiency: true,
-              source: "كبريتات الزنك",
-              quantity: 15,
-              method_ar: "رش أوراقي أو إضافة للتربة",
-            },
-          ],
-        },
-        waterManagement: {
-          assessment_ar:
-            "التربة لديها قدرة جيدة على احتفاظ الماء لكن تحتاج إلى صرف جيد لتجنب الإفراط في الرطوبة",
-          recommendations_ar: [
-            "تطبيق نظام ري بالتنقيط للمحاصيل الحساسة",
-            "تحسين الصرف السطحي لتجنب جمع المياه",
-            "إضافة المهاد لتقليل التبخر",
-          ],
-          irrigationAdjustments_ar:
-            "ري معتدل كل 3-4 أيام حسب الطقس والمحصول",
-        },
-        cropRotation: {
-          current_ar: "اختر محصول رئيسي من القائمة الممتازة",
-          recommended_ar:
-            "دورة توصى بها: قمح → خضروات → بقوليات → قمح (أو تناوب مشابه)",
-        },
-        organicMatterEnhancement: {
-          currentLevel: 2.5,
-          targetLevel: 4,
-          methods_ar: [
-            "إضافة السماد الحيواني المتحلل",
-            "زراعة محاصيل الغطاء الأخضر",
-            "تقليل الحرث العميق للحفاظ على المادة العضوية",
-          ],
-        },
-        implementationTimeline: {
-          immediate_ar:
-            "قبل الزراعة بأسبوعين: إضافة المادة العضوية والسماد الفوسفوري وتعديل pH",
-          shortTerm_ar:
-            "الأسابيع 1-4: تطبيق النيتروجين الأول ومراقبة رطوبة التربة",
-          mediumTerm_ar:
-            "الشهر 2-3: تطبيق النيتروجين الثاني والرش الورقي بالعناصر الدقيقة",
-          longTerm_ar:
-            "الشهر 4-6: مراقبة المحصول وتجهيز التربة للموسم القادم",
-        },
-      },
-      professionalSummary: {
-        executiveSummary_ar:
-          "تربتك جيدة وقابلة للإنتاج مع بعض التحسينات البسيطة. التركيز على إضافة المادة العضوية وتعديل المغذيات سيحسن الإنتاجية بشكل كبير.",
-        keyFindings_ar: [
-          "درجة pH معتدلة مناسبة لمعظم المحاصيل",
-          "محتوى عناصر غذائية جيد مع بعض الاختلالات البسيطة",
-          "بنية تربة جيدة تحتاج تحسين طفيف في المادة العضوية",
-          "فرص ممتازة لزراعة القمح والطماطم والذرة",
-        ],
-        primaryAction_ar:
-          "الخطوة الأولى: إضافة 3 طن/هكتار من السماد العضوي قبل الزراعة بأسبوعين",
-        nextSteps_ar:
-          "بعد التحضير الأولي: مراقبة رطوبة التربة بانتظام، وتطبيق الأسمدة حسب الجدول الموصى به، وملاحظة صحة المحصول طوال الموسم.",
-      },
-    },
-  };
-
-  return JSON.stringify(demoResponse, null, 2);
-}
-
-// Parse AI response to extract JSON
+// Parse and validate the JSON returned by the AI provider.
+// Invalid or non-JSON responses must fail instead of becoming fake successful reports.
 function extractJSON(text: string): any {
-  try {
-    // Try to find JSON block in code fences
-    const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[1]);
-    }
+  const response = text.trim();
 
-    // Try to find raw JSON object
-    const objectMatch = text.match(/\{[\s\S]*\}/);
-    if (objectMatch) {
-      return JSON.parse(objectMatch[0]);
-    }
-
-    // If no JSON found, return the text as is for debugging
-    return { raw_response: text };
-  } catch (error) {
-    console.error("Error parsing AI response as JSON:", error);
-    return { error: "Failed to parse AI response", raw_response: text };
+  if (!response) {
+    throw new Error("AI provider returned an empty soil analysis response");
   }
+
+  const fencedMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidates = [
+    ...(fencedMatch ? [fencedMatch[1].trim()] : []),
+    response,
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Try the next candidate.
+    }
+  }
+
+  const firstBrace = response.indexOf("{");
+  const lastBrace = response.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      const parsed = JSON.parse(response.slice(firstBrace, lastBrace + 1));
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Fall through to the explicit parsing error.
+    }
+  }
+
+  console.error("AI soil report response is not valid JSON");
+  throw new Error("AI provider returned an invalid JSON soil analysis report");
 }
 
 /**
@@ -455,19 +257,31 @@ export const analyzeSoilDetailed: RequestHandler = async (req, res) => {
     // Extract JSON from AI response
     const analysisResult = extractJSON(text);
 
-    if (real) {
-      markReal(res, "ai-provider");
-    } else {
-      markSimulated(res, "rule-based-demo");
-    }
+    markAdvisory(res, "ai-advisory");
 
     return res.status(200).json({
       success: true,
       data: analysisResult,
-      dataSource: real ? "ai-provider" : "rule-based-demo",
-      isRealData: real,
+      dataSource: "ai-advisory",
+      isRealData: false,
+      provenance: {
+        measurements: "user-provided-unverified",
+        advisory: "llm-generated",
+        mlPrediction: "not-available",
+        modelTraining: "not-claimed",
+        note_ar:
+          "القياسات مصدرها البيانات التي أدخلها المستخدم ولم يتم التثبت منها مخبرياً. التفسير والتوصيات استشارة مولّدة بواسطة مزود AI وليست قياسات مخبرية أو تنبؤاً من نموذج ML مدرّب.",
+      },
     });
   } catch (error) {
+    if (error instanceof AIProviderUnavailableError) {
+      return res.status(503).json({
+        success: false,
+        error: "AI_PROVIDER_UNAVAILABLE",
+        message: "Soil advisory is unavailable because no AI provider is configured.",
+      });
+    }
+
     console.error("Soil analysis error:", error);
 
     const errorMessage =
@@ -515,6 +329,14 @@ export const analyzeSoilBatch: RequestHandler = async (req, res) => {
       });
     }
 
+    if (!hasSoilAIProvider()) {
+      return res.status(503).json({
+        success: false,
+        error: "AI_PROVIDER_UNAVAILABLE",
+        message: "Batch soil advisory is unavailable because no AI provider is configured.",
+      });
+    }
+
     // Load prompt once
     const systemPrompt = await loadSoilAnalysisPrompt();
 
@@ -533,22 +355,34 @@ export const analyzeSoilBatch: RequestHandler = async (req, res) => {
       data: result.status === "fulfilled" ? result.value.analysis : { error: result.reason },
     }));
 
-    // A batch is only real if every sample was answered by a configured provider.
-    const allReal =
-      results.length > 0 &&
-      results.every((r) => r.status === "fulfilled" && r.value.real);
-    if (allReal) {
-      markReal(res, "ai-provider");
-    } else {
-      markSimulated(res, "rule-based-demo");
+    const successfulAnalyses = analyses.filter(
+      (analysis) => analysis.status === "fulfilled",
+    ).length;
+
+    if (successfulAnalyses === 0) {
+      return res.status(502).json({
+        success: false,
+        error: "SOIL_AI_BATCH_FAILED",
+        totalRequested: soils.length,
+        successfulAnalyses: 0,
+        analyses,
+      });
     }
 
-    res.status(200).json({
+    markAdvisory(res, "ai-advisory");
+
+    return res.status(200).json({
       success: true,
       totalRequested: soils.length,
-      successfulAnalyses: analyses.filter((a) => a.status === "fulfilled").length,
-      dataSource: allReal ? "ai-provider" : "rule-based-demo",
-      isRealData: allReal,
+      successfulAnalyses,
+      dataSource: "ai-advisory",
+      isRealData: false,
+      provenance: {
+        measurements: "user-provided-unverified",
+        advisory: "llm-generated",
+        mlPrediction: "not-available",
+        modelTraining: "not-claimed",
+      },
       analyses,
     });
   } catch (error) {

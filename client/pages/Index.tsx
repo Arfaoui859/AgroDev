@@ -1286,16 +1286,24 @@ function SoilDataInputForm() {
     setIsSubmitting(true);
 
     // Prepare soil sensor data for AI analysis
-    const sensorData = {
-        ph: parseFloat(formData.ph) || 7.0,
-        nitrogen: parseFloat(formData.nitrogen) || 0,
-        phosphorus: parseFloat(formData.phosphorus) || 0,
-        potassium: parseFloat(formData.potassium) || 0,
-        organic_matter: parseFloat(formData.organicMatter) || 0,
-        moisture: parseFloat(formData.moisture) || 0,
-        salinity: parseFloat(formData.conductivity) || 0,
-      temperature: parseFloat(formData.temperature) || 25,
+    const parseMeasurement = (value: string): number | undefined => {
+      if (value.trim() === "") return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
     };
+
+    const sensorData = Object.fromEntries(
+      Object.entries({
+        ph: parseMeasurement(formData.ph),
+        nitrogen: parseMeasurement(formData.nitrogen),
+        phosphorus: parseMeasurement(formData.phosphorus),
+        potassium: parseMeasurement(formData.potassium),
+        organic_matter: parseMeasurement(formData.organicMatter),
+        moisture: parseMeasurement(formData.moisture),
+        salinity: parseMeasurement(formData.conductivity),
+        temperature: parseMeasurement(formData.temperature),
+      }).filter(([, value]) => value !== undefined),
+    ) as Record<string, number>;
 
     try {
       // Check if soil analysis service is available

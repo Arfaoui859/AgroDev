@@ -337,40 +337,98 @@ export const getSmartCropRecommendations = async (
   req: Request,
   res: Response,
 ) => {
+  const body = (req.body ?? {}) as Record<string, any>;
+
+  // Accept the known frontend payload variants without inventing measurements.
+  const temperature = toNumber(
+    body.temperature ?? body.climate_data?.temperature,
+  );
+  const rainfall = toNumber(
+    body.annual_rainfall ??
+      body.rainfall ??
+      body.climate_data?.annual_rainfall ??
+      body.climate_data?.rainfall,
+  );
+  const soilPh = toNumber(
+    body.soil_ph ?? body.ph ?? body.soil_data?.ph,
+  );
+
+  // These are mandatory in the Python service's Pydantic request model.
+  const requiredErrors: string[] = [];
+
+  if (temperature === undefined || temperature < -30 || temperature > 60)
+    requiredErrors.push("temperature must be between -30 and 60");
+
+  if (rainfall === undefined || rainfall < 0 || rainfall > 10000)
+    requiredErrors.push("annual_rainfall must be between 0 and 10000");
+
+  if (soilPh === undefined || soilPh < 0 || soilPh > 14)
+    requiredErrors.push("soil_ph must be between 0 and 14");
+
+  // Only forward optional values that satisfy the Python API constraints.
+  const optionalNumber = (
+    value: unknown,
+    min: number,
+    max = Number.POSITIVE_INFINITY,
+  ): number | undefined => {
+    const n = toNumber(value);
+    return n !== undefined && n >= min && n <= max ? n : undefined;
+  };
+
+  const experience = optionalNumber(
+    body.farmer_experience_years,
+    0,
+  );
+
+  const requestPayload = {
+    temperature,
+    annual_rainfall: rainfall,
+    soil_ph: soilPh,
+    soil_quality_score: optionalNumber(body.soil_quality_score, 0, 1),
+    water_availability: optionalNumber(body.water_availability, 0, 1),
+    target_market_price: optionalNumber(body.target_market_price, 0),
+    farmer_experience_years:
+      experience !== undefined && Number.isInteger(experience)
+        ? experience
+        : undefined,
+    available_capital: optionalNumber(body.available_capital, 0),
+    farm_size: optionalNumber(body.farm_size ?? body.area_hectares, 0.000001),
+    risk_tolerance: optionalNumber(body.risk_tolerance, 0, 1),
+    location: normaliseLocation(body.location),
+    language: ["ar", "ar-tn", "fr", "en"].includes(body.language)
+      ? body.language
+      : undefined,
+  };
+
+  // Missing or invalid required measurements: use the honest local fallback.
+  // Never send a request that is guaranteed to fail FastAPI validation.
+  if (requiredErrors.length > 0) {
+    console.warn(
+      "Crop microservice skipped: invalid or missing required measurements:",
+      requiredErrors,
+    );
+    return res.json(recommendCropsForUI(normaliseCropInput(body)));
+  }
+
   try {
-    // The crop microservice expects {temperature, annual_rainfall, soil_ph};
-    // the UI sends {temperature, rainfall, ph}. Without this mapping the
-    // service answers 422 and every request silently fell back to rules.
-    const b = req.body ?? {};
     const response = await callAIService(
       AI_SERVICES.CROP_RECOMMENDATION,
       "/recommend-crops",
       "POST",
-      {
-        temperature: toNumber(b.temperature ?? b.climate_data?.temperature),
-        annual_rainfall: toNumber(
-          b.annual_rainfall ?? b.rainfall ?? b.climate_data?.rainfall,
-        ),
-        soil_ph: toNumber(b.soil_ph ?? b.ph ?? b.soil_data?.ph),
-        soil_quality_score: toNumber(b.soil_quality_score),
-        water_availability: toNumber(b.water_availability),
-        target_market_price: toNumber(b.target_market_price),
-        farmer_experience_years: toNumber(b.farmer_experience_years),
-        available_capital: toNumber(b.available_capital),
-        farm_size: toNumber(b.farm_size ?? b.area_hectares),
-        risk_tolerance: toNumber(b.risk_tolerance),
-        location: normaliseLocation(b.location),
-        language: b.language,
-      },
+      requestPayload,
     );
-    await respondFromMicroservice(res, response.data, AI_SERVICES.CROP_RECOMMENDATION);
+
+    return await respondFromMicroservice(
+      res,
+      response.data,
+      AI_SERVICES.CROP_RECOMMENDATION,
+    );
   } catch (error) {
     console.warn(
       "Crop microservice unavailable, using rule-based recommendations:",
       (error as AxiosError).message,
     );
-    const body = req.body ?? {};
-    res.json(recommendCropsForUI(normaliseCropInput(body)));
+    return res.json(recommendCropsForUI(normaliseCropInput(body)));
   }
 };
 
