@@ -340,7 +340,6 @@ export function createServer() {
       "/api/supply-chain",
       "/api/logistics",
       "/api/marketplace",
-      "/api/ai/assistant/alerts",
       "/api/soil-ai-detector",
       // Further fixture-backed modules: the routers below build their records
       // from fixed in-memory arrays (see the "Mock data for demonstration"
