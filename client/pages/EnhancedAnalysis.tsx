@@ -222,17 +222,32 @@ const EnhancedAnalysis: React.FC = () => {
   const quality = data.dataQuality ?? {};
   const discussReportWithAgent = () => {
     const groundedContext = {
-      executiveSummary: data.executiveSummary,
-      soilCharacterization: data.soilCharacterization,
-      findings,
-      cropSuitability: crop,
-      targetCropPlan: data.targetCropPlan,
+      executiveSummary: String(data.executiveSummary || "").slice(0, 1200),
+      soilTexture: data.soilCharacterization?.texture,
+      soilProperties: {
+        chemical: Array.isArray(data.soilCharacterization?.chemical) ? data.soilCharacterization.chemical.slice(0, 6) : [],
+        physical: Array.isArray(data.soilCharacterization?.physical) ? data.soilCharacterization.physical.slice(0, 6) : [],
+      },
+      findings: findings.slice(0, 8),
+      cropSuitability: {
+        status: crop.status,
+        candidates: Array.isArray(crop.candidates) ? crop.candidates.slice(0, 5) : [],
+        caveats: Array.isArray(crop.caveats) ? crop.caveats.slice(0, 8) : [],
+      },
+      targetCropPlan: data.targetCropPlan ? {
+        targetCrop: data.targetCropPlan.targetCrop,
+        feasibility: data.targetCropPlan.feasibility,
+        reasons: Array.isArray(data.targetCropPlan.reasons) ? data.targetCropPlan.reasons.slice(0, 6) : [],
+        actions: Array.isArray(data.targetCropPlan.actions) ? data.targetCropPlan.actions.slice(0, 6) : [],
+        firstAction: data.targetCropPlan.firstAction,
+        retestWhen: data.targetCropPlan.retestWhen,
+      } : null,
       waterAndIrrigation: data.waterAndIrrigation,
-      missingMeasurements: quality.missingMeasurements,
-      recommendations,
-      followUpPlan: followUp,
+      missingMeasurements: Array.isArray(quality.missingMeasurements) ? quality.missingMeasurements.slice(0, 12) : [],
+      recommendations: recommendations.slice(0, 8),
+      followUpPlan: followUp.slice(0, 6),
     };
-    const compactContext = JSON.stringify(groundedContext).slice(0, 6500);
+    const compactContext = JSON.stringify(groundedContext);
     navigate("/ai-assistant", {
       state: {
         initialPrompt: "أنت AgroGrowth Agent. أريد منك أن تبني قرار زراعة عملي اعتماداً على تقرير التربة التالي، لا تعطيني كلاماً عاماً. قارن المحاصيل المرشحة، اختر أفضل الخيارات الممكنة للموسم الحالي إذا كانت المعطيات كافية، وضّح شروط الزراعة والمخاطر والماء والتهيئة وخطة أول 30 يوماً. إذا نقصت معلومات حاسمة اسألني عنها ولا تخمّن. هذا التقرير هو المصدر: " + compactContext,
