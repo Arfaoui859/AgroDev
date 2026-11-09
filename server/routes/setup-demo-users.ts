@@ -159,13 +159,30 @@ export const deleteDemoUsers: RequestHandler = async (_req, res) => {
 
   const results = [];
   for (const user of targets) {
-    const { error: deleteError } =
+    // Remove the application row first; its profile and owned records follow
+    // the declared foreign-key cascade. Keep the Auth identity if this fails.
+    const { error: rowDeleteError } = await supabaseAdmin
+      .from("users")
+      .delete()
+      .eq("id", user.id);
+
+    if (rowDeleteError) {
+      results.push({
+        email: user.email,
+        userId: user.id,
+        deleted: false,
+        error: rowDeleteError.message,
+      });
+      continue;
+    }
+
+    const { error: authDeleteError } =
       await supabaseAdmin.auth.admin.deleteUser(user.id);
     results.push({
       email: user.email,
       userId: user.id,
-      deleted: !deleteError,
-      ...(deleteError ? { error: deleteError.message } : {}),
+      deleted: !authDeleteError,
+      ...(authDeleteError ? { error: authDeleteError.message } : {}),
     });
   }
 
