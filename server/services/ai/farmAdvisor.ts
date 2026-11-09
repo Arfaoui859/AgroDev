@@ -284,7 +284,7 @@ function detectRelevantAgents(question: string): string[] {
   const agents: string[] = [];
   if (/(تربة|ph|آزوت|فوسفور|بوتاس|ملوحة|soil|sol|torba|trab|mlou7a|azot|fosfor)/i.test(question) || /soil|sol\b/.test(q))
     agents.push("soil");
-  if (/(محصول|بذور|زراعة|crop|semis|culture|ma7soul|gharsa|ghars|zra3a|nzra3|tmatem|tomat|zitoun|9amh|felfel)/i.test(question) || /crop|culture/.test(q))
+  if (/(محصول|بذور|زراعة|نزرع|نغرس|crop|semis|culture|ma7soul|gharsa|ghars|zra3a|nzra3|tmatem|tomat|zitoun|9amh|felfel)/i.test(question) || /crop|culture/.test(q))
     agents.push("crop");
   if (/(طقس|مطر|حرارة|ري|weather|météo|irrigation|arrosage|meteo|matar|skhouna|bard|ns9i|s9i|jaw|jew|ri7|rri7|nrawi|satellite|ndvi|الساتلايت|قمر صناعي)/i.test(question) || /weather|irrigation|satellite|ndvi/.test(q))
     agents.push("weather");
