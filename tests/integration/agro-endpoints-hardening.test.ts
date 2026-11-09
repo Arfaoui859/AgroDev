@@ -263,14 +263,12 @@ describe("📦 Trader order creation validation", () => {
   });
 });
 
-describe("🔔 Notification feed provenance", () => {
-  const URL = "/api/notifications";
-
-  test("labels the demo notification feed as simulated, not real", async () => {
-    const res = await request(app).get(URL).expect(200);
-    // The feed is demo content; it must never be presented as a real alert.
-    expect(res.headers["x-data-provenance"]).toBe("simulated");
-    expect(res.headers["x-is-real-data"]).toBe("false");
-    expect(Array.isArray(res.body.data)).toBe(true);
+describe("🔔 Notification feed requires persisted, user-scoped records", () => {
+  test("does not expose a fabricated feed when no authenticated database session is present", async () => {
+    const res = await request(app).get("/api/notifications").expect(503);
+    expect(res.body.success).toBe(false);
+    expect(res.body.code).toBe("NOTIFICATION_DATABASE_UNAVAILABLE");
+    expect(res.body.dataAvailable).not.toBe(true);
+    expect(Array.isArray(res.body.data)).not.toBe(true);
   });
 });
