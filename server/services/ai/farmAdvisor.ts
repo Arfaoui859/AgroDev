@@ -250,7 +250,7 @@ function summariseContext(context?: FarmContext, lang: Language = "ar"): string[
   }
   if (context.platformRecords?.length) {
     const label = lang === "ar" ? "سجلات AgroGrowth الفعلية" : lang === "fr" ? "Enregistrements AgroGrowth" : "AgroGrowth persisted records";
-    parts.push(`${label}: ${context.platformRecords.slice(0, 30).join(" | ")}`);
+    parts.push(`${label}: ${context.platformRecords.slice(0, 45).join(" | ")}`);
   }
   return parts;
 }
