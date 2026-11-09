@@ -612,48 +612,15 @@ async def compare_crops(request: CropComparisonRequest):
     )
 @app.get("/supported-crops")
 async def get_supported_crops():
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "CROP_CATALOGUE_NOT_VERIFIED",
+            "message": "Crop suitability ranges and seasons have no verified source registry in this deployment.",
+            "production_ready": False,
+        },
+    )
 
-    try:
-        crops = []
-
-        for crop_name, crop_info in crop_recommender.crop_database.items():
-
-            optimal = crop_info.get("optimal_conditions", {})
-
-            crops.append({
-                "name": crop_name,
-                "name_ar": crop_info.get("name_ar"),
-                "category": crop_info.get("category"),
-                "growing_season": optimal.get("growing_season"),
-                "optimal_temperature_range": optimal.get(
-                    "temperature_range"
-                ),
-                "optimal_rainfall_range": optimal.get(
-                    "rainfall_range"
-                ),
-                "suitable_soil_types": optimal.get("soil_types", []),
-            })
-
-        return {
-            "status": "success",
-            "supported_crops": crops,
-            "total_count": len(crops),
-            "data_source": "static_crop_reference_database",
-            "field_validated": False,
-            "source_verified": False,
-        }
-
-    except Exception:
-        logger.exception("Getting supported crops failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to retrieve supported crops.",
-        )
-
-
-# ---------------------------------------------------------
-# Crop details
-# ---------------------------------------------------------
 
 @app.get("/crop-details/{crop_name}")
 async def get_crop_details(crop_name: str):
