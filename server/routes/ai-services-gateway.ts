@@ -822,15 +822,15 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     });
   }
 
-  const safeHistory = Array.isArray(history)
-    ? history
-        .filter((entry: any) =>
-          entry && (entry.role === "user" || entry.role === "assistant") &&
-          typeof entry.content === "string" && entry.content.length <= 4000,
-        )
-        .slice(-12)
-        .map((entry: any) => ({ role: entry.role, content: entry.content }))
-    : undefined;
+  // Always keep history as an array. The farm-context resolver below reads
+  // recent user turns even on a brand-new conversation with no prior history.
+  const safeHistory = (Array.isArray(history) ? history : [])
+    .filter((entry: any) =>
+      entry && (entry.role === "user" || entry.role === "assistant") &&
+      typeof entry.content === "string" && entry.content.length <= 4000,
+    )
+    .slice(-12)
+    .map((entry: any) => ({ role: entry.role, content: entry.content }));
 
   try {
     let farmContext: {
