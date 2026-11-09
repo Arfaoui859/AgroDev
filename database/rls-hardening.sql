@@ -121,8 +121,15 @@ BEGIN
         USING ERRCODE = '42501';
     END IF;
 
-    IF TG_OP = 'UPDATE' AND NEW.role IS DISTINCT FROM OLD.role THEN
-      RAISE EXCEPTION 'Users cannot change their own role'
+    IF TG_OP = 'UPDATE' AND (
+      NEW.id IS DISTINCT FROM OLD.id
+      OR NEW.email IS DISTINCT FROM OLD.email
+      OR NEW.role IS DISTINCT FROM OLD.role
+      OR NEW.password_hash IS DISTINCT FROM OLD.password_hash
+      OR NEW.email_verified IS DISTINCT FROM OLD.email_verified
+      OR NEW.is_active IS DISTINCT FROM OLD.is_active
+    ) THEN
+      RAISE EXCEPTION 'Users cannot modify identity or privilege fields'
         USING ERRCODE = '42501';
     END IF;
   END IF;
