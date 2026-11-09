@@ -22,19 +22,24 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 
 -- Avatar images policy
+DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
 CREATE POLICY "Avatar images are publicly accessible" ON storage.objects
     FOR SELECT USING (bucket_id = 'avatars');
 
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
 CREATE POLICY "Users can upload their own avatar" ON storage.objects
     FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
 CREATE POLICY "Users can update their own avatar" ON storage.objects
     FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- Farm images policy
+DROP POLICY IF EXISTS "Farm images are publicly accessible" ON storage.objects;
 CREATE POLICY "Farm images are publicly accessible" ON storage.objects
     FOR SELECT USING (bucket_id = 'farm-images');
 
+DROP POLICY IF EXISTS "Farm owners can upload farm images" ON storage.objects;
 CREATE POLICY "Farm owners can upload farm images" ON storage.objects
     FOR INSERT WITH CHECK (
         bucket_id = 'farm-images' AND
@@ -46,6 +51,7 @@ CREATE POLICY "Farm owners can upload farm images" ON storage.objects
     );
 
 -- Soil images policy (private)
+DROP POLICY IF EXISTS "Users can view their own soil images" ON storage.objects;
 CREATE POLICY "Users can view their own soil images" ON storage.objects
     FOR SELECT USING (
         bucket_id = 'soil-images' AND
@@ -56,6 +62,7 @@ CREATE POLICY "Users can view their own soil images" ON storage.objects
         )
     );
 
+DROP POLICY IF EXISTS "Users can upload soil images to their farms" ON storage.objects;
 CREATE POLICY "Users can upload soil images to their farms" ON storage.objects
     FOR INSERT WITH CHECK (
         bucket_id = 'soil-images' AND
@@ -67,6 +74,7 @@ CREATE POLICY "Users can upload soil images to their farms" ON storage.objects
     );
 
 -- Plant images policy (private)
+DROP POLICY IF EXISTS "Users can view their own plant images" ON storage.objects;
 CREATE POLICY "Users can view their own plant images" ON storage.objects
     FOR SELECT USING (
         bucket_id = 'plant-images' AND
@@ -77,6 +85,7 @@ CREATE POLICY "Users can view their own plant images" ON storage.objects
         )
     );
 
+DROP POLICY IF EXISTS "Users can upload plant images to their farms" ON storage.objects;
 CREATE POLICY "Users can upload plant images to their farms" ON storage.objects
     FOR INSERT WITH CHECK (
         bucket_id = 'plant-images' AND
@@ -92,16 +101,20 @@ CREATE POLICY "Users can upload plant images to their farms" ON storage.objects
 -- =====================================================
 
 -- User profiles policies
+DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
 CREATE POLICY "Users can view own profile" ON user_profiles
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON user_profiles;
 CREATE POLICY "Users can insert their own profile" ON user_profiles
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON user_profiles;
 CREATE POLICY "Users can update their own profile" ON user_profiles
     FOR UPDATE USING (auth.uid() = user_id);
 
 -- Farm sections policies
+DROP POLICY IF EXISTS "Users can view sections of their own farms" ON farm_sections;
 CREATE POLICY "Users can view sections of their own farms" ON farm_sections
     FOR SELECT USING (
         EXISTS (
@@ -111,6 +124,7 @@ CREATE POLICY "Users can view sections of their own farms" ON farm_sections
         )
     );
 
+DROP POLICY IF EXISTS "Users can manage sections of their own farms" ON farm_sections;
 CREATE POLICY "Users can manage sections of their own farms" ON farm_sections
     FOR ALL USING (
         EXISTS (
@@ -121,6 +135,7 @@ CREATE POLICY "Users can manage sections of their own farms" ON farm_sections
     );
 
 -- Soil analyses policies
+DROP POLICY IF EXISTS "Users can view soil analyses of their own farms" ON soil_analyses;
 CREATE POLICY "Users can view soil analyses of their own farms" ON soil_analyses
     FOR SELECT USING (
         EXISTS (
@@ -130,6 +145,7 @@ CREATE POLICY "Users can view soil analyses of their own farms" ON soil_analyses
         )
     );
 
+DROP POLICY IF EXISTS "Users can insert soil analyses for their own farms" ON soil_analyses;
 CREATE POLICY "Users can insert soil analyses for their own farms" ON soil_analyses
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -140,6 +156,7 @@ CREATE POLICY "Users can insert soil analyses for their own farms" ON soil_analy
     );
 
 -- Crop recommendations policies
+DROP POLICY IF EXISTS "Users can view crop recommendations for their own farms" ON crop_recommendations;
 CREATE POLICY "Users can view crop recommendations for their own farms" ON crop_recommendations
     FOR SELECT USING (
         EXISTS (
@@ -149,6 +166,7 @@ CREATE POLICY "Users can view crop recommendations for their own farms" ON crop_
         )
     );
 
+DROP POLICY IF EXISTS "Users can insert crop recommendations for their own farms" ON crop_recommendations;
 CREATE POLICY "Users can insert crop recommendations for their own farms" ON crop_recommendations
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -159,6 +177,7 @@ CREATE POLICY "Users can insert crop recommendations for their own farms" ON cro
     );
 
 -- Crop cultivations policies
+DROP POLICY IF EXISTS "Users can view cultivations of their own farms" ON crop_cultivations;
 CREATE POLICY "Users can view cultivations of their own farms" ON crop_cultivations
     FOR SELECT USING (
         EXISTS (
@@ -168,6 +187,7 @@ CREATE POLICY "Users can view cultivations of their own farms" ON crop_cultivati
         )
     );
 
+DROP POLICY IF EXISTS "Users can manage cultivations of their own farms" ON crop_cultivations;
 CREATE POLICY "Users can manage cultivations of their own farms" ON crop_cultivations
     FOR ALL USING (
         EXISTS (
@@ -178,6 +198,7 @@ CREATE POLICY "Users can manage cultivations of their own farms" ON crop_cultiva
     );
 
 -- Disease detections policies
+DROP POLICY IF EXISTS "Users can view disease detections of their own farms" ON plant_disease_detections;
 CREATE POLICY "Users can view disease detections of their own farms" ON plant_disease_detections
     FOR SELECT USING (
         EXISTS (
@@ -187,6 +208,7 @@ CREATE POLICY "Users can view disease detections of their own farms" ON plant_di
         )
     );
 
+DROP POLICY IF EXISTS "Users can insert disease detections for their own farms" ON plant_disease_detections;
 CREATE POLICY "Users can insert disease detections for their own farms" ON plant_disease_detections
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -197,6 +219,7 @@ CREATE POLICY "Users can insert disease detections for their own farms" ON plant
     );
 
 -- Sensor devices policies
+DROP POLICY IF EXISTS "Users can view sensors of their own farms" ON sensor_devices;
 CREATE POLICY "Users can view sensors of their own farms" ON sensor_devices
     FOR SELECT USING (
         EXISTS (
@@ -206,6 +229,7 @@ CREATE POLICY "Users can view sensors of their own farms" ON sensor_devices
         )
     );
 
+DROP POLICY IF EXISTS "Users can manage sensors of their own farms" ON sensor_devices;
 CREATE POLICY "Users can manage sensors of their own farms" ON sensor_devices
     FOR ALL USING (
         EXISTS (
@@ -216,6 +240,7 @@ CREATE POLICY "Users can manage sensors of their own farms" ON sensor_devices
     );
 
 -- Sensor readings policies
+DROP POLICY IF EXISTS "Users can view sensor readings from their own devices" ON sensor_readings;
 CREATE POLICY "Users can view sensor readings from their own devices" ON sensor_readings
     FOR SELECT USING (
         EXISTS (
@@ -227,6 +252,7 @@ CREATE POLICY "Users can view sensor readings from their own devices" ON sensor_
     );
 
 -- Weather records contain farm-linked location data; only the farm owner may read them.
+DROP POLICY IF EXISTS "Farm owners can view their weather records" ON weather_records;
 CREATE POLICY "Farm owners can view their weather records" ON weather_records
     FOR SELECT USING (
         EXISTS (
@@ -237,20 +263,25 @@ CREATE POLICY "Farm owners can view their weather records" ON weather_records
     );
 
 -- Market prices policies (public data)
+DROP POLICY IF EXISTS "All users can view market prices" ON market_prices;
 CREATE POLICY "All users can view market prices" ON market_prices
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "All users can view market predictions" ON market_predictions;
 CREATE POLICY "All users can view market predictions" ON market_predictions
     FOR SELECT USING (true);
 
 -- Notifications policies
+DROP POLICY IF EXISTS "Users can view their own notifications" ON notifications;
 CREATE POLICY "Users can view their own notifications" ON notifications
     FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
 CREATE POLICY "Users can update their own notifications" ON notifications
     FOR UPDATE USING (auth.uid() = user_id);
 
 -- AI service logs policies
+DROP POLICY IF EXISTS "Users can view their own AI service logs" ON ai_service_logs;
 CREATE POLICY "Users can view their own AI service logs" ON ai_service_logs
     FOR SELECT USING (auth.uid() = user_id);
 
