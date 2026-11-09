@@ -836,7 +836,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       governorate?: string;
       crop?: string;
       farmSizeHectares?: number;
-      soil?: Record<string, number>;
+      soil?: { ph?: number; organicMatter?: number; moisture?: number; temperature?: number };
     } | undefined;
     let farmContextStatus: "linked" | "no_farms" | "anonymous" | "unavailable" = "anonymous";
 
@@ -893,7 +893,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               return sum + (Number.isFinite(size) && size > 0 ? size : 0);
             }, 0);
             const latestSoil = soilResult.data?.[0];
-            const soil: Record<string, number> = {};
+            const soil: { ph?: number; organicMatter?: number; moisture?: number; temperature?: number } = {};
             if (latestSoil) {
               const ph = toNumber(latestSoil.ph_level);
               const organicMatter = toNumber(latestSoil.organic_matter_percent);
