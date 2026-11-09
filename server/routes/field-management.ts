@@ -467,3 +467,59 @@ function calculateTrend(soilDataArray: any[]): 'improving' | 'declining' | 'stab
   if (diff < -5) return 'declining';
   return 'stable';
 }
+
+export const createFarm: RequestHandler = async (req, res) => {
+  try {
+    const db = requestDb(req);
+    if (!db || req.identitySource !== "jwt" || !req.userId) {
+      return res.status(401).json({
+        success: false,
+        code: "VERIFIED_SESSION_REQUIRED",
+        message: "يلزم تسجيل دخول موثّق لإنشاء مزرعة.",
+      });
+    }
+
+    const body = req.body ?? {};
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const region = typeof body.region === "string" ? body.region.trim() : "";
+    const size = Number(body.size_hectares);
+    if (!name || name.length > 180 || !region || region.length > 120 || !Number.isFinite(size) || size <= 0) {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_FARM_INPUT",
+        message: "اسم المزرعة والمنطقة والمساحة بالهكتار بيانات إلزامية.",
+      });
+    }
+
+    const { data, error } = await db.from("farms").insert({
+      owner_id: req.userId,
+      name,
+      description: typeof body.description === "string" ? body.description.slice(0, 2000) : null,
+      location: { region, country: "Tunisia" },
+      size_hectares: size,
+      soil_type: typeof body.soil_type === "string" ? body.soil_type.slice(0, 100) : null,
+      climate_zone: typeof body.climate_zone === "string" ? body.climate_zone.slice(0, 100) : null,
+      water_source: typeof body.water_source === "string" ? body.water_source.slice(0, 100) : null,
+      irrigation_type: typeof body.irrigation_type === "string" ? body.irrigation_type.slice(0, 100) : null,
+    }).select("id,name,size_hectares,location,soil_type,created_at").single();
+
+    if (error) {
+      console.error("Farm creation failed:", error.code);
+      return res.status(503).json({
+        success: false,
+        code: "FARM_PERSISTENCE_FAILED",
+        message: "لم يتم حفظ المزرعة في قاعدة البيانات.",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      data,
+      provenance: { source: "supabase.farms", persisted: true },
+      message: "تم حفظ المزرعة بنجاح.",
+    });
+  } catch (error) {
+    console.error("Farm creation failed:", error);
+    sendCaughtError(res, error, "فشل في إنشاء المزرعة");
+  }
+};
