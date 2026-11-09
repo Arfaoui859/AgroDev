@@ -73,6 +73,12 @@ interface ChatMessage {
     suggestions?: string[];
     actionItems?: string[];
     relatedTopics?: string[];
+    /** Server-reported grounding status and evidence summary for this answer. */
+    farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable';
+    contextSummary?: string[];
+    note?: string;
+    disclaimer?: string;
+    usedAgents?: string[];
     /** Persisted disease record ID used to refresh its private image URL. */
     diseaseRecordId?: string;
     cultivationId?: string;
@@ -833,7 +839,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
    */
   const callAdvisorApi = async (
     messageContent: string
-  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string }> => {
+  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string; disclaimer?: string; modelSource?: string; farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable'; contextSummary?: string[]; usedAgents?: string[] }> => {
     const history = messages.slice(-6).map(m => ({
       role: m.type === 'user' ? 'user' : 'assistant',
       content: m.content
@@ -868,8 +874,13 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           modelSource: (result as { modelSource?: string }).modelSource,
           sources:
             source === 'llm'
-              ? [`نموذج لغوي (LLM): ${(result as { modelSource?: string }).modelSource ?? ''}`.trim()]
+              ? [`نموذج لغوي (LLM): ${result.modelSource ?? 'المصدر غير معلن'}`]
               : ['محرك قواعد زراعية'],
+          farmContextStatus: result.farmContextStatus,
+          contextSummary: result.contextSummary?.slice(0, 8),
+          note: result.note,
+          disclaimer: result.disclaimer,
+          usedAgents: result.usedAgents?.slice(0, 8),
           suggestions: quickActions.slice(0, 4),
           relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
         },
@@ -1321,6 +1332,26 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                                 {message.metadata.modelSource && (
                                   <span className="text-gray-400">· {message.metadata.modelSource}</span>
                                 )}
+                              </div>
+                            )}
+
+                            {(message.metadata.farmContextStatus || message.metadata.note || message.metadata.disclaimer || (message.metadata.contextSummary?.length ?? 0) > 0) && (
+                              <div className="rounded-md bg-slate-50 p-2 text-xs text-gray-600 space-y-1">
+                                {message.metadata.farmContextStatus && (
+                                  <p>
+                                    {language === 'ar' ? 'سياق الحساب: ' : language === 'fr' ? 'Contexte du compte : ' : 'Account context: '}
+                                    {message.metadata.farmContextStatus === 'linked'
+                                      ? (language === 'ar' ? 'تم ربط سجلات مزرعتك' : language === 'fr' ? 'Données de votre exploitation liées' : 'Farm records linked')
+                                      : message.metadata.farmContextStatus === 'no_farms'
+                                        ? (language === 'ar' ? 'لا توجد مزرعة مسجلة؛ إجابة عامة' : language === 'fr' ? 'Aucune ferme enregistrée; réponse générale' : 'No farm registered; general answer')
+                                        : message.metadata.farmContextStatus === 'unavailable'
+                                          ? (language === 'ar' ? 'تعذّر التحقق من بيانات المزرعة' : language === 'fr' ? 'Données de ferme indisponibles' : 'Farm data unavailable')
+                                          : (language === 'ar' ? 'جلسة غير موثقة؛ إجابة عامة' : language === 'fr' ? 'Session non vérifiée; réponse générale' : 'Unverified session; general answer')}
+                                  </p>
+                                )}
+                                {message.metadata.note && <p>{message.metadata.note}</p>}
+                                {message.metadata.disclaimer && <p>{message.metadata.disclaimer}</p>}
+                                {message.metadata.contextSummary?.map((fact, index) => <p key={index}>• {fact}</p>)}
                               </div>
                             )}
 
