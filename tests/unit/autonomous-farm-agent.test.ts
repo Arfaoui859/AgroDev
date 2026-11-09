@@ -14,6 +14,7 @@ describe("Autonomous Farm Agent event evaluation", () => {
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe("agent_soil_baseline_missing");
     expect(events[0].evidence.evidence).toBe("no_verified_soil_analysis_record");
+    expect(events[0].key).toBe("soil-baseline:farm-1:2026-11-09");
   });
 
   test("reminds about a recorded harvest date within seven days", () => {
