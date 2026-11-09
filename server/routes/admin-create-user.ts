@@ -1,78 +1,85 @@
-import { RequestHandler } from 'express';
-import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
-import { safeInsert as serverSafeInsert } from '../lib/supabaseHelpers';
-import { verifyAdminToken } from '../lib/adminAuth';
+import { RequestHandler } from "express";
+import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
+import { verifyAdminToken } from "../lib/adminAuth";
+
+const EMAIL_PATTERN = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
 
 export const adminCreateUser: RequestHandler = async (req, res) => {
   if (!verifyAdminToken(req)) {
-    return res.status(403).json({ success: false, error: 'Forbidden: invalid admin token' });
+    return res.status(403).json({ success: false, error: "Forbidden: invalid admin token" });
   }
 
   if (!isSupabaseConfigured || !supabaseAdmin) {
-    return res.status(500).json({ success: false, error: 'Supabase admin client not configured' });
+    return res.status(503).json({ success: false, error: "Supabase admin client is not configured" });
   }
 
-  const { email, password, full_name } = req.body || {};
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Missing email or password in request body' });
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+  const fullName = typeof req.body?.full_name === "string" ? req.body.full_name.trim() : "";
+
+  if (!EMAIL_PATTERN.test(email) || password.length < 12) {
+    return res.status(400).json({
+      success: false,
+      error: "A valid email and a password of at least 12 characters are required",
+    });
   }
 
   try {
-    // Create user in Supabase Auth (confirmed)
-    const { data: authData, error: authError } = await (supabaseAdmin as any).auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name },
-    });
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName || email.split("@")[0] },
+      });
 
+    let userId = authData.user?.id;
     if (authError) {
-      // If user already exists, try to find it
-      if (authError.message && authError.message.includes('already registered')) {
-        // find existing user
-        const { data: listData } = await (supabaseAdmin as any).auth.admin.listUsers();
-        const existing = listData?.users?.find((u: any) => u.email === email);
-        if (!existing) throw authError;
-        // proceed with existing user id
-        const userId = existing.id;
-        // Insert into users table as admin
-        const { error: insertErr } = await serverSafeInsert(supabaseAdmin as any, 'users', {
-          id: userId,
-          email,
-          full_name: full_name || null,
-          role: 'admin',
-          verified: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-        if (insertErr) {
-          return res.status(500).json({ success: false, error: insertErr.message });
-        }
-        return res.json({ success: true, message: 'Existing user promoted to admin', userId });
+      if (!authError.message.toLowerCase().includes("already registered")) {
+        return res.status(400).json({ success: false, error: authError.message });
       }
 
-      return res.status(500).json({ success: false, error: authError.message });
+      const { data: listed, error: listError } =
+        await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (listError) throw listError;
+      userId = listed.users.find((user) => user.email?.toLowerCase() === email)?.id;
     }
 
-    const userId = authData?.user?.id;
+    if (!userId) {
+      return res.status(409).json({ success: false, error: "Auth identity could not be resolved" });
+    }
 
-    // Insert into custom users table
-    const { error: userTableError } = await serverSafeInsert(supabaseAdmin as any, 'users', {
-      id: userId,
+    const { data: persisted, error: persistError } = await supabaseAdmin
+      .from("users")
+      .upsert({
+        id: userId,
+        email,
+        full_name: fullName || email.split("@")[0],
+        role: "admin",
+        email_verified: true,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "id" })
+      .select("id, email, role")
+      .single();
+
+    if (persistError || persisted?.role !== "admin") {
+      console.error("Admin user persistence failed:", persistError);
+      return res.status(500).json({
+        success: false,
+        error: "Auth identity exists, but administrator role was not persisted",
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Administrator account created or promoted",
+      userId,
       email,
-      full_name: full_name || null,
-      role: 'admin',
-      verified: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      role: persisted.role,
     });
-
-    if (userTableError) {
-      return res.status(500).json({ success: false, error: userTableError.message });
-    }
-
-    return res.json({ success: true, message: 'Admin user created', userId });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Admin user creation failed";
+    return res.status(500).json({ success: false, error: message });
   }
 };
