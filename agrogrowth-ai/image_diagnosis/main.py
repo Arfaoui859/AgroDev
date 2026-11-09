@@ -234,7 +234,7 @@ async def health():
     classifier = getattr(detector, "ml_classifier", None)
     inference_mode = getattr(detector, "inference_mode", "heuristic")
     model_source = (
-        getattr(classifier, "MODEL_SOURCE", "heuristic-demo")
+        getattr(classifier, "MODEL_SOURCE", DEFAULT_DISEASE_MODEL_SOURCE)
         if classifier is not None else "heuristic-demo"
     )
 
