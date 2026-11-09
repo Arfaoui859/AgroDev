@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Activity, AlertCircle, ArrowDownToLine, CheckCircle2, ClipboardList,
   FlaskConical, Leaf, Loader2, RefreshCw, ShieldCheck, Sprout,
@@ -219,6 +220,25 @@ const EnhancedAnalysis: React.FC = () => {
   const followUp = Array.isArray(data.followUpPlan) ? data.followUpPlan : [];
   const crop = data.cropSuitability ?? {};
   const quality = data.dataQuality ?? {};
+  const discussReportWithAgent = () => {
+    const groundedContext = {
+      executiveSummary: data.executiveSummary,
+      soilCharacterization: data.soilCharacterization,
+      findings,
+      cropSuitability: crop,
+      targetCropPlan: data.targetCropPlan,
+      waterAndIrrigation: data.waterAndIrrigation,
+      missingMeasurements: quality.missingMeasurements,
+      recommendations,
+      followUpPlan: followUp,
+    };
+    const compactContext = JSON.stringify(groundedContext).slice(0, 6500);
+    navigate("/ai-assistant", {
+      state: {
+        initialPrompt: "أنت AgroGrowth Agent. أريد منك أن تبني قرار زراعة عملي اعتماداً على تقرير التربة التالي، لا تعطيني كلاماً عاماً. قارن المحاصيل المرشحة، اختر أفضل الخيارات الممكنة للموسم الحالي إذا كانت المعطيات كافية، وضّح شروط الزراعة والمخاطر والماء والتهيئة وخطة أول 30 يوماً. إذا نقصت معلومات حاسمة اسألني عنها ولا تخمّن. هذا التقرير هو المصدر: " + compactContext,
+      },
+    });
+  };
 
   return (
     <main dir="rtl" className="min-h-screen bg-slate-50 px-3 py-6 text-right sm:px-6 lg:px-8">
@@ -272,7 +292,7 @@ const EnhancedAnalysis: React.FC = () => {
         </div>
 
         {report && <article className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 print:hidden"><div><h2 className="text-2xl font-black text-slate-900">التقرير الزراعي</h2><p className="text-xs text-slate-500">أُنشئ: {savedAt ? new Date(savedAt).toLocaleString("ar-TN") : "—"}</p><p className={`mt-1 text-xs font-semibold ${report?.persistence?.persisted ? "text-emerald-700" : "text-amber-700"}`}>{report?.persistence?.persisted ? "✓ محفوظ في حسابك وقاعدة البيانات" : report?.persistence?.reason === "FIELD_NOT_SELECTED" ? "⚠ التقرير غير محفوظ سحابياً: اختر حقلاً تملكه قبل التحليل." : report?.persistence?.reason === "FIELD_NOT_FOUND_OR_NOT_OWNED" ? "⚠ تعذّر ربط التقرير: الحقل غير موجود أو لا تملك صلاحية الوصول إليه." : report?.persistence?.reason === "DATABASE_OR_SESSION_UNAVAILABLE" ? "⚠ يلزم تسجيل الدخول والاتصال بقاعدة البيانات للحفظ السحابي." : "⚠ تعذّر تأكيد الحفظ السحابي؛ التقرير متاح في هذه الجلسة فقط."}</p></div><div className="flex gap-2"><button onClick={()=>window.print()} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold"><ArrowDownToLine size={16}/>طباعة / PDF</button><button onClick={()=>{setReport(null);setError("");}} className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white">تحليل عينة أخرى</button></div></div>
+          <div className="flex flex-wrap items-center justify-between gap-3 print:hidden"><div><h2 className="text-2xl font-black text-slate-900">التقرير الزراعي</h2><p className="text-xs text-slate-500">أُنشئ: {savedAt ? new Date(savedAt).toLocaleString("ar-TN") : "—"}</p><p className={`mt-1 text-xs font-semibold ${report?.persistence?.persisted ? "text-emerald-700" : "text-amber-700"}`}>{report?.persistence?.persisted ? "✓ محفوظ في حسابك وقاعدة البيانات" : report?.persistence?.reason === "FIELD_NOT_SELECTED" ? "⚠ التقرير غير محفوظ سحابياً: اختر حقلاً تملكه قبل التحليل." : report?.persistence?.reason === "FIELD_NOT_FOUND_OR_NOT_OWNED" ? "⚠ تعذّر ربط التقرير: الحقل غير موجود أو لا تملك صلاحية الوصول إليه." : report?.persistence?.reason === "DATABASE_OR_SESSION_UNAVAILABLE" ? "⚠ يلزم تسجيل الدخول والاتصال بقاعدة البيانات للحفظ السحابي." : "⚠ تعذّر تأكيد الحفظ السحابي؛ التقرير متاح في هذه الجلسة فقط."}</p></div><div className="flex flex-wrap gap-2"><button onClick={discussReportWithAgent} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white"><Sprout size={16}/>ناقش التقرير وابنِ خطة الزراعة مع Agent</button><button onClick={()=>window.print()} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold"><ArrowDownToLine size={16}/>طباعة / PDF</button><button onClick={()=>{setReport(null);setError("");}} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold">تحليل عينة أخرى</button></div></div>
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950"><strong>مصدر التقرير:</strong> القياسات مدخلة من المستخدم وغير متحقق منها مخبرياً؛ التفسير والتوصيات مولّدة بواسطة AI. لا يوجد ادعاء بوجود نموذج ML مدرّب أو تنبؤ مخبري.</div>
           <Section title="الملخص التنفيذي" icon={<CheckCircle2 className="text-emerald-700"/>}><p className="text-sm leading-8 text-slate-700">{text(data.executiveSummary, "لم يقدّم مزود AI ملخصاً تنفيذياً.")}</p></Section>
           <Section title="جودة البيانات وحدود التحليل" icon={<ShieldCheck/>}><h3 className="font-semibold">القياسات المتوفرة</h3><BulletList items={(Array.isArray(quality.providedMeasurements) ? quality.providedMeasurements.map((item:any)=>typeof item==="string"?item:`${text(item.name)}: ${text(item.value)} ${text(item.unit,"")}`) : [])}/><h3 className="pt-2 font-semibold">القياسات الناقصة</h3><BulletList items={list(quality.missingMeasurements)}/><h3 className="pt-2 font-semibold">القيود</h3><BulletList items={list(quality.limitations)}/></Section>
