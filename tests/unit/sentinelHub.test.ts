@@ -12,6 +12,14 @@ describe("Sentinel Hub farm NDVI client", () => {
       .rejects.toThrow("VALID_FARM_GEOJSON_BOUNDARY_REQUIRED");
   });
 
+  test("rejects unclosed GeoJSON polygon rings", async () => {
+    const invalidPolygon = {
+      type: "Polygon",
+      coordinates: [[[10, 36], [10.01, 36], [10.01, 36.01], [10, 36.01]]],
+    };
+    await expect(fetchFarmNdvi(invalidPolygon, 90)).rejects.toThrow("VALID_FARM_GEOJSON_BOUNDARY_REQUIRED");
+  });
+
   test("requires a supported observation period", async () => {
     const polygon = {
       type: "Polygon",
