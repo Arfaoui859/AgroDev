@@ -337,9 +337,7 @@ export function createServer() {
       // the SPA can disclose that these are illustrative, not live records.
       "/api/saas",
       "/api/subscription",
-      "/api/supply-chain",
       "/api/logistics",
-      "/api/marketplace",
       "/api/soil-ai-detector",
       // Further fixture-backed modules: the routers below build their records
       // from fixed in-memory arrays (see the "Mock data for demonstration"
