@@ -18,7 +18,11 @@ jest.mock("axios", () => {
   const callable: any = jest.fn(async (first: any) => {
     const url: string = typeof first === "string" ? first : (first?.url ?? "");
     // Port 8001 declares a synthetic model; port 8002 a real one.
-    const modelSource = url.includes(":8001") ? "synthetic-demo" : "field-validated-v2";
+    const modelSource = url.includes(":8001")
+      ? "synthetic-demo"
+      : url.includes(":8003")
+        ? "deterministic-rules"
+        : "field-validated-v2";
     return {
       data: { status: "healthy", model_source: modelSource },
       status: 200,
@@ -49,6 +53,12 @@ describe("🧪 AI health model provenance", () => {
     expect(crop.modelSource).toBe("field-validated-v2");
     expect(crop.modelTrainedOnSyntheticData).toBe(false);
     expect(crop.isRealModel).toBe(true);
+
+    const image = res.body.services.find((s: any) => s.key === "image_diagnosis");
+    expect(image.modelSource).toBe("deterministic-rules");
+    expect(image.modelKind).toBe("rule-based");
+    expect(image.isRealModel).toBe(false);
+    expect(image.modelTrainedOnSyntheticData).toBe(false);
   });
 
   test("counts synthetic-model services in the overview and warns in the note", async () => {
