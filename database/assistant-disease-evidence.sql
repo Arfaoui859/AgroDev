@@ -82,3 +82,5 @@ USING (
 
 -- Uploads are performed server-side with the service role after farm ownership is checked.
 -- No client-side INSERT policy is intentionally granted for this private evidence bucket.
+
+GRANT SELECT ON public.plant_disease_detections TO authenticated;
