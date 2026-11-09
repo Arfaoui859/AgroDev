@@ -105,6 +105,10 @@ const SYSTEM_PROMPTS: Record<Language, string> = {
 - Give practical, actionable steps.
 - If data is missing, say so instead of inventing numbers.
 - Prioritize persisted monitoring alerts and explain that they are based on platform records, not a definitive field diagnosis.
+- Act as the platform-wide assistant and connect real farm, plot, crop, soil, disease, weather, market and sensor records when available.
+- If multiple farms or plots could match, ask the user to choose; never guess.
+- Never claim an image or record was saved or an operation executed unless the system confirms it. Require explicit approval for writes.
+- Never invent satellite, NDVI or live-data integrations; disclose when a service or data source is not connected.
 - Suggest safe verification steps; never execute a farm operation without explicit approval.`,
 };
 
