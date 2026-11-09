@@ -123,8 +123,14 @@ export async function bulkUpdateNotifications(req: Request, res: Response) {
   if (!db || !req.userId) return unavailable(res, "NOTIFICATION_DATABASE_UNAVAILABLE");
   const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter((id: unknown) => typeof id === "string").slice(0, 100) : [];
   const action = req.body?.action;
-  if (!ids.length || !["read", "unread", "archive"].includes(action)) {
+  if (!ids.length || !["read", "unread", "archive", "delete"].includes(action)) {
     return res.status(400).json({ success: false, code: "INVALID_BULK_UPDATE" });
+  }
+  if (action === "delete") {
+    const { data, error } = await db.from("notifications").delete()
+      .eq("user_id", req.userId).in("id", ids).select("id");
+    if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_BULK_DELETE_FAILED", message: error.message });
+    return res.json({ success: true, deletedCount: data?.length ?? 0 });
   }
   const updates = action === "read" ? { read_at: new Date().toISOString() } :
     action === "unread" ? { read_at: null } : { archived_at: new Date().toISOString() };
