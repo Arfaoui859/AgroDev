@@ -564,25 +564,25 @@ export function createServer() {
   app.get("/api/fields/:fieldId/performance", requireAuth, getFieldPerformance);
   app.post("/api/ai-recommendations", requireAuth, generateAIRecommendations);
 
-  // Notification System routes
-  app.get("/api/notifications", getNotifications);
-  app.get("/api/notifications/:id", getNotificationById);
-  app.post("/api/notifications", createNotification);
-  app.put("/api/notifications/:id", updateNotification);
-  app.patch("/api/notifications/:id/read", markAsRead);
-  app.patch("/api/notifications/:id/unread", markAsUnread);
-  app.patch("/api/notifications/:id/star", toggleStar);
-  app.patch("/api/notifications/:id/archive", archiveNotification);
-  app.delete("/api/notifications/:id", deleteNotification);
-  app.patch("/api/notifications/bulk", bulkUpdateNotifications);
-  app.get("/api/sensors", getSensors);
-  app.get("/api/real-time-data", getRealTimeData);
-  app.get("/api/notification-rules", getNotificationRules);
-  app.post("/api/notification-rules", createNotificationRule);
-  app.put("/api/notification-rules/:id", updateNotificationRule);
-  app.delete("/api/notification-rules/:id", deleteNotificationRule);
-  app.get("/api/notification-stats", getNotificationStats);
-  app.post("/api/send-notification", sendManualNotification);
+  // Notification records are private to the authenticated owner and persisted in Supabase.
+  app.get("/api/notifications", requireAuth, getNotifications);
+  app.get("/api/notifications/:id", requireAuth, getNotificationById);
+  app.post("/api/notifications", requireAuth, createNotification);
+  app.put("/api/notifications/:id", requireAuth, updateNotification);
+  app.patch("/api/notifications/:id/read", requireAuth, markAsRead);
+  app.patch("/api/notifications/:id/unread", requireAuth, markAsUnread);
+  app.patch("/api/notifications/:id/star", requireAuth, toggleStar);
+  app.patch("/api/notifications/:id/archive", requireAuth, archiveNotification);
+  app.delete("/api/notifications/:id", requireAuth, deleteNotification);
+  app.patch("/api/notifications/bulk", requireAuth, bulkUpdateNotifications);
+  app.get("/api/sensors", requireAuth, getSensors);
+  app.get("/api/real-time-data", requireAuth, getRealTimeData);
+  app.get("/api/notification-rules", requireAuth, getNotificationRules);
+  app.post("/api/notification-rules", requireAuth, createNotificationRule);
+  app.put("/api/notification-rules/:id", requireAuth, updateNotificationRule);
+  app.delete("/api/notification-rules/:id", requireAuth, deleteNotificationRule);
+  app.get("/api/notification-stats", requireAuth, getNotificationStats);
+  app.post("/api/send-notification", requireAuth, sendManualNotification);
 
   // SaaS Management routes
   app.get("/api/saas/metrics", getSaaSMetrics);
