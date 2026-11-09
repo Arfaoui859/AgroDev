@@ -168,19 +168,15 @@ async def upload_pest_image(file: UploadFile = File(...)):
 
 @app.get("/pest-database")
 async def get_pest_database():
-    """
-    الحصول على قاعدة بيانات الآفات والأمراض
-    """
-    try:
-        return {
-            'success': True,
-            'data': to_json_safe(pest_recommender.pest_disease_database),
-            'message': 'تم جلب قاعدة البيانات بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching pest database: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "PEST_CATALOGUE_NOT_VERIFIED",
+            "message": "The bundled pest catalogue has no verified source registry or regional validation.",
+            "production_ready": False,
+        },
+    )
+
 
 @app.get("/prevention-measures/{crop_type}")
 async def get_prevention_measures(crop_type: str):
