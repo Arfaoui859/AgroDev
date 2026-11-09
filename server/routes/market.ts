@@ -17,6 +17,14 @@ export const getMarketData: RequestHandler = async (req, res) => {
 
     // Get recent market prices
     const marketPrices = await CropService.getMarketPricesByCropId(cropId, 30);
+    if (marketPrices.length === 0) {
+      return res.status(503).json({
+        status: "unavailable",
+        code: "MARKET_DATA_NOT_AVAILABLE",
+        dataAvailable: false,
+        message: "لا توجد أسعار مخزّنة وموثّقة لهذا المحصول حالياً.",
+      });
+    }
 
     // Calculate statistics
     const currentPrice =
@@ -98,6 +106,14 @@ export const getMarketData: RequestHandler = async (req, res) => {
 export const getAllMarketData: RequestHandler = async (req, res) => {
   try {
     const latestPrices = await CropService.getLatestMarketPrices();
+    if (latestPrices.length === 0) {
+      return res.status(503).json({
+        status: "unavailable",
+        code: "MARKET_DATA_NOT_AVAILABLE",
+        dataAvailable: false,
+        message: "لا توجد أسعار سوق مسجّلة حالياً.",
+      });
+    }
 
     // Resolve crop names via a separate lookup (no PostgREST embedded join:
     // market_prices has no FK to crops in the deployed schema).
@@ -147,10 +163,11 @@ export const getAllMarketData: RequestHandler = async (req, res) => {
           ? currentPrices.reduce((sum, v) => sum + v, 0) / currentPrices.length
           : null,
       },
-      dataSource: "database",
-      isRealData: true,
+      dataSource: "platform-database-unverified",
+      isRealData: false,
+      sourceVerified: false,
       disclaimer:
-        "الأسعار من قاعدة بيانات المنصة وقد تكون غير محدّثة. تحقق من المصادر الرسمية قبل أي قرار تجاري.",
+        "هذه سجلات مخزّنة في المنصة وليست أسعاراً رسمية أو متحققاً منها بشكل مستقل. تحقق من المصدر والتاريخ قبل أي قرار تجاري.",
     };
 
     res.json({
@@ -190,6 +207,14 @@ export const getMarketTrends: RequestHandler = async (req, res) => {
     const filteredPrices = marketPrices.filter(
       (price) => new Date(price.price_date) >= fromDate,
     );
+    if (filteredPrices.length === 0) {
+      return res.status(503).json({
+        status: "unavailable",
+        code: "MARKET_HISTORY_NOT_AVAILABLE",
+        dataAvailable: false,
+        message: "لا توجد بيانات تاريخية كافية للفترة المطلوبة.",
+      });
+    }
 
     // Analyze trends
     const trends = analyzeTrends(filteredPrices);
@@ -201,8 +226,9 @@ export const getMarketTrends: RequestHandler = async (req, res) => {
       insights: generateMarketInsights(trends),
       recommendations: generateMarketRecommendations(trends),
       lastUpdated: new Date().toISOString(),
-      dataSource: "database",
-      isRealData: true,
+      dataSource: "platform-database-unverified",
+      isRealData: false,
+      sourceVerified: false,
       sampleSize: filteredPrices.length,
       disclaimer:
         "الاتجاهات محسوبة من الأسعار المخزّنة في قاعدة بيانات المنصة؛ قد تكون محدودة عند قلّة السجلات.",
@@ -237,6 +263,14 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
     }
 
     const marketPrices = await CropService.getMarketPricesByCropId(cropId, 50);
+    if (marketPrices.length === 0) {
+      return res.status(503).json({
+        status: "unavailable",
+        code: "REGIONAL_MARKET_DATA_NOT_AVAILABLE",
+        dataAvailable: false,
+        message: "لا توجد أسعار إقليمية مسجّلة لهذا المحصول.",
+      });
+    }
 
     // Group by location
     const regionalData = {};
@@ -298,6 +332,10 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
           0,
         ) / Math.max(Object.keys(regionalData).length, 1),
       lastUpdated: new Date().toISOString(),
+      dataSource: "platform-database-unverified",
+      isRealData: false,
+      sourceVerified: false,
+      disclaimer: "بيانات قاعدة المنصة غير متحقق منها بشكل مستقل؛ لا تعتبر أسعاراً رسمية.",
     };
 
     res.json({
@@ -332,10 +370,11 @@ function calculateVolatility(prices: any[]): number {
 function generatePriceForecast(prices: any[]): any {
   if (prices.length < 7) {
     return {
-      nextWeek: 0,
-      nextMonth: 0,
-      confidence: "منخفضة",
-      method: "بيانات غير كافية",
+      nextWeek: null,
+      nextMonth: null,
+      confidence: "unavailable",
+      method: "insufficient_data",
+      dataAvailable: false,
     };
   }
 
