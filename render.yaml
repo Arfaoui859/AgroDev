@@ -9,7 +9,7 @@ services:
   - type: web
     name: agrogrowth-platform
     runtime: node
-    branch: feat/ai-integration-production-hardening   # change to main after merge
+    branch: feat/soil-analysis-professional-report   # autonomous agent + notification persistence branch
     region: frankfurt
     plan: starter
     # --include=dev: NODE_ENV=production would otherwise skip devDependencies needed by the build
