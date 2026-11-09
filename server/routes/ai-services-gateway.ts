@@ -5,11 +5,7 @@ import axios, { AxiosError } from "axios";
 import FormData from "form-data";
 import multer from "multer";
 import { uploadError, requireRealImages } from "../middleware/upload";
-import {
-  recommendCropsForUI,
-  CROP_REFERENCE,
-} from "../services/ai/cropAdvisor";
-import { analyzeSoil, recommendCrops } from "../services/ai/knowledgeEngine";
+import { CROP_REFERENCE } from "../services/ai/cropAdvisor";
 import {
   answerAgriculturalQuestion,
   detectLanguage,
@@ -944,27 +940,6 @@ function toNumber(value: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** Normalise varied soil payloads into the rule-based engine input shape. */
-function normaliseSoilInput(data: Record<string, any>) {
-  const d = data ?? {};
-  return {
-    ph: toNumber(d.ph),
-    nitrogen: toNumber(d.nitrogen),
-    phosphorus: toNumber(d.phosphorus),
-    potassium: toNumber(d.potassium),
-    organic_matter: toNumber(d.organic_matter ?? d.organicMatter),
-    moisture: toNumber(d.moisture),
-    salinity: toNumber(d.salinity ?? d.conductivity),
-    temperature: toNumber(d.temperature),
-  };
-}
-
-/**
- * The AI microservices type `location` as optional GPS coordinates
- * ({latitude, longitude}). The UI sometimes sends a free-text place name, which
- * makes Pydantic answer 422 and silently disables the microservice. Convert to a
- * GPS object when possible, otherwise drop the field rather than send junk.
- */
 function normaliseLocation(raw: any): { latitude: number; longitude: number } | undefined {
   if (!raw) return undefined;
   if (typeof raw === "object") {
@@ -975,24 +950,6 @@ function normaliseLocation(raw: any): { latitude: number; longitude: number } | 
       : undefined;
   }
   return undefined;
-}
-
-/** Normalise varied crop request payloads into the crop advisor input shape. */
-function normaliseCropInput(data: Record<string, any>) {
-  const d = data ?? {};
-  return {
-    ph: toNumber(d.ph ?? d.soil_ph ?? d.soil_data?.ph),
-    nitrogen: toNumber(d.nitrogen ?? d.soil_data?.nitrogen),
-    phosphorus: toNumber(d.phosphorus ?? d.soil_data?.phosphorus),
-    potassium: toNumber(d.potassium ?? d.soil_data?.potassium),
-    temperature: toNumber(d.temperature ?? d.climate_data?.temperature),
-    humidity: toNumber(d.humidity ?? d.climate_data?.humidity),
-    rainfall: toNumber(d.rainfall ?? d.climate_data?.rainfall ?? d.annual_rainfall),
-    area_hectares: toNumber(d.area_hectares ?? d.farm_size),
-    soil_type: d.soil_type,
-    salinity: toNumber(d.salinity ?? d.soil_data?.salinity),
-    season: d.season,
-  };
 }
 
 export const getSupportedCrops = async (req: Request, res: Response) => {
