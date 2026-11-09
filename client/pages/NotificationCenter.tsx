@@ -297,31 +297,6 @@ interface NotificationPreferences {
   updatedAt: string;
 }
 
-interface RealTimeData {
-  timestamp: string;
-  sensors: {
-    [sensorId: string]: {
-      value: number;
-      status: 'normal' | 'warning' | 'critical';
-      change: 'increase' | 'decrease' | 'stable';
-      changePercent: number;
-    };
-  };
-  weather: {
-    temperature: number;
-    humidity: number;
-    windSpeed: number;
-    pressure: number;
-    precipitation: number;
-    condition: string;
-  };
-  systemHealth: {
-    connectedSensors: number;
-    totalSensors: number;
-    dataLatency: number; // milliseconds
-    errorRate: number; // percentage
-  };
-}
 
 // Sensor and notification values are loaded from authenticated persistence; no demo records are seeded.\n\n// ============ MAIN COMPONENT ============
 
