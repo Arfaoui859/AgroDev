@@ -343,7 +343,7 @@ export const listSoilAnalysisReports: RequestHandler = async(req,res)=>{
     const { data, error } = await db
       .from("soil_analyses")
       .select("id,section_id,farm_id,analysis_type,analyzed_at,created_at,sensor_data,analysis_result")
-       .in("analysis_type",["lab","manual"])
+      .in("analysis_type",["lab","manual"])
       .order("analyzed_at",{ascending:false})
       .limit(limit);
     if (error) throw error;
