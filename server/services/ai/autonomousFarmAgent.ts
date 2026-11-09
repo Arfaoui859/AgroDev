@@ -195,7 +195,7 @@ export async function runFarmAgentScan(
 
   const [cultivationResult, soilResult, sensorResult, profileResult] = await Promise.all([
     db.from("crop_cultivations").select("id,farm_id,crop_name,expected_harvest_date,status").in("farm_id", farmIds),
-    db.from("soil_analyses").select("id,farm_id,analysis_type,analyzed_at,created_at").in("farm_id", farmIds).in("analysis_type", ["lab", "sensor"]).order("analyzed_at", { ascending: false }),
+    db.from("soil_analyses").select("id,farm_id,analysis_type,analyzed_at,created_at").in("farm_id", farmIds).in("analysis_type", ["lab", "laboratory", "sensor"]).order("analyzed_at", { ascending: false }),
     db.from("sensor_devices").select("id,farm_id,device_id,status,battery_level,updated_at").in("farm_id", farmIds),
     db.from("user_profiles").select("preferences").eq("user_id", userId).maybeSingle(),
   ]);
