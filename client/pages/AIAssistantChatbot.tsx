@@ -339,7 +339,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         timestamp: new Date().toISOString(),
         language,
         metadata: {
-          dataSource: payload.dataSource === "llm" || payload.data_source === "vision-model" ? "llm" : undefined,
+          dataSource: payload.dataSource === "llm" || payload.dataSource === "llm-generated" || payload.data_source === "vision-model" || payload.data_source === "llm-generated" ? "llm" : undefined,
           modelSource,
           sources: [modelSource],
           suggestions: cropType ? ["شنوّة نعمل توا؟", "كيفاش نمنع انتشار المرض؟"] : ["المحصول طماطم", "المحصول زيتون"]
