@@ -1,32 +1,26 @@
-"""
-Regression test for a KeyError that made /quick-recommendation unusable.
-
-The endpoint built its simplified payload with
-`crop['profit_analysis']['profit_per_hectare']`, but the recommender emits
-`net_profit`. Every request raised KeyError and answered HTTP 500, so the Node
-gateway silently fell back to the rule-based engine.
-
-The test drives the real endpoint coroutine (no mocks, no extra HTTP client
-dependency) and asserts the response is well formed.
-"""
+"""The quick endpoint must not expose a recommender trained on synthetic data."""
 
 import asyncio
 import importlib
+import pathlib
+import sys
+
+import pytest
+from fastapi import HTTPException
+
+AI_ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(AI_ROOT) not in sys.path:
+    sys.path.insert(0, str(AI_ROOT))
 
 quick_module = importlib.import_module("crop_recommendation.main")
 
 
-def test_quick_recommendation_returns_well_formed_payload():
-    body = asyncio.run(
-        quick_module.quick_recommendation(
-            temperature=24, rainfall=350, soil_ph=6.5, farm_size=2
+def test_quick_recommendation_fails_closed_for_synthetic_model():
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            quick_module.quick_recommendation(
+                temperature=24, rainfall=350, soil_ph=6.5, farm_size=2
+            )
         )
-    )
-    assert body["quick_recommendations"], "expected at least one recommendation"
-    top = body["quick_recommendations"][0]
-    # This endpoint reports suitability and risk, not financial estimates.
-    assert top["crop_name"]
-    assert top["risk_level"]
-    assert "expected_profit_per_hectare" not in top
-    assert "does not estimate profit" in body["disclaimer"].lower()
-    assert body["best_crop"] == top
+    assert exc.value.status_code == 503
+    assert exc.value.detail["code"] == "CROP_MODEL_NOT_VALIDATED"
