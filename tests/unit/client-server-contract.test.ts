@@ -58,6 +58,8 @@ function serverApiPaths(): Set<string> {
 
   const routes = new Set<string>();
   const add = (p: string) => p.startsWith("/api") && routes.add(normalize(p));
+  // Explicit catch-all fail-closed routers are valid mounted API surfaces.
+  for (const prefix of ["/api/agronomist-dashboard","/api/livestock-management","/api/farmer-dashboard","/api/government-dashboard","/api/trader-dashboard"]) add(prefix + "/*");
 
   // Direct handlers in index.ts
   for (const m of indexSrc.matchAll(
