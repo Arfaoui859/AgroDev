@@ -3,7 +3,7 @@
 ## What this first production slice does
 
 The agent evaluates persisted, user-owned farm records and creates deduplicated in-app notifications for:
-- Farms with no soil-analysis record.
+- Farms with no verified lab or sensor soil-analysis record (manual/image-only entries are not treated as validated measurements).
 - A latest soil-analysis record older than the configurable review window (default 180 days).
 - Active cultivations whose recorded expected harvest date is within seven days.
 - Active cultivations whose recorded expected harvest date has passed.
