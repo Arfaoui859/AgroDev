@@ -375,7 +375,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
             analysisResult: payload,
           });
           if (farmPayload.data.length === 1) {
-            await loadAssistantCultivations(farmPayload.data[0].id);
+            await loadAssistantCultivations(farmPayload.data[0].id, cropType || "");
           }
         } else {
           setMessages(prev => [...prev, {
@@ -505,7 +505,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
-  const loadAssistantCultivations = async (farmId: string) => {
+  const loadAssistantCultivations = async (farmId: string, cropTypeOverride?: string) => {
     if (!farmId) { setAssistantCultivations([]); return; }
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) return;
@@ -526,7 +526,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       grape: /grape|عنب|raisin/i,
       apple: /apple|تفاح|pomme/i,
     };
-    const currentCrop = pendingDiseaseSave?.cropType || "";
+    const currentCrop = cropTypeOverride || pendingDiseaseSave?.cropType || "";
     const matcher = cropMatchers[currentCrop];
     const matchingCultivations = matcher ? rows.filter((row: any) => matcher.test(String(row.crop_name || ""))) : [];
     if (matchingCultivations.length === 1) {
