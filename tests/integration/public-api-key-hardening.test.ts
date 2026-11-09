@@ -28,7 +28,7 @@ describe("🔑 Public API key minting", () => {
   });
 
   test("API-key minting fails closed until keys and usage are persisted", async () => {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       const res = await request(app)
         .post("/api/public/create-key")
         .send({ name: "Test", email: "t@example.com" });
@@ -36,6 +36,10 @@ describe("🔑 Public API key minting", () => {
       expect(res.body.code).toBe("PUBLIC_DATA_SOURCE_NOT_CONNECTED");
       expect(res.body.data?.apiKey).toBeUndefined();
     }
+    const rateLimited = await request(app)
+      .post("/api/public/create-key")
+      .send({ name: "Test", email: "t@example.com" });
+    expect(rateLimited.status).toBe(429);
   });
 
 });
