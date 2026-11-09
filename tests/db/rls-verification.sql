@@ -66,6 +66,21 @@ INSERT INTO public.farms (id, owner_id, name, location, size_hectares) VALUES
   ('f0000000-0000-0000-0000-0000000000b1', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
    'Farm B', '{"lat":34.7,"lng":10.7}'::jsonb, 2.0);
 
+INSERT INTO public.weather_records (farm_id, location, record_date, source)
+VALUES (
+  'f0000000-0000-0000-0000-0000000000a1',
+  '{"region":"test-private-farm"}'::jsonb,
+  CURRENT_DATE,
+  'rls-test'
+);
+INSERT INTO public.weather_forecasts (farm_id, forecast_date, forecast_data, source)
+VALUES (
+  'f0000000-0000-0000-0000-0000000000a1',
+  CURRENT_DATE,
+  '{"forecast":"private-test"}'::jsonb,
+  'rls-test'
+);
+
 INSERT INTO public.farm_sections (id, farm_id, name, area_hectares) VALUES
   ('50000000-0000-0000-0000-0000000000a1', 'f0000000-0000-0000-0000-0000000000a1',
    'Section A1', 2.0);
@@ -105,6 +120,10 @@ SELECT public.assert_true((SELECT count(*) FROM public.farm_sections) = 1,
   'farmer A sees own farm section');
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 1,
   'farmer A sees own soil analysis');
+SELECT public.assert_true((SELECT count(*) FROM public.weather_records) = 1,
+  'farmer A sees only weather records linked to own farm');
+SELECT public.assert_true((SELECT count(*) FROM public.weather_forecasts) = 1,
+  'farmer A sees only forecasts linked to own farm');
 
 -- The same owner-scoped policy must allow a real soil report insert.
 INSERT INTO public.soil_analyses (farm_id, section_id, analysis_type, sensor_data, analysis_result)
@@ -173,6 +192,10 @@ SELECT public.assert_true((SELECT count(*) FROM public.farms) = 1,
   'farmer B sees only own farm');
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 0,
   'farmer B CANNOT see farmer A soil analyses (cross-tenant leak)');
+SELECT public.assert_true((SELECT count(*) FROM public.weather_records) = 0,
+  'farmer B cannot read farmer A weather records');
+SELECT public.assert_true((SELECT count(*) FROM public.weather_forecasts) = 0,
+  'farmer B cannot read farmer A weather forecasts');
 SELECT public.assert_true((SELECT count(*) FROM public.farm_sections) = 0,
   'farmer B CANNOT see farmer A farm sections');
 SELECT public.assert_true((SELECT count(*) FROM public.notifications) = 0,
@@ -204,6 +227,10 @@ SELECT public.assert_true((SELECT count(*) FROM public.farms) = 0,
   'anonymous CANNOT read farms');
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 0,
   'anonymous CANNOT read soil_analyses');
+SELECT public.assert_true((SELECT count(*) FROM public.weather_records) = 0,
+  'anonymous CANNOT read farm-linked weather records');
+SELECT public.assert_true((SELECT count(*) FROM public.weather_forecasts) = 0,
+  'anonymous CANNOT read farm-linked weather forecasts');
 SELECT public.assert_true((SELECT count(*) FROM public.ai_service_logs) = 0,
   'anonymous CANNOT read ai_service_logs');
 SELECT public.assert_true((SELECT count(*) FROM public.market_prices) >= 1,
@@ -217,10 +244,10 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"sub":"eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee","role":"authenticated"}';
 
-SELECT public.assert_true((SELECT count(*) FROM public.farms) >= 2,
-  'expert can read farms across owners (consultation)');
-SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) >= 1,
-  'expert can read soil analyses for consultation');
+SELECT public.assert_true((SELECT count(*) FROM public.farms) = 0,
+  'expert cannot read farmer farms without an explicit consultation assignment');
+SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 0,
+  'expert cannot read soil analyses without an explicit consultation assignment');
 
 DO $$
 BEGIN
@@ -269,6 +296,27 @@ SELECT public.assert_true((SELECT count(*) FROM public.users) = 1,
   'new user can insert and then read own users row (signup path)');
 SELECT public.assert_true((SELECT count(*) FROM public.user_profiles) = 1,
   'new user can insert and read own user_profiles row');
+
+-- Self-service signup cannot grant a privileged role.
+DO $rls$
+BEGIN
+  BEGIN
+    INSERT INTO public.users (id, email, full_name, role)
+    VALUES ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'role-escalation@rls.test', 'Escalation', 'admin');
+    RAISE EXCEPTION 'RLS CHECK FAILED: new user self-assigned admin role';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - new user cannot self-assign admin role';
+  END;
+
+  BEGIN
+    UPDATE public.users SET role = 'admin'
+    WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    RAISE EXCEPTION 'RLS CHECK FAILED: user escalated own role';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - user cannot update own role';
+  END;
+END $rls$;
+
 
 DO $$
 BEGIN
