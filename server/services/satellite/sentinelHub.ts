@@ -12,13 +12,19 @@ function normalizeGeometry(raw: any): { type: "Polygon" | "MultiPolygon"; coordi
   const coordinates = candidate.coordinates;
   const rings = candidate.type === "Polygon" ? coordinates : coordinates.flat(1);
   if (!Array.isArray(rings) || !rings.length) return null;
+  let vertexCount = 0;
   for (const ring of rings) {
     if (!Array.isArray(ring) || ring.length < 4) return null;
+    vertexCount += ring.length;
+    if (vertexCount > 5000) return null;
     for (const point of ring) {
       if (!Array.isArray(point) || point.length < 2 ||
           !Number.isFinite(Number(point[0])) || !Number.isFinite(Number(point[1])) ||
           Math.abs(Number(point[0])) > 180 || Math.abs(Number(point[1])) > 90) return null;
     }
+    const first = ring[0];
+    const last = ring[ring.length - 1];
+    if (Number(first[0]) !== Number(last[0]) || Number(first[1]) !== Number(last[1])) return null;
   }
   return { type: candidate.type, coordinates } as { type: "Polygon" | "MultiPolygon"; coordinates: number[][][] | number[][][][] };
 }
