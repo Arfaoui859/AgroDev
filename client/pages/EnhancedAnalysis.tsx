@@ -9,17 +9,28 @@ import type { RawSoilData } from "@shared/api";
 type FormState = Record<string, string>;
 type ReportObject = Record<string, any>;
 
-const fields: Array<{key: keyof RawSoilData; label: string; unit: string; required?: boolean; step?: string}> = [
-  { key: "ph", label: "درجة الحموضة pH", unit: "0–14", required: true, step: "0.1" },
-  { key: "moisture", label: "رطوبة التربة", unit: "%", required: true, step: "0.1" },
-  { key: "organicMatter", label: "المادة العضوية", unit: "%", step: "0.1" },
+const fields: Array<{key: keyof RawSoilData; label: string; unit: string; required?: boolean; step?: string; max?: string}> = [
+  { key: "ph", label: "درجة الحموضة pH", unit: "0–14", required: true, step: "0.1", max: "14" },
+  { key: "moisture", label: "رطوبة التربة", unit: "%", required: true, step: "0.1", max: "100" },
+  { key: "organicMatter", label: "المادة العضوية", unit: "%", step: "0.1", max: "100" },
   { key: "electricalConductivity", label: "التوصيل الكهربائي EC", unit: "أدخل الوحدة أدناه", step: "0.01" },
   { key: "nitrogen", label: "النيتروجين N", unit: "حسب وحدة التحليل", step: "0.1" },
   { key: "phosphorus", label: "الفوسفور P", unit: "حسب وحدة التحليل", step: "0.1" },
   { key: "potassium", label: "البوتاسيوم K", unit: "حسب وحدة التحليل", step: "0.1" },
-  { key: "sandPercent", label: "الرمل", unit: "%", step: "0.1" },
-  { key: "siltPercent", label: "الغرين / السلت", unit: "%", step: "0.1" },
-  { key: "clayPercent", label: "الطين", unit: "%", step: "0.1" },
+  { key: "sandPercent", label: "الرمل", unit: "%", step: "0.1", max: "100" },
+  { key: "siltPercent", label: "الغرين / السلت", unit: "%", step: "0.1", max: "100" },
+  { key: "clayPercent", label: "الطين", unit: "%", step: "0.1", max: "100" },
+  { key: "calciumCarbonateTotal", label: "كربونات الكالسيوم الكلية CaCO3", unit: "%", step: "0.1", max: "100" },
+  { key: "calciumCarbonateActive", label: "الكِلس النشط", unit: "%", step: "0.1", max: "100" },
+  { key: "cec", label: "السعة التبادلية CEC", unit: "حسب وحدة المخبر", step: "0.1" },
+  { key: "sodium", label: "الصوديوم Na", unit: "حسب وحدة التحليل", step: "0.1" },
+  { key: "sodiumAdsorptionRatio", label: "SAR", unit: "بدون وحدة", step: "0.1" },
+  { key: "exchangeableSodiumPercentage", label: "ESP", unit: "%", step: "0.1", max: "100" },
+  { key: "waterElectricalConductivity", label: "EC ماء الري", unit: "أدخل الوحدة أدناه", step: "0.01" },
+  { key: "waterPh", label: "pH ماء الري", unit: "0–14", step: "0.1", max: "14" },
+  { key: "slopePercent", label: "انحدار الأرض", unit: "%", step: "0.1", max: "100" },
+  { key: "targetYield", label: "المردودية المستهدفة", unit: "أدخل الوحدة في الملاحظات", step: "0.1" },
+  { key: "farmAreaHectares", label: "مساحة المزرعة", unit: "هكتار", step: "0.01" },
 ];
 
 const text = (value: unknown, fallback: string = "غير متاح") =>
