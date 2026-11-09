@@ -153,7 +153,7 @@ export default function FarmOverviewPanel() {
               <div className="rounded-xl border border-dashed bg-slate-50/70 p-6 text-center">
                 <Sprout className="mx-auto mb-2 h-8 w-8 text-emerald-700" />
                 <p className="mb-4 text-sm text-muted-foreground">{t.noFarms}</p>
-                <Button asChild size="sm"><Link to="/farm-operations"><Plus className="me-2 h-4 w-4" />{t.addFarm}</Link></Button>
+                <Button asChild size="sm"><Link to="/farmer-dashboard?tab=farm"><Plus className="me-2 h-4 w-4" />{t.addFarm}</Link></Button>
               </div>
             )}
             {!loading && farms.map((farm) => (
@@ -179,7 +179,7 @@ export default function FarmOverviewPanel() {
               <div className="rounded-xl border border-dashed bg-slate-50/70 p-6 text-center">
                 <Leaf className="mx-auto mb-2 h-8 w-8 text-lime-700" />
                 <p className="mb-4 text-sm text-muted-foreground">{t.noCrops}</p>
-                <Button asChild size="sm" disabled={farms.length === 0}><Link to="/farm-operations"><Plus className="me-2 h-4 w-4" />{t.addCrop}</Link></Button>
+                <Button asChild size="sm" disabled={farms.length === 0}><Link to="/farmer-dashboard?tab=farm"><Plus className="me-2 h-4 w-4" />{t.addCrop}</Link></Button>
               </div>
             )}
             {!loading && crops.slice(0, 6).map((crop) => (
@@ -191,7 +191,7 @@ export default function FarmOverviewPanel() {
                 <Badge variant="outline" className="shrink-0 tabular-nums">{number(Number(crop.area_hectares) || 0)} ha</Badge>
               </div>
             ))}
-            {!loading && crops.length > 6 && <Button asChild variant="ghost" className="w-full"><Link to="/farm-operations">{t.viewAll}<ArrowUpRight className="ms-2 h-4 w-4" /></Link></Button>}
+            {!loading && crops.length > 6 && <Button asChild variant="ghost" className="w-full"><Link to="/farmer-dashboard?tab=farm">{t.viewAll}<ArrowUpRight className="ms-2 h-4 w-4" /></Link></Button>}
           </CardContent>
         </Card>
       </div>
