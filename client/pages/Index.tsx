@@ -1332,10 +1332,10 @@ function SoilDataInputForm() {
       localStorage.setItem("currentAnalysis", JSON.stringify(soilAnalysisData));
 
       toast({
-        title: isArabic ? "تم التحليل بنجاح" : "Analysis Complete",
+        title: isArabic ? "تم حفظ البيانات" : "Data Saved",
         description: isArabic
-          ? "تم حفظ نتائج التحليل"
-          : "Analysis results saved successfully",
+          ? "تم حفظ القياسات. التقرير يتولد في الصفحة التالية بعد تشغيل خدمة التحليل."
+          : "Measurements saved. The report will be generated on the next page when the analysis service responds.",
       });
 
       // Navigate to enhanced analysis page
@@ -1363,8 +1363,8 @@ function SoilDataInputForm() {
         toast({
           title: isArabic ? "تم حفظ البيانات" : "Data Saved",
           description: isArabic
-            ? "سيتم إنشاء تحليل تقديري - التحديث عند توفر الخدمة"
-            : "Mock analysis will be generated - Updates when service available",
+            ? "لم يتم إنشاء تقرير بعد. القياسات محفوظة ويمكن إعادة المحاولة عند توفر الخدمة."
+            : "No report was generated. Measurements are saved; retry when the AI service is available.",
         });
       } else {
         toast({
