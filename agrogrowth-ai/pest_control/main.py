@@ -180,25 +180,14 @@ async def get_pest_database():
 
 @app.get("/prevention-measures/{crop_type}")
 async def get_prevention_measures(crop_type: str):
-    """
-    الحصول على التدابير الوقائية للمحصول
-    """
-    try:
-        pest_identification = {'identified_pest': 'general'}
-        
-        measures = pest_recommender._recommend_prevention_measures(
-            pest_identification, crop_type
-        )
-        
-        return {
-            'success': True,
-            'data': to_json_safe(measures),
-            'message': 'تم جلب التدابير الوقائية بنجاح'
-        }
-        
-    except Exception as e:
-        logger.error(f"Error fetching prevention measures: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "PREVENTION_GUIDANCE_NOT_VERIFIED",
+            "message": "The bundled prevention advice is not linked to a verified crop/pest registry or region-specific source. It is disabled until reviewed.",
+            "production_ready": False,
+        },
+    )
 
 @app.post("/assess-severity")
 async def assess_severity(
