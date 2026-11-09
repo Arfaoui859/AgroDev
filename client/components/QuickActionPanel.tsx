@@ -308,7 +308,6 @@ const QuickActionPanel: React.FC<QuickActionPanelProps> = ({
                     )}
 
                     {actionError && <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>}
-                    {actionError && <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>}
                     <Button 
                       onClick={handleExecuteAction} 
                       disabled={isExecuting}
