@@ -388,115 +388,28 @@ export const useAIServices = () => {
     [],
   );
 
-  // Generate mock soil analysis when AI services are unavailable
-  const generateMockSoilAnalysis = (
-    sensorData: Record<string, number>,
-  ): SoilAnalysisResult => {
-    const ph = sensorData.ph || 7.0;
-    const nitrogen = sensorData.nitrogen || 45;
-    const phosphorus = sensorData.phosphorus || 25;
-    const potassium = sensorData.potassium || 180;
-    const moisture = sensorData.moisture || 35;
-    const organicMatter = sensorData.organicMatter || 2.8;
-
-    // Calculate overall health score
-    const phScore =
-      ph >= 6.0 && ph <= 7.5 ? 90 : ph >= 5.5 && ph <= 8.0 ? 70 : 50;
-    const nitrogenScore =
-      nitrogen >= 40 && nitrogen <= 60 ? 85 : nitrogen >= 30 ? 65 : 45;
-    const phosphorusScore =
-      phosphorus >= 20 && phosphorus <= 40 ? 80 : phosphorus >= 15 ? 60 : 40;
-    const potassiumScore =
-      potassium >= 150 && potassium <= 250 ? 95 : potassium >= 100 ? 75 : 55;
-
-    const overallScore = Math.round(
-      (phScore + nitrogenScore + phosphorusScore + potassiumScore) / 4,
-    );
-    const fertilityLevel =
-      overallScore >= 80
-        ? "ممتاز"
-        : overallScore >= 65
-          ? "جيد"
-          : overallScore >= 50
-            ? "متوسط"
-            : "ضعيف";
-
-    return {
-      dataSource: "estimate",
-      soil_type: {
-        classification: "تقدير محلي بناءً على المدخلات",
-        // No model was run, so confidence is unknown rather than invented.
-        confidence: 0,
-      },
-      properties: {
-        ph: ph,
-        nitrogen: nitrogen,
-        phosphorus: phosphorus,
-        potassium: potassium,
-        moisture: moisture,
-        organic_matter: organicMatter,
-      },
-      health_score: overallScore,
-      fertility_level: fertilityLevel,
-      overall_recommendations: [
-        "التربة في حالة عامة جيدة مع إمكانية للتحسين",
-        "يُنصح بإضافة المادة العضوية لتحسين بنية التربة",
-        "مراقبة مستوى الرطوبة والحفاظ على الري المنتظم",
-        "إجراء فحص دوري للعناصر الغذائية كل 3-6 أشهر",
-      ],
-      analysis_timestamp: new Date().toISOString(),
-    };
-  };
-
-  // 🌱 SOIL ANALYSIS SERVICES
+  // Detailed soil analysis is fail-closed: no local/mock report is generated.
   const analyzeSoilData = useCallback(
-    async (sensorData: Record<string, number>): Promise<SoilAnalysisResult> => {
+    async (sensorData: Record<string, number>) => {
       setLoading(true);
       try {
-        const result = await smartApiCall("/ai/soil/analyze", "soil", {
+        const response = await robustFetch(`${API_BASE}/soil-analysis/analyze`, {
           method: "POST",
-          body: JSON.stringify({ sensor_data: sensorData }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sensorData),
         });
-
-        toast({
-          title: "تم تحليل التربة بنجاح",
-          description: `مستوى الخصوبة: ${result.fertility_level}`,
-        });
-
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.success !== true || !result.data) {
+          throw new Error(result.message || result.error || `Soil analysis failed (${response.status})`);
+        }
         return result;
       } catch (error) {
-        console.warn("AI service unavailable, using local analysis:", error);
-
-        // Check if it's a service unavailability error
-        const isServiceUnavailable =
-          error instanceof Error &&
-          (error.message.includes("Service temporarily unavailable") ||
-            error.message.includes("503") ||
-            error.message.includes("502") ||
-            error.message.includes("Network connection failed"));
-
-        if (isServiceUnavailable || cloudConfig.fallbackToMock) {
-          // Generate mock analysis for demonstration
-          const mockResult = generateMockSoilAnalysis(sensorData);
-
-          toast({
-            title: "تم إنشاء تحليل محلي",
-            description: "تم إنشاء تحليل تقديري - سيتم التحديث عند توفر الخدمة",
-            variant: "default",
-          });
-
-          return mockResult;
-        }
-
-        // For other errors, show error message but don't throw
         toast({
-          title: "خطأ في تحليل التربة",
-          description: "سيتم استخدام تحليل تقديري بناء على البيانات المدخلة",
+          title: "تعذّر تحليل التربة",
+          description: error instanceof Error ? error.message : "خدمة التحليل غير متاحة حالياً",
           variant: "destructive",
         });
-
-        // Return mock analysis as fallback
-        return generateMockSoilAnalysis(sensorData);
+        throw error;
       } finally {
         setLoading(false);
       }
