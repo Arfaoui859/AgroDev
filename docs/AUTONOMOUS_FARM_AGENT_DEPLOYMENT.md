@@ -11,7 +11,7 @@ The agent evaluates persisted, user-owned farm records and creates deduplicated 
 - Registered sensors with a stored battery level at or below 20%.
 - Recorded high/critical plant-detection results that are not marked recovered; these create a verification/follow-up reminder, not a confirmed disease diagnosis.
 
-Every alert carries an evidence payload and a stable event key. Duplicate notifications are prevented by a database unique index. These are operational reminders, not diagnoses or guaranteed agronomic advice.
+Every alert carries an evidence payload, a stable event key, and a short ordered action checklist. High-priority events are returned before normal reminders. Duplicate notifications are prevented by a database unique index. These are operational reminders, not diagnoses or guaranteed agronomic advice.
 
 The first slice does **not** claim to monitor live sensor streams, forecast weather, detect plant disease continuously, track live market prices, or deliver push/SMS/email. It can follow up on high/critical disease-detection records already saved in the database, while explicitly requiring field verification. It creates in-app notifications only. Those capabilities need their respective verified data integrations and delivery providers.
 
