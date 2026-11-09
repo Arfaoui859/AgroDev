@@ -1070,6 +1070,13 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                     const nextDays = liveWeather.forecast.daily.slice(0, 5).map(day =>
                       day.date + ": " + day.minTemp + "–" + day.maxTemp + " C; rainfall=" + day.rainfall + " mm; humidity=" + day.humidity + "%"
                     ).join(" | ");
+                    if (farmContext) {
+                      farmContext.temperature = liveWeather.current.temperature;
+                      const todayRainfall = liveWeather.forecast.daily[0]?.rainfall;
+                      if (typeof todayRainfall === "number" && Number.isFinite(todayRainfall)) {
+                        farmContext.rainfall = todayRainfall;
+                      }
+                    }
                     platformRecords.push("LIVE WEATHER FROM OPEN-METEO for the selected farm " + selectedWeatherFarm.name + " [observation_time=" + (liveWeather.source.observationTime || "unreported") + "; provider=" + liveWeather.source.provider + "; current_temperature=" + liveWeather.current.temperature + " C; humidity=" + liveWeather.current.humidity + "%; wind=" + liveWeather.current.windSpeed + " km/h; conditions=" + liveWeather.current.description + "; ET0=" + liveWeather.agriculturalIndices.evapotranspiration + "; gridded_soil_moisture_estimate=" + liveWeather.agriculturalIndices.soilMoisture + "; crop_stress_indicator=" + liveWeather.agriculturalIndices.cropStress + "; next_days=" + nextDays + "]. Real provider forecast for farm coordinates, not an on-farm sensor measurement; soil moisture is a gridded model estimate.");
                   } catch (weatherError) {
                     platformRecords.push("Live Open-Meteo weather request failed for the registered farm; no live values were substituted. Existing dated weather records remain historical only. Provider error=" + (weatherError instanceof Error ? weatherError.message.slice(0, 180) : "unknown"));
