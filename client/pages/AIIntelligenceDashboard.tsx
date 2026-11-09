@@ -39,7 +39,7 @@ export default function AIIntelligenceDashboard(){
   const refresh=useCallback(async()=>{
     setLoading(true);setError(null);
     try{
-      const response=await fetch("/api/ai/health",{headers:{Accept:"application/json"}});
+      const response=await fetch("/api/ai/health?force=true",{headers:{Accept:"application/json"}});
       const payload=await response.json();
       if(!response.ok)throw new Error(payload.message||"تعذّر فحص خدمات الذكاء الاصطناعي.");
       setHealth(payload);
