@@ -1122,6 +1122,13 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           const declared =
             response.data?.model_source ?? response.data?.modelSource ?? null;
           const modelSource = typeof declared === "string" ? declared : null;
+          const advisoryDeclared =
+            response.data?.advisory_model_source ?? response.data?.advisoryModelSource ?? null;
+          const advisoryModelSource =
+            typeof advisoryDeclared === "string" ? advisoryDeclared : null;
+          const advisoryConfigured =
+            response.data?.advisory_configured === true ||
+            response.data?.advisoryConfigured === true;
           const nonMl =
             modelSource !== null && NON_ML_MODEL_SOURCE_RE.test(modelSource);
           const synthetic =
@@ -1130,6 +1137,8 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
             ...service,
             status: "available",
             modelSource,
+            advisoryModelSource,
+            advisoryConfigured,
             isRealModel: modelSource !== null && !nonMl,
             modelTrainedOnSyntheticData: synthetic,
             responseTime: Date.now() - checkStart,
