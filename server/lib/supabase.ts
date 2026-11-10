@@ -77,13 +77,24 @@ export function scopedClientFromAuthHeader(
   return createScopedClient(match ? match[1].trim() : null);
 }
 
-// For server-side operations that need elevated permissions
-export const supabaseAdmin: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(
-      supabaseUrl as string,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!,
-    )
+// Elevated server-side client. Never silently substitute the public anon key:
+// doing so makes admin queries look like ordinary RLS-filtered queries and can
+// misreport missing admin roles as 403 responses.
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || null;
+
+export const isSupabaseAdminConfigured = Boolean(supabaseUrl && supabaseServiceKey);
+
+export const supabaseAdmin: SupabaseClient | null = isSupabaseAdminConfigured
+  ? createClient(supabaseUrl as string, supabaseServiceKey as string, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
   : null;
+
+if (isSupabaseConfigured && !isSupabaseAdminConfigured) {
+  console.warn(
+    "[admin-auth] SUPABASE_SERVICE_ROLE_KEY is not configured; privileged database operations are disabled.",
+  );
+}
 
 // Database connection info
 export const databaseConfig = {
