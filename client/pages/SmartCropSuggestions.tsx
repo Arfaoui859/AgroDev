@@ -568,6 +568,8 @@ export default function SmartCropSuggestions() {
                       </Button>
                       <Button
                         size="sm"
+                        disabled
+                        title="ربط بدء الزراعة بخطة مزرعة محفوظة غير متاح بعد"
                         className="flex-1 bg-green-600 hover:bg-green-700"
                       >
                         <Sprout className="w-4 h-4 ml-1" />
@@ -649,7 +651,7 @@ export default function SmartCropSuggestions() {
                               <p className="font-medium">{crop.requirements.plantingDate}</p>
                             </div>
                             <div>
-                              <p className="text-muted-foreground">تاريخ الحص��د</p>
+                              <p className="text-muted-foreground">تاريخ الحصاد</p>
                               <p className="font-medium">{crop.requirements.harvestDate}</p>
                             </div>
                             <div>
@@ -931,7 +933,7 @@ export default function SmartCropSuggestions() {
                     onChange={(e) => setFarmerGoals({...farmerGoals, experience: e.target.value})}
                     className="w-full px-3 py-2 border border-border rounded-md bg-background"
                   >
-                    <option value="beginner">مبتد��</option>
+                    <option value="beginner">مبتدئ</option>
                     <option value="intermediate">متوسط</option>
                     <option value="expert">خبير</option>
                   </select>
