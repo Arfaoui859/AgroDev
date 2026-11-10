@@ -255,7 +255,7 @@ export class ServiceStatusManager {
     // Reuse a fresh cached result.
     if (
       lastCheckTime &&
-      now.getTime() - lastCheckTime.getTime() < 5 * 60 * 1000
+      now.getTime() - lastCheckTime.getTime() < 30 * 1000
     ) {
       return this.statusCache.get(cacheKey) || service;
     }
