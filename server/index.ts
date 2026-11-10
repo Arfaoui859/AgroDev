@@ -114,6 +114,7 @@ import {
 } from "./routes/field-inspector";
 import {
   getAdminDashboard,
+  createAdminManagedUser,
   getAdminUsers,
   getAdminSystemMetrics,
   getAdminUsageAnalytics,
@@ -569,6 +570,7 @@ export function createServer() {
   // (The non-production demo fallback still applies for local development.)
   app.get("/api/admin/overview", requireAdminAccess, getAdminDashboard);
   app.get("/api/admin/users", requireAdminAccess, getAdminUsers);
+  app.post("/api/admin/users", requireAdminAccess, createAdminManagedUser);
   app.get("/api/admin/system-metrics", requireAdminAccess, getAdminSystemMetrics);
   app.get("/api/admin/usage-analytics", requireAdminAccess, getAdminUsageAnalytics);
   app.get("/api/admin/security-events", requireAdminAccess, getAdminSecurityEvents);
