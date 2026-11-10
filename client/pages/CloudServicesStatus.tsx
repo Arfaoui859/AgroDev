@@ -452,12 +452,12 @@ const CloudServicesStatus: React.FC = () => {
 
               <div className="p-4 bg-green-50 rounded-lg">
                 <h4 className="font-medium text-green-900 mb-2">
-                  في وضع التطوير:
+                  كيف تقرأ حالة خدمات الذكاء الاصطناعي:
                 </h4>
                 <ul className="text-sm text-green-800 space-y-1 list-disc list-inside">
-                  <li>الخدمات تعمل في وضع المحاكاة (Mock Data)</li>
-                  <li>للحصول على بيانات حقيقية، قم بتشغيل docker-compose</li>
-                  <li>أو قم بتفعيل الخدمات السحابية عبر متغيرات البيئة</li>
+                  <li>حالة Healthy تعني أن نقطة الصحة تستجيب، ولا تثبت وحدها أن نموذج ML مدرّباً.</li>
+                  <li>راجع مصدر النموذج (model source) لكل خدمة للتمييز بين نموذج حقيقي وقواعد أو بيانات اصطناعية.</li>
+                  <li>الخدمة غير المتاحة يجب أن تظهر كغير متاحة؛ لا يتم اعتبار بيانات المحاكاة نتيجة إنتاجية.</li>
                 </ul>
               </div>
 
