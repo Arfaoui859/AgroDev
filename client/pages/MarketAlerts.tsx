@@ -69,7 +69,7 @@ const cropOptions = [
 ];
 
 const alertTypeOptions = [
-  { id: 'price_spike', name: 'ار��فاع الأسعار', description: 'تنبيهات عند ارتفاع الأسعار بشكل مفاجئ' },
+  { id: 'price_spike', name: 'ارتفاع الأسعار', description: 'تنبيهات عند ارتفاع الأسعار بشكل مفاجئ' },
   { id: 'price_drop', name: 'انخفاض الأسعار', description: 'تنبيهات عند انخفاض الأسعار بشكل كبير' },
   { id: 'seasonal_opportunity', name: 'الفرص الموسمية', description: 'تنبيهات حول الفرص الاستثمارية الموسمية' },
   { id: 'weather_impact', name: 'تأثير الطقس', description: 'تنبيهات حول تأثير الطقس على الأسعار' },
@@ -343,7 +343,7 @@ export default function MarketAlerts() {
                       }}
                     />
                     <Bell className="h-4 w-4 text-muted-foreground" />
-                    <Label htmlFor="in_app" className="text-sm">إشعا��ات التطبيق</Label>
+                    <Label htmlFor="in_app" className="text-sm">إشعارات التطبيق</Label>
                   </div>
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <Checkbox
