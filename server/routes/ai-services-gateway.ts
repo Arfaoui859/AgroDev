@@ -30,7 +30,7 @@ import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
  * service is labelled honestly instead of shown as production inference.
  */
 const HEURISTIC_MODEL_SOURCE_RE =
-  /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i;
+  /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy|deterministic|rule[-_ ]?based|feature[-_ ]?based/i;
 
 /**
  * Normalize a service base URL. Render's `fromService` `hostport` property yields
