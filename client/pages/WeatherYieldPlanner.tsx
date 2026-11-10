@@ -192,7 +192,7 @@ export default function WeatherYieldPlanner() {
   };
 
   const runPlan = async () => {
-    if (!latitude.trim() || !longitude.trim() || !farmSize.trim() || !Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)) || Number(farmSize) <= 0) {
+    if (!latitude.trim() || !longitude.trim() || !farmSize.trim() || !Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)) || Number(latitude) < -90 || Number(latitude) > 90 || Number(longitude) < -180 || Number(longitude) > 180 || Number(farmSize) <= 0) {
       setError(language === "ar" ? "أدخل إحداثيات الحقل ومساحته." : "Enter the field coordinates and farm size.");
       return;
     }
