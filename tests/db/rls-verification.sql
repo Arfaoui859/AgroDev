@@ -291,10 +291,10 @@ SELECT public.assert_true((SELECT count(*) FROM public.user_profiles) = 0,
   'anonymous CANNOT read user_profiles');
 SELECT public.assert_true((SELECT count(*) FROM public.farms) = 0,
   'anonymous CANNOT read farms');
-SELECT public.assert_true((SELECT count(*) FROM public.farm_equipment) = 0,
-  'anonymous CANNOT read farm equipment');
-SELECT public.assert_true((SELECT count(*) FROM public.farm_tasks) = 0,
-  'anonymous CANNOT read farm tasks');
+SELECT public.assert_true(NOT has_table_privilege('anon', 'public.farm_equipment', 'SELECT'),
+  'anonymous has no SELECT privilege on farm equipment');
+SELECT public.assert_true(NOT has_table_privilege('anon', 'public.farm_tasks', 'SELECT'),
+  'anonymous has no SELECT privilege on farm tasks');
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 0,
   'anonymous CANNOT read soil_analyses');
 SELECT public.assert_true((SELECT count(*) FROM public.weather_records) = 0,
