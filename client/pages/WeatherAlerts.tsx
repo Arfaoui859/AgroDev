@@ -67,7 +67,7 @@ const alertTypes = [
   { id: 'frost', name: 'تنبيهات الصقيع', icon: Snowflake, color: 'text-blue-600' },
   { id: 'wind', name: 'تنبيهات الرياح', icon: Wind, color: 'text-gray-600' },
   { id: 'precipitation', name: 'تنبيهات الأمطار', icon: CloudRain, color: 'text-blue-500' },
-  { id: 'drought', name: 'تنبيهات الجف��ف', icon: Sun, color: 'text-yellow-600' },
+  { id: 'drought', name: 'تنبيهات الجفاف', icon: Sun, color: 'text-yellow-600' },
   { id: 'storm', name: 'تنبيهات العواصف', icon: Zap, color: 'text-purple-600' }
 ];
 
