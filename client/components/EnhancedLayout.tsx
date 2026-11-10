@@ -74,11 +74,18 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return localStorage.getItem("agrogrowth-theme") === "dark"; } catch { return false; }
+  });
   const [connectionStatus, setConnectionStatus] = useState<
     "online" | "offline"
   >("online");
   const [notifications, setNotifications] = useState(3);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    try { localStorage.setItem("agrogrowth-theme", darkMode ? "dark" : "light"); } catch { /* Theme still applies for this session. */ }
+  }, [darkMode]);
 
   // Navigation structure
   const navigationItems: NavigationItem[] = [
