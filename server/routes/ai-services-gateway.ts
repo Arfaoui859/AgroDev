@@ -1127,6 +1127,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           const advisoryModelSource =
             typeof advisoryDeclared === "string" ? advisoryDeclared : null;
           const advisoryConfigured =
+            Boolean(advisoryModelSource) ||
             response.data?.advisory_configured === true ||
             response.data?.advisoryConfigured === true;
           const nonMl =
