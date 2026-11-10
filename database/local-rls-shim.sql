@@ -45,13 +45,13 @@ AS $storage_folder$
 $storage_folder$;
 
 -- Supabase creates this publication for Realtime; mirror it in the disposable CI database.
-DO $
+DO $publication$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
     EXECUTE 'CREATE PUBLICATION supabase_realtime';
   END IF;
 END;
-$;
+$publication$;
 
 CREATE SCHEMA IF NOT EXISTS auth;
 
