@@ -35,6 +35,7 @@ describe("🧪 Fertilizer effectiveness tracking", () => {
     expect(typeof res.body.effectivenessScore).toBe("number");
     expect(res.body.isRealData).toBe(false);
     expect(res.body.dataSource).toBe("rule-based");
+    expect(res.body.persistence).toBe("not-saved-demo");
   });
 
   test("rejects a partial payload instead of throwing a 500", async () => {
