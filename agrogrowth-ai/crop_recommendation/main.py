@@ -79,7 +79,7 @@ class CropRecommendationRequest(BaseModel):
 
     target_market_price: float = Field(
         description="User-supplied or sourced current market price in TND/kg",
-        ge=0,
+        gt=0,
     )
 
     farmer_experience_years: int = Field(
