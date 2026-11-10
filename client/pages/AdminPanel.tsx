@@ -335,7 +335,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'الإيرادات' : 'Revenue'}</p>
-                <p className="text-xl font-bold text-orange-600">{formatCurrency(dashboardData.summary?.totalRevenue || 0)}</p>
+                <p className="text-xl font-bold text-orange-600">{dashboardData.summary?.totalRevenue == null ? "—" : formatCurrency(dashboardData.summary.totalRevenue)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-orange-600" />
             </div>
@@ -347,7 +347,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'إيرادات شهرية' : 'Monthly Recurring'}</p>
-                <p className="text-xl font-bold text-teal-600">{formatCurrency(dashboardData.summary?.monthlyRecurring || 0)}</p>
+                <p className="text-xl font-bold text-teal-600">{dashboardData.summary?.monthlyRecurring == null ? "—" : formatCurrency(dashboardData.summary.monthlyRecurring)}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-teal-600" />
             </div>
@@ -751,20 +751,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         <p className="text-xs text-gray-600">{isArabic ? 'إجمالي المستخدمين' : 'Total Users'}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">{formatNumber(analytics.overview.activeUsers)}</p>
+                        <p className="text-2xl font-bold text-green-600">{analytics.overview.activeUsers == null ? "—" : formatNumber(analytics.overview.activeUsers)}</p>
                         <p className="text-xs text-gray-600">{isArabic ? 'نشطون' : 'Active'}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-purple-600">{formatNumber(analytics.overview.newUsers)}</p>
+                        <p className="text-2xl font-bold text-purple-600">{analytics.overview.newUsers == null ? "—" : formatNumber(analytics.overview.newUsers)}</p>
                         <p className="text-xs text-gray-600">{isArabic ? 'جدد هذا الشهر' : 'New This Month'}</p>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">{isArabic ? 'معدل الاحتفاظ' : 'Retention Rate'}</span>
-                        <span className="font-semibold">{analytics.overview.retentionRate}%</span>
+                        <span className="font-semibold">{analytics.overview.retentionRate == null ? "—" : `${analytics.overview.retentionRate}%`}</span>
                       </div>
-                      <Progress value={analytics.overview.retentionRate} className="w-full" />
+                      <Progress value={analytics.overview.retentionRate ?? 0} className="w-full" />
                     </div>
                   </div>
                 </CardContent>
@@ -782,16 +782,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center">
-                        <p className="text-xl font-bold text-green-600">{formatCurrency(analytics.subscriptions.totalRevenue)}</p>
+                        <p className="text-xl font-bold text-green-600">{analytics.subscriptions?.totalRevenue == null ? "—" : formatCurrency(analytics.subscriptions.totalRevenue)}</p>
                         <p className="text-xs text-gray-600">{isArabic ? 'إجمالي الإيرادات' : 'Total Revenue'}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xl font-bold text-blue-600">{formatCurrency(analytics.subscriptions.monthlyRecurringRevenue)}</p>
+                        <p className="text-xl font-bold text-blue-600">{analytics.subscriptions?.monthlyRecurringRevenue == null ? "—" : formatCurrency(analytics.subscriptions.monthlyRecurringRevenue)}</p>
                         <p className="text-xs text-gray-600">{isArabic ? 'إيرادات شهرية' : 'Monthly Recurring'}</p>
                       </div>
                     </div>
                     <div className="space-y-3">
-                      {Object.entries(analytics.subscriptions.subscriptionsByPlan).map(([plan, data]: [string, any]) => (
+                      {Object.entries(analytics.subscriptions?.subscriptionsByPlan || {}).map(([plan, data]: [string, any]) => (
                         <div key={plan} className="flex items-center justify-between">
                           <span className="text-sm capitalize">{plan}</span>
                           <div className="flex items-center space-x-2">
