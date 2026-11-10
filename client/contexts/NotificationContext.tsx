@@ -130,7 +130,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
   const [isLoading, setIsLoading] = useState(false);
-  const [realtimeSubscription, setRealtimeSubscription] = useState<NodeJS.Timeout | null>(null);
+  const [realtimeSubscription, setRealtimeSubscription] = useState<number | null>(null);
 
   const refreshNotifications = useCallback(async () => {
     setIsLoading(true);
