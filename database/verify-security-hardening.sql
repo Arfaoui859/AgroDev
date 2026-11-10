@@ -115,7 +115,9 @@ BEGIN
     WHERE schemaname = 'public' AND tablename = 'farm_equipment'
       AND policyname = 'Farm owners manage own equipment'
       AND qual ILIKE '%farms%' AND qual ILIKE '%owner_id = auth.uid()%'
+      AND qual ILIKE '%created_by = auth.uid()%'
       AND with_check ILIKE '%farms%' AND with_check ILIKE '%owner_id = auth.uid()%'
+      AND with_check ILIKE '%created_by = auth.uid()%'
   ) OR NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'farm_tasks'
