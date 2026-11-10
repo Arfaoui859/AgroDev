@@ -149,9 +149,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       if (failedResponse) {
         const failureBody = await failedResponse.json().catch(() => null);
         throw new Error(
-          failureBody?.message ||
-          failureBody?.code ||
-          `Admin data service unavailable (HTTP ${failedResponse.status})`,
+          `${failureBody?.code ? `${failureBody.code}: ` : ""}${failureBody?.message || `Admin data service unavailable (HTTP ${failedResponse.status})`}`,
         );
       }
 
@@ -260,15 +258,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   }
 
   if (!dashboardData) {
+    const dataSourceUnavailable = loadError?.includes('DASHBOARD_DATA_SOURCE_NOT_CONNECTED');
     return (
-      <div className="container mx-auto p-6">
-        <Alert className="border-red-500 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{isArabic ? 'خطأ' : 'Error'}</AlertTitle>
-          <AlertDescription>
-            {loadError || (isArabic ? 'فشل في تحميل بيانات الإدارة' : 'Failed to load admin data')}
+      <div className="container mx-auto p-6 space-y-4" dir={isArabic ? 'rtl' : 'ltr'}>
+        <Alert className={dataSourceUnavailable ? "border-amber-400 bg-amber-50" : "border-red-500 bg-red-50"}>
+          {dataSourceUnavailable ? <Info className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          <AlertTitle>
+            {dataSourceUnavailable
+              ? (isArabic ? 'تم الوصول إلى لوحة الإدارة، لكن البيانات غير مربوطة بعد' : 'Admin access granted; data source is not connected yet')
+              : (isArabic ? 'تعذّر تحميل لوحة الإدارة' : 'Admin panel could not be loaded')}
+          </AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>{loadError || (isArabic ? 'بيانات الإدارة غير متاحة' : 'Admin data is unavailable')}</p>
+            {dataSourceUnavailable && (
+              <p>
+                {isArabic
+                  ? 'تسجيل دخولك وصلاحية Admin منفصلان عن بيانات الإحصائيات. لن نعرض أرقاماً تجريبية أو مستخدمين وهميين.'
+                  : 'Your administrator sign-in is separate from live dashboard data. AgroGrowth will not display fabricated metrics or user records.'}
+              </p>
+            )}
           </AlertDescription>
         </Alert>
+        <Button onClick={fetchDashboardData} variant="outline" disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          {isArabic ? 'إعادة المحاولة' : 'Retry'}
+        </Button>
       </div>
     );
   }
