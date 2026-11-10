@@ -183,6 +183,9 @@ export function respondServiceError(
   if (error instanceof ProviderError) {
     const status = error.kind === "timeout" ? 504 : error.kind === "network" ? 503 : error.status ?? 502;
     res.status(status).json({
+      success: false,
+      data: null,
+      code: error.kind === "provenance" ? "MODEL_PROVENANCE_UNVERIFIED" : "MICROSERVICE_UNAVAILABLE",
       error: `${capability} unavailable`,
       message: error.message,
       status,
