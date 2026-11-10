@@ -126,18 +126,20 @@ export async function requireAuth(
  * RLS cannot hide the caller's own row. Returns null when the user has no
  * profile row or the database is unavailable.
  */
-async function resolveRole(userId: string, req: Request): Promise<string | null> {
+async function resolveRole(userId: string, req: Request): Promise<{ role: string; active: boolean } | null> {
   const client = supabaseAdmin || scopedClientFromAuthHeader(req.header("authorization"));
   if (!client) return null;
   try {
     const { data, error } = await client
       .from("users")
-      .select("role")
+      .select("role,is_active,status")
       .eq("id", userId)
       .maybeSingle();
     if (error || !data) return null;
-    const role = (data as { role?: string }).role;
-    return typeof role === "string" ? role.toLowerCase() : null;
+    const record = data as { role?: string; is_active?: boolean; status?: string };
+    if (typeof record.role !== "string") return null;
+    const active = record.is_active !== false && record.status !== "suspended" && record.status !== "inactive";
+    return { role: record.role.toLowerCase(), active };
   } catch {
     return null;
   }
@@ -195,8 +197,8 @@ export async function requireAdminAccess(
   if (userId) {
     // Prefer service-role access. If it is not configured, the already-verified
     // admin JWT is used as an RLS-scoped client to read its own role.
-    const role = await resolveRole(userId, req);
-    if (role && ADMIN_ROLES.has(role)) {
+    const roleRecord = await resolveRole(userId, req);
+    if (roleRecord && roleRecord.active && ADMIN_ROLES.has(roleRecord.role)) {
       req.userId = userId;
       req.identitySource = "jwt";
       return next();
