@@ -1,6 +1,14 @@
 import type { RequestHandler } from "express";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidISODate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value + "T00:00:00.000Z");
+  return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
+}
+
 function dbFor(req: Parameters<RequestHandler>[0]) {
   if (req.identitySource !== "jwt" || !req.userId) return null;
   return scopedClientFromAuthHeader(req.header("authorization"));
@@ -28,12 +36,12 @@ function expensePayload(body: any, userId: string) {
   const category = String(body.category ?? "");
   const currency = String(body.currency ?? "TND").toUpperCase();
   const allowed = new Set(["seeds", "fertilizers", "pesticides", "labor", "equipment", "fuel", "maintenance", "utilities", "insurance", "other"]);
-  if (!allowed.has(category) || currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (!allowed.has(category) || currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !isValidISODate(date)) {
     return null;
   }
   return {
     user_id: userId,
-    farm_id: typeof body.farm_id === "string" && body.farm_id ? body.farm_id : null,
+    farm_id: farmId,
     category,
     subcategory: String(body.subcategory ?? "").slice(0, 120),
     amount,
@@ -145,7 +153,13 @@ export const createRevenue: RequestHandler = async (req, res) => {
   const transportationCost = Number(body.transportationCost ?? 0);
   const marketingCost = Number(body.marketingCost ?? 0);
   const currency = String(body.currency ?? "TND").toUpperCase();
-  if (currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+  const farmId = body.farm_id == null || body.farm_id === "" ? null : String(body.farm_id);
+  const harvestDate = body.harvestDate == null || body.harvestDate === "" ? null : String(body.harvestDate);
+  const storageDays = body.storageDays == null || body.storageDays === "" ? 0 : Number(body.storageDays);
+  if (currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !isValidISODate(date) ||
+      (farmId !== null && !UUID_PATTERN.test(farmId)) ||
+      (harvestDate !== null && !isValidISODate(harvestDate)) ||
+      !Number.isInteger(storageDays) || storageDays < 0 ||
       (quantity !== null && (!Number.isFinite(quantity) || quantity <= 0)) ||
       (unitPrice !== null && (!Number.isFinite(unitPrice) || unitPrice <= 0)) ||
       !Number.isFinite(transportationCost) || transportationCost < 0 ||
@@ -157,7 +171,7 @@ export const createRevenue: RequestHandler = async (req, res) => {
     farm_id: typeof body.farm_id === "string" && body.farm_id ? body.farm_id : null,
     crop_related: body.cropRelated ? String(body.cropRelated).slice(0, 100) : null,
     amount,
-    currency: String(body.currency ?? "TND").slice(0, 3),
+    currency: "TND",
     revenue_date: date,
     description: String(body.description ?? "").slice(0, 2000),
     quantity,
@@ -168,8 +182,8 @@ export const createRevenue: RequestHandler = async (req, res) => {
     variety_name: String(body.varietyName ?? "").slice(0, 120),
     unit_price: unitPrice,
     quality_grade: body.qualityGrade ? String(body.qualityGrade).slice(0, 30) : null,
-    harvest_date: body.harvestDate || null,
-    storage_days: Number.isInteger(Number(body.storageDays)) && Number(body.storageDays) >= 0 ? Number(body.storageDays) : 0,
+    harvest_date: harvestDate,
+    storage_days: storageDays,
     transportation_cost: transportationCost,
     marketing_cost: marketingCost,
   };
@@ -204,7 +218,15 @@ export const updateRevenue: RequestHandler = async (req, res) => {
   const transportationCost = Number(body.transportationCost ?? 0);
   const marketingCost = Number(body.marketingCost ?? 0);
   const currency = String(body.currency ?? "TND").toUpperCase();
-  if (currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+  const quantity = body.quantity === "" || body.quantity === undefined || body.quantity === null ? null : Number(body.quantity);
+  const unitPrice = body.unitPrice === "" || body.unitPrice === undefined || body.unitPrice === null ? null : Number(body.unitPrice);
+  const harvestDate = body.harvestDate == null || body.harvestDate === "" ? null : String(body.harvestDate);
+  const storageDays = body.storageDays == null || body.storageDays === "" ? 0 : Number(body.storageDays);
+  if (currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !isValidISODate(date) ||
+      (quantity !== null && (!Number.isFinite(quantity) || quantity <= 0)) ||
+      (unitPrice !== null && (!Number.isFinite(unitPrice) || unitPrice <= 0)) ||
+      (harvestDate !== null && !isValidISODate(harvestDate)) ||
+      !Number.isInteger(storageDays) || storageDays < 0 ||
       !Number.isFinite(transportationCost) || transportationCost < 0 ||
       !Number.isFinite(marketingCost) || marketingCost < 0) {
     return res.status(400).json({ success: false, code: "INVALID_REVENUE" });
@@ -212,15 +234,15 @@ export const updateRevenue: RequestHandler = async (req, res) => {
   const { data, error } = await db.from("farm_revenues").update({
     amount, revenue_date: date, description: String(body.description ?? "").slice(0, 2000),
     crop_related: body.cropRelated ? String(body.cropRelated).slice(0, 100) : null,
-    quantity: body.quantity === "" || body.quantity === undefined ? null : Number(body.quantity),
+    quantity,
     unit: body.unit ? String(body.unit).slice(0, 40) : null,
     buyer: body.buyer ? String(body.buyer).slice(0, 160) : null,
     market_location: body.marketLocation ? String(body.marketLocation).slice(0, 160) : null,
     variety_name: String(body.varietyName ?? "").slice(0, 120),
-    unit_price: body.unitPrice === "" || body.unitPrice === undefined ? null : Number(body.unitPrice),
+    unit_price: unitPrice,
     quality_grade: body.qualityGrade ? String(body.qualityGrade).slice(0, 30) : null,
-    harvest_date: body.harvestDate || null,
-    storage_days: Number.isInteger(Number(body.storageDays)) && Number(body.storageDays) >= 0 ? Number(body.storageDays) : 0,
+    harvest_date: harvestDate,
+    storage_days: storageDays,
     transportation_cost: transportationCost,
     marketing_cost: marketingCost,
     currency: "TND",
