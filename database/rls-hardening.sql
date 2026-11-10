@@ -63,11 +63,16 @@ REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.is_expert() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.owns_farm(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.owns_section(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.current_user_role() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_expert() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.current_user_role() FROM anon;
+GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_admin() FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.is_expert() FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_expert() TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.owns_farm(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.owns_section(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 2. Turn RLS on for every table that lacked it.
@@ -681,3 +686,79 @@ CREATE POLICY "AgroGrowth plant image owner delete" ON storage.objects
     )
   );
 
+
+-- ---------------------------------------------------------------------------
+-- 10. Lock down SECURITY DEFINER RPCs and internal scheduler state.
+--
+-- The original setup RPCs accepted an arbitrary user_uuid and the webhook
+-- handler could be executed by default PUBLIC grants. Bind identity-sensitive
+-- RPCs to auth.uid(), and reserve webhook/scheduler operations for service_role.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.get_user_farms(user_uuid uuid)
+RETURNS TABLE (
+  farm_id uuid,
+  farm_name text,
+  location jsonb,
+  size_hectares numeric
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF auth.uid() IS NULL OR user_uuid IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'Access denied: requested user does not match caller'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN QUERY
+  SELECT f.id, f.name, f.location, f.size_hectares
+  FROM public.farms AS f
+  WHERE f.owner_id = auth.uid();
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_owns_farm(user_uuid uuid, farm_uuid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT auth.uid() IS NOT NULL
+     AND user_uuid IS NOT DISTINCT FROM auth.uid()
+     AND EXISTS (
+       SELECT 1
+       FROM public.farms AS f
+       WHERE f.id = farm_uuid
+         AND f.owner_id = auth.uid()
+     )
+$$;
+
+-- These four RPCs are intended for signed-in callers and enforce ownership.
+REVOKE ALL ON FUNCTION public.get_user_farms(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.user_owns_farm(uuid, uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_farm_dashboard(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.add_soil_analysis(uuid, jsonb, jsonb) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_user_farms(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.user_owns_farm(uuid, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_farm_dashboard(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.add_soil_analysis(uuid, jsonb, jsonb) TO authenticated, service_role;
+
+-- AI callbacks mutate analysis records and must only be invoked by trusted
+-- server-side workers using the Supabase service-role credential.
+REVOKE ALL ON FUNCTION public.handle_ai_service_response(
+  character varying, uuid, jsonb, integer, integer
+) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.handle_ai_service_response(
+  character varying, uuid, jsonb, integer, integer
+) TO service_role;
+
+-- Scheduler definitions are operational metadata, not user data. They remain
+-- inaccessible to browser roles and are managed only by trusted operations.
+ALTER TABLE public.scheduled_tasks ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.scheduled_tasks FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.scheduled_tasks TO service_role;
+
+NOTIFY pgrst, 'reload schema';
