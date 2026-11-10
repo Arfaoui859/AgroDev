@@ -106,9 +106,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (event === "SIGNED_OUT") {
         navigate("/login");
-      } else if (event === "SIGNED_IN") {
-        navigate("/");
       }
+      // SIGNED_IN navigation is handled by signIn after the trusted profile
+      // role has been loaded, so administrators are not briefly sent to the
+      // farmer landing page by this asynchronous auth event.
     });
 
     const initializeAuth = async () => {
@@ -410,9 +411,24 @@ Row Level Security (RLS) policies are blocking access.
         console.error("Error loading user data after signIn:", e);
       }
 
-      // Navigate to home
+      // Choose the initial destination from the persisted profile role.
+      // This is navigation only: ProtectedRoute and server middleware remain
+      // the actual authorization boundaries.
+      let destination = "/";
+      const { data: roleProfile, error: roleError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!roleError && ["admin", "administrator"].includes(
+        String(roleProfile?.role || "").toLowerCase(),
+      )) {
+        destination = "/admin-panel";
+      }
+
       try {
-        navigate("/");
+        navigate(destination);
       } catch (e) {
         console.warn("Navigation after signIn failed:", e);
       }
