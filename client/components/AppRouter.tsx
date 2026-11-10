@@ -285,8 +285,7 @@ export default function AppRouter() {
             element={<VeterinarianDashboard />}
           />
           <Route
-            path="/comprehensive-farm-management"
-            element={<Navigate to="/farmer-dashboard" replace />}
+            path="/comprehensive-farm-management" element={<ComprehensiveFarmManagement />} />}
           />
           <Route
             path="/field-inspector-dashboard"
