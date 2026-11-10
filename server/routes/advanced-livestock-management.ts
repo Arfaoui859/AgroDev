@@ -908,13 +908,6 @@ export async function getAnimalHealth(req: Request, res: Response) {
 
 export async function getBreedingRecommendations(req: Request, res: Response) {
   try {
-    const { farmId } = req.query;
-    
-    let animals = animalsDatabase;
-    if (farmId) {
-      animals = animals.filter(animal => animal.farmId === farmId);
-    }
-    
     // The current route reads a hardcoded in-memory demonstration catalogue,
     // not authenticated farm livestock records. Never publish its scores as
     // genetic recommendations.
