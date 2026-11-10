@@ -80,7 +80,7 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
   const [connectionStatus, setConnectionStatus] = useState<
     "online" | "offline"
   >("online");
-  const [notifications, setNotifications] = useState(3);
+  const [notifications, setNotifications] = useState(0);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
