@@ -187,18 +187,58 @@ export function requireRole(allowedRoles: readonly string[]): RequestHandler {
  * profile row or the database is unavailable.
  */
 async function resolveRole(userId: string): Promise<string | null> {
+  // In production, role checks must use the service-role client. Falling back
+  // to the anon client can make RLS hide a valid admin profile and incorrectly
+  // report that the caller is not an administrator.
+  if (process.env.NODE_ENV === "production" && !supabaseAdmin) {
+    console.error(
+      "[admin-auth] Role lookup unavailable: SUPABASE_SERVICE_ROLE_KEY is not configured.",
+    );
+    return null;
+  }
+
   const client = supabaseAdmin || supabase;
-  if (!client) return null;
+  if (!client) {
+    console.error("[admin-auth] Role lookup unavailable: Supabase client is not configured.");
+    return null;
+  }
+
   try {
     const { data, error } = await client
       .from("users")
       .select("role,is_active")
       .eq("id", userId)
       .maybeSingle();
-    if (error || !data || (data as { is_active?: boolean }).is_active === false) return null;
+
+    if (error) {
+      console.error("[admin-auth] Failed to read public.users role:", {
+        code: error.code || "UNKNOWN",
+        message: error.message,
+      });
+      return null;
+    }
+
+    if (!data) {
+      console.warn("[admin-auth] No public.users profile found for authenticated user.");
+      return null;
+    }
+
+    if ((data as { is_active?: boolean }).is_active === false) {
+      console.warn("[admin-auth] Admin role lookup rejected: account is inactive.");
+      return null;
+    }
+
     const role = (data as { role?: string }).role;
-    return typeof role === "string" ? role.toLowerCase() : null;
-  } catch {
+    if (typeof role !== "string" || !role.trim()) {
+      console.warn("[admin-auth] Admin role lookup rejected: profile role is empty.");
+      return null;
+    }
+
+    return role.trim().toLowerCase();
+  } catch (error) {
+    console.error("[admin-auth] Unexpected error while resolving platform role:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
     return null;
   }
 }
