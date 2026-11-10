@@ -1,4 +1,5 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
+import FarmOperationsManager from "../components/farm/FarmOperationsManager";
 import { apiFetch } from "@/lib/apiFetch";
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -271,6 +272,7 @@ const ComprehensiveFarmManagement: React.FC<
             </div>
           </AlertDescription>
         </Alert>
+        <FarmOperationsManager />
       </div>
     );
   }
