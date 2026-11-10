@@ -127,7 +127,9 @@ BEGIN
     WHERE schemaname = 'public' AND tablename = 'farm_tasks'
       AND policyname = 'Farm owners manage own tasks'
       AND qual ILIKE '%farms%' AND qual ILIKE '%owner_id = auth.uid()%'
+      AND qual ILIKE '%created_by = auth.uid()%'
       AND with_check ILIKE '%farms%' AND with_check ILIKE '%owner_id = auth.uid()%'
+      AND with_check ILIKE '%created_by = auth.uid()%'
   ) THEN
     RAISE EXCEPTION 'RLS verification failed: equipment/task farm ownership policies are missing or incomplete';
   END IF;
