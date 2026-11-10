@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Progress } from '../components/ui/progress';
 import { 
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
   Users, 
   Heart, 
   Activity, 
@@ -255,6 +256,10 @@ const AdvancedLivestockDashboard: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      <SimulatedDataNotice
+        title="بيانات الثروة الحيوانية تجريبية"
+        description="السجلات والتنبيهات والإنتاج المعروض حالياً أمثلة ثابتة من الخادم، وليست بيانات حيوانات مزرعتك أو مراقبة صحية مباشرة."
+      />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
