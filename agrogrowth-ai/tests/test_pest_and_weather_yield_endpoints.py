@@ -118,7 +118,7 @@ def test_weather_plan_returns_seasonal_plan():
     resp = wy_client.post(
         "/create-weather-plan",
         json={
-            "location": {"latitude": 35.0, "longitude": 10.0, "region": "تونس"},
+            "location": {"latitude": 35.0, "longitude": 10.0, "elevation": 100, "region": "تونس"},
             "crop_options": ["wheat", "tomato", "olive"],
             "planning_horizon_months": 12,
         },
