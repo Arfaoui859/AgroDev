@@ -863,6 +863,63 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           )}
         </TabsContent>
+
+        {/* Immutable administrator audit trail */}
+        <TabsContent value="activity" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                {isArabic ? 'سجل تدقيق الإدارة' : 'Administrator Audit Trail'}
+              </CardTitle>
+              <CardDescription>
+                {isArabic
+                  ? 'عمليات تغيير الصلاحيات المسجلة في قاعدة البيانات مع هوية المنفّذ والهدف والتوقيت'
+                  : 'Database-recorded administrator actions with actor, target and timestamp'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {activityLogs.length === 0 ? (
+                <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+                  {isArabic
+                    ? 'لا توجد سجلات تدقيق متاحة. تأكد من تطبيق database/admin-role-management.sql.'
+                    : 'No audit records are available. Confirm database/admin-role-management.sql has been applied.'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="px-3 py-3">{isArabic ? 'العملية' : 'Action'}</th>
+                        <th className="px-3 py-3">{isArabic ? 'المنفّذ' : 'Actor'}</th>
+                        <th className="px-3 py-3">{isArabic ? 'المستخدم المستهدف' : 'Target user'}</th>
+                        <th className="px-3 py-3">{isArabic ? 'قبل' : 'Before'}</th>
+                        <th className="px-3 py-3">{isArabic ? 'بعد' : 'After'}</th>
+                        <th className="px-3 py-3">{isArabic ? 'التاريخ' : 'Timestamp'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activityLogs.map((log: any) => (
+                        <tr key={log.id} className="border-b last:border-0">
+                          <td className="px-3 py-3">
+                            <Badge variant="outline">{log.action}</Badge>
+                          </td>
+                          <td className="px-3 py-3 font-mono text-xs">{log.actor_user_id}</td>
+                          <td className="px-3 py-3 font-mono text-xs">{log.target_user_id}</td>
+                          <td className="px-3 py-3">{String(log.before_data?.role ?? '—')}</td>
+                          <td className="px-3 py-3">{String(log.after_data?.role ?? '—')}</td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* User Details Modal */}
