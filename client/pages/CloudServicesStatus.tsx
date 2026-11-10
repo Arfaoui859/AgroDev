@@ -255,7 +255,7 @@ const CloudServicesStatus: React.FC = () => {
                 حالة API الرئيسي
               </CardTitle>
               <CardDescription>
-                حالة ��لخدمات من خلال API الرئيسي
+                حالة الخدمات من خلال API الرئيسي
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -272,7 +272,7 @@ const CloudServicesStatus: React.FC = () => {
                         <div className="text-2xl font-bold">{aiHealthStatus.overview.unavailableServices ?? 0}</div>
                       </div>
                       <div className="rounded-lg border p-3">
-                        <div className="text-xs text-muted-foreground">نماذج/خدمات اصطناعية</div>
+                        <div className="text-xs text-muted-foreground">خدمات ذات نماذج مدرّبة على بيانات اصطناعية</div>
                         <div className="text-2xl font-bold">{aiHealthStatus.overview.syntheticModelServices ?? 0}</div>
                       </div>
                     </div>
@@ -310,7 +310,8 @@ const CloudServicesStatus: React.FC = () => {
                   )}
                   {aiHealthStatus.note && <p className="text-sm text-muted-foreground">{aiHealthStatus.note}</p>}
                   {aiHealthStatus.error && <p className="text-sm text-destructive">{aiHealthStatus.error}</p>}
-                </div>              ) : (
+                </div>
+              ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>جاري فحص API الرئيسي...</p>
