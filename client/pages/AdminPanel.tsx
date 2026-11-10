@@ -310,7 +310,7 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'إجمالي المستخدمين' : 'Total Users'}</p>
-                <p className="text-2xl font-bold text-blue-600">{formatNumber(dashboardData.summary?.totalUsers || 0)}</p>
+                <p className="text-2xl font-bold text-blue-600">{dashboardData.summary?.totalUsers == null ? "—" : formatNumber(dashboardData.summary.totalUsers)}</p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
             </div>
