@@ -186,6 +186,19 @@ export function keyMintRateLimiter(): RequestHandler {
   });
 }
 
+/** Rate-limit privileged administrator bootstrap attempts, including bad tokens. */
+export function adminBootstrapRateLimiter(): RequestHandler {
+  return rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: Number(process.env.ADMIN_BOOTSTRAP_MAX_ATTEMPTS || 5),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: "Too many administrator bootstrap attempts. Wait before retrying.",
+    },
+  });
+}
+
 /** Reject oversized JSON bodies early with a clear 413 instead of a crash. */
 export function jsonBodyErrorHandler(): (
   err: any,
