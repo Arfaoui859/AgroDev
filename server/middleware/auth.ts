@@ -192,10 +192,10 @@ async function resolveRole(userId: string): Promise<string | null> {
   try {
     const { data, error } = await client
       .from("users")
-      .select("role")
+      .select("role,is_active")
       .eq("id", userId)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error || !data || (data as { is_active?: boolean }).is_active === false) return null;
     const role = (data as { role?: string }).role;
     return typeof role === "string" ? role.toLowerCase() : null;
   } catch {
