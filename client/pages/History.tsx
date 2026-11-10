@@ -167,7 +167,7 @@ export default function History() {
         </div>
         <h2 className="text-2xl font-bold mb-2">لا توجد سجلات تحليل</h2>
         <p className="text-muted-foreground mb-6">
-          لم تقم بإجراء أي تحليل ��لتربة بعد. ابدأ أول تحليل لك الآن
+          لم تقم بإجراء أي تحليل للتربة بعد. ابدأ أول تحليل لك الآن
         </p>
         <Button onClick={() => navigate("/data-input")}>
           <Plus className="w-4 h-4 ml-2" />
