@@ -48,6 +48,19 @@ BEGIN
     RAISE EXCEPTION 'Privilege verification failed: service_role cannot execute AI webhook RPC';
   END IF;
 
+  -- Browser clients may submit user-authored chat input, never forged AI output.
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'farm_agent_messages'
+      AND policyname = 'Users insert own farm agent messages'
+      AND qual IS NULL
+      AND with_check ILIKE '%role%user%'
+  ) THEN
+    RAISE EXCEPTION 'RLS verification failed: client message insert policy does not restrict role=user';
+  END IF;
+
   -- Both helper functions must bind supplied user ids to auth.uid().
   IF pg_get_functiondef('public.get_user_farms(uuid)'::regprocedure)
        NOT ILIKE '%user_uuid IS DISTINCT FROM auth.uid()%' THEN
