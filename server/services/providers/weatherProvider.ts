@@ -1,9 +1,11 @@
 /**
  * Real weather provider backed by Open-Meteo (https://open-meteo.com).
  *
- * Open-Meteo is free for non-commercial use and requires no API key, which makes
- * it suitable as the default provider. An OpenWeatherMap provider can be enabled
- * by setting WEATHER_PROVIDER=openweathermap and providing WEATHER_API_KEY.
+ * The public Open-Meteo endpoint is non-commercial only. Production requests
+ * must use the licensed customer endpoint via OPEN_METEO_API_KEY. The free
+ * endpoint is available only outside production or when the operator explicitly
+ * opts into OPEN_METEO_ALLOW_FREE_NONCOMMERCIAL=true. Historical archive access
+ * requires the Open-Meteo Professional plan or higher.
  *
  * The provider returns the existing `WeatherData` shape used across the client so
  * no UI changes are required, while all values now come from a real source.
