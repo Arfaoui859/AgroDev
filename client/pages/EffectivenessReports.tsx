@@ -261,6 +261,9 @@ export default function EffectivenessReports() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        هذا التقييم يعتمد على القياسات التي تدخلها وقواعد حسابية، وليس نموذج ML. النتائج المعروضة تخص الجلسة الحالية فقط ولا تُحفظ في قاعدة البيانات بعد.
+      </div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">تقارير الفعالية</h1>
