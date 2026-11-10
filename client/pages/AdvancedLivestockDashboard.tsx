@@ -87,7 +87,7 @@ interface DashboardData {
     healthyAnimals: number;
     sickAnimals: number;
     pregnantAnimals: number;
-    avgHealthScore: number;
+    avgHealthScore: number | null;
     totalProduction: number;
   };
   speciesDistribution: Record<string, number>;
@@ -370,7 +370,7 @@ const AdvancedLivestockDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">
-                {dashboardData.summary.avgHealthScore}%
+                {dashboardData.summary.avgHealthScore !== null ? `${dashboardData.summary.avgHealthScore}%` : "غير متاح"}
               </div>
               <Progress value={dashboardData.summary.avgHealthScore} className="mt-2" />
             </CardContent>
