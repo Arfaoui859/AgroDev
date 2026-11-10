@@ -115,3 +115,6 @@
 
 ## Release gate
 Do not describe AgroGrowth as production-ready until P0 is closed, all P1 security/data/Agent/soil-report items have evidence, and the exact deployed commit passes smoke and regression tests.
+
+| API authentication hardening — role dashboards | Added `requireAuth` to farmer, agronomist, trader and government dashboard mounts; added it to veterinarian dashboard endpoints and all field-inspector endpoints | These handlers currently fail closed with 503; role-specific server authorization and tenant-scoped data access still required before enabling real data |
+| API authentication hardening — farm and livestock | Added `requireAuth` to every comprehensive farm-management endpoint and all advanced livestock endpoints, including the previously unguarded `GET /api/animals` | Source-level route assertions pass; verify production JWT behavior and RLS against Supabase before claiming tenant isolation |
