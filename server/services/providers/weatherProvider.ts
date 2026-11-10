@@ -205,7 +205,7 @@ export async function getWeatherFromOpenMeteo(
     latitude: String(lat),
     longitude: String(lon),
     current:
-      "temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl,weather_code,visibility,precipitation",
+      "temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl,weather_code,visibility,precipitation,shortwave_radiation",
     hourly: "soil_moisture_0_to_7cm",
     daily:
       "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,et0_fao_evapotranspiration,wind_speed_10m_max,shortwave_radiation_sum,uv_index_max,pressure_msl_mean,visibility_mean,wind_direction_10m_dominant",
