@@ -162,3 +162,14 @@ the database migration `database/admin-role-management.sql` and the
 server-side Supabase service-role configuration. Do not apply this migration
 or claim production readiness until it has been run against the intended
 Supabase project.
+
+
+### Editing user profiles
+
+The Users table's **Edit** action updates the user's full name in both
+`public.users.full_name` and Supabase Auth user metadata. The mutation
+requires a verified administrator JWT and writes a before/after
+`user.profile.updated` audit record. It does not change the user's email
+address or password. If either persistence step or audit write fails, the
+API attempts to restore the previous values and reports a partial failure
+rather than claiming success.
