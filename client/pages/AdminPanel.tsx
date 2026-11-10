@@ -119,6 +119,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [createUserRole, setCreateUserRole] = useState('farmer');
   const [createUserLoading, setCreateUserLoading] = useState(false);
   const [userCreateNotice, setUserCreateNotice] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [editFullName, setEditFullName] = useState('');
+  const [editUserLoading, setEditUserLoading] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -204,6 +207,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
+
+  const handleEditUser = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingUser) return;
+    setEditUserLoading(true);
+    setRoleChangeError(null);
+    try {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(editingUser.id)}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: editFullName }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.success) throw new Error(body?.message || body?.code || `Profile update failed (HTTP ${response.status})`);
+      if (selectedUser?.id === editingUser.id) setSelectedUser({ ...selectedUser, fullName: editFullName, firstName: editFullName.split(/\\s+/)[0], lastName: editFullName.split(/\\s+/).slice(1).join(' '), firstNameArabic: editFullName.split(/\\s+/)[0], lastNameArabic: editFullName.split(/\\s+/).slice(1).join(' ') });
+      setEditingUser(null);
+      await loadUsers(userPage);
+    } catch (error) {
+      setRoleChangeError(error instanceof Error ? error.message : 'Profile update failed');
+    } finally {
+      setEditUserLoading(false);
+    }
+  };
 
   const handleCreateUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -826,7 +852,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <option value="investor">{isArabic ? 'مستثمر' : 'Investor'}</option>
                                 <option value="admin">{isArabic ? 'مدير النظام' : 'Administrator'}</option>
                               </select>
-                              <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} size="sm" variant="outline">
+                              <Button size="sm" variant="outline" onClick={() => { setEditingUser(user); setEditFullName(user.fullName || ''); }}>
                                 <Edit className="h-3 w-3 mr-1" />
                                 {isArabic ? 'تحرير' : 'Edit'}
                               </Button>
@@ -1015,6 +1041,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!editingUser} onOpenChange={(open) => { if (!open && !editUserLoading) setEditingUser(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{isArabic ? 'تعديل بيانات المستخدم' : 'Edit user profile'}</DialogTitle>
+            <DialogDescription>{editingUser?.email || ''}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditUser} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="admin-edit-user-name" className="text-sm font-medium">{isArabic ? 'الاسم الكامل' : 'Full name'}</label>
+              <Input id="admin-edit-user-name" value={editFullName} onChange={(event) => setEditFullName(event.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditingUser(null)} disabled={editUserLoading}>{isArabic ? 'إلغاء' : 'Cancel'}</Button>
+              <Button type="submit" disabled={editUserLoading}>{editUserLoading ? (isArabic ? 'جاري الحفظ...' : 'Saving...') : (isArabic ? 'حفظ التغييرات' : 'Save changes')}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
         <DialogContent className="max-w-lg">
