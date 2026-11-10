@@ -221,7 +221,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       });
       const body = await response.json().catch(() => null);
       if (!response.ok || !body?.success) throw new Error(body?.message || body?.code || `Profile update failed (HTTP ${response.status})`);
-      if (selectedUser?.id === editingUser.id) setSelectedUser({ ...selectedUser, fullName: editFullName, firstName: editFullName.split(/\\s+/)[0], lastName: editFullName.split(/\\s+/).slice(1).join(' '), firstNameArabic: editFullName.split(/\\s+/)[0], lastNameArabic: editFullName.split(/\\s+/).slice(1).join(' ') });
+      if (selectedUser?.id === editingUser.id) setSelectedUser({ ...selectedUser, fullName: editFullName, firstName: editFullName.split(/\s+/)[0], lastName: editFullName.split(/\s+/).slice(1).join(' '), firstNameArabic: editFullName.split(/\s+/)[0], lastNameArabic: editFullName.split(/\s+/).slice(1).join(' ') });
       setEditingUser(null);
       await loadUsers(userPage);
     } catch (error) {
