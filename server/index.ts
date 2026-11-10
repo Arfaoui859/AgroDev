@@ -492,8 +492,8 @@ export function createServer() {
   app.get("/api/livestock-dashboard", requireAuth, getLivestockDashboard);
 
   // Dashboard APIs remain fail-closed until tenant-scoped persistence exists.
-  // Require identity now so future implementations cannot accidentally expose
-  // these routes anonymously when their handlers are replaced.
+  // Enforce both verified identity and the trusted database role before the
+  // router can ever be replaced with live tenant data.
   app.use("/api/farmer-dashboard", requireAuth, requireRole(["farmer"]), farmerDashboardRoutes);
   app.use("/api/agronomist-dashboard", requireAuth, requireRole(["agronomist", "expert"]), agronomistDashboardRoutes);
   app.use("/api/trader-dashboard", requireAuth, requireRole(["trader"]), traderDashboardRoutes);
