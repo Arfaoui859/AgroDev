@@ -1,3 +1,10 @@
+## Admin provisioning validation hardening (2026-11-10)
+
+- Fixed the privileged admin-create endpoint's email validator: the previous escaped regular expression rejected ordinary email addresses.
+- Exported the validator for direct unit coverage and added positive/negative cases for valid addresses, missing domains, whitespace, and malformed input.
+- Admin maintenance endpoints remain rate-limited; no default admin credentials are embedded.
+- Validation is source-level until the current GitHub Actions run completes. The live Render/Supabase provisioning path has not been executed from this environment.
+
 # AgroGrowth — Remaining Work Register
 
 **Branch:** `feat/soil-analysis-professional-report`  
