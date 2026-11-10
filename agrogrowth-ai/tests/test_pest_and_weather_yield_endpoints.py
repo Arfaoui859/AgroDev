@@ -120,6 +120,21 @@ def test_weather_plan_returns_seasonal_plan():
     assert len(data["seasonal_plan"]["monthly_plans"]) == 12
 
 
+def test_yield_prediction_rejects_fabricated_default_inputs():
+    response = wy_client.post("/predict-crop-yield", json={})
+    assert response.status_code == 422
+
+
+def test_weather_plan_rejects_fabricated_default_inputs():
+    response = wy_client.post("/create-weather-plan", json={})
+    assert response.status_code == 422
+
+
+def test_combined_analysis_requires_explicit_weather_and_yield_inputs():
+    response = wy_client.post("/combined-analysis", json={})
+    assert response.status_code == 422
+
+
 def test_yield_prediction_returns_economic_analysis():
     resp = wy_client.post(
         "/predict-crop-yield",
