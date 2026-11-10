@@ -184,3 +184,74 @@ export async function getAdminActivityLogs(_req: Request, res: Response): Promis
 export async function getAdminSubscriptions(_req: Request, res: Response): Promise<void> {
   unavailable(res, 'ADMIN_SUBSCRIPTIONS_NOT_CONNECTED');
 }
+
+const ADMIN_MANAGED_ROLES = new Set([
+  'admin', 'farmer', 'agronomist', 'trader',
+  'veterinarian', 'inspector', 'government', 'investor',
+]);
+
+export async function updateAdminUserRole(req: Request, res: Response): Promise<void> {
+  // Mutations must be attributable to a real signed-in administrator.
+  // Operator tokens may bootstrap accounts, but are not accepted as a human actor.
+  if (req.identitySource !== 'jwt' || !req.userId) {
+    res.status(403).json({
+      success: false,
+      code: 'VERIFIED_ADMIN_SESSION_REQUIRED',
+      message: 'Sign in with a verified administrator account before changing roles.',
+    });
+    return;
+  }
+  if (!databaseReady(res)) return;
+
+  const targetUserId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  const newRole = typeof req.body?.role === 'string' ? req.body.role.trim().toLowerCase() : '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+    res.status(400).json({ success: false, code: 'INVALID_USER_ID', message: 'A valid user ID is required.' });
+    return;
+  }
+  if (!ADMIN_MANAGED_ROLES.has(newRole)) {
+    res.status(400).json({ success: false, code: 'INVALID_ROLE', message: 'The requested role is not supported.' });
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin!.rpc('admin_change_user_role', {
+      p_actor_user_id: req.userId,
+      p_target_user_id: targetUserId,
+      p_new_role: newRole,
+    });
+    if (error) {
+      const message = error.message || '';
+      if (error.code === 'P0002') {
+        res.status(404).json({ success: false, code: 'USER_NOT_FOUND', message: 'The target user does not exist.' });
+        return;
+      }
+      if (error.code === '42501') {
+        res.status(403).json({ success: false, code: 'ADMIN_REQUIRED', message: 'Administrator privileges are required.' });
+        return;
+      }
+      if (error.code === '23514') {
+        res.status(409).json({ success: false, code: 'LAST_ADMIN_PROTECTED', message: 'The last active administrator cannot be demoted.' });
+        return;
+      }
+      if (error.code === '22023') {
+        res.status(400).json({ success: false, code: 'INVALID_ROLE_CHANGE', message: 'The role change request is invalid.' });
+        return;
+      }
+      console.error('Admin role change RPC failed:', message);
+      unavailable(res, 'ADMIN_ROLE_CHANGE_NOT_READY');
+      return;
+    }
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase');
+    res.json({
+      success: true,
+      data,
+      provenance: { source: 'supabase.admin_change_user_role + admin_audit_logs', verified: true },
+    });
+  } catch (error) {
+    console.error('Admin role change failed:', error);
+    unavailable(res, 'ADMIN_ROLE_CHANGE_FAILED');
+  }
+}
