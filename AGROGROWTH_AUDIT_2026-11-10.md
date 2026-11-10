@@ -3,7 +3,7 @@
 **Audit date:** 2026-11-10  
 **Repository:** `Arfaoui859/AgroDev`  
 **Branch:** `feat/ai-integration-production-hardening`  
-**Code baseline reviewed:** `99d4496affbac91407a35a768bae420ad8d0c932`  
+**Code baseline reviewed:** `e58f4feea4d343fafc0a14c5e01f5fa4ec51c4c5`  
 **Audit mode:** Repository/code inspection plus targeted implementation changes. No live Render or Supabase verification was possible in this pass.
 
 ## 1. Executive summary
@@ -127,7 +127,9 @@ These screens are visibly disclosed as illustrative in the current frontend. The
 Authenticated GET/POST endpoints now load and save reports per verified user using
 the server-side Supabase client. The migration `database/effectiveness-reports.sql`
 creates the table and RLS policies. The page loads saved reports and sends the
-user's access token; it no longer treats page state as durable storage.
+user's access token; the API requires a verified JWT and writes through the
+server-side elevated client only after checking the caller identity. CI now
+applies this migration and runs a tenant-isolation SQL verification script.
 
 **Still required:** apply that SQL file in the correct Supabase project and ensure
 `SUPABASE_SERVICE_ROLE_KEY` is configured server-side. Until both are done, the
@@ -192,8 +194,8 @@ Priority order:
 | Repository code review | Completed for eight service entrypoints, gateway, service status, selected frontend reports and provenance files |
 | Targeted code fixes | Committed to the audit branch |
 | Soil model artifacts/report | Inspected; no retraining performed |
-| New soil regression tests | Added; not executed in this environment |
-| TypeScript/Jest/pytest/lint/build after changes | Not executed |
+| New soil regression tests | Added; current GitHub Actions CI run is queued |
+| TypeScript/Jest/pytest/lint/build after changes | Awaiting GitHub Actions CI; not yet passed |
 | Render live service health | Not verified |
 | Supabase live schema/RLS/Admin login | Not verified |
 | Production deployment | Not performed |
