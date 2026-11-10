@@ -723,17 +723,17 @@ export function createServer() {
   // Supabase Connection Test
   app.get("/api/test/supabase", requireAdminToken(), testSupabaseConnection);
   // Admin: confirm unconfirmed users (requires x-admin-token header matching ADMIN_API_TOKEN)
-  app.post("/api/admin/confirm-unconfirmed", (req, res, next) => {
+  app.post("/api/admin/confirm-unconfirmed", adminBootstrapRateLimiter(), (req, res, next) => {
     return confirmUnconfirmedUsers(req, res, next as any);
   });
 
   // Admin: set a user's password (requires x-admin-token header matching ADMIN_API_TOKEN)
-  app.post("/api/admin/set-password", (req, res, next) => {
+  app.post("/api/admin/set-password", adminBootstrapRateLimiter(), (req, res, next) => {
     return adminSetPassword(req, res, next as any);
   });
 
   // Admin: create a confirmed admin user (requires x-admin-token header matching ADMIN_API_TOKEN)
-  app.post("/api/admin/create-user", (req, res, next) => {
+  app.post("/api/admin/create-user", adminBootstrapRateLimiter(), (req, res, next) => {
     return adminCreateUser(req, res, next as any);
   });
 
