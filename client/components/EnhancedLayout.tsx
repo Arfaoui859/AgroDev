@@ -516,13 +516,13 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
               {/* Right Section */}
               <div className="flex items-center space-x-4">
                 {/* Quick Actions */}
-                <Button variant="ghost" size="sm" className="hidden sm:flex">
+                <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate("/field-management")}>
                   <Plus className="h-4 w-4 mr-2" />
                   {isArabic ? "إضافة" : "Add"}
                 </Button>
 
                 {/* Notifications */}
-                <Button variant="ghost" size="sm" className="relative">
+                <Button variant="ghost" size="sm" className="relative" onClick={() => navigate("/notifications")}>
                   <Bell className="h-5 w-5" />
                   {notifications > 0 && (
                     <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
