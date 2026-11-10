@@ -21,7 +21,8 @@ import {
   Send,
   CheckCircle,
   Clock,
-  Users
+  Users,
+  Phone
 } from 'lucide-react';
 
 interface QuickAction {
