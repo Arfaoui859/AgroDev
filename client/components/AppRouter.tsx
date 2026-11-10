@@ -284,9 +284,7 @@ export default function AppRouter() {
             path="/veterinarian-dashboard"
             element={<VeterinarianDashboard />}
           />
-          <Route
-            path="/comprehensive-farm-management" element={<ComprehensiveFarmManagement />} />}
-          />
+          <Route path="/comprehensive-farm-management" element={<ComprehensiveFarmManagement />} />
           <Route
             path="/field-inspector-dashboard"
             element={<FieldInspectorDashboard />}
