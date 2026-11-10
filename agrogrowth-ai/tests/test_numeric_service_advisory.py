@@ -51,9 +51,29 @@ def _soil_request(**overrides):
 
 
 def _crop_request(**overrides):
-    payload = {"temperature": 24, "annual_rainfall": 350, "soil_ph": 6.5}
+    payload = {
+        "temperature": 24,
+        "annual_rainfall": 350,
+        "soil_ph": 6.5,
+        "soil_quality_score": 0.7,
+        "water_availability": 0.65,
+        "target_market_price": 2.4,
+        "farmer_experience_years": 6,
+        "available_capital": 12000,
+        "farm_size": 3.0,
+        "risk_tolerance": 0.4,
+    }
     payload.update(overrides)
     return crop_main.CropRecommendationRequest(**payload)
+
+
+def test_crop_recommendation_requires_explicit_farm_and_market_inputs():
+    with pytest.raises(ValidationError):
+        crop_main.CropRecommendationRequest(
+            temperature=24,
+            annual_rainfall=350,
+            soil_ph=6.5,
+        )
 
 
 def test_soil_without_provider_has_no_advisory_and_is_labelled_synthetic():
