@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { apiFetch } from '../lib/apiFetch';
@@ -116,11 +116,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [usersTotalPages, setUsersTotalPages] = useState(1);
   const [canCreateDeleteUsers, setCanCreateDeleteUsers] = useState(false);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [usersPage]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setLoadError(null);
@@ -149,7 +145,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [usersPage]);
+
+  useEffect(() => {
+    void fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const handleUserStatusUpdate = async (userId: string, newStatus: string) => {
     try {
