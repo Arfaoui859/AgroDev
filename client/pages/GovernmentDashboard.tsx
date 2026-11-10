@@ -110,31 +110,59 @@ export default function GovernmentDashboard() {
   const [regionsData, setRegionsData] = useState<any>(null);
   const [budgetData, setBudgetData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [dataUnavailable, setDataUnavailable] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedPolicy, setSelectedPolicy] = useState<string>("all");
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/government-dashboard/overview').then(res => res.json()),
-      fetch('/api/government-dashboard/production').then(res => res.json()),
-      fetch('/api/government-dashboard/policies').then(res => res.json()),
-      fetch('/api/government-dashboard/compliance').then(res => res.json()),
-      fetch('/api/government-dashboard/crisis-alerts').then(res => res.json()),
-      fetch('/api/government-dashboard/regions').then(res => res.json()),
-      fetch('/api/government-dashboard/budget').then(res => res.json())
-    ]).then(([overview, production, policies, compliance, crisis, regions, budget]) => {
-      setOverviewData(overview.data);
-      setProductionData(production.data);
-      setPoliciesData(policies.data);
-      setComplianceData(compliance.data);
-      setCrisisData(crisis.data);
-      setRegionsData(regions.data);
-      setBudgetData(budget.data);
-      setLoading(false);
-    }).catch(error => {
-      console.error('Error fetching government dashboard data:', error);
-      setLoading(false);
-    });
+    let active = true;
+    const loadGovernmentData = async () => {
+      try {
+        const paths = [
+          '/api/government-dashboard/overview',
+          '/api/government-dashboard/production',
+          '/api/government-dashboard/policies',
+          '/api/government-dashboard/compliance',
+          '/api/government-dashboard/crisis-alerts',
+          '/api/government-dashboard/regions',
+          '/api/government-dashboard/budget',
+        ];
+        const responses = await Promise.all(paths.map((path) => fetch(path)));
+        if (responses.some((response) => !response.ok)) {
+          if (active) {
+            setDataUnavailable(true);
+            setOverviewData(null);
+            setProductionData(null);
+            setPoliciesData(null);
+            setComplianceData(null);
+            setCrisisData(null);
+            setRegionsData(null);
+            setBudgetData(null);
+          }
+          return;
+        }
+        const [overview, production, policies, compliance, crisis, regions, budget] =
+          await Promise.all(responses.map((response) => response.json()));
+        if (!active) return;
+        setOverviewData(overview.data ?? null);
+        setProductionData(production.data ?? null);
+        setPoliciesData(policies.data ?? null);
+        setComplianceData(compliance.data ?? null);
+        setCrisisData(crisis.data ?? null);
+        setRegionsData(regions.data ?? null);
+        setBudgetData(budget.data ?? null);
+        if (!overview.data || !production.data || !policies.data || !compliance.data || !crisis.data || !regions.data || !budget.data) {
+          setDataUnavailable(true);
+        }
+      } catch (error) {
+        console.error('Error fetching government dashboard data:', error);
+        if (active) setDataUnavailable(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void loadGovernmentData();
+    return () => { active = false; };
   }, []);
 
   const formatNumber = (num: number) => {
@@ -155,6 +183,21 @@ export default function GovernmentDashboard() {
           <p className="text-gray-600" style={{ fontFamily: 'Cairo, sans-serif' }}>
             {isArabic ? 'جاري تحميل بيانات لوحة التحكم الحكومية...' : 'Loading Government Dashboard...'}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dataUnavailable) {
+    return (
+      <div className="space-y-4 p-4" dir={isArabic ? "rtl" : "ltr"}>
+        <DataProvenanceBanner message={isArabic
+          ? "لوحة البيانات الحكومية غير متاحة حالياً. مصدر البيانات الموثّق غير مربوط؛ لذلك لن نعرض أصفاراً أو مؤشرات افتراضية على أنها إحصاءات رسمية."
+          : "Government dashboard data is unavailable. No verified source is connected, so illustrative zeroes or sample metrics are not presented as official statistics."} />
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
+          {isArabic
+            ? "تعذّر تحميل مجموعة البيانات الحكومية كاملة. أعد المحاولة لاحقاً بعد ربط مصدر موثّق."
+            : "The complete government dataset could not be loaded. Retry after a verified data source is connected."}
         </div>
       </div>
     );
