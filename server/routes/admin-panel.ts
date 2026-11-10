@@ -311,3 +311,41 @@ export const deleteAdminUser: RequestHandler = async (req, res) => {
     return dbError(res, error, "user deletion");
   }
 };
+
+export const createAdminManagedUser: RequestHandler = async (req, res) => {
+  if (!supabaseAdmin) return unavailable(res, "Admin database access is not configured.");
+  const { email, password, full_name, role } = req.body || {};
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || typeof password !== "string" || password.length < 12) {
+    return res.status(400).json({ success: false, error: "A valid email and password of at least 12 characters are required." });
+  }
+  const allowedRoles = ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"];
+  const normalizedRole = typeof role === "string" && allowedRoles.includes(role) ? role : "farmer";
+  try {
+    const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: normalizedEmail,
+      password,
+      email_confirm: false,
+      user_metadata: { full_name: typeof full_name === "string" ? full_name.trim() : "" },
+    });
+    if (createError) throw createError;
+    const authUser = created.user;
+    if (!authUser) throw new Error("Supabase Auth did not return a created user.");
+    const { data, error } = await supabaseAdmin.from("users").upsert({
+      id: authUser.id,
+      email: normalizedEmail,
+      full_name: typeof full_name === "string" ? full_name.trim() : null,
+      role: normalizedRole,
+      verified: false,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "id" }).select("*").single();
+    if (error) {
+      await supabaseAdmin.auth.admin.deleteUser(authUser.id).catch(() => undefined);
+      throw error;
+    }
+    return res.status(201).json({ success: true, data: toAdminUser(data), provenance: { source: "Supabase Auth + public.users", simulated: false } });
+  } catch (error) {
+    return dbError(res, error, "user creation");
+  }
+};
