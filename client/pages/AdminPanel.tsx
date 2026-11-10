@@ -117,7 +117,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [usersPage]);
 
   const fetchDashboardData = async () => {
     try {
