@@ -624,19 +624,19 @@ export default function NotificationCenter() {
                 <CardTitle>{isArabic ? 'إجراءات سريعة' : 'Quick Actions'}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full justify-start" size="sm">
+                <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} className="w-full justify-start" size="sm">
                   <Plus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                   {isArabic ? 'إنشاء قاعدة جديدة' : 'Create New Rule'}
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} variant="outline" className="w-full justify-start" size="sm">
                   <Send className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                   {isArabic ? 'إرسال إشعار' : 'Send Notification'}
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} variant="outline" className="w-full justify-start" size="sm">
                   <Settings className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                   {isArabic ? 'إعدادات الحساسات' : 'Sensor Settings'}
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} variant="outline" className="w-full justify-start" size="sm">
                   <Download className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                   {isArabic ? 'تصدير التقارير' : 'Export Reports'}
                 </Button>
@@ -674,7 +674,7 @@ export default function NotificationCenter() {
                           <Eye className="h-3 w-3" />
                         </Button>
                         {notification.actions && notification.actions.length > 0 && (
-                          <Button size="sm" variant="outline">
+                          <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} size="sm" variant="outline">
                             {isArabic ? notification.actions[0].labelArabic : notification.actions[0].label}
                           </Button>
                         )}
@@ -840,7 +840,7 @@ export default function NotificationCenter() {
                         {notification.actions && notification.actions.length > 0 && (
                           <div className="flex space-x-2 rtl:space-x-reverse mt-3">
                             {notification.actions.map((action, index) => (
-                              <Button key={index} size="sm" variant={action.type === 'primary' ? 'default' : 'outline'}>
+                              <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} key={index} size="sm" variant={action.type === 'primary' ? 'default' : 'outline'}>
                                 {isArabic ? action.labelArabic : action.label}
                               </Button>
                             ))}
@@ -964,11 +964,11 @@ export default function NotificationCenter() {
 
                     {/* Action Buttons */}
                     <div className="flex space-x-2 rtl:space-x-reverse">
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} size="sm" variant="outline" className="flex-1">
                         <LineChart className="h-3 w-3 mr-1 rtl:ml-1 rtl:mr-0" />
                         {isArabic ? 'البيانات' : 'Data'}
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} size="sm" variant="outline" className="flex-1">
                         <Settings className="h-3 w-3 mr-1 rtl:ml-1 rtl:mr-0" />
                         {isArabic ? 'إعدادات' : 'Settings'}
                       </Button>
