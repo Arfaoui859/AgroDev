@@ -1,3 +1,13 @@
+## Admin user-management workflow expansion (2026-11-10)
+
+- Added invitation-based user creation through `POST /api/admin/users`. The endpoint requires a verified admin JWT, rejects existing platform profiles/auth identities, invites through Supabase Auth, creates a non-admin role profile, writes a `user.created` audit event, and attempts rollback if persistence/audit fails.
+- Enabled the Admin Panel Add User dialog with full name, email, and supported role selection. No password is generated or exposed in the browser; the user completes setup through the invitation email.
+- Added audited full-name editing through `PATCH /api/admin/users/:userId/profile`, synchronizing `public.users.full_name` and Auth user metadata with rollback attempts.
+- Added UI support for showing profile-name changes in the activity audit table.
+- Added anonymous/demo-session rejection coverage for invitation and profile-edit endpoints.
+- Updated `docs/ADMIN_ACCOUNT_SETUP.md` with the invitation SMTP prerequisite, data provenance, and profile-edit behavior.
+- Changes are source-committed only. Supabase SMTP delivery, migration application, CI, TypeScript/build, and live end-to-end flows remain unverified. Do not claim production availability until those checks pass.
+
 ## Admin user-directory pagination and server-side filters (2026-11-10)
 
 - Connected the Admin users table to the existing server-side search, role filter, and account-status filter parameters.
