@@ -131,6 +131,7 @@ export const getAdminDashboard: RequestHandler = async (req, res) => {
       success: true,
       data: {
         summary,
+        capabilities: { canCreateDeleteUsers: Boolean(supabaseAdmin), canUpdateUsers: true },
         recentUsers: users,
         recentActivity: activityResult.error ? [] : (activityResult.data || []).map((entry: any) => ({
           id: entry.id,
