@@ -575,6 +575,7 @@ const ComprehensiveFarmManagement: React.FC<
                               size="sm"
                               variant="outline"
                               className="mt-2"
+                              disabled={!onAlertResolve}
                               onClick={() => handleAlertResolve(alert.id)}
                             >
                               {isArabic ? "حل" : "Resolve"}
