@@ -116,7 +116,7 @@ export async function createAdminManagedUser(req: Request, res: Response): Promi
   const fullName = typeof req.body?.fullName === 'string' ? req.body.fullName.trim().slice(0, 120) : '';
   const role = typeof req.body?.role === 'string' ? req.body.role.trim().toLowerCase() : 'farmer';
   const allowedRoles = new Set(['farmer', 'agronomist', 'trader', 'veterinarian', 'inspector', 'government', 'investor']);
-  if (!/^[^@ \\t\\r\\n]+@[^@ \\t\\r\\n]+\\.[^@ \\t\\r\\n]+$/.test(email) || !fullName || !allowedRoles.has(role)) {
+  if (!/^[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+$/.test(email) || !fullName || !allowedRoles.has(role)) {
     res.status(400).json({ success: false, code: 'INVALID_USER_DETAILS', message: 'A valid email, full name, and supported non-admin role are required.' });
     return;
   }
