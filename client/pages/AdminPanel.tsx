@@ -122,6 +122,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editFullName, setEditFullName] = useState('');
   const [editUserLoading, setEditUserLoading] = useState(false);
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+  const [passwordResetNotice, setPasswordResetNotice] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -207,6 +209,46 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
+
+  const handlePasswordReset = async () => {
+    if (!selectedUser?.id || passwordResetLoading) return;
+    const confirmed = window.confirm(
+      isArabic
+        ? `إرسال رابط إعادة تعيين كلمة المرور إلى ${selectedUser.email}؟`
+        : `Send a password reset email to ${selectedUser.email}?`,
+    );
+    if (!confirmed) return;
+
+    setPasswordResetLoading(true);
+    setPasswordResetNotice(null);
+    setRoleChangeError(null);
+    try {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(selectedUser.id)}/password-reset`, {
+        method: 'POST',
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.success) {
+        const partial = body?.partial ? (isArabic ? ' تنبيه: قد يكون البريد أُرسل لكن سجل التدقيق لم يُحفظ.' : ' Note: the email may have been sent, but its audit record was not saved.') : '';
+        throw new Error((body?.message || body?.code || `Password reset failed (HTTP ${response.status})`) + partial);
+      }
+      setPasswordResetNotice(
+        isArabic
+          ? `تم طلب إرسال رابط إعادة التعيين إلى ${selectedUser.email}. لا يتم عرض كلمة المرور للأدمن.`
+          : `Password reset email requested for ${selectedUser.email}. The administrator never sees the password.`,
+      );
+      try {
+        const logsResponse = await apiFetch('/api/admin/activity-logs');
+        const logsBody = await logsResponse.json().catch(() => null);
+        if (logsResponse.ok && logsBody?.success) setActivityLogs(logsBody.data);
+      } catch {
+        // The password reset request succeeded; an optional activity refresh must not reverse that result.
+      }
+    } catch (error) {
+      setRoleChangeError(error instanceof Error ? error.message : 'Password reset request failed');
+    } finally {
+      setPasswordResetLoading(false);
+    }
+  };
 
   const handleEditUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1112,6 +1154,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 {isArabic ? 'تفاصيل المستخدم والنشاط' : 'User details and activity'}
               </DialogDescription>
             </DialogHeader>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" variant="outline" onClick={handlePasswordReset} disabled={passwordResetLoading}>
+                {passwordResetLoading
+                  ? (isArabic ? 'جارٍ إرسال الطلب...' : 'Sending request...')
+                  : (isArabic ? 'إرسال رابط إعادة تعيين كلمة المرور' : 'Send password reset email')}
+              </Button>
+              {passwordResetNotice && <p role="status" className="text-sm text-green-700">{passwordResetNotice}</p>}
+            </div>
             
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
