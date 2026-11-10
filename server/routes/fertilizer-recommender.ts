@@ -463,17 +463,6 @@ router.get('/effectiveness', requireAuth, async (req, res) => {
 
 // Track and persist application effectiveness for the authenticated user.
 router.post('/track/effectiveness', requireAuth, async (req, res) => {
-  const userId = req.userId;
-  if (!userId || req.identitySource !== "jwt") {
-    return res.status(401).json({ error: "Verified user authentication is required" });
-  }
-  if (!supabaseAdmin) {
-    return res.status(503).json({
-      error: "PERSISTENCE_NOT_CONFIGURED",
-      message: "Server-side Supabase persistence is not configured.",
-    });
-  }
-
   const {
     applicationId,
     productUsed,
@@ -490,18 +479,7 @@ router.post('/track/effectiveness', requireAuth, async (req, res) => {
     userRating
   } = req.body ?? {};
 
-  if (
-    typeof productName !== "string" || productName.trim() === "" ||
-    !applicationDate || Number.isNaN(new Date(applicationDate).getTime()) ||
-    !["fertilizer", "pesticide"].includes(productType) ||
-    num(userRating) === null || (num(userRating) ?? 0) < 1 || (num(userRating) ?? 0) > 5
-  ) {
-    return res.status(400).json({
-      error: "Product, valid application date, product type, and rating from 1 to 5 are required",
-      code: "INVALID_REPORT_METADATA",
-    });
-  }
-
+  // Before/after measurements are the minimum evidence needed for a score.
   const beforeScore = num(beforeCondition?.healthScore);
   const afterScore = num(afterCondition?.healthScore);
   if (
@@ -517,17 +495,30 @@ router.post('/track/effectiveness', requireAuth, async (req, res) => {
   }
 
   if (
+    (productType !== undefined && !["fertilizer", "pesticide"].includes(productType)) ||
+    (applicationDate !== undefined && Number.isNaN(new Date(applicationDate).getTime())) ||
+    (num(userRating) !== null && ((num(userRating) ?? 0) < 1 || (num(userRating) ?? 0) > 5)) ||
     (farmSize !== undefined && (!Number.isFinite(Number(farmSize)) || Number(farmSize) <= 0)) ||
     (cost !== undefined && (!Number.isFinite(Number(cost)) || Number(cost) < 0))
   ) {
     return res.status(400).json({
-      error: "farmSize must be positive and cost must be non-negative when supplied",
-      code: "INVALID_OPTIONAL_INPUT",
+      error: "Invalid product type, date, rating, farm size, or cost",
+      code: "INVALID_REPORT_METADATA",
     });
   }
 
+  const normalizedProductName =
+    typeof productName === "string" && productName.trim()
+      ? productName.trim()
+      : typeof productUsed === "string" && productUsed.trim()
+        ? productUsed.trim()
+        : "Unknown product";
+  const normalizedProductType = productType ?? "fertilizer";
+  const normalizedApplicationDate =
+    applicationDate ?? new Date().toISOString().slice(0, 10);
+
   const effectiveness = analyzeApplicationEffectiveness(
-    productUsed || productName,
+    normalizedProductName,
     weatherConditions,
     { ...beforeCondition, healthScore: beforeScore },
     { ...afterCondition, healthScore: afterScore },
@@ -536,10 +527,10 @@ router.post('/track/effectiveness', requireAuth, async (req, res) => {
 
   const report = {
     applicationId: applicationId ?? null,
-    productName: productName ?? productUsed ?? "Unknown product",
-    productType: productType ?? "fertilizer",
+    productName: normalizedProductName,
+    productType: normalizedProductType,
     cropType: cropType ?? null,
-    applicationDate: applicationDate ?? new Date().toISOString().slice(0, 10),
+    applicationDate: normalizedApplicationDate,
     ...(farmSize !== undefined ? { farmSize: Number(farmSize) } : {}),
     ...(cost !== undefined ? { cost: Number(cost) } : {}),
     notes: typeof notes === "string" ? notes : "",
@@ -556,6 +547,25 @@ router.post('/track/effectiveness', requireAuth, async (req, res) => {
     disclaimer:
       "درجة الفعالية محسوبة بقواعد زراعية من القيم المُدخلة وليست ناتجة عن نموذج تعلّم آلي.",
   };
+
+  // Development/test demo identities may preview the calculation, but they are
+  // never written to the user-owned table. Production requireAuth only accepts
+  // verified Supabase JWT identities.
+  if (req.identitySource !== "jwt") {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(401).json({ error: "Verified user authentication is required" });
+    }
+    return res.json({ ...report, persistence: "not-saved-demo" });
+  }
+
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Verified user authentication is required" });
+  if (!supabaseAdmin) {
+    return res.status(503).json({
+      error: "PERSISTENCE_NOT_CONFIGURED",
+      message: "Server-side Supabase persistence is not configured.",
+    });
+  }
 
   const { data, error } = await supabaseAdmin
     .from("effectiveness_reports")
