@@ -392,7 +392,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         category: "agriculture"
       };
       setMessages(prev => [...prev, imageAssistantMessage]);
-      await updateActiveConversation(imageUserMessage, imageAssistantMessage);
+      await persistUserConversationMessage(imageUserMessage);
       // Keep the original image and verified response available for an explicit,
       // user-approved save into the selected farm/cultivation record.
       const { data: { session } } = await supabase.auth.getSession();
@@ -1038,6 +1038,47 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       console.error("Could not open assistant conversation:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const persistUserConversationMessage = async (message: ChatMessage) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + session.access_token,
+      };
+      let conversationId = activeConversation;
+      if (!conversationId) {
+        const createResponse = await fetch("/api/assistant/conversations", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            title: message.content.slice(0, 180),
+            language: message.language,
+            category: message.category || "general",
+          }),
+        });
+        const created = await createResponse.json();
+        if (!createResponse.ok || created.success !== true) throw new Error(created.code || "CONVERSATION_CREATE_FAILED");
+        conversationId = created.data.id;
+        setActiveConversation(conversationId);
+      }
+      const response = await fetch("/api/assistant/conversations/" + encodeURIComponent(conversationId) + "/messages", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          role: "user",
+          content: message.content,
+          language: message.language,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.success !== true) throw new Error(payload.code || "USER_MESSAGE_PERSIST_FAILED");
+      await loadConversations();
+    } catch (error) {
+      console.warn("Image prompt could not be saved to assistant history:", error);
     }
   };
 
