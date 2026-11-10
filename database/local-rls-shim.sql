@@ -103,3 +103,18 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authentic
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
+
+
+-- Local/CI stand-in for the scheduled_tasks table created by Supabase setup.
+-- The production schema is created by database/supabase-setup.sql.
+CREATE TABLE IF NOT EXISTS public.scheduled_tasks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_name varchar(100) NOT NULL,
+  schedule varchar(100) NOT NULL,
+  enabled boolean DEFAULT true,
+  last_run timestamp,
+  next_run timestamp,
+  function_name varchar(255) NOT NULL,
+  parameters jsonb,
+  created_at timestamp DEFAULT now()
+);
