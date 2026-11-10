@@ -290,7 +290,7 @@ export const getFieldPerformance: RequestHandler = async (req, res) => {
 
 export const generateAIRecommendations: RequestHandler = async (req, res) => {
   try {
-    const { fieldId, cropType, soilData } = req.body;
+    const { fieldId } = req.body ?? {};
     
     if (!fieldId) {
       return res.status(400).json({
