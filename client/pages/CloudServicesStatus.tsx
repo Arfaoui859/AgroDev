@@ -260,50 +260,52 @@ const CloudServicesStatus: React.FC = () => {
             </CardHeader>
             <CardContent>
               {aiHealthStatus ? (
-                <div className="space-y-3">
-                  {Object.entries(aiHealthStatus).map(([key, value]) => {
-                    if (
-                      key === "overall_status" ||
-                      key === "error_message" ||
-                      key === "timestamp"
-                    ) {
-                      return null;
-                    }
-                    const isHealthy = value === "healthy";
+                <div className="space-y-4">
+                  {aiHealthStatus.overview && (
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="rounded-lg border p-3">
+                        <div className="text-xs text-muted-foreground">الخدمات المتاحة</div>
+                        <div className="text-2xl font-bold">{aiHealthStatus.overview.availableServices ?? 0}/{aiHealthStatus.overview.totalServices ?? 8}</div>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <div className="text-xs text-muted-foreground">غير المتاحة</div>
+                        <div className="text-2xl font-bold">{aiHealthStatus.overview.unavailableServices ?? 0}</div>
+                      </div>
+                      <div className="rounded-lg border p-3">
+                        <div className="text-xs text-muted-foreground">نماذج/خدمات اصطناعية</div>
+                        <div className="text-2xl font-bold">{aiHealthStatus.overview.syntheticModelServices ?? 0}</div>
+                      </div>
+                    </div>
+                  )}
+                  {Array.isArray(aiHealthStatus.services) && aiHealthStatus.services.map((service: any) => {
+                    const isHealthy = service.status === "available";
                     return (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-3">
-                          {getStatusIcon(isHealthy)}
-                          <div className="font-medium">
-                            {key
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </div>
+                      <div key={service.key || service.name} className="rounded-lg border p-3 space-y-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="font-medium">{service.nameAr || service.name}</div>
+                          {getStatusBadge(isHealthy)}
                         </div>
-                        {getStatusBadge(isHealthy)}
+                        {service.modelSource && (
+                          <div className="text-xs text-muted-foreground">
+                            مصدر النموذج: <span className="font-mono">{service.modelSource}</span>
+                            {" · "}{service.isRealModel ? "نموذج مزوّد فعلي" : service.modelTrainedOnSyntheticData ? "بيانات اصطناعية" : "قواعد / تحليل غير مدرّب"}
+                          </div>
+                        )}
+                        {service.error && <p className="text-xs text-destructive">{service.error}</p>}
+                        {service.responseTime !== undefined && <p className="text-xs text-muted-foreground">{service.responseTime} ms</p>}
                       </div>
                     );
                   })}
-
-                  {aiHealthStatus.overall_status && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm">
-                        <strong>الحالة العامة:</strong>{" "}
-                        {aiHealthStatus.overall_status}
-                      </div>
-                      {aiHealthStatus.error_message && (
-                        <div className="text-sm text-red-600 mt-1">
-                          <strong>رسالة الخطأ:</strong>{" "}
-                          {aiHealthStatus.error_message}
-                        </div>
-                      )}
+                  {aiHealthStatus.llm && (
+                    <div className="text-sm rounded-lg bg-muted p-3">
+                      <strong>مزود اللغة:</strong> {aiHealthStatus.llm.provider || "غير محدد"}
+                      {" · "}{aiHealthStatus.llm.configured ? "مهيّأ" : "غير مهيّأ"}
+                      {aiHealthStatus.llm.model ? ` · ${aiHealthStatus.llm.model}` : ""}
                     </div>
                   )}
-                </div>
-              ) : (
+                  {aiHealthStatus.note && <p className="text-sm text-muted-foreground">{aiHealthStatus.note}</p>}
+                  {aiHealthStatus.error && <p className="text-sm text-destructive">{aiHealthStatus.error}</p>}
+                </div>              ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>جاري فحص API الرئيسي...</p>
