@@ -344,7 +344,7 @@ export default function EffectivenessReports() {
             <Download className="h-4 w-4 ml-2" />
             تصدير التقرير
           </Button>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <Dialog open={showAddDialog} onOpenChange={(open) => { setShowAddDialog(open); if (open) setSubmitError(null); }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 ml-2" />
