@@ -40,6 +40,14 @@ describe("administrator user mutations require a verified admin session", () => 
     expect(response.body.success).not.toBe(true);
   });
 
+  test("password reset endpoint rejects an anonymous/demo identity", async () => {
+    const response = await request(app)
+      .post(`/api/admin/users/${TARGET_USER_ID}/password-reset`);
+
+    expect([401, 403]).toContain(response.status);
+    expect(response.body.success).not.toBe(true);
+  });
+
   test("account status endpoint rejects non-boolean status values", async () => {
     const response = await request(app)
       .patch(`/api/admin/users/${TARGET_USER_ID}/status`)
