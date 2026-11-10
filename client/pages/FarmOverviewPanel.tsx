@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sprout, Tractor, Wallet, RefreshCw, ArrowUpRight, MapPin, CalendarDays, Plus, Leaf, CircleAlert } from "lucide-react";
+import { Sprout, Tractor, Wallet, RefreshCw, ArrowUpRight, MapPin, CalendarDays, Plus, Leaf, AlertCircle } from "lucide-react";
 
 type Farm = { id: string; name: string; size_hectares: number; location?: unknown };
 type Cultivation = { id: string; farm_id: string; crop_name: string; planting_date: string; area_hectares: number; status: string };
@@ -122,7 +122,7 @@ export default function FarmOverviewPanel() {
         </div>
       </header>
 
-      {error && <Alert variant="destructive"><CircleAlert className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+      {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => {
