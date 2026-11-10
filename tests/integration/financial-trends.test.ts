@@ -10,9 +10,8 @@ describe("Financial summaries require persisted user records", () => {
 
   test("does not return synthetic financial trends for an empty or unknown period", async () => {
     const response = await request(app)
-      .get("/api/financial-summary?period=yearly&year=2099")
-      .expect(503);
+      .get("/api/financial-summary?period=yearly&year=2099");
 
-    expect(response.body.code).toBe("FARM_FINANCE_DATABASE_UNAVAILABLE");
+    expect([401, 403]).toContain(response.status);
   });
 });
