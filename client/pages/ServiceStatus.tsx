@@ -305,6 +305,12 @@ const ServiceStatusPage: React.FC = () => {
                           <div>
                             <h4 className="font-medium">{service.name}</h4>
                             <p className="text-sm text-gray-600">{service.description}</p>
+                            {healthCheck?.modelSource && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                مصدر النتيجة: <span className="font-mono">{healthCheck.modelSource}</span>
+                                {" · "}{healthCheck.isRealModel ? "نموذج مزوّد فعلي" : healthCheck.modelTrainedOnSyntheticData ? "بيانات اصطناعية" : "قواعد / تحليل غير مدرّب"}
+                              </p>
+                            )}
                             {healthCheck?.lastChecked && (
                               <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                                 <Clock className="h-3 w-3" />
