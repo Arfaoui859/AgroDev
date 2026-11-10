@@ -5,7 +5,7 @@ FastAPI service for intelligent irrigation scheduling and water management
 
 import os
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
@@ -30,27 +30,27 @@ irrigation_optimizer = create_smart_irrigation_optimizer()
 
 # Pydantic models for API
 class WeatherData(BaseModel):
-    temperature: float = 25.0
-    humidity: float = 60.0
-    wind_speed: float = 5.0
-    solar_radiation: float = 25.0
-    recent_rainfall: float = 0.0
+    temperature: float = Field(..., ge=-60, le=65)
+    humidity: float = Field(..., ge=0, le=100)
+    wind_speed: float = Field(..., ge=0)
+    solar_radiation: float = Field(..., ge=0)
+    recent_rainfall: float = Field(..., ge=0)
 
 class SoilData(BaseModel):
-    moisture_percentage: float = 50.0
-    field_capacity: float = 35.0
-    wilting_point: float = 15.0
-    soil_type: str = "loamy"
-    soil_type_factor: float = 1.0
-    irrigation_strategy: str = "balanced"  # conservative, balanced, intensive
+    moisture_percentage: float = Field(..., ge=0, le=100)
+    field_capacity: float = Field(..., ge=0, le=100)
+    wilting_point: float = Field(..., ge=0, le=100)
+    soil_type: str
+    soil_type_factor: float = Field(..., gt=0)
+    irrigation_strategy: str = Field(..., pattern="^(conservative|balanced|intensive)$")
 
 class IrrigationOptimizationRequest(BaseModel):
-    crop_type: str = "wheat"
-    growth_stage: str = "vegetative"
-    weather_data: WeatherData = WeatherData()
-    soil_data: SoilData = SoilData()
-    farm_size: float = 1.0
-    days_ahead: int = 7
+    crop_type: str = Field(..., min_length=1)
+    growth_stage: str = Field(..., min_length=1)
+    weather_data: WeatherData
+    soil_data: SoilData
+    farm_size: float = Field(..., gt=0)
+    days_ahead: int = Field(7, ge=1, le=30)
     language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
 
 class IrrigationScheduleRequest(BaseModel):
