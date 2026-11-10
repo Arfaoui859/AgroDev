@@ -962,6 +962,7 @@ export async function getFeedRecommendations(req: Request, res: Response) {
       dataSource: "static-demo-records",
       isRealData: false,
       note: "الاحتياجات والتوصيات الحالية محسوبة من سجل حيوان تجريبي وليست وصفة تغذية لمزرعتك."
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -988,6 +989,7 @@ export async function optimizeFeedBudget(req: Request, res: Response) {
       dataSource: "static-demo-records",
       isRealData: false,
       note: "تحسين الميزانية تجريبي ويعتمد على سجلات حيوانات ثابتة وأسعار غير متحققة لحظياً."
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -1108,7 +1110,10 @@ export async function getLivestockDashboard(req: Request, res: Response) {
             return bProduction - aProduction;
           })
           .slice(0, 5)
-      }
+      },
+      dataSource: "static-demo-records",
+      isRealData: false,
+      note: "إحصائيات الثروة الحيوانية الحالية مبنية على سجلات تجريبية ثابتة وليست بيانات مزرعتك.",
     });
   } catch (error) {
     res.status(500).json({
