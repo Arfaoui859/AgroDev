@@ -322,6 +322,11 @@ const ServiceStatusPage: React.FC = () => {
                                 )}
                               </p>
                             )}
+                            {healthCheck?.advisoryConfigured && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                مزوّد الاستشارة: <span className="font-mono">{healthCheck.advisoryModelSource || "مهيّأ"}</span>
+                              </p>
+                            )}
                           </div>
                         </div>
                         
