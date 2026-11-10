@@ -543,7 +543,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           </p>
                         </div>
                       </div>
-                    ))}
+                    )) : <p className="py-6 text-center text-sm text-gray-500">{isArabic ? "لا توجد أنشطة إدارية مسجّلة بعد." : "No administrator activity has been recorded yet."}</p>}
                   </div>
                 </ScrollArea>
               </CardContent>
