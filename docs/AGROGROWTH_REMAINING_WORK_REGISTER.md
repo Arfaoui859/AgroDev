@@ -21,6 +21,11 @@
 | Farm management route | `/comprehensive-farm-management` now renders the comprehensive page rather than redirecting to the farmer dashboard | Source route change only; route smoke test pending |
 | Field creation honesty | Field Management demo screen no longer silently closes and pretends to save; save is disabled with an explicit database-integration explanation | CRUD implementation remains outstanding |
 | Field page controls | Alert shortcut opens alerts; field-view action opens details; unavailable location, report, import, export, and activity-replay controls are disabled | Source change only; browser test pending |
+| Role-specific dashboards | Agronomist, trader, veterinarian, and inspector routes now require matching roles (admin allowed); ProtectedRoute no longer stores user IDs/user agents in localStorage or schedules full-page redirects | Client-side guard only; backend authorization still must be verified |
+| Investor dashboard | Removed shared demo investor ID; uses authenticated apiFetch; treats unavailable API responses as unavailable data; no longer presents demo financial data as live | Investor endpoints currently fail closed; real investor persistence and authorization remain unimplemented |
+| Admin mutations | Disabled add/edit/suspend/activate UI controls that had no secure server mutation endpoint; removed local-only user status update | Admin CRUD/status APIs remain outstanding |
+| Crop recommendations UI | Uses authenticated apiFetch; clears results and shows unavailable state on non-success responses; planting action disabled until connected to a persisted cultivation workflow | Recommendation API is currently fail-closed; no trained/validated model is claimed |
+| Arabic copy integrity | Repaired visible replacement-character corruption in core, notification, market-alert, weather-alert, and crop-suggestion pages | Needs full UI locale review and automated encoding scan |
 | Equipment data | Comprehensive Farm Management shows an empty state when no equipment records exist rather than inventing a sample tractor | Verify API response and rendering in browser |
 
 ## Remaining work — prioritized
