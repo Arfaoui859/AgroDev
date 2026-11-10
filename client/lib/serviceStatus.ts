@@ -7,6 +7,10 @@ export interface ServiceStatus {
   lastChecked?: Date;
   errorMessage?: string;
   requiresLocal?: boolean;
+  healthServiceKey?: string;
+  modelSource?: string;
+  isRealModel?: boolean;
+  modelTrainedOnSyntheticData?: boolean;
 }
 
 export interface ServiceCategory {
@@ -23,7 +27,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "crop-recommendation",
         name: "Smart Crop Recommendations",
         status: "unavailable",
-        endpoint: "/api/ai/crop-recommendation",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "crop_recommendation",
         description: "AI-powered crop selection based on soil and climate conditions",
         requiresLocal: true
       },
@@ -31,7 +36,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "soil-analysis",
         name: "Soil Analysis AI",
         status: "unavailable", 
-        endpoint: "/api/ai/soil-analysis",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "soil_analysis",
         description: "Intelligent soil health assessment and recommendations",
         requiresLocal: true
       },
@@ -39,7 +45,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "climate-crop-matcher",
         name: "Climate Crop Matcher",
         status: "unavailable",
-        endpoint: "/api/ai/climate-crop-matcher", 
+        endpoint: "/api/ai/health",
+        healthServiceKey: "soil_analysis", 
         description: "Match crops with climate conditions for optimal yield",
         requiresLocal: true
       }
@@ -52,7 +59,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "plant-disease-detection",
         name: "Plant Disease Detection",
         status: "unavailable",
-        endpoint: "/api/ai/plant-disease-detection",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "image_diagnosis",
         description: "Image-based plant disease identification and treatment recommendations",
         requiresLocal: true
       },
@@ -60,7 +68,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "leaf-scan",
         name: "Leaf Scan AI",
         status: "unavailable",
-        endpoint: "/api/ai/leaf-scan",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "image_diagnosis",
         description: "Advanced leaf analysis for early disease detection",
         requiresLocal: true
       },
@@ -68,7 +77,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "pest-control",
         name: "Pest Control Recommender",
         status: "unavailable",
-        endpoint: "/api/ai/pest-control",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "pest_control",
         description: "Intelligent pest identification and control strategies",
         requiresLocal: true
       }
@@ -81,7 +91,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "weather-yield-planner",
         name: "Smart Weather Crop Planner",
         status: "unavailable",
-        endpoint: "/api/ai/weather-yield-planner",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "weather_yield",
         description: "Weather-based crop planning and yield optimization",
         requiresLocal: true
       },
@@ -89,7 +100,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "yield-predictor",
         name: "Yield Predictor AI",
         status: "unavailable", 
-        endpoint: "/api/ai/yield-predictor",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "weather_yield",
         description: "Predict crop yields based on multiple factors",
         requiresLocal: true
       },
@@ -97,7 +109,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "irrigation-optimizer",
         name: "Smart Irrigation Optimizer",
         status: "unavailable",
-        endpoint: "/api/ai/irrigation-optimizer",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "irrigation_optimization",
         description: "Optimize irrigation schedules based on weather and soil data",
         requiresLocal: true
       }
@@ -110,7 +123,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "market-forecast",
         name: "Market Forecast AI",
         status: "unavailable",
-        endpoint: "/api/ai/market-forecast",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "market_forecast",
         description: "Predict market prices and demand trends",
         requiresLocal: true
       },
@@ -118,7 +132,8 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "supply-demand",
         name: "Supply Demand AI",
         status: "unavailable",
-        endpoint: "/api/ai/supply-demand",
+        endpoint: "/api/ai/health",
+        healthServiceKey: "market_forecast",
         description: "Analyze supply and demand patterns for better decision making",
         requiresLocal: true
       },
@@ -126,9 +141,7 @@ export const AI_SERVICES: ServiceCategory[] = [
         id: "smart-match",
         name: "Smart Match AI",
         status: "unavailable",
-        endpoint: "/api/ai/smart-match",
-        description: "Match farmers with buyers and optimize pricing",
-        requiresLocal: true
+        description: "No dedicated deployed service is registered in the current eight-service gateway.",
       }
     ]
   },
@@ -229,6 +242,28 @@ export class ServiceStatusManager {
       };
 
       try {
+        if (service.healthServiceKey) {
+          const response = await fetch('/api/ai/health', {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!response.ok) throw new Error(`AI gateway health returned HTTP ${response.status}`);
+          const payload = await response.json();
+          const serviceHealth = Array.isArray(payload.services)
+            ? payload.services.find((item: any) => item.key === service.healthServiceKey)
+            : undefined;
+          if (!serviceHealth) throw new Error(`No health entry for ${service.healthServiceKey}`);
+          updatedService.status = serviceHealth.status === 'available' ? 'available' : 'unavailable';
+          updatedService.modelSource = typeof serviceHealth.modelSource === 'string' ? serviceHealth.modelSource : undefined;
+          updatedService.isRealModel = serviceHealth.isRealModel === true;
+          updatedService.modelTrainedOnSyntheticData = serviceHealth.modelTrainedOnSyntheticData === true;
+          updatedService.errorMessage = serviceHealth.error;
+          updatedService.lastChecked = new Date();
+          this.statusCache.set(cacheKey, updatedService);
+          this.lastCheck.set(cacheKey, updatedService.lastChecked);
+          return updatedService;
+        }
         if (service.endpoint) {
           const response = await fetch(service.endpoint, {
             method: 'GET',
