@@ -12,6 +12,8 @@
  */
 
 import { Router } from "express";
+import { getWeatherFromOpenMeteo, getHistoricalWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
+import { ProviderError } from "../services/providers/http";
 import {
   callMicroservice,
   respondServiceError,
@@ -46,6 +48,83 @@ function sendLegacy(
     modelSource: result.modelSource,
   });
 }
+
+// Build an input bundle from licensed, real forecast + historical weather data.
+router.get("/weather-context", async (req, res) => {
+  const latitude = Number(req.query.lat);
+  const longitude = Number(req.query.lon);
+  if (
+    !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+    !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+  ) {
+    return res.status(400).json({ success: false, code: "INVALID_COORDINATES", error: "Valid latitude and longitude are required." });
+  }
+  try {
+    const [current, historical] = await Promise.all([
+      getWeatherFromOpenMeteo({ lat: latitude, lon: longitude }),
+      getHistoricalWeatherFromOpenMeteo(latitude, longitude, 12),
+    ]);
+    const months = historical.monthly;
+    if (!months.length || current.location.elevation === undefined) {
+      return res.status(503).json({ success: false, code: "WEATHER_CONTEXT_INCOMPLETE", error: "The provider did not return enough verified weather history for this location.", dataAvailable: false });
+    }
+    const average = (values: number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+    const annualRainfall = months.reduce((sum, month) => sum + month.totalRainfall, 0);
+    const annualTemperature = average(months.map((month) => month.avgTemp));
+    const annualHumidity = average(months.map((month) => month.avgHumidity));
+    const annualWind = average(months.map((month) => month.avgWindSpeed ?? 0));
+    const annualSolar = average(months.map((month) => month.avgSolarRadiation ?? 0)) / 3.6;
+    const annualVariation = Math.max(...months.map((month) => month.maxTemp ?? month.avgTemp)) -
+      Math.min(...months.map((month) => month.minTemp ?? month.avgTemp));
+    const recentTemperatureVariation = historical.recentTemperatureVariation || annualVariation;
+    const recentRainfall = historical.recentRainfall;
+    const currentWeather = {
+      temperature: current.current.temperature,
+      humidity: current.current.humidity,
+      rainfall: current.current.rainfall ?? 0,
+      wind_speed: current.current.windSpeed,
+      solar_radiation: current.forecast.daily[0]?.solarRadiation ?? current.current.solarRadiation ?? 0,
+      recent_rainfall: recentRainfall,
+      annual_rainfall: annualRainfall,
+      temperature_variation: recentTemperatureVariation,
+    };
+    const historicalWeather = {
+      temperature: annualTemperature,
+      humidity: annualHumidity,
+      rainfall: annualRainfall,
+      wind_speed: annualWind,
+      solar_radiation: annualSolar,
+      recent_rainfall: recentRainfall,
+      annual_rainfall: annualRainfall,
+      temperature_variation: annualVariation,
+    };
+    const values = [...Object.values(currentWeather), ...Object.values(historicalWeather)];
+    if (values.some((value) => !Number.isFinite(value))) {
+      return res.status(503).json({ success: false, code: "WEATHER_CONTEXT_INCOMPLETE", error: "The weather provider returned incomplete numeric data.", dataAvailable: false });
+    }
+    return res.json({
+      success: true,
+      data: {
+        location: { latitude, longitude, elevation: current.location.elevation, region: typeof req.query.region === "string" ? req.query.region : undefined },
+        current_conditions: currentWeather,
+        historical_weather: historicalWeather,
+        weather_data: currentWeather,
+      },
+      source: { provider: "Open-Meteo customer API + historical archive", isRealData: true },
+    });
+  } catch (error) {
+    const providerError = error instanceof ProviderError ? error : null;
+    const status = providerError?.kind === "unconfigured" ? 503 : providerError ? 502 : 500;
+    console.error("[weather-yield-context] provider failure:", error instanceof Error ? error.message : error);
+    return res.status(status).json({
+      success: false,
+      code: providerError?.kind === "unconfigured" ? "WEATHER_PROVIDER_NOT_CONFIGURED" : "WEATHER_DATA_UNAVAILABLE",
+      error: providerError?.message || "Unable to load verified weather context.",
+      provider: providerError?.provider || "Open-Meteo",
+      dataAvailable: false,
+    });
+  }
+});
 
 // Weather-based crop planning
 router.post("/weather-plan", async (req, res) => {
