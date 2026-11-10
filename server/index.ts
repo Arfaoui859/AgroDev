@@ -518,30 +518,35 @@ export function createServer() {
   );
 
   // Comprehensive Farm Management Dashboard routes
-  app.get("/api/farm-management/overview", getComprehensiveFarmDashboard);
-  app.get("/api/farm-management/alerts", getFarmAlerts);
-  app.get("/api/farm-management/tasks", getFarmTasks);
-  app.get("/api/farm-management/crops", getFarmCrops);
-  app.get("/api/farm-management/weather", getFarmWeather);
-  app.get("/api/farm-management/market", getFarmMarket);
-  app.get("/api/farm-management/equipment", getFarmEquipment);
-  app.get("/api/farm-management/financial", getFarmFinancial);
-  app.get("/api/farm-management/labor", getFarmLabor);
+  // Farm-management endpoints are currently fail-closed (503), but still
+  // require a verified caller identity before exposing tenant-specific routes.
+  app.get("/api/farm-management/overview", requireAuth, getComprehensiveFarmDashboard);
+  app.get("/api/farm-management/alerts", requireAuth, getFarmAlerts);
+  app.get("/api/farm-management/tasks", requireAuth, getFarmTasks);
+  app.get("/api/farm-management/crops", requireAuth, getFarmCrops);
+  app.get("/api/farm-management/weather", requireAuth, getFarmWeather);
+  app.get("/api/farm-management/market", requireAuth, getFarmMarket);
+  app.get("/api/farm-management/equipment", requireAuth, getFarmEquipment);
+  app.get("/api/farm-management/financial", requireAuth, getFarmFinancial);
+  app.get("/api/farm-management/labor", requireAuth, getFarmLabor);
 
-  // Field Inspector Dashboard routes
-  app.get("/api/field-inspector/overview", getFieldInspectorDashboard);
-  app.get("/api/field-inspector/visits", getFieldInspectorVisits);
-  app.get("/api/field-inspector/notes", getFieldInspectorNotes);
+  // Field Inspector routes require authentication even while their data
+  // handlers remain fail-closed until tenant-scoped persistence is connected.
+  app.get("/api/field-inspector/overview", requireAuth, getFieldInspectorDashboard);
+  app.get("/api/field-inspector/visits", requireAuth, getFieldInspectorVisits);
+  app.get("/api/field-inspector/notes", requireAuth, getFieldInspectorNotes);
   app.get(
     "/api/field-inspector/quality-assessments",
+    requireAuth,
     getFieldInspectorQualityAssessments,
   );
-  app.get("/api/field-inspector/reports", getFieldInspectorReports);
+  app.get("/api/field-inspector/reports", requireAuth, getFieldInspectorReports);
   app.get(
     "/api/field-inspector/recommendation-tracking",
+    requireAuth,
     getFieldInspectorRecommendationTracking,
   );
-  app.get("/api/field-inspector/profile", getFieldInspectorProfile);
+  app.get("/api/field-inspector/profile", requireAuth, getFieldInspectorProfile);
 
   // Admin Panel routes. These expose platform-wide figures (all users, system
   // metrics, security events, activity logs), so they are gated with
