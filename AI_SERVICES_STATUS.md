@@ -143,3 +143,7 @@ The following Python services now reject empty requests instead of silently subs
 - **Pest control:** crop, symptoms, affected area/count, total plant count, plant age/health, weather, farm size, plant density and irrigation frequency are required; default tomato/plant-health/weather values were removed.
 
 These changes improve input integrity; they do not change the numeric engines' current synthetic-demo provenance or establish agronomic accuracy. The weather/yield, irrigation and pest numeric engines remain synthetic and must not be marketed as field-validated ML.
+
+## Weather provider commercial readiness
+
+Production weather requests now require the licensed Open-Meteo customer endpoint via the server-only `OPEN_METEO_API_KEY`. The free public endpoint is non-commercial only; the historical archive used by Weather & Yield requires the Professional plan or higher. If the key/plan is absent, weather endpoints return an explicit 503 rather than calling the free endpoint or fabricating weather. `WeatherYieldPlanner` now fetches its weather context from the authenticated backend endpoint and reports weather-provider provenance separately from the synthetic yield model.
