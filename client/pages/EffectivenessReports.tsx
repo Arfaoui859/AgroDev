@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,6 @@ import {
   RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from "@/components/SimulatedDataNotice";
 
 interface EffectivenessReport {
   id: string;
@@ -40,9 +39,9 @@ interface EffectivenessReport {
   farmSize: number;
   beforeCondition: {
     healthScore: number;
-    yieldEstimate: number;
-    pestLevel: number;
-    nutrientLevel: number;
+    yieldEstimate?: number;
+    pestLevel?: number;
+    nutrientLevel?: number;
   };
   afterCondition: {
     healthScore: number;
@@ -54,175 +53,66 @@ interface EffectivenessReport {
   effectivenessScore: number;
   improvements: string[];
   futureRecommendations: string[];
-  weatherConditions: {
-    temperature: number;
-    humidity: number;
-    wind: number;
+  weatherConditions?: {
+    temperature?: number;
+    humidity?: number;
+    wind?: number;
   };
-  cost: number;
+  cost?: number;
   notes?: string;
 }
 
-const mockReports: EffectivenessReport[] = [
-  {
-    id: '1',
-    applicationId: 'app-001',
-    productName: 'سماد NPK متوازن',
-    productType: 'fertilizer',
-    applicationDate: '2024-01-10',
-    cropType: 'olive',
-    farmSize: 2.5,
-    beforeCondition: {
-      healthScore: 65,
-      yieldEstimate: 1200,
-      pestLevel: 15,
-      nutrientLevel: 40
-    },
-    afterCondition: {
-      healthScore: 82,
-      yieldEstimate: 1450,
-      pestLevel: 12,
-      nutrientLevel: 75
-    },
-    userRating: 4,
-    effectivenessScore: 88,
-    improvements: [
-      'تحسن ملحوظ في صحة النبات',
-      'زيادة في كثافة الأوراق',
-      'تحسن في لون الأوراق'
-    ],
-    futureRecommendations: [
-      'المتابعة مع نفس المنتج',
-      'تقليل الجرعة بنسبة 10%',
-      'إضافة عناصر صغرى'
-    ],
-    weatherConditions: {
-      temperature: 22,
-      humidity: 65,
-      wind: 8
-    },
-    cost: 480.5,
-    notes: 'استجابة ممتازة للتسميد، يُنصح بالاستمرار'
-  },
-  {
-    id: '2',
-    applicationId: 'app-002',
-    productName: 'كبريتات النحاس',
-    productType: 'pesticide',
-    applicationDate: '2024-01-15',
-    cropType: 'tomato',
-    farmSize: 1.8,
-    beforeCondition: {
-      healthScore: 55,
-      yieldEstimate: 800,
-      pestLevel: 35,
-      nutrientLevel: 60
-    },
-    afterCondition: {
-      healthScore: 78,
-      yieldEstimate: 980,
-      pestLevel: 8,
-      nutrientLevel: 62
-    },
-    userRating: 5,
-    effectivenessScore: 92,
-    improvements: [
-      'انخفاض كبير في الإصابة بالفطريات',
-      'تحسن في مظهر الأوراق',
-      'زيادة في معدل النمو'
-    ],
-    futureRecommendations: [
-      'إعادة التطبيق بعد 15 يوم',
-      'مراقبة العودة للإصابة',
-      'استخدام مبيد وقائي'
-    ],
-    weatherConditions: {
-      temperature: 18,
-      humidity: 70,
-      wind: 12
-    },
-    cost: 125.0,
-    notes: 'علاج فعال جداً ضد تبقع الأوراق'
-  },
-  {
-    id: '3',
-    applicationId: 'app-003',
-    productName: 'زيت النيم الطبيعي',
-    productType: 'pesticide',
-    applicationDate: '2024-01-18',
-    cropType: 'citrus',
-    farmSize: 3.2,
-    beforeCondition: {
-      healthScore: 70,
-      yieldEstimate: 2100,
-      pestLevel: 25,
-      nutrientLevel: 65
-    },
-    afterCondition: {
-      healthScore: 75,
-      yieldEstimate: 2200,
-      pestLevel: 18,
-      nutrientLevel: 67
-    },
-    userRating: 3,
-    effectivenessScore: 68,
-    improvements: [
-      'انخفاض طفيف في الحشرات الماصة',
-      'لا تأثير سلبي على النحل',
-      'تحسن في نشاط الحشرات النافعة'
-    ],
-    futureRecommendations: [
-      'زيادة تركيز المحلول',
-      'تكرار التطبيق كل 7 أيام',
-      'دمج مع مبيد آخر'
-    ],
-    weatherConditions: {
-      temperature: 25,
-      humidity: 80,
-      wind: 15
-    },
-    cost: 195.8,
-    notes: 'فعالية متوسطة، يحتاج تحسين'
-  }
-];
-
-const effectivenessData = [
-  { month: 'ديسمبر', fertilizer: 85, pesticide: 78, overall: 82 },
-  { month: 'يناير', fertilizer: 88, pesticide: 82, overall: 85 },
-  { month: 'فبراير', fertilizer: 92, pesticide: 85, overall: 89 },
-  { month: 'مارس', fertilizer: 89, pesticide: 88, overall: 89 },
-];
-
-const costEffectivenessData = [
-  { product: 'NPK متوازن', cost: 480, effectiveness: 88, roi: 2.4 },
-  { product: 'كبريتات النحاس', cost: 125, effectiveness: 92, roi: 3.2 },
-  { product: 'زيت النيم', cost: 196, effectiveness: 68, roi: 1.8 },
-  { product: 'فوسفات عالي', cost: 340, effectiveness: 85, roi: 2.1 },
-];
-
-const productPerformanceData = [
-  { name: 'ممتاز (85-100)', value: 35, color: '#10b981' },
-  { name: 'جيد (70-84)', value: 45, color: '#3b82f6' },
-  { name: 'متوسط (55-69)', value: 15, color: '#f59e0b' },
-  { name: 'ضعيف (أقل من 55)', value: 5, color: '#ef4444' },
-];
-
 export default function EffectivenessReports() {
-  const [reports, setReports] = useState<EffectivenessReport[]>(mockReports);
-  const [filteredReports, setFilteredReports] = useState<EffectivenessReport[]>(mockReports);
+  const [reports, setReports] = useState<EffectivenessReport[]>([]);
+  const [filteredReports, setFilteredReports] = useState<EffectivenessReport[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [filterCrop, setFilterCrop] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPeriod, setFilterPeriod] = useState<string>('30');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedReport, setSelectedReport] = useState<EffectivenessReport | null>(null);
+  const effectivenessData = useMemo(() => {
+    const byMonth = new Map<string, { month: string; fertilizer: number[]; pesticide: number[] }>();
+    for (const report of filteredReports) {
+      const date = new Date(report.applicationDate);
+      if (Number.isNaN(date.getTime())) continue;
+      const month = date.toLocaleDateString("ar-TN", { month: "short", year: "numeric" });
+      const entry = byMonth.get(month) || { month, fertilizer: [], pesticide: [] };
+      entry[report.productType].push(report.effectivenessScore);
+      byMonth.set(month, entry);
+    }
+    return Array.from(byMonth.values()).map(entry => ({
+      month: entry.month,
+      fertilizer: entry.fertilizer.length ? Math.round(entry.fertilizer.reduce((a,b)=>a+b,0)/entry.fertilizer.length) : null,
+      pesticide: entry.pesticide.length ? Math.round(entry.pesticide.reduce((a,b)=>a+b,0)/entry.pesticide.length) : null,
+      overall: Math.round([...entry.fertilizer, ...entry.pesticide].reduce((a,b)=>a+b,0) / (entry.fertilizer.length + entry.pesticide.length)),
+    }));
+  }, [filteredReports]);
+  const productPerformanceData = useMemo(() => {
+    const buckets = [
+      { name: "ممتاز (85-100)", min: 85, max: 101, color: "#10b981" },
+      { name: "جيد (70-84)", min: 70, max: 85, color: "#3b82f6" },
+      { name: "متوسط (55-69)", min: 55, max: 70, color: "#f59e0b" },
+      { name: "ضعيف (أقل من 55)", min: 0, max: 55, color: "#ef4444" },
+    ];
+    return buckets.map(bucket => ({ ...bucket, value: filteredReports.filter(r => r.effectivenessScore >= bucket.min && r.effectivenessScore < bucket.max).length }));
+  }, [filteredReports]);
+  const costEffectivenessData = useMemo(() => filteredReports
+    .filter(report => report.cost !== undefined)
+    .map(report => ({ product: report.productName, cost: report.cost, effectiveness: report.effectivenessScore })), [filteredReports]);
+
   const [newReport, setNewReport] = useState({
     productName: '',
     productType: 'fertilizer' as 'fertilizer' | 'pesticide',
     cropType: 'olive',
     userRating: 5,
     notes: '',
-    beforeHealthScore: 50,
-    afterHealthScore: 70
+    beforeHealthScore: "",
+    afterHealthScore: "",
+    farmSize: "",
+    cost: "",
+    applicationDate: new Date().toISOString().slice(0, 10)
   });
 
   useEffect(() => {
@@ -249,31 +139,40 @@ export default function EffectivenessReports() {
   }, [reports, filterCrop, filterType, filterPeriod]);
 
   const addNewReport = async () => {
+    const beforeHealthScore = Number(newReport.beforeHealthScore);
+    const afterHealthScore = Number(newReport.afterHealthScore);
+    if (!newReport.productName.trim() || !newReport.applicationDate ||
+        !Number.isFinite(beforeHealthScore) || !Number.isFinite(afterHealthScore) ||
+        beforeHealthScore < 0 || beforeHealthScore > 100 ||
+        afterHealthScore < 0 || afterHealthScore > 100) {
+      setSubmitError("أدخل اسم المنتج والتاريخ وقياسَي صحة النبات بين 0 و100.");
+      return;
+    }
+
+    const farmSize = newReport.farmSize.trim() ? Number(newReport.farmSize) : undefined;
+    const cost = newReport.cost.trim() ? Number(newReport.cost) : undefined;
+    if ((farmSize !== undefined && (!Number.isFinite(farmSize) || farmSize <= 0)) ||
+        (cost !== undefined && (!Number.isFinite(cost) || cost < 0))) {
+      setSubmitError("تحقق من مساحة المزرعة والتكلفة المدخلتين.");
+      return;
+    }
+
     const reportData = {
-      ...newReport,
+      productName: newReport.productName.trim(),
+      productType: newReport.productType,
+      cropType: newReport.cropType,
+      userRating: newReport.userRating,
+      notes: newReport.notes.trim(),
       applicationId: `app-${Date.now()}`,
-      applicationDate: new Date().toISOString().split('T')[0],
-      farmSize: 2.0,
-      beforeCondition: {
-        healthScore: newReport.beforeHealthScore,
-        yieldEstimate: 1000,
-        pestLevel: 20,
-        nutrientLevel: 50
-      },
-      afterCondition: {
-        healthScore: newReport.afterHealthScore,
-        yieldEstimate: 1200,
-        pestLevel: 10,
-        nutrientLevel: 70
-      },
-      weatherConditions: {
-        temperature: 20,
-        humidity: 65,
-        wind: 10
-      },
-      cost: 250
+      applicationDate: newReport.applicationDate,
+      ...(farmSize !== undefined ? { farmSize } : {}),
+      ...(cost !== undefined ? { cost } : {}),
+      beforeCondition: { healthScore: beforeHealthScore },
+      afterCondition: { healthScore: afterHealthScore },
     };
 
+    setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await fetch('/api/fertilizer/track/effectiveness', {
         method: 'POST',
@@ -288,25 +187,27 @@ export default function EffectivenessReports() {
         const newReportWithAnalysis: EffectivenessReport = {
           id: Date.now().toString(),
           ...reportData,
-          effectivenessScore: result.effectivenessScore || 75,
-          improvements: result.improvements || ['تحسن عام في حالة النبات'],
-          futureRecommendations: result.recommendations || ['متابعة المراقبة'],
+          effectivenessScore: Number(result.effectivenessScore),
+          improvements: Array.isArray(result.improvements) ? result.improvements : [],
+          futureRecommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
         };
         
         setReports(prev => [newReportWithAnalysis, ...prev]);
         setShowAddDialog(false);
         setNewReport({
-          productName: '',
-          productType: 'fertilizer',
-          cropType: 'olive',
-          userRating: 5,
-          notes: '',
-          beforeHealthScore: 50,
-          afterHealthScore: 70
+          productName: '', productType: 'fertilizer', cropType: 'olive',
+          userRating: 5, notes: '', beforeHealthScore: '', afterHealthScore: '',
+          farmSize: '', cost: '', applicationDate: new Date().toISOString().slice(0, 10)
         });
+      } else {
+        const payload = await response.json().catch(() => ({}));
+        setSubmitError(payload.message || payload.error || `تعذر حفظ التقييم (HTTP ${response.status}).`);
       }
     } catch (error) {
       console.error('Error submitting report:', error);
+      setSubmitError("تعذر الاتصال بالخادم. لم تتم إضافة التقرير.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -352,11 +253,6 @@ export default function EffectivenessReports() {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <SimulatedDataNotice
-        title={SIMULATED_RECORDS_TITLE_AR}
-        description={SIMULATED_RECORDS_DESCRIPTION_AR}
-        className="mb-2"
-      />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">تقارير الفعالية</h1>
@@ -426,6 +322,20 @@ export default function EffectivenessReports() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <Label htmlFor="applicationDate">تاريخ التطبيق</Label>
+                    <Input id="applicationDate" type="date" value={newReport.applicationDate} onChange={(e) => setNewReport(prev => ({...prev, applicationDate: e.target.value}))} />
+                  </div>
+                  <div>
+                    <Label htmlFor="farmSize">مساحة المزرعة (هكتار، اختياري)</Label>
+                    <Input id="farmSize" type="number" min="0.01" step="0.01" value={newReport.farmSize} onChange={(e) => setNewReport(prev => ({...prev, farmSize: e.target.value}))} />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="reportCost">التكلفة بالدينار التونسي (اختياري)</Label>
+                  <Input id="reportCost" type="number" min="0" step="0.01" value={newReport.cost} onChange={(e) => setNewReport(prev => ({...prev, cost: e.target.value}))} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <Label htmlFor="beforeHealth">صحة النبات قبل التطبيق (%)</Label>
                     <Input
                       id="beforeHealth"
@@ -480,11 +390,12 @@ export default function EffectivenessReports() {
                 </div>
               </div>
 
+              {submitError && <p role="alert" className="text-sm text-destructive">{submitError}</p>}
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                   إلغاء
                 </Button>
-                <Button onClick={addNewReport}>
+                <Button onClick={addNewReport} disabled={isSubmitting}>{isSubmitting ? "جارٍ التقييم..." : "إضافة التقرير"}
                   إضافة التقرير
                 </Button>
               </DialogFooter>
@@ -738,7 +649,7 @@ export default function EffectivenessReports() {
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={effectivenessData}>
+                    {effectivenessData.length ? <LineChart data={effectivenessData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -747,7 +658,7 @@ export default function EffectivenessReports() {
                       <Line type="monotone" dataKey="fertilizer" stroke="#10b981" name="الأسمدة" />
                       <Line type="monotone" dataKey="pesticide" stroke="#3b82f6" name="المبيدات" />
                       <Line type="monotone" dataKey="overall" stroke="#8b5cf6" name="العام" />
-                    </LineChart>
+                    </LineChart> : <p className="text-sm text-muted-foreground">لا توجد تقييمات فعلية كافية لعرض الاتجاهات.</p>}
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -768,7 +679,7 @@ export default function EffectivenessReports() {
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}%`}
+                        label={({ name, value }) => `${name}: ${value}`}
                       >
                         {productPerformanceData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -789,7 +700,7 @@ export default function EffectivenessReports() {
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={costEffectivenessData}>
+                  {costEffectivenessData.length ? <BarChart data={costEffectivenessData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="product" />
                     <YAxis yAxisId="left" />
@@ -798,7 +709,7 @@ export default function EffectivenessReports() {
                     <Legend />
                     <Bar yAxisId="left" dataKey="cost" fill="#f59e0b" name="التكلفة (د.ت)" />
                     <Bar yAxisId="right" dataKey="effectiveness" fill="#10b981" name="الفعالية (%)" />
-                  </BarChart>
+                  </BarChart> : <p className="text-sm text-muted-foreground">أدخل تكلفة حقيقية عند تسجيل التقييم لعرض تحليل التكلفة.</p>}
                 </ResponsiveContainer>
               </div>
             </CardContent>
