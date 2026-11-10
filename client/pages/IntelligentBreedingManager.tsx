@@ -97,6 +97,7 @@ const IntelligentBreedingManager: React.FC = () => {
   const [selectedMale, setSelectedMale] = useState<string>('');
   const [selectedFemale, setSelectedFemale] = useState<string>('');
   const [compatibilityResult, setCompatibilityResult] = useState<any>(null);
+  const [compatibilityMessage, setCompatibilityMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAnimals();
@@ -137,36 +138,22 @@ const IntelligentBreedingManager: React.FC = () => {
 
   const checkCompatibility = async () => {
     if (!selectedMale || !selectedFemale) return;
-    
-    try {
-      const male = animals.find(a => a.id === selectedMale);
-      const female = animals.find(a => a.id === selectedFemale);
-      
-      if (!male || !female) return;
-      
-      // Mock compatibility calculation for demo
-      const mockResult = {
-        compatibilityScore: Math.floor(Math.random() * 40) + 60, // 60-100
-        geneticAdvantages: [
-          'تنوع جيني ممتاز يقلل من مخاطر الأمراض الوراثية',
-          'وراثة ممتازة لصفة إنتاج الحليب',
-          'أعمار مثالية للتناسل'
-        ],
-        potentialRisks: [
-          'مراقبة مطلوبة لحالة الأم الصحية',
-          'تأكد من التغذية المناسبة قبل التلقيح'
-        ],
-        recommendations: [
-          'التلقيح الموصى به في الربيع القادم',
-          'تعزيز التغذية قبل شهر من التلقيح',
-          'مراقبة دورية للحالة الصحية'
-        ]
-      };
-      
-      setCompatibilityResult(mockResult);
-    } catch (error) {
-      console.error('Error checking compatibility:', error);
+
+    const male = animals.find(a => a.id === selectedMale);
+    const female = animals.find(a => a.id === selectedFemale);
+
+    if (!male || !female) {
+      setCompatibilityResult(null);
+      setCompatibilityMessage("تعذر العثور على بيانات الحيوانين المحددين.");
+      return;
     }
+
+    // No pedigree/genomic model or validated compatibility endpoint is wired
+    // into this screen yet. Never invent a random compatibility percentage.
+    setCompatibilityResult(null);
+    setCompatibilityMessage(
+      "تحليل التوافق الوراثي غير متاح حالياً: لا توجد بيانات نسب/جينوم موثقة أو خدمة تقييم معتمدة مربوطة بهذه الشاشة. لم يتم إنشاء نسبة توافق تقديرية."
+    );
   };
 
   const getSpeciesIcon = (species: string) => {
