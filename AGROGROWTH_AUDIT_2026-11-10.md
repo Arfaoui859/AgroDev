@@ -3,7 +3,7 @@
 **Audit date:** 2026-11-10  
 **Repository:** `Arfaoui859/AgroDev`  
 **Branch:** `feat/ai-integration-production-hardening`  
-**Code baseline reviewed:** `c2c315bd9d1c8a60894606625fe6554f0dc589bc`  
+**Code baseline reviewed:** `1db51d621199c8869712682443ed9aa5b258f14a`  
 **Audit mode:** Repository/code inspection plus targeted implementation changes. No live Render or Supabase verification was possible in this pass.
 
 ## 1. Executive summary
@@ -71,6 +71,28 @@ The gateway now distinguishes:
 - a declared configured model/provider.
 
 A deterministic rule engine is not incorrectly counted as a model trained on synthetic data. A model/provider being configured is still not evidence of agronomic validation.
+
+### 2.4 Commercial weather provider and UI integration
+
+The Weather & Yield Planner no longer calls the public Open-Meteo free endpoint
+directly from the browser. It requests an authenticated backend weather-context
+bundle. The backend combines current forecast and historical archive data,
+including coordinates/elevation, temperature, humidity, rainfall, wind and
+solar radiation. Weather provenance is displayed separately from the numeric
+yield model's synthetic provenance.
+
+Production provider access now requires `OPEN_METEO_API_KEY` and the licensed
+Open-Meteo customer endpoint. Historical archive access requires the
+Professional plan or higher. Without this configuration, production weather
+requests return an explicit 503. This is intentional: Open-Meteo's public free
+API is for non-commercial use only. See the provider's official
+[Terms](https://open-meteo.com/en/terms) and [Pricing](https://open-meteo.com/en/pricing).
+
+The Pest Control and Irrigation Optimization forms now collect the measurements
+required by their Python request models and unwrap the legacy API envelope
+before rendering results. The weather/yield form no longer sends hardcoded
+weather/soil values; it uses the backend weather bundle and requires farm soil
+and management inputs.
 
 ### 2.3 Input integrity hardening
 
@@ -250,6 +272,7 @@ Priority order:
 | Soil model artifacts/report | Inspected; no retraining performed |
 | New soil regression tests | Added; GitHub Actions runs queued at audit time |
 | AI input-integrity regression tests | Added for crop, weather/yield, irrigation and pest; CI not yet completed |
+| Commercial weather-provider guard | Added; tests queued, production key not yet configured |
 | Admin CRUD + RLS regression | Added; GitHub Actions runs queued at audit time |
 | TypeScript/Jest/pytest/lint/build after changes | Awaiting GitHub Actions CI; not yet passed |
 | Render live service health | Not verified |
