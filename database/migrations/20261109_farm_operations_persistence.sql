@@ -51,8 +51,20 @@ DROP POLICY IF EXISTS "Users manage their own farm expenses" ON public.farm_expe
 CREATE POLICY "Users manage their own farm expenses"
   ON public.farm_expenses
   FOR ALL
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    AND (farm_id IS NULL OR EXISTS (
+      SELECT 1 FROM public.farms f
+      WHERE f.id = farm_expenses.farm_id AND f.owner_id = auth.uid()
+    ))
+  )
+  WITH CHECK (
+    user_id = auth.uid()
+    AND (farm_id IS NULL OR EXISTS (
+      SELECT 1 FROM public.farms f
+      WHERE f.id = farm_expenses.farm_id AND f.owner_id = auth.uid()
+    ))
+  );
 
 CREATE TABLE IF NOT EXISTS public.farm_revenues (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -86,8 +98,20 @@ DROP POLICY IF EXISTS "Users manage their own farm revenues" ON public.farm_reve
 CREATE POLICY "Users manage their own farm revenues"
   ON public.farm_revenues
   FOR ALL
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    AND (farm_id IS NULL OR EXISTS (
+      SELECT 1 FROM public.farms f
+      WHERE f.id = farm_revenues.farm_id AND f.owner_id = auth.uid()
+    ))
+  )
+  WITH CHECK (
+    user_id = auth.uid()
+    AND (farm_id IS NULL OR EXISTS (
+      SELECT 1 FROM public.farms f
+      WHERE f.id = farm_revenues.farm_id AND f.owner_id = auth.uid()
+    ))
+  );
 
 -- Idempotent extension for deployments that already created farm_revenues.
 ALTER TABLE public.farm_revenues
