@@ -184,15 +184,23 @@ const FarmerDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/farmer-dashboard/overview");
-      if (!response.ok) {
-        throw new Error("Failed to fetch dashboard data");
+      const response = await fetch("/api/farmer-dashboard/overview", {
+        headers: { Accept: "application/json" },
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.success !== true || !result.data) {
+        throw new Error(
+          result.message ||
+            (response.status === 503
+              ? "Verified farmer dashboard data is not connected yet. Demo data is intentionally disabled."
+              : "Farmer dashboard request failed (HTTP " + response.status + ")."),
+        );
       }
-      const result = await response.json();
       setDashboardData(result.data);
       setError(null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setDashboardData(null);
+      setError(error instanceof Error ? error.message : "Unable to load verified farm data.");
     } finally {
       setLoading(false);
     }
