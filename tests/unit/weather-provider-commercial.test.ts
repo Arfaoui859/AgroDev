@@ -1,6 +1,4 @@
 import { getWeatherFromOpenMeteo, getHistoricalWeatherFromOpenMeteo } from "../../server/services/providers/weatherProvider";
-import { ProviderError } from "../../server/services/providers/http";
-
 const original = {
   nodeEnv: process.env.NODE_ENV,
   apiKey: process.env.OPEN_METEO_API_KEY,
