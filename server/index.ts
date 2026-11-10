@@ -121,6 +121,7 @@ import {
   getAdminActivityLogs,
   getAdminSubscriptions,
   updateAdminUserRole,
+  setAdminUserActive,
 } from "./routes/admin-panel";
 import governmentDashboardRoutes from "./routes/government-dashboard";
 import {
@@ -574,6 +575,7 @@ export function createServer() {
   app.get("/api/admin/activity-logs", requireAdminAccess, getAdminActivityLogs);
   app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
   app.patch("/api/admin/users/:userId/role", requireAdminAccess, updateAdminUserRole);
+  app.patch("/api/admin/users/:userId/status", requireAdminAccess, setAdminUserActive);
 
   // Government Dashboard routes
   app.use("/api/government-dashboard", requireAuth, governmentDashboardRoutes);
