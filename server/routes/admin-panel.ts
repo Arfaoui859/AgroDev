@@ -234,9 +234,13 @@ export const getAdminUsageAnalytics: RequestHandler = async (req, res) => {
   if (!requireDatabase(req, res)) return;
   const client = getAdminClient(req)!;
   try {
-    const { data, error, count } = await client
-      .from("users").select("id,role,created_at", { count: "exact" })
-      .order("created_at", { ascending: false }).limit(1000);
+    const [{ data, error, count }, activeResult, newResult] = await Promise.all([
+      client.from("users").select("id,role,created_at", { count: "exact" })
+        .order("created_at", { ascending: false }).limit(1000),
+      client.from("users").select("id", { count: "exact", head: true }).eq("is_active", true),
+      client.from("users").select("id", { count: "exact", head: true })
+        .gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()),
+    ]);
     if (error) throw error;
     const byRole = (data || []).reduce((acc: Record<string, number>, row: any) => {
       const role = String(row.role || "unknown");
@@ -252,7 +256,12 @@ export const getAdminUsageAnalytics: RequestHandler = async (req, res) => {
     return res.json({
       success: true,
       data: {
-        overview: { totalUsers: count ?? (data || []).length, activeUsers: null, newUsers: null },
+        overview: {
+          totalUsers: count ?? (data || []).length,
+          activeUsers: activeResult.error ? null : (activeResult.count ?? 0),
+          newUsers: newResult.error ? null : (newResult.count ?? 0),
+          retentionRate: null,
+        },
         usersByRole: byRole,
         registrationsByMonth: Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b)).map(([month, users]) => ({ month, users })),
         subscriptions: null,
