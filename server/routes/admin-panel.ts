@@ -303,7 +303,7 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
   const client = getAdminClient(req);
   if (!client) return unavailable(res, "Admin database access is not configured.");
   const userId = String(req.params.userId || "");
-  const { status, role } = req.body || {};
+  const { status, role, full_name, phone } = req.body || {};
   if (!userId) return res.status(400).json({ success: false, error: "User id is required." });
   if (role !== undefined && !["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"].includes(role)) {
     return res.status(400).json({ success: false, error: "Unsupported user role." });
@@ -311,8 +311,14 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
   if (status !== undefined && !["active", "inactive", "suspended"].includes(status)) {
     return res.status(400).json({ success: false, error: "Unsupported user status." });
   }
-  if (status === undefined && role === undefined) {
-    return res.status(400).json({ success: false, error: "Provide a role or status to update." });
+  if (full_name !== undefined && (typeof full_name !== "string" || full_name.trim().length < 2 || full_name.trim().length > 150)) {
+    return res.status(400).json({ success: false, error: "Full name must contain 2 to 150 characters." });
+  }
+  if (phone !== undefined && (typeof phone !== "string" || phone.trim().length > 30)) {
+    return res.status(400).json({ success: false, error: "Phone must be a string of at most 30 characters." });
+  }
+  if (status === undefined && role === undefined && full_name === undefined && phone === undefined) {
+    return res.status(400).json({ success: false, error: "Provide at least one user field to update." });
   }
   if (req.userId === userId && (role !== undefined && role !== "admin" || status !== undefined && status !== "active")) {
     return res.status(409).json({ success: false, error: "You cannot remove your own administrator access or deactivate your own account." });
@@ -329,6 +335,8 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
     }
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (role !== undefined) patch.role = role;
+    if (full_name !== undefined) patch.full_name = full_name.trim();
+    if (phone !== undefined) patch.phone = phone.trim() || null;
     if (status !== undefined) {
       patch.status = status;
       patch.is_active = status === "active";
@@ -336,7 +344,7 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
     const { data, error } = await client.from("users").update(patch).eq("id", userId).select("*").maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ success: false, error: "User record not found." });
-    await recordAdminAction(client, req.userId, "user.updated", userId, { role: role ?? null, status: status ?? null });
+    await recordAdminAction(client, req.userId, "user.updated", userId, { role: role ?? null, status: status ?? null, profileFields: { full_name: full_name !== undefined, phone: phone !== undefined } });
     return res.json({ success: true, data: toAdminUser(data), provenance: { source: "Supabase public.users", simulated: false } });
   } catch (error) {
     return dbError(res, error, "user update");
