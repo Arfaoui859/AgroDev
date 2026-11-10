@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import os from "node:os";
+import * as os from "node:os";
 import { supabaseAdmin, scopedClientFromAuthHeader } from "../lib/supabase";
 
 type DbUser = Record<string, any>;
