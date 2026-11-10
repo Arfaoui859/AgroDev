@@ -93,8 +93,6 @@ export async function addAgentConversationMessage(req: Request, res: Response) {
     .select("id").eq("id", req.params.conversationId).eq("user_id", req.userId).maybeSingle();
   if (conversationError) return persistenceFailure(res, "CONVERSATION_READ_FAILED", conversationError);
   if (!conversation) return res.status(404).json({ success: false, code: "CONVERSATION_NOT_FOUND" });
-  const metadata = req.body?.metadata && typeof req.body.metadata === "object" && !Array.isArray(req.body.metadata)
-    ? req.body.metadata : {};
   const { data, error } = await db.from("farm_agent_messages").insert({
     conversation_id: req.params.conversationId,
     user_id: req.userId,
