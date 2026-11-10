@@ -269,6 +269,9 @@ router.post('/recommendations/fertilizer', (req, res) => {
     totalBudgetRequired: topRecommendations.reduce((sum, rec) => sum + rec.totalCost, 0),
     sustainabilityScore: calculateSustainabilityScore(topRecommendations),
     applicationTiming: generateOptimalTiming(topRecommendations, season),
+    dataSource: "static-reference-catalogue",
+    isRealData: false,
+    disclaimer: "المنتجات والأسعار والموردون والجرعات في هذا الكتالوج بيانات مرجعية ثابتة غير متحققة لحظياً. تحقق من الملصق المعتمد وتوصية مهندس فلاحي محلي قبل الشراء أو التطبيق.",
     lastUpdated: new Date().toISOString()
   });
 });
@@ -369,6 +372,9 @@ router.post('/recommendations/pesticide', (req, res) => {
     integratedPestManagement: generateIPMStrategy(topRecommendations),
     applicationCalendar: generateTreatmentCalendar(topRecommendations),
     safetyGuidelines: generateComprehensiveSafetyGuide(),
+    dataSource: "static-reference-catalogue",
+    isRealData: false,
+    disclaimer: "هذا كتالوج مرجعي ثابت وليس توصية مبنية على تشخيص مخبري أو تحقق من التسجيل القانوني الحالي. لا تستخدم أي مبيد قبل التثبت من تسجيله للمحصول والآفة والجرعة وفترة ما قبل الجني والملصق المحلي.",
     lastUpdated: new Date().toISOString()
   });
 });
@@ -404,7 +410,10 @@ router.post('/schedule/comprehensive', (req, res) => {
     farmSize,
     schedule,
     notifications: generateNotificationSettings(schedule),
-    weatherIntegration: true,
+    weatherIntegration: Boolean(weatherData),
+    dataSource: weatherData ? "user-supplied-weather" : "rule-based-calendar",
+    isRealData: Boolean(weatherData),
+    disclaimer: "الجدولة حسابية ولا تمثل وصفة زراعية مؤكدة؛ راجع الطقس الفعلي وملصق المنتج وفترات ما قبل الجني.",
     lastUpdated: new Date().toISOString()
   });
 });
