@@ -261,7 +261,7 @@ Row Level Security (RLS) policies are blocking access.
           .from("user_profiles")
           .select("*")
           .eq("user_id", userId)
-          .single();
+          .maybeSingle();
         if (error) throw error;
         return data;
       };
