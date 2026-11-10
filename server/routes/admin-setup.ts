@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
 
-const EMAIL_PATTERN = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const setupAdminUser: RequestHandler = async (req, res) => {
   if (!isSupabaseConfigured || !supabaseAdmin) {
