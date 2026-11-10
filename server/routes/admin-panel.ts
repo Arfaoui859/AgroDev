@@ -178,8 +178,44 @@ export async function getAdminUsageAnalytics(_req: Request, res: Response): Prom
 export async function getAdminSecurityEvents(_req: Request, res: Response): Promise<void> {
   unavailable(res, 'ADMIN_SECURITY_EVENTS_NOT_CONNECTED');
 }
-export async function getAdminActivityLogs(_req: Request, res: Response): Promise<void> {
-  unavailable(res, 'ADMIN_ACTIVITY_LOGS_NOT_CONNECTED');
+export async function getAdminActivityLogs(req: Request, res: Response): Promise<void> {
+  if (!databaseReady(res)) return;
+  const page = Math.max(1, Math.min(10000, Number.parseInt(String(req.query.page || '1'), 10) || 1));
+  const pageSize = Math.max(1, Math.min(100, Number.parseInt(String(req.query.limit || '25'), 10) || 25));
+  const action = typeof req.query.action === 'string' ? req.query.action.trim().slice(0, 80) : '';
+
+  try {
+    let query = supabaseAdmin!
+      .from('admin_audit_logs')
+      .select('id,actor_user_id,action,target_user_id,before_data,after_data,created_at', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range((page - 1) * pageSize, page * pageSize - 1);
+
+    if (action) query = query.eq('action', action);
+    const { data, error, count } = await query;
+    if (error) {
+      console.error('Admin audit log query failed:', error.message);
+      unavailable(res, 'ADMIN_AUDIT_LOGS_NOT_READY');
+      return;
+    }
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase');
+    res.json({
+      success: true,
+      data: data || [],
+      pagination: {
+        page,
+        pageSize,
+        total: count ?? (data || []).length,
+        totalPages: Math.ceil((count ?? (data || []).length) / pageSize),
+      },
+      provenance: { source: 'supabase.public.admin_audit_logs', verified: true, model_source: null },
+    });
+  } catch (error) {
+    console.error('Admin audit log query failed:', error);
+    unavailable(res, 'ADMIN_AUDIT_LOGS_QUERY_FAILED');
+  }
 }
 export async function getAdminSubscriptions(_req: Request, res: Response): Promise<void> {
   unavailable(res, 'ADMIN_SUBSCRIPTIONS_NOT_CONNECTED');
