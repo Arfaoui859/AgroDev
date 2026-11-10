@@ -65,11 +65,9 @@ describe("🗄️ Routes degrade gracefully with no database configured", () => 
     expect(res.body.dataAvailable).toBe(false);
   });
 
-  test("GET /api/fields returns an empty list, not 500", async () => {
+  test("GET /api/fields rejects callers without a verified farmer session", async () => {
     const res = await request(app).get("/api/fields");
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe("success");
-    expect(res.body.data).toEqual([]);
+    expect([401, 403]).toContain(res.status);
   });
 
   test("crop metadata still resolves from the bundled reference dataset", async () => {
@@ -78,14 +76,13 @@ describe("🗄️ Routes degrade gracefully with no database configured", () => 
     if (res.status === 200) expect(Array.isArray(res.body.data)).toBe(true);
   });
 
-  test("a write that needs persistence answers 503, not a leaked 500", async () => {
+  test("a write is rejected before persistence when no verified session is supplied", async () => {
     const res = await request(app).post("/api/fields").send({
       farm_id: "00000000-0000-0000-0000-000000000000",
       name: "Test Field",
       size_hectares: 2,
       soil_type: "clay",
     });
-    expect(res.status).toBe(503);
-    expect(res.body.message).toMatch(/not configured/i);
+    expect([401, 403]).toContain(res.status);
   });
 });
