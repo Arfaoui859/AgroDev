@@ -122,6 +122,7 @@ import {
   getAdminSubscriptions,
   updateAdminUser,
   deleteAdminUser,
+  createAdminManagedUser,
 } from "./routes/admin-panel";
 import governmentDashboardRoutes from "./routes/government-dashboard";
 import {
@@ -547,6 +548,7 @@ export function createServer() {
   app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
   app.patch("/api/admin/users/:userId", requireAdminAccess, updateAdminUser);
   app.delete("/api/admin/users/:userId", requireAdminAccess, deleteAdminUser);
+  app.post("/api/admin/users", requireAdminAccess, createAdminManagedUser);
 
   // Government Dashboard routes
   app.use("/api/government-dashboard", governmentDashboardRoutes);
