@@ -1,135 +1,46 @@
-# 🤖 AgroGrowth AI Infrastructure
+# AgroGrowth AI Infrastructure
 
-## 📋 نظرة عامة
+This directory contains the eight FastAPI services used by the AgroGrowth Node
+gateway. The service inventory and current provenance are documented in
+[AI_SERVICES_STATUS.md](../AI_SERVICES_STATUS.md).
 
-هذا المشروع يحتوي على جميع نماذج الذكاء الاصطناعي لمنصة AgroGrowth، مبني كـ microservices مستقلة وقابلة للتطوير.
+## Actual service inventory
 
-## 🏗️ الهيكل العام
+| Service | Directory | Default port | Current model/data status |
+|---|---|---:|---|
+| Soil analysis | `soil_analysis` | 8001 | Deterministic sensor rules; seven separate laboratory-assisted ML artifacts |
+| Crop recommendation | `crop_recommendation` | 8002 | Synthetic-demo recommender; deterministic profit arithmetic |
+| Image diagnosis | `image_diagnosis` | 8003 | Heuristic leaf analysis; optional configured vision provider |
+| Market prediction | `market_prediction` | 8004 | Synthetic-demo forecasts; no licensed live price feed |
+| Intelligent agent | `intelligent_agent` | 8005 | Configured LLM provider when credentials are present |
+| Weather / yield intelligence | `weather_yield_intelligence` | 8006 | Synthetic-demo yield model |
+| Pest control | `pest_control` | 8007 | Synthetic-demo numeric model; optional LLM advisory |
+| Irrigation optimization | `irrigation_optimization` | 8008 | Synthetic-demo numeric model; optional LLM advisory |
 
-```
-agrogrowth-ai/
-├── ai_common/                     # الوحدات المشتركة
-│   ├── model_loader.py           # محمل النماذج
-│   ├── utils.py                  # الأدوات المساعدة
-│   └── base_service.py           # قالب الخدمة الأساسي
-├── soil_analysis/                # تحليل التربة والبيئة
-├── crop_recommendation/          # توصيات المحاصيل
-├── image_diagnosis/              # تشخيص الصور
-├── market_forecast/              # التنبؤ بالسوق
-├── smart_assistant/              # المساعد الذكي
-├── market_matching/              # ربط السوق
-├── models/                       # النماذج المدربة
-└── docker-compose.yml           # إعداد الحاويات
-```
+## Run locally
 
-## 🧠 نماذج الذكاء الاصطناعي
-
-### 1. تحليل التربة والبيئة الزراعية
-- **SoilAnalyzerAI**: تحليل خصائص التربة (pH، النيتروجين، الفوسفور، البوتاسيوم)
-- **ClimateCropMatcher**: مطابقة المناخ مع المحاصيل المناسبة
-- **SoilImageDiagnosisAI**: تشخيص التربة من الصور
-
-### 2. التوصيات الذكية للمحاصيل
-- **CropRecommenderAI**: اقتراح المحاصيل الأنسب
-- **ProfitEstimatorAI**: تقدير الأرباح المتوقعة
-
-### 3. تشخيص الآفات والأمراض
-- **PlantDiseaseDetector**: كشف أمراض النباتات من الصور
-- **LeafScanAI**: فحص الأوراق وتشخيص المشاكل
-
-### 4. التنبؤ بالأسعار والسوق
-- **MarketForecastAI**: التنبؤ بأسعار المحاصيل
-- **SupplyDemandAI**: تحليل العرض والطلب
-
-### 5. المساعد الذكي
-- **AgroChatAI**: محادثة ذكية مع المزارعين
-- **FarmingTasksPlanner**: تخطيط المهام الزراعية
-- **AlertNotifierAI**: نظام التنبيهات الذكية
-
-### 6. ربط السوق
-- **SmartMatchAI**: ربط المزارعين بالمشترين
-- **ProductQualityEvaluator**: تقييم جودة المنتجات
-
-## 🚀 تشغيل الخدمات
-
-### تشغيل جميع الخدمات
-```bash
-docker-compose up -d
-```
-
-### تشغيل خدمة محددة
-```bash
-docker-compose up soil-analysis
-```
-
-### تطوير محلي
-```bash
-# تثبيت المتطلبات
-pip install -r requirements.txt
-
-# تشغيل خدمة محددة
-cd soil_analysis
-python main.py
-```
-
-## 📊 المراقبة والصحة
-
-كل خدمة تحتوي على نقاط مراقبة:
-- `/health` - فحص صحة الخدمة
-- `/metrics` - مقاييس الأداء
-- `/docs` - وثائق API التفاعلية
-
-## 🔧 التكوين
-
-متغيرات البيئة المطلوبة:
-```env
-# قاعدة البيانات
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=agrogrowth
-DB_USER=postgres
-DB_PASSWORD=password
-
-# Redis للتخزين المؤقت
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# مفاتيح API الخارجية
-WEATHER_API_KEY=your_weather_api_key
-SATELLITE_API_KEY=your_satellite_api_key
-```
-
-## 🧪 الاختبار
+From the repository root:
 
 ```bash
-# تشغيل جميع الاختبارات
-pytest
-
-# اختبار خدمة محددة
-pytest soil_analysis/tests/
+bash scripts/start-ai-services.sh
+bash scripts/start-ai-services.sh --check
 ```
 
-## 📈 الأداء والتحسين
+Or run the service containers with the repository's root `docker-compose.yml`.
+The Node/Express backend should call the Python services through its gateway;
+the browser should not call private Render services directly.
 
-- استخدام Redis للتخزين المؤقت
-- تحسين النماذج للإنتاج
-- مراقبة الذاكرة والمعالج
-- تحديث النماذج تلقائياً
+## Provenance rules
 
-## 🔒 الأمان
+- `isRealModel: true` means the service declares a configured real model/provider;
+  it does not establish agronomic accuracy.
+- `modelTrainedOnSyntheticData: true` means the service declares synthetic
+  training/demo data.
+- `deterministic-rules` and `heuristic-demo` are not trained ML inference.
+- Weather from Open-Meteo is a real external observation; synthetic yield
+  estimates remain synthetic.
+- A reachable `/health` endpoint does not prove that an inference model is trained
+  or that its result is validated.
 
-- التحقق من المدخلات
-- تشفير البيانات الحساسة
-- مراقبة الوصول
-- حدود معدل الطلبات
-
-## 📞 الدعم الفني
-
-للمساعدة أو الاستفسارات:
-- Email: ai-support@agrogrowth.com
-- Slack: #ai-team
-- GitHub Issues: [agrogrowth-ai/issues](https://github.com/agrogrowth/ai/issues)
-
-## 📄 الترخيص
-
-هذا المشروع مرخص تحت رخصة MIT. راجع ملف LICENSE للتفاصيل.
+Never remove provenance disclaimers unless the underlying dataset, model
+validation, and live inference path have been independently verified.
