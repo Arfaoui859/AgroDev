@@ -911,9 +911,9 @@ export const useAIServices = () => {
         },
         services: [],
         error: error instanceof Error ? error.message : "AI health check failed",
-      }, [smartApiCall]);
+      };
     }
-  };
+  }, [smartApiCall]);
 
   return {
     loading,
