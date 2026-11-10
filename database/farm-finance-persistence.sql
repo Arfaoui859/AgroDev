@@ -60,32 +60,50 @@ ALTER TABLE public.farm_revenues ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.farm_expenses FROM PUBLIC, anon;
 REVOKE ALL ON TABLE public.farm_revenues FROM PUBLIC, anon;
 
-DROP POLICY IF EXISTS "Users manage own farm expenses" ON public.farm_expenses;
-CREATE POLICY "Users manage own farm expenses"
+DROP POLICY IF EXISTS "Users manage their own farm expenses" ON public.farm_expenses;
+CREATE POLICY "Users manage their own farm expenses"
   ON public.farm_expenses FOR ALL TO authenticated
-  USING (user_id = auth.uid())
+  USING (
+    user_id = auth.uid()
+    AND (
+      farm_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id = farm_expenses.farm_id AND f.owner_id = auth.uid()
+      )
+    )
+  )
   WITH CHECK (
     user_id = auth.uid()
     AND (
       farm_id IS NULL
       OR EXISTS (
         SELECT 1 FROM public.farms f
-        WHERE f.id = farm_id AND f.owner_id = auth.uid()
+        WHERE f.id = farm_expenses.farm_id AND f.owner_id = auth.uid()
       )
     )
   );
 
-DROP POLICY IF EXISTS "Users manage own farm revenues" ON public.farm_revenues;
-CREATE POLICY "Users manage own farm revenues"
+DROP POLICY IF EXISTS "Users manage their own farm revenues" ON public.farm_revenues;
+CREATE POLICY "Users manage their own farm revenues"
   ON public.farm_revenues FOR ALL TO authenticated
-  USING (user_id = auth.uid())
+  USING (
+    user_id = auth.uid()
+    AND (
+      farm_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.farms f
+        WHERE f.id = farm_revenues.farm_id AND f.owner_id = auth.uid()
+      )
+    )
+  )
   WITH CHECK (
     user_id = auth.uid()
     AND (
       farm_id IS NULL
       OR EXISTS (
         SELECT 1 FROM public.farms f
-        WHERE f.id = farm_id AND f.owner_id = auth.uid()
+        WHERE f.id = farm_revenues.farm_id AND f.owner_id = auth.uid()
       )
     )
   );
