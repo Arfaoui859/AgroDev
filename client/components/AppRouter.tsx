@@ -271,24 +271,12 @@ export default function AppRouter() {
             element={<LivestockProductionAnalytics />}
           />
           <Route path="/farmer-dashboard" element={<UnifiedFarmerDashboard />} />
-          <Route
-            path="/agronomist-dashboard"
-            element={<AgronomistDashboard />}
-          />
-          <Route
-            path="/enhanced-agronomist"
-            element={<EnhancedAgronomistDashboard />}
-          />
-          <Route path="/trader-dashboard" element={<TraderDashboard />} />
-          <Route
-            path="/veterinarian-dashboard"
-            element={<VeterinarianDashboard />}
-          />
+          <Route path="/agronomist-dashboard" element={<ProtectedRoute allowedRoles={["agronomist", "admin"]} fallbackRoute="/farmer-dashboard"><AgronomistDashboard /></ProtectedRoute>} />
+          <Route path="/enhanced-agronomist" element={<ProtectedRoute allowedRoles={["agronomist", "admin"]} fallbackRoute="/farmer-dashboard"><EnhancedAgronomistDashboard /></ProtectedRoute>} />
+          <Route path="/trader-dashboard" element={<ProtectedRoute allowedRoles={["trader", "admin"]} fallbackRoute="/farmer-dashboard"><TraderDashboard /></ProtectedRoute>} />
+          <Route path="/veterinarian-dashboard" element={<ProtectedRoute allowedRoles={["veterinarian", "admin"]} fallbackRoute="/farmer-dashboard"><VeterinarianDashboard /></ProtectedRoute>} />
           <Route path="/comprehensive-farm-management" element={<ComprehensiveFarmManagement />} />
-          <Route
-            path="/field-inspector-dashboard"
-            element={<FieldInspectorDashboard />}
-          />
+          <Route path="/field-inspector-dashboard" element={<ProtectedRoute allowedRoles={["inspector", "admin"]} fallbackRoute="/farmer-dashboard"><FieldInspectorDashboard /></ProtectedRoute>} />
           <Route
             path="/admin-panel"
             element={
