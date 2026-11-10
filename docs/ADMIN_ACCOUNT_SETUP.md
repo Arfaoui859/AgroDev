@@ -113,3 +113,25 @@ If the migration is missing or the service-role client is not configured,
 the API returns an explicit 503 and the UI explains that audit records are
 not available. Apply `database/admin-role-management.sql` before expecting
 role-change audit events to appear.
+
+
+## Account activation and suspension (new)
+
+The Admin Panel → Users actions call `PATCH /api/admin/users/:userId/status`.
+The backend requires a verified administrator JWT and a configured Supabase
+service-role client. It synchronizes the account with Supabase Auth using
+`ban_duration: '876000h'` for suspension and `ban_duration: 'none'` for
+reactivation, then invokes `admin_set_user_active` to update
+`public.users.is_active` and append an audit record. If the database rejects
+the operation, the API attempts to restore the previous Auth ban state.
+
+The database function serializes status changes, blocks self-suspension, and
+prevents suspension of the last active administrator. It is included in the
+same `database/admin-role-management.sql` migration; re-apply the updated
+migration before using the controls.
+
+A suspended user's Auth ban prevents new sign-ins and token refresh. Existing
+access tokens may remain valid until expiry; role-protected/admin endpoints
+also check `public.users.is_active` and reject inactive accounts. This is
+not a substitute for short access-token lifetimes or a session-revocation
+strategy if immediate revocation of every existing token is required.
