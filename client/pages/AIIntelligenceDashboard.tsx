@@ -16,7 +16,7 @@ import SmartSoilAnalysis from "@/components/ai/SmartSoilAnalysis";
 import SmartCropRecommendations from "@/components/ai/SmartCropRecommendations";
 import PlantDiseaseDetection from "@/components/ai/PlantDiseaseDetection";
 import { useServiceHealthChecker } from "@/hooks/useServiceHealthChecker";
-import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
+import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from "@/components/SimulatedDataNotice";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Brain,
