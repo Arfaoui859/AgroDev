@@ -105,6 +105,91 @@ export async function getAdminDashboard(_req: Request, res: Response): Promise<v
   }
 }
 
+export async function createAdminManagedUser(req: Request, res: Response): Promise<void> {
+  if (req.identitySource !== 'jwt' || !req.userId) {
+    res.status(403).json({ success: false, code: 'VERIFIED_ADMIN_SESSION_REQUIRED', message: 'A signed-in administrator session is required.' });
+    return;
+  }
+  if (!databaseReady(res)) return;
+
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const fullName = typeof req.body?.fullName === 'string' ? req.body.fullName.trim().slice(0, 120) : '';
+  const role = typeof req.body?.role === 'string' ? req.body.role.trim().toLowerCase() : 'farmer';
+  const allowedRoles = new Set(['farmer', 'agronomist', 'trader', 'veterinarian', 'inspector', 'government', 'investor']);
+  if (!/^[^@ \\t\\r\\n]+@[^@ \\t\\r\\n]+\\.[^@ \\t\\r\\n]+$/.test(email) || !fullName || !allowedRoles.has(role)) {
+    res.status(400).json({ success: false, code: 'INVALID_USER_DETAILS', message: 'A valid email, full name, and supported non-admin role are required.' });
+    return;
+  }
+
+  try {
+    const { data: existing, error: existingError } = await supabaseAdmin!
+      .from('users').select('id').eq('email', email).maybeSingle();
+    if (existingError) {
+      unavailable(res, 'ADMIN_USER_DUPLICATE_CHECK_FAILED');
+      return;
+    }
+    if (existing) {
+      res.status(409).json({ success: false, code: 'USER_ALREADY_EXISTS', message: 'A platform profile already exists for this email.' });
+      return;
+    }
+
+    const { data: invited, error: inviteError } = await supabaseAdmin!.auth.admin.inviteUserByEmail(email, {
+      data: { full_name: fullName },
+    });
+    if (inviteError || !invited.user?.id) {
+      const message = inviteError?.message || 'Invitation could not be created.';
+      const conflict = /already|registered|exists/i.test(message);
+      res.status(conflict ? 409 : 503).json({
+        success: false,
+        code: conflict ? 'AUTH_USER_ALREADY_EXISTS' : 'USER_INVITATION_FAILED',
+        message: conflict ? 'An authentication account already exists for this email.' : 'Supabase could not send the account invitation. Check the Auth email provider configuration.',
+      });
+      return;
+    }
+
+    const userId = invited.user.id;
+    const { error: profileError } = await supabaseAdmin!.from('users').insert({
+      id: userId, email, full_name: fullName, role,
+      email_verified: false, is_active: true, updated_at: new Date().toISOString(),
+    });
+    if (profileError) {
+      const { error: cleanupError } = await supabaseAdmin!.auth.admin.deleteUser(userId);
+      if (cleanupError) console.error('CRITICAL: failed to roll back invited Auth user:', cleanupError.message);
+      console.error('Admin-created profile insert failed:', profileError.message);
+      unavailable(res, cleanupError ? 'USER_CREATION_PARTIAL_FAILURE' : 'ADMIN_USER_PROFILE_CREATE_FAILED');
+      return;
+    }
+
+    const { error: auditError } = await supabaseAdmin!.from('admin_audit_logs').insert({
+      actor_user_id: req.userId,
+      action: 'user.created',
+      target_user_id: userId,
+      before_data: {},
+      after_data: { email, role, is_active: true, invitation_sent: true },
+    });
+    if (auditError) {
+      const { error: profileCleanupError } = await supabaseAdmin!.from('users').delete().eq('id', userId);
+      const { error: authCleanupError } = await supabaseAdmin!.auth.admin.deleteUser(userId);
+      if (profileCleanupError || authCleanupError) {
+        console.error('CRITICAL: user creation rollback incomplete:', profileCleanupError?.message, authCleanupError?.message);
+      }
+      unavailable(res, 'ADMIN_USER_AUDIT_WRITE_FAILED');
+      return;
+    }
+
+    res.status(201).setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase.auth + public.users + public.admin_audit_logs');
+    res.json({
+      success: true,
+      data: { id: userId, email, fullName, role, status: 'active', invitationSent: true },
+      provenance: { source: 'supabase.auth.inviteUserByEmail + public.users + public.admin_audit_logs', verified: true },
+    });
+  } catch (error) {
+    console.error('Admin-managed user creation failed:', error);
+    unavailable(res, 'ADMIN_USER_CREATE_FAILED');
+  }
+}
+
 export async function getAdminUsers(req: Request, res: Response): Promise<void> {
   if (!databaseReady(res)) return;
   const page = Math.max(1, Math.min(10000, Number.parseInt(String(req.query.page || '1'), 10) || 1));
