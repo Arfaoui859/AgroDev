@@ -311,7 +311,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'مستخدمون نشطون' : 'Active Users'}</p>
-                <p className="text-2xl font-bold text-green-600">{formatNumber(dashboardData.summary?.activeUsers || 0)}</p>
+                <p className="text-2xl font-bold text-green-600">{dashboardData.summary?.activeUsers == null ? "—" : formatNumber(dashboardData.summary.activeUsers)}</p>
               </div>
               <Activity className="h-8 w-8 text-green-600" />
             </div>
@@ -323,7 +323,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'مستخدمون جدد' : 'New Users'}</p>
-                <p className="text-2xl font-bold text-purple-600">{formatNumber(dashboardData.summary?.newUsers || 0)}</p>
+                <p className="text-2xl font-bold text-purple-600">{dashboardData.summary?.newUsers == null ? "—" : formatNumber(dashboardData.summary.newUsers)}</p>
               </div>
               <UserPlus className="h-8 w-8 text-purple-600" />
             </div>
@@ -359,7 +359,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'تذاكر الدعم' : 'Support Tickets'}</p>
-                <p className="text-2xl font-bold text-yellow-600">{formatNumber(dashboardData.summary?.supportTickets || 0)}</p>
+                <p className="text-2xl font-bold text-yellow-600">{dashboardData.summary?.supportTickets == null ? "—" : formatNumber(dashboardData.summary.supportTickets)}</p>
               </div>
               <MessageSquare className="h-8 w-8 text-yellow-600" />
             </div>
@@ -383,7 +383,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'تنبيهات أمنية' : 'Security Alerts'}</p>
-                <p className="text-2xl font-bold text-red-600">{formatNumber(dashboardData.summary?.securityAlerts || 0)}</p>
+                <p className="text-2xl font-bold text-red-600">{dashboardData.summary?.securityAlerts == null ? "—" : formatNumber(dashboardData.summary.securityAlerts)}</p>
               </div>
               <Shield className="h-8 w-8 text-red-600" />
             </div>
@@ -406,25 +406,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
                   <Cpu className="h-8 w-8 text-blue-600" />
                 </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.cpuUsage?.toFixed(1) || 0}%</p>
+                <p className="text-2xl font-bold">{systemMetrics.server?.cpuUsage == null ? "—" : `${systemMetrics.server.cpuUsage.toFixed(1)}%`}</p>
                 <p className="text-xs text-gray-600">{isArabic ? 'استخدام المعالج' : 'CPU Usage'}</p>
-                <Progress value={systemMetrics.server?.cpuUsage || 0} className="w-full mt-2" />
+                <Progress value={systemMetrics.server?.cpuUsage ?? 0} className="w-full mt-2" />
               </div>
               <div className="flex flex-col items-center">
                 <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
                   <MemoryStick className="h-8 w-8 text-green-600" />
                 </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.memoryUsage?.toFixed(1) || 0}%</p>
+                <p className="text-2xl font-bold">{systemMetrics.server?.memoryUsage == null ? "—" : `${systemMetrics.server.memoryUsage.toFixed(1)}%`}</p>
                 <p className="text-xs text-gray-600">{isArabic ? 'استخدام الذاكرة' : 'Memory Usage'}</p>
-                <Progress value={systemMetrics.server?.memoryUsage || 0} className="w-full mt-2" />
+                <Progress value={systemMetrics.server?.memoryUsage ?? 0} className="w-full mt-2" />
               </div>
               <div className="flex flex-col items-center">
                 <div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mb-2">
                   <HardDrive className="h-8 w-8 text-purple-600" />
                 </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.diskUsage?.toFixed(1) || 0}%</p>
+                <p className="text-2xl font-bold">{systemMetrics.server?.diskUsage == null ? "—" : `${systemMetrics.server.diskUsage.toFixed(1)}%`}</p>
                 <p className="text-xs text-gray-600">{isArabic ? 'استخدام القرص' : 'Disk Usage'}</p>
-                <Progress value={systemMetrics.server?.diskUsage || 0} className="w-full mt-2" />
+                <Progress value={systemMetrics.server?.diskUsage ?? 0} className="w-full mt-2" />
               </div>
               <div className="flex flex-col items-center">
                 <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center mb-2">
