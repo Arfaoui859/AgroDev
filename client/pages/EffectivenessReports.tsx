@@ -36,7 +36,7 @@ interface EffectivenessReport {
   productType: 'fertilizer' | 'pesticide';
   applicationDate: string;
   cropType: string;
-  farmSize: number;
+  farmSize?: number;
   beforeCondition: {
     healthScore: number;
     yieldEstimate?: number;
@@ -45,9 +45,9 @@ interface EffectivenessReport {
   };
   afterCondition: {
     healthScore: number;
-    yieldEstimate: number;
-    pestLevel: number;
-    nutrientLevel: number;
+    yieldEstimate?: number;
+    pestLevel?: number;
+    nutrientLevel?: number;
   };
   userRating: number;
   effectivenessScore: number;
@@ -142,6 +142,7 @@ export default function EffectivenessReports() {
     const beforeHealthScore = Number(newReport.beforeHealthScore);
     const afterHealthScore = Number(newReport.afterHealthScore);
     if (!newReport.productName.trim() || !newReport.applicationDate ||
+        newReport.beforeHealthScore.trim() === "" || newReport.afterHealthScore.trim() === "" ||
         !Number.isFinite(beforeHealthScore) || !Number.isFinite(afterHealthScore) ||
         beforeHealthScore < 0 || beforeHealthScore > 100 ||
         afterHealthScore < 0 || afterHealthScore > 100) {
@@ -184,10 +185,15 @@ export default function EffectivenessReports() {
       
       if (response.ok) {
         const result = await response.json();
+        const effectivenessScore = Number(result.effectivenessScore);
+        if (!Number.isFinite(effectivenessScore)) {
+          setSubmitError("استجابة الخادم لا تحتوي على نتيجة فعالية صالحة.");
+          return;
+        }
         const newReportWithAnalysis: EffectivenessReport = {
           id: Date.now().toString(),
           ...reportData,
-          effectivenessScore: Number(result.effectivenessScore),
+          effectivenessScore,
           improvements: Array.isArray(result.improvements) ? result.improvements : [],
           futureRecommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
         };
@@ -240,8 +246,10 @@ export default function EffectivenessReports() {
 
   const calculateAverageCost = () => {
     if (filteredReports.length === 0) return 0;
-    const sum = filteredReports.reduce((acc, report) => acc + report.cost, 0);
-    return Math.round(sum / filteredReports.length);
+    const reportsWithCost = filteredReports.filter(report => report.cost !== undefined);
+    if (reportsWithCost.length === 0) return 0;
+    const sum = reportsWithCost.reduce((acc, report) => acc + (report.cost ?? 0), 0);
+    return Math.round(sum / reportsWithCost.length);
   };
 
   const calculateAverageImprovement = () => {
@@ -671,7 +679,7 @@ export default function EffectivenessReports() {
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    {filteredReports.length ? <PieChart>
                       <Pie
                         data={productPerformanceData}
                         cx="50%"
@@ -686,7 +694,7 @@ export default function EffectivenessReports() {
                         ))}
                       </Pie>
                       <Tooltip />
-                    </PieChart>
+                    </PieChart> : <p className="text-sm text-muted-foreground">لا توجد تقييمات فعلية لعرض التوزيع.</p>}
                   </ResponsiveContainer>
                 </div>
               </CardContent>
