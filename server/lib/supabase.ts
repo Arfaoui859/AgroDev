@@ -77,11 +77,17 @@ export function scopedClientFromAuthHeader(
   return createScopedClient(match ? match[1].trim() : null);
 }
 
-// For server-side operations that need elevated permissions
-export const supabaseAdmin: SupabaseClient | null = isSupabaseConfigured
+// Privileged server-side operations must never silently fall back to the
+// public anon key. A client created with anon credentials is not an admin client.
+export const isSupabaseAdminConfigured = Boolean(
+  supabaseUrl && process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
+
+export const supabaseAdmin: SupabaseClient | null = isSupabaseAdminConfigured
   ? createClient(
       supabaseUrl as string,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+      { auth: { persistSession: false, autoRefreshToken: false } },
     )
   : null;
 
