@@ -27,6 +27,11 @@ wy_client = TestClient(wy_main.app)
 # Pest control
 # --------------------------------------------------------------------------
 
+def test_pest_analysis_rejects_fabricated_default_context():
+    response = pest_client.post("/analyze-pest-problem", json={})
+    assert response.status_code == 422
+
+
 def test_pest_analyze_problem_returns_full_analysis():
     resp = pest_client.post(
         "/analyze-pest-problem",
