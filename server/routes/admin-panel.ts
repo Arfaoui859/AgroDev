@@ -194,6 +194,81 @@ export async function updateAdminUserProfile(req: Request, res: Response): Promi
   }
 }
 
+export async function sendAdminPasswordReset(req: Request, res: Response): Promise<void> {
+  if (req.identitySource !== 'jwt' || !req.userId) {
+    res.status(403).json({ success: false, code: 'VERIFIED_ADMIN_SESSION_REQUIRED', message: 'A signed-in administrator session is required.' });
+    return;
+  }
+  if (!databaseReady(res)) return;
+
+  const targetUserId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+    res.status(400).json({ success: false, code: 'INVALID_USER_ID', message: 'A valid user ID is required.' });
+    return;
+  }
+
+  try {
+    const { data: profile, error: profileError } = await supabaseAdmin!
+      .from('users').select('id,email').eq('id', targetUserId).maybeSingle();
+    if (profileError) {
+      unavailable(res, 'ADMIN_PASSWORD_RESET_LOOKUP_FAILED');
+      return;
+    }
+    if (!profile?.email) {
+      res.status(404).json({ success: false, code: 'USER_EMAIL_NOT_FOUND', message: 'The target user has no registered email address.' });
+      return;
+    }
+
+    const { data: authResult, error: authLookupError } = await supabaseAdmin!.auth.admin.getUserById(targetUserId);
+    if (authLookupError || !authResult.user?.email) {
+      unavailable(res, 'ADMIN_AUTH_USER_LOOKUP_FAILED');
+      return;
+    }
+
+    // Use Supabase Auth's recovery flow; never read, generate, or expose a password.
+    // The redirect destination is controlled by the Supabase project's configured Site URL.
+    const { error: resetError } = await supabaseAdmin!.auth.resetPasswordForEmail(authResult.user.email);
+    if (resetError) {
+      console.error('Admin password reset email failed:', resetError.message);
+      res.status(503).json({
+        success: false,
+        code: 'PASSWORD_RESET_EMAIL_FAILED',
+        message: 'Supabase could not send the password reset email. Verify the Auth email provider and Site URL configuration.',
+      });
+      return;
+    }
+
+    const { error: auditError } = await supabaseAdmin!.from('admin_audit_logs').insert({
+      actor_user_id: req.userId,
+      action: 'user.password_reset.requested',
+      target_user_id: targetUserId,
+      before_data: null,
+      after_data: { email: authResult.user.email, delivery_requested: true },
+    });
+    if (auditError) {
+      console.error('CRITICAL: password reset email was requested but its audit record failed:', auditError.message);
+      res.status(503).json({
+        success: false,
+        code: 'PASSWORD_RESET_AUDIT_PARTIAL_FAILURE',
+        message: 'The reset email request was sent to Supabase, but the audit record could not be saved. Check the admin audit log before retrying.',
+        partial: true,
+      });
+      return;
+    }
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase.auth + public.admin_audit_logs');
+    res.json({
+      success: true,
+      data: { userId: targetUserId, email: authResult.user.email, resetEmailRequested: true },
+      provenance: { source: 'supabase.auth.resetPasswordForEmail + public.admin_audit_logs', verified: true },
+    });
+  } catch (error) {
+    console.error('Admin password reset request failed:', error);
+    unavailable(res, 'ADMIN_PASSWORD_RESET_FAILED');
+  }
+}
+
 export async function createAdminManagedUser(req: Request, res: Response): Promise<void> {
   if (req.identitySource !== 'jwt' || !req.userId) {
     res.status(403).json({ success: false, code: 'VERIFIED_ADMIN_SESSION_REQUIRED', message: 'A signed-in administrator session is required.' });
