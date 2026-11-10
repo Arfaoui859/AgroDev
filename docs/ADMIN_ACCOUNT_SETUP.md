@@ -71,7 +71,7 @@ The browser obtains a normal Supabase session. Admin access is determined server
 - Never put `ADMIN_API_TOKEN` or `SUPABASE_SERVICE_ROLE_KEY` in a `VITE_*` variable, browser console, frontend request, screenshot, Git commit, or public issue.
 - Do not use the service-role key as the admin token. They are different secrets.
 - The bootstrap endpoint is for operator provisioning only; it is not a public signup or role-change endpoint.
-- The admin dashboard data APIs currently fail closed with `503 DASHBOARD_DATA_SOURCE_NOT_CONNECTED` until real admin data persistence is implemented. Admin login and route authorization do not imply that those dashboard analytics are already live.
+- The overview and user directory use verified Supabase records. Revenue, subscription, uptime, and other optional analytics remain explicitly unavailable until their source tables/integrations are connected. Admin login and route authorization do not imply that every dashboard metric is live.
 
 
 ## Administrator role management (new)
@@ -135,3 +135,30 @@ access tokens may remain valid until expiry; role-protected/admin endpoints
 also check `public.users.is_active` and reject inactive accounts. This is
 not a substitute for short access-token lifetimes or a session-revocation
 strategy if immediate revocation of every existing token is required.
+
+
+## Admin user invitations and directory (2026-11-10)
+
+The **Admin Panel → Users** tab supports server-side search by email/name,
+role and account-status filters, and pagination across the full user directory.
+The page size is 50 records; the API caps it at 100.
+
+The **Add User** action calls `POST /api/admin/users` using the signed-in
+administrator's verified JWT. It accepts a full name, email, and a supported
+non-admin platform role. The API sends a Supabase Auth invitation email,
+creates the matching `public.users` profile, and appends a
+`user.created` record to `public.admin_audit_logs`. If profile or audit
+persistence fails, the API attempts to roll back the newly created Auth
+identity and profile rather than reporting a successful creation.
+
+**Email delivery prerequisite:** configure and test the Supabase Auth email
+provider/SMTP settings. If invitation delivery fails, the endpoint returns an
+explicit error; it does not create a password in the browser or expose a
+service-role credential. Existing Auth identities are not silently promoted
+or overwritten by this invitation flow.
+
+User invitations, role changes, and account activation/suspension require
+the database migration `database/admin-role-management.sql` and the
+server-side Supabase service-role configuration. Do not apply this migration
+or claim production readiness until it has been run against the intended
+Supabase project.
