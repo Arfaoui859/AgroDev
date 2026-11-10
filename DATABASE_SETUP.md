@@ -95,6 +95,16 @@ However, using the SQL script is faster and ensures everything is configured cor
 
 ---
 
+## Commercial weather-provider configuration
+
+AgroGrowth is a commercial product. The public Open-Meteo API is restricted to
+non-commercial use; production must use the licensed customer endpoint and a
+server-side `OPEN_METEO_API_KEY`. Historical archive access for the
+weather/yield planner requires the Open-Meteo Professional plan or higher.
+Never put this key in a `VITE_*` variable. Without it, production weather
+endpoints return an explicit 503 instead of silently using the non-commercial
+free API. The development-only free endpoint can be enabled outside production.
+
 ## Admin panel database connection and user management
 
 After the base tables exist, run `database/rls-hardening.sql` and then
