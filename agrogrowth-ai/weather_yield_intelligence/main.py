@@ -6,7 +6,7 @@ Combined FastAPI service for SmartWeatherCropPlanner and YieldPredictorAI
 import os
 import threading
 from fastapi import FastAPI, HTTPException, File, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional, Union
 import logging
 from datetime import datetime
