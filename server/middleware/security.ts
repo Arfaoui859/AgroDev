@@ -199,6 +199,22 @@ export function adminBootstrapRateLimiter(): RequestHandler {
   });
 }
 
+
+/** Strictly limit administrator-triggered recovery emails to reduce mailbox abuse. */
+export function adminPasswordResetRateLimiter(): RequestHandler {
+  return rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: Number(process.env.ADMIN_PASSWORD_RESET_MAX_REQUESTS || 5),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      code: "ADMIN_PASSWORD_RESET_RATE_LIMITED",
+      message: "Too many password reset emails requested. Try again later.",
+    },
+  });
+}
+
 /** Reject oversized JSON bodies early with a clear 413 instead of a crash. */
 export function jsonBodyErrorHandler(): (
   err: any,
