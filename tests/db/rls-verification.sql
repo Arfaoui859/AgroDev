@@ -50,11 +50,25 @@ DELETE FROM public.users WHERE id IN (
   'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
   'cccccccc-cccc-cccc-cccc-cccccccccccc');
 
+DELETE FROM auth.users WHERE id IN (
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+  'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+  'cccccccc-cccc-cccc-cccc-cccccccccccc');
+
 INSERT INTO public.users (id, email, full_name, role) VALUES
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'farmer.a@rls.test', 'Farmer A', 'farmer'),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'farmer.b@rls.test', 'Farmer B', 'farmer'),
   ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'expert@rls.test',   'Expert',   'expert'),
   ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'admin@rls.test',    'Admin',    'admin');
+
+INSERT INTO auth.users (id, email) VALUES
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'farmer.a@rls.test'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'farmer.b@rls.test'),
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'expert@rls.test'),
+  ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'admin@rls.test')
+ON CONFLICT (id) DO NOTHING;
+
 
 INSERT INTO public.user_profiles (user_id, bio) VALUES
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'A bio'),
@@ -84,6 +98,24 @@ VALUES (
 INSERT INTO public.farm_sections (id, farm_id, name, area_hectares) VALUES
   ('50000000-0000-0000-0000-0000000000a1', 'f0000000-0000-0000-0000-0000000000a1',
    'Section A1', 2.0);
+
+INSERT INTO public.farm_equipment (
+  id, farm_id, name, category, created_by
+) VALUES (
+  '60000000-0000-0000-0000-0000000000a1',
+  'f0000000-0000-0000-0000-0000000000a1',
+  'Tractor A', 'tractor', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+);
+
+INSERT INTO public.farm_tasks (
+  id, farm_id, title, task_type, status, created_by, assigned_to
+) VALUES (
+  '70000000-0000-0000-0000-0000000000a1',
+  'f0000000-0000-0000-0000-0000000000a1',
+  'Irrigate section A1', 'irrigation', 'pending',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+);
 
 INSERT INTO public.soil_analyses (id, farm_id, section_id, ph_level, analysis_type, sensor_data) VALUES
   ('50a00000-0000-0000-0000-0000000000a1', 'f0000000-0000-0000-0000-0000000000a1',
@@ -121,6 +153,33 @@ SELECT public.assert_true((SELECT name FROM public.farms) = 'Farm A',
   'the visible farm belongs to farmer A');
 SELECT public.assert_true((SELECT count(*) FROM public.farm_sections) = 1,
   'farmer A sees own farm section');
+SELECT public.assert_true((SELECT count(*) FROM public.farm_equipment) = 1,
+  'farmer A sees own equipment');
+SELECT public.assert_true((SELECT count(*) FROM public.farm_tasks) = 1,
+  'farmer A sees own farm tasks');
+
+DO $rls$
+BEGIN
+  BEGIN
+    INSERT INTO public.farm_equipment (farm_id, name, created_by)
+    VALUES ('f0000000-0000-0000-0000-0000000000b1', 'Foreign tractor', auth.uid());
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A inserted equipment into farmer B farm';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot insert equipment into farmer B farm';
+  END;
+  BEGIN
+    INSERT INTO public.farm_tasks (farm_id, title, created_by, assigned_to)
+    VALUES (
+      'f0000000-0000-0000-0000-0000000000a1',
+      'Spoofed creator task',
+      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+    );
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A spoofed task creator identity';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot spoof farm task creator identity';
+  END;
+END $rls$;
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 1,
   'farmer A sees own soil analysis');
 SELECT public.assert_true((SELECT count(*) FROM public.weather_records) = 1,
@@ -201,6 +260,10 @@ SELECT public.assert_true((SELECT count(*) FROM public.weather_forecasts) = 0,
   'farmer B cannot read farmer A weather forecasts');
 SELECT public.assert_true((SELECT count(*) FROM public.farm_sections) = 0,
   'farmer B CANNOT see farmer A farm sections');
+SELECT public.assert_true((SELECT count(*) FROM public.farm_equipment) = 0,
+  'farmer B CANNOT see farmer A equipment');
+SELECT public.assert_true((SELECT count(*) FROM public.farm_tasks) = 0,
+  'farmer B CANNOT see farmer A farm tasks');
 SELECT public.assert_true((SELECT count(*) FROM public.notifications) = 0,
   'farmer B CANNOT see farmer A notifications');
 SELECT public.assert_true((SELECT count(*) FROM public.user_analytics) = 0,
@@ -228,6 +291,10 @@ SELECT public.assert_true((SELECT count(*) FROM public.user_profiles) = 0,
   'anonymous CANNOT read user_profiles');
 SELECT public.assert_true((SELECT count(*) FROM public.farms) = 0,
   'anonymous CANNOT read farms');
+SELECT public.assert_true((SELECT count(*) FROM public.farm_equipment) = 0,
+  'anonymous CANNOT read farm equipment');
+SELECT public.assert_true((SELECT count(*) FROM public.farm_tasks) = 0,
+  'anonymous CANNOT read farm tasks');
 SELECT public.assert_true((SELECT count(*) FROM public.soil_analyses) = 0,
   'anonymous CANNOT read soil_analyses');
 SELECT public.assert_true((SELECT count(*) FROM public.weather_records) = 0,
