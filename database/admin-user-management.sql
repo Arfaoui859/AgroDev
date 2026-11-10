@@ -19,3 +19,23 @@ CREATE INDEX IF NOT EXISTS idx_users_created_at ON public.users(created_at DESC)
 
 -- Only the admin API (service role or JWT passing the public.is_admin() RLS
 -- policy) should manage other users. No public/anonymous table access is added.
+
+-- A signed-in admin JWT may list/update users through the RLS-scoped API client.
+-- The security-definer role function avoids recursive policies on public.users.
+CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = auth.uid() AND lower(role) IN ('admin', 'administrator')
+  )
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
+
+DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
+CREATE POLICY "Admins can manage users" ON public.users
+  FOR ALL TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+GRANT SELECT, UPDATE ON public.users TO authenticated;
