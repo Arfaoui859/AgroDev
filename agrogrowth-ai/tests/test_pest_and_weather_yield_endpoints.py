@@ -126,14 +126,18 @@ def test_yield_prediction_returns_economic_analysis():
         json={
             "crop_type": "wheat",
             "farm_size": 2.0,
-            "weather_data": {"temperature": 22, "humidity": 60,
-                             "annual_rainfall": 450, "recent_rainfall": 10},
-            "soil_data": {"ph": 6.8, "fertility_score": 0.75,
-                          "organic_matter": 3.5, "moisture_percentage": 45},
+            "location": {"latitude": 35.0, "longitude": 10.0, "elevation": 100, "region": "Tunisia"},
+            "weather_data": {
+        "temperature": 22, "humidity": 60, "rainfall": 15,
+        "wind_speed": 4, "solar_radiation": 20,
+        "recent_rainfall": 10, "annual_rainfall": 450,
+        "temperature_variation": 8
+    },
+            "soil_data": {"ph": 6.8, "fertility_score": 0.75, "organic_matter": 3.5, "moisture_percentage": 45, "soil_type": "loam"},
             "management_practices": {"irrigation_efficiency": 0.85,
                                      "fertilizer_application_rate": 1.0,
                                      "pest_management_score": 0.85,
-                                     "disease_control_score": 0.8},
+                                     "disease_control_score": 0.8, "organic_farming": false},
         },
     )
     assert resp.status_code == 200, resp.text
