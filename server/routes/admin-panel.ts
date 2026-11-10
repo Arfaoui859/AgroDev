@@ -119,7 +119,10 @@ export async function getAdminUsers(req: Request, res: Response): Promise<void> 
       .order('created_at', { ascending: false })
       .range((page - 1) * pageSize, page * pageSize - 1);
 
-    if (search) query = query.or(`email.ilike.%${search.replace(/[,%()]/g, '')}%,full_name.ilike.%${search.replace(/[,%()]/g, '')}%`);
+    if (search) {
+      const safeSearch = search.replace(/[^\\p{L}\\p{N}@._+\\- ]/gu, '');
+      if (safeSearch) query = query.or(`email.ilike.%${safeSearch}%,full_name.ilike.%${safeSearch}%`);
+    }
     if (role && role !== 'all') query = query.eq('role', role);
     if (status === 'active') query = query.eq('is_active', true);
     if (status === 'inactive' || status === 'suspended') query = query.eq('is_active', false);
