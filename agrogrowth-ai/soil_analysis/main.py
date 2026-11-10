@@ -91,8 +91,8 @@ class LabAssistedSoilRequest(BaseModel):
     lab_values: Dict[str, Any] = Field(
         ...,
         description=(
-            "Laboratory soil measurements. Values must correspond "
-            "to the features required by the production models."
+            "Laboratory soil measurements. All required analyte features must "
+            "be supplied; partial panels are not imputed or used for prediction."
         ),
     )
 
