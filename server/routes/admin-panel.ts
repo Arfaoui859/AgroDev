@@ -20,7 +20,7 @@ function requireDatabase(req: Parameters<RequestHandler>[0], res: Parameters<Req
   if (getAdminClient(req)) return true;
   unavailable(
     res,
-    "Admin database access is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the server.",
+    "Admin database access is not configured. A verified administrator JWT with admin RLS access or a server-side SUPABASE_SERVICE_ROLE_KEY is required.",
   );
   return false;
 }
