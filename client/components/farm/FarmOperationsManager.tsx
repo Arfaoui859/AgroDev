@@ -30,7 +30,7 @@ const emptyTask = {
 
 async function readJson(response: Response) {
   const body = await response.json().catch(() => ({}));
-  if (!response.ok || body.success !== true) {
+  if (!response.ok || (body.success !== true && body.status !== "success")) {
     throw new Error(body.message || `Request failed (HTTP ${response.status})`);
   }
   return body;
@@ -50,6 +50,7 @@ export default function FarmOperationsManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [newFarm, setNewFarm] = useState({ name: "", region: "", size_hectares: "" });
   const ar = isArabic;
 
   const loadFarms = useCallback(async () => {
@@ -91,6 +92,25 @@ export default function FarmOperationsManager() {
 
   useEffect(() => { void loadFarms(); }, [loadFarms]);
   useEffect(() => { void loadOperations(); }, [loadOperations]);
+
+  const createFarm = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true); setError(null); setNotice(null);
+    try {
+      const response = await apiFetch("/api/farms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newFarm, size_hectares: Number(newFarm.size_hectares) }),
+      });
+      const body = await readJson(response);
+      setNewFarm({ name: "", region: "", size_hectares: "" });
+      setNotice(ar ? "تم إنشاء المزرعة وحفظها." : "Farm created and saved.");
+      await loadFarms();
+      if (body.data?.id) setFarmId(body.data.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Farm creation failed.");
+    } finally { setSaving(false); }
+  };
 
   const saveEquipment = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -187,7 +207,13 @@ export default function FarmOperationsManager() {
 
         {error && <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
         {notice && <div role="status" className="rounded-md border border-green-500/30 bg-green-500/5 p-3 text-sm">{notice}</div>}
-        {!loading && farms.length === 0 && <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{ar ? "لا توجد مزرعة مرتبطة بحسابك بعد. أنشئ مزرعة أولاً من إدارة المزارع." : "No farm is linked to your account yet. Create a farm first in Farm Management."}</p>}
+        {!loading && farms.length === 0 && <form onSubmit={createFarm} className="grid gap-3 rounded-lg border border-dashed p-4 sm:grid-cols-3">
+          <div className="sm:col-span-3"><p className="font-medium">{ar ? "إنشاء أول مزرعة" : "Create your first farm"}</p><p className="text-sm text-muted-foreground">{ar ? "يلزم تسجيل مزرعة قبل إضافة المعدات والمهام." : "A farm is required before adding equipment and tasks."}</p></div>
+          {inputField(ar ? "اسم المزرعة *" : "Farm name *", newFarm.name, (v) => setNewFarm((p) => ({ ...p, name: v })))}
+          {inputField(ar ? "الولاية / المنطقة *" : "Region *", newFarm.region, (v) => setNewFarm((p) => ({ ...p, region: v })))}
+          {inputField(ar ? "المساحة (هكتار) *" : "Area (hectares) *", newFarm.size_hectares, (v) => setNewFarm((p) => ({ ...p, size_hectares: v })), "number")}
+          <div className="sm:col-span-3"><Button type="submit" disabled={saving || !newFarm.name.trim() || !newFarm.region.trim() || Number(newFarm.size_hectares) <= 0}><Plus className="mr-2 h-4 w-4" />{ar ? "إنشاء المزرعة" : "Create farm"}</Button></div>
+        </form>}
 
         {farmId && <div className="grid gap-6 lg:grid-cols-2">
           <section className="space-y-4">
