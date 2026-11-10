@@ -9,7 +9,7 @@ import {
   requireAdminToken,
   keyMintRateLimiter,
 } from "./middleware/security";
-import { requireAuth, requireAdminAccess } from "./middleware/auth";
+import { requireAuth, requireAdminAccess, requireRole } from "./middleware/auth";
 import { blockSimulatedData } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import { handleUploadError } from "./middleware/upload";
@@ -494,61 +494,66 @@ export function createServer() {
   // Dashboard APIs remain fail-closed until tenant-scoped persistence exists.
   // Require identity now so future implementations cannot accidentally expose
   // these routes anonymously when their handlers are replaced.
-  app.use("/api/farmer-dashboard", requireAuth, farmerDashboardRoutes);
-  app.use("/api/agronomist-dashboard", requireAuth, agronomistDashboardRoutes);
-  app.use("/api/trader-dashboard", requireAuth, traderDashboardRoutes);
+  app.use("/api/farmer-dashboard", requireAuth, requireRole(["farmer"]), farmerDashboardRoutes);
+  app.use("/api/agronomist-dashboard", requireAuth, requireRole(["agronomist", "expert"]), agronomistDashboardRoutes);
+  app.use("/api/trader-dashboard", requireAuth, requireRole(["trader"]), traderDashboardRoutes);
 
   // Veterinarian records are sensitive and must never be anonymously readable.
-  app.get("/api/veterinarian-dashboard/overview", requireAuth, getVeterinarianDashboard);
-  app.get("/api/veterinarian-dashboard/patients", requireAuth, getVeterinarianPatients);
+  app.get("/api/veterinarian-dashboard/overview", requireAuth, requireRole(["veterinarian"]), getVeterinarianDashboard);
+  app.get("/api/veterinarian-dashboard/patients", requireAuth, requireRole(["veterinarian"]), getVeterinarianPatients);
   app.get(
     "/api/veterinarian-dashboard/appointments",
     requireAuth,
+    requireRole(["veterinarian"]),
     getVeterinarianAppointments,
   );
   app.get(
     "/api/veterinarian-dashboard/emergencies",
     requireAuth,
+    requireRole(["veterinarian"]),
     getVeterinarianEmergencies,
   );
-  app.get("/api/veterinarian-dashboard/inventory", requireAuth, getVeterinarianInventory);
-  app.get("/api/veterinarian-dashboard/treatments", requireAuth, getVeterinarianTreatments);
+  app.get("/api/veterinarian-dashboard/inventory", requireAuth, requireRole(["veterinarian"]), getVeterinarianInventory);
+  app.get("/api/veterinarian-dashboard/treatments", requireAuth, requireRole(["veterinarian"]), getVeterinarianTreatments);
   app.get(
     "/api/veterinarian-dashboard/financial-summary",
     requireAuth,
+    requireRole(["veterinarian"]),
     getVeterinarianFinancials,
   );
 
   // Comprehensive Farm Management Dashboard routes
   // Farm-management endpoints are currently fail-closed (503), but still
   // require a verified caller identity before exposing tenant-specific routes.
-  app.get("/api/farm-management/overview", requireAuth, getComprehensiveFarmDashboard);
-  app.get("/api/farm-management/alerts", requireAuth, getFarmAlerts);
-  app.get("/api/farm-management/tasks", requireAuth, getFarmTasks);
-  app.get("/api/farm-management/crops", requireAuth, getFarmCrops);
-  app.get("/api/farm-management/weather", requireAuth, getFarmWeather);
-  app.get("/api/farm-management/market", requireAuth, getFarmMarket);
-  app.get("/api/farm-management/equipment", requireAuth, getFarmEquipment);
-  app.get("/api/farm-management/financial", requireAuth, getFarmFinancial);
-  app.get("/api/farm-management/labor", requireAuth, getFarmLabor);
+  app.get("/api/farm-management/overview", requireAuth, requireRole(["farmer"]), getComprehensiveFarmDashboard);
+  app.get("/api/farm-management/alerts", requireAuth, requireRole(["farmer"]), getFarmAlerts);
+  app.get("/api/farm-management/tasks", requireAuth, requireRole(["farmer"]), getFarmTasks);
+  app.get("/api/farm-management/crops", requireAuth, requireRole(["farmer"]), getFarmCrops);
+  app.get("/api/farm-management/weather", requireAuth, requireRole(["farmer"]), getFarmWeather);
+  app.get("/api/farm-management/market", requireAuth, requireRole(["farmer"]), getFarmMarket);
+  app.get("/api/farm-management/equipment", requireAuth, requireRole(["farmer"]), getFarmEquipment);
+  app.get("/api/farm-management/financial", requireAuth, requireRole(["farmer"]), getFarmFinancial);
+  app.get("/api/farm-management/labor", requireAuth, requireRole(["farmer"]), getFarmLabor);
 
   // Field Inspector routes require authentication even while their data
   // handlers remain fail-closed until tenant-scoped persistence is connected.
-  app.get("/api/field-inspector/overview", requireAuth, getFieldInspectorDashboard);
-  app.get("/api/field-inspector/visits", requireAuth, getFieldInspectorVisits);
-  app.get("/api/field-inspector/notes", requireAuth, getFieldInspectorNotes);
+  app.get("/api/field-inspector/overview", requireAuth, requireRole(["inspector"]), getFieldInspectorDashboard);
+  app.get("/api/field-inspector/visits", requireAuth, requireRole(["inspector"]), getFieldInspectorVisits);
+  app.get("/api/field-inspector/notes", requireAuth, requireRole(["inspector"]), getFieldInspectorNotes);
   app.get(
     "/api/field-inspector/quality-assessments",
     requireAuth,
+    requireRole(["inspector"]),
     getFieldInspectorQualityAssessments,
   );
-  app.get("/api/field-inspector/reports", requireAuth, getFieldInspectorReports);
+  app.get("/api/field-inspector/reports", requireAuth, requireRole(["inspector"]), getFieldInspectorReports);
   app.get(
     "/api/field-inspector/recommendation-tracking",
     requireAuth,
+    requireRole(["inspector"]),
     getFieldInspectorRecommendationTracking,
   );
-  app.get("/api/field-inspector/profile", requireAuth, getFieldInspectorProfile);
+  app.get("/api/field-inspector/profile", requireAuth, requireRole(["inspector"]), getFieldInspectorProfile);
 
   // Admin Panel routes. These expose platform-wide figures (all users, system
   // metrics, security events, activity logs), so they are gated with
