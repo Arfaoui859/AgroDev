@@ -5,7 +5,7 @@ FastAPI service for intelligent pest and disease management
 
 import os
 from fastapi import FastAPI, HTTPException, File, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional, Union
 import logging
 from datetime import datetime
@@ -33,25 +33,25 @@ pest_recommender = create_pest_control_recommender()
 
 # Pydantic models for API
 class WeatherConditions(BaseModel):
-    temperature: float = 25.0
-    humidity: float = 60.0
-    recent_rainfall: float = 0.0
-    wind_speed: float = 5.0
+    temperature: float = Field(..., ge=-60, le=65)
+    humidity: float = Field(..., ge=0, le=100)
+    recent_rainfall: float = Field(..., ge=0)
+    wind_speed: float = Field(..., ge=0)
 
 class PestAnalysisRequest(BaseModel):
-    crop_type: str = "tomato"
-    symptoms: List[str] = []
-    affected_area_percentage: float = 20.0
-    affected_plant_count: int = 0
-    total_plant_count: int = 100
-    plant_age_days: int = 60
-    plant_health_score: float = 0.7
-    weather_conditions: WeatherConditions = WeatherConditions()
-    farm_size: float = 1.0
-    plant_density: str = "normal"  # low, normal, high
-    irrigation_frequency: str = "normal"  # low, normal, excessive
+    crop_type: str = Field(..., min_length=1)
+    symptoms: List[str] = Field(..., min_length=1)
+    affected_area_percentage: float = Field(..., ge=0, le=100)
+    affected_plant_count: int = Field(..., ge=0)
+    total_plant_count: int = Field(..., ge=1)
+    plant_age_days: int = Field(..., ge=0)
+    plant_health_score: float = Field(..., ge=0, le=1)
+    weather_conditions: WeatherConditions
+    farm_size: float = Field(..., gt=0)
+    plant_density: str = Field(..., pattern="^(low|normal|high)$")
+    irrigation_frequency: str = Field(..., pattern="^(low|normal|excessive)$")
     previous_treatment: bool = False
-    treatment_history: List[str] = []
+    treatment_history: List[str] = Field(default_factory=list)
     image_data: Optional[str] = None  # base64 encoded image
     language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
 
