@@ -59,12 +59,13 @@ export async function getAdminDashboard(_req: Request, res: Response): Promise<v
     if (activity.error) console.warn('Admin activity feed unavailable:', activity.error.message);
     const recentActivity = activityRows.map((row: any) => ({
       id: row.id,
-      action: String(row.event_type || 'Platform event'),
-      actionArabic: String(row.event_type || 'نشاط المنصة'),
-      userName: row.user_id || 'Unknown user',
-      userNameArabic: row.user_id || 'مستخدم',
+      action: String(row.event_type || 'Recorded platform event'),
+      actionArabic: 'حدث مسجّل في المنصة',
+      userName: row.user_id ? `User ID: ${row.user_id}` : 'Unknown user',
+      userNameArabic: row.user_id ? `معرّف المستخدم: ${row.user_id}` : 'مستخدم غير معروف',
       timestamp: row.created_at,
-      status: 'success',
+      // user_analytics does not define a success/failure outcome.
+      status: 'recorded',
     }));
 
     res.setHeader('X-AgroGrowth-Data-Status', 'verified');
@@ -86,14 +87,16 @@ export async function getAdminDashboard(_req: Request, res: Response): Promise<v
           securityAlerts: null,
         },
         recentActivity,
-        securityAlerts: [],
+        // Monitoring is not connected; null must not be presented as zero alerts.
+        securityAlerts: null,
       },
       provenance: {
         source: 'supabase.public.users, public.farms, public.user_analytics',
         verified: true,
         model_source: null,
         limitations: [
-          'Revenue, subscription, uptime and support-ticket metrics are not connected.',
+          'Revenue, subscription, uptime, support-ticket and security-alert monitoring are not connected.',
+          'Recent analytics rows are recorded events, not verified successful actions.',
           ...(farms.error ? ['Farm count table is unavailable.'] : []),
           ...(activity.error ? ['User analytics activity feed is unavailable.'] : []),
         ],
