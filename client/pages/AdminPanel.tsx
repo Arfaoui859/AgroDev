@@ -106,6 +106,7 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", password: "", full_name: "", role: "farmer" });
+  const [editProfile, setEditProfile] = useState({ full_name: "", phone: "" });
   const [savingUser, setSavingUser] = useState(false);
   const [usersPage, setUsersPage] = useState(1);
   const [usersTotal, setUsersTotal] = useState(0);
@@ -146,6 +147,28 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
   useEffect(() => {
     void fetchDashboardData();
   }, [fetchDashboardData]);
+
+  const openUserEditor = (user: any) => {
+    setSelectedUser(user);
+    setEditProfile({ full_name: user.full_name || "", phone: user.phone || "" });
+  };
+
+  const handleProfileUpdate = async (userId: string) => {
+    try {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editProfile),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success) throw new Error(payload.error || "Failed to update user profile");
+      setUsers((previous) => previous.map((user) => user.id === userId ? payload.data : user));
+      setSelectedUser(payload.data);
+      setLoadError(null);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Profile update failed");
+    }
+  };
 
   const handleUserStatusUpdate = async (userId: string, newStatus: string) => {
     try {
@@ -498,7 +521,7 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
                           <p className="text-xs text-gray-500">
                             {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
                           </p>
-                          <Button size="sm" variant="outline" onClick={() => setSelectedUser(user)}>
+                          <Button size="sm" variant="outline" onClick={() => openUserEditor(user)}>
                             <Eye className="h-3 w-3 mr-1" />
                             {isArabic ? 'عرض' : 'View'}
                           </Button>
@@ -846,6 +869,11 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
             </DialogHeader>
             
             <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-lg border p-3">
+                <div className="space-y-1"><label className="text-sm font-medium">{isArabic ? "الاسم الكامل" : "Full name"}</label><Input value={editProfile.full_name} onChange={(event) => setEditProfile((current) => ({ ...current, full_name: event.target.value }))} /></div>
+                <div className="space-y-1"><label className="text-sm font-medium">{isArabic ? "رقم الهاتف" : "Phone"}</label><Input value={editProfile.phone} onChange={(event) => setEditProfile((current) => ({ ...current, phone: event.target.value }))} /></div>
+                <div className="md:col-span-2"><Button size="sm" onClick={() => handleProfileUpdate(selectedUser.id)}>{isArabic ? "حفظ بيانات المستخدم" : "Save profile"}</Button></div>
+              </div>
               <div className="flex flex-wrap items-end gap-3">
                 <div className="min-w-[220px]"><label className="text-sm font-medium">{isArabic ? "تغيير الدور" : "Change role"}</label>
                   <Select value={selectedUser.role} onValueChange={(value) => handleUserRoleUpdate(selectedUser.id, value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"].map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent></Select>
