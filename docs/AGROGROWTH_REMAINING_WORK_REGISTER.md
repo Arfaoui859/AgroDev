@@ -20,6 +20,7 @@
 | Notifications | Removed the fabricated initial unread count of 3; starts at 0 until API data arrives | API/session behavior still needs live verification |
 | Farm management route | `/comprehensive-farm-management` now renders the comprehensive page rather than redirecting to the farmer dashboard | Source route change only; route smoke test pending |
 | Field creation honesty | Field Management demo screen no longer silently closes and pretends to save; save is disabled with an explicit database-integration explanation | CRUD implementation remains outstanding |
+| Field page controls | Alert shortcut opens alerts; field-view action opens details; unavailable location, report, import, export, and activity-replay controls are disabled | Source change only; browser test pending |
 | Equipment data | Comprehensive Farm Management shows an empty state when no equipment records exist rather than inventing a sample tractor | Verify API response and rendering in browser |
 
 ## Remaining work — prioritized
