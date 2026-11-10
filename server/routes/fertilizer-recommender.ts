@@ -422,6 +422,8 @@ router.post('/schedule/comprehensive', (req, res) => {
 
 // List persisted effectiveness reports for the authenticated user.
 router.get('/effectiveness', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
   if (!supabaseAdmin) {
     return res.status(503).json({
       error: "PERSISTENCE_NOT_CONFIGURED",
@@ -432,7 +434,7 @@ router.get('/effectiveness', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from("effectiveness_reports")
     .select("id, report, created_at")
-    .eq("user_id", req.userId)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -459,6 +461,8 @@ router.get('/effectiveness', requireAuth, async (req, res) => {
 
 // Track and persist application effectiveness for the authenticated user.
 router.post('/track/effectiveness', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
   if (!supabaseAdmin) {
     return res.status(503).json({
       error: "PERSISTENCE_NOT_CONFIGURED",
@@ -481,6 +485,18 @@ router.post('/track/effectiveness', requireAuth, async (req, res) => {
     afterCondition,
     userRating
   } = req.body ?? {};
+
+  if (
+    typeof productName !== "string" || productName.trim() === "" ||
+    !applicationDate || Number.isNaN(new Date(applicationDate).getTime()) ||
+    !["fertilizer", "pesticide"].includes(productType) ||
+    num(userRating) === null || num(userRating)! < 1 || num(userRating)! > 5
+  ) {
+    return res.status(400).json({
+      error: "Product, valid application date, product type, and rating from 1 to 5 are required",
+      code: "INVALID_REPORT_METADATA",
+    });
+  }
 
   const beforeScore = num(beforeCondition?.healthScore);
   const afterScore = num(afterCondition?.healthScore);
