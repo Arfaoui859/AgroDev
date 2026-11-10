@@ -48,6 +48,47 @@ BEGIN
     RAISE EXCEPTION 'Privilege verification failed: service_role cannot execute AI webhook RPC';
   END IF;
 
+  -- Financial ledgers must be RLS-enabled, inaccessible to anon, and
+  -- available only through owner-scoped policies for authenticated users.
+  FOREACH rel IN ARRAY ARRAY[
+    'public.farm_expenses'::regclass,
+    'public.farm_revenues'::regclass
+  ] LOOP
+    IF NOT (SELECT c.relrowsecurity FROM pg_class c WHERE c.oid = rel) THEN
+      RAISE EXCEPTION 'RLS verification failed: % is not RLS-enabled', rel;
+    END IF;
+    IF has_table_privilege('anon', rel, 'SELECT')
+       OR has_table_privilege('anon', rel, 'INSERT')
+       OR has_table_privilege('anon', rel, 'UPDATE')
+       OR has_table_privilege('anon', rel, 'DELETE') THEN
+      RAISE EXCEPTION 'Privilege verification failed: anon can access %', rel;
+    END IF;
+    IF NOT has_table_privilege('authenticated', rel, 'SELECT')
+       OR NOT has_table_privilege('authenticated', rel, 'INSERT')
+       OR NOT has_table_privilege('authenticated', rel, 'UPDATE')
+       OR NOT has_table_privilege('authenticated', rel, 'DELETE') THEN
+      RAISE EXCEPTION 'Privilege verification failed: authenticated CRUD grants missing on %', rel;
+    END IF;
+  END LOOP;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'farm_expenses'
+      AND policyname = 'Users manage own farm expenses'
+      AND with_check ILIKE '%user_id = auth.uid()%'
+      AND with_check ILIKE '%farms%'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'farm_revenues'
+      AND policyname = 'Users manage own farm revenues'
+      AND with_check ILIKE '%user_id = auth.uid()%'
+      AND with_check ILIKE '%farms%'
+  ) THEN
+    RAISE EXCEPTION 'RLS verification failed: financial ledger ownership policies are missing or incomplete';
+  END IF;
+
   -- Browser clients may submit user-authored chat input, never forged AI output.
   IF NOT EXISTS (
     SELECT 1
