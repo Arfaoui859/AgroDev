@@ -275,7 +275,7 @@ const IntelligentBreedingManager: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>الذكر</Label>
-                    <Select value={selectedMale} onValueChange={setSelectedMale}>
+                    <Select value={selectedMale} onValueChange={(value) => { setSelectedMale(value); setCompatibilityMessage(null); setCompatibilityResult(null); }}>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الذكر" />
                       </SelectTrigger>
@@ -291,7 +291,7 @@ const IntelligentBreedingManager: React.FC = () => {
 
                   <div className="space-y-2">
                     <Label>الأنثى</Label>
-                    <Select value={selectedFemale} onValueChange={setSelectedFemale}>
+                    <Select value={selectedFemale} onValueChange={(value) => { setSelectedFemale(value); setCompatibilityMessage(null); setCompatibilityResult(null); }}>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الأنثى" />
                       </SelectTrigger>
