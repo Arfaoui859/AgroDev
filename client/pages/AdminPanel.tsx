@@ -623,7 +623,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">
-                            {new Date(user.createdAt).toLocaleDateString()}
+                            {user.createdAt && Number.isFinite(Date.parse(user.createdAt)) ? new Date(user.createdAt).toLocaleDateString() : (isArabic ? 'غير متاح' : 'N/A')}
                           </p>
                           <Button size="sm" variant="outline" onClick={() => setSelectedUser(user)}>
                             <Eye className="h-3 w-3 mr-1" />
@@ -1121,7 +1121,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
                 <div>
                   <label className="text-sm font-medium">{isArabic ? 'الهاتف' : 'Phone'}</label>
-                  <p className="text-sm">{selectedUser.phone}</p>
+                  <p className="text-sm text-muted-foreground">{isArabic ? 'غير مربوط بمصدر موثوق' : 'Not connected to a verified source'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{isArabic ? 'الدور' : 'Role'}</label>
@@ -1196,7 +1196,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Last Updated */}
       <div className="text-center text-xs text-gray-500">
-        {isArabic ? 'آخر تحديث' : 'Last updated'}: {new Date(dashboardData.lastUpdated).toLocaleString()}
+        {isArabic ? 'حالة المصدر' : 'Data source status'}: {isArabic ? 'بيانات المستخدمين من قاعدة البيانات' : 'User data loaded from the database'}
       </div>
     </div>
   );
