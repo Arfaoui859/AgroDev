@@ -96,12 +96,24 @@ export async function callMicroservice<T = any>(
 
       const raw = (await response.json()) as any;
       const probe = await probeService(baseUrl);
-      recordSuccess(
-        capability,
-        probe.modelSource ?? "microservice",
-        !probe.heuristic,
-        Date.now() - startedAt,
-      );
+      if (!probe.reachable || !probe.modelSource || probe.heuristic) {
+        const reason = !probe.reachable
+          ? "Microservice health/provenance could not be verified."
+          : probe.heuristic
+            ? "Synthetic or heuristic microservice output is disabled for production responses."
+            : "Microservice did not declare a model source.";
+        const provenanceError = new ProviderError(
+          capability,
+          "provenance",
+          reason,
+          503,
+          false,
+        );
+        recordFailure(capability, probe.modelSource ?? "unknown", provenanceError, Date.now() - startedAt);
+        throw provenanceError;
+      }
+
+      recordSuccess(capability, probe.modelSource, true, Date.now() - startedAt);
 
       return {
         data: (raw && typeof raw === "object" && "data" in raw ? raw.data : raw) as T,
