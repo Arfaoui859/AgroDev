@@ -11,6 +11,7 @@ import {
   keyMintRateLimiter,
 } from "./middleware/security";
 import { requireAuth, requireAdminAccess } from "./middleware/auth";
+import { getCurrentUserRecord } from "./routes/current-user";
 import { withSimulatedProvenance } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import { handleUploadError } from "./middleware/upload";
@@ -695,6 +696,9 @@ export function createServer() {
 
   // AI capability discovery + honest provenance for every client AI feature
   app.use("/api/ai", aiCapabilitiesRoutes);
+
+  // Verified application profile (role is read from the database, never user metadata).
+  app.get("/api/auth/me", requireAuth, getCurrentUserRecord);
 
   // Supabase Connection Test
   app.get("/api/test/supabase", requireAdminToken(), testSupabaseConnection);
