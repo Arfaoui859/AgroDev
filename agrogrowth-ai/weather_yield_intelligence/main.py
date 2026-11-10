@@ -75,14 +75,14 @@ class LocationData(BaseModel):
     # Coordinates must come from the caller or a real geocoding source.
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
-    elevation: Optional[float] = None
+    elevation: float = Field(..., ge=-500, le=9000)
     region: Optional[str] = None
 
 class WeatherData(BaseModel):
     # No default Tunisian weather is fabricated when a caller omits measurements.
     temperature: float = Field(..., ge=-60, le=65)
     humidity: float = Field(..., ge=0, le=100)
-    rainfall: Optional[float] = Field(None, ge=0)
+    rainfall: float = Field(..., ge=0)
     wind_speed: float = Field(..., ge=0)
     solar_radiation: float = Field(..., ge=0)
     recent_rainfall: float = Field(..., ge=0)
@@ -100,11 +100,11 @@ class SoilData(BaseModel):
     wilting_point: float = 15.0
 
 class ManagementPractices(BaseModel):
-    irrigation_efficiency: float = 0.8
-    fertilizer_application_rate: float = 1.0
-    pest_management_score: float = 0.8
-    disease_control_score: float = 0.8
-    organic_farming: bool = False
+    irrigation_efficiency: float = Field(..., ge=0, le=1)
+    fertilizer_application_rate: float = Field(..., ge=0)
+    pest_management_score: float = Field(..., ge=0, le=1)
+    disease_control_score: float = Field(..., ge=0, le=1)
+    organic_farming: bool
 
 class FarmProfile(BaseModel):
     farm_size: float = 1.0
