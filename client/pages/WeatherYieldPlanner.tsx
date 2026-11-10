@@ -57,6 +57,7 @@ interface WeatherPlan {
   dataSource?: string;
   isRealData?: boolean;
   modelSource?: string;
+  weatherProviderSource?: string;
 }
 
 interface YieldPrediction {
@@ -74,6 +75,7 @@ interface YieldPrediction {
   dataSource?: string;
   isRealData?: boolean;
   modelSource?: string;
+  weatherProviderSource?: string;
 }
 
 
@@ -225,7 +227,7 @@ export default function WeatherYieldPlanner() {
       if (!response.ok) {
         throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
       }
-      setPlan({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource });
+      setPlan({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource, weatherProviderSource: weatherContext.source });
     } catch (err) {
       setError(
         t("weather.planFailed") +
@@ -267,7 +269,7 @@ export default function WeatherYieldPlanner() {
       if (!response.ok) {
         throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
       }
-      setYieldResult({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource });
+      setYieldResult({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource, weatherProviderSource: weatherContext.source });
     } catch (err) {
       setError(
         t("weather.yieldFailed") +
@@ -408,6 +410,7 @@ export default function WeatherYieldPlanner() {
           {plan && (
             <>
               <AIProvenanceNotice result={plan} />
+              <p className="text-xs text-muted-foreground">{language === "ar" ? "مصدر الطقس: Open-Meteo (توقعات + إعادة تحليل تاريخي). مصدر حساب المردودية يبقى النموذج التجريبي المعلن." : `Weather source: ${plan.weatherProviderSource || "Open-Meteo forecast + archive"}. The yield/planning numeric engine retains its declared synthetic-demo provenance.`}</p>
               <AdvisoryPanel advisory={plan.advisory} />
             </>
           )}
@@ -502,6 +505,7 @@ export default function WeatherYieldPlanner() {
           {yieldResult && (
             <>
               <AIProvenanceNotice result={yieldResult} />
+              <p className="text-xs text-muted-foreground">{language === "ar" ? "الطقس من Open-Meteo؛ توقع المردودية صادر عن محرك تجريبي وليس نموذجًا ميدانيًا مثبتًا." : `Weather source: ${yieldResult.weatherProviderSource || "Open-Meteo forecast + archive"}. Yield output is synthetic-demo, not field-validated.`}</p>
               <AdvisoryPanel advisory={yieldResult.advisory} />
             </>
           )}
