@@ -132,7 +132,7 @@ async function resolveRole(userId: string, req: Request): Promise<{ role: string
   try {
     const { data, error } = await client
       .from("users")
-      .select("role,is_active,status")
+      .select("*")
       .eq("id", userId)
       .maybeSingle();
     if (error || !data) return null;
