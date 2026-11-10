@@ -126,7 +126,7 @@ export default function IrrigationOptimization() {
       if (!response.ok) {
         throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
       }
-      setResult(body);
+      setResult({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource });
     } catch (err) {
       setError(
         t("irrigation.failed") +
