@@ -1,4 +1,5 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
+import { apiFetch } from "@/lib/apiFetch";
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
@@ -91,7 +92,6 @@ interface ComprehensiveFarmManagementProps {
 const ComprehensiveFarmManagement: React.FC<
   ComprehensiveFarmManagementProps
 > = ({
-  farmId = "farm_001",
   onTaskUpdate,
   onAlertResolve,
   onEquipmentMaintenance,
@@ -102,9 +102,6 @@ const ComprehensiveFarmManagement: React.FC<
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
-  const [selectedTask, setSelectedTask] = useState<any>(null);
-  const [selectedCrop, setSelectedCrop] = useState<any>(null);
-  const [selectedEquipment, setSelectedEquipment] = useState<any>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
@@ -124,7 +121,7 @@ const ComprehensiveFarmManagement: React.FC<
     try {
       if (!dashboardData) setLoading(true);
       setLoadError(null);
-      const response = await fetch("/api/farm-management/overview", {
+      const response = await apiFetch("/api/farm-management/overview", {
         headers: { Accept: "application/json" },
       });
       const data = await response.json().catch(() => ({}));
@@ -252,6 +249,7 @@ const ComprehensiveFarmManagement: React.FC<
   if (!dashboardData) {
     return (
       <div className="container mx-auto p-6">
+        <DataProvenanceBanner className="mb-4" />
         <Alert className="border-red-500 bg-red-50">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>{isArabic ? "خطأ" : "Error"}</AlertTitle>
@@ -290,7 +288,7 @@ const ComprehensiveFarmManagement: React.FC<
             style={{ fontFamily: "Cairo, sans-serif" }}
           >
             {isArabic
-              ? "لوحة إدارة المزر��ة الشاملة"
+              ? "لوحة إدارة المزرعة الشاملة"
               : "Comprehensive Farm Management"}
           </h1>
           <p className="text-gray-600 mt-1">
@@ -474,7 +472,7 @@ const ComprehensiveFarmManagement: React.FC<
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">
-                  {isArabic ? "إيرادات ال��وم" : "Today Revenue"}
+                  {isArabic ? "إيرادات اليوم" : "Today Revenue"}
                 </p>
                 <p className="text-lg font-bold text-green-600">
                   {formatCurrency(dashboardData.summary?.todayRevenue || 0)}
@@ -769,8 +767,7 @@ const ComprehensiveFarmManagement: React.FC<
                 {(dashboardData.crops || []).slice(0, 6).map((crop: any) => (
                   <div
                     key={crop.id}
-                    className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => setSelectedCrop(crop)}
+                    className="p-4 border rounded-lg hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold">
@@ -1222,7 +1219,7 @@ const ComprehensiveFarmManagement: React.FC<
                     <div className="text-center p-3 bg-green-50 rounded-lg">
                       <Wind className="h-6 w-6 text-green-600 mx-auto mb-1" />
                       <p className="text-sm text-gray-600">
-                        {isArabic ? "الريا��" : "Wind"}
+                        {isArabic ? "الرياح" : "Wind"}
                       </p>
                       <p className="font-bold">
                         {dashboardData.weather?.current?.windSpeed || 12} km/h
@@ -1614,7 +1611,8 @@ const ComprehensiveFarmManagement: React.FC<
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        onClick={() => setSelectedEquipment(equipment)}
+                        disabled
+                        title={isArabic ? "تفاصيل المعدات غير متاحة حاليًا" : "Equipment details are not available yet"}
                       >
                         <Eye className="h-3 w-3 mr-1" />
                         {isArabic ? "عرض" : "View"}
@@ -1816,7 +1814,7 @@ const ComprehensiveFarmManagement: React.FC<
               {selectedAlert.actionRequired && (
                 <div>
                   <label className="text-sm font-medium">
-                    {isArabic ? "الإجراء المطل��ب" : "Required Action"}
+                    {isArabic ? "الإجراء المطلوب" : "Required Action"}
                   </label>
                   <p className="text-sm">
                     {isArabic
