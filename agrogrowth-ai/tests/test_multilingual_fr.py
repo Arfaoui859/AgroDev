@@ -154,7 +154,7 @@ def test_yield_prediction_accepts_french():
         "temperature_variation": 8
     },
             "soil_data": {"ph": 6.8, "fertility_score": 0.75, "organic_matter": 3.5, "moisture_percentage": 45, "soil_type": "loam"},
-            "management_practices": {"irrigation_efficiency": 0.85, "fertilizer_application_rate": 1.0, "pest_management_score": 0.85, "disease_control_score": 0.8, "organic_farming": false},
+            "management_practices": {"irrigation_efficiency": 0.85, "fertilizer_application_rate": 1.0, "pest_management_score": 0.85, "disease_control_score": 0.8, "organic_farming": False},
             "farm_size": 2.0,
             "language": "fr",
         },
