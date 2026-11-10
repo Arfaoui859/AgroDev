@@ -99,3 +99,17 @@ accepted for this human-attributed mutation.
 
 If the migration has not been applied or the service-role key is missing, the
 endpoint fails closed; it does not pretend the role change succeeded.
+
+
+## Administrator audit trail (new)
+
+The `GET /api/admin/activity-logs` endpoint reads the latest records from
+`public.admin_audit_logs` with bounded pagination (25 by default, maximum
+100 per page). The Admin Panel → Activity tab displays the action, actor
+user ID, target user ID, before/after role values, and timestamp.
+
+The audit view is intentionally read-only. It displays no fabricated events.
+If the migration is missing or the service-role client is not configured,
+the API returns an explicit 503 and the UI explains that audit records are
+not available. Apply `database/admin-role-management.sql` before expecting
+role-change audit events to appear.
