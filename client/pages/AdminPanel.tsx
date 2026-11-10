@@ -107,6 +107,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [userPage, setUserPage] = useState(1);
+  const [userPagination, setUserPagination] = useState({ page: 1, pageSize: 50, total: 0, totalPages: 0 });
+  const [usersLoading, setUsersLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
@@ -139,6 +142,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
       setDashboardData(dashboard?.data || null);
       setUsers(Array.isArray(usersData?.data) ? usersData.data : []);
+      setUserPagination(usersData?.pagination || { page: 1, pageSize: 50, total: Array.isArray(usersData?.data) ? usersData.data.length : 0, totalPages: 1 });
+      setUserPage(1);
 
       const optionalEndpoints = [
         ['/api/admin/system-metrics', setSystemMetrics],
@@ -176,6 +181,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       setLoading(false);
     }
   };
+
+  const loadUsers = async (page = 1) => {
+    setUsersLoading(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: '50' });
+      if (searchQuery.trim()) params.set('search', searchQuery.trim());
+      if (filterRole !== 'all') params.set('role', filterRole);
+      if (filterStatus !== 'all') params.set('status', filterStatus);
+      const response = await apiFetch(`/api/admin/users?${params.toString()}`);
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.success) throw new Error(body?.message || `User directory unavailable (HTTP ${response.status})`);
+      setUsers(Array.isArray(body.data) ? body.data : []);
+      setUserPagination(body.pagination || { page, pageSize: 50, total: (body.data || []).length, totalPages: 1 });
+      setUserPage(page);
+    } catch (error) {
+      setRoleChangeError(error instanceof Error ? error.message : 'User directory unavailable');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void loadUsers(1); }, 350);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery, filterRole, filterStatus]);
 
   const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
@@ -705,20 +735,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {users
-                      .filter(user => {
-                        const matchesSearch = !searchQuery || 
-                          user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.firstNameArabic.includes(searchQuery) ||
-                          user.lastNameArabic.includes(searchQuery);
-                        const matchesRole = filterRole === 'all' || user.role === filterRole;
-                        const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
-                        return matchesSearch && matchesRole && matchesStatus;
-                      })
-                      .slice(0, 20)
-                      .map((user) => (
+                    {users.map((user) => (
                         <tr key={user.id} className="hover:bg-gray-50">
                           <td className="px-4 py-4">
                             <div className="flex items-center">
@@ -812,6 +829,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   </tbody>
                 </table>
               </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t px-4 py-3">
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  {isArabic
+                    ? `عرض ${users.length} من أصل ${userPagination.total} مستخدم`
+                    : `Showing ${users.length} of ${userPagination.total} users`}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button type="button" size="sm" variant="outline" disabled={usersLoading || userPage <= 1} onClick={() => loadUsers(userPage - 1)}>
+                    {isArabic ? 'السابق' : 'Previous'}
+                  </Button>
+                  <span className="text-sm tabular-nums">{userPage} / {Math.max(1, userPagination.totalPages)}</span>
+                  <Button type="button" size="sm" variant="outline" disabled={usersLoading || userPage >= userPagination.totalPages} onClick={() => loadUsers(userPage + 1)}>
+                    {isArabic ? 'التالي' : 'Next'}
+                  </Button>
+                </div>
+              </div>
+              {usersLoading && <p className="px-4 pb-3 text-xs text-muted-foreground">{isArabic ? 'جاري تحديث قائمة المستخدمين...' : 'Updating user directory...'}</p>}
             </CardContent>
           </Card>
         </TabsContent>
