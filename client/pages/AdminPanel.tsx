@@ -115,69 +115,52 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   }, []);
 
   const fetchDashboardData = async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
-      setLoading(true);
-      setLoadError(null);
-      const [
-        dashboardResponse,
-        usersResponse,
-        metricsResponse,
-        analyticsResponse,
-        securityResponse,
-        activityResponse,
-        subscriptionsResponse
-      ] = await Promise.all([
+      // Core administrator experience depends only on verified overview and
+      // user-directory data. Optional modules must not hide the user list.
+      const [dashboardResponse, usersResponse] = await Promise.all([
         apiFetch('/api/admin/overview'),
         apiFetch('/api/admin/users'),
-        apiFetch('/api/admin/system-metrics'),
-        apiFetch('/api/admin/usage-analytics'),
-        apiFetch('/api/admin/security-events'),
-        apiFetch('/api/admin/activity-logs'),
-        apiFetch('/api/admin/subscriptions')
       ]);
 
-      const failedResponse = [
-        dashboardResponse,
-        usersResponse,
-        metricsResponse,
-        analyticsResponse,
-        securityResponse,
-        activityResponse,
-        subscriptionsResponse,
-      ].find((response) => !response.ok);
+      const [dashboard, usersData] = await Promise.all([
+        dashboardResponse.json().catch(() => null),
+        usersResponse.json().catch(() => null),
+      ]);
 
-      if (failedResponse) {
-        const failureBody = await failedResponse.json().catch(() => null);
-        throw new Error(
-          `${failureBody?.code ? `${failureBody.code}: ` : ""}${failureBody?.message || `Admin data service unavailable (HTTP ${failedResponse.status})`}`,
-        );
+      if (!dashboardResponse.ok) {
+        throw new Error(`${dashboard?.code ? `${dashboard.code}: ` : ''}${dashboard?.message || `Overview unavailable (HTTP ${dashboardResponse.status})`}`);
+      }
+      if (!usersResponse.ok) {
+        throw new Error(`${usersData?.code ? `${usersData.code}: ` : ''}${usersData?.message || `User directory unavailable (HTTP ${usersResponse.status})`}`);
       }
 
-      const [
-        dashboard,
-        usersData,
-        metricsData,
-        analyticsData,
-        securityData,
-        activityData,
-        subscriptionsData
-      ] = await Promise.all([
-        dashboardResponse.json(),
-        usersResponse.json(),
-        metricsResponse.json(),
-        analyticsResponse.json(),
-        securityResponse.json(),
-        activityResponse.json(),
-        subscriptionsResponse.json()
-      ]);
+      setDashboardData(dashboard?.data || null);
+      setUsers(Array.isArray(usersData?.data) ? usersData.data : []);
 
-      setDashboardData(dashboard.data);
-      setUsers(usersData.data);
-      setSystemMetrics(metricsData.data);
-      setAnalytics(analyticsData.data);
-      setSecurityEvents(securityData.data);
-      setActivityLogs(activityData.data);
-      setSubscriptions(subscriptionsData.data);
+      const optionalEndpoints = [
+        ['/api/admin/system-metrics', setSystemMetrics],
+        ['/api/admin/usage-analytics', setAnalytics],
+        ['/api/admin/security-events', setSecurityEvents],
+        ['/api/admin/activity-logs', setActivityLogs],
+        ['/api/admin/subscriptions', setSubscriptions],
+      ] as const;
+
+      await Promise.all(optionalEndpoints.map(async ([url, setter]) => {
+        try {
+          const response = await apiFetch(url);
+          const body = await response.json().catch(() => null);
+          if (response.ok && body?.success) {
+            setter(body.data);
+          } else {
+            setter(null as any);
+          }
+        } catch {
+          setter(null as any);
+        }
+      }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Admin data is unavailable';
       setLoadError(message);
