@@ -709,7 +709,7 @@ export function createServer() {
   app.post("/api/ai/market/supply-demand", analyzeSupplyDemand);
 
   // 🧠 Smart Assistant AI Service (Future)
-  app.post("/api/ai/assistant/chat", requireAuth, requireVerifiedAuth, chatWithAIAssistant);
+  app.post("/api/ai/assistant/chat", chatWithAIAssistant); // Public general chat; persistence is enabled only for a verified JWT.
   app.post("/api/ai/assistant/generate-tasks", generateFarmingTasks);
   app.get("/api/ai/assistant/alerts", getSmartAlerts);
 
