@@ -8,6 +8,7 @@ import {
   jsonBodyErrorHandler,
   requireAdminToken,
   keyMintRateLimiter,
+  adminBootstrapRateLimiter,
 } from "./middleware/security";
 import { requireAuth, requireAdminAccess, requireRole, requireVerifiedAuth } from "./middleware/auth";
 import { blockSimulatedData } from "./lib/provenance";
@@ -746,7 +747,7 @@ export function createServer() {
   app.post("/api/setup-users", requireAdminToken(), setupMultipleUsers);
 
   // Admin User Setup
-  app.post("/api/setup-admin", requireAdminToken(), keyMintRateLimiter(), setupAdminUser);
+  app.post("/api/setup-admin", adminBootstrapRateLimiter(), requireAdminToken(), setupAdminUser);
 
   // Auth Helper Endpoints (bypass RLS)
   app.post("/api/auth/create-user-profile", requireAdminToken(), createUserWithProfile);
