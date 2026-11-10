@@ -289,8 +289,11 @@ export const getAdminActivityLogs: RequestHandler = async (req, res) => {
   if (!requireDatabase(req, res)) return;
   const client = getAdminClient(req)!;
   const { data, error } = await client.from("admin_activity_logs").select("*").order("created_at", { ascending: false }).limit(100);
-  if (error) return dbError(res, error, "administrator activity logs");
-  return res.json({ success: true, data: data || [], provenance: { source: "Supabase public.admin_activity_logs", simulated: false } });
+  if (error) {
+    console.warn("[admin-panel] admin_activity_logs is not available:", error.message);
+    return res.json({ success: true, data: [], availability: { available: false, reason: "Apply database/admin-user-management.sql to enable the administrator audit trail." }, provenance: { source: "Supabase", simulated: false } });
+  }
+  return res.json({ success: true, data: data || [], availability: { available: true }, provenance: { source: "Supabase public.admin_activity_logs", simulated: false } });
 };
 export const getAdminSubscriptions: RequestHandler = async (req, res) =>
   readOptionalTable(req, res, "subscriptions");
