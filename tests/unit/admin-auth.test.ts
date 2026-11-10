@@ -7,6 +7,7 @@
  * Supabase service-role key must never be accepted as an HTTP credential.
  */
 import { verifyAdminToken, timingSafeEqualStr } from "../../server/lib/adminAuth";
+import { ADMIN_EMAIL_PATTERN } from "../../server/routes/admin-create-user";
 
 function fakeReq(token?: string): any {
   return { header: (name: string) => (name === "x-admin-token" ? token : undefined) };
@@ -77,4 +78,17 @@ describe("🔐 timingSafeEqualStr", () => {
     expect(timingSafeEqualStr("abc", "abcd")).toBe(false);
     expect(timingSafeEqualStr("", "")).toBe(true);
   });
+});
+
+
+describe("admin provisioning email validation", () => {
+  test.each(["admin@example.com", "sami.arfaoui+agro@neuroforge.tn"])(
+    "accepts valid email %s",
+    (email) => expect(ADMIN_EMAIL_PATTERN.test(email)).toBe(true),
+  );
+
+  test.each(["", "not-an-email", "admin@", "@example.com", "admin @example.com", "admin@example"])(
+    "rejects invalid email %s",
+    (email) => expect(ADMIN_EMAIL_PATTERN.test(email)).toBe(false),
+  );
 });
