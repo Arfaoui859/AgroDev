@@ -69,8 +69,21 @@ INSERT INTO auth.users (id, email) VALUES
   ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'admin@rls.test')
 ON CONFLICT (id) DO NOTHING;
 
+-- Ensure the fixture has one profile row even in the lightweight auth shim.
+-- The NOT EXISTS guard keeps this safe when the signup trigger already created it.
+INSERT INTO public.user_profiles (user_id)
+SELECT id
+FROM auth.users
+WHERE id IN (
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+  'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+  'cccccccc-cccc-cccc-cccc-cccccccccccc'
+)
+AND NOT EXISTS (
+  SELECT 1 FROM public.user_profiles p WHERE p.user_id = auth.users.id
+);
 
--- The auth.users signup trigger creates one profile row per fixture user.
 
 INSERT INTO public.farms (id, owner_id, name, location, size_hectares) VALUES
   ('f0000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
