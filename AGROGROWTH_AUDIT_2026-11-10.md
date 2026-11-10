@@ -3,7 +3,7 @@
 **Audit date:** 2026-11-10  
 **Repository:** `Arfaoui859/AgroDev`  
 **Branch:** `feat/ai-integration-production-hardening`  
-**Code baseline reviewed:** `a04117b979c5bba60d3d0cf928b0619b6e827377`  
+**Code baseline reviewed:** `c2c315bd9d1c8a60894606625fe6554f0dc589bc`  
 **Audit mode:** Repository/code inspection plus targeted implementation changes. No live Render or Supabase verification was possible in this pass.
 
 ## 1. Executive summary
@@ -71,6 +71,25 @@ The gateway now distinguishes:
 - a declared configured model/provider.
 
 A deterministic rule engine is not incorrectly counted as a model trained on synthetic data. A model/provider being configured is still not evidence of agronomic validation.
+
+### 2.3 Input integrity hardening
+
+A second pass removed silent example-input substitution from the crop, weather/yield,
+irrigation and pest microservice request models:
+- Crop recommendations require the farm/soil/weather/market inputs that affect
+  the numeric ranking. The Node gateway checks every required field and uses
+  its labelled local rule-based fallback when values are missing.
+- Weather/yield no longer assumes a default Tunisia coordinate, weather profile,
+  soil profile, crop or farm size.
+- Irrigation no longer assumes a wheat crop, vegetative stage, one-hectare farm,
+  default weather or default soil moisture.
+- Pest assessment no longer assumes tomato, 20% affected area, plant age,
+  plant-health score or default weather when those values are not supplied.
+
+Regression tests were added to require 422 responses for empty requests and to
+exercise complete input payloads. These changes prevent fabricated input values;
+they do **not** change the numeric engines' current `synthetic-demo` provenance
+or prove agronomic accuracy.
 
 ## 3. Gateway and service monitoring
 
@@ -230,6 +249,7 @@ Priority order:
 | Targeted code fixes | Committed to the audit branch |
 | Soil model artifacts/report | Inspected; no retraining performed |
 | New soil regression tests | Added; GitHub Actions runs queued at audit time |
+| AI input-integrity regression tests | Added for crop, weather/yield, irrigation and pest; CI not yet completed |
 | Admin CRUD + RLS regression | Added; GitHub Actions runs queued at audit time |
 | TypeScript/Jest/pytest/lint/build after changes | Awaiting GitHub Actions CI; not yet passed |
 | Render live service health | Not verified |
