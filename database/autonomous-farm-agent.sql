@@ -74,6 +74,7 @@ DROP POLICY IF EXISTS "Users insert own farm agent messages" ON public.farm_agen
 CREATE POLICY "Users insert own farm agent messages" ON public.farm_agent_messages
   FOR INSERT WITH CHECK (
     user_id = auth.uid()
+    AND role = 'user'
     AND EXISTS (
       SELECT 1 FROM public.farm_agent_conversations c
       WHERE c.id = conversation_id AND c.user_id = auth.uid()
