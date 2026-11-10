@@ -19,6 +19,25 @@ CREATE INDEX IF NOT EXISTS admin_audit_logs_actor_idx
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.admin_audit_logs FROM anon, authenticated;
 GRANT SELECT, INSERT ON public.admin_audit_logs TO service_role;
+REVOKE UPDATE, DELETE, TRUNCATE ON public.admin_audit_logs FROM service_role;
+
+CREATE OR REPLACE FUNCTION public.prevent_admin_audit_log_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $
+BEGIN
+  RAISE EXCEPTION 'Administrator audit logs are append-only'
+    USING ERRCODE = '42501';
+END;
+$;
+
+DROP TRIGGER IF EXISTS admin_audit_logs_append_only ON public.admin_audit_logs;
+CREATE TRIGGER admin_audit_logs_append_only
+  BEFORE UPDATE OR DELETE ON public.admin_audit_logs
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_admin_audit_log_mutation();
+
+REVOKE ALL ON FUNCTION public.prevent_admin_audit_log_mutation() FROM PUBLIC, anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.admin_change_user_role(
   p_actor_user_id uuid,
