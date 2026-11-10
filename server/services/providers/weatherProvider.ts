@@ -421,6 +421,8 @@ export interface HistoricalMonthlyAverage {
 
 export interface HistoricalWeather {
   monthly: HistoricalMonthlyAverage[];
+  recentRainfall: number;
+  recentTemperatureVariation: number;
   source: { provider: string; isRealData: true };
 }
 
@@ -468,6 +470,10 @@ export async function getHistoricalWeatherFromOpenMeteo(
   );
 
   const times = data.daily?.time ?? [];
+  const recentCutoff = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  let recentRainfall = 0;
+  let recentMaxTemp = -Infinity;
+  let recentMinTemp = Infinity;
   const buckets = new Map<
     string,
     { tempSum: number; tempCount: number; rainSum: number; humSum: number; humCount: number; maxTemp: number; minTemp: number; windSum: number; windCount: number; solarSum: number; solarCount: number }
@@ -493,7 +499,12 @@ export async function getHistoricalWeatherFromOpenMeteo(
       bucket.humSum += hum;
       bucket.humCount += 1;
     }
-    if (typeof rain === "number") bucket.rainSum += rain;
+    if (typeof rain === "number") {
+      bucket.rainSum += rain;
+      if (iso >= recentCutoff) recentRainfall += rain;
+    }
+    if (iso >= recentCutoff && typeof maxTemp === "number") recentMaxTemp = Math.max(recentMaxTemp, maxTemp);
+    if (iso >= recentCutoff && typeof minTemp === "number") recentMinTemp = Math.min(recentMinTemp, minTemp);
     if (typeof maxTemp === "number") bucket.maxTemp = Math.max(bucket.maxTemp, maxTemp);
     if (typeof minTemp === "number") bucket.minTemp = Math.min(bucket.minTemp, minTemp);
     if (typeof wind === "number") { bucket.windSum += wind; bucket.windCount += 1; }
@@ -516,6 +527,10 @@ export async function getHistoricalWeatherFromOpenMeteo(
 
   return {
     monthly,
+    recentRainfall: round(recentRainfall, 1),
+    recentTemperatureVariation: Number.isFinite(recentMaxTemp) && Number.isFinite(recentMinTemp)
+      ? round(recentMaxTemp - recentMinTemp, 1)
+      : 0,
     source: { provider: "Open-Meteo Archive", isRealData: true },
   };
 }
