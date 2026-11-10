@@ -111,6 +111,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", password: "", full_name: "", role: "farmer" });
   const [savingUser, setSavingUser] = useState(false);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [usersTotalPages, setUsersTotalPages] = useState(1);
 
   useEffect(() => {
     fetchDashboardData();
@@ -120,7 +123,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     try {
       setLoading(true);
       setLoadError(null);
-      const endpoints = ["/api/admin/overview", "/api/admin/users?page=1&limit=100", "/api/admin/system-metrics", "/api/admin/usage-analytics", "/api/admin/security-events", "/api/admin/activity-logs", "/api/admin/subscriptions"];
+      const endpoints = ["/api/admin/overview", `/api/admin/users?page=${usersPage}&limit=50`, "/api/admin/system-metrics", "/api/admin/usage-analytics", "/api/admin/security-events", "/api/admin/activity-logs", "/api/admin/subscriptions"];
       const responses = await Promise.all(endpoints.map((url) => apiFetch(url)));
       const payloads = await Promise.all(responses.map(async (response) => {
         const payload = await response.json().catch(() => ({}));
@@ -130,6 +133,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       const [dashboard, usersData, metricsData, analyticsData, securityData, activityData, subscriptionsData] = payloads;
       setDashboardData(dashboard.data || null);
       setUsers(Array.isArray(usersData.data) ? usersData.data : []);
+      setUsersTotal(Number(usersData.pagination?.total ?? 0));
+      setUsersTotalPages(Math.max(1, Number(usersData.pagination?.totalPages ?? 1)));
       setSystemMetrics(metricsData.data || null);
       setAnalytics(analyticsData.data || null);
       setSecurityEvents(Array.isArray(securityData.data) ? securityData.data : []);
@@ -291,6 +296,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </Button>
         </div>
       </div>
+
+      {loadError && dashboardData && (
+        <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>{isArabic ? "تعذّر تنفيذ العملية" : "Operation failed"}</AlertTitle><AlertDescription>{loadError}</AlertDescription></Alert>
+      )}
 
       {/* Quick Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
@@ -728,6 +737,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="flex items-center justify-between border-t p-3 text-sm">
+                <span>{isArabic ? `إجمالي ${usersTotal} مستخدم` : `${usersTotal} users total`}</span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" disabled={usersPage <= 1 || loading} onClick={() => setUsersPage((page) => Math.max(1, page - 1))}>{isArabic ? "السابق" : "Previous"}</Button>
+                  <span>{usersPage} / {usersTotalPages}</span>
+                  <Button size="sm" variant="outline" disabled={usersPage >= usersTotalPages || loading} onClick={() => setUsersPage((page) => Math.min(usersTotalPages, page + 1))}>{isArabic ? "التالي" : "Next"}</Button>
+                </div>
               </div>
             </CardContent>
           </Card>
