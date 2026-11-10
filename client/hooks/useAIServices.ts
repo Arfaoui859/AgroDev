@@ -896,65 +896,24 @@ export const useAIServices = () => {
 
   const checkAIServicesHealth = useCallback(async () => {
     try {
-      // If using cloud services, check them individually
-      if (cloudConfig.useCloudServices) {
-        const serviceUrls = [
-          { name: "soil_analysis", url: cloudConfig.soilAnalysisUrl },
-          {
-            name: "crop_recommendation",
-            url: cloudConfig.cropRecommendationUrl,
-          },
-          { name: "image_diagnosis", url: cloudConfig.imageDiagnosisUrl },
-          { name: "market_prediction", url: cloudConfig.marketPredictionUrl },
-          { name: "intelligent_agent", url: cloudConfig.intelligentAgentUrl },
-        ];
-
-        const healthChecks = await Promise.allSettled(
-          serviceUrls.map(async (service) => {
-            const isHealthy = await checkServiceHealth(service.url);
-            return { [service.name]: isHealthy ? "healthy" : "unavailable" };
-          }),
-        );
-
-        const healthStatus = healthChecks.reduce((acc, result, index) => {
-          if (result.status === "fulfilled") {
-            return { ...acc, ...result.value };
-          } else {
-            return { ...acc, [serviceUrls[index].name]: "error" };
-          }
-        }, {});
-
-        return {
-          ...healthStatus,
-          overall_status: "cloud_services",
-          timestamp: new Date().toISOString(),
-        };
-      }
-
-      // Otherwise, use the main API health check
-      const result = await smartApiCall("/ai/health");
-      console.log("AI services health check successful:", result);
-      return result;
+      // The backend gateway is authoritative: it checks all eight private
+      // services and returns each service's actual model provenance. Browser
+      // probes only cover a subset and cannot reliably reach private services.
+      return await smartApiCall("/ai/health");
     } catch (error) {
-      console.warn(
-        "AI services health check failed (services may not be running):",
-        error,
-      );
-
+      console.warn("AI services health check failed:", error);
       return {
-        soil_analysis: "unavailable",
-        crop_recommendation: "unavailable",
-        image_diagnosis: "unavailable",
-        market_prediction: "unavailable",
-        weather_intelligence: "unavailable",
-        pest_control: "unavailable",
-        irrigation_optimization: "unavailable",
-        overall_status: "services_unavailable",
-        error_message: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
+        overview: {
+          totalServices: 8,
+          availableServices: 0,
+          unavailableServices: 8,
+          syntheticModelServices: 0,
+        },
+        services: [],
+        error: error instanceof Error ? error.message : "AI health check failed",
       };
     }
-  }, []);
+  };
 
   return {
     loading,
