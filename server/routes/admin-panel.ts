@@ -259,3 +259,55 @@ export const getAdminActivityLogs: RequestHandler = async (_req, res) =>
   readOptionalTable(res, "activity_logs", "activity logs");
 export const getAdminSubscriptions: RequestHandler = async (_req, res) =>
   readOptionalTable(res, "subscriptions", "subscriptions");
+
+export const updateAdminUser: RequestHandler = async (req, res) => {
+  if (!supabaseAdmin) return unavailable(res, "Admin database access is not configured.");
+  const userId = String(req.params.userId || "");
+  const { status, role } = req.body || {};
+  if (!userId) return res.status(400).json({ success: false, error: "User id is required." });
+  if (role !== undefined && !["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"].includes(role)) {
+    return res.status(400).json({ success: false, error: "Unsupported user role." });
+  }
+  if (status !== undefined && !["active", "inactive", "suspended"].includes(status)) {
+    return res.status(400).json({ success: false, error: "Unsupported user status." });
+  }
+  if (status === undefined && role === undefined) {
+    return res.status(400).json({ success: false, error: "Provide a role or status to update." });
+  }
+  if (req.userId === userId && (role !== undefined && role !== "admin" || status !== undefined && status !== "active")) {
+    return res.status(409).json({ success: false, error: "You cannot remove your own administrator access or deactivate your own account." });
+  }
+  try {
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (role !== undefined) patch.role = role;
+    if (status !== undefined) patch.is_active = status === "active";
+    const { data, error } = await supabaseAdmin.from("users").update(patch).eq("id", userId).select("*").maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ success: false, error: "User record not found." });
+    return res.json({ success: true, data: toAdminUser(data), provenance: { source: "Supabase public.users", simulated: false } });
+  } catch (error) {
+    return dbError(res, error, "user update");
+  }
+};
+
+export const deleteAdminUser: RequestHandler = async (req, res) => {
+  if (!supabaseAdmin) return unavailable(res, "Admin database access is not configured.");
+  const userId = String(req.params.userId || "");
+  if (!userId) return res.status(400).json({ success: false, error: "User id is required." });
+  if (req.userId === userId) return res.status(409).json({ success: false, error: "You cannot delete your own administrator account." });
+  try {
+    const { data: target, error: lookupError } = await supabaseAdmin.from("users").select("id,role").eq("id", userId).maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!target) return res.status(404).json({ success: false, error: "User record not found." });
+    if (String(target.role).toLowerCase() === "admin") {
+      const { count, error: countError } = await supabaseAdmin.from("users").select("id", { count: "exact", head: true }).eq("role", "admin");
+      if (countError) throw countError;
+      if ((count ?? 0) <= 1) return res.status(409).json({ success: false, error: "The last administrator cannot be deleted." });
+    }
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (error) throw error;
+    return res.json({ success: true, deletedUserId: userId });
+  } catch (error) {
+    return dbError(res, error, "user deletion");
+  }
+};
