@@ -5,7 +5,7 @@
 DO $$
 DECLARE
   fn text;
-  rel record;
+  rel regclass;
 BEGIN
   -- Private scheduler table must be RLS-enabled and unavailable to browser roles.
   IF NOT EXISTS (
