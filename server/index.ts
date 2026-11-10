@@ -120,6 +120,7 @@ import {
   getAdminSecurityEvents,
   getAdminActivityLogs,
   getAdminSubscriptions,
+  updateAdminUserRole,
 } from "./routes/admin-panel";
 import governmentDashboardRoutes from "./routes/government-dashboard";
 import {
@@ -572,6 +573,7 @@ export function createServer() {
   app.get("/api/admin/security-events", requireAdminAccess, getAdminSecurityEvents);
   app.get("/api/admin/activity-logs", requireAdminAccess, getAdminActivityLogs);
   app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
+  app.patch("/api/admin/users/:userId/role", requireAdminAccess, updateAdminUserRole);
 
   // Government Dashboard routes
   app.use("/api/government-dashboard", requireAuth, governmentDashboardRoutes);
