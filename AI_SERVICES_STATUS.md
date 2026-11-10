@@ -108,8 +108,10 @@ screens. The audit additionally corrected:
 - Deterministic rules are classified as non-ML without falsely claiming that they
   were trained on synthetic data.
 - The effectiveness report page no longer seeds fake historical farm records or
-  hardcoded chart series. Its score is explicitly described as rule-based and
-  session-only; it is not yet persisted to Supabase.
+  hardcoded chart series. Its score is explicitly rule-based; authenticated
+  per-user GET/POST persistence and `database/effectiveness-reports.sql` were
+  added. Apply the migration and configure the server-side Supabase secret to
+  enable durable storage.
 - The livestock breeding screen no longer generates a random genetic compatibility
   percentage when no validated pedigree/genomic engine is connected.
 
