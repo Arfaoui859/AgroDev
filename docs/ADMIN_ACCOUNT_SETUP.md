@@ -185,3 +185,10 @@ two-factor enrollment are explicitly marked as not connected/unavailable;
 the UI no longer reads placeholder properties or presents them as real
 account-security facts. Connect verified Auth/session telemetry before
 enabling those indicators.
+
+
+### Administrator-triggered password recovery
+
+The user details dialog provides a **Send password reset email** action. It is available only through the admin-protected API and the handler also requires a verified administrator JWT (the shared bootstrap token is not accepted as the human actor). The endpoint resolves the target through public.users and Supabase Auth, then calls Supabase Auth's resetPasswordForEmail recovery flow. It never reads, creates, returns, or displays a user's password. The recovery redirect uses the Supabase project's configured Auth Site URL; configure that URL and the Auth email/SMTP provider for the production domain before relying on delivery.
+
+A user.password_reset.requested event is appended to public.admin_audit_logs. If email submission succeeds but the audit write fails, the API reports an explicit partial failure so the operator can inspect the audit log before retrying. This flow has not been exercised against the production Supabase project; email delivery, redirect configuration, and migration readiness must be verified there.
