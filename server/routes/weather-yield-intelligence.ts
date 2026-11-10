@@ -126,11 +126,20 @@ router.get("/yield-database", async (_req, res) => {
 // as a query parameter and the rest as a JSON body.
 router.post("/assess-climate-suitability", async (req, res) => {
   try {
-    const {
-      crop_type = "wheat",
-      location = { latitude: 35.0, longitude: 10.0 },
-      current_weather = { temperature: 25.0, rainfall: 400.0 },
-    } = req.body ?? {};
+    const { crop_type, location, current_weather } = req.body ?? {};
+    if (
+      typeof crop_type !== "string" || !crop_type.trim() ||
+      !Number.isFinite(Number(location?.latitude)) ||
+      !Number.isFinite(Number(location?.longitude)) ||
+      !Number.isFinite(Number(current_weather?.temperature)) ||
+      !Number.isFinite(Number(current_weather?.rainfall))
+    ) {
+      return res.status(400).json({
+        success: false,
+        code: "MISSING_MEASURED_INPUTS",
+        error: "crop_type, field coordinates, and current measured weather are required.",
+      });
+    }
 
     const params = new URLSearchParams({ crop_type: String(crop_type) });
     const result = await callMicroservice({
@@ -149,10 +158,21 @@ router.post("/assess-climate-suitability", async (req, res) => {
 router.post("/optimize-planting", async (req, res) => {
   try {
     const {
-      crop_types = ["wheat", "tomato"],
-      location = { latitude: 35.0, longitude: 10.0 },
+      crop_types,
+      location,
       planning_months = 12,
     } = req.body ?? {};
+    if (
+      !Array.isArray(crop_types) || crop_types.length === 0 ||
+      !Number.isFinite(Number(location?.latitude)) ||
+      !Number.isFinite(Number(location?.longitude))
+    ) {
+      return res.status(400).json({
+        success: false,
+        code: "MISSING_MEASURED_INPUTS",
+        error: "crop_types and valid field coordinates are required.",
+      });
+    }
 
     const params = new URLSearchParams();
     for (const crop of crop_types) params.append("crop_types", String(crop));
