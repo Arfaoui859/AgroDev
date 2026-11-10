@@ -1,4 +1,4 @@
-import { requireRole } from "../../server/middleware/auth";
+import { requireRole, requireVerifiedAuth } from "../../server/middleware/auth";
 import { supabaseAdmin } from "../../server/lib/supabase";
 
 jest.mock("../../server/lib/supabase", () => ({
@@ -73,5 +73,28 @@ describe("requireRole", () => {
     expect(result.next).not.toHaveBeenCalled();
     expect(result.res.status).toHaveBeenCalledWith(403);
     expect(mockedAdmin.from).not.toHaveBeenCalled();
+  });
+});
+
+describe("requireVerifiedAuth", () => {
+  it("allows only a verified JWT identity", () => {
+    const req: any = { userId: "user-123", identitySource: "jwt" };
+    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
+    const next = jest.fn();
+    requireVerifiedAuth(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it("rejects demo identities before persisted operations", () => {
+    const req: any = { userId: "demo-user", identitySource: "demo" };
+    const res: any = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
+    const next = jest.fn();
+    requireVerifiedAuth(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      code: "VERIFIED_SESSION_REQUIRED",
+    }));
   });
 });
