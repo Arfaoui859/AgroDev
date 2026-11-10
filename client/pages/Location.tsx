@@ -339,7 +339,7 @@ export default function Location() {
                   <span>تحديد الموقع بـ GPS</span>
                 </CardTitle>
                 <CardDescription>
-                  انقر على الزر أدناه للسم��ح للتطبيق بالوصول إلى موقعك الحالي
+                  انقر على الزر أدناه للسماح للتطبيق بالوصول إلى موقعك الحالي
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
