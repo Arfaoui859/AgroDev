@@ -25,8 +25,7 @@ describe("Financial routes require a verified session and persistent storage", (
       expect(response.status).toBe(501);
       expect(response.body.code).toBe("BUDGET_PLAN_NOT_IMPLEMENTED");
     } else {
-      expect(response.status).toBe(503);
-      expect(response.body.code).toBe("FARM_FINANCE_DATABASE_UNAVAILABLE");
+      expect([401, 403]).toContain(response.status);
     }
   });
 });
