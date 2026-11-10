@@ -1265,7 +1265,7 @@ export default function FieldManagement() {
                     <div className="text-xs text-muted-foreground">
                       {activity.time}
                     </div>
-                    <Button size="sm" variant="ghost">
+                    <Button size="sm" variant="ghost" disabled title={isArabic ? "إعادة تنفيذ النشاط غير متاحة" : "Activity replay is not available"}>
                       <RotateCcw className="h-3 w-3" />
                     </Button>
                   </div>
