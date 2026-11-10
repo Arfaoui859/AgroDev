@@ -51,7 +51,7 @@ function toAdminUser(user: DbUser) {
     emailVerified: Boolean(user.email_verified ?? user.verified ?? user.email_confirmed_at),
     phoneVerified: Boolean(user.phone_verified),
     twoFactorEnabled: Boolean(user.two_factor_enabled),
-    lastLogin: user.last_sign_in_at || user.last_login_at || null,
+    lastLogin: user.last_sign_in_at || user.last_login_at || user.last_login || null,
     loginCount: Number.isFinite(Number(user.login_count)) ? Number(user.login_count) : null,
     createdAt: user.created_at || null,
     updatedAt: user.updated_at || null,
@@ -319,6 +319,7 @@ export const deleteAdminUser: RequestHandler = async (req, res) => {
     }
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (error) throw error;
+    await supabaseAdmin.from("users").delete().eq("id", userId);
     return res.json({ success: true, deletedUserId: userId });
   } catch (error) {
     return dbError(res, error, "user deletion");
@@ -349,7 +350,7 @@ export const createAdminManagedUser: RequestHandler = async (req, res) => {
       email: normalizedEmail,
       full_name: typeof full_name === "string" ? full_name.trim() : null,
       role: normalizedRole,
-      verified: false,
+      email_verified: false,
       is_active: true,
       status: "active",
       updated_at: new Date().toISOString(),
