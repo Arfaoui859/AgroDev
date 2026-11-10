@@ -13,6 +13,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- not a replacement for Supabase Storage and are never applied to production.
 CREATE SCHEMA IF NOT EXISTS storage;
 
+CREATE TABLE IF NOT EXISTS storage.buckets (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  public boolean NOT NULL DEFAULT false,
+  file_size_limit bigint,
+  allowed_mime_types text[]
+);
+
 CREATE TABLE IF NOT EXISTS storage.objects (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   bucket_id text NOT NULL,
