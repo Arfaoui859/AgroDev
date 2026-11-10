@@ -59,6 +59,7 @@ const waterLabels: Record<string, string> = {
 };
 
 const EnhancedAnalysis: React.FC = () => {
+  const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({ ph: "", moisture: "", organicMatter: "", electricalConductivity: "", electricalConductivityUnit: "", nitrogen: "", phosphorus: "", potassium: "", sandPercent: "", siltPercent: "", clayPercent: "", calciumCarbonateTotal: "", calciumCarbonateActive: "", cec: "", sodium: "", sodiumAdsorptionRatio: "", exchangeableSodiumPercentage: "", waterElectricalConductivity: "", waterElectricalConductivityUnit: "", waterPh: "", slopePercent: "", drainage: "", previousCrop: "", targetCrop: "", targetYield: "", farmAreaHectares: "", irrigationMethod: "", region: "", cropMode: "plant-now", fieldId: "", location: "", samplingDate: "", sampleDepth: "", currentCrop: "", season: "", nutrientUnit: "", nutrientMethod: "", electricalConductivityMethod: "", notes: "" });
   const [report, setReport] = useState<SoilAnalysisEnvelope | null>(null);
   const [loading, setLoading] = useState(false);
