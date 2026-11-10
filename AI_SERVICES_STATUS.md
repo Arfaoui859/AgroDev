@@ -132,3 +132,14 @@ as operational workflows.
 
 **Live Render verification was not completed during this code audit.** This report
 therefore makes no claim that all eight deployed URLs are currently online.
+
+## Input-integrity hardening (2026-11-10)
+
+The following Python services now reject empty requests instead of silently substituting example farm conditions:
+
+- **Crop recommendation:** temperature, annual rainfall, soil pH, soil quality, water availability, current market price, farmer experience, available capital, farm size and risk tolerance are required before the Python microservice is called. The Node gateway validates these fields and uses its separately labelled rule-based fallback when any are missing.
+- **Weather / yield:** location coordinates, historical/current weather, soil measurements, crop and farm size are required. Empty seasonal/yield requests now receive FastAPI 422 validation responses rather than a default 35°N/10°E location, default Tunisian weather, assumed soil, or one-hectare farm.
+- **Irrigation:** crop, growth stage, farm size, measured weather and soil moisture/field-capacity inputs are required; default weather and soil profiles were removed.
+- **Pest control:** crop, symptoms, affected area/count, total plant count, plant age/health, weather, farm size, plant density and irrigation frequency are required; default tomato/plant-health/weather values were removed.
+
+These changes improve input integrity; they do not change the numeric engines' current synthetic-demo provenance or establish agronomic accuracy. The weather/yield, irrigation and pest numeric engines remain synthetic and must not be marketed as field-validated ML.
