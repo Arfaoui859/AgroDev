@@ -431,7 +431,7 @@ export function createServer() {
   app.use("/api/emergency-response", emergencyResponseRoutes);
   app.use("/api/emerging-tech", emergingTechRoutes);
   app.use("/api/ip-management", ipManagementRoutes);
-  app.use("/api/smart-advisor", smartAdvisorRoutes);
+  app.use("/api/smart-advisor", requireAuth, requireVerifiedAuth, smartAdvisorRoutes);
   app.use("/api/digital-training", digitalTrainingRoutes);
   app.use("/api/predictive-analytics", predictiveAnalyticsRoutes);
   app.use("/api/risk-detection", riskDetectionRoutes);
