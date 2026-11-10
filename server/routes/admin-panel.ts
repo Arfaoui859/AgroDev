@@ -105,6 +105,95 @@ export async function getAdminDashboard(_req: Request, res: Response): Promise<v
   }
 }
 
+export async function updateAdminUserProfile(req: Request, res: Response): Promise<void> {
+  if (req.identitySource !== 'jwt' || !req.userId) {
+    res.status(403).json({ success: false, code: 'VERIFIED_ADMIN_SESSION_REQUIRED', message: 'A signed-in administrator session is required.' });
+    return;
+  }
+  if (!databaseReady(res)) return;
+
+  const targetUserId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  const fullName = typeof req.body?.fullName === 'string' ? req.body.fullName.trim().slice(0, 120) : '';
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+    res.status(400).json({ success: false, code: 'INVALID_USER_ID', message: 'A valid user ID is required.' });
+    return;
+  }
+  if (!fullName || fullName.length < 2) {
+    res.status(400).json({ success: false, code: 'INVALID_FULL_NAME', message: 'Full name must contain at least 2 characters.' });
+    return;
+  }
+
+  try {
+    const { data: profile, error: profileReadError } = await supabaseAdmin!
+      .from('users').select('id,full_name,email').eq('id', targetUserId).maybeSingle();
+    if (profileReadError) {
+      unavailable(res, 'ADMIN_USER_PROFILE_LOOKUP_FAILED');
+      return;
+    }
+    if (!profile) {
+      res.status(404).json({ success: false, code: 'USER_NOT_FOUND', message: 'The target user does not exist.' });
+      return;
+    }
+    const { data: authResult, error: authReadError } = await supabaseAdmin!.auth.admin.getUserById(targetUserId);
+    if (authReadError || !authResult.user) {
+      unavailable(res, 'ADMIN_AUTH_USER_LOOKUP_FAILED');
+      return;
+    }
+
+    const previousName = String(profile.full_name || '');
+    const previousMetadata = authResult.user.user_metadata || {};
+    const { error: authUpdateError } = await supabaseAdmin!.auth.admin.updateUserById(targetUserId, {
+      user_metadata: { ...previousMetadata, full_name: fullName },
+    });
+    if (authUpdateError) {
+      unavailable(res, 'ADMIN_AUTH_PROFILE_UPDATE_FAILED');
+      return;
+    }
+
+    const { error: profileUpdateError } = await supabaseAdmin!
+      .from('users').update({ full_name: fullName, updated_at: new Date().toISOString() }).eq('id', targetUserId);
+    if (profileUpdateError) {
+      const { error: rollbackError } = await supabaseAdmin!.auth.admin.updateUserById(targetUserId, {
+        user_metadata: previousMetadata,
+      });
+      if (rollbackError) console.error('CRITICAL: Auth metadata rollback failed:', rollbackError.message);
+      unavailable(res, rollbackError ? 'ADMIN_PROFILE_PARTIAL_FAILURE' : 'ADMIN_USER_PROFILE_UPDATE_FAILED');
+      return;
+    }
+
+    const { error: auditError } = await supabaseAdmin!.from('admin_audit_logs').insert({
+      actor_user_id: req.userId,
+      action: 'user.profile.updated',
+      target_user_id: targetUserId,
+      before_data: { full_name: previousName },
+      after_data: { full_name: fullName },
+    });
+    if (auditError) {
+      const { error: profileRollbackError } = await supabaseAdmin!
+        .from('users').update({ full_name: previousName, updated_at: new Date().toISOString() }).eq('id', targetUserId);
+      const { error: authRollbackError } = await supabaseAdmin!.auth.admin.updateUserById(targetUserId, {
+        user_metadata: previousMetadata,
+      });
+      if (profileRollbackError || authRollbackError) {
+        console.error('CRITICAL: profile update rollback incomplete:', profileRollbackError?.message, authRollbackError?.message);
+      }
+      unavailable(res, 'ADMIN_USER_PROFILE_AUDIT_FAILED');
+      return;
+    }
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase.auth.admin + public.users + public.admin_audit_logs');
+    res.json({
+      success: true,
+      data: { id: targetUserId, email: profile.email, fullName },
+      provenance: { source: 'supabase.auth.admin + public.users + public.admin_audit_logs', verified: true },
+    });
+  } catch (error) {
+    console.error('Admin user profile update failed:', error);
+    unavailable(res, 'ADMIN_USER_PROFILE_UPDATE_FAILED');
+  }
+}
+
 export async function createAdminManagedUser(req: Request, res: Response): Promise<void> {
   if (req.identitySource !== 'jwt' || !req.userId) {
     res.status(403).json({ success: false, code: 'VERIFIED_ADMIN_SESSION_REQUIRED', message: 'A signed-in administrator session is required.' });
