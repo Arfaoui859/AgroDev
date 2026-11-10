@@ -70,9 +70,7 @@ INSERT INTO auth.users (id, email) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 
-INSERT INTO public.user_profiles (user_id, bio) VALUES
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'A bio'),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'B bio');
+-- The auth.users signup trigger creates one profile row per fixture user.
 
 INSERT INTO public.farms (id, owner_id, name, location, size_hectares) VALUES
   ('f0000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
