@@ -124,27 +124,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     try {
       // Core administrator experience depends only on verified overview and
       // user-directory data. Optional modules must not hide the user list.
-      const [dashboardResponse, usersResponse] = await Promise.all([
-        apiFetch('/api/admin/overview'),
-        apiFetch('/api/admin/users'),
-      ]);
-
-      const [dashboard, usersData] = await Promise.all([
-        dashboardResponse.json().catch(() => null),
-        usersResponse.json().catch(() => null),
-      ]);
+      const dashboardResponse = await apiFetch('/api/admin/overview');
+      const dashboard = await dashboardResponse.json().catch(() => null);
 
       if (!dashboardResponse.ok) {
         throw new Error(`${dashboard?.code ? `${dashboard.code}: ` : ''}${dashboard?.message || `Overview unavailable (HTTP ${dashboardResponse.status})`}`);
       }
-      if (!usersResponse.ok) {
-        throw new Error(`${usersData?.code ? `${usersData.code}: ` : ''}${usersData?.message || `User directory unavailable (HTTP ${usersResponse.status})`}`);
-      }
-
       setDashboardData(dashboard?.data || null);
-      setUsers(Array.isArray(usersData?.data) ? usersData.data : []);
-      setUserPagination(usersData?.pagination || { page: 1, pageSize: 50, total: Array.isArray(usersData?.data) ? usersData.data.length : 0, totalPages: 1 });
-      setUserPage(1);
 
       const optionalEndpoints = [
         ['/api/admin/system-metrics', setSystemMetrics],
@@ -772,10 +758,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm text-gray-900">
-                              {new Date(user.lastLogin).toLocaleDateString()}
+                              {user.lastLogin && Number.isFinite(Date.parse(user.lastLogin))
+                                ? new Date(user.lastLogin).toLocaleDateString()
+                                : (isArabic ? 'لم يسجل الدخول بعد' : 'Never logged in')}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {user.loginCount} {isArabic ? 'دخول' : 'logins'}
+                              {user.loginCount ?? '—'} {isArabic ? 'دخول' : 'logins'}
                             </div>
                           </td>
                           <td className="px-4 py-4">
