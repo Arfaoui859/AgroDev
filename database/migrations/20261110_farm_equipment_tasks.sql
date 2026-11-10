@@ -30,10 +30,11 @@ CREATE POLICY "Farm owners manage own equipment" ON public.farm_equipment
   USING (EXISTS (
     SELECT 1 FROM public.farms f
     WHERE f.id = farm_equipment.farm_id AND f.owner_id = auth.uid()
-  ))
+  ) AND created_by = auth.uid())
   WITH CHECK (EXISTS (
     SELECT 1 FROM public.farms f
     WHERE f.id = farm_equipment.farm_id AND f.owner_id = auth.uid()
+  ) AND created_by = auth.uid()
   ));
 REVOKE ALL ON TABLE public.farm_equipment FROM PUBLIC, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.farm_equipment TO authenticated;
@@ -53,7 +54,8 @@ CREATE TABLE IF NOT EXISTS public.farm_tasks (
   created_by uuid NOT NULL REFERENCES auth.users(id),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CHECK ((status = 'completed' AND completed_at IS NOT NULL) OR status <> 'completed')
+  CHECK ((status = 'completed' AND completed_at IS NOT NULL) OR status <> 'completed'),
+  CHECK (assigned_to IS NULL OR assigned_to = created_by)
 );
 CREATE INDEX IF NOT EXISTS farm_tasks_farm_due_idx
   ON public.farm_tasks(farm_id, due_date NULLS LAST, created_at DESC);
@@ -65,10 +67,11 @@ CREATE POLICY "Farm owners manage own tasks" ON public.farm_tasks
   USING (EXISTS (
     SELECT 1 FROM public.farms f
     WHERE f.id = farm_tasks.farm_id AND f.owner_id = auth.uid()
-  ))
+  ) AND created_by = auth.uid())
   WITH CHECK (EXISTS (
     SELECT 1 FROM public.farms f
     WHERE f.id = farm_tasks.farm_id AND f.owner_id = auth.uid()
+  ) AND created_by = auth.uid()
   ));
 REVOKE ALL ON TABLE public.farm_tasks FROM PUBLIC, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.farm_tasks TO authenticated;
