@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS public.farm_revenues (
 ALTER TABLE public.farm_expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.farm_revenues ENABLE ROW LEVEL SECURITY;
 
+-- Do not rely on project-wide default privileges: explicitly remove browser
+-- access from anonymous callers before granting the signed-in role.
+REVOKE ALL ON TABLE public.farm_expenses FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.farm_revenues FROM PUBLIC, anon;
+
 DROP POLICY IF EXISTS "Users manage own farm expenses" ON public.farm_expenses;
 CREATE POLICY "Users manage own farm expenses"
   ON public.farm_expenses FOR ALL TO authenticated
