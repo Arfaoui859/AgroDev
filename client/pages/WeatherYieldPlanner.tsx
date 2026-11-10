@@ -225,7 +225,7 @@ export default function WeatherYieldPlanner() {
       if (!response.ok) {
         throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
       }
-      setPlan(body);
+      setPlan({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource });
     } catch (err) {
       setError(
         t("weather.planFailed") +
@@ -238,7 +238,7 @@ export default function WeatherYieldPlanner() {
 
   const runYield = async () => {
     const soilInputs = [soilPh, soilFertility, soilOrganicMatter, soilMoisture, irrigationEfficiency, fertilizerRate, pestManagement, diseaseControl];
-    if (!latitude.trim() || !longitude.trim() || !farmSize.trim() || soilInputs.some((value) => value.trim() === "") || Number(farmSize) <= 0) {
+    if (!latitude.trim() || !longitude.trim() || !farmSize.trim() || !Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)) || Number(latitude) < -90 || Number(latitude) > 90 || Number(longitude) < -180 || Number(longitude) > 180 || Number(farmSize) <= 0 || soilInputs.some((value) => value.trim() === "")) {
       setError(language === "ar" ? "أدخل إحداثيات الحقل ومساحته وقياسات التربة وممارسات الإدارة." : "Enter field coordinates, farm size, measured soil values and management practices.");
       return;
     }
@@ -267,7 +267,7 @@ export default function WeatherYieldPlanner() {
       if (!response.ok) {
         throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
       }
-      setYieldResult(body);
+      setYieldResult({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource });
     } catch (err) {
       setError(
         t("weather.yieldFailed") +
