@@ -483,37 +483,39 @@ export function createServer() {
 
   // Advanced Livestock Management routes
   app.get("/api/animals", getAnimals);
-  app.get("/api/animal-health/:animalId", getAnimalHealth);
-  app.get("/api/breeding-recommendations", getBreedingRecommendations);
-  app.get("/api/feed-recommendations/:animalId", getFeedRecommendations);
-  app.post("/api/optimize-feed-budget", optimizeFeedBudget);
-  app.get("/api/health-alerts", getHealthAlerts);
-  app.get("/api/livestock-dashboard", getLivestockDashboard);
+  // Livestock records are user-specific and require an authenticated identity.
+  app.get("/api/animal-health/:animalId", requireAuth, getAnimalHealth);
+  app.get("/api/breeding-recommendations", requireAuth, getBreedingRecommendations);
+  app.get("/api/feed-recommendations/:animalId", requireAuth, getFeedRecommendations);
+  app.post("/api/optimize-feed-budget", requireAuth, optimizeFeedBudget);
+  app.get("/api/health-alerts", requireAuth, getHealthAlerts);
+  app.get("/api/livestock-dashboard", requireAuth, getLivestockDashboard);
 
-  // Farmer Dashboard routes
-  app.use("/api/farmer-dashboard", farmerDashboardRoutes);
+  // Dashboard APIs remain fail-closed until tenant-scoped persistence exists.
+  // Require identity now so future implementations cannot accidentally expose
+  // these routes anonymously when their handlers are replaced.
+  app.use("/api/farmer-dashboard", requireAuth, farmerDashboardRoutes);
+  app.use("/api/agronomist-dashboard", requireAuth, agronomistDashboardRoutes);
+  app.use("/api/trader-dashboard", requireAuth, traderDashboardRoutes);
 
-  // Agronomist Dashboard routes
-  app.use("/api/agronomist-dashboard", agronomistDashboardRoutes);
-
-  // Trader Dashboard routes
-  app.use("/api/trader-dashboard", traderDashboardRoutes);
-
-  // Veterinarian Dashboard routes
-  app.get("/api/veterinarian-dashboard/overview", getVeterinarianDashboard);
-  app.get("/api/veterinarian-dashboard/patients", getVeterinarianPatients);
+  // Veterinarian records are sensitive and must never be anonymously readable.
+  app.get("/api/veterinarian-dashboard/overview", requireAuth, getVeterinarianDashboard);
+  app.get("/api/veterinarian-dashboard/patients", requireAuth, getVeterinarianPatients);
   app.get(
     "/api/veterinarian-dashboard/appointments",
+    requireAuth,
     getVeterinarianAppointments,
   );
   app.get(
     "/api/veterinarian-dashboard/emergencies",
+    requireAuth,
     getVeterinarianEmergencies,
   );
-  app.get("/api/veterinarian-dashboard/inventory", getVeterinarianInventory);
-  app.get("/api/veterinarian-dashboard/treatments", getVeterinarianTreatments);
+  app.get("/api/veterinarian-dashboard/inventory", requireAuth, getVeterinarianInventory);
+  app.get("/api/veterinarian-dashboard/treatments", requireAuth, getVeterinarianTreatments);
   app.get(
     "/api/veterinarian-dashboard/financial-summary",
+    requireAuth,
     getVeterinarianFinancials,
   );
 
@@ -562,7 +564,7 @@ export function createServer() {
   app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
 
   // Government Dashboard routes
-  app.use("/api/government-dashboard", governmentDashboardRoutes);
+  app.use("/api/government-dashboard", requireAuth, governmentDashboardRoutes);
 
   // Field Management routes. These act on the caller's own farms/fields, so
   // identity must be established (verified JWT, or the non-production demo
