@@ -1,4 +1,6 @@
 import express from 'express';
+import { requireAuth } from "../middleware/auth";
+import { supabaseAdmin } from "../lib/supabase";
 
 const router = express.Router();
 
@@ -418,50 +420,143 @@ router.post('/schedule/comprehensive', (req, res) => {
   });
 });
 
-// Track application effectiveness
-router.post('/track/effectiveness', (req, res) => {
+// List persisted effectiveness reports for the authenticated user.
+router.get('/effectiveness', requireAuth, async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(503).json({
+      error: "PERSISTENCE_NOT_CONFIGURED",
+      message: "Server-side Supabase persistence is not configured.",
+    });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("effectiveness_reports")
+    .select("id, report, created_at")
+    .eq("user_id", req.userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    console.error("[effectiveness] list failed:", error.message);
+    return res.status(error.code === "42P01" ? 503 : 500).json({
+      error: error.code === "42P01" ? "PERSISTENCE_SCHEMA_MISSING" : "PERSISTENCE_READ_FAILED",
+      message: error.code === "42P01"
+        ? "Apply database/effectiveness-reports.sql before using saved reports."
+        : "Unable to load saved effectiveness reports.",
+    });
+  }
+
+  return res.json({
+    reports: (data ?? []).map((row: any) => ({
+      ...(row.report ?? {}),
+      id: row.id,
+      createdAt: row.created_at,
+    })),
+    dataSource: "supabase-user-records",
+    isRealData: true,
+  });
+});
+
+// Track and persist application effectiveness for the authenticated user.
+router.post('/track/effectiveness', requireAuth, async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(503).json({
+      error: "PERSISTENCE_NOT_CONFIGURED",
+      message: "Server-side Supabase persistence is not configured.",
+    });
+  }
+
   const {
     applicationId,
     productUsed,
     productName,
+    productType,
+    cropType,
+    applicationDate,
+    farmSize,
+    cost,
+    notes,
     weatherConditions,
     beforeCondition,
     afterCondition,
     userRating
   } = req.body ?? {};
 
-  // The two health scores are the only inputs we cannot invent: without them
-  // there is no before/after to compare, so ask for them instead of guessing.
   const beforeScore = num(beforeCondition?.healthScore);
   const afterScore = num(afterCondition?.healthScore);
-  if (beforeScore === null || afterScore === null) {
+  if (
+    beforeScore === null ||
+    afterScore === null ||
+    beforeScore < 0 || beforeScore > 100 ||
+    afterScore < 0 || afterScore > 100
+  ) {
     return res.status(400).json({
-      error:
-        'beforeCondition.healthScore and afterCondition.healthScore are required numbers',
-      code: 'INVALID_INPUT',
+      error: "beforeCondition.healthScore and afterCondition.healthScore must be numbers from 0 to 100",
+      code: "INVALID_INPUT",
+    });
+  }
+
+  if (
+    (farmSize !== undefined && (!Number.isFinite(Number(farmSize)) || Number(farmSize) <= 0)) ||
+    (cost !== undefined && (!Number.isFinite(Number(cost)) || Number(cost) < 0))
+  ) {
+    return res.status(400).json({
+      error: "farmSize must be positive and cost must be non-negative when supplied",
+      code: "INVALID_OPTIONAL_INPUT",
     });
   }
 
   const effectiveness = analyzeApplicationEffectiveness(
     productUsed || productName,
     weatherConditions,
-    beforeCondition,
-    afterCondition,
+    { ...beforeCondition, healthScore: beforeScore },
+    { ...afterCondition, healthScore: afterScore },
     userRating,
   );
 
-  res.json({
+  const report = {
     applicationId: applicationId ?? null,
+    productName: productName ?? productUsed ?? "Unknown product",
+    productType: productType ?? "fertilizer",
+    cropType: cropType ?? null,
+    applicationDate: applicationDate ?? new Date().toISOString().slice(0, 10),
+    ...(farmSize !== undefined ? { farmSize: Number(farmSize) } : {}),
+    ...(cost !== undefined ? { cost: Number(cost) } : {}),
+    notes: typeof notes === "string" ? notes : "",
+    beforeCondition: { ...beforeCondition, healthScore: beforeScore },
+    afterCondition: { ...afterCondition, healthScore: afterScore },
+    ...(weatherConditions ? { weatherConditions } : {}),
+    userRating: num(userRating),
     effectivenessScore: effectiveness.score,
     improvements: effectiveness.improvements,
-    recommendations: effectiveness.futureRecommendations,
-    learningData: effectiveness.learningData,
-    dataSource: 'rule-based',
+    futureRecommendations: effectiveness.futureRecommendations,
+    dataSource: "rule-based",
     isRealData: false,
-    modelSource: 'rule-based-engine',
+    modelSource: "rule-based-engine",
     disclaimer:
-      'درجة الفعالية محسوبة بقواعد زراعية من القيم المُدخلة (الطقس، قبل/بعد، تقييم المستخدم) وليست ناتجة عن نموذج تعلّم آلي.',
-    lastUpdated: new Date().toISOString()
+      "درجة الفعالية محسوبة بقواعد زراعية من القيم المُدخلة وليست ناتجة عن نموذج تعلّم آلي.",
+  };
+
+  const { data, error } = await supabaseAdmin
+    .from("effectiveness_reports")
+    .insert({ user_id: req.userId, report })
+    .select("id, created_at")
+    .single();
+
+  if (error) {
+    console.error("[effectiveness] save failed:", error.message);
+    return res.status(error.code === "42P01" ? 503 : 500).json({
+      error: error.code === "42P01" ? "PERSISTENCE_SCHEMA_MISSING" : "PERSISTENCE_WRITE_FAILED",
+      message: error.code === "42P01"
+        ? "Apply database/effectiveness-reports.sql before saving reports."
+        : "Unable to save the effectiveness report.",
+    });
+  }
+
+  return res.status(201).json({
+    id: data.id,
+    createdAt: data.created_at,
+    ...report,
   });
 });
 
