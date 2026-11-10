@@ -192,8 +192,12 @@ export const getAdminSystemMetrics: RequestHandler = async (req, res) => {
   if (!requireDatabase(req, res)) return;
   const client = getAdminClient(req)!;
   try {
-    const { count: users, error } = await client
-      .from("users").select("id", { count: "exact", head: true });
+    const [{ count: users, error }, activeResult, newResult] = await Promise.all([
+      client.from("users").select("id", { count: "exact", head: true }),
+      client.from("users").select("id", { count: "exact", head: true }).eq("is_active", true),
+      client.from("users").select("id", { count: "exact", head: true })
+        .gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()),
+    ]);
     if (error) throw error;
     return res.json({
       success: true,
@@ -216,8 +220,8 @@ export const getAdminSystemMetrics: RequestHandler = async (req, res) => {
         },
         application: {
           totalUsers: users ?? 0,
-          activeUsers: null,
-          newRegistrations: null,
+          activeUsers: activeResult.error ? null : (activeResult.count ?? 0),
+          newRegistrations: newResult.error ? null : (newResult.count ?? 0),
           dailyActiveUsers: null,
           weeklyActiveUsers: null,
           monthlyActiveUsers: null,
