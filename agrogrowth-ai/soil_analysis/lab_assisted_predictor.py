@@ -17,7 +17,7 @@ MANIFEST_PATH = MODEL_DIR / "manifest.json"
 
 
 class LabAssistedSoilPredictor:
-    def __init__(self, min_feature_coverage: float = 0.80):
+    def __init__(self, min_feature_coverage: float = 1.0):
         if not 0 < min_feature_coverage <= 1:
             raise ValueError("min_feature_coverage must be in (0, 1].")
 
