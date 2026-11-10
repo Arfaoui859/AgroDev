@@ -75,18 +75,55 @@ BEGIN
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename = 'farm_expenses'
-      AND policyname = 'Users manage own farm expenses'
+      AND policyname = 'Users manage their own farm expenses'
       AND with_check ILIKE '%user_id = auth.uid()%'
-      AND with_check ILIKE '%farms%'
   ) OR NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename = 'farm_revenues'
-      AND policyname = 'Users manage own farm revenues'
+      AND policyname = 'Users manage their own farm revenues'
       AND with_check ILIKE '%user_id = auth.uid()%'
-      AND with_check ILIKE '%farms%'
   ) THEN
     RAISE EXCEPTION 'RLS verification failed: financial ledger ownership policies are missing or incomplete';
+  END IF;
+
+  -- Equipment and task rows are children of a farm; ownership is inherited
+  -- through farms.owner_id and every browser CRUD privilege is explicitly scoped.
+  FOREACH rel IN ARRAY ARRAY[
+    'public.farm_equipment'::regclass,
+    'public.farm_tasks'::regclass
+  ] LOOP
+    IF NOT (SELECT c.relrowsecurity FROM pg_class c WHERE c.oid = rel) THEN
+      RAISE EXCEPTION 'RLS verification failed: % is not RLS-enabled', rel;
+    END IF;
+    IF has_table_privilege('anon', rel, 'SELECT')
+       OR has_table_privilege('anon', rel, 'INSERT')
+       OR has_table_privilege('anon', rel, 'UPDATE')
+       OR has_table_privilege('anon', rel, 'DELETE') THEN
+      RAISE EXCEPTION 'Privilege verification failed: anon can access %', rel;
+    END IF;
+    IF NOT has_table_privilege('authenticated', rel, 'SELECT')
+       OR NOT has_table_privilege('authenticated', rel, 'INSERT')
+       OR NOT has_table_privilege('authenticated', rel, 'UPDATE')
+       OR NOT has_table_privilege('authenticated', rel, 'DELETE') THEN
+      RAISE EXCEPTION 'Privilege verification failed: authenticated CRUD grants missing on %', rel;
+    END IF;
+  END LOOP;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'farm_equipment'
+      AND policyname = 'Farm owners manage own equipment'
+      AND qual ILIKE '%farms%' AND qual ILIKE '%owner_id = auth.uid()%'
+      AND with_check ILIKE '%farms%' AND with_check ILIKE '%owner_id = auth.uid()%'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'farm_tasks'
+      AND policyname = 'Farm owners manage own tasks'
+      AND qual ILIKE '%farms%' AND qual ILIKE '%owner_id = auth.uid()%'
+      AND with_check ILIKE '%farms%' AND with_check ILIKE '%owner_id = auth.uid()%'
+  ) THEN
+    RAISE EXCEPTION 'RLS verification failed: equipment/task farm ownership policies are missing or incomplete';
   END IF;
 
   -- Browser clients may submit user-authored chat input, never forged AI output.
