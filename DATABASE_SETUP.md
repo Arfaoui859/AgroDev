@@ -95,6 +95,23 @@ However, using the SQL script is faster and ensures everything is configured cor
 
 ---
 
+## Admin panel database connection and user management
+
+After the base tables exist, run `database/rls-hardening.sql` and then
+`database/admin-user-management.sql` in the same Supabase project's SQL Editor.
+The admin migration adds persistent account status, an administrator-only RLS
+policy for listing/updating users, and an audit table for admin CRUD actions.
+It is idempotent and does not create demonstration users.
+
+The Admin dashboard reads actual `public.users` rows. It does not seed mock users.
+Role and status updates use the verified administrator JWT and RLS. Creating and
+deleting Supabase Auth accounts additionally require a server-side
+`SUPABASE_SERVICE_ROLE_KEY` on Render; never expose it in a `VITE_*` variable.
+
+Verify that the frontend and Render `SUPABASE_URL` point to the same Supabase
+project. The signed-in account must have `public.users.role = 'admin'` and must
+not be inactive/suspended. The Admin API rejects unverified or non-admin JWTs.
+
 ## Demo Users
 
 After setting up the database, you can test with:
