@@ -123,6 +123,8 @@ interface Conversation {
 }
 
 const AIAssistantChatbot: React.FC = () => {
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
