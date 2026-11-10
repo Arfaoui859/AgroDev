@@ -88,11 +88,7 @@ interface AdminPanelProps {
   onSystemAction?: (action: string) => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({
-  adminId = 'admin_001',
-  onUserAction,
-  onSystemAction
-}) => {
+const AdminPanel: React.FC<AdminPanelProps> = () => {
   const { isArabic, toggleLanguage } = useLanguage();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
