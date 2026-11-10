@@ -72,27 +72,30 @@ def _model_status():
 
 # Pydantic models for API
 class LocationData(BaseModel):
-    latitude: float = 35.0
-    longitude: float = 10.0
-    elevation: float = 100.0
-    region: str = "تونس"
+    # Coordinates must come from the caller or a real geocoding source.
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    elevation: Optional[float] = None
+    region: Optional[str] = None
 
 class WeatherData(BaseModel):
-    temperature: float = 25.0
-    humidity: float = 60.0
-    rainfall: float = 400.0
-    wind_speed: float = 5.0
-    solar_radiation: float = 25.0
-    recent_rainfall: float = 0.0
-    annual_rainfall: float = 400.0
-    temperature_variation: float = 10.0
+    # No default Tunisian weather is fabricated when a caller omits measurements.
+    temperature: float = Field(..., ge=-60, le=65)
+    humidity: float = Field(..., ge=0, le=100)
+    rainfall: Optional[float] = Field(None, ge=0)
+    wind_speed: float = Field(..., ge=0)
+    solar_radiation: float = Field(..., ge=0)
+    recent_rainfall: float = Field(..., ge=0)
+    annual_rainfall: float = Field(..., ge=0)
+    temperature_variation: float = Field(..., ge=0)
 
 class SoilData(BaseModel):
-    ph: float = 6.5
-    fertility_score: float = 0.7
-    organic_matter: float = 3.0
-    moisture_percentage: float = 50.0
-    soil_type: str = "loamy"
+    # These are measured/user-provided values, not assumed defaults.
+    ph: float = Field(..., ge=0, le=14)
+    fertility_score: float = Field(..., ge=0, le=1)
+    organic_matter: float = Field(..., ge=0)
+    moisture_percentage: float = Field(..., ge=0, le=100)
+    soil_type: Optional[str] = None
     field_capacity: float = 35.0
     wilting_point: float = 15.0
 
@@ -110,29 +113,29 @@ class FarmProfile(BaseModel):
     technology_adoption: str = "medium"  # low, medium, high
 
 class WeatherPlanningRequest(BaseModel):
-    location: LocationData = LocationData()
-    historical_weather: WeatherData = WeatherData()
-    current_conditions: WeatherData = WeatherData()
-    crop_options: List[str] = ["wheat", "corn", "tomato", "potato", "olive"]
-    farm_profile: FarmProfile = FarmProfile()
+    location: LocationData
+    historical_weather: WeatherData
+    current_conditions: WeatherData
+    crop_options: List[str] = Field(default_factory=lambda: ["wheat", "corn", "tomato", "potato", "olive"])
+    farm_profile: FarmProfile = Field(default_factory=FarmProfile)
     planning_horizon_months: int = 12
     language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
 
 class YieldPredictionRequest(BaseModel):
-    crop_type: str = "wheat"
-    location: LocationData = LocationData()
-    weather_data: WeatherData = WeatherData()
-    soil_data: SoilData = SoilData()
-    management_practices: ManagementPractices = ManagementPractices()
-    farm_size: float = 1.0
+    crop_type: str = Field(..., min_length=1)
+    location: LocationData
+    weather_data: WeatherData
+    soil_data: SoilData
+    management_practices: ManagementPractices
+    farm_size: float = Field(..., gt=0)
     language: Optional[str] = None  # advisory language: ar, ar-tn, fr or en
     planting_date: Optional[str] = None
     variety_info: Dict[str, Any] = {}
     field_image: Optional[str] = None  # base64 encoded
 
 class CombinedAnalysisRequest(BaseModel):
-    weather_planning: WeatherPlanningRequest = WeatherPlanningRequest()
-    yield_prediction: YieldPredictionRequest = YieldPredictionRequest()
+    weather_planning: WeatherPlanningRequest
+    yield_prediction: YieldPredictionRequest
     analysis_scope: str = "comprehensive"  # basic, detailed, comprehensive
 
 @app.post("/create-weather-plan")
@@ -141,7 +144,7 @@ def create_weather_based_plan(request: WeatherPlanningRequest):
     إنشاء خطة زراعة ذكية حسب الطقس والمناخ
     """
     try:
-        logger.info(f"Creating weather-based plan for location: {request.location.region}")
+        logger.info(f"Creating weather-based plan for location: {request.location.region or 'coordinates-provided'}")
         
         input_data = request.model_dump()
         result = get_weather_planner().create_weather_based_plan(input_data)
