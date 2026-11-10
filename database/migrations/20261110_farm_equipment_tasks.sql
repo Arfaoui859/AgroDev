@@ -72,7 +72,7 @@ CREATE POLICY "Farm owners manage own tasks" ON public.farm_tasks
     SELECT 1 FROM public.farms f
     WHERE f.id = farm_tasks.farm_id AND f.owner_id = auth.uid()
   ) AND created_by = auth.uid()
-  ));
+  );
 REVOKE ALL ON TABLE public.farm_tasks FROM PUBLIC, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.farm_tasks TO authenticated;
 GRANT ALL ON TABLE public.farm_tasks TO service_role;
