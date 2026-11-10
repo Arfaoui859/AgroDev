@@ -515,6 +515,20 @@ NODE_ENV=test npm run test
 - **Network**: Browser developer tools Network tab
 - **Database**: Use Adminer at http://localhost:8081
 
+## Current engineering status (2026-11-10)
+
+The AI service names and health checks are not proof of trained-model accuracy.
+For the evidence-based status of all eight Python services, dataset provenance,
+model limitations, frontend demo modules, and remaining production blockers, see:
+
+- [AI services status and model provenance](AI_SERVICES_STATUS.md)
+- [Comprehensive services and frontend audit — 2026-11-10](AGROGROWTH_AUDIT_2026-11-10.md)
+- [Effectiveness reports database migration](database/effectiveness-reports.sql)
+
+The current audit branch is `feat/ai-integration-production-hardening`. Live
+Render health, Supabase migration application, and post-change CI must be
+verified before describing the deployment as production-ready.
+
 ## 📞 Support
 
 ### Getting Help
