@@ -109,7 +109,7 @@ function mapServerNotification(raw: ServerNotification): Notification {
     titleArabic: raw.titleArabic ?? raw.title ?? '',
     message: raw.message ?? '',
     messageArabic: raw.messageArabic ?? raw.message ?? '',
-    type: CLIENT_TYPE[raw.type ?? 'info'] ?? (priority === 'high' || priority === 'urgent' ? 'warning' : 'info'),
+    type: CLIENT_TYPE[raw.type ?? 'info'] ?? (priority === 'high' || priority === 'critical' ? 'warning' : 'info'),
     category: (category as Notification['category']) ?? 'system',
     categoryArabic: raw.categoryArabic ?? CATEGORY_ARABIC[category] ?? 'نظام',
     priority,
