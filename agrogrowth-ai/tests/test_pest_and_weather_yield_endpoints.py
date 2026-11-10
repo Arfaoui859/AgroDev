@@ -34,7 +34,12 @@ def test_pest_analyze_problem_returns_full_analysis():
             "crop_type": "tomato",
             "symptoms": ["أوراق مجعدة", "إفرازات لزجة"],
             "affected_area_percentage": 25.0,
+            "affected_plant_count": 25,
+            "total_plant_count": 100,
+            "plant_age_days": 60,
             "plant_health_score": 0.7,
+            "plant_density": "normal",
+            "irrigation_frequency": "normal",
             "weather_conditions": {
                 "temperature": 28,
                 "humidity": 65,
