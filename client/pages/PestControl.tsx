@@ -166,7 +166,7 @@ export default function PestControl() {
         // never render a fabricated diagnosis in that case.
         throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
       }
-      setResult(body);
+      setResult({ ...(body.data || {}), dataSource: body.dataSource, isRealData: body.isRealData, modelSource: body.modelSource });
     } catch (err) {
       setError(
         t("pest.analysisFailed") +
