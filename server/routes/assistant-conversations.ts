@@ -1,8 +1,101 @@
 import type { Request, Response } from "express";
-import { scopedClientFromAuthHeader } from "../lib/supabase";
+import { scopedClientFromAuthHeader, supabaseAdmin } from "../lib/supabase";
 
 function callerDb(req: Request) {
   return scopedClientFromAuthHeader(req.header("authorization"));
+}
+
+export interface TrustedAssistantTurn {
+  authorization: string | undefined;
+  userId: string;
+  conversationId?: string | null;
+  userContent: string;
+  assistantContent: string;
+  language: "ar" | "fr" | "en";
+  dataSource: "llm" | "rule-based";
+  modelSource: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Persist a model response generated inside the server process. The browser
+ * cannot call this function or supply assistant provenance; it is invoked only
+ * after chatWithAIAssistant has generated the response from the trusted advisor.
+ * User messages use the caller-scoped JWT client; assistant messages use the
+ * server-only service-role client after conversation ownership is verified.
+ */
+export async function persistTrustedAssistantTurn(turn: TrustedAssistantTurn): Promise<string> {
+  const db = scopedClientFromAuthHeader(turn.authorization);
+  if (!db || !turn.userId) throw new Error("VERIFIED_SESSION_REQUIRED");
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !supabaseAdmin) {
+    throw new Error("ASSISTANT_SERVICE_ROLE_NOT_CONFIGURED");
+  }
+  if (!turn.userContent.trim() || !turn.assistantContent.trim() ||
+      turn.userContent.length > 20_000 || turn.assistantContent.length > 20_000 ||
+      !["llm", "rule-based"].includes(turn.dataSource) ||
+      !turn.modelSource || turn.modelSource.length > 200) {
+    throw new Error("INVALID_TRUSTED_ASSISTANT_TURN");
+  }
+
+  let conversationId = turn.conversationId || null;
+  let createdConversation = false;
+  if (conversationId) {
+    const { data, error } = await db.from("farm_agent_conversations")
+      .select("id").eq("id", conversationId).eq("user_id", turn.userId).maybeSingle();
+    if (error) throw new Error("CONVERSATION_OWNERSHIP_CHECK_FAILED");
+    if (!data) throw new Error("CONVERSATION_NOT_FOUND");
+  } else {
+    const { data, error } = await db.from("farm_agent_conversations").insert({
+      user_id: turn.userId,
+      title: turn.userContent.trim().slice(0, 180) || "AgroGrowth Assistant",
+      language: turn.language,
+      category: "general",
+    }).select("id").single();
+    if (error || !data?.id) throw new Error("CONVERSATION_CREATE_FAILED");
+    conversationId = data.id;
+    createdConversation = true;
+  }
+
+  const { data: userMessage, error: userInsertError } = await db.from("farm_agent_messages").insert({
+    conversation_id: conversationId,
+    user_id: turn.userId,
+    role: "user",
+    content: turn.userContent.trim(),
+    language: turn.language,
+    data_source: null,
+    model_source: null,
+    metadata: {},
+  }).select("id").single();
+  if (userInsertError || !userMessage?.id) {
+    if (createdConversation) {
+      await db.from("farm_agent_conversations").delete().eq("id", conversationId).eq("user_id", turn.userId);
+    }
+    throw new Error("USER_MESSAGE_PERSIST_FAILED");
+  }
+
+  const { error: assistantInsertError } = await supabaseAdmin.from("farm_agent_messages").insert({
+    conversation_id: conversationId,
+    user_id: turn.userId,
+    role: "assistant",
+    content: turn.assistantContent.trim(),
+    language: turn.language,
+    data_source: turn.dataSource,
+    model_source: turn.modelSource,
+    metadata: turn.metadata ?? {},
+  });
+  if (assistantInsertError) {
+    await db.from("farm_agent_messages").delete().eq("id", userMessage.id).eq("user_id", turn.userId);
+    if (createdConversation) {
+      await db.from("farm_agent_conversations").delete().eq("id", conversationId).eq("user_id", turn.userId);
+    }
+    throw new Error("ASSISTANT_MESSAGE_PERSIST_FAILED");
+  }
+
+  const { error: timestampError } = await db.from("farm_agent_conversations")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", conversationId).eq("user_id", turn.userId);
+  if (timestampError) console.warn("Assistant conversation timestamp update failed:", timestampError.code);
+  return conversationId;
 }
 
 function unavailable(res: Response) {
