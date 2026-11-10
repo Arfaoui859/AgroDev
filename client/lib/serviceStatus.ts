@@ -153,6 +153,7 @@ export const AI_SERVICES: ServiceCategory[] = [
         name: "Farming Tasks Planner",
         status: "unavailable",
         endpoint: "/api/ai/farming-tasks-planner", 
+        healthServiceKey: "smart_assistant",
         description: "Intelligent farm task scheduling and planning",
         requiresLocal: true
       },
@@ -161,6 +162,7 @@ export const AI_SERVICES: ServiceCategory[] = [
         name: "Agro Chat AI",
         status: "unavailable",
         endpoint: "/api/ai/agro-chat",
+        healthServiceKey: "smart_assistant",
         description: "AI assistant for farming questions and guidance", 
         requiresLocal: true
       },
@@ -169,6 +171,7 @@ export const AI_SERVICES: ServiceCategory[] = [
         name: "Alert Notifier AI",
         status: "unavailable",
         endpoint: "/api/ai/alert-notifier",
+        healthServiceKey: "smart_assistant",
         description: "Intelligent alert system for farm conditions",
         requiresLocal: true
       }
