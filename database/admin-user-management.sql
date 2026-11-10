@@ -39,6 +39,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
 
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
 CREATE POLICY "Admins can manage users" ON public.users
   FOR ALL TO authenticated
