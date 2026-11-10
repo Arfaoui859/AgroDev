@@ -578,7 +578,7 @@ export default function NotificationCenter() {
           <TabsTrigger value="notifications">{isArabic ? 'الإشعارات' : 'Notifications'}</TabsTrigger>
           <TabsTrigger value="sensors">{isArabic ? 'الحساسات' : 'Sensors'}</TabsTrigger>
           <TabsTrigger value="rules">{isArabic ? 'القواعد' : 'Rules'}</TabsTrigger>
-          <TabsTrigger value="settings">{isArabic ? 'ال��عدادات' : 'Settings'}</TabsTrigger>
+          <TabsTrigger value="settings">{isArabic ? 'الإعدادات' : 'Settings'}</TabsTrigger>
         </TabsList>
 
         {/* Dashboard Tab */}
@@ -649,7 +649,7 @@ export default function NotificationCenter() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 rtl:space-x-reverse">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
-                <span>{isArabic ? 'الإشعارات الحرجة الأخير��' : 'Recent Critical Notifications'}</span>
+                <span>{isArabic ? 'الإشعارات الحرجة الأخيرة' : 'Recent Critical Notifications'}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
