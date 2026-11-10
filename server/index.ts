@@ -116,6 +116,7 @@ import {
   getAdminDashboard,
   createAdminManagedUser,
   updateAdminUserProfile,
+  sendAdminPasswordReset,
   getAdminUsers,
   getAdminSystemMetrics,
   getAdminUsageAnalytics,
@@ -573,6 +574,7 @@ export function createServer() {
   app.get("/api/admin/users", requireAdminAccess, getAdminUsers);
   app.post("/api/admin/users", requireAdminAccess, createAdminManagedUser);
   app.patch("/api/admin/users/:userId/profile", requireAdminAccess, updateAdminUserProfile);
+  app.post("/api/admin/users/:userId/password-reset", requireAdminAccess, sendAdminPasswordReset);
   app.get("/api/admin/system-metrics", requireAdminAccess, getAdminSystemMetrics);
   app.get("/api/admin/usage-analytics", requireAdminAccess, getAdminUsageAnalytics);
   app.get("/api/admin/security-events", requireAdminAccess, getAdminSecurityEvents);
