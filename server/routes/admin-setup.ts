@@ -60,6 +60,23 @@ export const setupAdminUser: RequestHandler = async (req, res) => {
         });
       }
       userId = existingUser.id;
+
+      // The operator explicitly supplies the bootstrap password in this
+      // token-protected request. Apply it to an existing Auth identity too;
+      // otherwise the setup response would misleadingly imply that the
+      // submitted password is usable for login.
+      const { error: passwordError } =
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          password,
+          email_confirm: true,
+          user_metadata: { full_name: "مدير النظام" },
+        });
+      if (passwordError) {
+        return res.status(400).json({
+          success: false,
+          error: passwordError.message || "Failed to update administrator password",
+        });
+      }
     } else {
       if (!authData.user?.id) {
         throw new Error("Supabase Auth did not return a user ID");
