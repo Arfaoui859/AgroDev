@@ -708,24 +708,15 @@ const IntelligentBreedingManager: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span>معدل الحمل</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={85} className="w-20" />
-                      <span className="font-bold">85%</span>
-                    </div>
+                    <span className="font-semibold text-muted-foreground">غير متاح — لا توجد سجلات تناسل موثقة</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>معدل الولادة الآمنة</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={92} className="w-20" />
-                      <span className="font-bold">92%</span>
-                    </div>
+                    <span className="font-semibold text-muted-foreground">غير متاح — لا توجد سجلات ولادة موثقة</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>معدل بقاء الصغار</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={88} className="w-20" />
-                      <span className="font-bold">88%</span>
-                    </div>
+                    <span className="font-semibold text-muted-foreground">غير متاح — لا توجد سجلات موثقة</span>
                   </div>
                 </div>
               </CardContent>
