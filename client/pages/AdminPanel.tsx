@@ -114,6 +114,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [usersPage, setUsersPage] = useState(1);
   const [usersTotal, setUsersTotal] = useState(0);
   const [usersTotalPages, setUsersTotalPages] = useState(1);
+  const [canCreateDeleteUsers, setCanCreateDeleteUsers] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -132,6 +133,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       }));
       const [dashboard, usersData, metricsData, analyticsData, securityData, activityData, subscriptionsData] = payloads;
       setDashboardData(dashboard.data || null);
+      setCanCreateDeleteUsers(dashboard.data?.capabilities?.canCreateDeleteUsers === true);
       setUsers(Array.isArray(usersData.data) ? usersData.data : []);
       setUsersTotal(Number(usersData.pagination?.total ?? 0));
       setUsersTotalPages(Math.max(1, Number(usersData.pagination?.totalPages ?? 1)));
@@ -289,13 +291,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           <LanguageSwitcher />
-          <Button onClick={() => setCreateUserOpen(true)} size="sm"><UserPlus className="h-4 w-4 mr-2" />{isArabic ? "إضافة مستخدم" : "Add user"}</Button>
+          <Button onClick={() => setCreateUserOpen(true)} size="sm" disabled={!canCreateDeleteUsers}><UserPlus className="h-4 w-4 mr-2" />{isArabic ? "إضافة مستخدم" : "Add user"}</Button>
           <Button onClick={fetchDashboardData} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {isArabic ? 'تحديث' : 'Refresh'}
           </Button>
         </div>
       </div>
+
+      {!canCreateDeleteUsers && dashboardData && (
+        <Alert><Info className="h-4 w-4" /><AlertTitle>{isArabic ? "عمليات إنشاء وحذف الحسابات غير مفعّلة" : "Account creation and deletion are disabled"}</AlertTitle><AlertDescription>{isArabic ? "أضف SUPABASE_SERVICE_ROLE_KEY كمتغير سري على الخادم لتفعيل إدارة حسابات Supabase Auth. تبقى قراءة المستخدمين وتعديل الأدوار والحالات متاحة عبر صلاحيات RLS." : "Set the server-side SUPABASE_SERVICE_ROLE_KEY to enable Supabase Auth account creation/deletion. Listing and role/status updates remain available through admin RLS."}</AlertDescription></Alert>
+      )}
 
       {loadError && dashboardData && (
         <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>{isArabic ? "تعذّر تنفيذ العملية" : "Operation failed"}</AlertTitle><AlertDescription>{loadError}</AlertDescription></Alert>
@@ -617,7 +623,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={() => setCreateUserOpen(true)}>
+            <Button onClick={() => setCreateUserOpen(true)} disabled={!canCreateDeleteUsers}>
               <UserPlus className="h-4 w-4 mr-2" />
               {isArabic ? 'إضافة مستخدم' : 'Add User'}
             </Button>
@@ -848,7 +854,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="min-w-[220px]"><label className="text-sm font-medium">{isArabic ? "تغيير الدور" : "Change role"}</label>
                   <Select value={selectedUser.role} onValueChange={(value) => handleUserRoleUpdate(selectedUser.id, value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"].map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent></Select>
                 </div>
-                <Button variant="destructive" onClick={() => handleUserDelete(selectedUser.id)}><Trash2 className="h-4 w-4 mr-2" />{isArabic ? "حذف المستخدم" : "Delete user"}</Button>
+                <Button variant="destructive" onClick={() => handleUserDelete(selectedUser.id)} disabled={!canCreateDeleteUsers}><Trash2 className="h-4 w-4 mr-2" />{isArabic ? "حذف المستخدم" : "Delete user"}</Button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
