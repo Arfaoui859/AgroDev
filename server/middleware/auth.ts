@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import { supabase, supabaseAdmin } from "../lib/supabase";
 import { verifyAdminToken } from "../lib/adminAuth";
 
@@ -119,6 +119,45 @@ export async function requireAuth(
     error: "Unauthorized",
     message: "Sign in to access this resource.",
   });
+}
+
+/**
+ * Require a trusted role stored in public.users for the verified JWT identity.
+ * Client metadata, query parameters, request bodies, and demo identities are
+ * never accepted as role evidence. Platform admins may access role dashboards.
+ */
+export function requireRole(allowedRoles: readonly string[]): RequestHandler {
+  const allowed = new Set(allowedRoles.map((role) => role.toLowerCase()));
+
+  return async (req, res, next) => {
+    if (!req.userId || req.identitySource !== "jwt") {
+      res.status(req.identitySource === "demo" ? 403 : 401).json({
+        success: false,
+        error: req.identitySource === "demo" ? "Forbidden" : "Unauthorized",
+        message: "A verified account is required to access this role-specific resource.",
+      });
+      return;
+    }
+
+    const role = await resolveRole(req.userId);
+    if (!role) {
+      res.status(403).json({
+        success: false,
+        error: "Forbidden",
+        message: "Your account has no verifiable platform role. Contact an administrator.",
+      });
+      return;
+    }
+
+    if (ADMIN_ROLES.has(role) || allowed.has(role)) return next();
+
+    res.status(403).json({
+      success: false,
+      error: "Forbidden",
+      message: "Your account role is not permitted to access this resource.",
+      requiredRoles: [...allowed],
+    });
+  };
 }
 
 /**
