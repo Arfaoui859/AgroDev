@@ -151,6 +151,8 @@ def test_weather_plan_is_deterministic_for_same_input():
     """The seasonal outlook must not contain random jitter between calls."""
     payload = {
         "location": {"latitude": 35.0, "longitude": 10.0, "region": "تونس"},
+        "historical_weather": {"temperature": 22, "humidity": 60, "rainfall": 15, "wind_speed": 4, "solar_radiation": 20, "recent_rainfall": 10, "annual_rainfall": 450, "temperature_variation": 8},
+        "current_conditions": {"temperature": 22, "humidity": 60, "rainfall": 15, "wind_speed": 4, "solar_radiation": 20, "recent_rainfall": 10, "annual_rainfall": 450, "temperature_variation": 8},
         "crop_options": ["wheat", "tomato"],
         "planning_horizon_months": 12,
     }
