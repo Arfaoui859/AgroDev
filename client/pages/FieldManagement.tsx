@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1282,7 +1282,7 @@ export default function FieldManagement() {
           <DialogHeader>
             <DialogTitle>{isArabic ? 'إضافة حقل جديد' : 'Add New Field'}</DialogTitle>
             <DialogDescription>
-              {isArabic ? 'أدخل تفاصيل الحقل الجديد لإضافته إلى المزرعة' : 'Enter the details for the new field to add it to your farm'}
+              {isArabic ? 'هذه الشاشة تعرض سجلات توضيحية فقط. حفظ الحقول غير متاح قبل ربط نموذج الحقول بقاعدة البيانات.' : 'This screen currently displays illustrative records only. Saving fields is unavailable until the field form is connected to the database.'}
             </DialogDescription>
           </DialogHeader>
           
@@ -1358,13 +1358,9 @@ export default function FieldManagement() {
             <Button variant="outline" onClick={() => setShowAddFieldDialog(false)}>
               {isArabic ? 'إلغاء' : 'Cancel'}
             </Button>
-            <Button onClick={() => {
-              // Handle field creation
-              setShowAddFieldDialog(false);
-              setNewField({});
-            }}>
+            <Button disabled title={isArabic ? 'يلزم ربط قاعدة البيانات' : 'Database integration required'}>
               <Save className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
-              {isArabic ? 'حفظ الحقل' : 'Save Field'}
+              {isArabic ? 'الحفظ غير متاح حالياً' : 'Save unavailable'}
             </Button>
           </div>
         </DialogContent>
