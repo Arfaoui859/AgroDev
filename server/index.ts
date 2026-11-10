@@ -746,7 +746,7 @@ export function createServer() {
   app.post("/api/setup-users", requireAdminToken(), setupMultipleUsers);
 
   // Admin User Setup
-  app.post("/api/setup-admin", requireAdminToken(), setupAdminUser);
+  app.post("/api/setup-admin", requireAdminToken(), keyMintRateLimiter(), setupAdminUser);
 
   // Auth Helper Endpoints (bypass RLS)
   app.post("/api/auth/create-user-profile", requireAdminToken(), createUserWithProfile);
