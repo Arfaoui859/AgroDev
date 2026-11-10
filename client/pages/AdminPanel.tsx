@@ -234,7 +234,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       if (!response.ok || !body?.success) {
         throw new Error(body?.message || `Role update failed (HTTP ${response.status})`);
       }
-      await fetchDashboardData();
+      await loadUsers(userPage);
     } catch (error) {
       setRoleChangeError(error instanceof Error ? error.message : 'Role update failed');
     } finally {
@@ -263,7 +263,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       if (!response.ok || !body?.success) {
         throw new Error(body?.message || `Account status update failed (HTTP ${response.status})`);
       }
-      await fetchDashboardData();
+      await loadUsers(userPage);
     } catch (error) {
       setRoleChangeError(error instanceof Error ? error.message : 'Account status update failed');
     } finally {
