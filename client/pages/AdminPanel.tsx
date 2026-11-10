@@ -1,4 +1,3 @@
-import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -108,6 +107,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", password: "", full_name: "", role: "farmer" });
+  const [savingUser, setSavingUser] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -116,51 +119,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [
-        dashboardResponse,
-        usersResponse,
-        metricsResponse,
-        analyticsResponse,
-        securityResponse,
-        activityResponse,
-        subscriptionsResponse
-      ] = await Promise.all([
-        apiFetch('/api/admin/overview'),
-        apiFetch('/api/admin/users'),
-        apiFetch('/api/admin/system-metrics'),
-        apiFetch('/api/admin/usage-analytics'),
-        apiFetch('/api/admin/security-events'),
-        apiFetch('/api/admin/activity-logs'),
-        apiFetch('/api/admin/subscriptions')
-      ]);
-
-      const [
-        dashboard,
-        usersData,
-        metricsData,
-        analyticsData,
-        securityData,
-        activityData,
-        subscriptionsData
-      ] = await Promise.all([
-        dashboardResponse.json(),
-        usersResponse.json(),
-        metricsResponse.json(),
-        analyticsResponse.json(),
-        securityResponse.json(),
-        activityResponse.json(),
-        subscriptionsResponse.json()
-      ]);
-
-      setDashboardData(dashboard.data);
-      setUsers(usersData.data);
-      setSystemMetrics(metricsData.data);
-      setAnalytics(analyticsData.data);
-      setSecurityEvents(securityData.data);
-      setActivityLogs(activityData.data);
-      setSubscriptions(subscriptionsData.data);
+      setLoadError(null);
+      const endpoints = ["/api/admin/overview", "/api/admin/users?page=1&limit=100", "/api/admin/system-metrics", "/api/admin/usage-analytics", "/api/admin/security-events", "/api/admin/activity-logs", "/api/admin/subscriptions"];
+      const responses = await Promise.all(endpoints.map((url) => apiFetch(url)));
+      const payloads = await Promise.all(responses.map(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.success === false) throw new Error(payload.message || payload.error || `Admin API failed (${response.status})`);
+        return payload;
+      }));
+      const [dashboard, usersData, metricsData, analyticsData, securityData, activityData, subscriptionsData] = payloads;
+      setDashboardData(dashboard.data || null);
+      setUsers(Array.isArray(usersData.data) ? usersData.data : []);
+      setSystemMetrics(metricsData.data || null);
+      setAnalytics(analyticsData.data || null);
+      setSecurityEvents(Array.isArray(securityData.data) ? securityData.data : []);
+      setActivityLogs(Array.isArray(activityData.data) ? activityData.data : []);
+      setSubscriptions(Array.isArray(subscriptionsData.data) ? subscriptionsData.data : []);
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+      const message = error instanceof Error ? error.message : "Unable to load admin data";
+      setLoadError(message);
+      console.error("Admin data load failed:", message);
     } finally {
       setLoading(false);
     }
@@ -168,18 +146,51 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleUserStatusUpdate = async (userId: string, newStatus: string) => {
     try {
-      setUsers(prev => 
-        prev.map(user => 
-          user.id === userId ? { ...user, status: newStatus } : user
-        )
-      );
-      
-      if (onUserAction) {
-        onUserAction('status_update', userId);
-      }
-    } catch (error) {
-      console.error('Error updating user status:', error);
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success) throw new Error(payload.error || "Failed to update user status");
+      setUsers((previous) => previous.map((user) => user.id === userId ? payload.data : user));
+      setSelectedUser((current) => current?.id === userId ? payload.data : current);
+    } catch (error) { setLoadError(error instanceof Error ? error.message : "User update failed"); }
+  };
+
+  const handleUserRoleUpdate = async (userId: string, role: string) => {
+    try {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success) throw new Error(payload.error || "Failed to update user role");
+      setUsers((previous) => previous.map((user) => user.id === userId ? payload.data : user));
+      setSelectedUser(payload.data);
+    } catch (error) { setLoadError(error instanceof Error ? error.message : "Role update failed"); }
+  };
+
+  const handleUserDelete = async (userId: string) => {
+    if (!window.confirm(isArabic ? "هل أنت متأكد من حذف المستخدم نهائيًا؟ سيتم حذف حساب تسجيل الدخول أيضًا." : "Permanently delete this user and their authentication account?")) return;
+    try {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success) throw new Error(payload.error || "Failed to delete user");
+      setUsers((previous) => previous.filter((user) => user.id !== userId));
+      setSelectedUser(null);
+      await fetchDashboardData();
+    } catch (error) { setLoadError(error instanceof Error ? error.message : "User deletion failed"); }
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUser.email.trim() || newUser.password.length < 12) {
+      setLoadError(isArabic ? "أدخل بريدًا صحيحًا وكلمة مرور من 12 حرفًا على الأقل." : "Enter a valid email and a password of at least 12 characters.");
+      return;
     }
+    try {
+      setSavingUser(true);
+      const response = await apiFetch("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(newUser) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success) throw new Error(payload.error || "Failed to create user");
+      setCreateUserOpen(false);
+      setNewUser({ email: "", password: "", full_name: "", role: "farmer" });
+      await fetchDashboardData();
+    } catch (error) { setLoadError(error instanceof Error ? error.message : "User creation failed"); }
+    finally { setSavingUser(false); }
   };
 
   const getStatusColor = (status: string) => {
@@ -252,7 +263,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>{isArabic ? 'خطأ' : 'Error'}</AlertTitle>
           <AlertDescription>
-            {isArabic ? 'فشل في تحميل بيانات الإدارة' : 'Failed to load admin data'}
+            {loadError || (isArabic ? 'فشل في تحميل بيانات الإدارة' : 'Failed to load admin data')}
           </AlertDescription>
         </Alert>
       </div>
@@ -261,7 +272,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <div className={`container mx-auto p-4 space-y-6 ${isArabic ? 'rtl' : 'ltr'}`}>
-      <DataProvenanceBanner className="mb-4" />
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -274,6 +284,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           <LanguageSwitcher />
+          <Button onClick={() => setCreateUserOpen(true)} size="sm"><UserPlus className="h-4 w-4 mr-2" />{isArabic ? "إضافة مستخدم" : "Add user"}</Button>
           <Button onClick={fetchDashboardData} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {isArabic ? 'تحديث' : 'Refresh'}
@@ -460,7 +471,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <Users className="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <h4 className="font-medium">{isArabic ? `${user.firstNameArabic} ${user.lastNameArabic}` : `${user.firstName} ${user.lastName}`}</h4>
+                            <h4 className="font-medium">{isArabic ? (user.full_name_ar || user.full_name || user.email) : (user.full_name || user.email)}</h4>
                             <p className="text-sm text-gray-600">{user.email}</p>
                             <div className="flex items-center space-x-2 mt-1">
                               <Badge className={getRoleColor(user.role)}>
@@ -474,7 +485,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">
-                            {new Date(user.createdAt).toLocaleDateString()}
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
                           </p>
                           <Button size="sm" variant="outline" onClick={() => setSelectedUser(user)}>
                             <Eye className="h-3 w-3 mr-1" />
@@ -672,10 +683,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           </td>
                           <td className="px-4 py-4">
                             <div className="text-sm text-gray-900">
-                              {new Date(user.lastLogin).toLocaleDateString()}
+                              {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : "—"}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {user.loginCount} {isArabic ? 'دخول' : 'logins'}
+                              {user.loginCount ?? "—"} {isArabic ? 'دخول' : 'logins'}
                             </div>
                           </td>
                           <td className="px-4 py-4">
@@ -798,13 +809,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </TabsContent>
       </Tabs>
 
+      <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}><DialogContent><DialogHeader><DialogTitle>{isArabic ? "إضافة مستخدم" : "Create user"}</DialogTitle><DialogDescription>{isArabic ? "إنشاء حساب جديد في Supabase." : "Create a Supabase Auth account and public user record."}</DialogDescription></DialogHeader><div className="space-y-3"><Input placeholder={isArabic ? "الاسم الكامل" : "Full name"} value={newUser.full_name} onChange={(event) => setNewUser((current) => ({ ...current, full_name: event.target.value }))} /><Input type="email" placeholder="Email" value={newUser.email} onChange={(event) => setNewUser((current) => ({ ...current, email: event.target.value }))} /><Input type="password" placeholder={isArabic ? "كلمة المرور (12 حرفًا على الأقل)" : "Password (12+ characters)"} value={newUser.password} onChange={(event) => setNewUser((current) => ({ ...current, password: event.target.value }))} /><Select value={newUser.role} onValueChange={(role) => setNewUser((current) => ({ ...current, role }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"].map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent></Select><Button className="w-full" onClick={handleCreateUser} disabled={savingUser}>{savingUser ? (isArabic ? "جارٍ الإنشاء..." : "Creating...") : (isArabic ? "إنشاء المستخدم" : "Create user")}</Button></div></DialogContent></Dialog>
+
       {/* User Details Modal */}
       {selectedUser && (
         <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {isArabic ? `${selectedUser.firstNameArabic} ${selectedUser.lastNameArabic}` : `${selectedUser.firstName} ${selectedUser.lastName}`}
+                {isArabic ? (selectedUser.full_name_ar || selectedUser.full_name || selectedUser.email) : (selectedUser.full_name || selectedUser.email)}
               </DialogTitle>
               <DialogDescription>
                 {isArabic ? 'تفاصيل المستخدم والنشاط' : 'User details and activity'}
@@ -812,6 +825,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </DialogHeader>
             
             <div className="space-y-6">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="min-w-[220px]"><label className="text-sm font-medium">{isArabic ? "تغيير الدور" : "Change role"}</label>
+                  <Select value={selectedUser.role} onValueChange={(value) => handleUserRoleUpdate(selectedUser.id, value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"].map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <Button variant="destructive" onClick={() => handleUserDelete(selectedUser.id)}><Trash2 className="h-4 w-4 mr-2" />{isArabic ? "حذف المستخدم" : "Delete user"}</Button>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">{isArabic ? 'البريد الإلكتروني' : 'Email'}</label>
@@ -839,18 +858,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <label className="text-sm font-medium">{isArabic ? 'إحصائيات الاستخدام' : 'Usage Statistics'}</label>
                 <div className="grid grid-cols-3 gap-4 mt-2">
                   <div className="p-3 bg-blue-50 rounded-lg text-center">
-                    <p className="text-lg font-bold text-blue-600">{selectedUser.loginCount}</p>
+                    <p className="text-lg font-bold text-blue-600">{selectedUser.loginCount ?? "—"}</p>
                     <p className="text-xs text-gray-600">{isArabic ? 'عدد مرات الدخول' : 'Total Logins'}</p>
                   </div>
                   <div className="p-3 bg-green-50 rounded-lg text-center">
                     <p className="text-lg font-bold text-green-600">
-                      {new Date(selectedUser.lastLogin).toLocaleDateString()}
+                      {selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleDateString() : "—"}
                     </p>
                     <p className="text-xs text-gray-600">{isArabic ? 'آخر دخول' : 'Last Login'}</p>
                   </div>
                   <div className="p-3 bg-purple-50 rounded-lg text-center">
                     <p className="text-lg font-bold text-purple-600">
-                      {new Date(selectedUser.createdAt).toLocaleDateString()}
+                      {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : "—"}
                     </p>
                     <p className="text-xs text-gray-600">{isArabic ? 'تاريخ التسجيل' : 'Member Since'}</p>
                   </div>
