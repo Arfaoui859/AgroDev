@@ -9,7 +9,7 @@
 export class ProviderError extends Error {
   readonly provider: string;
   readonly status?: number;
-  readonly kind: "timeout" | "network" | "http" | "parse" | "unconfigured";
+  readonly kind: "timeout" | "network" | "http" | "parse" | "unconfigured" | "provenance";
   /** Whether the caller should retry. Only transient failures are retryable. */
   readonly retryable: boolean;
   /** Server-requested delay (ms) from a Retry-After header, when present. */
