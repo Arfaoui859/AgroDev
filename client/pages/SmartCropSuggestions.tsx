@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/apiFetch';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -148,6 +149,7 @@ export default function SmartCropSuggestions() {
   const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [recommendationUnavailable, setRecommendationUnavailable] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState<CropRecommendation | null>(null);
   const [useIoTData, setUseIoTData] = useState(false);
   const [manualInputMode, setManualInputMode] = useState(true);
@@ -197,7 +199,7 @@ export default function SmartCropSuggestions() {
   const generateRecommendations = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/smart-crop-suggestions/recommendations', {
+      const response = await apiFetch('/api/smart-crop-suggestions/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -208,13 +210,24 @@ export default function SmartCropSuggestions() {
         })
       });
 
-      const data = await response.json();
-      
-      if (data.success) {
-        setRecommendations(data.data.recommendations);
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.success !== true || !Array.isArray(data?.data?.recommendations)) {
+        setRecommendations([]);
+        setRecommendationUnavailable(true);
+        return;
       }
+
+      setRecommendations(data.data.recommendations);
+      setRecommendationUnavailable(false);
     } catch (error) {
       console.error('Error generating recommendations:', error);
+      setRecommendations([]);
+      setRecommendationUnavailable(true);
+      toast({
+        title: 'التوصيات غير متاحة حالياً',
+        description: 'لم يتم توفير مصدر توصيات موثّق. لم نعرض نتائج افتراضية.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -300,7 +313,8 @@ export default function SmartCropSuggestions() {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <DataProvenanceBanner />
+      <DataProvenanceBanner message="التوصيات الذكية غير مفعّلة حالياً إلى حين ربط مصدر بيانات موثّق والتحقق من نموذج التوصية. القيم الأولية في النموذج أمثلة إدخال وليست قياسات لحقل حقيقي." />
+      {recommendationUnavailable && <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">خدمة التوصيات غير متاحة حالياً. لم يتم إنشاء أو عرض توصيات تخمينية؛ راجع حالة الخدمة لاحقاً.</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
