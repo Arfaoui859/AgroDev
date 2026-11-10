@@ -113,6 +113,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const usersRequestSequence = React.useRef(0);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [createUserEmail, setCreateUserEmail] = useState('');
+  const [createUserName, setCreateUserName] = useState('');
+  const [createUserRole, setCreateUserRole] = useState('farmer');
+  const [createUserLoading, setCreateUserLoading] = useState(false);
+  const [userCreateNotice, setUserCreateNotice] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -198,6 +204,32 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
   const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
+
+  const handleCreateUser = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreateUserLoading(true);
+    setRoleChangeError(null);
+    setUserCreateNotice(null);
+    try {
+      const response = await apiFetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: createUserEmail, fullName: createUserName, role: createUserRole }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.success) throw new Error(body?.message || body?.code || `User invitation failed (HTTP ${response.status})`);
+      setCreateUserOpen(false);
+      setCreateUserEmail('');
+      setCreateUserName('');
+      setCreateUserRole('farmer');
+      setUserCreateNotice(isArabic ? 'تم إرسال دعوة إنشاء الحساب بنجاح.' : 'Account invitation sent successfully.');
+      await loadUsers(1);
+    } catch (error) {
+      setRoleChangeError(error instanceof Error ? error.message : 'User invitation failed');
+    } finally {
+      setCreateUserLoading(false);
+    }
+  };
 
   const handleRoleChange = async (user: any, nextRole: string) => {
     if (!nextRole || nextRole === user.role) return;
@@ -657,6 +689,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <AlertDescription>{roleChangeError}</AlertDescription>
             </Alert>
           )}
+          {userCreateNotice && (
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>{userCreateNotice}</AlertDescription>
+            </Alert>
+          )}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               <div className="relative">
@@ -696,7 +734,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"}>
+            <Button onClick={() => { setUserCreateNotice(null); setCreateUserOpen(true); }}>
               <UserPlus className="h-4 w-4 mr-2" />
               {isArabic ? 'إضافة مستخدم' : 'Add User'}
             </Button>
@@ -977,6 +1015,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{isArabic ? 'إضافة مستخدم جديد' : 'Invite a new user'}</DialogTitle>
+            <DialogDescription>
+              {isArabic
+                ? 'سيتم إرسال دعوة عبر البريد الإلكتروني ليُكمل المستخدم إعداد حسابه بنفسه.'
+                : 'An invitation email will be sent so the user can finish setting up their own account.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="admin-create-user-name" className="text-sm font-medium">{isArabic ? 'الاسم الكامل' : 'Full name'}</label>
+              <Input id="admin-create-user-name" value={createUserName} onChange={(event) => setCreateUserName(event.target.value)} required maxLength={120} autoComplete="name" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="admin-create-user-email" className="text-sm font-medium">{isArabic ? 'البريد الإلكتروني' : 'Email address'}</label>
+              <Input id="admin-create-user-email" type="email" value={createUserEmail} onChange={(event) => setCreateUserEmail(event.target.value)} required autoComplete="email" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="admin-create-user-role" className="text-sm font-medium">{isArabic ? 'الدور' : 'Platform role'}</label>
+              <select id="admin-create-user-role" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={createUserRole} onChange={(event) => setCreateUserRole(event.target.value)}>
+                <option value="farmer">{isArabic ? 'فلاح' : 'Farmer'}</option>
+                <option value="agronomist">{isArabic ? 'خبير زراعي' : 'Agronomist'}</option>
+                <option value="trader">{isArabic ? 'تاجر' : 'Trader'}</option>
+                <option value="veterinarian">{isArabic ? 'طبيب بيطري' : 'Veterinarian'}</option>
+                <option value="inspector">{isArabic ? 'مراقب' : 'Inspector'}</option>
+                <option value="government">{isArabic ? 'مؤسسة حكومية' : 'Government'}</option>
+                <option value="investor">{isArabic ? 'مستثمر' : 'Investor'}</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setCreateUserOpen(false)} disabled={createUserLoading}>{isArabic ? 'إلغاء' : 'Cancel'}</Button>
+              <Button type="submit" disabled={createUserLoading}>{createUserLoading ? (isArabic ? 'جاري الإرسال...' : 'Sending...') : (isArabic ? 'إرسال الدعوة' : 'Send invitation')}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* User Details Modal */}
       {selectedUser && (
