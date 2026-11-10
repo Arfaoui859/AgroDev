@@ -8,6 +8,9 @@ export interface HealthCheckResult {
   responseTime: number;
   lastChecked: Date;
   error?: string;
+  modelSource?: string;
+  isRealModel?: boolean;
+  modelTrainedOnSyntheticData?: boolean;
 }
 
 export interface SystemHealth {
@@ -167,6 +170,9 @@ export const useServiceHealthChecker = () => {
                 isAvailable: service.status === 'available',
                 responseTime: 0,
                 lastChecked: service.lastChecked ?? new Date(),
+                modelSource: service.modelSource,
+                isRealModel: service.isRealModel,
+                modelTrainedOnSyntheticData: service.modelTrainedOnSyntheticData,
                 error: service.status === 'available'
                   ? undefined
                   : service.errorMessage ?? 'AI service unavailable'
