@@ -9,7 +9,7 @@ import {
   requireAdminToken,
   keyMintRateLimiter,
 } from "./middleware/security";
-import { requireAuth, requireAdminAccess, requireRole } from "./middleware/auth";
+import { requireAuth, requireAdminAccess, requireRole, requireVerifiedAuth } from "./middleware/auth";
 import { blockSimulatedData } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import { handleUploadError } from "./middleware/upload";
@@ -445,16 +445,16 @@ export function createServer() {
   app.use("/api/weather-yield-intelligence", weatherYieldIntelligenceRouter);
 
   // Financial Management routes
-  app.post("/api/expenses", requireAuth, createExpense);
-  app.get("/api/expenses", requireAuth, getExpenses);
-  app.put("/api/expenses/:id", requireAuth, updateExpense);
-  app.delete("/api/expenses/:id", requireAuth, deleteExpense);
-  app.post("/api/revenues", requireAuth, createRevenue);
-  app.get("/api/revenues", requireAuth, getRevenues);
-  app.put("/api/revenues/:id", requireAuth, updateRevenue);
-  app.delete("/api/revenues/:id", requireAuth, deleteRevenue);
-  app.get("/api/profitability-analysis", requireAuth, getProfitabilityAnalysis);
-  app.get("/api/financial-summary", requireAuth, getFinancialSummary);
+  app.post("/api/expenses", requireAuth, requireRole(["farmer"]), createExpense);
+  app.get("/api/expenses", requireAuth, requireRole(["farmer"]), getExpenses);
+  app.put("/api/expenses/:id", requireAuth, requireRole(["farmer"]), updateExpense);
+  app.delete("/api/expenses/:id", requireAuth, requireRole(["farmer"]), deleteExpense);
+  app.post("/api/revenues", requireAuth, requireRole(["farmer"]), createRevenue);
+  app.get("/api/revenues", requireAuth, requireRole(["farmer"]), getRevenues);
+  app.put("/api/revenues/:id", requireAuth, requireRole(["farmer"]), updateRevenue);
+  app.delete("/api/revenues/:id", requireAuth, requireRole(["farmer"]), deleteRevenue);
+  app.get("/api/profitability-analysis", requireAuth, requireRole(["farmer"]), getProfitabilityAnalysis);
+  app.get("/api/financial-summary", requireAuth, requireRole(["farmer"]), getFinancialSummary);
   app.post("/api/budget-plans", requireAuth, createBudgetPlan);
   app.get("/api/budget-plans", requireAuth, getBudgetPlans);
   app.put("/api/budget-plans/:id", requireAuth, updateBudgetPlan);
@@ -575,31 +575,31 @@ export function createServer() {
   // identity must be established (verified JWT, or the non-production demo
   // identity) before the handler runs. The scoped Supabase client then enforces
   // ownership through RLS as a second layer.
-  app.get("/api/farms", requireAuth, getFarms);
-  app.post("/api/farms", requireAuth, createFarm);
-  app.get("/api/farms/:farmId", requireAuth, getFarmById);
-  app.get("/api/fields", requireAuth, getFields);
-  app.get("/api/fields/:fieldId", requireAuth, getFieldById);
-  app.post("/api/fields", requireAuth, createField);
-  app.put("/api/fields/:fieldId", requireAuth, updateField);
-  app.delete("/api/fields/:fieldId", requireAuth, deleteField);
-  app.get("/api/crop-history", requireAuth, getCropHistory);
-  app.get("/api/field-alerts", requireAuth, getFieldAlerts);
-  app.get("/api/activity-logs", requireAuth, getActivityLogs);
-  app.get("/api/fields/:fieldId/performance", requireAuth, getFieldPerformance);
-  app.post("/api/ai-recommendations", requireAuth, generateAIRecommendations);
+  app.get("/api/farms", requireAuth, requireRole(["farmer"]), getFarms);
+  app.post("/api/farms", requireAuth, requireRole(["farmer"]), createFarm);
+  app.get("/api/farms/:farmId", requireAuth, requireRole(["farmer"]), getFarmById);
+  app.get("/api/fields", requireAuth, requireRole(["farmer"]), getFields);
+  app.get("/api/fields/:fieldId", requireAuth, requireRole(["farmer"]), getFieldById);
+  app.post("/api/fields", requireAuth, requireRole(["farmer"]), createField);
+  app.put("/api/fields/:fieldId", requireAuth, requireRole(["farmer"]), updateField);
+  app.delete("/api/fields/:fieldId", requireAuth, requireRole(["farmer"]), deleteField);
+  app.get("/api/crop-history", requireAuth, requireRole(["farmer"]), getCropHistory);
+  app.get("/api/field-alerts", requireAuth, requireRole(["farmer"]), getFieldAlerts);
+  app.get("/api/activity-logs", requireAuth, requireRole(["farmer"]), getActivityLogs);
+  app.get("/api/fields/:fieldId/performance", requireAuth, requireRole(["farmer"]), getFieldPerformance);
+  app.post("/api/ai-recommendations", requireAuth, requireRole(["farmer"]), generateAIRecommendations);
 
   // Notification records are private to the authenticated owner and persisted in Supabase.
-  app.get("/api/notifications", requireAuth, getNotifications);
-  app.get("/api/notifications/:id", requireAuth, getNotificationById);
-  app.post("/api/notifications", requireAuth, createNotification);
-  app.put("/api/notifications/:id", requireAuth, updateNotification);
-  app.patch("/api/notifications/:id/read", requireAuth, markAsRead);
-  app.patch("/api/notifications/:id/unread", requireAuth, markAsUnread);
-  app.patch("/api/notifications/:id/star", requireAuth, toggleStar);
-  app.patch("/api/notifications/:id/archive", requireAuth, archiveNotification);
-  app.delete("/api/notifications/:id", requireAuth, deleteNotification);
-  app.patch("/api/notifications/bulk", requireAuth, bulkUpdateNotifications);
+  app.get("/api/notifications", requireAuth, requireVerifiedAuth, getNotifications);
+  app.get("/api/notifications/:id", requireAuth, requireVerifiedAuth, getNotificationById);
+  app.post("/api/notifications", requireAuth, requireVerifiedAuth, createNotification);
+  app.put("/api/notifications/:id", requireAuth, requireVerifiedAuth, updateNotification);
+  app.patch("/api/notifications/:id/read", requireAuth, requireVerifiedAuth, markAsRead);
+  app.patch("/api/notifications/:id/unread", requireAuth, requireVerifiedAuth, markAsUnread);
+  app.patch("/api/notifications/:id/star", requireAuth, requireVerifiedAuth, toggleStar);
+  app.patch("/api/notifications/:id/archive", requireAuth, requireVerifiedAuth, archiveNotification);
+  app.delete("/api/notifications/:id", requireAuth, requireVerifiedAuth, deleteNotification);
+  app.patch("/api/notifications/bulk", requireAuth, requireVerifiedAuth, bulkUpdateNotifications);
   app.get("/api/sensors", requireAuth, getSensors);
   app.get("/api/real-time-data", requireAuth, getRealTimeData);
   app.get("/api/notification-rules", requireAuth, getNotificationRules);
