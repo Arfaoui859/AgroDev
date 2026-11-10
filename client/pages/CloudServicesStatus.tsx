@@ -291,6 +291,11 @@ const CloudServicesStatus: React.FC = () => {
                             {" · "}{service.isRealModel ? "نموذج مزوّد فعلي" : service.modelTrainedOnSyntheticData ? "بيانات اصطناعية" : "قواعد / تحليل غير مدرّب"}
                           </div>
                         )}
+                        {service.advisoryConfigured && (
+                          <p className="text-xs text-muted-foreground">
+                            مزوّد الاستشارة: <span className="font-mono">{service.advisoryModelSource || "مهيّأ"}</span>
+                          </p>
+                        )}
                         {service.error && <p className="text-xs text-destructive">{service.error}</p>}
                         {service.responseTime !== undefined && <p className="text-xs text-muted-foreground">{service.responseTime} ms</p>}
                       </div>
