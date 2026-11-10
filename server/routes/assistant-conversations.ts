@@ -77,7 +77,16 @@ export async function addAgentConversationMessage(req: Request, res: Response) {
   const role = req.body?.role;
   const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
   const language = ["ar", "fr", "en"].includes(req.body?.language) ? req.body.language : "ar";
-  if (!["user", "assistant"].includes(role) || !content || content.length > 20_000) {
+  // This public endpoint persists caller-authored input only. Assistant
+  // messages and model provenance must be written by a trusted server workflow.
+  if (role !== "user") {
+    return res.status(403).json({
+      success: false,
+      code: "ASSISTANT_MESSAGE_SERVER_ONLY",
+      message: "Assistant messages can only be persisted by the trusted AI service.",
+    });
+  }
+  if (!content || content.length > 20_000) {
     return res.status(400).json({ success: false, code: "INVALID_CONVERSATION_MESSAGE" });
   }
   const { data: conversation, error: conversationError } = await db.from("farm_agent_conversations")
@@ -92,9 +101,9 @@ export async function addAgentConversationMessage(req: Request, res: Response) {
     role,
     content,
     language,
-    data_source: typeof req.body?.dataSource === "string" ? req.body.dataSource.slice(0, 30) : null,
-    model_source: typeof req.body?.modelSource === "string" ? req.body.modelSource.slice(0, 200) : null,
-    metadata,
+    data_source: null,
+    model_source: null,
+    metadata: {},
   }).select("id,conversation_id,role,content,language,data_source,model_source,metadata,created_at").single();
   if (error) return persistenceFailure(res, "CONVERSATION_MESSAGE_SAVE_FAILED", error);
   const { error: updateError } = await db.from("farm_agent_conversations").update({ updated_at: new Date().toISOString() })
