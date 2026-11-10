@@ -88,14 +88,19 @@ def test_pest_accepts_french_and_keeps_canonical_fields():
     assert len(data["treatment_recommendations"]) > 0
 
 
+def test_irrigation_rejects_fabricated_default_inputs():
+    response = irr_client.post("/optimize-irrigation", json={})
+    assert response.status_code == 422
+
+
 def test_irrigation_accepts_french_and_keeps_canonical_fields():
     resp = irr_client.post(
         "/optimize-irrigation",
         json={
             "crop_type": "wheat",
             "growth_stage": "vegetative",
-            "weather_data": {"temperature": 28, "humidity": 60},
-            "soil_data": {"moisture_percentage": 45},
+            "weather_data": {"temperature": 28, "humidity": 60, "wind_speed": 4, "solar_radiation": 20, "recent_rainfall": 2},
+            "soil_data": {"moisture_percentage": 45, "field_capacity": 35, "wilting_point": 15, "soil_type": "loam", "soil_type_factor": 1.0, "irrigation_strategy": "balanced"},
             "farm_size": 1.0,
             "days_ahead": 7,
             "language": "fr",
