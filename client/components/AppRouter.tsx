@@ -74,6 +74,7 @@ const AdminPanel = React.lazy(() => import("../pages/AdminPanel"));
 const GovernmentDashboard = React.lazy(() => import("../pages/GovernmentDashboard"));
 const UserSettings = React.lazy(() => import("../pages/UserSettings"));
 const FieldManagement = React.lazy(() => import("../pages/FieldManagement"));
+const ComprehensiveFarmManagement = React.lazy(() => import("../pages/ComprehensiveFarmManagement"));
 
 const GamificationDashboard = React.lazy(() => import("../pages/GamificationDashboard"));
 const InvestorDashboard = React.lazy(() => import("../pages/InvestorDashboard"));
