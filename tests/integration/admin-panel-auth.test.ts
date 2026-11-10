@@ -13,6 +13,9 @@
  *
  *   1. A valid `x-admin-token` is always accepted.
  *   2. The endpoints are never 500 — a missing/incorrect guard must not crash.
+ *   3. Backed endpoints return verified Supabase data, or an explicit 503
+ *      with null data when the database is not configured. Optional modules
+ *      remain explicitly unavailable rather than inventing records.
  *
  * The strict production behaviour (anonymous → 401, non-admin JWT → 403) is
  * asserted separately in `admin-authorization.test.ts` by forcing
@@ -55,8 +58,15 @@ describe("🔐 /api/admin/* GET routes are gated by requireAdminAccess", () => {
       const res = await request(app)
         .get(path)
         .set("x-admin-token", token);
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect([200, 503]).toContain(res.status);
+      if (res.status === 200) {
+        expect(res.body.success).toBe(true);
+        expect(res.headers['x-agrogrowth-data-status']).toBe('verified');
+      } else {
+        expect(res.body.success).toBe(false);
+        expect(res.body.data).toBeNull();
+        expect(res.body.code).toMatch(/^ADMIN_|^DASHBOARD_/);
+      }
     },
   );
 
