@@ -65,14 +65,15 @@ REVOKE ALL ON FUNCTION public.owns_farm(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.owns_section(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.current_user_role() FROM anon;
 GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated, service_role;
-REVOKE ALL ON FUNCTION public.is_admin() FROM anon;
-GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
-REVOKE ALL ON FUNCTION public.is_expert() FROM anon;
-GRANT EXECUTE ON FUNCTION public.is_expert() TO authenticated, service_role;
-REVOKE ALL ON FUNCTION public.owns_farm(uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO authenticated, service_role;
-REVOKE ALL ON FUNCTION public.owns_section(uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO authenticated, service_role;
+
+-- RLS policies call these boolean predicates while evaluating anonymous reads.
+-- They are SECURITY DEFINER, use an empty search_path, and derive identity only
+-- from auth.uid(); for anon auth.uid() is NULL, so each predicate safely returns
+-- false. Granting EXECUTE avoids permission errors and lets RLS deny the row.
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_expert() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.owns_farm(uuid) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.owns_section(uuid) TO anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 2. Turn RLS on for every table that lacked it.
