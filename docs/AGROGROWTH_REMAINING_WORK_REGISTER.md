@@ -1,3 +1,11 @@
+## Admin user-directory pagination and server-side filters (2026-11-10)
+
+- Connected the Admin users table to the existing server-side search, role filter, and account-status filter parameters.
+- Added debounced search/filter refreshes, server pagination controls, total-result counts, and a loading state.
+- Removed the client-side 20-row truncation and local filtering that only searched the first API page.
+- The API currently returns up to 50 rows per page; the UI now exposes navigation across all result pages.
+- Source change committed as `7b9de68790a429491e86dbaa11d5dfed93c28a62`. TypeScript/build, browser behavior, CI, and live Supabase pagination still require verification.
+
 ## Admin provisioning validation hardening (2026-11-10)
 
 - Fixed the privileged admin-create endpoint's email validator: the previous escaped regular expression rejected ordinary email addresses.
