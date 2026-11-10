@@ -760,12 +760,15 @@ export function createServer() {
   app.get("/api/gamification/stats", getGamificationStats);
 
   // 💼 INVESTOR DASHBOARD ROUTES
-  app.get("/api/investor/opportunities", getInvestmentOpportunities);
-  app.get("/api/investor/profitability", getInvestorProfitabilityAnalysis);
-  app.get("/api/investor/insights", getMarketInsights);
-  app.get("/api/investor/portfolio", getInvestorPortfolio);
-  app.get("/api/investor/dashboard", getInvestorDashboard);
-  app.post("/api/investor/invest", createInvestment);
+  // Investor accounts are not yet part of the declared UserRole contract and
+  // every handler remains fail-closed (503). Require a verified identity now;
+  // add a dedicated investor role guard only after role provisioning is defined.
+  app.get("/api/investor/opportunities", requireAuth, getInvestmentOpportunities);
+  app.get("/api/investor/profitability", requireAuth, getInvestorProfitabilityAnalysis);
+  app.get("/api/investor/insights", requireAuth, getMarketInsights);
+  app.get("/api/investor/portfolio", requireAuth, getInvestorPortfolio);
+  app.get("/api/investor/dashboard", requireAuth, getInvestorDashboard);
+  app.post("/api/investor/invest", requireAuth, createInvestment);
 
   // 📊 PUBLIC DATA API ROUTES
   app.get("/api/public/market-prices", getMarketPrices);
