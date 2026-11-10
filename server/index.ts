@@ -12,6 +12,7 @@ import {
 import { requireAuth, requireAdminAccess, requireRole, requireVerifiedAuth } from "./middleware/auth";
 import { blockSimulatedData } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
+import farmOperationsRoutes from "./routes/farm-operations";
 import { handleUploadError } from "./middleware/upload";
 import {
   getWeatherByCoordinates,
@@ -295,6 +296,7 @@ import {
 
 export function createServer() {
   const app = express();
+  app.use("/api/farm-operations", requireAuth, requireVerifiedAuth, requireRole(["farmer"]), farmOperationsRoutes);
 
   // Trust the single reverse proxy in front of the Render service.
   app.set("trust proxy", 1);
