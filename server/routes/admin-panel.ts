@@ -290,7 +290,10 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
   try {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (role !== undefined) patch.role = role;
-    if (status !== undefined) patch.is_active = status === "active";
+    if (status !== undefined) {
+      patch.status = status;
+      patch.is_active = status === "active";
+    }
     const { data, error } = await client.from("users").update(patch).eq("id", userId).select("*").maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ success: false, error: "User record not found." });
@@ -348,6 +351,7 @@ export const createAdminManagedUser: RequestHandler = async (req, res) => {
       role: normalizedRole,
       verified: false,
       is_active: true,
+      status: "active",
       updated_at: new Date().toISOString(),
     }, { onConflict: "id" }).select("*").single();
     if (error) {
