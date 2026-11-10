@@ -608,7 +608,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <Button>
+            <Button onClick={() => setCreateUserOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               {isArabic ? 'إضافة مستخدم' : 'Add User'}
             </Button>
@@ -638,12 +638,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {users
+                    {users.length === 0 ? (
+                      <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">{isArabic ? "لا توجد سجلات مستخدمين متاحة في قاعدة البيانات." : "No user records are available in the database."}</td></tr>
+                    ) : users
                       .filter(user => {
                         const matchesSearch = !searchQuery || 
-                          user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (user.firstName || user.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (user.lastName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (user.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                           user.firstNameArabic.includes(searchQuery) ||
                           user.lastNameArabic.includes(searchQuery);
                         const matchesRole = filterRole === 'all' || user.role === filterRole;
