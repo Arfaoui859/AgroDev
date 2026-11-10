@@ -859,7 +859,10 @@ export async function getAnimals(req: Request, res: Response) {
     res.json({
       success: true,
       data: filteredAnimals,
-      count: filteredAnimals.length
+      count: filteredAnimals.length,
+      dataSource: "static-demo-records",
+      isRealData: false,
+      note: "الحيوانات المعروضة سجلات تجريبية ثابتة وليست بيانات مزرعتك المحفوظة."
     });
   } catch (error) {
     res.status(500).json({
@@ -889,7 +892,10 @@ export async function getAnimalHealth(req: Request, res: Response) {
       data: {
         animal,
         healthAnalysis
-      }
+      },
+      dataSource: "static-demo-records",
+      isRealData: false,
+      note: "هذا التحليل مبني على سجل حيوان تجريبي ثابت."
     });
   } catch (error) {
     res.status(500).json({
@@ -909,11 +915,23 @@ export async function getBreedingRecommendations(req: Request, res: Response) {
       animals = animals.filter(animal => animal.farmId === farmId);
     }
     
-    const breedingSchedule = AIBreedingOptimizationEngine.generateBreedingSchedule(animals);
-    
+    // The current route reads a hardcoded in-memory demonstration catalogue,
+    // not authenticated farm livestock records. Never publish its scores as
+    // genetic recommendations.
+    const breedingSchedule = {
+      recommendedPairings: [],
+      seasonalRecommendations:
+        AIBreedingOptimizationEngine.getSeasonalBreedingRecommendations(),
+      assessmentStatus: "unavailable",
+      note: "لا يمكن حساب التوافق الوراثي قبل ربط سجلات حيوانات موثقة وبيانات نسب/جينوم حقيقية.",
+    };
+
     res.json({
       success: true,
-      data: breedingSchedule
+      data: breedingSchedule,
+      dataSource: "static-demo-records",
+      isRealData: false,
+      modelSource: "not-configured",
     });
   } catch (error) {
     res.status(500).json({
@@ -940,8 +958,10 @@ export async function getFeedRecommendations(req: Request, res: Response) {
     
     res.json({
       success: true,
-      data: feedRecommendations
-    });
+      data: feedRecommendations,
+      dataSource: "static-demo-records",
+      isRealData: false,
+      note: "الاحتياجات والتوصيات الحالية محسوبة من سجل حيوان تجريبي وليست وصفة تغذية لمزرعتك."
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -964,8 +984,10 @@ export async function optimizeFeedBudget(req: Request, res: Response) {
     
     res.json({
       success: true,
-      data: optimization
-    });
+      data: optimization,
+      dataSource: "static-demo-records",
+      isRealData: false,
+      note: "تحسين الميزانية تجريبي ويعتمد على سجلات حيوانات ثابتة وأسعار غير متحققة لحظياً."
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -978,38 +1000,54 @@ export async function optimizeFeedBudget(req: Request, res: Response) {
 export async function getHealthAlerts(req: Request, res: Response) {
   try {
     const { farmId, severity, resolved } = req.query;
-    
-    let alerts = healthAlertsDatabase;
-    
-    if (severity) {
-      alerts = alerts.filter(alert => alert.severity === severity);
-    }
-    
-    if (resolved !== undefined) {
-      alerts = alerts.filter(alert => alert.isResolved === (resolved === 'true'));
-    }
-    
-    // Generate new alerts based on current animal health
+
     const newAlerts: HealthAlert[] = [];
-    for (const animal of animalsDatabase) {
-      const healthAnalysis = AIHealthAnalysisEngine.analyzeAnimalHealth(animal, animal.healthHistory);
+    const scopedAnimals = farmId
+      ? animalsDatabase.filter(animal => animal.farmId === farmId)
+      : animalsDatabase;
+
+    for (const animal of scopedAnimals) {
+      const healthAnalysis = AIHealthAnalysisEngine.analyzeAnimalHealth(
+        animal,
+        animal.healthHistory,
+      );
       newAlerts.push(...healthAnalysis.alerts);
     }
-    
-    // Add new alerts to database
-    healthAlertsDatabase.push(...newAlerts);
-    
+
+    const existingAlerts = healthAlertsDatabase.filter(alert => {
+      if (severity && alert.severity !== severity) return false;
+      if (resolved !== undefined && alert.isResolved !== (resolved === "true")) return false;
+      if (farmId && !scopedAnimals.some(animal => animal.id === alert.animalId)) return false;
+      return true;
+    });
+
+    const existingKeys = new Set(
+      healthAlertsDatabase.map(alert => `${alert.animalId}:${alert.type}:${alert.condition}`),
+    );
+    for (const alert of newAlerts) {
+      const key = `${alert.animalId}:${alert.type}:${alert.condition}`;
+      if (!existingKeys.has(key)) {
+        healthAlertsDatabase.push(alert);
+        existingKeys.add(key);
+      }
+    }
+
     res.json({
       success: true,
-      data: alerts.concat(newAlerts).sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
+      data: [...existingAlerts, ...newAlerts]
+        .filter((alert, index, all) =>
+          all.findIndex(item => item.id === alert.id) === index,
+        )
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      dataSource: "static-demo-records",
+      isRealData: false,
+      note: "تنبيهات الحيوانات الحالية مولّدة من بيانات تجريبية ثابتة وليست تنبيهات حية من مزرعتك.",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'حدث خطأ في استرجاع التنبيهات الصحية',
-      error: safeErrorMessage(error, 'Unknown error')
+      message: "حدث خطأ في استرجاع التنبيهات الصحية",
+      error: safeErrorMessage(error, "Unknown error"),
     });
   }
 }
@@ -1035,7 +1073,9 @@ export async function getLivestockDashboard(req: Request, res: Response) {
       return analysis.healthScore;
     });
     
-    const avgHealthScore = healthScores.reduce((sum, score) => sum + score, 0) / healthScores.length;
+    const avgHealthScore = healthScores.length
+      ? Math.round(healthScores.reduce((sum, score) => sum + score, 0) / healthScores.length)
+      : null;
     
     // Production analysis
     const totalProduction = animals.reduce((sum, animal) => {
@@ -1056,12 +1096,12 @@ export async function getLivestockDashboard(req: Request, res: Response) {
           healthyAnimals,
           sickAnimals,
           pregnantAnimals,
-          avgHealthScore: Math.round(avgHealthScore),
+          avgHealthScore,
           totalProduction
         },
         speciesDistribution: speciesCount,
         recentAlerts: healthAlertsDatabase.slice(0, 5),
-        topProducers: animals
+        topProducers: [...animals]
           .sort((a, b) => {
             const aProduction = a.productionHistory.reduce((sum, record) => sum + record.quantity, 0);
             const bProduction = b.productionHistory.reduce((sum, record) => sum + record.quantity, 0);
