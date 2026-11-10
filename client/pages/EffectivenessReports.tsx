@@ -28,6 +28,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 interface EffectivenessReport {
   id: string;
@@ -67,6 +68,8 @@ export default function EffectivenessReports() {
   const [filteredReports, setFilteredReports] = useState<EffectivenessReport[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filterCrop, setFilterCrop] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPeriod, setFilterPeriod] = useState<string>('30');
@@ -114,6 +117,38 @@ export default function EffectivenessReports() {
     cost: "",
     applicationDate: new Date().toISOString().slice(0, 10)
   });
+
+  useEffect(() => {
+    let active = true;
+    const loadSavedReports = async () => {
+      setIsLoadingReports(true);
+      setLoadError(null);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          throw new Error("سجّل الدخول لعرض التقارير المحفوظة في حسابك.");
+        }
+        const response = await fetch("/api/fertilizer/effectiveness", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+        }
+        if (active) {
+          setReports(Array.isArray(payload.reports) ? payload.reports : []);
+        }
+      } catch (error) {
+        if (active) {
+          setLoadError(error instanceof Error ? error.message : "تعذر تحميل التقارير المحفوظة.");
+        }
+      } finally {
+        if (active) setIsLoadingReports(false);
+      }
+    };
+    void loadSavedReports();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let filtered = reports;
@@ -175,10 +210,15 @@ export default function EffectivenessReports() {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("سجّل الدخول قبل حفظ التقرير.");
+      }
       const response = await fetch('/api/fertilizer/track/effectiveness', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(reportData),
       });
@@ -191,7 +231,7 @@ export default function EffectivenessReports() {
           return;
         }
         const newReportWithAnalysis: EffectivenessReport = {
-          id: Date.now().toString(),
+          id: result.id,
           ...reportData,
           effectivenessScore,
           improvements: Array.isArray(result.improvements) ? result.improvements : [],
@@ -211,7 +251,7 @@ export default function EffectivenessReports() {
       }
     } catch (error) {
       console.error('Error submitting report:', error);
-      setSubmitError("تعذر الاتصال بالخادم. لم تتم إضافة التقرير.");
+      setSubmitError(error instanceof Error ? error.message : "تعذر الاتصال بالخادم. لم تتم إضافة التقرير.");
     } finally {
       setIsSubmitting(false);
     }
@@ -291,8 +331,9 @@ export default function EffectivenessReports() {
   return (
     <div className="space-y-6" dir="rtl">
       <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-        هذا التقييم يعتمد على القياسات التي تدخلها وقواعد حسابية، وليس نموذج ML. النتائج المعروضة تخص الجلسة الحالية فقط ولا تُحفظ في قاعدة البيانات بعد.
+        درجة الفعالية محسوبة بقواعد زراعية من قياساتك وليست نموذج ML. تُحفظ التقارير في حسابك عند نجاح الاتصال بقاعدة البيانات.
       </div>
+      {loadError && <div role="alert" className="rounded-lg border border-destructive/40 p-3 text-sm text-destructive">{loadError}</div>}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">تقارير الفعالية</h1>
