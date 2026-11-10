@@ -103,6 +103,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -116,6 +117,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const [
         dashboardResponse,
         usersResponse,
@@ -133,6 +135,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         apiFetch('/api/admin/activity-logs'),
         apiFetch('/api/admin/subscriptions')
       ]);
+
+      const failedResponse = [
+        dashboardResponse,
+        usersResponse,
+        metricsResponse,
+        analyticsResponse,
+        securityResponse,
+        activityResponse,
+        subscriptionsResponse,
+      ].find((response) => !response.ok);
+
+      if (failedResponse) {
+        const failureBody = await failedResponse.json().catch(() => null);
+        throw new Error(
+          failureBody?.message ||
+          failureBody?.code ||
+          `Admin data service unavailable (HTTP ${failedResponse.status})`,
+        );
+      }
 
       const [
         dashboard,
@@ -160,7 +181,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       setActivityLogs(activityData.data);
       setSubscriptions(subscriptionsData.data);
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+      const message = error instanceof Error ? error.message : 'Admin data is unavailable';
+      setLoadError(message);
+      setDashboardData(null);
+      setUsers([]);
+      setSystemMetrics(null);
+      setAnalytics(null);
+      setSecurityEvents([]);
+      setActivityLogs([]);
+      setSubscriptions([]);
+      console.error('Error fetching admin data:', message);
     } finally {
       setLoading(false);
     }
@@ -236,7 +266,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>{isArabic ? 'خطأ' : 'Error'}</AlertTitle>
           <AlertDescription>
-            {isArabic ? 'فشل في تحميل بيانات الإدارة' : 'Failed to load admin data'}
+            {loadError || (isArabic ? 'فشل في تحميل بيانات الإدارة' : 'Failed to load admin data')}
           </AlertDescription>
         </Alert>
       </div>
