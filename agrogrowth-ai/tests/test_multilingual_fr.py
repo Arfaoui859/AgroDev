@@ -168,7 +168,15 @@ def test_yield_prediction_accepts_french():
 def test_all_supported_languages_are_accepted(lang):
     resp = pest_client.post(
         "/analyze-pest-problem",
-        json={"crop_type": "tomato", "symptoms": ["أوراق مجعدة"], "language": lang},
+        json={
+            "crop_type": "tomato", "symptoms": ["أوراق مجعدة"],
+            "affected_area_percentage": 20, "affected_plant_count": 20,
+            "total_plant_count": 100, "plant_age_days": 60,
+            "plant_health_score": 0.7, "plant_density": "normal",
+            "irrigation_frequency": "normal", "farm_size": 1.0,
+            "weather_conditions": {"temperature": 25, "humidity": 60, "recent_rainfall": 5, "wind_speed": 3},
+            "language": lang,
+        },
     )
     assert resp.status_code == 200, resp.text
 
@@ -177,6 +185,14 @@ def test_unknown_language_does_not_break_the_service():
     # An unexpected value must not 500; the advisory falls back to Arabic.
     resp = pest_client.post(
         "/analyze-pest-problem",
-        json={"crop_type": "tomato", "symptoms": ["أوراق مجعدة"], "language": "de"},
+        json={
+            "crop_type": "tomato", "symptoms": ["أوراق مجعدة"],
+            "affected_area_percentage": 20, "affected_plant_count": 20,
+            "total_plant_count": 100, "plant_age_days": 60,
+            "plant_health_score": 0.7, "plant_density": "normal",
+            "irrigation_frequency": "normal", "farm_size": 1.0,
+            "weather_conditions": {"temperature": 25, "humidity": 60, "recent_rainfall": 5, "wind_speed": 3},
+            "language": "de",
+        },
     )
     assert resp.status_code == 200, resp.text
