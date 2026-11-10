@@ -1034,7 +1034,7 @@ export default function FieldManagement() {
                     </div>
                   </div>
                   
-                  <Button variant="outline">
+                  <Button variant="outline" disabled title={isArabic ? "خدمات الموقع غير مفعلة" : "Location services are not configured"}>
                     <Navigation className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     {isArabic ? 'تحديد المواقع' : 'Location Services'}
                   </Button>
@@ -1071,7 +1071,7 @@ export default function FieldManagement() {
                               </span>
                             </div>
                           </div>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => handleFieldSelect(field)}>
                             <Eye className="h-3 w-3" />
                           </Button>
                         </div>
@@ -1136,7 +1136,7 @@ export default function FieldManagement() {
                             {isArabic ? 'محسن بـ 12%' : 'Improved by 12%'}
                           </span>
                         </div>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" disabled title={isArabic ? "التقارير غير مفعلة بعد" : "Report export is not implemented"}>
                           <FileText className="h-3 w-3 mr-1 rtl:ml-1 rtl:mr-0" />
                           {isArabic ? 'تقرير' : 'Report'}
                         </Button>
@@ -1198,11 +1198,11 @@ export default function FieldManagement() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">{isArabic ? 'سجل النشاطات والتعديلات' : 'Activity & Edit History'}</h3>
             <div className="flex space-x-2 rtl:space-x-reverse">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled title={isArabic ? "التصدير غير مفعّل بعد" : "Export is not implemented"}>
                 <Download className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                 {isArabic ? 'تصدير' : 'Export'}
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled title={isArabic ? "الاستيراد غير مفعّل بعد" : "Import is not implemented"}>
                 <Upload className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                 {isArabic ? 'استيراد' : 'Import'}
               </Button>
