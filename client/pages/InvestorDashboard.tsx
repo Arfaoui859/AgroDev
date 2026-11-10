@@ -495,7 +495,7 @@ const InvestorDashboard = () => {
                 />
 
                 <Input
-                  placeholder="أقصى استثما�� ($)"
+                  placeholder="أقصى استثمار ($)"
                   value={filters.maxInvestment}
                   onChange={(e) =>
                     setFilters({ ...filters, maxInvestment: e.target.value })
