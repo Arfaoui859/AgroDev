@@ -335,7 +335,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'الإيرادات' : 'Revenue'}</p>
-                <p className="text-xl font-bold text-orange-600">{formatCurrency(dashboardData.summary?.totalRevenue || 0)}</p>
+                <p className="text-xl font-bold text-orange-600">{dashboardData.summary?.totalRevenue == null ? (isArabic ? 'غير متاح' : 'Not connected') : formatCurrency(dashboardData.summary.totalRevenue)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-orange-600" />
             </div>
@@ -347,7 +347,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'إيرادات شهرية' : 'Monthly Recurring'}</p>
-                <p className="text-xl font-bold text-teal-600">{formatCurrency(dashboardData.summary?.monthlyRecurring || 0)}</p>
+                <p className="text-xl font-bold text-teal-600">{dashboardData.summary?.monthlyRecurring == null ? (isArabic ? 'غير متاح' : 'Not connected') : formatCurrency(dashboardData.summary.monthlyRecurring)}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-teal-600" />
             </div>
@@ -359,7 +359,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'تذاكر الدعم' : 'Support Tickets'}</p>
-                <p className="text-2xl font-bold text-yellow-600">{formatNumber(dashboardData.summary?.supportTickets || 0)}</p>
+                <p className="text-2xl font-bold text-yellow-600">{dashboardData.summary?.supportTickets == null ? (isArabic ? 'غير متاح' : 'Not connected') : formatNumber(dashboardData.summary.supportTickets)}</p>
               </div>
               <MessageSquare className="h-8 w-8 text-yellow-600" />
             </div>
@@ -371,7 +371,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'وقت التشغيل' : 'System Uptime'}</p>
-                <p className="text-sm font-bold text-indigo-600">{formatUptime(dashboardData.summary?.systemUptime || 0)}</p>
+                <p className="text-sm font-bold text-indigo-600">{dashboardData.summary?.systemUptime == null ? (isArabic ? 'غير متاح' : 'Not connected') : formatUptime(dashboardData.summary.systemUptime)}</p>
               </div>
               <Server className="h-8 w-8 text-indigo-600" />
             </div>
@@ -383,7 +383,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">{isArabic ? 'تنبيهات أمنية' : 'Security Alerts'}</p>
-                <p className="text-2xl font-bold text-red-600">{formatNumber(dashboardData.summary?.securityAlerts || 0)}</p>
+                <p className="text-2xl font-bold text-red-600">{dashboardData.summary?.securityAlerts == null ? (isArabic ? 'غير متاح' : 'Not connected') : formatNumber(dashboardData.summary.securityAlerts)}</p>
               </div>
               <Shield className="h-8 w-8 text-red-600" />
             </div>
