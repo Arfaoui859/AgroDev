@@ -14,6 +14,7 @@
 import { Router } from "express";
 import { getWeatherFromOpenMeteo, getHistoricalWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
 import { ProviderError } from "../services/providers/http";
+import { requireAuth } from "../middleware/auth";
 import {
   callMicroservice,
   respondServiceError,
@@ -50,7 +51,7 @@ function sendLegacy(
 }
 
 // Build an input bundle from licensed, real forecast + historical weather data.
-router.get("/weather-context", async (req, res) => {
+router.get("/weather-context", requireAuth, async (req, res) => {
   const latitude = Number(req.query.lat);
   const longitude = Number(req.query.lon);
   if (
