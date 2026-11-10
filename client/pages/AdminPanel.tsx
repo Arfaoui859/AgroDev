@@ -879,7 +879,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {activityLogs.length === 0 ? (
+              {!Array.isArray(activityLogs) || activityLogs.length === 0 ? (
                 <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
                   {isArabic
                     ? 'لا توجد سجلات تدقيق متاحة. تأكد من تطبيق database/admin-role-management.sql.'
@@ -899,7 +899,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {activityLogs.map((log: any) => (
+                      {(Array.isArray(activityLogs) ? activityLogs : []).map((log: any) => (
                         <tr key={log.id} className="border-b last:border-0">
                           <td className="px-3 py-3">
                             <Badge variant="outline">{log.action}</Badge>
