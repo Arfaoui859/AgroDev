@@ -394,11 +394,13 @@ async def health_check():
         'advisory_configured': get_provider().is_configured(),
         'services': {
             'weather_planner': {
-                'status': 'active',
+                'status': 'ready' if _model_status()['weather_planner'] else 'not_loaded',
+                'ready': _model_status()['weather_planner'],
                 'model_trained': _model_status()['weather_planner']
             },
             'yield_predictor': {
-                'status': 'active', 
+                'status': 'ready' if _model_status()['yield_predictor'] else 'not_loaded',
+                'ready': _model_status()['yield_predictor'],
                 'model_trained': _model_status()['yield_predictor']
             }
         },
