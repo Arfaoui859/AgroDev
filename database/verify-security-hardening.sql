@@ -76,13 +76,17 @@ BEGIN
     WHERE schemaname = 'public'
       AND tablename = 'farm_expenses'
       AND policyname = 'Users manage their own farm expenses'
+      AND qual ILIKE '%farm_expenses.farm_id%' AND qual ILIKE '%owner_id = auth.uid()%'
       AND with_check ILIKE '%user_id = auth.uid()%'
+      AND with_check ILIKE '%farm_expenses.farm_id%' AND with_check ILIKE '%owner_id = auth.uid()%'
   ) OR NOT EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename = 'farm_revenues'
       AND policyname = 'Users manage their own farm revenues'
+      AND qual ILIKE '%farm_revenues.farm_id%' AND qual ILIKE '%owner_id = auth.uid()%'
       AND with_check ILIKE '%user_id = auth.uid()%'
+      AND with_check ILIKE '%farm_revenues.farm_id%' AND with_check ILIKE '%owner_id = auth.uid()%'
   ) THEN
     RAISE EXCEPTION 'RLS verification failed: financial ledger ownership policies are missing or incomplete';
   END IF;
