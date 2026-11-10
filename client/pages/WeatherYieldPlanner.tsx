@@ -80,88 +80,15 @@ interface YieldPrediction {
 
 
 async function fetchWeatherContext(latitude: number, longitude: number) {
-  const end = new Date(Date.now() - 86400000);
-  const start = new Date(end.getTime() - 364 * 86400000);
-  const iso = (date: Date) => date.toISOString().slice(0, 10);
-  const forecastUrl = new URL("https://api.open-meteo.com/v1/forecast");
-  forecastUrl.search = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    current: "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,shortwave_radiation",
-    daily: "precipitation_sum,temperature_2m_max,temperature_2m_min",
-    past_days: "30",
-    forecast_days: "1",
-    timezone: "auto",
-  }).toString();
-  const archiveUrl = new URL("https://archive-api.open-meteo.com/v1/archive");
-  archiveUrl.search = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    start_date: iso(start),
-    end_date: iso(end),
-    daily: "temperature_2m_mean,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,wind_speed_10m_max,shortwave_radiation_sum",
-    timezone: "auto",
-  }).toString();
-  const [forecastResponse, archiveResponse] = await Promise.all([
-    fetch(forecastUrl.toString(), { signal: AbortSignal.timeout(15000) }),
-    fetch(archiveUrl.toString(), { signal: AbortSignal.timeout(20000) }),
-  ]);
-  if (!forecastResponse.ok || !archiveResponse.ok) {
-    throw new Error(`Open-Meteo weather data unavailable (forecast ${forecastResponse.status}, archive ${archiveResponse.status})`);
-  }
-  const [forecast, archive] = await Promise.all([forecastResponse.json(), archiveResponse.json()]);
-  const numbers = (values: unknown[]) => values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
-  const mean = (values: unknown[]) => {
-    const valid = numbers(values);
-    return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
-  };
-  const sum = (values: unknown[]) => numbers(values).reduce((total, value) => total + value, 0);
-  const range = (maxValues: unknown[], minValues: unknown[]) => {
-    const max = numbers(maxValues), min = numbers(minValues);
-    return max.length && min.length ? Math.max(...max) - Math.min(...min) : null;
-  };
-  const current = forecast.current || {};
-  const forecastDaily = forecast.daily || {};
-  const archiveDaily = archive.daily || {};
-  const annualRainfall = sum(archiveDaily.precipitation_sum || []);
-  const recentRainfall = sum((forecastDaily.precipitation_sum || []).slice(-7));
-  const annualTemperature = mean(archiveDaily.temperature_2m_mean || []);
-  const annualHumidity = mean(archiveDaily.relative_humidity_2m_mean || []);
-  const annualWind = mean(archiveDaily.wind_speed_10m_max || []);
-  const annualSolar = mean(archiveDaily.shortwave_radiation_sum || []);
-  const annualVariation = range(archiveDaily.temperature_2m_max || [], archiveDaily.temperature_2m_min || []);
-  const recentVariation = range(forecastDaily.temperature_2m_max || [], forecastDaily.temperature_2m_min || []);
-  const elevation = Number(forecast.elevation);
-  const currentWeather = {
-    temperature: Number(current.temperature_2m),
-    humidity: Number(current.relative_humidity_2m),
-    rainfall: Number(current.precipitation ?? 0),
-    wind_speed: Number(current.wind_speed_10m),
-    solar_radiation: Number(current.shortwave_radiation),
-    recent_rainfall: recentRainfall,
-    annual_rainfall: annualRainfall,
-    temperature_variation: recentVariation ?? annualVariation,
-  };
-  const historicalWeather = {
-    temperature: annualTemperature,
-    humidity: annualHumidity,
-    rainfall: annualRainfall,
-    wind_speed: annualWind,
-    solar_radiation: annualSolar,
-    recent_rainfall: recentRainfall,
-    annual_rainfall: annualRainfall,
-    temperature_variation: annualVariation,
-  };
-  const required = [...Object.values(currentWeather), ...Object.values(historicalWeather), elevation];
-  if (required.some((value) => typeof value !== "number" || !Number.isFinite(value))) {
-    throw new Error("Open-Meteo did not return enough weather history for this location.");
+  const params = new URLSearchParams({ lat: String(latitude), lon: String(longitude) });
+  const response = await apiFetch(`/api/weather-yield-intelligence/weather-context?${params.toString()}`);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.success || !payload.data) {
+    throw new Error(payload.error || "Verified weather context is unavailable.");
   }
   return {
-    location: { latitude, longitude, elevation, region: "Open-Meteo grid cell" },
-    current_conditions: currentWeather,
-    historical_weather: historicalWeather,
-    weather_data: currentWeather,
-    source: "Open-Meteo forecast + archive (measured/reanalysis weather)",
+    ...payload.data,
+    source: payload.source?.provider || "Licensed Open-Meteo commercial API",
   };
 }
 
