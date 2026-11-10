@@ -9,14 +9,16 @@
  * no UI changes are required, while all values now come from a real source.
  */
 
-import { fetchJson, round } from "./http";
+import { fetchJson, round, ProviderError } from "./http";
 
 export interface WeatherData {
-  location: { name: string; lat: number; lon: number };
+  location: { name: string; lat: number; lon: number; elevation?: number };
   current: {
     temperature: number;
     humidity: number;
     windSpeed: number;
+    rainfall?: number;
+    solarRadiation?: number;
     pressure: number;
     visibility: number;
     description: string;
@@ -73,6 +75,7 @@ export interface WeatherData {
 }
 
 interface OpenMeteoResponse {
+  elevation?: number;
   current?: {
     time?: string;
     temperature_2m?: number;
@@ -82,6 +85,7 @@ interface OpenMeteoResponse {
     weather_code?: number;
     visibility?: number;
     precipitation?: number;
+    shortwave_radiation?: number;
   };
   daily?: {
     time?: string[];
@@ -169,6 +173,21 @@ export interface WeatherRequest {
   governorate?: string;
 }
 
+function openMeteoEndpoint(path: "forecast" | "archive", params: URLSearchParams): string {
+  const apiKey = process.env.OPEN_METEO_API_KEY?.trim();
+  const allowFreeNonCommercial = process.env.OPEN_METEO_ALLOW_FREE_NONCOMMERCIAL === "true";
+  if (!apiKey && process.env.NODE_ENV === "production" && !allowFreeNonCommercial) {
+    throw new ProviderError(
+      "Open-Meteo",
+      "unconfigured",
+      "A commercial Open-Meteo API key is required in production. Configure OPEN_METEO_API_KEY; historical archive access requires the Professional plan.",
+    );
+  }
+  const host = apiKey ? "https://customer-api.open-meteo.com/v1" : "https://api.open-meteo.com/v1";
+  if (apiKey) params.set("apikey", apiKey);
+  return `${host}/${path}?${params.toString()}`;
+}
+
 /**
  * Fetch a real, current + 7 day forecast from Open-Meteo and map it to the
  * platform's WeatherData contract.
@@ -193,7 +212,7 @@ export async function getWeatherFromOpenMeteo(
   });
 
   const data = await fetchJson<OpenMeteoResponse>(
-    `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
+    openMeteoEndpoint("forecast", params),
     { provider: "Open-Meteo", timeoutMs: 12_000, retries: 2 },
   );
 
@@ -287,11 +306,14 @@ export async function getWeatherFromOpenMeteo(
       name: locationName || `موقع (${lat.toFixed(2)}, ${lon.toFixed(2)})`,
       lat,
       lon,
+      elevation: typeof data.elevation === "number" ? data.elevation : undefined,
     },
     current: {
       temperature: round(current.temperature_2m),
       humidity: round(current.relative_humidity_2m),
       windSpeed: round(current.wind_speed_10m),
+      rainfall: round(current.precipitation ?? 0, 1),
+      solarRadiation: round(current.shortwave_radiation ?? 0, 1),
       pressure: round(current.pressure_msl),
       visibility: round((current.visibility ?? 0) / 1000),
       description: currentWeather.description,
@@ -391,6 +413,10 @@ export interface HistoricalMonthlyAverage {
   avgTemp: number;
   totalRainfall: number;
   avgHumidity: number;
+  maxTemp?: number;
+  minTemp?: number;
+  avgWindSpeed?: number;
+  avgSolarRadiation?: number;
 }
 
 export interface HistoricalWeather {
@@ -404,6 +430,10 @@ interface OpenMeteoArchiveResponse {
     temperature_2m_mean?: number[];
     relative_humidity_2m_mean?: number[];
     precipitation_sum?: number[];
+    temperature_2m_max?: number[];
+    temperature_2m_min?: number[];
+    wind_speed_10m_max?: number[];
+    shortwave_radiation_sum?: number[];
   };
 }
 
@@ -428,29 +458,33 @@ export async function getHistoricalWeatherFromOpenMeteo(
     longitude: String(lon),
     start_date: start.toISOString().slice(0, 10),
     end_date: end.toISOString().slice(0, 10),
-    daily: "temperature_2m_mean,relative_humidity_2m_mean,precipitation_sum",
+    daily: "temperature_2m_mean,temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,precipitation_sum,wind_speed_10m_max,shortwave_radiation_sum",
     timezone: "Africa/Tunis",
   });
 
   const data = await fetchJson<OpenMeteoArchiveResponse>(
-    `https://archive-api.open-meteo.com/v1/archive?${params.toString()}`,
+    openMeteoEndpoint("archive", params),
     { provider: "Open-Meteo Archive", timeoutMs: 15_000, retries: 2 },
   );
 
   const times = data.daily?.time ?? [];
   const buckets = new Map<
     string,
-    { tempSum: number; tempCount: number; rainSum: number; humSum: number; humCount: number }
+    { tempSum: number; tempCount: number; rainSum: number; humSum: number; humCount: number; maxTemp: number; minTemp: number; windSum: number; windCount: number; solarSum: number; solarCount: number }
   >();
 
   times.forEach((iso, index) => {
     const key = iso.slice(0, 7); // YYYY-MM
     const bucket =
       buckets.get(key) ??
-      { tempSum: 0, tempCount: 0, rainSum: 0, humSum: 0, humCount: 0 };
+      { tempSum: 0, tempCount: 0, rainSum: 0, humSum: 0, humCount: 0, maxTemp: -Infinity, minTemp: Infinity, windSum: 0, windCount: 0, solarSum: 0, solarCount: 0 };
     const temp = data.daily?.temperature_2m_mean?.[index];
     const hum = data.daily?.relative_humidity_2m_mean?.[index];
     const rain = data.daily?.precipitation_sum?.[index];
+    const maxTemp = data.daily?.temperature_2m_max?.[index];
+    const minTemp = data.daily?.temperature_2m_min?.[index];
+    const wind = data.daily?.wind_speed_10m_max?.[index];
+    const solar = data.daily?.shortwave_radiation_sum?.[index];
     if (typeof temp === "number") {
       bucket.tempSum += temp;
       bucket.tempCount += 1;
@@ -460,6 +494,10 @@ export async function getHistoricalWeatherFromOpenMeteo(
       bucket.humCount += 1;
     }
     if (typeof rain === "number") bucket.rainSum += rain;
+    if (typeof maxTemp === "number") bucket.maxTemp = Math.max(bucket.maxTemp, maxTemp);
+    if (typeof minTemp === "number") bucket.minTemp = Math.min(bucket.minTemp, minTemp);
+    if (typeof wind === "number") { bucket.windSum += wind; bucket.windCount += 1; }
+    if (typeof solar === "number") { bucket.solarSum += solar; bucket.solarCount += 1; }
     buckets.set(key, bucket);
   });
 
@@ -470,6 +508,10 @@ export async function getHistoricalWeatherFromOpenMeteo(
       avgTemp: b.tempCount ? round(b.tempSum / b.tempCount, 1) : 0,
       totalRainfall: round(b.rainSum, 1),
       avgHumidity: b.humCount ? round(b.humSum / b.humCount) : 0,
+      maxTemp: Number.isFinite(b.maxTemp) ? round(b.maxTemp, 1) : 0,
+      minTemp: Number.isFinite(b.minTemp) ? round(b.minTemp, 1) : 0,
+      avgWindSpeed: b.windCount ? round(b.windSum / b.windCount, 1) : 0,
+      avgSolarRadiation: b.solarCount ? round(b.solarSum / b.solarCount, 1) : 0,
     }));
 
   return {
