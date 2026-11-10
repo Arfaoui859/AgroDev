@@ -72,3 +72,30 @@ The browser obtains a normal Supabase session. Admin access is determined server
 - Do not use the service-role key as the admin token. They are different secrets.
 - The bootstrap endpoint is for operator provisioning only; it is not a public signup or role-change endpoint.
 - The admin dashboard data APIs currently fail closed with `503 DASHBOARD_DATA_SOURCE_NOT_CONNECTED` until real admin data persistence is implemented. Admin login and route authorization do not imply that those dashboard analytics are already live.
+
+
+## Administrator role management (new)
+
+Before using the role editor in **Admin Panel → Users**, apply
+`database/admin-role-management.sql` in the Supabase SQL Editor (or with
+`psql`). This migration creates the service-role-only audit table and an
+atomic database function for role changes. It serializes role changes and
+refuses to demote the last active administrator.
+
+The Render API service must have all three server-side variables configured:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+The service-role key is a server secret. Never add it to a `VITE_*` variable,
+frontend code, Git, screenshots, or chat. The API now refuses to use the anon
+key as a substitute for a privileged Supabase client.
+
+A signed-in administrator with a verified Supabase session can change roles
+from the Users tab. Changes are written to `public.users` and recorded in
+`public.admin_audit_logs`. Operator `x-admin-token` credentials are not
+accepted for this human-attributed mutation.
+
+If the migration has not been applied or the service-role key is missing, the
+endpoint fails closed; it does not pretend the role change succeeded.
