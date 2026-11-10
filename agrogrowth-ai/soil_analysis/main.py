@@ -166,7 +166,7 @@ def get_lab_predictor() -> LabAssistedSoilPredictor:
 
         try:
             predictor = LabAssistedSoilPredictor(
-                min_feature_coverage=0.80
+                min_feature_coverage=1.0
             )
 
             if len(predictor.models) != 7:
