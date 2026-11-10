@@ -39,3 +39,23 @@ CREATE POLICY "Admins can manage users" ON public.users
   WITH CHECK (public.is_admin());
 
 GRANT SELECT, UPDATE ON public.users TO authenticated;
+
+-- Auditable record of administrator CRUD operations.
+CREATE TABLE IF NOT EXISTS public.admin_activity_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  target_user_id uuid,
+  action text NOT NULL,
+  details jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_admin_activity_created_at
+  ON public.admin_activity_logs(created_at DESC);
+ALTER TABLE public.admin_activity_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins read admin activity" ON public.admin_activity_logs;
+CREATE POLICY "Admins read admin activity" ON public.admin_activity_logs
+  FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS "Admins write admin activity" ON public.admin_activity_logs;
+CREATE POLICY "Admins write admin activity" ON public.admin_activity_logs
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+GRANT SELECT, INSERT ON public.admin_activity_logs TO authenticated;
