@@ -26,8 +26,9 @@ function expensePayload(body: any, userId: string) {
   const amount = Number(body.amount);
   const date = String(body.date ?? "");
   const category = String(body.category ?? "");
+  const currency = String(body.currency ?? "TND").toUpperCase();
   const allowed = new Set(["seeds", "fertilizers", "pesticides", "labor", "equipment", "fuel", "maintenance", "utilities", "insurance", "other"]);
-  if (!allowed.has(category) || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (!allowed.has(category) || currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return null;
   }
   return {
@@ -36,7 +37,7 @@ function expensePayload(body: any, userId: string) {
     category,
     subcategory: String(body.subcategory ?? "").slice(0, 120),
     amount,
-    currency: String(body.currency ?? "TND").slice(0, 3),
+    currency: "TND",
     expense_date: date,
     description: String(body.description ?? "").slice(0, 2000),
     crop_related: body.cropRelated ? String(body.cropRelated).slice(0, 100) : null,
@@ -137,13 +138,14 @@ export const createRevenue: RequestHandler = async (req, res) => {
   const db = dbFor(req);
   if (!db) return unavailable(res);
   const body = req.body ?? {};
-  const amount = Number(body.amount ?? body.totalRevenue ?? body.netRevenue);
+  const amount = Number(body.amount ?? body.totalRevenue);
   const date = String(body.date ?? body.revenue_date ?? body.saleDate ?? "");
   const quantity = body.quantity === "" || body.quantity === undefined || body.quantity === null ? null : Number(body.quantity);
   const unitPrice = body.unitPrice === "" || body.unitPrice === undefined || body.unitPrice === null ? null : Number(body.unitPrice);
   const transportationCost = Number(body.transportationCost ?? 0);
   const marketingCost = Number(body.marketingCost ?? 0);
-  if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+  const currency = String(body.currency ?? "TND").toUpperCase();
+  if (currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
       (quantity !== null && (!Number.isFinite(quantity) || quantity <= 0)) ||
       (unitPrice !== null && (!Number.isFinite(unitPrice) || unitPrice <= 0)) ||
       !Number.isFinite(transportationCost) || transportationCost < 0 ||
@@ -197,7 +199,7 @@ export const updateRevenue: RequestHandler = async (req, res) => {
   const db = dbFor(req);
   if (!db) return unavailable(res);
   const body = req.body ?? {};
-  const amount = Number(body.amount ?? body.totalRevenue ?? body.netRevenue);
+  const amount = Number(body.amount ?? body.totalRevenue);
   const date = String(body.date ?? body.revenue_date ?? body.saleDate ?? "");
   const transportationCost = Number(body.transportationCost ?? 0);
   const marketingCost = Number(body.marketingCost ?? 0);
@@ -220,6 +222,7 @@ export const updateRevenue: RequestHandler = async (req, res) => {
     storage_days: Number.isInteger(Number(body.storageDays)) && Number(body.storageDays) >= 0 ? Number(body.storageDays) : 0,
     transportation_cost: transportationCost,
     marketing_cost: marketingCost,
+    currency: "TND",
     updated_at: new Date().toISOString(),
   }).eq("id", req.params.id).eq("user_id", req.userId).select("*").maybeSingle();
   if (error) {
