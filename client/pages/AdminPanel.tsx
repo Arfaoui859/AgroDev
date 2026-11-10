@@ -177,6 +177,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+  const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
+  const [roleChangeUserId, setRoleChangeUserId] = useState<string | null>(null);
+
+  const handleRoleChange = async (user: any, nextRole: string) => {
+    if (!nextRole || nextRole === user.role) return;
+    const confirmed = window.confirm(
+      isArabic
+        ? `تأكيد تغيير صلاحية ${user.email} إلى ${nextRole}؟`
+        : `Change ${user.email}'s role to ${nextRole}?`,
+    );
+    if (!confirmed) return;
+
+    setRoleChangeError(null);
+    setRoleChangeUserId(user.id);
+    try {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(user.id)}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: nextRole }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.success) {
+        throw new Error(body?.message || `Role update failed (HTTP ${response.status})`);
+      }
+      await fetchDashboardData();
+    } catch (error) {
+      setRoleChangeError(error instanceof Error ? error.message : 'Role update failed');
+    } finally {
+      setRoleChangeUserId(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -571,6 +603,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {/* Users Tab */}
         <TabsContent value="users" className="space-y-6">
+          {roleChangeError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{roleChangeError}</AlertDescription>
+            </Alert>
+          )}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               <div className="relative">
@@ -695,6 +733,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <Eye className="h-3 w-3 mr-1" />
                                 {isArabic ? 'عرض' : 'View'}
                               </Button>
+                              <select
+                                aria-label={isArabic ? 'تغيير دور المستخدم' : 'Change user role'}
+                                className="h-9 max-w-36 rounded-md border bg-background px-2 text-xs"
+                                value={user.role}
+                                disabled={roleChangeUserId === user.id}
+                                onChange={(event) => handleRoleChange(user, event.target.value)}
+                              >
+                                <option value="farmer">{isArabic ? 'فلاح' : 'Farmer'}</option>
+                                <option value="agronomist">{isArabic ? 'خبير زراعي' : 'Agronomist'}</option>
+                                <option value="trader">{isArabic ? 'تاجر' : 'Trader'}</option>
+                                <option value="veterinarian">{isArabic ? 'طبيب بيطري' : 'Veterinarian'}</option>
+                                <option value="inspector">{isArabic ? 'مراقب' : 'Inspector'}</option>
+                                <option value="government">{isArabic ? 'مؤسسة حكومية' : 'Government'}</option>
+                                <option value="investor">{isArabic ? 'مستثمر' : 'Investor'}</option>
+                                <option value="admin">{isArabic ? 'مدير النظام' : 'Administrator'}</option>
+                              </select>
                               <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} size="sm" variant="outline">
                                 <Edit className="h-3 w-3 mr-1" />
                                 {isArabic ? 'تحرير' : 'Edit'}
