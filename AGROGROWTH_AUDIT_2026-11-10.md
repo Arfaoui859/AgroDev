@@ -3,7 +3,7 @@
 **Audit date:** 2026-11-10  
 **Repository:** `Arfaoui859/AgroDev`  
 **Branch:** `feat/ai-integration-production-hardening`  
-**Code baseline reviewed:** `e58f4feea4d343fafc0a14c5e01f5fa4ec51c4c5`  
+**Code baseline reviewed:** `a04117b979c5bba60d3d0cf928b0619b6e827377`  
 **Audit mode:** Repository/code inspection plus targeted implementation changes. No live Render or Supabase verification was possible in this pass.
 
 ## 1. Executive summary
@@ -15,7 +15,8 @@ AgroGrowth has eight FastAPI service implementations, a Node/Express gateway, a 
 - Image leaf screening is heuristic; disease diagnosis can use a configured multimodal vision provider, but accuracy on a labelled agricultural dataset has not been demonstrated.
 - Intelligent Agent behaviour depends on an actually configured LLM provider.
 - Multiple frontend modules are still illustrative/demo workflows rather than persisted operational workflows.
-- The effectiveness report page had seeded historical examples and static chart data; these were removed. It currently computes rule-based assessments from user-entered measurements and keeps them only in page memory.
+- The effectiveness report page's seeded history was removed; authenticated persistence endpoints and an RLS migration now exist, pending application to the live Supabase project.
+- The Admin Panel was found to be returning 50 randomly generated users and fabricated metrics. This pass replaced those handlers with database-backed user records and honest unavailable states for data sources that do not exist.
 
 The most important rule remains: **HTTP 200 / healthy means reachable, not model-powered, accurate, or production-validated.**
 
@@ -92,12 +93,20 @@ The deployed URLs could not be queried from this audit environment. No claim is 
 
 | Area | Change |
 |---|---|
+| Admin Panel | Removed 50 randomly generated users and all random/mock admin metrics from server/routes/admin-panel.ts |
+| Admin Panel | Dashboard and user list now query public.users with exact counts, pagination and database provenance |
+| Admin Panel | Role/status updates now persist through PATCH /api/admin/users/:userId and admin RLS; last-admin/self-lockout protections added |
+| Admin Panel | Create/delete actions now use Supabase Auth Admin API and are explicitly disabled when the server-side secret is absent |
+| Admin Panel | Added user creation dialog, role editor, suspend/activate, delete confirmation, pagination and visible API errors |
+| Admin Panel | Added verified current-user profile endpoint so the frontend hydrates roles from public.users rather than trusting user_metadata.role |
+| Admin Panel | Added admin_activity_logs migration and audit events for create/update/delete; security/subscription data stays unavailable unless a real table exists |
+| Admin Panel | Removed the generic simulated-data banner; missing CPU, disk, revenue and subscription metrics render as unavailable instead of fabricated zeroes |
 | Effectiveness Reports | Removed seeded mock reports and hardcoded chart series |
 | Effectiveness Reports | Added validation for product/date/before-after scores |
 | Effectiveness Reports | Cost and farm area are optional user-entered values; no invented weather, yield, pest or nutrient values |
 | Effectiveness Reports | Displays empty states instead of zero/false averages when no actual reports exist |
 | Effectiveness Reports | Added CSV export of actual assessments |
-| Effectiveness Reports | Clearly discloses that the score is rule-based and the records are session-only, not persisted to Supabase |
+| Effectiveness Reports | Clearly discloses that the score is rule-based; authenticated per-user persistence code and RLS migration are now present |
 | AI Intelligence Dashboard | Changed its disclosure from market-price wording to simulated-record wording |
 | Service Status | Uses the aggregate gateway health and shows each model's declared provenance |
 | Cloud Services Status | Displays the real eight-service response shape and no longer says all services are in mock mode |
@@ -124,16 +133,13 @@ These screens are visibly disclosed as illustrative in the current frontend. The
 
 ### 4.3 Effectiveness report persistence
 
-Authenticated GET/POST endpoints now load and save reports per verified user using
-the server-side Supabase client. The migration `database/effectiveness-reports.sql`
-creates the table and RLS policies. The page loads saved reports and sends the
-user's access token; the API requires a verified JWT and writes through the
-server-side elevated client only after checking the caller identity. CI now
-applies this migration and runs a tenant-isolation SQL verification script.
+Authenticated GET/POST endpoints load and save reports per verified user. The
+migration `database/effectiveness-reports.sql` creates the table and RLS policies.
+The page sends the user's access token; the API requires a verified JWT and
+checks caller identity before writing.
 
-**Still required:** apply that SQL file in the correct Supabase project and ensure
-`SUPABASE_SERVICE_ROLE_KEY` is configured server-side. Until both are done, the
-API intentionally returns a clear 503 and the page displays the persistence error.
+**Still required:** apply the migration in the live Supabase project, configure
+the server-side secret, and verify live reads/writes after deployment.
 
 ## 5. Authentication / Admin items still requiring live configuration
 
@@ -157,6 +163,34 @@ Still unverified:
 
 Never put the Supabase secret in a `VITE_` variable or expose it in browser code.
 
+## 5.1 Admin Panel — code-level correction in this pass
+
+The original `server/routes/admin-panel.ts` generated 50 random users on every
+request and returned random analytics, security events, subscriptions and system
+metrics. This made the admin user list unrelated to Supabase and made CRUD
+buttons misleading. Those generators were removed from the active route module.
+
+Current implementation:
+- `GET /api/admin/users` returns paginated real `public.users` rows.
+- `GET /api/admin/overview` and usage analytics derive counts from database
+  queries; revenue, subscriptions, support and security counts are `null` when
+  there is no verified source.
+- `PATCH /api/admin/users/:userId` persists role/status changes and protects
+  the current admin and last administrator from lockout.
+- `POST /api/admin/users` and `DELETE /api/admin/users/:userId` use Supabase
+  Auth Admin APIs and require a server-side service secret.
+- `database/admin-user-management.sql` adds account status fields, admin RLS
+  access and an audit table for admin CRUD events.
+- `GET /api/auth/me` hydrates the app role from the verified database profile;
+  user metadata is not accepted as proof of an admin role.
+
+**Live dependency:** apply `database/admin-user-management.sql` after
+`database/rls-hardening.sql`. If the server-side service key is absent, listing
+and role/status updates can use the verified JWT + admin RLS policy; account
+creation/deletion remain disabled until `SUPABASE_SERVICE_ROLE_KEY` is set.
+The migration and CI regression test have been added but not yet confirmed on
+the live Supabase project.
+
 ## 6. Historical reports and test baseline
 
 The repository contains prior engineering reports dated 2026-11-04 and a soil training report dated 2026-11-07. The older `AI_INTEGRATION_DIAGNOSTIC_REPORT.md` is explicitly historical/superseded. Do not use its February 2025 claims as the current service state.
@@ -178,14 +212,15 @@ Priority order:
 
 1. Run TypeScript, lint, full Jest, Python pytest, build and targeted service smoke tests on this exact branch.
 2. Deploy the branch to Render and verify `/api/ai/health` reports all eight actual service states and correct provenance.
-3. Set and verify the server-side Supabase secret/service-role key; retest Admin login and role verification.
-4. Capture the actual Supabase Auth 400 response reason without sharing secrets or tokens.
-5. Apply `database/effectiveness-reports.sql` in Supabase, set the server-side
+3. Apply `database/admin-user-management.sql` in Supabase and verify Admin login, full user list, role/status updates and admin audit logging.
+4. Set and verify the server-side Supabase secret/service-role key to enable account creation/deletion and test both actions.
+5. Capture the actual Supabase Auth 400 response reason without sharing secrets or tokens.
+6. Apply `database/effectiveness-reports.sql` in Supabase, set the server-side
    secret key, and verify per-user effectiveness report reads/writes.
-6. Connect the demo-backed frontend workflows listed in §4.2 to authenticated database/API sources, or keep them clearly marked as demo-only.
-7. Obtain a licensed/live Tunisian market-price source and build leakage-safe, time-based market forecasting evaluation.
-8. Collect Tunisian field soil samples and labelled crop/leaf/pest datasets; run external validation before promoting any model as field-ready.
-9. Review model artifact footprint and Render memory limits; the seven soil artifacts are large and loaded sequentially to limit peak memory.
+7. Connect the demo-backed frontend workflows listed in §4.2 to authenticated database/API sources, or keep them clearly marked as demo-only.
+8. Obtain a licensed/live Tunisian market-price source and build leakage-safe, time-based market forecasting evaluation.
+9. Collect Tunisian field soil samples and labelled crop/leaf/pest datasets; run external validation before promoting any model as field-ready.
+10. Review model artifact footprint and Render memory limits; the seven soil artifacts are large and loaded sequentially to limit peak memory.
 
 ## 8. Verification status
 
@@ -194,10 +229,11 @@ Priority order:
 | Repository code review | Completed for eight service entrypoints, gateway, service status, selected frontend reports and provenance files |
 | Targeted code fixes | Committed to the audit branch |
 | Soil model artifacts/report | Inspected; no retraining performed |
-| New soil regression tests | Added; current GitHub Actions CI run is queued |
+| New soil regression tests | Added; GitHub Actions runs queued at audit time |
+| Admin CRUD + RLS regression | Added; GitHub Actions runs queued at audit time |
 | TypeScript/Jest/pytest/lint/build after changes | Awaiting GitHub Actions CI; not yet passed |
 | Render live service health | Not verified |
-| Supabase live schema/RLS/Admin login | Not verified |
+| Supabase live schema/RLS/Admin login | Not verified; admin migration must be applied |
 | Production deployment | Not performed |
 
 **Conclusion:** the platform has a meaningful working foundation, including real soil lab-assisted ML artifacts and provider integration paths, but it is not honest to call all eight services fully trained or all frontend workflows production-complete. The source-of-truth status file is `AI_SERVICES_STATUS.md`; this report records the code-level audit and the remaining blockers.
