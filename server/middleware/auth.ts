@@ -127,7 +127,7 @@ export async function requireAuth(
  * profile row or the database is unavailable.
  */
 async function resolveRole(userId: string): Promise<string | null> {
-  const client = supabaseAdmin || supabase;
+  const client = supabaseAdmin;
   if (!client) return null;
   try {
     const { data, error } = await client
@@ -193,6 +193,16 @@ export async function requireAdminAccess(
   }
 
   if (userId) {
+    // Role checks must use the elevated client; the anon client is subject to
+    // RLS and cannot reliably distinguish "not an admin" from "row hidden".
+    if (!supabaseAdmin) {
+      res.status(503).json({
+        success: false,
+        error: "Admin authorization is not configured",
+        message: "Set SUPABASE_SERVICE_ROLE_KEY on the server to enable admin role verification.",
+      });
+      return;
+    }
     const role = await resolveRole(userId);
     if (role && ADMIN_ROLES.has(role)) {
       req.userId = userId;
