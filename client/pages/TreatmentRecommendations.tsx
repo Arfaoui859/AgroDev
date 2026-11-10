@@ -59,6 +59,7 @@ import {
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../lib/apiFetch';
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 
 interface TreatmentProduct {
   id: string;
@@ -342,6 +343,11 @@ const TreatmentRecommendations: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-7xl" dir="rtl">
+      <SimulatedDataNotice
+        title="كتالوج علاجات مرجعي غير متحقق لحظياً"
+        description="العلاجات والجرعات والأسعار المعروضة مرجع ثابت وليست توصية تشخيصية مؤكدة أو تحققاً من التسجيل المحلي. لا تطبق مبيداً دون مراجعة الملصق الرسمي والمهندس الفلاحي وفترة ما قبل الجني."
+        className="mb-2"
+      />
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
