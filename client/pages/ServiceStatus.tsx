@@ -71,7 +71,7 @@ const ServiceStatusPage: React.FC = () => {
           حالة الخدمات والأنظمة
         </h1>
         <p className="text-gray-600">
-          فحص مباشر لحالة جميع خدمات الذكاء الاصطناعي والخدمات الأساسية
+          فحص مباشر لحالة الخدمات الأساسية وقدرات الذكاء الاصطناعي المرتبطة بالخدمات الثمانية
         </p>
         {systemHealth && (
           <div className="flex items-center justify-center gap-4 mt-4">
@@ -176,7 +176,7 @@ const ServiceStatusPage: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="ai-services">
             <Zap className="w-4 h-4 ml-2" />
-            خدمات الذكاء الاصطناعي
+            قدرات الذكاء الاصطناعي
           </TabsTrigger>
         </TabsList>
 
@@ -291,7 +291,7 @@ const ServiceStatusPage: React.FC = () => {
                   {category.name}
                 </CardTitle>
                 <CardDescription>
-                  {category.services.length} خدمة ذكاء اصطناعي
+                  {category.services.length} قدرة مرتبطة بالخدمات
                 </CardDescription>
               </CardHeader>
               <CardContent>
