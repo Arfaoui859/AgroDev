@@ -203,7 +203,8 @@ export const updateRevenue: RequestHandler = async (req, res) => {
   const date = String(body.date ?? body.revenue_date ?? body.saleDate ?? "");
   const transportationCost = Number(body.transportationCost ?? 0);
   const marketingCost = Number(body.marketingCost ?? 0);
-  if (!Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+  const currency = String(body.currency ?? "TND").toUpperCase();
+  if (currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
       !Number.isFinite(transportationCost) || transportationCost < 0 ||
       !Number.isFinite(marketingCost) || marketingCost < 0) {
     return res.status(400).json({ success: false, code: "INVALID_REVENUE" });
