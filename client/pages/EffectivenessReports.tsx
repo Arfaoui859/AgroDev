@@ -100,7 +100,7 @@ export default function EffectivenessReports() {
   }, [filteredReports]);
   const costEffectivenessData = useMemo(() => filteredReports
     .filter(report => report.cost !== undefined)
-    .map(report => ({ product: report.productName, cost: report.cost, effectiveness: report.effectivenessScore })), [filteredReports]);
+    .map(report => ({ product: report.productName, cost: report.cost ?? 0, effectiveness: report.effectivenessScore })), [filteredReports]);
 
   const [newReport, setNewReport] = useState({
     productName: '',
@@ -599,10 +599,10 @@ export default function EffectivenessReports() {
                     <div className="space-y-2">
                       <h4 className="font-medium">التكلفة</h4>
                       <div className="text-lg font-semibold text-green-600">
-                        {report.cost.toFixed(2)} د.ت
+                        {report.cost !== undefined ? `${report.cost.toFixed(2)} د.ت` : "غير مدخلة"}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {(report.cost / report.farmSize).toFixed(2)} د.ت/هكتار
+                        {report.cost !== undefined && report.farmSize ? `${(report.cost / report.farmSize).toFixed(2)} د.ت/هكتار` : "غير متاحة"}
                       </p>
                     </div>
                   </div>
