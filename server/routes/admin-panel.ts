@@ -317,6 +317,15 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
     return res.status(409).json({ success: false, error: "You cannot remove your own administrator access or deactivate your own account." });
   }
   try {
+    if (role !== undefined && role !== "admin") {
+      const { data: currentTarget, error: currentError } = await client.from("users").select("role").eq("id", userId).maybeSingle();
+      if (currentError) throw currentError;
+      if (String(currentTarget?.role || "").toLowerCase() === "admin") {
+        const { count, error: countError } = await client.from("users").select("id", { count: "exact", head: true }).eq("role", "admin");
+        if (countError) throw countError;
+        if ((count ?? 0) <= 1) return res.status(409).json({ success: false, error: "The last administrator cannot be demoted." });
+      }
+    }
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (role !== undefined) patch.role = role;
     if (status !== undefined) {
