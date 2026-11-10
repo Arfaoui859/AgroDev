@@ -296,7 +296,6 @@ import {
 
 export function createServer() {
   const app = express();
-  app.use("/api/farm-operations", requireAuth, requireVerifiedAuth, requireRole(["farmer"]), farmOperationsRoutes);
 
   // Trust the single reverse proxy in front of the Render service.
   app.set("trust proxy", 1);
@@ -311,6 +310,9 @@ export function createServer() {
 
   // Global API rate limiting (health checks are exempt)
   app.use("/api", apiRateLimiter());
+
+  // Real farm equipment/task CRUD: parse JSON, apply security headers and rate limits first.
+  app.use("/api/farm-operations", requireAuth, requireVerifiedAuth, requireRole(["farmer"]), farmOperationsRoutes);
 
   // Stricter limiter for expensive AI inference paths (may trigger paid model
   // calls). Registered here, before any /api/ai, /api/disease, /api/soil-analysis
