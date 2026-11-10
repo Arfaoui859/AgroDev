@@ -433,11 +433,11 @@ const IntelligentBreedingManager: React.FC = () => {
             <Target className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              87%
+            <div className="text-2xl font-bold text-muted-foreground">
+              غير متاح
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              للعام الماضي
+              لا توجد سجلات تناسل تاريخية موثقة
             </p>
           </CardContent>
         </Card>
