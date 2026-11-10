@@ -524,6 +524,8 @@ model limitations, frontend demo modules, and remaining production blockers, see
 - [AI services status and model provenance](AI_SERVICES_STATUS.md)
 - [Comprehensive services and frontend audit — 2026-11-10](AGROGROWTH_AUDIT_2026-11-10.md)
 - [Effectiveness reports database migration](database/effectiveness-reports.sql)
+- [Admin user-management migration](database/admin-user-management.sql)
+- [Database and Admin connection setup](DATABASE_SETUP.md)
 
 The current audit branch is `feat/ai-integration-production-hardening`. Live
 Render health, Supabase migration application, and post-change CI must be
