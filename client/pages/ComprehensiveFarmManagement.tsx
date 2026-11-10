@@ -1035,7 +1035,8 @@ const ComprehensiveFarmManagement: React.FC<
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setSelectedTask(task)}
+                        disabled
+                        title={isArabic ? "تفاصيل المهمة غير متاحة حتى ربطها بسير عمل محفوظ" : "Task details are unavailable until a persisted workflow is connected"}
                       >
                         <Eye className="h-3 w-3 mr-1" />
                         {isArabic ? "عرض" : "View"}
@@ -1157,7 +1158,8 @@ const ComprehensiveFarmManagement: React.FC<
                     <Button
                       className="w-full"
                       variant="outline"
-                      onClick={() => setSelectedCrop(crop)}
+                      disabled
+                      title={isArabic ? "تفاصيل المحصول غير متاحة حتى ربطها بسجل محفوظ" : "Crop details are unavailable until connected to a persisted crop record"}
                     >
                       <Sprout className="h-4 w-4 mr-2" />
                       {isArabic ? "عرض التفاصيل" : "View Details"}
