@@ -482,7 +482,7 @@ export function createServer() {
   app.post("/api/assistant/satellite/ndvi", requireAuth, analyzeFarmSatelliteNdvi);
 
   // Advanced Livestock Management routes
-  app.get("/api/animals", getAnimals);
+  app.get("/api/animals", requireAuth, getAnimals);
   // Livestock records are user-specific and require an authenticated identity.
   app.get("/api/animal-health/:animalId", requireAuth, getAnimalHealth);
   app.get("/api/breeding-recommendations", requireAuth, getBreedingRecommendations);
