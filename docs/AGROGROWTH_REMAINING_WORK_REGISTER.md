@@ -30,6 +30,8 @@
 | Crop recommendations UI | Uses authenticated apiFetch; clears results and shows unavailable state on non-success responses; planting action disabled until connected to a persisted cultivation workflow | Recommendation API is currently fail-closed; no trained/validated model is claimed |
 | Arabic copy integrity | Repaired visible replacement-character corruption in core, notification, market-alert, weather-alert, and crop-suggestion pages | Needs full UI locale review and automated encoding scan |
 | Equipment data | Comprehensive Farm Management shows an empty state when no equipment records exist rather than inventing a sample tractor | Verify API response and rendering in browser |
+| Comprehensive farm API authentication | Dashboard overview now uses `apiFetch` so a Supabase access token is attached when available; removed the misleading hard-coded `farm_001` default | Backend overview endpoint intentionally returns HTTP 503 until tenant-scoped persistence is implemented; authenticated request path is source-checked only |
+| Comprehensive farm detail actions | Removed unused detail state and disabled crop/task/equipment detail controls that previously changed invisible state; corrected four Arabic replacement-character strings and added provenance banner to unavailable state | Source assertions passed; real detail views and persistence remain outstanding |
 
 ## Remaining work — prioritized
 
