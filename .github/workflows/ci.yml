@@ -188,16 +188,24 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/local-rls-shim.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/cloud-setup.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
+          # Apply the same tenant-owned persistence migrations used by the app.
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/farm-finance-persistence.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
 
       - name: 🔁 Re-apply hardening (must be idempotent)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agrogrowth
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/farm-finance-persistence.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
 
       - name: 🔒 Verify tenant isolation and RLS policies
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agrogrowth
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/rls-verification.sql
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/rls-verification.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/verify-security-hardening.sql
 
   # =====================================
   # DOCKER BUILD (production target)
