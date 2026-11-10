@@ -30,7 +30,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "crop_recommendation",
         description: "AI-powered crop selection based on soil and climate conditions",
-        requiresLocal: true
       },
       {
         id: "soil-analysis",
@@ -39,7 +38,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "soil_analysis",
         description: "Intelligent soil health assessment and recommendations",
-        requiresLocal: true
       },
       {
         id: "climate-crop-matcher",
@@ -48,7 +46,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "soil_analysis", 
         description: "Match crops with climate conditions for optimal yield",
-        requiresLocal: true
       }
     ]
   },
@@ -62,7 +59,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "image_diagnosis",
         description: "Image-based plant disease identification and treatment recommendations",
-        requiresLocal: true
       },
       {
         id: "leaf-scan",
@@ -71,7 +67,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "image_diagnosis",
         description: "Advanced leaf analysis for early disease detection",
-        requiresLocal: true
       },
       {
         id: "pest-control",
@@ -80,7 +75,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "pest_control",
         description: "Intelligent pest identification and control strategies",
-        requiresLocal: true
       }
     ]
   },
@@ -94,7 +88,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "weather_yield",
         description: "Weather-based crop planning and yield optimization",
-        requiresLocal: true
       },
       {
         id: "yield-predictor",
@@ -103,7 +96,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "weather_yield",
         description: "Predict crop yields based on multiple factors",
-        requiresLocal: true
       },
       {
         id: "irrigation-optimizer",
@@ -112,7 +104,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "irrigation_optimization",
         description: "Optimize irrigation schedules based on weather and soil data",
-        requiresLocal: true
       }
     ]
   },
@@ -126,7 +117,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "market_forecast",
         description: "Predict market prices and demand trends",
-        requiresLocal: true
       },
       {
         id: "supply-demand",
@@ -135,7 +125,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/health",
         healthServiceKey: "market_forecast",
         description: "Analyze supply and demand patterns for better decision making",
-        requiresLocal: true
       },
       {
         id: "smart-match",
@@ -155,7 +144,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/farming-tasks-planner", 
         healthServiceKey: "smart_assistant",
         description: "Intelligent farm task scheduling and planning",
-        requiresLocal: true
       },
       {
         id: "agro-chat",
@@ -164,7 +152,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/agro-chat",
         healthServiceKey: "smart_assistant",
         description: "AI assistant for farming questions and guidance", 
-        requiresLocal: true
       },
       {
         id: "alert-notifier",
@@ -173,7 +160,6 @@ export const AI_SERVICES: ServiceCategory[] = [
         endpoint: "/api/ai/alert-notifier",
         healthServiceKey: "smart_assistant",
         description: "Intelligent alert system for farm conditions",
-        requiresLocal: true
       }
     ]
   }
