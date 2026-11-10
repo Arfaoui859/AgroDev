@@ -17,7 +17,7 @@ function fail(res: Response, status: number, code: string, message: string) {
 function dbFor(req: Request) {
   return scopedClientFromAuthHeader(req.header("authorization"));
 }
-function validDate(value: unknown): value is string {
+export function validDate(value: unknown): value is string {
   if (typeof value !== "string" || !DATE.test(value)) return false;
   const d = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(d.valueOf()) && d.toISOString().slice(0, 10) === value;
@@ -25,7 +25,7 @@ function validDate(value: unknown): value is string {
 function optionalText(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
-function equipmentPayload(body: any) {
+export function equipmentPayload(body: any) {
   const name = optionalText(body.name, 180);
   const category = body.category ?? "other";
   const condition = body.condition ?? "unknown";
@@ -45,14 +45,14 @@ function equipmentPayload(body: any) {
     notes: optionalText(body.notes, 3000),
   };
 }
-function taskPayload(body: any) {
+export function taskPayload(body: any, userId?: string) {
   const title = optionalText(body.title, 180);
   const task_type = body.task_type ?? "general";
   const priority = body.priority ?? "medium";
   const status = body.status ?? "pending";
   if (!title || !taskTypes.has(task_type) || !taskPriorities.has(priority) ||
       !taskStatuses.has(status) || (body.due_date != null && body.due_date !== "" && !validDate(body.due_date)) ||
-      (body.assigned_to != null && body.assigned_to !== "" && !UUID.test(body.assigned_to))) return null;
+      (body.assigned_to != null && body.assigned_to !== "" && (!UUID.test(body.assigned_to) || (userId && body.assigned_to !== userId)))) return null;
   return {
     title, task_type, priority, status,
     description: optionalText(body.description, 4000),
@@ -132,7 +132,7 @@ router.post("/tasks", async (req, res) => {
   const db = dbFor(req);
   if (!db) return fail(res, 503, "DATABASE_UNAVAILABLE", "قاعدة البيانات غير متاحة.");
   const farmId = req.body?.farm_id;
-  const payload = taskPayload(req.body ?? {});
+  const payload = taskPayload(req.body ?? {}, (req as any).userId);
   if (typeof farmId !== "string" || !UUID.test(farmId) || !payload)
     return fail(res, 400, "INVALID_TASK_INPUT", "تحقق من المزرعة وبيانات المهمة.");
   const { data, error } = await db.from("farm_tasks").insert({ ...payload, farm_id: farmId, created_by: (req as any).userId }).select("*").single();
