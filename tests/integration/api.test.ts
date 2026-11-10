@@ -296,7 +296,7 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
           const response = await request(prodApp)
             .get("/api/demo-users")
             .set("x-admin-token", "wrong-token");
-          expect([401, 403]).toContain(response.status);
+          expect(response.status).toBe(404);
         } finally {
           if (previousEnv === undefined) delete process.env.NODE_ENV;
           else process.env.NODE_ENV = previousEnv;
