@@ -827,7 +827,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       }
 
       // Update conversation
-      await updateActiveConversation(userMessage, aiResponse);
+      // The chat endpoint now persists the user turn and its server-generated answer.
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -852,7 +852,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
    */
   const callAdvisorApi = async (
     messageContent: string
-  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string; disclaimer?: string; modelSource?: string; farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable'; contextSummary?: string[]; usedAgents?: string[]; correlationId?: string }> => {
+  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string; disclaimer?: string; modelSource?: string; farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable'; contextSummary?: string[]; usedAgents?: string[]; correlationId?: string; conversationId?: string | null; historyPersisted?: boolean; historyPersistenceCode?: string | null }> => {
     const history = messages.slice(-6).map(m => ({
       role: m.type === 'user' ? 'user' : 'assistant',
       content: m.content
@@ -864,7 +864,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         'Content-Type': 'application/json',
         ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       },
-      body: JSON.stringify({ message: messageContent, language, history })
+      body: JSON.stringify({ message: messageContent, language, history, conversationId: activeConversation })
     });
     const payload = await response.json();
     if (!response.ok) {
@@ -879,6 +879,13 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     try {
       const result = await callAdvisorApi(userInput);
       const source = result.dataSource === 'llm' ? 'llm' : 'rule-based';
+      if (result.conversationId) setActiveConversation(result.conversationId);
+      if (result.historyPersisted) await loadConversations();
+      const historyNote = result.historyPersisted
+        ? undefined
+        : (language === "ar"
+          ? "تنبيه: الإجابة جاهزة، لكن لم يتم تأكيد حفظها في سجل المحادثات. رمز الحفظ: " + (result.historyPersistenceCode || "غير متاح")
+          : "Note: the answer is ready, but chat history was not confirmed as saved. Persistence code: " + (result.historyPersistenceCode || "unavailable"));
       return {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
@@ -894,7 +901,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
               : ['محرك قواعد زراعية'],
           farmContextStatus: result.farmContextStatus,
           contextSummary: result.contextSummary?.slice(0, 8),
-          note: result.note,
+          note: [result.note, historyNote].filter(Boolean).join(' ') || undefined,
           disclaimer: result.disclaimer,
           usedAgents: result.usedAgents?.slice(0, 8),
           correlationId: result.correlationId,
@@ -1031,76 +1038,6 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       console.error("Could not open assistant conversation:", error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const updateActiveConversation = async (userMessage: ChatMessage, aiMessage: ChatMessage) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("VERIFIED_SESSION_REQUIRED");
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + session.access_token,
-      };
-      let conversationId = activeConversation;
-      if (!conversationId) {
-        const createResponse = await fetch("/api/assistant/conversations", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            title: userMessage.content.slice(0, 180),
-            language,
-            category: aiMessage.category || "general",
-          }),
-        });
-        const created = await createResponse.json();
-        if (!createResponse.ok || created.success !== true) throw new Error(created.code || "CONVERSATION_CREATE_FAILED");
-        conversationId = created.data.id;
-        setActiveConversation(conversationId);
-      }
-
-      for (const message of [userMessage, aiMessage]) {
-        const saveResponse = await fetch(`/api/assistant/conversations/${encodeURIComponent(conversationId)}/messages`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            role: message.type,
-            content: message.content,
-            language: message.language,
-            dataSource: message.metadata?.dataSource,
-            modelSource: message.metadata?.modelSource,
-            metadata: message.metadata || {},
-          }),
-        });
-        const saved = await saveResponse.json();
-        if (!saveResponse.ok || saved.success !== true) throw new Error(saved.code || "CONVERSATION_MESSAGE_SAVE_FAILED");
-      }
-      await loadConversations();
-    } catch (error) {
-      console.error("Assistant answer was generated but conversation persistence failed:", error);
-      setMessages(prev => [...prev, {
-        id: "memory-save-warning-" + Date.now(),
-        type: "assistant",
-        content: (() => {
-          const detail = error instanceof Error ? error.message : "UNKNOWN";
-          if (detail.includes("ASSISTANT_MIGRATION_REQUIRED")) {
-            return language === "ar"
-              ? "تعذّر حفظ المحادثة لأن جداول الذاكرة غير موجودة في Supabase. افتح Supabase → SQL Editor، وطبّق الملف database/autonomous-farm-agent.sql كاملاً، ثم أعد تحميل التطبيق وجرّب من جديد. الإجابة الحالية لم يُؤكّد حفظ سجلها."
-              : "Conversation history tables are missing. In Supabase SQL Editor, apply database/autonomous-farm-agent.sql, reload the app, and retry. The generated answer was not confirmed as persisted.";
-          }
-          if (detail.includes("ASSISTANT_RLS_DENIED")) {
-            return language === "ar"
-              ? "رفضت سياسات RLS حفظ المحادثة. يلزم التحقق من JWT المستخدم وسياسات الوصول إلى farm_agent_conversations وfarm_agent_messages. لم يتم تأكيد حفظ السجل."
-              : "RLS denied conversation persistence. Verify the user's JWT and policies on farm_agent_conversations and farm_agent_messages. History was not confirmed as saved.";
-          }
-          return language === "ar"
-            ? "تم توليد الإجابة لكن تعذّر تأكيد حفظ سجل المحادثة. رمز الخطأ: " + detail + ". لم يتم اعتبار السجل محفوظاً."
-            : "The answer was generated, but conversation history was not confirmed as saved. Error: " + detail;
-        })(),
-        timestamp: new Date().toISOString(),
-        language,
-        category: "general",
-      }]);
     }
   };
 
