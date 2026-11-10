@@ -28,6 +28,7 @@ import {
   Brain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 
 interface FertilizerRecommendation {
   id: string;
@@ -216,6 +217,11 @@ export default function FertilizerRecommendations() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <SimulatedDataNotice
+        title="كتالوج مرجعي ثابت غير متحقق لحظياً"
+        description="المنتجات والأسعار والموردون والجرعات بيانات مرجعية ثابتة وليست عروضاً أو مخزوناً مباشراً. تحقق من تسجيل المنتج والملصق والجرعة وفترة ما قبل الجني مع مهندس فلاحي محلي قبل التطبيق."
+        className="mb-2"
+      />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">توصيات الأسمدة والمبيدات</h1>
