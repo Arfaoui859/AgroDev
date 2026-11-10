@@ -124,7 +124,14 @@ These screens are visibly disclosed as illustrative in the current frontend. The
 
 ### 4.3 Effectiveness report persistence
 
-The page now avoids fake history, but the backend `POST /api/fertilizer/track/effectiveness` calculates a rule-based score and does not persist a report row. The frontend therefore keeps newly created assessments in page state only. A proper next implementation requires an authenticated per-user table, RLS policy, GET/list endpoint, and insert endpoint. Until that work is complete, the page explicitly warns that refreshing loses the session's entries.
+Authenticated GET/POST endpoints now load and save reports per verified user using
+the server-side Supabase client. The migration `database/effectiveness-reports.sql`
+creates the table and RLS policies. The page loads saved reports and sends the
+user's access token; it no longer treats page state as durable storage.
+
+**Still required:** apply that SQL file in the correct Supabase project and ensure
+`SUPABASE_SERVICE_ROLE_KEY` is configured server-side. Until both are done, the
+API intentionally returns a clear 503 and the page displays the persistence error.
 
 ## 5. Authentication / Admin items still requiring live configuration
 
@@ -171,7 +178,8 @@ Priority order:
 2. Deploy the branch to Render and verify `/api/ai/health` reports all eight actual service states and correct provenance.
 3. Set and verify the server-side Supabase secret/service-role key; retest Admin login and role verification.
 4. Capture the actual Supabase Auth 400 response reason without sharing secrets or tokens.
-5. Implement persisted effectiveness reports with user ownership and RLS.
+5. Apply `database/effectiveness-reports.sql` in Supabase, set the server-side
+   secret key, and verify per-user effectiveness report reads/writes.
 6. Connect the demo-backed frontend workflows listed in §4.2 to authenticated database/API sources, or keep them clearly marked as demo-only.
 7. Obtain a licensed/live Tunisian market-price source and build leakage-safe, time-based market forecasting evaluation.
 8. Collect Tunisian field soil samples and labelled crop/leaf/pest datasets; run external validation before promoting any model as field-ready.
