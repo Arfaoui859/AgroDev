@@ -76,13 +76,109 @@ interface YieldPrediction {
   modelSource?: string;
 }
 
+
+async function fetchWeatherContext(latitude: number, longitude: number) {
+  const end = new Date(Date.now() - 86400000);
+  const start = new Date(end.getTime() - 364 * 86400000);
+  const iso = (date: Date) => date.toISOString().slice(0, 10);
+  const forecastUrl = new URL("https://api.open-meteo.com/v1/forecast");
+  forecastUrl.search = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    current: "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,shortwave_radiation",
+    daily: "precipitation_sum,temperature_2m_max,temperature_2m_min",
+    past_days: "30",
+    forecast_days: "1",
+    timezone: "auto",
+  }).toString();
+  const archiveUrl = new URL("https://archive-api.open-meteo.com/v1/archive");
+  archiveUrl.search = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    start_date: iso(start),
+    end_date: iso(end),
+    daily: "temperature_2m_mean,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,wind_speed_10m_max,shortwave_radiation_sum",
+    timezone: "auto",
+  }).toString();
+  const [forecastResponse, archiveResponse] = await Promise.all([
+    fetch(forecastUrl.toString(), { signal: AbortSignal.timeout(15000) }),
+    fetch(archiveUrl.toString(), { signal: AbortSignal.timeout(20000) }),
+  ]);
+  if (!forecastResponse.ok || !archiveResponse.ok) {
+    throw new Error(`Open-Meteo weather data unavailable (forecast ${forecastResponse.status}, archive ${archiveResponse.status})`);
+  }
+  const [forecast, archive] = await Promise.all([forecastResponse.json(), archiveResponse.json()]);
+  const numbers = (values: unknown[]) => values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const mean = (values: unknown[]) => {
+    const valid = numbers(values);
+    return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
+  };
+  const sum = (values: unknown[]) => numbers(values).reduce((total, value) => total + value, 0);
+  const range = (maxValues: unknown[], minValues: unknown[]) => {
+    const max = numbers(maxValues), min = numbers(minValues);
+    return max.length && min.length ? Math.max(...max) - Math.min(...min) : null;
+  };
+  const current = forecast.current || {};
+  const forecastDaily = forecast.daily || {};
+  const archiveDaily = archive.daily || {};
+  const annualRainfall = sum(archiveDaily.precipitation_sum || []);
+  const recentRainfall = sum((forecastDaily.precipitation_sum || []).slice(-7));
+  const annualTemperature = mean(archiveDaily.temperature_2m_mean || []);
+  const annualHumidity = mean(archiveDaily.relative_humidity_2m_mean || []);
+  const annualWind = mean(archiveDaily.wind_speed_10m_max || []);
+  const annualSolar = mean(archiveDaily.shortwave_radiation_sum || []);
+  const annualVariation = range(archiveDaily.temperature_2m_max || [], archiveDaily.temperature_2m_min || []);
+  const recentVariation = range(forecastDaily.temperature_2m_max || [], forecastDaily.temperature_2m_min || []);
+  const elevation = Number(forecast.elevation);
+  const currentWeather = {
+    temperature: Number(current.temperature_2m),
+    humidity: Number(current.relative_humidity_2m),
+    rainfall: Number(current.precipitation ?? 0),
+    wind_speed: Number(current.wind_speed_10m),
+    solar_radiation: Number(current.shortwave_radiation),
+    recent_rainfall: recentRainfall,
+    annual_rainfall: annualRainfall,
+    temperature_variation: recentVariation ?? annualVariation,
+  };
+  const historicalWeather = {
+    temperature: annualTemperature,
+    humidity: annualHumidity,
+    rainfall: annualRainfall,
+    wind_speed: annualWind,
+    solar_radiation: annualSolar,
+    recent_rainfall: recentRainfall,
+    annual_rainfall: annualRainfall,
+    temperature_variation: annualVariation,
+  };
+  const required = [...Object.values(currentWeather), ...Object.values(historicalWeather), elevation];
+  if (required.some((value) => typeof value !== "number" || !Number.isFinite(value))) {
+    throw new Error("Open-Meteo did not return enough weather history for this location.");
+  }
+  return {
+    location: { latitude, longitude, elevation, region: "Open-Meteo grid cell" },
+    current_conditions: currentWeather,
+    historical_weather: historicalWeather,
+    weather_data: currentWeather,
+    source: "Open-Meteo forecast + archive (measured/reanalysis weather)",
+  };
+}
+
 export default function WeatherYieldPlanner() {
   const { language, dir, t } = useLanguage();
 
-  const [latitude, setLatitude] = useState(35.0);
-  const [longitude, setLongitude] = useState(10.0);
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [crops, setCrops] = useState<string[]>(["wheat", "tomato"]);
-  const [farmSize, setFarmSize] = useState(1);
+  const [farmSize, setFarmSize] = useState("");
+  const [soilPh, setSoilPh] = useState("");
+  const [soilFertility, setSoilFertility] = useState("");
+  const [soilOrganicMatter, setSoilOrganicMatter] = useState("");
+  const [soilMoisture, setSoilMoisture] = useState("");
+  const [irrigationEfficiency, setIrrigationEfficiency] = useState("");
+  const [fertilizerRate, setFertilizerRate] = useState("");
+  const [pestManagement, setPestManagement] = useState("");
+  const [diseaseControl, setDiseaseControl] = useState("");
+  const [organicFarming, setOrganicFarming] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [loadingYield, setLoadingYield] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +192,10 @@ export default function WeatherYieldPlanner() {
   };
 
   const runPlan = async () => {
+    if (!latitude.trim() || !longitude.trim() || !farmSize.trim() || !Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude)) || Number(farmSize) <= 0) {
+      setError(language === "ar" ? "أدخل إحداثيات الحقل ومساحته." : "Enter the field coordinates and farm size.");
+      return;
+    }
     if (crops.length === 0) {
       setError(t("weather.selectCrop"));
       return;
@@ -104,14 +204,18 @@ export default function WeatherYieldPlanner() {
     setError(null);
     setPlan(null);
     try {
+      const weatherContext = await fetchWeatherContext(Number(latitude), Number(longitude));
       const response = await apiFetch(
         "/api/weather-yield-intelligence/weather-plan",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            location: { latitude, longitude, region: "تونس" },
+            location: weatherContext.location,
+            historical_weather: weatherContext.historical_weather,
+            current_conditions: weatherContext.current_conditions,
             crop_options: crops,
+            farm_profile: { farm_size: Number(farmSize) },
             planning_horizon_months: 12,
             language,
           }),
@@ -133,10 +237,16 @@ export default function WeatherYieldPlanner() {
   };
 
   const runYield = async () => {
+    const soilInputs = [soilPh, soilFertility, soilOrganicMatter, soilMoisture, irrigationEfficiency, fertilizerRate, pestManagement, diseaseControl];
+    if (!latitude.trim() || !longitude.trim() || !farmSize.trim() || soilInputs.some((value) => value.trim() === "") || Number(farmSize) <= 0) {
+      setError(language === "ar" ? "أدخل إحداثيات الحقل ومساحته وقياسات التربة وممارسات الإدارة." : "Enter field coordinates, farm size, measured soil values and management practices.");
+      return;
+    }
     setLoadingYield(true);
     setError(null);
     setYieldResult(null);
     try {
+      const weatherContext = await fetchWeatherContext(Number(latitude), Number(longitude));
       const response = await apiFetch(
         "/api/weather-yield-intelligence/predict-yield",
         {
@@ -144,9 +254,11 @@ export default function WeatherYieldPlanner() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             crop_type: crops[0] ?? "wheat",
-            farm_size: farmSize,
-            weather_data: { temperature: 22, humidity: 60, annual_rainfall: 450 },
-            soil_data: { ph: 6.8, fertility_score: 0.75, moisture_percentage: 45 },
+            location: weatherContext.location,
+            farm_size: Number(farmSize),
+            weather_data: weatherContext.weather_data,
+            soil_data: { ph: Number(soilPh), fertility_score: Number(soilFertility), organic_matter: Number(soilOrganicMatter), moisture_percentage: Number(soilMoisture) },
+            management_practices: { irrigation_efficiency: Number(irrigationEfficiency), fertilizer_application_rate: Number(fertilizerRate), pest_management_score: Number(pestManagement), disease_control_score: Number(diseaseControl), organic_farming: organicFarming },
             language,
           }),
         },
@@ -198,7 +310,7 @@ export default function WeatherYieldPlanner() {
                 type="number"
                 step={0.1}
                 value={latitude}
-                onChange={(e) => setLatitude(Number(e.target.value))}
+                onChange={(e) => setLatitude(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -207,7 +319,7 @@ export default function WeatherYieldPlanner() {
                 type="number"
                 step={0.1}
                 value={longitude}
-                onChange={(e) => setLongitude(Number(e.target.value))}
+                onChange={(e) => setLongitude(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -216,9 +328,25 @@ export default function WeatherYieldPlanner() {
                 type="number"
                 step={0.1}
                 value={farmSize}
-                onChange={(e) => setFarmSize(Number(e.target.value))}
+                onChange={(e) => setFarmSize(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="rounded-lg border p-4 space-y-3">
+            <h3 className="font-semibold">{language === "ar" ? "قياسات التربة وممارسات الإدارة لتوقع المردودية" : "Soil measurements and management inputs for yield estimation"}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="space-y-1"><Label>pH</Label><Input type="number" min="0" max="14" step="0.1" value={soilPh} onChange={(e) => setSoilPh(e.target.value)} /></div>
+              <div className="space-y-1"><Label>{language === "ar" ? "خصوبة التربة (0–1)" : "Soil fertility (0–1)"}</Label><Input type="number" min="0" max="1" step="0.01" value={soilFertility} onChange={(e) => setSoilFertility(e.target.value)} /></div>
+              <div className="space-y-1"><Label>{language === "ar" ? "المادة العضوية (%)" : "Organic matter (%)"}</Label><Input type="number" min="0" step="0.1" value={soilOrganicMatter} onChange={(e) => setSoilOrganicMatter(e.target.value)} /></div>
+              <div className="space-y-1"><Label>{language === "ar" ? "رطوبة التربة (%)" : "Soil moisture (%)"}</Label><Input type="number" min="0" max="100" step="0.1" value={soilMoisture} onChange={(e) => setSoilMoisture(e.target.value)} /></div>
+              <div className="space-y-1"><Label>{language === "ar" ? "كفاءة الري (0–1)" : "Irrigation efficiency (0–1)"}</Label><Input type="number" min="0" max="1" step="0.01" value={irrigationEfficiency} onChange={(e) => setIrrigationEfficiency(e.target.value)} /></div>
+              <div className="space-y-1"><Label>{language === "ar" ? "معدل التسميد" : "Fertilizer application rate"}</Label><Input type="number" min="0" step="0.1" value={fertilizerRate} onChange={(e) => setFertilizerRate(e.target.value)} /></div>
+              <div className="space-y-1"><Label>{language === "ar" ? "إدارة الآفات (0–1)" : "Pest management (0–1)"}</Label><Input type="number" min="0" max="1" step="0.01" value={pestManagement} onChange={(e) => setPestManagement(e.target.value)} /></div>
+              <div className="space-y-1"><Label>{language === "ar" ? "مكافحة الأمراض (0–1)" : "Disease control (0–1)"}</Label><Input type="number" min="0" max="1" step="0.01" value={diseaseControl} onChange={(e) => setDiseaseControl(e.target.value)} /></div>
+            </div>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={organicFarming} onChange={(e) => setOrganicFarming(e.target.checked)} />{language === "ar" ? "زراعة عضوية" : "Organic farming"}</label>
+            <p className="text-xs text-muted-foreground">{language === "ar" ? "بيانات الطقس تُجلب مباشرة من Open-Meteo. التربة والممارسات يجب أن تكون من قياسات المزرعة." : "Weather is fetched from Open-Meteo. Soil and management values must come from this farm's measurements."}</p>
           </div>
 
           <div className="space-y-2">
