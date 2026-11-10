@@ -173,3 +173,15 @@ requires a verified administrator JWT and writes a before/after
 address or password. If either persistence step or audit write fails, the
 API attempts to restore the previous values and reports a partial failure
 rather than claiming success.
+
+
+### User detail data integrity (2026-11-10)
+
+The user details dialog now displays only fields returned by the persisted
+user directory: account creation time, recorded last sign-in, account ID,
+and the profile's email-verification flag. Missing or invalid timestamps are
+shown as unavailable/not recorded. Login counts, phone verification, and
+two-factor enrollment are explicitly marked as not connected/unavailable;
+the UI no longer reads placeholder properties or presents them as real
+account-security facts. Connect verified Auth/session telemetry before
+enabling those indicators.
