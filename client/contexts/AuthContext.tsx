@@ -236,6 +236,32 @@ Row Level Security (RLS) policies are blocking access.
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
+          // The public.users row is the source of truth for application roles.
+          // Retry through the server's verified-JWT endpoint before using a
+          // restricted non-admin fallback; never trust user_metadata.role.
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (currentSession?.access_token) {
+            try {
+              const response = await fetch("/api/auth/me", {
+                headers: { Authorization: `Bearer ${currentSession.access_token}` },
+              });
+              const payload = await response.json().catch(() => ({}));
+              if (response.ok && payload.success && payload.data) {
+                setUser(payload.data);
+                setUserProfile({
+                  id: "default",
+                  user_id: user.id,
+                  preferences: { language: "ar", notifications: true, weather_alerts: true, market_alerts: true },
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                });
+                return;
+              }
+              console.error("Verified application profile unavailable:", payload.error || response.status);
+            } catch (profileError) {
+              console.error("Server profile verification failed:", profileError);
+            }
+          }
           setUser({
             id: user.id,
             email: user.email || "",
@@ -244,7 +270,7 @@ Row Level Security (RLS) policies are blocking access.
               user.email?.split("@")[0] ||
               "User",
             full_name_ar: user.user_metadata?.full_name_ar || "مستخدم",
-            role: user.user_metadata?.role || "farmer",
+            role: "farmer",
             verified: user.email_confirmed_at ? true : false,
             created_at: user.created_at,
             updated_at: user.updated_at || user.created_at,
