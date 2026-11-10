@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { isSupabaseConfigured, supabaseAdmin } from '../lib/supabase';
+import { isSupabaseAdminConfigured, supabaseAdmin } from '../lib/supabase';
 
 function unavailable(res: Response, code = 'DASHBOARD_DATA_SOURCE_NOT_CONNECTED'): void {
   res.setHeader('X-AgroGrowth-Data-Status', 'unavailable');
@@ -14,7 +14,7 @@ function unavailable(res: Response, code = 'DASHBOARD_DATA_SOURCE_NOT_CONNECTED'
 }
 
 function databaseReady(res: Response): boolean {
-  if (!isSupabaseConfigured || !supabaseAdmin) {
+  if (!isSupabaseAdminConfigured || !supabaseAdmin) {
     unavailable(res);
     return false;
   }
