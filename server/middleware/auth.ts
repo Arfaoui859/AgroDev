@@ -122,6 +122,27 @@ export async function requireAuth(
 }
 
 /**
+ * Require requireAuth to have established a verified Supabase JWT.
+ * Use for persisted user-owned resources that are available to multiple roles.
+ */
+export function requireVerifiedAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  if (req.identitySource !== "jwt" || !req.userId) {
+    res.status(req.identitySource === "demo" ? 403 : 401).json({
+      success: false,
+      error: req.identitySource === "demo" ? "Forbidden" : "Unauthorized",
+      code: "VERIFIED_SESSION_REQUIRED",
+      message: "A verified Supabase session is required for persisted data.",
+    });
+    return;
+  }
+  next();
+}
+
+/**
  * Require a trusted role stored in public.users for the verified JWT identity.
  * Client metadata, query parameters, request bodies, and demo identities are
  * never accepted as role evidence. Platform admins may access role dashboards.
