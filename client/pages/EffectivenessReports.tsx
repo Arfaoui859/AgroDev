@@ -235,7 +235,7 @@ export default function EffectivenessReports() {
     const csv = [headers, ...rows]
       .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
       .join("\r\n");
-    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([new Uint8Array([0xef, 0xbb, 0xbf]), csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -243,7 +243,7 @@ export default function EffectivenessReports() {
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const getScoreColor = (score: number) => {
@@ -267,22 +267,22 @@ export default function EffectivenessReports() {
     return <TrendingDown className="h-4 w-4 text-red-600" />;
   };
 
-  const calculateAverageEffectiveness = () => {
-    if (filteredReports.length === 0) return 0;
+  const calculateAverageEffectiveness = (): number | null => {
+    if (filteredReports.length === 0) return null;
     const sum = filteredReports.reduce((acc, report) => acc + report.effectivenessScore, 0);
     return Math.round(sum / filteredReports.length);
   };
 
-  const calculateAverageCost = () => {
-    if (filteredReports.length === 0) return 0;
+  const calculateAverageCost = (): number | null => {
+    if (filteredReports.length === 0) return null;
     const reportsWithCost = filteredReports.filter(report => report.cost !== undefined);
-    if (reportsWithCost.length === 0) return 0;
+    if (reportsWithCost.length === 0) return null;
     const sum = reportsWithCost.reduce((acc, report) => acc + (report.cost ?? 0), 0);
     return Math.round(sum / reportsWithCost.length);
   };
 
-  const calculateAverageImprovement = () => {
-    if (filteredReports.length === 0) return 0;
+  const calculateAverageImprovement = (): number | null => {
+    if (filteredReports.length === 0) return null;
     const sum = filteredReports.reduce((acc, report) => 
       acc + (report.afterCondition.healthScore - report.beforeCondition.healthScore), 0);
     return Math.round(sum / filteredReports.length);
@@ -498,7 +498,7 @@ export default function EffectivenessReports() {
                 <BarChart2 className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{calculateAverageEffectiveness()}%</div>
+                <div className="text-2xl font-bold">{calculateAverageEffectiveness() ?? "—"}{calculateAverageEffectiveness() !== null ? "%" : ""}</div>
                 <div className="text-xs text-muted-foreground">متوسط الفعالية</div>
               </div>
             </div>
@@ -512,7 +512,7 @@ export default function EffectivenessReports() {
                 <TrendingUp className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold">+{calculateAverageImprovement()}%</div>
+                <div className="text-2xl font-bold">{calculateAverageImprovement() !== null ? `+${calculateAverageImprovement()}%` : "—"}</div>
                 <div className="text-xs text-muted-foreground">متوسط التحسن</div>
               </div>
             </div>
@@ -526,7 +526,7 @@ export default function EffectivenessReports() {
                 <Target className="h-4 w-4 text-yellow-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{calculateAverageCost()}</div>
+                <div className="text-2xl font-bold">{calculateAverageCost() ?? "—"}</div>
                 <div className="text-xs text-muted-foreground">متوسط التكلفة (د.ت)</div>
               </div>
             </div>
