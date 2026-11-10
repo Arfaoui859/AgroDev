@@ -14,6 +14,7 @@ import pathlib
 import sys
 
 import pytest
+from pydantic import ValidationError
 
 AI_ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(AI_ROOT) not in sys.path:
