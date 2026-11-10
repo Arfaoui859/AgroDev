@@ -118,28 +118,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }, 15000); // 15 second fallback
 
-    initializeAuth();
-
-    return () => {
-      mounted = false;
-      clearTimeout(fallbackTimeout);
-    };
-
-    // Listen for auth state changes
+    // Subscribe before initialization so sign-in/sign-out events are never missed.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
 
-      setSession(session);
+      setSession(nextSession);
 
-      if (session?.user) {
-        try {
-          await loadUserData(session.user.id);
-        } catch (error) {
+      if (nextSession?.user) {
+        // Defer database work outside the Supabase auth callback.
+        Promise.resolve().then(() => loadUserData(nextSession.user.id)).catch((error) => {
           console.error("Error loading user data in auth state change:", error);
-          // Continue anyway
-        }
+        });
       } else {
         setUser(null);
         setUserProfile(null);
@@ -147,13 +138,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setIsLoading(false);
 
-      // Handle auth events
       if (event === "SIGNED_OUT") {
         navigate("/login");
       } else if (event === "SIGNED_IN") {
         navigate("/");
       }
     });
+
+    initializeAuth();
 
     return () => {
       mounted = false;
@@ -174,8 +166,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           .from("users")
           .select("*")
           .eq("id", userId)
-          .single();
+          .maybeSingle();
         if (error) throw error;
+        if (!data) throw new Error("USER_PROFILE_NOT_FOUND");
         return data;
       };
 
@@ -484,9 +477,7 @@ Row Level Security (RLS) policies are blocking access.
         password,
       });
 
-      // Log full result for debugging
-      console.log("signIn result:", result);
-
+      // Never log the auth response: it contains access and refresh tokens.
       if (result.error) throw result.error;
 
       const user = result.data?.user;
