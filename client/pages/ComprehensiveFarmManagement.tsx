@@ -100,6 +100,7 @@ const ComprehensiveFarmManagement: React.FC<
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
@@ -121,53 +122,47 @@ const ComprehensiveFarmManagement: React.FC<
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
-      const response = await fetch("/api/farm-management/overview");
-      const data = await response.json();
+      if (!dashboardData) setLoading(true);
+      setLoadError(null);
+      const response = await fetch("/api/farm-management/overview", {
+        headers: { Accept: "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
 
-      if (data.success) {
-        setDashboardData(data.data);
+      if (!response.ok || data.success !== true || !data.data) {
+        const message =
+          data.message ||
+          (response.status === 503
+            ? "Farm management data is not connected to a verified source yet."
+            : "Farm data request failed (HTTP " + response.status + ").");
+        setDashboardData(null);
+        setLoadError(message);
+        return;
       }
+
+      setDashboardData(data.data);
+      setLoadError(null);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      setDashboardData(null);
+      setLoadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to connect to farm management data.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleTaskStatusUpdate = async (taskId: string, newStatus: string) => {
-    try {
-      // في التطبيق الحقيقي، سيتم إرسال طلب API
-      setDashboardData((prev: any) => ({
-        ...prev,
-        tasks: prev.tasks.map((task: any) =>
-          task.id === taskId ? { ...task, status: newStatus } : task,
-        ),
-      }));
-
-      if (onTaskUpdate) {
-        onTaskUpdate(taskId, newStatus);
-      }
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
+  const handleTaskStatusUpdate = (taskId: string, newStatus: string) => {
+    // Never show an optimistic success: this component has no persistence API.
+    if (onTaskUpdate) onTaskUpdate(taskId, newStatus);
   };
 
-  const handleAlertResolve = async (alertId: string) => {
-    try {
-      setDashboardData((prev: any) => ({
-        ...prev,
-        alerts: prev.alerts.map((alert: any) =>
-          alert.id === alertId ? { ...alert, resolved: true } : alert,
-        ),
-      }));
-
-      if (onAlertResolve) {
-        onAlertResolve(alertId);
-      }
-    } catch (error) {
-      console.error("Error resolving alert:", error);
-    }
+  const handleAlertResolve = (alertId: string) => {
+    // Never mark an alert resolved locally unless the owning workflow persists it.
+    if (onAlertResolve) onAlertResolve(alertId);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -261,9 +256,21 @@ const ComprehensiveFarmManagement: React.FC<
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>{isArabic ? "خطأ" : "Error"}</AlertTitle>
           <AlertDescription>
-            {isArabic
-              ? "فشل في تحميل بيانات المزرعة"
-              : "Failed to load farm data"}
+            <div className="space-y-3">
+              <p>
+                {isArabic
+                  ? "بيانات إدارة المزرعة غير متاحة حاليًا من مصدر موثّق. لم نعرض بيانات تجريبية أو نغيّر حالة أي مهمة أو تنبيه."
+                  : "Verified farm-management data is not available yet. No demo data is shown, and no task or alert is marked as changed."}
+              </p>
+              {loadError && <p className="text-xs opacity-80">{loadError}</p>}
+              <p className="text-xs">
+                {isArabic ? "حالة البيانات: غير متصلة / غير متحقق منها" : "Data status: unavailable / unverified"}
+              </p>
+              <Button size="sm" variant="outline" onClick={fetchDashboardData} disabled={loading}>
+                <RefreshCw className={"h-4 w-4 mr-2 " + (loading ? "animate-spin" : "")} />
+                {isArabic ? "إعادة المحاولة" : "Retry"}
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       </div>
@@ -873,6 +880,7 @@ const ComprehensiveFarmManagement: React.FC<
                     ) : (
                       <Button
                         size="sm"
+                        disabled={!onAlertResolve}
                         onClick={() => handleAlertResolve(alert.id)}
                       >
                         <CheckCircle className="h-3 w-3 mr-1" />
@@ -1585,6 +1593,7 @@ const ComprehensiveFarmManagement: React.FC<
                           size="sm"
                           variant="outline"
                           className="flex-1"
+                          disabled={!onEquipmentMaintenance}
                           onClick={() => {
                             if (onEquipmentMaintenance) {
                               onEquipmentMaintenance(equipment.id);
