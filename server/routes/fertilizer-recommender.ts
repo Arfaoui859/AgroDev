@@ -423,7 +423,9 @@ router.post('/schedule/comprehensive', (req, res) => {
 // List persisted effectiveness reports for the authenticated user.
 router.get('/effectiveness', requireAuth, async (req, res) => {
   const userId = req.userId;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+  if (!userId || req.identitySource !== "jwt") {
+    return res.status(401).json({ error: "Verified user authentication is required" });
+  }
   if (!supabaseAdmin) {
     return res.status(503).json({
       error: "PERSISTENCE_NOT_CONFIGURED",
