@@ -138,7 +138,7 @@ async function resolveRole(userId: string, req: Request): Promise<{ role: string
     if (error || !data) return null;
     const record = data as { role?: string; is_active?: boolean; status?: string };
     if (typeof record.role !== "string") return null;
-    const active = record.is_active !== false && record.status !== "suspended" && record.status !== "inactive";
+    const active = record.is_active !== false && (record.status === undefined || record.status === "active");
     return { role: record.role.toLowerCase(), active };
   } catch {
     return null;
