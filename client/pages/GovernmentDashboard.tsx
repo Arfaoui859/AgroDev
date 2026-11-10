@@ -309,7 +309,7 @@ export default function GovernmentDashboard() {
           <TabsTrigger value="policies" className="text-xs">{isArabic ? 'السياسات' : 'Policies'}</TabsTrigger>
           <TabsTrigger value="compliance" className="text-xs">{isArabic ? 'الامتثال' : 'Compliance'}</TabsTrigger>
           <TabsTrigger value="crisis" className="text-xs">{isArabic ? 'إدارة الأزمات' : 'Crisis Mgmt'}</TabsTrigger>
-          <TabsTrigger value="budget" className="text-xs">{isArabic ? 'الميزان��ة' : 'Budget'}</TabsTrigger>
+          <TabsTrigger value="budget" className="text-xs">{isArabic ? 'الميزانية' : 'Budget'}</TabsTrigger>
           <TabsTrigger value="analytics" className="text-xs">{isArabic ? 'التحليلات' : 'Analytics'}</TabsTrigger>
         </TabsList>
 
