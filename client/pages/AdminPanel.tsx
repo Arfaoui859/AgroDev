@@ -445,7 +445,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center mb-2">
                   <Zap className="h-8 w-8 text-orange-600" />
                 </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.responseTime || 0}ms</p>
+                <p className="text-2xl font-bold">{systemMetrics.server?.responseTime == null ? "—" : `${systemMetrics.server.responseTime}ms`}</p>
                 <p className="text-xs text-gray-600">{isArabic ? 'زمن الاستجابة' : 'Response Time'}</p>
               </div>
             </div>
@@ -508,7 +508,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           </Button>
                         </div>
                       </div>
-                    ))}
+                    )) : <p className="py-6 text-center text-sm text-gray-500">{isArabic ? "لا توجد أنشطة إدارية مسجّلة بعد." : "No administrator activity has been recorded yet."}</p>}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -525,7 +525,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <CardContent>
                 <ScrollArea className="h-64">
                   <div className="space-y-3">
-                    {dashboardData.recentActivity?.slice(0, 8).map((activity: any) => (
+                    {dashboardData.recentActivity?.length ? dashboardData.recentActivity.slice(0, 8).map((activity: any) => (
                       <div key={activity.id} className="flex items-start space-x-3 rtl:space-x-reverse p-3 border rounded-lg">
                         <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
                           activity.status === 'success' ? 'bg-green-100' : 
@@ -536,10 +536,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                            <AlertCircle className="h-4 w-4 text-yellow-600" />}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium text-sm">{isArabic ? activity.actionArabic : activity.action}</h4>
-                          <p className="text-xs text-gray-600">{isArabic ? activity.userNameArabic : activity.userName}</p>
+                          <h4 className="font-medium text-sm">{isArabic ? (activity.actionArabic || activity.action) : activity.action}</h4>
+                          <p className="text-xs text-gray-600">{isArabic ? (activity.userNameArabic || activity.userName) : activity.userName}</p>
                           <p className="text-xs text-gray-500 mt-1">
-                            {new Date(activity.timestamp).toLocaleString()}
+                            {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : "—"}
                           </p>
                         </div>
                       </div>
