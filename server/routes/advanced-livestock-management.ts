@@ -1026,20 +1026,19 @@ export async function getHealthAlerts(req: Request, res: Response) {
     const existingKeys = new Set(
       healthAlertsDatabase.map(alert => `${alert.animalId}:${alert.type}:${alert.condition}`),
     );
-    for (const alert of newAlerts) {
+    const freshAlerts = newAlerts.filter(alert => {
+      if (severity && alert.severity !== severity) return false;
+      if (resolved !== undefined && alert.isResolved !== (resolved === "true")) return false;
       const key = `${alert.animalId}:${alert.type}:${alert.condition}`;
-      if (!existingKeys.has(key)) {
-        healthAlertsDatabase.push(alert);
-        existingKeys.add(key);
-      }
-    }
+      if (existingKeys.has(key)) return false;
+      existingKeys.add(key);
+      healthAlertsDatabase.push(alert);
+      return true;
+    });
 
     res.json({
       success: true,
-      data: [...existingAlerts, ...newAlerts]
-        .filter((alert, index, all) =>
-          all.findIndex(item => item.id === alert.id) === index,
-        )
+      data: [...existingAlerts, ...freshAlerts]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
       dataSource: "static-demo-records",
       isRealData: false,
