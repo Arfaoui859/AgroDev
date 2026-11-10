@@ -1137,56 +1137,57 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">{isArabic ? 'إحصائيات الاستخدام' : 'Usage Statistics'}</label>
-                <div className="grid grid-cols-3 gap-4 mt-2">
-                  <div className="p-3 bg-blue-50 rounded-lg text-center">
-                    <p className="text-lg font-bold text-blue-600">{selectedUser.loginCount}</p>
-                    <p className="text-xs text-gray-600">{isArabic ? 'عدد مرات الدخول' : 'Total Logins'}</p>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg text-center">
-                    <p className="text-lg font-bold text-green-600">
-                      {new Date(selectedUser.lastLogin).toLocaleDateString()}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">{isArabic ? 'بيانات الحساب المسجّلة' : 'Recorded account data'}</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">{isArabic ? 'تاريخ إنشاء الحساب' : 'Account created'}</p>
+                    <p className="mt-1 text-sm font-semibold">
+                      {selectedUser.createdAt && Number.isFinite(Date.parse(selectedUser.createdAt))
+                        ? new Date(selectedUser.createdAt).toLocaleString()
+                        : (isArabic ? 'غير متاح' : 'Not available')}
                     </p>
-                    <p className="text-xs text-gray-600">{isArabic ? 'آخر دخول' : 'Last Login'}</p>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-lg text-center">
-                    <p className="text-lg font-bold text-purple-600">
-                      {new Date(selectedUser.createdAt).toLocaleDateString()}
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">{isArabic ? 'آخر تسجيل دخول مسجّل' : 'Last recorded sign-in'}</p>
+                    <p className="mt-1 text-sm font-semibold">
+                      {selectedUser.lastLogin && Number.isFinite(Date.parse(selectedUser.lastLogin))
+                        ? new Date(selectedUser.lastLogin).toLocaleString()
+                        : (isArabic ? 'لم يُسجّل' : 'Not recorded')}
                     </p>
-                    <p className="text-xs text-gray-600">{isArabic ? 'تاريخ التسجيل' : 'Member Since'}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">{isArabic ? 'معرّف الحساب' : 'Account ID'}</p>
+                    <p className="mt-1 break-all font-mono text-xs">{selectedUser.id}</p>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {isArabic
+                    ? 'عدد مرات الدخول غير متاح حالياً لأن سجلّ جلسات الدخول غير مربوط بلوحة الإدارة.'
+                    : 'Total login count is unavailable because sign-in session analytics are not connected to the admin panel.'}
+                </p>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">{isArabic ? 'الحماية والأمان' : 'Security & Protection'}</label>
-                <div className="grid grid-cols-3 gap-4 mt-2">
-                  <div className="flex items-center space-x-2">
-                    {selectedUser.emailVerified ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    )}
-                    <span className="text-sm">{isArabic ? 'البريد موثق' : 'Email Verified'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {selectedUser.phoneVerified ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    )}
-                    <span className="text-sm">{isArabic ? 'الهاتف موثق' : 'Phone Verified'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {selectedUser.twoFactorEnabled ? (
-                      <Shield className="h-4 w-4 text-blue-500" />
-                    ) : (
-                      <Lock className="h-4 w-4 text-gray-400" />
-                    )}
-                    <span className="text-sm">{isArabic ? 'المصادقة الثنائية' : '2FA Enabled'}</span>
-                  </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium">{isArabic ? 'حالة التحقق والأمان' : 'Verification & security status'}</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge variant="outline" className={selectedUser.emailVerified ? 'border-green-500 text-green-700' : 'border-amber-500 text-amber-700'}>
+                    {selectedUser.emailVerified
+                      ? (isArabic ? 'البريد الإلكتروني موثّق' : 'Email verified')
+                      : (isArabic ? 'البريد الإلكتروني غير موثّق' : 'Email not verified')}
+                  </Badge>
+                  <Badge variant="outline">
+                    {isArabic ? 'الهاتف: غير مربوط' : 'Phone verification: not connected'}
+                  </Badge>
+                  <Badge variant="outline">
+                    {isArabic ? 'المصادقة الثنائية: غير متاحة' : '2FA status: unavailable'}
+                  </Badge>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {isArabic
+                    ? 'حالة توثيق البريد مأخوذة من سجل المستخدم في قاعدة البيانات. لا يتم افتراض حالة الهاتف أو المصادقة الثنائية.'
+                    : 'Email verification is read from the public user profile record. Phone verification and 2FA are not inferred when no verified source is connected.'}
+                </p>
               </div>
             </div>
           </DialogContent>
