@@ -15,7 +15,6 @@ import {
   TrendingDown,
   Star,
   FileText,
-  Calendar,
   Sprout,
   Droplets,
   CheckCircle,
@@ -25,7 +24,6 @@ import {
   Plus,
   Download,
   Filter,
-  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
