@@ -471,11 +471,11 @@ export function createServer() {
   app.post("/api/internal/autonomous-agent/run", runScheduledAutonomousAgent);
 
   // Persistent assistant memory: all records are scoped to the verified caller.
-  app.get("/api/assistant/conversations", requireAuth, listAgentConversations);
-  app.post("/api/assistant/conversations", requireAuth, createAgentConversation);
-  app.get("/api/assistant/conversations/:conversationId/messages", requireAuth, listAgentConversationMessages);
-  app.post("/api/assistant/conversations/:conversationId/messages", requireAuth, addAgentConversationMessage);
-  app.delete("/api/assistant/conversations/:conversationId", requireAuth, deleteAgentConversation);
+  app.get("/api/assistant/conversations", requireAuth, requireVerifiedAuth, listAgentConversations);
+  app.post("/api/assistant/conversations", requireAuth, requireVerifiedAuth, createAgentConversation);
+  app.get("/api/assistant/conversations/:conversationId/messages", requireAuth, requireVerifiedAuth, listAgentConversationMessages);
+  app.post("/api/assistant/conversations/:conversationId/messages", requireAuth, requireVerifiedAuth, addAgentConversationMessage);
+  app.delete("/api/assistant/conversations/:conversationId", requireAuth, requireVerifiedAuth, deleteAgentConversation);
 
   // Assistant actions are always explicit, authenticated, and persisted.
   app.get("/api/assistant/farms", requireAuth, listAssistantFarms);
@@ -709,7 +709,7 @@ export function createServer() {
   app.post("/api/ai/market/supply-demand", analyzeSupplyDemand);
 
   // 🧠 Smart Assistant AI Service (Future)
-  app.post("/api/ai/assistant/chat", chatWithAIAssistant);
+  app.post("/api/ai/assistant/chat", requireAuth, requireVerifiedAuth, chatWithAIAssistant);
   app.post("/api/ai/assistant/generate-tasks", generateFarmingTasks);
   app.get("/api/ai/assistant/alerts", getSmartAlerts);
 
