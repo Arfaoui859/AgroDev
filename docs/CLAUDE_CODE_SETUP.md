@@ -42,7 +42,7 @@ After installation, use `/reload-plugins` if requested and `/mcp` to inspect con
 
 OmniRoute is a separate local service, not a dependency of the AgroGrowth web application. Review its current upstream repository and security model before installing:
 
-- https://github.com/Gmagl/omniroute
+- https://github.com/cheaper-inference/OmniRoute
 
 If you choose this provider, install and start it in WSL using the upstream's current official instructions. The current project docs describe an npm global install and a local dashboard/API on port 20128; verify the latest README before executing:
 
