@@ -97,6 +97,9 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
   const [securityEvents, setSecurityEvents] = useState<any[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [securityAvailability, setSecurityAvailability] = useState<any>(null);
+  const [activityAvailability, setActivityAvailability] = useState<any>(null);
+  const [subscriptionsAvailability, setSubscriptionsAvailability] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -133,8 +136,11 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
       setSystemMetrics(metricsData.data || null);
       setAnalytics(analyticsData.data || null);
       setSecurityEvents(Array.isArray(securityData.data) ? securityData.data : []);
+      setSecurityAvailability(securityData.availability || { available: true });
       setActivityLogs(Array.isArray(activityData.data) ? activityData.data : []);
+      setActivityAvailability(activityData.availability || { available: true });
       setSubscriptions(Array.isArray(subscriptionsData.data) ? subscriptionsData.data : []);
+      setSubscriptionsAvailability(subscriptionsData.availability || { available: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to load admin data";
       setLoadError(message);
@@ -850,6 +856,52 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
               </Card>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="system" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><Server className="h-5 w-5" />{isArabic ? "الخادم" : "Application server"}</CardTitle></CardHeader><CardContent className="space-y-3">
+              <div className="flex justify-between"><span>{isArabic ? "مدة التشغيل" : "Uptime"}</span><strong>{systemMetrics?.server?.uptime == null ? "—" : formatUptime(systemMetrics.server.uptime)}</strong></div>
+              <div className="flex justify-between"><span>{isArabic ? "استخدام ذاكرة Node heap" : "Node heap usage"}</span><strong>{systemMetrics?.server?.memoryUsage == null ? "—" : `${systemMetrics.server.memoryUsage}%`}</strong></div>
+              <div className="flex justify-between"><span>CPU</span><strong>{systemMetrics?.server?.cpuUsage == null ? "—" : `${systemMetrics.server.cpuUsage}%`}</strong></div>
+              <div className="flex justify-between"><span>{isArabic ? "القرص" : "Disk"}</span><strong>{systemMetrics?.server?.diskUsage == null ? "—" : `${systemMetrics.server.diskUsage}%`}</strong></div>
+            </CardContent></Card>
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />{isArabic ? "قاعدة البيانات" : "Database"}</CardTitle></CardHeader><CardContent className="space-y-3">
+              <div className="flex justify-between"><span>{isArabic ? "عدد الاتصالات" : "Connections"}</span><strong>{systemMetrics?.database?.connectionCount ?? "—"}</strong></div>
+              <div className="flex justify-between"><span>{isArabic ? "زمن الاستعلام" : "Average query time"}</span><strong>{systemMetrics?.database?.avgQueryTime == null ? "—" : `${systemMetrics.database.avgQueryTime} ms`}</strong></div>
+              <div className="flex justify-between"><span>{isArabic ? "التخزين" : "Storage used"}</span><strong>{systemMetrics?.database?.storageUsed ?? "—"}</strong></div>
+              <div className="flex justify-between"><span>{isArabic ? "آخر نسخة احتياطية" : "Last backup"}</span><strong>{systemMetrics?.database?.lastBackup || "—"}</strong></div>
+            </CardContent></Card>
+            <Card><CardHeader><CardTitle>{isArabic ? "حسابات المنصة" : "Platform accounts"}</CardTitle></CardHeader><CardContent className="space-y-3">
+              <div className="flex justify-between"><span>{isArabic ? "إجمالي المستخدمين" : "Total users"}</span><strong>{systemMetrics?.application?.totalUsers ?? "—"}</strong></div>
+              <div className="flex justify-between"><span>{isArabic ? "المستخدمون النشطون يوميًا" : "Daily active users"}</span><strong>{systemMetrics?.application?.dailyActiveUsers ?? "—"}</strong></div>
+              <p className="text-xs text-muted-foreground">{isArabic ? "المقاييس غير المتاحة لا يتم استبدالها بأرقام تقديرية." : "Unavailable infrastructure metrics are intentionally not replaced with estimates."}</p>
+            </CardContent></Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
+          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" />{isArabic ? "الأحداث الأمنية" : "Security events"}</CardTitle><CardDescription>{isArabic ? "سجلات أمنية فعلية فقط" : "Verified security records only"}</CardDescription></CardHeader><CardContent>
+            {!securityAvailability?.available ? <Alert><Info className="h-4 w-4" /><AlertTitle>{isArabic ? "مصدر الأحداث الأمنية غير متصل" : "Security event source unavailable"}</AlertTitle><AlertDescription>{securityAvailability?.reason || (isArabic ? "لم يتم إعداد جدول الأحداث الأمنية." : "The security_events table has not been configured.")}</AlertDescription></Alert>
+              : securityEvents.length === 0 ? <p className="py-8 text-center text-muted-foreground">{isArabic ? "لا توجد أحداث أمنية مسجلة." : "No security events have been recorded."}</p>
+              : <div className="space-y-3">{securityEvents.map((event, index) => <div key={event.id || index} className="flex items-center justify-between border rounded-lg p-3"><div><p className="font-medium">{event.event_type || event.action || event.type || "Security event"}</p><p className="text-xs text-muted-foreground">{event.created_at || event.timestamp || "—"}</p></div><Badge>{event.severity || event.status || "recorded"}</Badge></div>)}</div>}
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="subscriptions" className="space-y-6">
+          <Card><CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" />{isArabic ? "الاشتراكات" : "Subscriptions"}</CardTitle></CardHeader><CardContent>
+            {!subscriptionsAvailability?.available ? <Alert><Info className="h-4 w-4" /><AlertTitle>{isArabic ? "بيانات الاشتراكات غير متاحة" : "Subscription records unavailable"}</AlertTitle><AlertDescription>{subscriptionsAvailability?.reason || (isArabic ? "لم يتم ربط جدول الاشتراكات." : "No verified subscriptions table is connected. Revenue is therefore not reported.")}</AlertDescription></Alert>
+              : subscriptions.length === 0 ? <p className="py-8 text-center text-muted-foreground">{isArabic ? "لا توجد اشتراكات مسجلة." : "No subscription records found."}</p>
+              : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="p-2">ID</th><th className="p-2">User</th><th className="p-2">Plan</th><th className="p-2">Status</th><th className="p-2">Created</th></tr></thead><tbody>{subscriptions.map((item, index) => <tr key={item.id || index} className="border-b"><td className="p-2">{item.id || "—"}</td><td className="p-2">{item.user_id || item.email || "—"}</td><td className="p-2">{item.plan || item.plan_name || "—"}</td><td className="p-2">{item.status || "—"}</td><td className="p-2">{item.created_at || "—"}</td></tr>)}</tbody></table></div>}
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-6">
+          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" />{isArabic ? "سجل عمليات الإدارة" : "Administrator audit trail"}</CardTitle></CardHeader><CardContent>
+            {!activityAvailability?.available ? <Alert><Info className="h-4 w-4" /><AlertTitle>{isArabic ? "سجل الأنشطة غير مهيّأ" : "Audit trail is not configured"}</AlertTitle><AlertDescription>{activityAvailability?.reason || "Apply database/admin-user-management.sql to enable audit history."}</AlertDescription></Alert>
+              : activityLogs.length === 0 ? <p className="py-8 text-center text-muted-foreground">{isArabic ? "لا توجد عمليات إدارة مسجلة بعد." : "No administrator actions have been recorded yet."}</p>
+              : <div className="space-y-3">{activityLogs.map((entry, index) => <div key={entry.id || index} className="border rounded-lg p-3"><div className="flex items-center justify-between"><strong>{entry.action || "Admin action"}</strong><span className="text-xs text-muted-foreground">{entry.created_at ? new Date(entry.created_at).toLocaleString() : "—"}</span></div><p className="text-xs text-muted-foreground mt-1">{isArabic ? "المدير" : "Actor"}: {entry.actor_id || "Admin API token"} · {isArabic ? "المستخدم المستهدف" : "Target"}: {entry.target_user_id || "—"}</p></div>)}</div>}
+          </CardContent></Card>
         </TabsContent>
       </Tabs>
 
