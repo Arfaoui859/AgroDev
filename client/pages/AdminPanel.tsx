@@ -209,6 +209,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+
+  const handleAccountStatusChange = async (user: any, isActive: boolean) => {
+    const confirmed = window.confirm(
+      isArabic
+        ? (isActive ? `تأكيد إعادة تفعيل الحساب ${user.email}؟` : `تأكيد إيقاف الحساب ${user.email}؟`)
+        : (isActive ? `Reactivate ${user.email}?` : `Suspend ${user.email}?`),
+    );
+    if (!confirmed) return;
+
+    setRoleChangeError(null);
+    setRoleChangeUserId(user.id);
+    try {
+      const response = await apiFetch(`/api/admin/users/${encodeURIComponent(user.id)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.success) {
+        throw new Error(body?.message || `Account status update failed (HTTP ${response.status})`);
+      }
+      await fetchDashboardData();
+    } catch (error) {
+      setRoleChangeError(error instanceof Error ? error.message : 'Account status update failed');
+    } finally {
+      setRoleChangeUserId(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -754,23 +783,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 {isArabic ? 'تحرير' : 'Edit'}
                               </Button>
                               {user.status === 'active' ? (
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   className="text-red-600"
-                                  disabled
-                                  title={isArabic ? "تغيير حالة المستخدم غير متاح حتى ربط واجهة إدارية آمنة" : "User status changes require a secure admin API"}
+                                  disabled={roleChangeUserId === user.id}
+                                  onClick={() => handleAccountStatusChange(user, false)}
                                 >
                                   <UserX className="h-3 w-3 mr-1" />
                                   {isArabic ? 'إيقاف' : 'Suspend'}
                                 </Button>
                               ) : (
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
+                                <Button
+                                  size="sm"
+                                  variant="outline"
                                   className="text-green-600"
-                                  disabled
-                                  title={isArabic ? "تغيير حالة المستخدم غير متاح حتى ربط واجهة إدارية آمنة" : "User status changes require a secure admin API"}
+                                  disabled={roleChangeUserId === user.id}
+                                  onClick={() => handleAccountStatusChange(user, true)}
                                 >
                                   <UserCheck className="h-3 w-3 mr-1" />
                                   {isArabic ? 'تفعيل' : 'Activate'}
