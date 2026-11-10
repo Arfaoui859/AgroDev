@@ -65,40 +65,40 @@ class CropRecommendationRequest(BaseModel):
         le=14,
     )
 
-    soil_quality_score: Optional[float] = Field(
-        default=0.7,
+    soil_quality_score: float = Field(
+        description="Measured or explicitly assessed soil quality score",
         ge=0,
         le=1,
     )
 
-    water_availability: Optional[float] = Field(
-        default=0.8,
+    water_availability: float = Field(
+        description="Measured or explicitly assessed water availability",
         ge=0,
         le=1,
     )
 
-    target_market_price: Optional[float] = Field(
-        default=3.0,
+    target_market_price: float = Field(
+        description="User-supplied or sourced current market price in TND/kg",
         ge=0,
     )
 
-    farmer_experience_years: Optional[int] = Field(
-        default=5,
+    farmer_experience_years: int = Field(
+        description="Farmer's actual experience in years",
         ge=0,
     )
 
-    available_capital: Optional[float] = Field(
-        default=10000,
+    available_capital: float = Field(
+        description="Farmer's available capital in TND",
         ge=0,
     )
 
-    farm_size: Optional[float] = Field(
-        default=2.0,
+    farm_size: float = Field(
+        description="Actual farm size in hectares",
         gt=0,
     )
 
-    risk_tolerance: Optional[float] = Field(
-        default=0.5,
+    risk_tolerance: float = Field(
+        description="Farmer's selected risk tolerance from 0 to 1",
         ge=0,
         le=1,
     )
