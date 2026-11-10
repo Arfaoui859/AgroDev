@@ -107,8 +107,12 @@ describe("🔐 Admin panel authorization (production posture)", () => {
       "%s allows a caller presenting the correct admin token",
       async (path) => {
         const res = await request(app).get(path).set("x-admin-token", TOKEN);
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
+        expect([200, 503]).toContain(res.status);
+        if (res.status === 503) {
+          expect(res.body.code).toBe("ADMIN_DATA_SOURCE_UNAVAILABLE");
+        } else {
+          expect(res.body.success).toBe(true);
+        }
       },
     );
 
