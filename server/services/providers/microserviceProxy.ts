@@ -73,6 +73,27 @@ export async function callMicroservice<T = any>(
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const startedAt = Date.now();
     try {
+      // Verify the service's declared model provenance BEFORE sending any
+      // inference request. A reachable demo/heuristic service must not receive
+      // or process production user data through this proxy.
+      const probe = await probeService(baseUrl);
+      if (!probe.reachable || !probe.modelSource || probe.heuristic) {
+        const reason = !probe.reachable
+          ? "Microservice health/provenance could not be verified."
+          : probe.heuristic
+            ? "Synthetic or heuristic microservice output is disabled for production responses."
+            : "Microservice did not declare a model source.";
+        const provenanceError = new ProviderError(
+          capability,
+          "provenance",
+          reason,
+          503,
+          false,
+        );
+        recordFailure(capability, probe.modelSource ?? "unknown", provenanceError, Date.now() - startedAt);
+        throw provenanceError;
+      }
+
       const response = await fetch(url, {
         method,
         signal: controller.signal,
@@ -95,24 +116,6 @@ export async function callMicroservice<T = any>(
       }
 
       const raw = (await response.json()) as any;
-      const probe = await probeService(baseUrl);
-      if (!probe.reachable || !probe.modelSource || probe.heuristic) {
-        const reason = !probe.reachable
-          ? "Microservice health/provenance could not be verified."
-          : probe.heuristic
-            ? "Synthetic or heuristic microservice output is disabled for production responses."
-            : "Microservice did not declare a model source.";
-        const provenanceError = new ProviderError(
-          capability,
-          "provenance",
-          reason,
-          503,
-          false,
-        );
-        recordFailure(capability, probe.modelSource ?? "unknown", provenanceError, Date.now() - startedAt);
-        throw provenanceError;
-      }
-
       recordSuccess(capability, probe.modelSource, true, Date.now() - startedAt);
 
       return {
