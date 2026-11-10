@@ -9,6 +9,8 @@ export interface HealthCheckResult {
   lastChecked: Date;
   error?: string;
   modelSource?: string;
+  advisoryModelSource?: string;
+  advisoryConfigured?: boolean;
   isRealModel?: boolean;
   modelTrainedOnSyntheticData?: boolean;
 }
@@ -171,6 +173,8 @@ export const useServiceHealthChecker = () => {
                 responseTime: 0,
                 lastChecked: service.lastChecked ?? new Date(),
                 modelSource: service.modelSource,
+                advisoryModelSource: service.advisoryModelSource,
+                advisoryConfigured: service.advisoryConfigured,
                 isRealModel: service.isRealModel,
                 modelTrainedOnSyntheticData: service.modelTrainedOnSyntheticData,
                 error: service.status === 'available'
