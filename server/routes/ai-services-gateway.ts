@@ -1197,19 +1197,22 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     console.warn("AI services health check failed:", error);
     res.json({
       overview: {
-        totalServices: 5,
+        totalServices: 8,
         availableServices: 0,
-        unavailableServices: 5,
+        unavailableServices: 8,
         syntheticModelServices: 0,
         lastUpdated: new Date().toISOString(),
         checkDuration: 0
       },
       services: [
-        { name: "Soil Analysis", nameAr: "تحليل التربة", url: AI_SERVICES.SOIL_ANALYSIS, status: "unavailable" },
-        { name: "Crop Recommendation", nameAr: "توصيات المحاصيل", url: AI_SERVICES.CROP_RECOMMENDATION, status: "unavailable" },
-        { name: "Image Diagnosis", nameAr: "تشخيص الصور", url: AI_SERVICES.IMAGE_DIAGNOSIS, status: "unavailable" },
-        { name: "Market Forecast", nameAr: "توقعات السوق", url: AI_SERVICES.MARKET_FORECAST, status: "unavailable" },
-        { name: "Smart Assistant", nameAr: "المساعد الذكي", url: AI_SERVICES.SMART_ASSISTANT, status: "unavailable" }
+        { name: "Soil Analysis", nameAr: "تحليل التربة", key: "soil_analysis", url: AI_SERVICES.SOIL_ANALYSIS, status: "unavailable" },
+        { name: "Crop Recommendation", nameAr: "توصيات المحاصيل", key: "crop_recommendation", url: AI_SERVICES.CROP_RECOMMENDATION, status: "unavailable" },
+        { name: "Image Diagnosis", nameAr: "تشخيص الصور", key: "image_diagnosis", url: AI_SERVICES.IMAGE_DIAGNOSIS, status: "unavailable" },
+        { name: "Market Forecast", nameAr: "توقعات السوق", key: "market_forecast", url: AI_SERVICES.MARKET_FORECAST, status: "unavailable" },
+        { name: "Smart Assistant", nameAr: "المساعد الذكي", key: "smart_assistant", url: AI_SERVICES.SMART_ASSISTANT, status: "unavailable" },
+        { name: "Weather & Yield Intelligence", nameAr: "الطقس والمردودية", key: "weather_yield", url: AI_SERVICES.SMART_MARKETPLACE, status: "unavailable" },
+        { name: "Pest Control", nameAr: "مكافحة الآفات", key: "pest_control", url: AI_SERVICES.PEST_CONTROL, status: "unavailable" },
+        { name: "Irrigation Optimization", nameAr: "تحسين الري", key: "irrigation_optimization", url: AI_SERVICES.IRRIGATION_OPTIMIZATION, status: "unavailable" }
       ],
       error: "فشل في فحص خدمات الذكاء الاصطناعي - هذا طبيعي عندما لا تكون الخدمات قيد التشغيل"
     });
