@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
 import { verifyAdminToken } from "../lib/adminAuth";
 
-const EMAIL_PATTERN = /^[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+$/;
+export const ADMIN_EMAIL_PATTERN = /^[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+$/;
 
 export const adminCreateUser: RequestHandler = async (req, res) => {
   if (!verifyAdminToken(req)) {
@@ -17,7 +17,7 @@ export const adminCreateUser: RequestHandler = async (req, res) => {
   const password = typeof req.body?.password === "string" ? req.body.password : "";
   const fullName = typeof req.body?.full_name === "string" ? req.body.full_name.trim() : "";
 
-  if (!EMAIL_PATTERN.test(email) || password.length < 12) {
+  if (!ADMIN_EMAIL_PATTERN.test(email) || password.length < 12) {
     return res.status(400).json({
       success: false,
       error: "A valid email and a password of at least 12 characters are required",
