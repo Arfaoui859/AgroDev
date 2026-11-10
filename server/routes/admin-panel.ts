@@ -45,14 +45,18 @@ export async function getAdminDashboard(_req: Request, res: Response): Promise<v
         .order('created_at', { ascending: false }).limit(8),
     ]);
 
-    const errors = [users.error, activeUsers.error, farms.error, newUsers.error, activity.error].filter(Boolean);
-    if (errors.length) {
-      console.error('Admin overview query failed:', errors.map((e) => e?.message));
+    const coreErrors = [users.error, activeUsers.error, newUsers.error].filter(Boolean);
+    if (coreErrors.length) {
+      console.error('Admin overview query failed:', coreErrors.map((e) => e?.message));
       unavailable(res, 'ADMIN_OVERVIEW_QUERY_FAILED');
       return;
     }
 
-    const activityRows = activity.data || [];
+    // Optional tables may not yet exist in every deployment. Do not block
+    // the verified user counts because a secondary analytics module is absent.
+    const activityRows = activity.error ? [] : (activity.data || []);
+    if (farms.error) console.warn('Admin farm count unavailable:', farms.error.message);
+    if (activity.error) console.warn('Admin activity feed unavailable:', activity.error.message);
     const recentActivity = activityRows.map((row: any) => ({
       id: row.id,
       action: String(row.event_type || 'Platform event'),
@@ -72,7 +76,7 @@ export async function getAdminDashboard(_req: Request, res: Response): Promise<v
           totalUsers: users.count ?? 0,
           activeUsers: activeUsers.count ?? 0,
           newUsers: newUsers.count ?? 0,
-          totalFarms: farms.count ?? 0,
+          totalFarms: farms.error ? null : (farms.count ?? 0),
           // Revenue, subscriptions, uptime and support-ticket totals are not
           // inferred from unrelated tables. They remain explicitly unavailable.
           totalRevenue: null,
@@ -88,7 +92,11 @@ export async function getAdminDashboard(_req: Request, res: Response): Promise<v
         source: 'supabase.public.users, public.farms, public.user_analytics',
         verified: true,
         model_source: null,
-        limitations: ['Revenue, subscription, uptime and support-ticket metrics are not connected.'],
+        limitations: [
+          'Revenue, subscription, uptime and support-ticket metrics are not connected.',
+          ...(farms.error ? ['Farm count table is unavailable.'] : []),
+          ...(activity.error ? ['User analytics activity feed is unavailable.'] : []),
+        ],
       },
     });
   } catch (error) {
