@@ -248,7 +248,8 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
             const prodApp = createServer();
             const agent = request(prodApp) as any;
             const response = await agent[method](path).send({});
-            expect(response.status).toBe(404);
+            expect(response.status).toBe(403);
+            expect(response.body.error).toMatch(/disabled/i);
           } finally {
             if (previousEnv === undefined) delete process.env.NODE_ENV;
             else process.env.NODE_ENV = previousEnv;
