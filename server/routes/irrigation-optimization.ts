@@ -59,12 +59,26 @@ router.post("/optimize", async (req, res) => {
 router.post("/water-requirements", async (req, res) => {
   try {
     const {
-      crop_type = "wheat",
-      growth_stage = "vegetative",
-      temperature = 25.0,
-      humidity = 60.0,
+      crop_type,
+      growth_stage,
+      temperature,
+      humidity,
       days_to_calculate = 30,
     } = req.body ?? {};
+
+    if (
+      typeof crop_type !== "string" || !crop_type.trim() ||
+      typeof growth_stage !== "string" || !growth_stage.trim() ||
+      !Number.isFinite(Number(temperature)) ||
+      !Number.isFinite(Number(humidity)) ||
+      Number(humidity) < 0 || Number(humidity) > 100
+    ) {
+      return res.status(400).json({
+        success: false,
+        code: "MISSING_MEASURED_INPUTS",
+        error: "crop_type, growth_stage, measured temperature and humidity are required.",
+      });
+    }
 
     const result = await callMicroservice({
       baseUrl: IRRIGATION_SERVICE(),
