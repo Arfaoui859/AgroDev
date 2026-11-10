@@ -17,8 +17,13 @@ import { createServer } from "../../server/index";
 jest.mock("axios", () => {
   const callable: any = jest.fn(async (first: any) => {
     const url: string = typeof first === "string" ? first : (first?.url ?? "");
-    // Port 8001 declares a synthetic model; port 8002 a real one.
-    const modelSource = url.includes(":8001") ? "synthetic-demo" : "field-validated-v2";
+    // Soil is deterministic rules, crop is synthetic-demo, other services
+    // use a real-model marker only inside this isolated test fixture.
+    const modelSource = url.includes(":8001")
+      ? "deterministic-rules"
+      : url.includes(":8002")
+        ? "synthetic-demo"
+        : "field-validated-v2";
     return {
       data: { status: "healthy", model_source: modelSource },
       status: 200,
@@ -41,14 +46,14 @@ describe("🧪 AI health model provenance", () => {
   test("surfaces each service's declared model source", async () => {
     const res = await request(app).get("/api/ai/health").expect(200);
     const soil = res.body.services.find((s: any) => s.key === "soil_analysis");
-    expect(soil.modelSource).toBe("synthetic-demo");
-    expect(soil.modelTrainedOnSyntheticData).toBe(true);
+    expect(soil.modelSource).toBe("deterministic-rules");
+    expect(soil.modelTrainedOnSyntheticData).toBe(false);
     expect(soil.isRealModel).toBe(false);
 
     const crop = res.body.services.find((s: any) => s.key === "crop_recommendation");
-    expect(crop.modelSource).toBe("field-validated-v2");
-    expect(crop.modelTrainedOnSyntheticData).toBe(false);
-    expect(crop.isRealModel).toBe(true);
+    expect(crop.modelSource).toBe("synthetic-demo");
+    expect(crop.modelTrainedOnSyntheticData).toBe(true);
+    expect(crop.isRealModel).toBe(false);
   });
 
   test("counts synthetic-model services in the overview and warns in the note", async () => {
