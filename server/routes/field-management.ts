@@ -317,11 +317,17 @@ export const generateAIRecommendations: RequestHandler = async (req, res) => {
       });
     }
 
-    // Get latest soil data if not provided
-    let currentSoilData = soilData;
+    // Recommendations must be based on persisted measurements, not values
+    // supplied by the browser. Client-provided soilData is intentionally ignored
+    // because it is unverified and could make the report appear evidence-backed.
+    const currentSoilData = await FarmService.getLatestSoilData(fieldId, requestDb(req));
     if (!currentSoilData) {
-      const latestSoil = await FarmService.getLatestSoilData(fieldId, requestDb(req));
-      currentSoilData = latestSoil;
+      return res.status(409).json({
+        status: "error",
+        code: "PERSISTED_SOIL_DATA_REQUIRED",
+        message: "يلزم حفظ تحليل تربة موثّق لهذا الحقل قبل إنشاء توصيات زراعية مرتبطة به.",
+        provenance: { source: "supabase.soil_analyses", persisted: false },
+      });
     }
 
     // Score crops with the deterministic agronomic engine. This previously
