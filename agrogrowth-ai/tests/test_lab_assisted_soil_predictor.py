@@ -78,7 +78,7 @@ def test_invalid_measurements_are_rejected(value):
         predictor.predict({"aluminium_extractable": value})
 
 
-@pytest.mark.parametrize("coverage", [0, -0.1, 1.01, 2])
+@pytest.mark.parametrize("coverage", [0, -0.1, 0.8, 0.99, 1.01, 2])
 def test_invalid_feature_coverage_threshold_is_rejected(coverage):
     with pytest.raises(ValueError):
         LabAssistedSoilPredictor(min_feature_coverage=coverage)
