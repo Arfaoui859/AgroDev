@@ -18,7 +18,7 @@ import { createClient } from "@supabase/supabase-js";
 type CreateClientArgs = [string, string, any?];
 
 /** A minimal thenable query builder that resolves to an empty result set. */
-function fakeBuilder(): any {
+function fakeBuilder(table?: string): any {
   const builder: any = {
     select: () => builder,
     insert: (payload: any) => {
@@ -30,7 +30,7 @@ function fakeBuilder(): any {
     eq: () => builder,
     order: () => builder,
     limit: () => builder,
-    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    maybeSingle: () => Promise.resolve({ data: table === "users" ? { role: "farmer" } : null, error: null }),
     single: () => Promise.resolve({ data: null, error: null }),
     then: (resolve: any) => resolve({ data: [], error: null }),
   };
@@ -46,7 +46,7 @@ jest.mock("@supabase/supabase-js", () => {
     createClient: jest.fn((...args: CreateClientArgs[]) => {
       (globalThis as any).__createClientCalls.push(args[2]);
       return {
-        from: () => fakeBuilder(),
+        from: (table: string) => fakeBuilder(table),
         // requireAuth verifies the bearer token through the module-level client.
         auth: {
           getUser: async () => ({
