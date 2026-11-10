@@ -6,8 +6,14 @@ small in-memory test double. They never retrain or claim to validate the models.
 from __future__ import annotations
 
 import math
+import pathlib
+import sys
 
 import pytest
+
+AI_ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(AI_ROOT) not in sys.path:
+    sys.path.insert(0, str(AI_ROOT))
 
 from soil_analysis.lab_assisted_predictor import LabAssistedSoilPredictor
 
