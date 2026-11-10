@@ -119,6 +119,8 @@ def test_weather_plan_returns_seasonal_plan():
         "/create-weather-plan",
         json={
             "location": {"latitude": 35.0, "longitude": 10.0, "elevation": 100, "region": "تونس"},
+            "historical_weather": {"temperature": 22, "humidity": 60, "rainfall": 15, "wind_speed": 4, "solar_radiation": 20, "recent_rainfall": 10, "annual_rainfall": 450, "temperature_variation": 8},
+            "current_conditions": {"temperature": 22, "humidity": 60, "rainfall": 15, "wind_speed": 4, "solar_radiation": 20, "recent_rainfall": 10, "annual_rainfall": 450, "temperature_variation": 8},
             "crop_options": ["wheat", "tomato", "olive"],
             "planning_horizon_months": 12,
         },
@@ -162,7 +164,7 @@ def test_yield_prediction_returns_economic_analysis():
             "management_practices": {"irrigation_efficiency": 0.85,
                                      "fertilizer_application_rate": 1.0,
                                      "pest_management_score": 0.85,
-                                     "disease_control_score": 0.8, "organic_farming": false},
+                                     "disease_control_score": 0.8, "organic_farming": False},
         },
     )
     assert resp.status_code == 200, resp.text
