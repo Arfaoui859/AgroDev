@@ -352,7 +352,6 @@ export default function AppRouter() {
           />
           <Route path="/database-status" element={<DatabaseStatus />} />
           <Route path="/service-status" element={<ServiceStatus />} />
-          <Route path="/auth-test" element={<AuthTest />} />
           <Route path="/settings" element={<UserSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
