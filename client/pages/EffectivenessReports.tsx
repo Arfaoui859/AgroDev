@@ -217,6 +217,35 @@ export default function EffectivenessReports() {
     }
   };
 
+  const exportReports = () => {
+    if (filteredReports.length === 0) return;
+    const headers = ["التاريخ", "المنتج", "النوع", "المحصول", "صحة قبل", "صحة بعد", "الفعالية", "التكلفة TND", "المساحة هكتار", "ملاحظات"];
+    const rows = filteredReports.map(report => [
+      report.applicationDate,
+      report.productName,
+      report.productType,
+      report.cropType,
+      report.beforeCondition.healthScore,
+      report.afterCondition.healthScore,
+      report.effectivenessScore,
+      report.cost ?? "",
+      report.farmSize ?? "",
+      report.notes ?? "",
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
+      .join("\r\n");
+    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `agrogrowth-effectiveness-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 85) return 'text-green-600';
     if (score >= 70) return 'text-blue-600';
@@ -272,7 +301,7 @@ export default function EffectivenessReports() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={exportReports} disabled={filteredReports.length === 0}>
             <Download className="h-4 w-4 ml-2" />
             تصدير التقرير
           </Button>
