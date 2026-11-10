@@ -94,7 +94,6 @@ export const getAdminDashboard: RequestHandler = async (req, res) => {
       fetchUsers(client, 5, 0),
       client.from("farms").select("id", { count: "exact", head: true }),
     ]);
-    const activeUsers = users.filter((u) => u.status === "active").length;
     // Dashboard summary counts are queried independently so pagination does not
     // distort totals. If the optional farms table is unavailable, disclose it.
     const { count: allActive, error: activeError } = await client
