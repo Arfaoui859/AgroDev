@@ -63,6 +63,17 @@ function toAdminUser(user: DbUser) {
   };
 }
 
+async function recordAdminAction(client: any, actorId: string | undefined, action: string, targetUserId: string | null, details: Record<string, unknown> = {}) {
+  if (!client) return;
+  const { error } = await client.from("admin_activity_logs").insert({
+    actor_id: actorId || null,
+    target_user_id: targetUserId,
+    action,
+    details,
+  });
+  if (error) console.warn("[admin-panel] audit log write failed:", error.message);
+}
+
 async function fetchUsers(client: any, limit = 100, from = 0) {
   if (!client) throw new Error("ADMIN_DATABASE_NOT_CONFIGURED");
   const { data, error, count } = await client
@@ -90,9 +101,10 @@ export const getAdminDashboard: RequestHandler = async (req, res) => {
   if (!requireDatabase(req, res)) return;
   const client = getAdminClient(req)!;
   try {
-    const [{ users, total }, farmsResult] = await Promise.all([
+    const [{ users, total }, farmsResult, activityResult] = await Promise.all([
       fetchUsers(client, 5, 0),
       client.from("farms").select("id", { count: "exact", head: true }),
+      client.from("admin_activity_logs").select("*").order("created_at", { ascending: false }).limit(8),
     ]);
     // Dashboard summary counts are queried independently so pagination does not
     // distort totals. If the optional farms table is unavailable, disclose it.
@@ -120,7 +132,16 @@ export const getAdminDashboard: RequestHandler = async (req, res) => {
       data: {
         summary,
         recentUsers: users,
-        recentActivity: [],
+        recentActivity: activityResult.error ? [] : (activityResult.data || []).map((entry: any) => ({
+          id: entry.id,
+          action: entry.action,
+          actionArabic: entry.action,
+          userName: entry.actor_id || "Admin API token",
+          userNameArabic: entry.actor_id || "مدير النظام",
+          timestamp: entry.created_at,
+          status: "success",
+          details: entry.details,
+        })),
         securityAlerts: [],
         systemHealth: {
           status: "server-observed",
@@ -138,7 +159,7 @@ export const getAdminDashboard: RequestHandler = async (req, res) => {
             "revenue",
             "support tickets",
             "security event history",
-            "activity history",
+            ...(activityResult.error ? ["admin activity history"] : []),
           ],
         },
       },
@@ -264,8 +285,13 @@ async function readOptionalTable(req: Parameters<RequestHandler>[0], res: Parame
 
 export const getAdminSecurityEvents: RequestHandler = async (req, res) =>
   readOptionalTable(req, res, "security_events");
-export const getAdminActivityLogs: RequestHandler = async (req, res) =>
-  readOptionalTable(req, res, "activity_logs");
+export const getAdminActivityLogs: RequestHandler = async (req, res) => {
+  if (!requireDatabase(req, res)) return;
+  const client = getAdminClient(req)!;
+  const { data, error } = await client.from("admin_activity_logs").select("*").order("created_at", { ascending: false }).limit(100);
+  if (error) return dbError(res, error, "administrator activity logs");
+  return res.json({ success: true, data: data || [], provenance: { source: "Supabase public.admin_activity_logs", simulated: false } });
+};
 export const getAdminSubscriptions: RequestHandler = async (req, res) =>
   readOptionalTable(req, res, "subscriptions");
 
@@ -297,6 +323,7 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
     const { data, error } = await client.from("users").update(patch).eq("id", userId).select("*").maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ success: false, error: "User record not found." });
+    await recordAdminAction(client, req.userId, "user.updated", userId, { role: role ?? null, status: status ?? null });
     return res.json({ success: true, data: toAdminUser(data), provenance: { source: "Supabase public.users", simulated: false } });
   } catch (error) {
     return dbError(res, error, "user update");
@@ -320,6 +347,7 @@ export const deleteAdminUser: RequestHandler = async (req, res) => {
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (error) throw error;
     await supabaseAdmin.from("users").delete().eq("id", userId);
+    await recordAdminAction(supabaseAdmin, req.userId, "user.deleted", userId, { role: target.role });
     return res.json({ success: true, deletedUserId: userId });
   } catch (error) {
     return dbError(res, error, "user deletion");
@@ -359,6 +387,7 @@ export const createAdminManagedUser: RequestHandler = async (req, res) => {
       await supabaseAdmin.auth.admin.deleteUser(authUser.id).catch(() => undefined);
       throw error;
     }
+    await recordAdminAction(supabaseAdmin, req.userId, "user.created", authUser.id, { role: normalizedRole, email: normalizedEmail });
     return res.status(201).json({ success: true, data: toAdminUser(data), provenance: { source: "Supabase Auth + public.users", simulated: false } });
   } catch (error) {
     return dbError(res, error, "user creation");
