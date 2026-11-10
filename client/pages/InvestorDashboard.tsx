@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   DollarSign,
   TrendingUp,
@@ -134,6 +135,7 @@ const InvestorDashboard = () => {
     [],
   );
   const [loading, setLoading] = useState(true);
+  const [dataUnavailable, setDataUnavailable] = useState(false);
   const [filters, setFilters] = useState({
     cropType: "",
     region: "",
@@ -149,33 +151,49 @@ const InvestorDashboard = () => {
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setDataUnavailable(false);
     try {
-      // Fetch main dashboard data
-      const dashboardResponse = await fetch(
-        "/api/investor/dashboard?investorId=demo-investor",
-      );
-      if (dashboardResponse.ok) {
-        const dashboardResult = await dashboardResponse.json();
-        setDashboardData(dashboardResult.data);
-        setMetrics(dashboardResult.data.overview.metrics);
-        setOpportunities(dashboardResult.data.topOpportunities);
-        setInsights(dashboardResult.data.marketInsights);
-        setProfitability(dashboardResult.data.profitabilityAnalysis);
+      // Never render investment figures until verified, authenticated records
+      // are available from the persistent investor data source.
+      const dashboardResponse = await apiFetch("/api/investor/dashboard");
+      if (!dashboardResponse.ok) {
+        setDashboardData(null);
+        setMetrics(null);
+        setOpportunities([]);
+        setInsights([]);
+        setProfitability([]);
+        setPortfolio([]);
+        setDataUnavailable(true);
+        return;
       }
 
-      // Fetch portfolio
-      const portfolioResponse = await fetch(
-        "/api/investor/portfolio?investorId=demo-investor",
-      );
-      if (portfolioResponse.ok) {
-        const portfolioResult = await portfolioResponse.json();
-        setPortfolio(portfolioResult.data.portfolio);
+      const dashboardResult = await dashboardResponse.json();
+      setDashboardData(dashboardResult.data);
+      setMetrics(dashboardResult.data?.overview?.metrics ?? null);
+      setOpportunities(dashboardResult.data?.topOpportunities ?? []);
+      setInsights(dashboardResult.data?.marketInsights ?? []);
+      setProfitability(dashboardResult.data?.profitabilityAnalysis ?? []);
+
+      const portfolioResponse = await apiFetch("/api/investor/portfolio");
+      if (!portfolioResponse.ok) {
+        setPortfolio([]);
+        setDataUnavailable(true);
+        return;
       }
+      const portfolioResult = await portfolioResponse.json();
+      setPortfolio(portfolioResult.data?.portfolio ?? []);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.error("Error fetching investor dashboard data:", error);
+      setDashboardData(null);
+      setMetrics(null);
+      setOpportunities([]);
+      setInsights([]);
+      setProfitability([]);
+      setPortfolio([]);
+      setDataUnavailable(true);
       toast({
         title: "خطأ",
-        description: "فشل في تحميل بيانات لوحة المستثمرين",
+        description: "بيانات المستثمرين غير متاحة حالياً. لم يتم عرض أرقام تقديرية.",
         variant: "destructive",
       });
     } finally {
@@ -184,13 +202,14 @@ const InvestorDashboard = () => {
   };
 
   const fetchFilteredOpportunities = async () => {
+    if (dataUnavailable) return;
     try {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
 
-      const response = await fetch(`/api/investor/opportunities?${params}`);
+      const response = await apiFetch(`/api/investor/opportunities?${params}`);
       if (response.ok) {
         const result = await response.json();
         setOpportunities(result.data.opportunities);
@@ -201,17 +220,20 @@ const InvestorDashboard = () => {
   };
 
   const handleInvest = async (opportunityId: string, amount: number) => {
+    if (dataUnavailable) {
+      toast({ title: "غير متاح", description: "عمليات الاستثمار معطّلة إلى حين ربط مصدر بيانات موثّق ونظام استثمار آمن.", variant: "destructive" });
+      return;
+    }
     try {
-      const response = await fetch("/api/investor/invest", {
+      const response = await apiFetch("/api/investor/invest", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          investorId: "demo-investor",
           opportunityId,
           amount,
-          notes: "Investment via dashboard",
+          notes: "Investment request from AgroGrowth",
         }),
       });
 
@@ -301,7 +323,7 @@ const InvestorDashboard = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8" dir="rtl">
-      <DataProvenanceBanner className="mb-4" />
+      <DataProvenanceBanner className="mb-4" message="بيانات الاستثمار والمحفظة غير متاحة حالياً: لم يتم ربط قاعدة بيانات موثّقة للمستثمرين. لن نعرض فرصاً أو عوائد تجريبية على أنها حقيقية." />
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
