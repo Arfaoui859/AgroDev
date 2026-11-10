@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { supabase, supabaseAdmin } from "../lib/supabase";
+import { supabase, supabaseAdmin, scopedClientFromAuthHeader } from "../lib/supabase";
 import { verifyAdminToken } from "../lib/adminAuth";
 
 /** Roles treated as platform administrators. */
@@ -126,8 +126,8 @@ export async function requireAuth(
  * RLS cannot hide the caller's own row. Returns null when the user has no
  * profile row or the database is unavailable.
  */
-async function resolveRole(userId: string): Promise<string | null> {
-  const client = supabaseAdmin;
+async function resolveRole(userId: string, req: Request): Promise<string | null> {
+  const client = supabaseAdmin || scopedClientFromAuthHeader(req.header("authorization"));
   if (!client) return null;
   try {
     const { data, error } = await client
@@ -193,17 +193,9 @@ export async function requireAdminAccess(
   }
 
   if (userId) {
-    // Role checks must use the elevated client; the anon client is subject to
-    // RLS and cannot reliably distinguish "not an admin" from "row hidden".
-    if (!supabaseAdmin) {
-      res.status(503).json({
-        success: false,
-        error: "Admin authorization is not configured",
-        message: "Set SUPABASE_SERVICE_ROLE_KEY on the server to enable admin role verification.",
-      });
-      return;
-    }
-    const role = await resolveRole(userId);
+    // Prefer service-role access. If it is not configured, the already-verified
+    // admin JWT is used as an RLS-scoped client to read its own role.
+    const role = await resolveRole(userId, req);
     if (role && ADMIN_ROLES.has(role)) {
       req.userId = userId;
       req.identitySource = "jwt";
