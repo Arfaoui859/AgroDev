@@ -44,6 +44,15 @@ AS $storage_folder$
   END
 $storage_folder$;
 
+-- Supabase creates this publication for Realtime; mirror it in the disposable CI database.
+DO $
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END;
+$;
+
 CREATE SCHEMA IF NOT EXISTS auth;
 
 -- Minimal auth.users table for exercising the production signup trigger in CI.
