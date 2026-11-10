@@ -97,8 +97,18 @@ export default function PestControl() {
 
   const [cropType, setCropType] = useState("tomato");
   const [symptoms, setSymptoms] = useState<string[]>([]);
-  const [affectedArea, setAffectedArea] = useState(20);
-  const [plantHealth, setPlantHealth] = useState(0.7);
+  const [affectedArea, setAffectedArea] = useState("");
+  const [affectedPlantCount, setAffectedPlantCount] = useState("");
+  const [totalPlantCount, setTotalPlantCount] = useState("");
+  const [plantAgeDays, setPlantAgeDays] = useState("");
+  const [plantHealth, setPlantHealth] = useState("");
+  const [farmSize, setFarmSize] = useState("");
+  const [temperature, setTemperature] = useState("");
+  const [humidity, setHumidity] = useState("");
+  const [recentRainfall, setRecentRainfall] = useState("");
+  const [windSpeed, setWindSpeed] = useState("");
+  const [plantDensity, setPlantDensity] = useState("");
+  const [irrigationFrequency, setIrrigationFrequency] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PestAnalysis | null>(null);
@@ -114,6 +124,15 @@ export default function PestControl() {
       setError(t("pest.selectSymptom"));
       return;
     }
+    const requiredMeasurements = [affectedArea, affectedPlantCount, totalPlantCount, plantAgeDays, plantHealth, farmSize, temperature, humidity, recentRainfall, windSpeed];
+    if (requiredMeasurements.some((value) => value.trim() === "") || !plantDensity || !irrigationFrequency) {
+      setError(language === "ar" ? "أدخل جميع قياسات النباتات والطقس وحجم المزرعة قبل التحليل." : "Enter all plant, weather and farm measurements before analysis.");
+      return;
+    }
+    if (Number(totalPlantCount) < 1 || Number(affectedPlantCount) > Number(totalPlantCount)) {
+      setError(language === "ar" ? "عدد النباتات المصابة يجب ألا يتجاوز العدد الإجمالي." : "Affected plant count cannot exceed total plant count.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setResult(null);
@@ -124,8 +143,20 @@ export default function PestControl() {
         body: JSON.stringify({
           crop_type: cropType,
           symptoms,
-          affected_area_percentage: affectedArea,
-          plant_health_score: plantHealth,
+          affected_area_percentage: Number(affectedArea),
+          affected_plant_count: Number(affectedPlantCount),
+          total_plant_count: Number(totalPlantCount),
+          plant_age_days: Number(plantAgeDays),
+          plant_health_score: Number(plantHealth),
+          farm_size: Number(farmSize),
+          plant_density: plantDensity,
+          irrigation_frequency: irrigationFrequency,
+          weather_conditions: {
+            temperature: Number(temperature),
+            humidity: Number(humidity),
+            recent_rainfall: Number(recentRainfall),
+            wind_speed: Number(windSpeed),
+          },
           language,
         }),
       });
@@ -205,32 +236,19 @@ export default function PestControl() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>
-                {t("pest.affectedArea")}: {affectedArea}%
-              </Label>
-              <Input
-                type="range"
-                min={0}
-                max={100}
-                value={affectedArea}
-                onChange={(e) => setAffectedArea(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>
-                {t("pest.plantHealth")}:{" "}
-                {plantHealth.toFixed(2)}
-              </Label>
-              <Input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={plantHealth}
-                onChange={(e) => setPlantHealth(Number(e.target.value))}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label>{language === "ar" ? "نسبة المساحة المصابة (%)" : "Affected area (%)"}</Label><Input type="number" min="0" max="100" value={affectedArea} onChange={(e) => setAffectedArea(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "عدد النباتات المصابة" : "Affected plants"}</Label><Input type="number" min="0" value={affectedPlantCount} onChange={(e) => setAffectedPlantCount(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "إجمالي النباتات" : "Total plants"}</Label><Input type="number" min="1" value={totalPlantCount} onChange={(e) => setTotalPlantCount(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "عمر النبات (يوم)" : "Plant age (days)"}</Label><Input type="number" min="0" value={plantAgeDays} onChange={(e) => setPlantAgeDays(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "صحة النبات (0–1)" : "Plant health (0–1)"}</Label><Input type="number" min="0" max="1" step="0.05" value={plantHealth} onChange={(e) => setPlantHealth(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "مساحة المزرعة (هكتار)" : "Farm size (ha)"}</Label><Input type="number" min="0.01" step="0.01" value={farmSize} onChange={(e) => setFarmSize(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "الحرارة (°C)" : "Temperature (°C)"}</Label><Input type="number" value={temperature} onChange={(e) => setTemperature(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "الرطوبة (%)" : "Humidity (%)"}</Label><Input type="number" min="0" max="100" value={humidity} onChange={(e) => setHumidity(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "أمطار حديثة (مم)" : "Recent rainfall (mm)"}</Label><Input type="number" min="0" value={recentRainfall} onChange={(e) => setRecentRainfall(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "سرعة الرياح (كم/س)" : "Wind speed (km/h)"}</Label><Input type="number" min="0" value={windSpeed} onChange={(e) => setWindSpeed(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "كثافة النباتات" : "Plant density"}</Label><Select value={plantDensity} onValueChange={setPlantDensity}><SelectTrigger><SelectValue placeholder={language === "ar" ? "اختر" : "Select"} /></SelectTrigger><SelectContent><SelectItem value="low">{language === "ar" ? "منخفضة" : "Low"}</SelectItem><SelectItem value="normal">{language === "ar" ? "عادية" : "Normal"}</SelectItem><SelectItem value="high">{language === "ar" ? "مرتفعة" : "High"}</SelectItem></SelectContent></Select></div>
+              <div className="space-y-2"><Label>{language === "ar" ? "وتيرة الري" : "Irrigation frequency"}</Label><Select value={irrigationFrequency} onValueChange={setIrrigationFrequency}><SelectTrigger><SelectValue placeholder={language === "ar" ? "اختر" : "Select"} /></SelectTrigger><SelectContent><SelectItem value="low">{language === "ar" ? "منخفضة" : "Low"}</SelectItem><SelectItem value="normal">{language === "ar" ? "عادية" : "Normal"}</SelectItem><SelectItem value="excessive">{language === "ar" ? "مفرطة" : "Excessive"}</SelectItem></SelectContent></Select></div>
             </div>
 
             <Button onClick={analyze} disabled={loading} className="w-full">
