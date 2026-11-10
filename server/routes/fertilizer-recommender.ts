@@ -490,7 +490,7 @@ router.post('/track/effectiveness', requireAuth, async (req, res) => {
     typeof productName !== "string" || productName.trim() === "" ||
     !applicationDate || Number.isNaN(new Date(applicationDate).getTime()) ||
     !["fertilizer", "pesticide"].includes(productType) ||
-    num(userRating) === null || num(userRating)! < 1 || num(userRating)! > 5
+    num(userRating) === null || (num(userRating) ?? 0) < 1 || (num(userRating) ?? 0) > 5
   ) {
     return res.status(400).json({
       error: "Product, valid application date, product type, and rating from 1 to 5 are required",
@@ -555,7 +555,7 @@ router.post('/track/effectiveness', requireAuth, async (req, res) => {
 
   const { data, error } = await supabaseAdmin
     .from("effectiveness_reports")
-    .insert({ user_id: req.userId, report })
+    .insert({ user_id: userId, report })
     .select("id, created_at")
     .single();
 
