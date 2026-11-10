@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import os from "node:os";
-import { supabaseAdmin } from "../lib/supabase";
+import { supabaseAdmin, scopedClientFromAuthHeader } from "../lib/supabase";
 
 type DbUser = Record<string, any>;
 
@@ -12,8 +12,12 @@ const unavailable = (res: Parameters<RequestHandler>[1], message: string) =>
     data: null,
   });
 
-function requireDatabase(res: Parameters<RequestHandler>[1]): boolean {
-  if (supabaseAdmin) return true;
+function getAdminClient(req: Parameters<RequestHandler>[0]) {
+  return supabaseAdmin || scopedClientFromAuthHeader(req.header("authorization"));
+}
+
+function requireDatabase(req: Parameters<RequestHandler>[0], res: Parameters<RequestHandler>[1]): boolean {
+  if (getAdminClient(req)) return true;
   unavailable(
     res,
     "Admin database access is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the server.",
@@ -59,9 +63,9 @@ function toAdminUser(user: DbUser) {
   };
 }
 
-async function fetchUsers(limit = 100, from = 0) {
-  if (!supabaseAdmin) throw new Error("ADMIN_DATABASE_NOT_CONFIGURED");
-  const { data, error, count } = await supabaseAdmin
+async function fetchUsers(client: any, limit = 100, from = 0) {
+  if (!client) throw new Error("ADMIN_DATABASE_NOT_CONFIGURED");
+  const { data, error, count } = await client
     .from("users")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
@@ -82,17 +86,18 @@ function dbError(res: Parameters<RequestHandler>[1], error: unknown, action: str
   });
 }
 
-export const getAdminDashboard: RequestHandler = async (_req, res) => {
-  if (!requireDatabase(res)) return;
+export const getAdminDashboard: RequestHandler = async (req, res) => {
+  if (!requireDatabase(req, res)) return;
+  const client = getAdminClient(req)!;
   try {
     const [{ users, total }, farmsResult] = await Promise.all([
-      fetchUsers(5, 0),
-      supabaseAdmin!.from("farms").select("id", { count: "exact", head: true }),
+      fetchUsers(client, 5, 0),
+      client.from("farms").select("id", { count: "exact", head: true }),
     ]);
     const activeUsers = users.filter((u) => u.status === "active").length;
     // Dashboard summary counts are queried independently so pagination does not
     // distort totals. If the optional farms table is unavailable, disclose it.
-    const { count: allActive, error: activeError } = await supabaseAdmin!
+    const { count: allActive, error: activeError } = await client
       .from("users")
       .select("id", { count: "exact", head: true })
       .or("is_active.eq.true,status.eq.active");
@@ -144,11 +149,12 @@ export const getAdminDashboard: RequestHandler = async (_req, res) => {
 };
 
 export const getAdminUsers: RequestHandler = async (req, res) => {
-  if (!requireDatabase(res)) return;
+  if (!requireDatabase(req, res)) return;
+  const client = getAdminClient(req)!;
   try {
     const page = Math.max(1, Number.parseInt(String(req.query.page || "1"), 10) || 1);
     const limit = Math.min(100, Math.max(1, Number.parseInt(String(req.query.limit || "50"), 10) || 50));
-    const { users, total } = await fetchUsers(limit, (page - 1) * limit);
+    const { users, total } = await fetchUsers(client, limit, (page - 1) * limit);
     return res.json({
       success: true,
       data: users,
@@ -160,10 +166,11 @@ export const getAdminUsers: RequestHandler = async (req, res) => {
   }
 };
 
-export const getAdminSystemMetrics: RequestHandler = async (_req, res) => {
-  if (!requireDatabase(res)) return;
+export const getAdminSystemMetrics: RequestHandler = async (req, res) => {
+  if (!requireDatabase(req, res)) return;
+  const client = getAdminClient(req)!;
   try {
-    const { count: users, error } = await supabaseAdmin!
+    const { count: users, error } = await client
       .from("users").select("id", { count: "exact", head: true });
     if (error) throw error;
     return res.json({
@@ -200,10 +207,11 @@ export const getAdminSystemMetrics: RequestHandler = async (_req, res) => {
   }
 };
 
-export const getAdminUsageAnalytics: RequestHandler = async (_req, res) => {
-  if (!requireDatabase(res)) return;
+export const getAdminUsageAnalytics: RequestHandler = async (req, res) => {
+  if (!requireDatabase(req, res)) return;
+  const client = getAdminClient(req)!;
   try {
-    const { data, error, count } = await supabaseAdmin!
+    const { data, error, count } = await client
       .from("users").select("id,role,created_at", { count: "exact" })
       .order("created_at", { ascending: false }).limit(1000);
     if (error) throw error;
@@ -234,9 +242,9 @@ export const getAdminUsageAnalytics: RequestHandler = async (_req, res) => {
   }
 };
 
-async function readOptionalTable(res: Parameters<RequestHandler>[1], table: string, label: string) {
-  if (!requireDatabase(res)) return null;
-  const { data, error } = await supabaseAdmin!
+async function readOptionalTable(req: Parameters<RequestHandler>[0], res: Parameters<RequestHandler>[1], table: string) {
+  if (!requireDatabase(req, res)) return null;
+  const { data, error } = await getAdminClient(req)!
     .from(table).select("*").limit(100);
   if (error) {
     console.warn(`[admin-panel] ${table} is not available:`, error.message);
@@ -253,15 +261,16 @@ async function readOptionalTable(res: Parameters<RequestHandler>[1], table: stri
   });
 }
 
-export const getAdminSecurityEvents: RequestHandler = async (_req, res) =>
-  readOptionalTable(res, "security_events", "security events");
-export const getAdminActivityLogs: RequestHandler = async (_req, res) =>
-  readOptionalTable(res, "activity_logs", "activity logs");
-export const getAdminSubscriptions: RequestHandler = async (_req, res) =>
-  readOptionalTable(res, "subscriptions", "subscriptions");
+export const getAdminSecurityEvents: RequestHandler = async (req, res) =>
+  readOptionalTable(req, res, "security_events");
+export const getAdminActivityLogs: RequestHandler = async (req, res) =>
+  readOptionalTable(req, res, "activity_logs");
+export const getAdminSubscriptions: RequestHandler = async (req, res) =>
+  readOptionalTable(req, res, "subscriptions");
 
 export const updateAdminUser: RequestHandler = async (req, res) => {
-  if (!supabaseAdmin) return unavailable(res, "Admin database access is not configured.");
+  const client = getAdminClient(req);
+  if (!client) return unavailable(res, "Admin database access is not configured.");
   const userId = String(req.params.userId || "");
   const { status, role } = req.body || {};
   if (!userId) return res.status(400).json({ success: false, error: "User id is required." });
@@ -281,7 +290,7 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (role !== undefined) patch.role = role;
     if (status !== undefined) patch.is_active = status === "active";
-    const { data, error } = await supabaseAdmin.from("users").update(patch).eq("id", userId).select("*").maybeSingle();
+    const { data, error } = await client.from("users").update(patch).eq("id", userId).select("*").maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ success: false, error: "User record not found." });
     return res.json({ success: true, data: toAdminUser(data), provenance: { source: "Supabase public.users", simulated: false } });
@@ -291,7 +300,7 @@ export const updateAdminUser: RequestHandler = async (req, res) => {
 };
 
 export const deleteAdminUser: RequestHandler = async (req, res) => {
-  if (!supabaseAdmin) return unavailable(res, "Admin database access is not configured.");
+  if (!supabaseAdmin) return unavailable(res, "SUPABASE_SERVICE_ROLE_KEY is required for deleting Supabase Auth accounts.");
   const userId = String(req.params.userId || "");
   if (!userId) return res.status(400).json({ success: false, error: "User id is required." });
   if (req.userId === userId) return res.status(409).json({ success: false, error: "You cannot delete your own administrator account." });
@@ -313,7 +322,7 @@ export const deleteAdminUser: RequestHandler = async (req, res) => {
 };
 
 export const createAdminManagedUser: RequestHandler = async (req, res) => {
-  if (!supabaseAdmin) return unavailable(res, "Admin database access is not configured.");
+  if (!supabaseAdmin) return unavailable(res, "SUPABASE_SERVICE_ROLE_KEY is required for creating Supabase Auth accounts.");
   const { email, password, full_name, role } = req.body || {};
   const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || typeof password !== "string" || password.length < 12) {
