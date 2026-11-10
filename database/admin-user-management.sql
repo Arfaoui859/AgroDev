@@ -6,7 +6,14 @@ ALTER TABLE public.users
 
 UPDATE public.users
 SET status = CASE WHEN is_active THEN 'active' ELSE 'inactive' END
-WHERE status IS NULL OR status = '';
+WHERE status IS NULL OR status = '' OR (status = 'active' AND is_active = false);
+
+UPDATE public.users
+SET status = 'inactive'
+WHERE status NOT IN ('active', 'inactive', 'suspended', 'pending');
+
+UPDATE public.users
+SET is_active = (status = 'active');
 
 ALTER TABLE public.users
   DROP CONSTRAINT IF EXISTS users_status_check;
