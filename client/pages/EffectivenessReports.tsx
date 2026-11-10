@@ -235,7 +235,7 @@ export default function EffectivenessReports() {
           ...reportData,
           effectivenessScore,
           improvements: Array.isArray(result.improvements) ? result.improvements : [],
-          futureRecommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
+          futureRecommendations: Array.isArray(result.futureRecommendations) ? result.futureRecommendations : [],
         };
         
         setReports(prev => [newReportWithAnalysis, ...prev]);
