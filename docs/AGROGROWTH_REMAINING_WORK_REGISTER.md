@@ -169,3 +169,6 @@ Do not describe AgroGrowth as production-ready until P0 is closed, all P1 securi
 
 
 | Admin user detail integrity | Replaced placeholder login-count, phone-verification and 2FA indicators with truthful availability states; the dialog now displays only account ID, persisted creation/last-login timestamps and the stored email-verification flag, with invalid/missing timestamps handled safely | Session analytics, phone verification and 2FA remain unconnected and are explicitly disclosed. No production UI test or build has been run in this source-only update. |
+
+
+| Admin password recovery | Added an admin-only password reset email endpoint and a Send password reset email action in the user details dialog. The endpoint requires a verified administrator JWT, uses Supabase Auth resetPasswordForEmail, and appends user.password_reset.requested to the append-only admin audit log. Added an integration test for anonymous/demo rejection and documented the required Auth Site URL and SMTP configuration. | Not tested against live Supabase/SMTP; no production email delivery claim. CI/build/Jest status remains unverified for this batch. |
