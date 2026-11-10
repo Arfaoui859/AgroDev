@@ -9,6 +9,8 @@ export interface ServiceStatus {
   requiresLocal?: boolean;
   healthServiceKey?: string;
   modelSource?: string;
+  advisoryModelSource?: string;
+  advisoryConfigured?: boolean;
   isRealModel?: boolean;
   modelTrainedOnSyntheticData?: boolean;
 }
@@ -170,6 +172,8 @@ type GatewayServiceHealth = {
   key: string;
   status: string;
   modelSource?: string | null;
+  advisoryModelSource?: string | null;
+  advisoryConfigured?: boolean;
   isRealModel?: boolean;
   modelTrainedOnSyntheticData?: boolean;
   error?: string;
@@ -280,6 +284,8 @@ export class ServiceStatusManager {
           if (!serviceHealth) throw new Error(`No health entry for ${service.healthServiceKey}`);
           updatedService.status = serviceHealth.status === 'available' ? 'available' : 'unavailable';
           updatedService.modelSource = typeof serviceHealth.modelSource === 'string' ? serviceHealth.modelSource : undefined;
+          updatedService.advisoryModelSource = typeof serviceHealth.advisoryModelSource === 'string' ? serviceHealth.advisoryModelSource : undefined;
+          updatedService.advisoryConfigured = serviceHealth.advisoryConfigured === true;
           updatedService.isRealModel = serviceHealth.isRealModel === true;
           updatedService.modelTrainedOnSyntheticData = serviceHealth.modelTrainedOnSyntheticData === true;
           updatedService.errorMessage = serviceHealth.error;
