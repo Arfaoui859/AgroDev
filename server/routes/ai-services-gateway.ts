@@ -29,8 +29,10 @@ import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
  * on real field data". Shared with the health view so a reachable-but-synthetic
  * service is labelled honestly instead of shown as production inference.
  */
-const HEURISTIC_MODEL_SOURCE_RE =
+const NON_ML_MODEL_SOURCE_RE =
   /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy|deterministic|rule[-_ ]?based|feature[-_ ]?based/i;
+const SYNTHETIC_MODEL_SOURCE_RE =
+  /demo|simulat|synthetic|mock|random|placeholder|dummy/i;
 
 /**
  * Normalize a service base URL. Render's `fromService` `hostport` property yields
@@ -1120,14 +1122,16 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           const declared =
             response.data?.model_source ?? response.data?.modelSource ?? null;
           const modelSource = typeof declared === "string" ? declared : null;
-          const heuristic =
-            modelSource !== null && HEURISTIC_MODEL_SOURCE_RE.test(modelSource);
+          const nonMl =
+            modelSource !== null && NON_ML_MODEL_SOURCE_RE.test(modelSource);
+          const synthetic =
+            modelSource !== null && SYNTHETIC_MODEL_SOURCE_RE.test(modelSource);
           return {
             ...service,
             status: "available",
             modelSource,
-            isRealModel: modelSource !== null && !heuristic,
-            modelTrainedOnSyntheticData: heuristic,
+            isRealModel: modelSource !== null && !nonMl,
+            modelTrainedOnSyntheticData: synthetic,
             responseTime: Date.now() - checkStart,
             lastChecked: new Date().toISOString()
           };
