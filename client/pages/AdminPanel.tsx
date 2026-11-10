@@ -903,8 +903,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               </CardTitle>
               <CardDescription>
                 {isArabic
-                  ? 'عمليات تغيير الصلاحيات المسجلة في قاعدة البيانات مع هوية المنفّذ والهدف والتوقيت'
-                  : 'Database-recorded administrator actions with actor, target and timestamp'}
+                  ? 'عمليات الإدارة المسجلة في قاعدة البيانات: تغيير الصلاحيات وحالة الحساب، مع هوية المنفّذ والهدف والتوقيت'
+                  : 'Database-recorded role and account-status changes with actor, target and timestamp'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -935,8 +935,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           </td>
                           <td className="px-3 py-3 font-mono text-xs">{log.actor_user_id}</td>
                           <td className="px-3 py-3 font-mono text-xs">{log.target_user_id}</td>
-                          <td className="px-3 py-3">{String(log.before_data?.role ?? '—')}</td>
-                          <td className="px-3 py-3">{String(log.after_data?.role ?? '—')}</td>
+                          <td className="px-3 py-3">{String(log.before_data?.role ?? (typeof log.before_data?.is_active === 'boolean' ? (log.before_data.is_active ? (isArabic ? 'نشط' : 'Active') : (isArabic ? 'موقوف' : 'Suspended')) : '—'))}</td>
+                          <td className="px-3 py-3">{String(log.after_data?.role ?? (typeof log.after_data?.is_active === 'boolean' ? (log.after_data.is_active ? (isArabic ? 'نشط' : 'Active') : (isArabic ? 'موقوف' : 'Suspended')) : '—'))}</td>
                           <td className="px-3 py-3 whitespace-nowrap">
                             {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
                           </td>
