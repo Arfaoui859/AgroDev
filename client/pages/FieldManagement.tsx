@@ -584,7 +584,7 @@ export default function FieldManagement() {
           </p>
         </div>
         <div className="flex items-center space-x-4 rtl:space-x-reverse">
-          <Button variant="outline" size="icon" className="relative">
+          <Button variant="outline" size="icon" className="relative" onClick={() => setActiveTab("alerts")}>
             <Bell className="h-4 w-4" />
             {unreadAlertsCount > 0 && (
               <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
