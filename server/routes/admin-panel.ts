@@ -100,14 +100,15 @@ export const getAdminDashboard: RequestHandler = async (req, res) => {
     const { count: allActive, error: activeError } = await client
       .from("users")
       .select("id", { count: "exact", head: true })
-      .or("is_active.eq.true,status.eq.active");
+       .eq("is_active", true);
+    const { count: newUsers, error: newUsersError } = await client
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString());
     const summary = {
       totalUsers: total,
-      activeUsers: activeError ? null : (allActive ?? activeUsers),
-      newUsers: users.filter((u) => {
-        if (!u.createdAt) return false;
-        return Date.now() - new Date(u.createdAt).getTime() <= 30 * 86400000;
-      }).length,
+      activeUsers: activeError ? null : (allActive ?? null),
+      newUsers: newUsersError ? null : (newUsers ?? 0),
       totalFarms: farmsResult.error ? null : (farmsResult.count ?? 0),
       totalRevenue: null,
       monthlyRecurring: null,
@@ -179,8 +180,9 @@ export const getAdminSystemMetrics: RequestHandler = async (req, res) => {
         server: {
           uptime: Math.floor(process.uptime()),
           cpuUsage: null,
-          memoryUsage: process.memoryUsage().rss,
-          memoryTotal: os.totalmem(),
+          memoryUsage: Math.round((process.memoryUsage().heapUsed / Math.max(process.memoryUsage().heapTotal, 1)) * 100),
+          memoryUsedBytes: process.memoryUsage().heapUsed,
+          memoryTotal: process.memoryUsage().heapTotal,
           diskUsage: null,
           responseTime: null,
           requestCount: null,
