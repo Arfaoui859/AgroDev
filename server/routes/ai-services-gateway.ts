@@ -19,6 +19,7 @@ import { probeService } from "../services/providers/serviceProbe";
 import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
 import { resolveUserIdFromJwt } from "../middleware/auth";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
+import { persistTrustedAssistantTurn } from "./assistant-conversations";
 import { getWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
 
 /**
@@ -807,7 +808,7 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
 
 // 🧠 SMART ASSISTANT ENDPOINTS
 export const chatWithAIAssistant = async (req: Request, res: Response) => {
-  const { message, question, history, language } = req.body ?? {};
+  const { message, question, history, language, conversationId } = req.body ?? {};
   const userMessage: string = (message || question || "").toString();
   const correlationId = crypto.randomUUID();
   res.set("X-Correlation-Id", correlationId);
@@ -1123,7 +1124,42 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         : farmContextStatus === "unavailable"
           ? "تعذّر جلب سياق المزرعة والتحقق منه؛ هذه إجابة عامة ولا تعتمد على بيانات مزرعة غير متاحة."
           : "لم يتم تقديم جلسة موثقة؛ هذه إجابة عامة.";
-    res.json({ ...result, farmContextStatus, note: [result.note, contextNote].filter(Boolean).join(" "), correlationId });
+    let persistedConversationId: string | null = null;
+    let historyPersisted = false;
+    let historyPersistenceCode: string | null = null;
+    if (userId) {
+      try {
+        persistedConversationId = await persistTrustedAssistantTurn({
+          authorization: req.header("authorization"),
+          userId,
+          conversationId: typeof conversationId === "string" ? conversationId : null,
+          userContent: userMessage,
+          assistantContent: result.answer,
+          language: result.language,
+          dataSource: result.dataSource,
+          modelSource: result.modelSource,
+          metadata: {
+            correlationId,
+            farmContextStatus,
+            usedAgents: result.usedAgents.slice(0, 8),
+            contextSummary: result.contextSummary.slice(0, 8),
+          },
+        });
+        historyPersisted = true;
+      } catch (persistError) {
+        historyPersistenceCode = persistError instanceof Error ? persistError.message : "ASSISTANT_HISTORY_SAVE_FAILED";
+        console.warn(`Assistant history persistence failed [${correlationId}]:`, historyPersistenceCode);
+      }
+    }
+    res.json({
+      ...result,
+      farmContextStatus,
+      note: [result.note, contextNote].filter(Boolean).join(" "),
+      correlationId,
+      conversationId: persistedConversationId,
+      historyPersisted,
+      historyPersistenceCode,
+    });
   } catch (error) {
     console.error(
       `Assistant error [${correlationId}]:`,
