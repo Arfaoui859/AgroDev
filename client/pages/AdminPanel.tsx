@@ -498,7 +498,7 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
               <CardContent>
                 <ScrollArea className="h-64">
                   <div className="space-y-3">
-                    {dashboardData.recentUsers?.map((user: any) => (
+                    {dashboardData.recentUsers?.length ? dashboardData.recentUsers.map((user: any) => (
                       <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center space-x-3 rtl:space-x-reverse">
                           <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -527,7 +527,7 @@ const AdminPanel: React.FC<AdminPanelProps> = () => {
                           </Button>
                         </div>
                       </div>
-                    )) : <p className="py-6 text-center text-sm text-gray-500">{isArabic ? "لا توجد أنشطة إدارية مسجّلة بعد." : "No administrator activity has been recorded yet."}</p>}
+                    )) : <p className="py-6 text-center text-sm text-gray-500">{isArabic ? "لا توجد سجلات مستخدمين." : "No user records are available."}</p>}
                   </div>
                 </ScrollArea>
               </CardContent>
