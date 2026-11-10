@@ -377,25 +377,33 @@ export const getSmartCropRecommendations = async (
     return n !== undefined && n >= min && n <= max ? n : undefined;
   };
 
-  const experience = optionalNumber(
-    body.farmer_experience_years,
-    0,
-  );
+  const experience = optionalNumber(body.farmer_experience_years, 0);
+  const soilQuality = optionalNumber(body.soil_quality_score, 0, 1);
+  const waterAvailability = optionalNumber(body.water_availability, 0, 1);
+  const targetMarketPrice = optionalNumber(body.target_market_price, 0);
+  const availableCapital = optionalNumber(body.available_capital, 0);
+  const farmSize = optionalNumber(body.farm_size ?? body.area_hectares, 0.000001);
+  const riskTolerance = optionalNumber(body.risk_tolerance, 0, 1);
+
+  if (soilQuality === undefined) requiredErrors.push("soil_quality_score is required (0-1)");
+  if (waterAvailability === undefined) requiredErrors.push("water_availability is required (0-1)");
+  if (targetMarketPrice === undefined) requiredErrors.push("target_market_price is required in TND/kg");
+  if (experience === undefined || !Number.isInteger(experience)) requiredErrors.push("farmer_experience_years is required");
+  if (availableCapital === undefined) requiredErrors.push("available_capital is required in TND");
+  if (farmSize === undefined) requiredErrors.push("farm_size is required in hectares");
+  if (riskTolerance === undefined) requiredErrors.push("risk_tolerance is required (0-1)");
 
   const requestPayload = {
     temperature,
     annual_rainfall: rainfall,
     soil_ph: soilPh,
-    soil_quality_score: optionalNumber(body.soil_quality_score, 0, 1),
-    water_availability: optionalNumber(body.water_availability, 0, 1),
-    target_market_price: optionalNumber(body.target_market_price, 0),
-    farmer_experience_years:
-      experience !== undefined && Number.isInteger(experience)
-        ? experience
-        : undefined,
-    available_capital: optionalNumber(body.available_capital, 0),
-    farm_size: optionalNumber(body.farm_size ?? body.area_hectares, 0.000001),
-    risk_tolerance: optionalNumber(body.risk_tolerance, 0, 1),
+    soil_quality_score: soilQuality,
+    water_availability: waterAvailability,
+    target_market_price: targetMarketPrice,
+    farmer_experience_years: experience,
+    available_capital: availableCapital,
+    farm_size: farmSize,
+    risk_tolerance: riskTolerance,
     location: normaliseLocation(body.location),
     language: ["ar", "ar-tn", "fr", "en"].includes(body.language)
       ? body.language
