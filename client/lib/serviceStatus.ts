@@ -166,6 +166,47 @@ export const AI_SERVICES: ServiceCategory[] = [
 ];
 
 // Database and core services
+type GatewayServiceHealth = {
+  key: string;
+  status: string;
+  modelSource?: string | null;
+  isRealModel?: boolean;
+  modelTrainedOnSyntheticData?: boolean;
+  error?: string;
+};
+
+let gatewayHealthCache: { checkedAt: number; services: GatewayServiceHealth[] } | null = null;
+let gatewayHealthInFlight: Promise<GatewayServiceHealth[]> | null = null;
+
+async function getGatewayServiceHealth(): Promise<GatewayServiceHealth[]> {
+  if (gatewayHealthCache && Date.now() - gatewayHealthCache.checkedAt < 15_000) {
+    return gatewayHealthCache.services;
+  }
+  if (gatewayHealthInFlight) return gatewayHealthInFlight;
+
+  gatewayHealthInFlight = (async () => {
+    const response = await fetch("/api/ai/health", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!response.ok) {
+      throw new Error(`AI gateway health returned HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (!Array.isArray(payload.services)) {
+      throw new Error("AI gateway health response has no services array");
+    }
+    const services = payload.services as GatewayServiceHealth[];
+    gatewayHealthCache = { checkedAt: Date.now(), services };
+    return services;
+  })().finally(() => {
+    gatewayHealthInFlight = null;
+  });
+
+  return gatewayHealthInFlight;
+}
+
 export const CORE_SERVICES: ServiceStatus[] = [
   {
     id: "supabase-db",
@@ -232,16 +273,10 @@ export class ServiceStatusManager {
 
       try {
         if (service.healthServiceKey) {
-          const response = await fetch('/api/ai/health', {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            signal: AbortSignal.timeout(8000),
-          });
-          if (!response.ok) throw new Error(`AI gateway health returned HTTP ${response.status}`);
-          const payload = await response.json();
-          const serviceHealth = Array.isArray(payload.services)
-            ? payload.services.find((item: any) => item.key === service.healthServiceKey)
-            : undefined;
+          const gatewayServices = await getGatewayServiceHealth();
+          const serviceHealth = gatewayServices.find(
+            item => item.key === service.healthServiceKey,
+          );
           if (!serviceHealth) throw new Error(`No health entry for ${service.healthServiceKey}`);
           updatedService.status = serviceHealth.status === 'available' ? 'available' : 'unavailable';
           updatedService.modelSource = typeof serviceHealth.modelSource === 'string' ? serviceHealth.modelSource : undefined;
