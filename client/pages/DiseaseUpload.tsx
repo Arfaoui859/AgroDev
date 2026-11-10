@@ -251,7 +251,7 @@ export default function DiseaseUpload() {
         </div>
         <h1 className="text-3xl font-bold">تشخيص الأمراض بالذكاء الاصطناعي</h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          ارفع صور النبات��ت المصابة للحصول على تشخيص فوري دقيق مع توصيات العلاج المناسبة
+          ارفع صور النباتات المصابة للحصول على تشخيص فوري دقيق مع توصيات العلاج المناسبة
         </p>
       </div>
 
