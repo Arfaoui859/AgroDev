@@ -22,6 +22,15 @@ describe("administrator user mutations require a verified admin session", () => 
     expect(response.body.success).not.toBe(true);
   });
 
+  test("user invitation endpoint rejects an anonymous/demo identity", async () => {
+    const response = await request(app)
+      .post("/api/admin/users")
+      .send({ email: "new-user@example.com", fullName: "New User", role: "farmer" });
+
+    expect([401, 403]).toContain(response.status);
+    expect(response.body.success).not.toBe(true);
+  });
+
   test("account status endpoint rejects non-boolean status values", async () => {
     const response = await request(app)
       .patch(`/api/admin/users/${TARGET_USER_ID}/status`)
