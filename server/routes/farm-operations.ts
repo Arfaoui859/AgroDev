@@ -30,8 +30,9 @@ export function equipmentPayload(body: any) {
   const category = body.category ?? "other";
   const condition = body.condition ?? "unknown";
   const status = body.status ?? "active";
+  const currency = body.currency == null || body.currency === "" ? "TND" : String(body.currency).toUpperCase();
   const cost = body.purchase_cost === "" || body.purchase_cost == null ? null : Number(body.purchase_cost);
-  if (!name || !equipmentCategories.has(category) || !equipmentConditions.has(condition) ||
+  if (!name || currency !== "TND" || !equipmentCategories.has(category) || !equipmentConditions.has(condition) ||
       !equipmentStatuses.has(status) || (cost !== null && (!Number.isFinite(cost) || cost < 0)) ||
       (body.purchase_date != null && body.purchase_date !== "" && !validDate(body.purchase_date))) return null;
   return {
