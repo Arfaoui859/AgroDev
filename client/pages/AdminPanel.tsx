@@ -166,22 +166,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleUserStatusUpdate = async (userId: string, newStatus: string) => {
-    try {
-      setUsers(prev => 
-        prev.map(user => 
-          user.id === userId ? { ...user, status: newStatus } : user
-        )
-      );
-      
-      if (onUserAction) {
-        onUserAction('status_update', userId);
-      }
-    } catch (error) {
-      console.error('Error updating user status:', error);
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -597,7 +581,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <Button>
+            <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"}>
               <UserPlus className="h-4 w-4 mr-2" />
               {isArabic ? 'إضافة مستخدم' : 'Add User'}
             </Button>
@@ -684,7 +668,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <Eye className="h-3 w-3 mr-1" />
                                 {isArabic ? 'عرض' : 'View'}
                               </Button>
-                              <Button size="sm" variant="outline">
+                              <Button disabled title={isArabic ? "هذه العملية غير مفعّلة بعد" : "This action is not implemented yet"} size="sm" variant="outline">
                                 <Edit className="h-3 w-3 mr-1" />
                                 {isArabic ? 'تحرير' : 'Edit'}
                               </Button>
@@ -693,7 +677,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                   size="sm" 
                                   variant="outline" 
                                   className="text-red-600"
-                                  onClick={() => handleUserStatusUpdate(user.id, 'suspended')}
+                                  disabled
+                                  title={isArabic ? "تغيير حالة المستخدم غير متاح حتى ربط واجهة إدارية آمنة" : "User status changes require a secure admin API"}
                                 >
                                   <UserX className="h-3 w-3 mr-1" />
                                   {isArabic ? 'إيقاف' : 'Suspend'}
@@ -703,7 +688,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                   size="sm" 
                                   variant="outline" 
                                   className="text-green-600"
-                                  onClick={() => handleUserStatusUpdate(user.id, 'active')}
+                                  disabled
+                                  title={isArabic ? "تغيير حالة المستخدم غير متاح حتى ربط واجهة إدارية آمنة" : "User status changes require a secure admin API"}
                                 >
                                   <UserCheck className="h-3 w-3 mr-1" />
                                   {isArabic ? 'تفعيل' : 'Activate'}
