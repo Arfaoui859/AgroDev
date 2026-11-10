@@ -279,7 +279,7 @@ const dashboardCards: DashboardCard[] = [
     titleArabic: "تصنيف الفلاحين الذكي",
     description:
       "AI-powered farmer classification and insights for better targeting",
-    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي ورى لاست����اف أفضل",
+    descriptionArabic: "تصنيف المزارعين بالذكاء الاصطناعي وتحليلات لاستهداف أفضل",
     icon: Brain,
     href: "/farmer-segmentation",
     color: "bg-gradient-to-br from-violet-500 to-purple-600",
@@ -1597,7 +1597,7 @@ function SoilDataInputForm() {
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              {isArabic ? "م��احظات إضافية" : "Additional Notes"}
+              {isArabic ? "ملاحظات إضافية" : "Additional Notes"}
             </label>
             <textarea
               value={formData.notes}
