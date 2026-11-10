@@ -110,6 +110,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [userPage, setUserPage] = useState(1);
   const [userPagination, setUserPagination] = useState({ page: 1, pageSize: 50, total: 0, totalPages: 0 });
   const [usersLoading, setUsersLoading] = useState(false);
+  const usersRequestSequence = React.useRef(0);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
@@ -183,6 +184,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const loadUsers = async (page = 1) => {
+    const requestId = ++usersRequestSequence.current;
     setUsersLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: '50' });
@@ -191,14 +193,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       if (filterStatus !== 'all') params.set('status', filterStatus);
       const response = await apiFetch(`/api/admin/users?${params.toString()}`);
       const body = await response.json().catch(() => null);
+      if (requestId !== usersRequestSequence.current) return;
       if (!response.ok || !body?.success) throw new Error(body?.message || `User directory unavailable (HTTP ${response.status})`);
       setUsers(Array.isArray(body.data) ? body.data : []);
       setUserPagination(body.pagination || { page, pageSize: 50, total: (body.data || []).length, totalPages: 1 });
       setUserPage(page);
     } catch (error) {
-      setRoleChangeError(error instanceof Error ? error.message : 'User directory unavailable');
+      if (requestId === usersRequestSequence.current) setRoleChangeError(error instanceof Error ? error.message : 'User directory unavailable');
     } finally {
-      setUsersLoading(false);
+      if (requestId === usersRequestSequence.current) setUsersLoading(false);
     }
   };
 
@@ -689,6 +692,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <SelectItem value="agronomist">{isArabic ? 'خبير زراعي' : 'Agronomist'}</SelectItem>
                   <SelectItem value="trader">{isArabic ? 'تاجر' : 'Trader'}</SelectItem>
                   <SelectItem value="veterinarian">{isArabic ? 'طبيب بيطري' : 'Veterinarian'}</SelectItem>
+                  <SelectItem value="inspector">{isArabic ? 'مراقب' : 'Inspector'}</SelectItem>
+                  <SelectItem value="government">{isArabic ? 'مؤسسة حكومية' : 'Government'}</SelectItem>
+                  <SelectItem value="investor">{isArabic ? 'مستثمر' : 'Investor'}</SelectItem>
                   <SelectItem value="admin">{isArabic ? 'مدير' : 'Admin'}</SelectItem>
                 </SelectContent>
               </Select>
@@ -701,7 +707,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   <SelectItem value="active">{isArabic ? 'نشط' : 'Active'}</SelectItem>
                   <SelectItem value="inactive">{isArabic ? 'غير نشط' : 'Inactive'}</SelectItem>
                   <SelectItem value="suspended">{isArabic ? 'موقوف' : 'Suspended'}</SelectItem>
-                  <SelectItem value="pending">{isArabic ? 'معلق' : 'Pending'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
