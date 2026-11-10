@@ -3,7 +3,7 @@ import { scopedClientFromAuthHeader } from "../lib/supabase";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function isValidISODate(value: string): boolean {
+export function isValidISODate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(value + "T00:00:00.000Z");
   return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
@@ -30,13 +30,15 @@ function unavailable(res: Parameters<RequestHandler>[1], error?: { code?: string
   });
 }
 
-function expensePayload(body: any, userId: string) {
+export function expensePayload(body: any, userId: string) {
   const amount = Number(body.amount);
   const date = String(body.date ?? "");
   const category = String(body.category ?? "");
   const currency = String(body.currency ?? "TND").toUpperCase();
+  const farmId = body.farm_id == null || body.farm_id === "" ? null : String(body.farm_id);
   const allowed = new Set(["seeds", "fertilizers", "pesticides", "labor", "equipment", "fuel", "maintenance", "utilities", "insurance", "other"]);
-  if (!allowed.has(category) || currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !isValidISODate(date)) {
+  if (!allowed.has(category) || currency !== "TND" || !Number.isFinite(amount) || amount <= 0 ||
+      !isValidISODate(date) || (farmId !== null && !UUID_PATTERN.test(farmId))) {
     return null;
   }
   return {
@@ -168,7 +170,7 @@ export const createRevenue: RequestHandler = async (req, res) => {
   }
   const payload = {
     user_id: req.userId,
-    farm_id: typeof body.farm_id === "string" && body.farm_id ? body.farm_id : null,
+    farm_id: farmId,
     crop_related: body.cropRelated ? String(body.cropRelated).slice(0, 100) : null,
     amount,
     currency: "TND",
