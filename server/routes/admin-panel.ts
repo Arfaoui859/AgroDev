@@ -221,6 +221,113 @@ export async function getAdminSubscriptions(_req: Request, res: Response): Promi
   unavailable(res, 'ADMIN_SUBSCRIPTIONS_NOT_CONNECTED');
 }
 
+
+export async function setAdminUserActive(req: Request, res: Response): Promise<void> {
+  if (req.identitySource !== 'jwt' || !req.userId) {
+    res.status(403).json({
+      success: false,
+      code: 'VERIFIED_ADMIN_SESSION_REQUIRED',
+      message: 'Sign in with a verified administrator account before changing account status.',
+    });
+    return;
+  }
+  if (!databaseReady(res)) return;
+
+  const targetUserId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  const isActive = req.body?.isActive;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetUserId)) {
+    res.status(400).json({ success: false, code: 'INVALID_USER_ID', message: 'A valid user ID is required.' });
+    return;
+  }
+  if (typeof isActive !== 'boolean') {
+    res.status(400).json({ success: false, code: 'INVALID_ACCOUNT_STATUS', message: 'isActive must be a boolean.' });
+    return;
+  }
+  if (!isActive && targetUserId === req.userId) {
+    res.status(400).json({ success: false, code: 'SELF_SUSPENSION_BLOCKED', message: 'You cannot suspend your own administrator account.' });
+    return;
+  }
+
+  try {
+    const { data: target, error: targetError } = await supabaseAdmin!
+      .from('users').select('is_active').eq('id', targetUserId).maybeSingle();
+    if (targetError) {
+      console.error('Admin target status lookup failed:', targetError.message);
+      unavailable(res, 'ADMIN_USER_STATUS_LOOKUP_FAILED');
+      return;
+    }
+    if (!target) {
+      res.status(404).json({ success: false, code: 'USER_NOT_FOUND', message: 'The target user does not exist.' });
+      return;
+    }
+    const previousActive = target.is_active !== false;
+    if (previousActive === isActive) {
+      res.json({ success: true, data: { target_user_id: targetUserId, is_active: isActive, changed: false } });
+      return;
+    }
+
+    const { error: authError } = await supabaseAdmin!.auth.admin.updateUserById(targetUserId, {
+      ban_duration: isActive ? 'none' : '876000h',
+    });
+    if (authError) {
+      console.error('Supabase Auth account status update failed:', authError.message);
+      res.status(503).json({
+        success: false,
+        code: 'AUTH_ACCOUNT_STATUS_UPDATE_FAILED',
+        message: 'Supabase Auth could not update this account. No database status change was applied.',
+      });
+      return;
+    }
+
+    const { data, error } = await supabaseAdmin!.rpc('admin_set_user_active', {
+      p_actor_user_id: req.userId,
+      p_target_user_id: targetUserId,
+      p_is_active: isActive,
+    });
+    if (error) {
+      // Keep Auth and public.users aligned if the database guard rejects the change.
+      const { error: rollbackError } = await supabaseAdmin!.auth.admin.updateUserById(targetUserId, {
+        ban_duration: previousActive ? 'none' : '876000h',
+      });
+      if (rollbackError) {
+        console.error('CRITICAL: Auth status rollback failed after database rejection:', rollbackError.message);
+        unavailable(res, 'ACCOUNT_STATUS_PARTIAL_FAILURE');
+        return;
+      }
+      if (error.code === 'P0002') {
+        res.status(404).json({ success: false, code: 'USER_NOT_FOUND', message: 'The target user does not exist.' });
+        return;
+      }
+      if (error.code === '42501') {
+        res.status(403).json({ success: false, code: 'ADMIN_REQUIRED', message: 'Administrator privileges are required.' });
+        return;
+      }
+      if (error.code === '23514') {
+        res.status(409).json({ success: false, code: 'LAST_ADMIN_PROTECTED', message: 'The last active administrator cannot be suspended.' });
+        return;
+      }
+      if (error.code === '22023') {
+        res.status(400).json({ success: false, code: 'INVALID_ACCOUNT_STATUS_CHANGE', message: 'The account status change is not permitted.' });
+        return;
+      }
+      console.error('Admin account status RPC failed:', error.message);
+      unavailable(res, 'ADMIN_ACCOUNT_STATUS_CHANGE_FAILED');
+      return;
+    }
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase');
+    res.json({
+      success: true,
+      data,
+      provenance: { source: 'supabase.auth.admin + admin_set_user_active + admin_audit_logs', verified: true },
+    });
+  } catch (error) {
+    console.error('Admin account status change failed:', error);
+    unavailable(res, 'ADMIN_ACCOUNT_STATUS_CHANGE_FAILED');
+  }
+}
+
 const ADMIN_MANAGED_ROLES = new Set([
   'admin', 'farmer', 'agronomist', 'trader',
   'veterinarian', 'inspector', 'government', 'investor',
