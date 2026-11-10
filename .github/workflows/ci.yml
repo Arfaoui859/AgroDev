@@ -195,7 +195,10 @@ jobs:
       - name: 🔒 Verify tenant isolation and RLS policies
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agrogrowth
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/rls-verification.sql
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/rls-verification.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/admin-user-management-verification.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/effectiveness-reports-verification.sql
 
   # =====================================
   # DOCKER BUILD (production target)
