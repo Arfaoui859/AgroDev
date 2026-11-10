@@ -632,6 +632,7 @@ const ComprehensiveFarmManagement: React.FC<
                             {task.status === "pending" && (
                               <Button
                                 size="sm"
+                                disabled={!onTaskUpdate}
                                 onClick={() =>
                                   handleTaskStatusUpdate(task.id, "in_progress")
                                 }
@@ -644,6 +645,7 @@ const ComprehensiveFarmManagement: React.FC<
                               <Button
                                 size="sm"
                                 variant="outline"
+                                disabled={!onTaskUpdate}
                                 onClick={() =>
                                   handleTaskStatusUpdate(task.id, "completed")
                                 }
@@ -999,7 +1001,8 @@ const ComprehensiveFarmManagement: React.FC<
                       {task.status === "pending" && (
                         <Button
                           size="sm"
-                          onClick={() =>
+                          disabled={!onTaskUpdate}
+                                onClick={() =>
                             handleTaskStatusUpdate(task.id, "in_progress")
                           }
                         >
@@ -1011,7 +1014,8 @@ const ComprehensiveFarmManagement: React.FC<
                         <>
                           <Button
                             size="sm"
-                            onClick={() =>
+                            disabled={!onTaskUpdate}
+                                onClick={() =>
                               handleTaskStatusUpdate(task.id, "completed")
                             }
                           >
@@ -1021,7 +1025,8 @@ const ComprehensiveFarmManagement: React.FC<
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() =>
+                            disabled={!onTaskUpdate}
+                                onClick={() =>
                               handleTaskStatusUpdate(task.id, "pending")
                             }
                           >
