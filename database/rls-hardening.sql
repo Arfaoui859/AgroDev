@@ -77,8 +77,19 @@ ALTER TABLE public.sensor_readings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.soil_images            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_analytics         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.weather_data           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weather_forecasts      ENABLE ROW LEVEL SECURITY;
+
+-- Some existing deployments contain a legacy farm-scoped weather_data table,
+-- while the current clean cloud-setup schema creates weather_records and
+-- weather_forecasts instead. Secure the legacy table when present without
+-- making a clean install fail when it is absent.
+DO $$
+BEGIN
+  IF to_regclass('public.weather_data') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.weather_data ENABLE ROW LEVEL SECURITY';
+  END IF;
+END
+$$;
 ALTER TABLE public.weather_records        ENABLE ROW LEVEL SECURITY;
 
 -- ---------------------------------------------------------------------------
@@ -324,12 +335,19 @@ DROP POLICY IF EXISTS "Admins manage system_settings" ON public.system_settings;
 CREATE POLICY "Admins manage system_settings" ON public.system_settings
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- weather_data is farm-scoped (farm_id), so it is owner-managed like the other
--- agronomic records rather than public-read.
-DROP POLICY IF EXISTS "Owners manage own weather_data" ON public.weather_data;
-CREATE POLICY "Owners manage own weather_data" ON public.weather_data
-  FOR ALL USING (public.owns_farm(farm_id)) WITH CHECK (public.owns_farm(farm_id));
-
-DROP POLICY IF EXISTS "Experts can view weather_data" ON public.weather_data;
-CREATE POLICY "Experts can view weather_data" ON public.weather_data
-  FOR SELECT USING (public.is_expert());
+-- Legacy deployments may still have farm-scoped weather_data. Keep it
+-- private to the owning farm and readable by experts; skip it on clean installs
+-- where cloud-setup.sql creates weather_records/weather_forecasts instead.
+DO $$
+BEGIN
+  IF to_regclass('public.weather_data') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Owners manage own weather_data" ON public.weather_data';
+    EXECUTE 'CREATE POLICY "Owners manage own weather_data" ON public.weather_data
+      FOR ALL USING (public.owns_farm(farm_id))
+      WITH CHECK (public.owns_farm(farm_id))';
+    EXECUTE 'DROP POLICY IF EXISTS "Experts can view weather_data" ON public.weather_data';
+    EXECUTE 'CREATE POLICY "Experts can view weather_data" ON public.weather_data
+      FOR SELECT USING (public.is_expert())';
+  END IF;
+END
+$$;

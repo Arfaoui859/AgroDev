@@ -47,11 +47,9 @@ describe("🔐 /api/admin/* GET routes are gated by requireAdminAccess", () => {
   test.each(ADMIN_ENDPOINTS)(
     "%s is reachable with a valid admin token",
     async (path) => {
-      // ADMIN_API_TOKEN may be unset in the test env; SUPABASE_SERVICE_ROLE_KEY
-      // is the documented backward-compatible fallback. Skip only if neither is
-      // configured, so we never assert against an unconfigured credential.
-      const token =
-        process.env.ADMIN_API_TOKEN || process.env.SUPABASE_SERVICE_ROLE_KEY;
+      // Only the dedicated operator token is accepted as an HTTP credential.
+      // The service-role key must never be sent in a request header.
+      const token = process.env.ADMIN_API_TOKEN;
       if (!token) {
         return;
       }

@@ -77,8 +77,7 @@ services:
           type: pserv
           name: agrogrowth-intelligent-agent
           property: hostport
-      # TODO: confirm the real variable name the server reads for the weather/yield service
-      # (the old file mapped it to SMART_MARKETPLACE_URL, which looks wrong).
+      # Backward-compatible alias accepted by the Node gateway for weather/yield.
       - key: SMART_MARKETPLACE_URL
         fromService:
           type: pserv
@@ -129,7 +128,7 @@ services:
     region: frankfurt
     plan: standard            # TensorFlow/vision does not fit in 512 MB (starter)
     rootDir: agrogrowth-ai
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt -r image_diagnosis/requirements.txt
     startCommand: python -m uvicorn image_diagnosis.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
@@ -158,8 +157,53 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
+      - key: AI_PROVIDER
+        value: gemini
+      - key: AI_MODEL
+        value: gemini-flash-lite-latest
+      - key: AI_TIMEOUT_MS
+        value: "25000"
+      - key: AI_MAX_RETRIES
+        value: "0"
+      - key: AGENT_TOOL_TIMEOUT_SECONDS
+        value: "25"
       - key: GEMINI_API_KEY
         sync: false
+      - key: SOIL_ANALYSIS_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-soil-analysis
+          property: hostport
+      - key: CROP_RECOMMENDATION_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-crop-recommendation
+          property: hostport
+      - key: IMAGE_DIAGNOSIS_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-image-diagnosis
+          property: hostport
+      - key: MARKET_FORECAST_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-market-prediction
+          property: hostport
+      - key: WEATHER_YIELD_INTELLIGENCE_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-weather-yield
+          property: hostport
+      - key: PEST_CONTROL_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-pest-control
+          property: hostport
+      - key: IRRIGATION_OPTIMIZATION_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-irrigation-optimization
+          property: hostport
 
   - type: pserv
     name: agrogrowth-weather-yield

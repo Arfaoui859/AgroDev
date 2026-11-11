@@ -1,10 +1,8 @@
 /**
  * Admin-token verification tests.
  *
- * The privileged maintenance endpoints (admin user provisioning, password reset,
- * auth debug) accept an `x-admin-token` header. Verification must be
- * constant-time and must prefer the dedicated ADMIN_API_TOKEN, while still
- * accepting the legacy SUPABASE_SERVICE_ROLE_KEY for existing clients.
+ * Privileged operator endpoints accept only the dedicated ADMIN_API_TOKEN.
+ * The Supabase service-role key is never valid as an HTTP header credential.
  */
 import { verifyAdminToken, timingSafeEqualStr } from "../../server/lib/adminAuth";
 
@@ -12,25 +10,23 @@ function fakeReq(token?: string): any {
   return { header: (name: string) => (name === "x-admin-token" ? token : undefined) };
 }
 
-const KEYS = ["ADMIN_API_TOKEN", "SUPABASE_SERVICE_ROLE_KEY"] as const;
-const SAVED: Record<string, string | undefined> = {};
+const SAVED_ADMIN = process.env.ADMIN_API_TOKEN;
+const SAVED_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 beforeEach(() => {
-  for (const k of KEYS) {
-    SAVED[k] = process.env[k];
-    delete process.env[k];
-  }
+  delete process.env.ADMIN_API_TOKEN;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 });
 
 afterEach(() => {
-  for (const k of KEYS) {
-    if (SAVED[k] === undefined) delete process.env[k];
-    else process.env[k] = SAVED[k];
-  }
+  if (SAVED_ADMIN === undefined) delete process.env.ADMIN_API_TOKEN;
+  else process.env.ADMIN_API_TOKEN = SAVED_ADMIN;
+  if (SAVED_SERVICE_ROLE === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  else process.env.SUPABASE_SERVICE_ROLE_KEY = SAVED_SERVICE_ROLE;
 });
 
-describe("🔐 verifyAdminToken", () => {
-  test("accepts a matching ADMIN_API_TOKEN", () => {
+describe("verifyAdminToken", () => {
+  test("accepts a matching dedicated ADMIN_API_TOKEN", () => {
     process.env.ADMIN_API_TOKEN = "correct-horse";
     expect(verifyAdminToken(fakeReq("correct-horse"))).toBe(true);
   });
@@ -40,20 +36,21 @@ describe("🔐 verifyAdminToken", () => {
     expect(verifyAdminToken(fakeReq("wrong"))).toBe(false);
   });
 
-  test("accepts SUPABASE_SERVICE_ROLE_KEY as a legacy fallback", () => {
+  test("never accepts SUPABASE_SERVICE_ROLE_KEY as an HTTP token", () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
-    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(true);
+    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(false);
   });
 
-  test("ADMIN_API_TOKEN matches independently of the service-role key", () => {
+  test("accepts only ADMIN_API_TOKEN even when both secrets are configured", () => {
     process.env.ADMIN_API_TOKEN = "admin-only";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
     expect(verifyAdminToken(fakeReq("admin-only"))).toBe(true);
-    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(true);
+    expect(verifyAdminToken(fakeReq("service-role-key"))).toBe(false);
     expect(verifyAdminToken(fakeReq("neither"))).toBe(false);
   });
 
-  test("rejects everything when no secret is configured", () => {
+  test("rejects everything when no dedicated token is configured", () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
     expect(verifyAdminToken(fakeReq("anything"))).toBe(false);
   });
 
@@ -70,7 +67,7 @@ describe("🔐 verifyAdminToken", () => {
   });
 });
 
-describe("🔐 timingSafeEqualStr", () => {
+describe("timingSafeEqualStr", () => {
   test("matches equal strings and rejects unequal ones", () => {
     expect(timingSafeEqualStr("abc", "abc")).toBe(true);
     expect(timingSafeEqualStr("abc", "abd")).toBe(false);

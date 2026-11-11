@@ -57,7 +57,8 @@ describe("🗄️ Routes degrade gracefully with no database configured", () => 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("success");
     expect(res.body.data.summary.averagePrice).toBeNull();
-    expect(res.body.data.isRealData).toBe(true);
+    expect(res.body.data.isRealData).toBe(false);
+    expect(res.body.data.dataSource).toBe("unavailable");
   });
 
   test("GET /api/market/trends reports a zero sample size, not 500", async () => {

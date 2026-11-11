@@ -1,8 +1,9 @@
 # AgroGrowth AI Services — Evidence-Based Status
 
-**Last code audit:** 2026-11-10  
+**Last code audit:** 2026-11-11  
 **Repository:** `Arfaoui859/AgroDev`  
-**Branch:** `feat/ai-integration-production-hardening`
+**Remediation branch:** `fix/agrogrowth-ci-and-production-gaps-2026-11-11`  
+**Base branch:** `feat/ai-integration-production-hardening`
 
 > **Important:** This file describes the implementation found in the repository. It is
 > not a live Render health certificate. A service returning HTTP 200 from `/health`
@@ -80,9 +81,7 @@ recommendation effectiveness.
   estimates are deterministic financial calculations and must be treated as
   estimates, not verified farm profitability. The service README's old claims of
   model performance should not be used as evidence.
-- **Image diagnosis:** heuristic leaf scanning is not CNN inference. Disease
-  diagnosis can use the configured multimodal vision provider, but agronomic
-  accuracy still requires a labelled, representative leaf-image evaluation set.
+- **Image diagnosis:** a MobileNetV3-Large ONNX classifier and PyTorch checkpoint are committed for PlantVillage (38 classes). The committed test report records 10,948 samples, accuracy 0.9968 and macro-F1 0.9926. These are PlantVillage test metrics, not Tunisian field validation. The service explicitly falls back to heuristic analysis when ONNX Runtime or the model artifact is unavailable. The Render Blueprint now installs the service-specific ONNX Runtime dependency; verify disease_classifier_loaded and disease_classifier_source after deployment.
 - **Market prediction:** no licensed live Tunisian price feed is present. Forecasts
   and supply-demand outputs are labelled synthetic. A populated market database
   and a trusted price source are still required.
@@ -96,7 +95,32 @@ recommendation effectiveness.
   data. Optional LLM narration does not turn synthetic numeric predictions into
   real measurements.
 
-## 4. Frontend provenance and reporting
+## 4. Multi-agent orchestration — v1
+
+The Intelligent Agent service (8005) now exposes POST /orchestrate, with the Node
+gateway route POST /api/ai/assistant/orchestrate and a frontend hook method.
+The allow-listed specialist registry covers soil, crop, image diagnosis, market,
+weather, yield, pest and irrigation. A configured LLM selects relevant tools
+using JSON mode; the application validates and dispatches only registered tools.
+
+Tool arguments must be supplied explicitly in tool_inputs. The LLM does not
+invent sensor readings, lab values, market prices, weather or farm measurements.
+Missing required fields are returned to the caller. Calls are bounded to five
+concurrent tools, use configured private service URLs and timeouts, and return
+per-agent status, duration and provenance. Image uploads use multipart form data
+through the Node gateway and are converted for the private Python service.
+
+This is orchestration v1 with explicit dependency references and sequential
+execution waves. The caller defines bindings such as a soil result field feeding
+the crop request; the LLM does not invent those downstream values. See
+Existing AIAssistantChatbot and SmartAdvisor chat screens still use their
+legacy chat endpoints; the new hook is exposed for screens that have collected
+the required structured inputs. Do not switch a chat UI until it can collect
+missing measurements safely. See MULTI_AGENT_ORCHESTRATOR_USAGE.md and
+MULTI_AGENT_READINESS_AUDIT_2026-11-11.md for request contracts, boundaries and
+remaining production acceptance gates.
+
+## 5. Frontend provenance and reporting
 
 The frontend already contains simulated-data disclosures on several demo-backed
 screens. The audit additionally corrected:
@@ -119,7 +143,23 @@ Other demo-backed screens remain visibly labelled as illustrative rather than li
 records. They still need real database/API integrations before they can be treated
 as operational workflows.
 
-## 5. How to verify a live deployment
+## 6. Security and operational guardrails added in the remediation branch
+
+- Browser Supabase configuration no longer contains a project URL or anon JWT fallback. The build requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY; without them the client does not silently connect to an embedded project.
+- Legacy demo-account provisioning, fixed demo credentials and auth-debug endpoints are retired. Authenticated requests to those legacy routes receive HTTP 410 after the admin-token gate; unauthenticated requests remain denied.
+- The old Supabase diagnostic endpoint that inserted and deleted a probe row in public.users has been retired. Use read-only health/capability probes for deployment monitoring.
+- The seed script that generated random market-price rows has been removed. Never populate market_prices with random/example prices and then expose them as market observations.
+- The database verification script now requires an explicit SUPABASE_URL and server-side SUPABASE_SERVICE_ROLE_KEY; it no longer defaults to a historical project URL.
+- Authentication initialization stops cleanly when the browser Supabase variables are missing and signup/signin return an explicit configuration error.
+- AI inference and file uploads in the browser now use the Node API gateway only; old hardcoded Railway/Render browser endpoints were removed. Cloud service health is obtained from the gateway's eight-service health contract.
+- Browser mock soil-analysis fallback is removed. The API's explicit deterministic rule-based path may still answer when available; an unavailable API now surfaces an error instead of manufacturing a local result.
+- Generic mock UI data can only be enabled by an explicit VITE_FALLBACK_TO_MOCK=true in a development build; it is disabled by default and cannot be enabled in production.
+- The Public Data API's deterministic market/production/weather endpoints are demo-only and carry simulated provenance headers. Its built-in demo key is loaded only outside production; production key issuance returns 503 until a durable, abuse-protected key store is implemented.
+- PublicDataDashboard does not auto-fetch synthetic data or offer API key issuance in production; the page explicitly discloses its demo-only state.
+
+These changes remove unsafe defaults and accidental demo-data mutation paths. They do not verify the live Supabase project or the currently deployed Render environment.
+
+## 6. How to verify a live deployment
 
 1. Call `GET /api/ai/health` on the deployed AgroGrowth API.
 2. Check all eight service entries and their `status` fields.

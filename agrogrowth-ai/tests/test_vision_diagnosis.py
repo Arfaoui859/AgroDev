@@ -65,7 +65,7 @@ def test_no_provider_labels_heuristic():
     result = _detect()
     assert result.data_source == "heuristic"
     assert result.is_real_data is False
-    assert result.model_source == "heuristic-demo"
+    assert result.model_source == "feature-based-heuristics"
     assert result.disease_detection["detection_method"] == "feature_based_heuristics"
 
 

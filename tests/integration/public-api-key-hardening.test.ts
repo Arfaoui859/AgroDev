@@ -17,7 +17,7 @@ describe("🔑 Public API key minting", () => {
   beforeEach(() => {
     process.env = {
       ...ORIGINAL,
-      NODE_ENV: "production",
+      NODE_ENV: "test",
       PUBLIC_API_KEY_MINT_MAX: "3",
     };
     app = createServer();
@@ -41,7 +41,15 @@ describe("🔑 Public API key minting", () => {
     expect(sawTooMany).toBe(true);
   });
 
-  test("a created key is long, high-entropy and not time-guessable", async () => {
+  test("production key minting stays disabled until a persistent key store exists", async () => {
+    process.env.NODE_ENV = "production";
+    const res = await request(app).post("/api/public/create-key").send({ name: "Test", email: "t@example.com" });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("PUBLIC_API_KEY_STORE_UNAVAILABLE");
+  });
+
+  test("a created key is long, high-entropy and not time-guessable in test mode", async () => {
+    process.env.NODE_ENV = "test";
     const res = await request(app)
       .post("/api/public/create-key")
       .send({ name: "Test", email: "t@example.com" });
@@ -56,7 +64,8 @@ describe("🔑 Public API key minting", () => {
     expect(key).not.toMatch(/_1[0-9]{12}_/);
   });
 
-  test("still rejects a request missing name/email", async () => {
+  test("still rejects a request missing name/email outside production", async () => {
+    process.env.NODE_ENV = "test";
     const res = await request(app)
       .post("/api/public/create-key")
       .send({ name: "OnlyName" });

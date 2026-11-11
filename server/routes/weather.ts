@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import {
   getWeatherFromOpenMeteo,
+  getHistoricalWeatherFromOpenMeteo,
   type WeatherData,
 } from "../services/providers/weatherProvider";
 import { ProviderError } from "../services/providers/http";
@@ -127,6 +128,55 @@ export const getWeatherByLocation: RequestHandler = async (req, res) => {
     res.json(weatherData);
   } catch (error) {
     providerErrorResponse(error, res, "خطأ في جلب بيانات الطقس");
+  }
+};
+
+/**
+ * Return measured climate inputs for crop suitability from the trailing 12 months.
+ * This uses daily observations from Open-Meteo Archive; it never substitutes
+ * a short forecast or a governorate-level illustrative climatology for annual rainfall.
+ */
+export const getCropClimateInputs: RequestHandler = async (req, res) => {
+  const lat = Number(req.query.lat);
+  const lon = Number(req.query.lon);
+  if (!isValidCoordinate(lat, lon)) {
+    return res.status(400).json({ error: "Valid farm latitude and longitude are required.", dataAvailable: false });
+  }
+  try {
+    const history = await getHistoricalWeatherFromOpenMeteo(lat, lon, 12);
+    const monthly = history.monthly.filter((item) =>
+      Number.isFinite(item.avgTemp) && Number.isFinite(item.totalRainfall)
+    );
+    if (monthly.length < 12) {
+      return res.status(503).json({
+        error: "Insufficient historical weather observations for crop planning.",
+        dataAvailable: false,
+        provider: history.source.provider,
+      });
+    }
+    const temperature = monthly.reduce((sum, item) => sum + item.avgTemp, 0) / monthly.length;
+    const annualRainfall = monthly.reduce((sum, item) => sum + item.totalRainfall, 0);
+    if (!Number.isFinite(temperature) || !Number.isFinite(annualRainfall)) {
+      return res.status(502).json({ error: "Weather provider returned invalid climate observations.", dataAvailable: false });
+    }
+    markReal(res, "open-meteo-archive");
+    return res.json({
+      data: {
+        temperature: Math.round(temperature * 10) / 10,
+        annual_rainfall: Math.round(annualRainfall * 10) / 10,
+        period_months: monthly.map((item) => item.month),
+        latitude: lat,
+        longitude: lon,
+      },
+      dataSource: history.source.provider,
+      isRealData: true,
+      verification: "verified",
+      observedAt: new Date().toISOString(),
+      method: "Mean of observed monthly mean temperatures and sum of observed monthly precipitation over the trailing 12-month archive period.",
+      note: "Observed trailing-12-month climate, not a long-term climate normal.",
+    });
+  } catch (error) {
+    providerErrorResponse(error, res, "تعذّر جلب السجل المناخي للمزرعة");
   }
 };
 

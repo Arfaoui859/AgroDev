@@ -29,17 +29,17 @@ print_header() {
 
 print_test() {
     echo -e "${BLUE}[TEST]${NC} $1"
-    ((TESTS_TOTAL++))
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
 }
 
 print_success() {
     echo -e "${GREEN}[PASS]${NC} $1"
-    ((TESTS_PASSED++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 print_failure() {
     echo -e "${RED}[FAIL]${NC} $1"
-    ((TESTS_FAILED++))
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 print_warning() {
@@ -100,130 +100,6 @@ test_api_endpoint() {
         print_failure "Invalid JSON or connection failed - $url"
         echo "Response: $response"
         return 1
-    fi
-}
-
-# Function to test service health
-test_service_health() {
-    local service_url="$1"
-    local service_name="$2"
-    
-    print_test "Testing $service_name health endpoint"
-    
-    local health_url="${service_url}/health"
-    local response_code
-    response_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 10 "$health_url" || echo "000")
-    
-    if [ "$response_code" = "200" ]; then
-        print_success "$service_name is healthy"
-        
-        # Test actual service endpoint
-        case "$service_name" in
-            "Soil Analysis")
-                test_soil_analysis_service "$service_url"
-                ;;
-            "Crop Recommendation")
-                test_crop_recommendation_service "$service_url"
-                ;;
-            "Image Diagnosis")
-                test_image_diagnosis_service "$service_url"
-                ;;
-        esac
-        
-        return 0
-    else
-        print_failure "$service_name health check failed (status: $response_code)"
-        return 1
-    fi
-}
-
-# Test soil analysis service
-test_soil_analysis_service() {
-    local service_url="$1"
-    
-    print_test "Testing soil analysis API"
-    
-    local test_data='{
-        "sensor_data": {
-            "ph": 7.0,
-            "nitrogen": 45,
-            "phosphorus": 25,
-            "potassium": 180,
-            "moisture": 35,
-            "organic_matter": 2.8
-        }
-    }'
-    
-    local response
-    response=$(curl -s --connect-timeout 15 --max-time 15 \
-        -X POST \
-        -H "Content-Type: application/json" \
-        -d "$test_data" \
-        "${service_url}/analyze" || echo '{"error": "request_failed"}')
-    
-    if echo "$response" | jq .soil_type >/dev/null 2>&1; then
-        print_success "Soil analysis service is working"
-        echo "Sample response:" 
-        echo "$response" | jq .soil_type
-    else
-        print_failure "Soil analysis service failed"
-        echo "Response: $response"
-    fi
-}
-
-# Test crop recommendation service
-test_crop_recommendation_service() {
-    local service_url="$1"
-    
-    print_test "Testing crop recommendation API"
-    
-    local test_data='{
-        "climate_data": {
-            "temperature": 25,
-            "rainfall": 800,
-            "humidity": 65
-        },
-        "soil_data": {
-            "ph": 7.0,
-            "nitrogen": 45
-        },
-        "farm_size": 2.0
-    }'
-    
-    local response
-    response=$(curl -s --connect-timeout 15 --max-time 15 \
-        -X POST \
-        -H "Content-Type: application/json" \
-        -d "$test_data" \
-        "${service_url}/recommend" || echo '{"error": "request_failed"}')
-    
-    if echo "$response" | jq .recommendations >/dev/null 2>&1; then
-        print_success "Crop recommendation service is working"
-        echo "Sample response:"
-        echo "$response" | jq '.recommendations[0].crop // "No recommendations"'
-    else
-        print_failure "Crop recommendation service failed"
-        echo "Response: $response"
-    fi
-}
-
-# Test image diagnosis service
-test_image_diagnosis_service() {
-    local service_url="$1"
-    
-    print_test "Testing image diagnosis API endpoints"
-    
-    # Test supported diseases endpoint
-    local response
-    response=$(curl -s --connect-timeout 10 --max-time 10 \
-        "${service_url}/supported-diseases" || echo '{"error": "request_failed"}')
-    
-    if echo "$response" | jq . >/dev/null 2>&1; then
-        print_success "Image diagnosis service endpoints are accessible"
-        echo "Supported diseases count: $(echo "$response" | jq '. | length // 0')"
-    else
-        print_failure "Image diagnosis service failed"
-        echo "Response: $response"
     fi
 }
 
@@ -324,7 +200,7 @@ main() {
     print_info "Test Configuration:"
     print_info "Frontend URL: ${FRONTEND_URL:-'Not set'}"
     print_info "API URL: ${API_URL:-'Not set'}"
-    print_info "Use Cloud Services: ${VITE_USE_CLOUD_SERVICES:-'false'}"
+    print_info "AI service checks: Node API gateway only (private services are server-side)"
     echo ""
     
     # Test 1: Infrastructure
@@ -340,38 +216,11 @@ main() {
     test_database_connectivity
     test_redis_connectivity
     
-    # Test 2: AI Services
-    if [ "$VITE_USE_CLOUD_SERVICES" = "true" ]; then
-        print_header "2. Cloud AI Services Tests"
-        
-        # Test each AI service
-        if [ -n "$VITE_SOIL_ANALYSIS_URL" ]; then
-            test_service_health "$VITE_SOIL_ANALYSIS_URL" "Soil Analysis"
-        fi
-        
-        if [ -n "$VITE_CROP_RECOMMENDATION_URL" ]; then
-            test_service_health "$VITE_CROP_RECOMMENDATION_URL" "Crop Recommendation"
-        fi
-        
-        if [ -n "$VITE_IMAGE_DIAGNOSIS_URL" ]; then
-            test_service_health "$VITE_IMAGE_DIAGNOSIS_URL" "Image Diagnosis"
-        fi
-        
-        if [ -n "$VITE_MARKET_PREDICTION_URL" ]; then
-            test_service_health "$VITE_MARKET_PREDICTION_URL" "Market Prediction"
-        fi
-        
-        if [ -n "$VITE_INTELLIGENT_AGENT_URL" ]; then
-            test_service_health "$VITE_INTELLIGENT_AGENT_URL" "Intelligent Agent"
-        fi
-    else
-        print_header "2. Local AI Services Tests"
-        print_warning "Cloud services disabled, testing through main API"
-        
-        # Test AI services through main API
-        test_api_endpoint "${API_URL}/ai/health" "AI services health through main API"
-    fi
-    
+    # Test 2: AI Services — always through the Node gateway.
+    # Private Render/Python service URLs must never be probed from this client script.
+    print_header "2. AI Services Gateway Tests"
+    test_api_endpoint "${API_URL}/ai/health" "Eight AI services health through main API"
+
     # Test 3: PWA Features
     print_header "3. PWA Features Tests"
     test_pwa_features "$FRONTEND_URL"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +20,6 @@ import {
   AlertCircle,
   Info,
   CheckCircle,
-  Clock,
   Settings,
   Filter,
   Search,
@@ -34,8 +33,6 @@ import {
   Mail,
   Phone,
   Globe,
-  Zap,
-  Activity,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -57,7 +54,6 @@ import {
   Wifi,
   WifiOff,
   Radio,
-  Satellite,
   Gauge,
   BarChart3,
   PieChart,
@@ -74,7 +70,6 @@ import {
   PlayCircle,
   PauseCircle,
   Square,
-  RefreshCw,
   RotateCcw,
   FastForward,
   Rewind,
@@ -294,32 +289,6 @@ interface NotificationPreferences {
   };
   language: 'ar' | 'en';
   updatedAt: string;
-}
-
-interface RealTimeData {
-  timestamp: string;
-  sensors: {
-    [sensorId: string]: {
-      value: number;
-      status: 'normal' | 'warning' | 'critical';
-      change: 'increase' | 'decrease' | 'stable';
-      changePercent: number;
-    };
-  };
-  weather: {
-    temperature: number;
-    humidity: number;
-    windSpeed: number;
-    pressure: number;
-    precipitation: number;
-    condition: string;
-  };
-  systemHealth: {
-    connectedSensors: number;
-    totalSensors: number;
-    dataLatency: number; // milliseconds
-    errorRate: number; // percentage
-  };
 }
 
 // ============ MOCK DATA ============
@@ -613,111 +582,18 @@ const mockNotifications: Notification[] = [
   }
 ];
 
-const mockRealTimeData: RealTimeData = {
-  timestamp: new Date().toISOString(),
-  sensors: {
-    'sensor-001': {
-      value: 35.2,
-      status: 'normal',
-      change: 'decrease',
-      changePercent: -2.1
-    },
-    'sensor-002': {
-      value: 5.8,
-      status: 'warning',
-      change: 'decrease',
-      changePercent: -3.2
-    },
-    'sensor-003': {
-      value: 24.5,
-      status: 'normal',
-      change: 'increase',
-      changePercent: 1.8
-    }
-  },
-  weather: {
-    temperature: 24.5,
-    humidity: 65,
-    windSpeed: 12,
-    pressure: 1013.2,
-    precipitation: 0,
-    condition: 'partly_cloudy'
-  },
-  systemHealth: {
-    connectedSensors: 2,
-    totalSensors: 3,
-    dataLatency: 120,
-    errorRate: 5.2
-  }
-};
-
 // ============ MAIN COMPONENT ============
 
 export default function NotificationCenter() {
   const { isArabic } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
-  const [sensors, setSensors] = useState<IoTSensor[]>(mockSensors);
-  const [realTimeData, setRealTimeData] = useState<RealTimeData>(mockRealTimeData);
+  const [sensors] = useState<IoTSensor[]>(mockSensors);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
-  const [isRealTimeEnabled, setIsRealTimeEnabled] = useState(true);
-
-  // Simulate real-time updates
-  useEffect(() => {
-    if (!isRealTimeEnabled) return;
-
-    const interval = setInterval(() => {
-      // Simulate sensor data updates
-      setSensors(prev => prev.map(sensor => ({
-        ...sensor,
-        lastReading: {
-          ...sensor.lastReading,
-          value: sensor.lastReading.value + (Math.random() - 0.5) * 2,
-          timestamp: new Date().toISOString()
-        },
-        batteryLevel: Math.max(0, sensor.batteryLevel - Math.random() * 0.1),
-        signalStrength: Math.min(100, Math.max(0, sensor.signalStrength + (Math.random() - 0.5) * 5))
-      })));
-
-      // Simulate new notifications occasionally
-      if (Math.random() < 0.1) { // 10% chance every interval
-        const newNotification: Notification = {
-          id: `notif-${Date.now()}`,
-          type: Math.random() > 0.7 ? 'warning' : 'info',
-          typeArabic: Math.random() > 0.7 ? 'تحذير' : 'معلومات',
-          category: 'sensor',
-          categoryArabic: 'حساس',
-          priority: 'medium',
-          priorityArabic: 'متوسط',
-          title: 'Sensor Reading Update',
-          titleArabic: 'تحديث قراءة الحساس',
-          message: 'New sensor reading detected with slight variation.',
-          messageArabic: 'تم اكتشاف قراءة جديدة للحساس مع تغير طفيف.',
-          actionRequired: false,
-          channels: ['in_app'],
-          source: {
-            type: 'iot_sensor',
-            id: 'sensor-001',
-            name: 'Soil Moisture Sensor #1'
-          },
-          targetUsers: ['user-001'],
-          targetRoles: ['farmer'],
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          isArchived: false,
-          isStarred: false
-        };
-        
-        setNotifications(prev => [newNotification, ...prev.slice(0, 49)]);
-      }
-    }, 5000); // Update every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [isRealTimeEnabled]);
 
   // Filter notifications
   const filteredNotifications = notifications.filter(notification => {
@@ -857,62 +733,24 @@ export default function NotificationCenter() {
           </div>
         </div>
         
-        <div className="flex items-center space-x-3 rtl:space-x-reverse">
-          <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <Label className="text-sm">
-              {isArabic ? 'المراقبة اللحظية' : 'Real-time Monitoring'}
-            </Label>
-            <Switch 
-              checked={isRealTimeEnabled} 
-              onCheckedChange={setIsRealTimeEnabled}
-            />
-            {isRealTimeEnabled && (
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            )}
-          </div>
-          <Button variant="outline" size="sm">
+        <div className="flex items-center gap-3">
+          <Badge variant="secondary">
+            {isArabic ? 'لقطة بيانات تجريبية' : 'Demo snapshot'}
+          </Badge>
+          <Button variant="outline" size="sm" disabled>
             <Settings className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Real-time Status Bar */}
-      {isRealTimeEnabled && (
-        <Card className="bg-gradient-to-r from-green-500 to-blue-600 text-white">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <Satellite className="h-4 w-4" />
-                  <span className="text-sm opacity-90">{isArabic ? 'الحساسات المتصلة' : 'Connected Sensors'}</span>
-                </div>
-                <p className="text-lg font-bold">{realTimeData.systemHealth.connectedSensors}/{realTimeData.systemHealth.totalSensors}</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <Zap className="h-4 w-4" />
-                  <span className="text-sm opacity-90">{isArabic ? 'زمن الاستجابة' : 'Data Latency'}</span>
-                </div>
-                <p className="text-lg font-bold">{realTimeData.systemHealth.dataLatency}ms</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <Activity className="h-4 w-4" />
-                  <span className="text-sm opacity-90">{isArabic ? 'معدل الأخطاء' : 'Error Rate'}</span>
-                </div>
-                <p className="text-lg font-bold">{realTimeData.systemHealth.errorRate}%</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 rtl:space-x-reverse mb-1">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span className="text-sm opacity-90">{isArabic ? 'آخر تحديث' : 'Last Update'}</span>
-                </div>
-                <p className="text-sm">{new Date(realTimeData.timestamp).toLocaleTimeString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          {isArabic
+            ? 'هذه بيانات توضيحية ثابتة. ربط الحساسات الحقيقية ومصدر الإشعارات الدائم غير مفعّل في هذه الشاشة؛ لن نولّد قراءات أو تنبيهات عشوائية.'
+            : 'These are static illustrative records. Live sensor ingestion and persistent notification sources are not connected on this screen; no random readings or alerts are generated.'}
+        </AlertDescription>
+      </Alert>
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

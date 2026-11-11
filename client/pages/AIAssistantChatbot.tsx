@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Bot,
   MessageCircle,
@@ -70,6 +71,7 @@ interface ChatMessage {
     suggestions?: string[];
     actionItems?: string[];
     relatedTopics?: string[];
+    soilSave?: { farmId: string; fieldId?: string; sensorData: Record<string, number>; columns: Record<string, number>; healthScore?: number; analysisResult: Record<string, unknown>; status?: 'saved' | 'saving' | 'failed'; savedId?: string; error?: string };
   };
   attachments?: {
     type: 'image' | 'document' | 'chart';
@@ -109,6 +111,7 @@ interface Conversation {
 }
 
 const AIAssistantChatbot: React.FC = () => {
+  const { session, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -132,11 +135,129 @@ const AIAssistantChatbot: React.FC = () => {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [quickActions, setQuickActions] = useState<string[]>([]);
+  const [showFarmInputs, setShowFarmInputs] = useState(false);
+  const [farms, setFarms] = useState<Array<{ id: string; name?: string; name_ar?: string; location?: unknown }>>([]);
+  const [weatherClimate, setWeatherClimate] = useState<{
+    temperature: number; annual_rainfall: number; dataSource: string; observedAt: string; method: string;
+  } | null>(null);
+  const [weatherClimateStatus, setWeatherClimateStatus] = useState<'idle' | 'loading' | 'ready' | 'unavailable'>('idle');
+  const [fields, setFields] = useState<Array<{ id: string; farm_id: string; name?: string; name_ar?: string }>>([]);
+  const [selectedFarmId, setSelectedFarmId] = useState('');
+  const [selectedFieldId, setSelectedFieldId] = useState('');
+  const [farmLoadError, setFarmLoadError] = useState('');
+  const [farmLoading, setFarmLoading] = useState(false);
+  const [soilHistory, setSoilHistory] = useState<Array<{ id: string; analysis_type: string; analyzed_at: string; ph_level?: number | null; moisture_percent?: number | null; health_score?: number | null; sensor_data?: Record<string, unknown> }>>([]);
+  const [soilHistoryLoading, setSoilHistoryLoading] = useState(false);
+  const [soilHistoryError, setSoilHistoryError] = useState('');
+  // Empty strings mean "not supplied". Never prefill agricultural measurements.
+  const [farmInputs, setFarmInputs] = useState({
+    soilPh: '',
+    soilMoisture: '',
+    organicMatter: '',
+    sand: '',
+    silt: '',
+    clay: '',
+    temperature: '',
+    annualRainfall: '',
+    soilQualityScore: '',
+    waterAvailability: '',
+    targetMarketPrice: '',
+    farmerExperienceYears: '',
+    availableCapital: '',
+    farmSize: '',
+    riskTolerance: ''
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     initializeChatbot();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadOwnedFarms = async () => {
+      if (!session?.access_token || !isAuthenticated) {
+        setFarms([]); setFields([]); setSelectedFarmId(''); setSelectedFieldId('');
+        return;
+      }
+      setFarmLoading(true); setFarmLoadError('');
+      try {
+        const response = await fetch('/api/farms', { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.status !== 'success' || !Array.isArray(payload.data)) throw new Error(payload.message || `Farm list request failed (${response.status})`);
+        if (active) setFarms(payload.data);
+      } catch (error) {
+        if (active) setFarmLoadError(error instanceof Error ? error.message : 'Unable to load farms');
+      } finally { if (active) setFarmLoading(false); }
+    };
+    loadOwnedFarms();
+    return () => { active = false; };
+  }, [session?.access_token, isAuthenticated]);
+
+  useEffect(() => {
+    let active = true;
+    const loadOwnedFields = async () => {
+      setFields([]); setSelectedFieldId('');
+      if (!selectedFarmId || !session?.access_token) return;
+      try {
+        const response = await fetch(`/api/fields?farmId=${encodeURIComponent(selectedFarmId)}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.status !== 'success' || !Array.isArray(payload.data)) throw new Error(payload.message || `Field list request failed (${response.status})`);
+        if (active) setFields(payload.data);
+      } catch (error) { if (active) setFarmLoadError(error instanceof Error ? error.message : 'Unable to load fields'); }
+    };
+    loadOwnedFields();
+    return () => { active = false; };
+  }, [selectedFarmId, session?.access_token]);
+
+  useEffect(() => {
+    setSoilHistory([]);
+    setSoilHistoryError('');
+  }, [selectedFarmId, selectedFieldId]);
+
+  // Fetch the selected farm's own trailing-12-month climate observations.
+  // Coordinates come only from the authenticated farm record; no generic fallback.
+  useEffect(() => {
+    let active = true;
+    const loadFarmClimate = async () => {
+      setWeatherClimate(null);
+      if (!selectedFarmId) { setWeatherClimateStatus('idle'); return; }
+      const farm = farms.find((item) => item.id === selectedFarmId);
+      let location: any = farm?.location;
+      if (typeof location === 'string') {
+        try { location = JSON.parse(location); } catch { location = null; }
+      }
+      const lat = Number(location?.lat ?? location?.latitude);
+      const lon = Number(location?.lng ?? location?.lon ?? location?.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        setWeatherClimateStatus('unavailable');
+        return;
+      }
+      setWeatherClimateStatus('loading');
+      try {
+        const response = await fetch(`/api/weather/crop-climate-inputs?lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.isRealData !== true || !payload.data ||
+            !Number.isFinite(payload.data.temperature) || !Number.isFinite(payload.data.annual_rainfall)) {
+          throw new Error(payload.error || 'Climate observations unavailable');
+        }
+        if (active) {
+          setWeatherClimate({
+            temperature: payload.data.temperature,
+            annual_rainfall: payload.data.annual_rainfall,
+            dataSource: payload.dataSource || 'Open-Meteo Archive',
+            observedAt: payload.observedAt,
+            method: payload.method,
+          });
+          setWeatherClimateStatus('ready');
+        }
+      } catch {
+        if (active) setWeatherClimateStatus('unavailable');
+      }
+    };
+    loadFarmClimate();
+    return () => { active = false; };
+  }, [selectedFarmId, farms]);
 
   useEffect(() => {
     scrollToBottom();
@@ -279,25 +400,118 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
+  const buildFarmInput = () => {
+    const toNumber = (value: string): number | undefined => {
+      if (value.trim() === '') return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    const measurements: Record<string, {
+      value: number;
+      unit: string;
+      source: 'farmer_entered' | 'weather_provider';
+      verification: 'unverified' | 'verified';
+      observed_at: string;
+      evidence_reference?: string;
+      method?: string;
+    }> = {};
+    const observedAt = new Date().toISOString();
+    const fields: Array<[keyof typeof farmInputs, string, string]> = [
+      ['soilPh', 'soil_ph', 'pH'],
+      ['soilMoisture', 'soil_moisture', '%'],
+      ['organicMatter', 'organic_matter', '%'],
+      ['sand', 'sand', '%'],
+      ['silt', 'silt', '%'],
+      ['clay', 'clay', '%'],
+      ['temperature', 'air_temperature', '°C'],
+      ['annualRainfall', 'annual_rainfall', 'mm/year'],
+      ['soilQualityScore', 'soil_quality_score', 'ratio'],
+      ['waterAvailability', 'water_availability', 'ratio'],
+      ['targetMarketPrice', 'market_price', 'TND/kg'],
+      ['farmerExperienceYears', 'farmer_experience_years', 'years'],
+      ['availableCapital', 'available_capital', 'TND'],
+      ['farmSize', 'farm_size', 'ha'],
+      ['riskTolerance', 'risk_tolerance', 'ratio'],
+    ];
+
+    fields.forEach(([formKey, contractKey, unit]) => {
+      // Provider-backed climate observations take precedence over manual values.
+      if ((formKey === 'temperature' || formKey === 'annualRainfall') && weatherClimate) return;
+      const value = toNumber(farmInputs[formKey]);
+      if (value !== undefined) {
+        measurements[contractKey] = {
+          value,
+          unit,
+          source: 'farmer_entered',
+          verification: 'unverified',
+          observed_at: observedAt,
+        };
+      }
+    });
+    if (weatherClimate) {
+      const evidence = `${weatherClimate.dataSource}; observedAt=${weatherClimate.observedAt}`;
+      measurements.air_temperature = {
+        value: weatherClimate.temperature, unit: '°C', source: 'weather_provider',
+        verification: 'verified', observed_at: weatherClimate.observedAt,
+        evidence_reference: evidence, method: weatherClimate.method,
+      };
+      measurements.annual_rainfall = {
+        value: weatherClimate.annual_rainfall, unit: 'mm/year', source: 'weather_provider',
+        verification: 'verified', observed_at: weatherClimate.observedAt,
+        evidence_reference: evidence, method: weatherClimate.method,
+      };
+    }
+
+    if (Object.keys(measurements).length === 0 && !selectedFarmId) return undefined;
+    return {
+      schema_version: '1.0.0' as const,
+      ...(selectedFarmId ? { farm_id: selectedFarmId } : {}),
+      ...(selectedFieldId ? { field_id: selectedFieldId } : {}),
+      measurements,
+    };
+  };
+
   /**
-   * Ask the AgroGrowth Farm Advisor backend. The backend uses the configured LLM
-   * when available and otherwise answers from its rule-based engine, always
-   * reporting which source produced the answer.
+   * Send chat requests through the central multi-agent orchestrator.
+   * The orchestrator selects registered specialist tools and reports any
+   * missing farm measurements instead of fabricating tool arguments.
    */
   const callAdvisorApi = async (
     messageContent: string
-  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string }> => {
-    const history = messages.slice(-6).map(m => ({
-      role: m.type === 'user' ? 'user' : 'assistant',
-      content: m.content
-    }));
-    const response = await fetch('/api/ai/assistant/chat', {
+  ): Promise<{
+    response: string;
+    planner_source?: string;
+    planner_model_source?: string | null;
+    synthesis_model_source?: string | null;
+    selected_agents?: string[];
+    selected_tools?: string[];
+    missing_inputs?: Record<string, string[]>;
+    tool_results?: Array<{ tool: string; status: string; model_source?: string; is_real_data?: boolean | null; result?: Record<string, unknown> }>;
+    input_provenance?: Record<string, { source: string; verification: string; unit: string; observed_at: string }>;
+    language?: string;
+  }> => {
+    const farmInput = buildFarmInput();
+    const response = await fetch('/api/ai/assistant/orchestrate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: messageContent, language, history })
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+      body: JSON.stringify({
+        message: messageContent,
+        language,
+        max_agents: 5,
+        // This screen's profile currently contains demo defaults, not
+        // verified account data. Do not present them to agents as farm facts.
+        user_context: {},
+        // Only values explicitly entered in this form are sent. The gateway
+        // labels them unverified and returns their provenance with the result.
+        ...(farmInput ? { farm_input: farmInput } : {})
+      })
     });
     if (!response.ok) {
-      throw new Error(`Advisor API error: ${response.status}`);
+      throw new Error(`Multi-agent orchestrator error: ${response.status}`);
     }
     return response.json();
   };
@@ -305,22 +519,81 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   const generateAIResponse = async (userInput: string): Promise<ChatMessage> => {
     try {
       const result = await callAdvisorApi(userInput);
-      const source = result.dataSource === 'llm' ? 'llm' : 'rule-based';
+      const soilToolSucceeded = (result.tool_results ?? []).some(item =>
+        item.tool === 'soil.analyze' && ['success', 'completed', 'ok'].includes(item.status.toLowerCase())
+      );
+      const submittedMeasurements = buildFarmInput()?.measurements ?? {};
+      const sensorData: Record<string, number> = {};
+      const soilColumns: Record<string, number> = {};
+      const soilSensorKeys: Record<string, string> = {
+        soil_ph: 'ph', soil_moisture: 'moisture', organic_matter: 'organic_matter',
+        nitrogen: 'nitrogen', phosphorus: 'phosphorus', potassium: 'potassium',
+        sand: 'sand', silt: 'silt', clay: 'clay', salinity: 'salinity',
+      };
+      const soilColumnKeys: Record<string, string> = {
+        soil_ph: 'ph_level', soil_moisture: 'moisture_percent',
+        organic_matter: 'organic_matter_percent', nitrogen: 'nitrogen_level',
+        phosphorus: 'phosphorus_level', potassium: 'potassium_level',
+      };
+      Object.entries(submittedMeasurements).forEach(([key, measurement]) => {
+        if (soilSensorKeys[key]) sensorData[soilSensorKeys[key]] = measurement.value;
+        if (soilColumnKeys[key]) soilColumns[soilColumnKeys[key]] = measurement.value;
+      });
+      const soilToolResult = (result.tool_results ?? []).find(item =>
+        item.tool === 'soil.analyze' && ['success', 'completed', 'ok'].includes(item.status.toLowerCase())
+      );
+      const soilSave = soilToolSucceeded && soilToolResult && selectedFarmId && Object.keys(sensorData).length > 0
+        ? {
+            farmId: selectedFarmId,
+            ...(selectedFieldId ? { fieldId: selectedFieldId } : {}),
+            sensorData,
+            columns: soilColumns,
+            ...(typeof soilToolResult.result?.health_score === 'number' &&
+              Number.isFinite(soilToolResult.result.health_score) &&
+              soilToolResult.result.health_score >= 0 &&
+              soilToolResult.result.health_score <= 100
+              ? { healthScore: Math.round(soilToolResult.result.health_score) }
+              : {}),
+            // Preserve the specialist's structured output and provenance, not
+            // only the LLM's narrative summary shown in the chat.
+            analysisResult: {
+              agent: soilToolResult.tool,
+              agent_result: soilToolResult.result ?? null,
+              model_source: soilToolResult.model_source ?? null,
+              is_real_data: soilToolResult.is_real_data ?? null,
+              input_provenance: result.input_provenance ?? {},
+              captured_at: new Date().toISOString(),
+            },
+          }
+        : undefined;
+      const source = result.synthesis_model_source ? 'llm' : 'rule-based';
+      const provenance = [
+        ...(result.planner_model_source ? [`Planner: ${result.planner_model_source}`] : []),
+        ...(result.synthesis_model_source ? [`Synthesis: ${result.synthesis_model_source}`] : []),
+        ...(result.selected_tools ?? []),
+        ...Object.entries(result.input_provenance ?? {}).map(([key, item]) =>
+          `Input ${key}: ${item.source}/${item.verification} (${item.unit})`
+        ),
+        ...(result.tool_results ?? []).map(item =>
+          `${item.tool}: ${item.status}${item.model_source ? ` (${item.model_source})` : ''}`
+        )
+      ];
       return {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: result.answer,
+        content: result.response,
         timestamp: new Date().toISOString(),
         language: (result.language as 'ar' | 'en' | 'fr') || language,
         metadata: {
           dataSource: source,
-          modelSource: (result as { modelSource?: string }).modelSource,
-          sources:
-            source === 'llm'
-              ? [`نموذج لغوي (LLM): ${(result as { modelSource?: string }).modelSource ?? ''}`.trim()]
-              : ['محرك قواعد زراعية'],
+          modelSource: result.synthesis_model_source ?? result.planner_source,
+          sources: provenance.length ? provenance : ['Multi-agent orchestrator'],
           suggestions: quickActions.slice(0, 4),
-          relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
+          actionItems: Object.entries(result.missing_inputs ?? {}).flatMap(([agent, fields]) =>
+            fields.map(field => `${agent}: ${field}`)
+          ),
+          relatedTopics: result.selected_agents ?? ['زراعة', 'أسواق', 'طقس', 'استثمار'],
+          ...(soilSave ? { soilSave } : {})
         },
         category: 'general'
       };
@@ -336,6 +609,78 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       fallback.content = `${fallback.content}${suffix}`;
       fallback.metadata = { ...fallback.metadata, sources: ['إرشادات عامة محلية'] };
       return fallback;
+    }
+  };
+
+  const loadSoilAnalysisHistory = async () => {
+    if (!selectedFarmId || !session?.access_token) return;
+    setSoilHistoryLoading(true);
+    setSoilHistoryError('');
+    try {
+      const params = new URLSearchParams({ farm_id: selectedFarmId, limit: '20' });
+      if (selectedFieldId) params.set('field_id', selectedFieldId);
+      const response = await fetch(`/api/soil-analysis/records?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success || !Array.isArray(payload.data)) {
+        throw new Error(payload.message || payload.error || `History request failed (${response.status})`);
+      }
+      setSoilHistory(payload.data);
+    } catch (error) {
+      setSoilHistoryError(error instanceof Error ? error.message : 'Unable to load soil history');
+      setSoilHistory([]);
+    } finally {
+      setSoilHistoryLoading(false);
+    }
+  };
+
+  const saveSoilAnalysisForMessage = async (messageId: string) => {
+    const message = messages.find(item => item.id === messageId);
+    const save = message?.metadata?.soilSave;
+    if (!save || !session?.access_token || save.status === 'saving' || save.status === 'saved') return;
+
+    setMessages(previous => previous.map(item => item.id === messageId
+      ? { ...item, metadata: { ...item.metadata, soilSave: { ...save, status: 'saving', error: undefined } } }
+      : item
+    ));
+    try {
+      const response = await fetch('/api/soil-analysis/records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          farm_id: save.farmId,
+          ...(save.fieldId ? { field_id: save.fieldId } : {}),
+          analysis_type: 'sensor',
+          sensor_data: save.sensorData,
+          analysis_result: {
+            ...save.analysisResult,
+            assistant_response: message.content,
+            response_source: message.metadata?.modelSource ?? message.metadata?.dataSource ?? 'multi-agent-orchestrator',
+            provenance: message.metadata?.sources ?? [],
+          },
+          ...save.columns,
+          ...(save.healthScore !== undefined ? { health_score: save.healthScore } : {}),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success || !payload.data?.id) {
+        throw new Error(payload.message || payload.error || `Save failed (${response.status})`);
+      }
+      setMessages(previous => previous.map(item => item.id === messageId
+        ? { ...item, metadata: { ...item.metadata, soilSave: { ...save, status: 'saved', savedId: payload.data.id } } }
+        : item
+      ));
+      await loadSoilAnalysisHistory();
+    } catch (error) {
+      const messageText = error instanceof Error ? error.message : 'Unable to save soil analysis';
+      setMessages(previous => previous.map(item => item.id === messageId
+        ? { ...item, metadata: { ...item.metadata, soilSave: { ...save, status: 'failed', error: messageText } } }
+        : item
+      ));
     }
   };
 
@@ -1393,6 +1738,34 @@ Comment puis-je vous aider aujourd'hui?`
                               </div>
                             )}
 
+                            {message.metadata.soilSave && (
+                              <div className="flex flex-wrap items-center gap-2 rounded-md bg-green-50 p-2">
+                                {message.metadata.soilSave.status === 'saved' ? (
+                                  <span className="text-xs text-green-700">
+                                    {language === 'ar' ? 'تم حفظ تحليل التربة' : language === 'fr' ? 'Analyse du sol enregistrée' : 'Soil analysis saved'}
+                                    {message.metadata.soilSave.savedId ? ` · ${message.metadata.soilSave.savedId}` : ''}
+                                  </span>
+                                ) : (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={message.metadata.soilSave.status === 'saving' || !session?.access_token}
+                                      onClick={() => saveSoilAnalysisForMessage(message.id)}
+                                    >
+                                      {message.metadata.soilSave.status === 'saving'
+                                        ? (language === 'ar' ? 'جارٍ الحفظ...' : language === 'fr' ? 'Enregistrement...' : 'Saving...')
+                                        : (language === 'ar' ? 'حفظ تحليل التربة في المزرعة' : language === 'fr' ? 'Enregistrer l’analyse du sol' : 'Save soil analysis to farm')}
+                                    </Button>
+                                    {message.metadata.soilSave.error && (
+                                      <span className="text-xs text-red-600">{message.metadata.soilSave.error}</span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
+
                             {/* Quick Suggestions */}
                             {message.metadata.suggestions && message.metadata.suggestions.length > 0 && (
                               <div>
@@ -1481,6 +1854,161 @@ Comment puis-je vous aider aujourd'hui?`
 
                 <div ref={messagesEndRef} />
               </CardContent>
+
+              {/* Select only farms and fields visible to the authenticated Supabase user. */}
+              <div className="flex-shrink-0 px-4 pt-3 bg-gray-50 border-t space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="text-xs text-gray-700 space-y-1">
+                    <span>{language === 'ar' ? 'المزرعة (اختياري للحفظ)' : language === 'fr' ? 'Exploitation (facultatif)' : 'Farm (optional for saving)'}</span>
+                    <Select
+                      value={selectedFarmId}
+                      onValueChange={setSelectedFarmId}
+                      disabled={!isAuthenticated || farmLoading || farms.length === 0}
+                    >
+                      <SelectTrigger><SelectValue placeholder={
+                        farmLoading
+                          ? (language === 'ar' ? 'جارٍ تحميل المزارع...' : 'Loading farms...')
+                          : !isAuthenticated
+                            ? (language === 'ar' ? 'سجّل الدخول لاختيار مزرعتك' : 'Sign in to select a farm')
+                            : (language === 'ar' ? 'اختر مزرعة' : language === 'fr' ? 'Choisir une exploitation' : 'Select a farm')
+                      } /></SelectTrigger>
+                      <SelectContent>
+                        {farms.map(farm => (
+                          <SelectItem key={farm.id} value={farm.id}>
+                            {farm.name_ar || farm.name || farm.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                  <label className="text-xs text-gray-700 space-y-1">
+                    <span>{language === 'ar' ? 'الحقل (اختياري)' : language === 'fr' ? 'Parcelle (facultatif)' : 'Field (optional)'}</span>
+                    <Select
+                      value={selectedFieldId}
+                      onValueChange={setSelectedFieldId}
+                      disabled={!selectedFarmId || fields.length === 0}
+                    >
+                      <SelectTrigger><SelectValue placeholder={
+                        !selectedFarmId
+                          ? (language === 'ar' ? 'اختر المزرعة أولاً' : 'Select a farm first')
+                          : (language === 'ar' ? 'اختر حقلاً' : language === 'fr' ? 'Choisir une parcelle' : 'Select a field')
+                      } /></SelectTrigger>
+                      <SelectContent>
+                        {fields.map(field => (
+                          <SelectItem key={field.id} value={field.id}>
+                            {field.name_ar || field.name || field.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                </div>
+                {!isAuthenticated && (
+                  <p className="text-xs text-amber-700">
+                    {language === 'ar' ? 'يمكنك استعمال المساعد، لكن يلزم تسجيل الدخول لعرض مزارعك وحفظ التحاليل.' : language === 'fr' ? 'Connectez-vous pour afficher vos exploitations et enregistrer les analyses.' : 'Sign in to load your farms and save analyses.'}
+                  </p>
+                )}
+                {farmLoadError && <p role="alert" className="text-xs text-red-600">{farmLoadError}</p>}
+                {isAuthenticated && !farmLoading && !farmLoadError && farms.length === 0 && (
+                  <p className="text-xs text-gray-500">
+                    {language === 'ar' ? 'لا توجد مزارع مرتبطة بحسابك بعد.' : language === 'fr' ? 'Aucune exploitation liée à votre compte.' : 'No farms are linked to your account yet.'}
+                  </p>
+                )}
+                {selectedFarmId && (
+                  <p className="text-xs text-gray-600" role="status">
+                    {weatherClimateStatus === 'loading'
+                      ? (language === 'ar' ? 'جارٍ جلب المناخ والأمطار التاريخية للمزرعة...' : language === 'fr' ? 'Chargement du climat historique de l’exploitation...' : 'Loading farm climate observations...')
+                      : weatherClimateStatus === 'ready'
+                        ? (language === 'ar' ? `تم جلب الحرارة والأمطار من ${weatherClimate?.dataSource} (آخر 12 شهراً).` : language === 'fr' ? `Climat récupéré depuis ${weatherClimate?.dataSource} (12 derniers mois).` : `Climate loaded from ${weatherClimate?.dataSource} (trailing 12 months).`)
+                        : (language === 'ar' ? 'بيانات المناخ غير متاحة: تحقق من إحداثيات المزرعة وإعداد مزود الطقس. لن نخمن الحرارة أو الأمطار.' : language === 'fr' ? 'Climat indisponible : vérifiez les coordonnées et le fournisseur. Aucune valeur ne sera inventée.' : 'Climate unavailable: check farm coordinates and weather provider configuration. No values will be guessed.')}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <Button type="button" variant="outline" size="sm"
+                    disabled={!selectedFarmId || soilHistoryLoading || !session?.access_token}
+                    onClick={loadSoilAnalysisHistory}>
+                    {soilHistoryLoading
+                      ? (language === 'ar' ? 'جارٍ تحميل التاريخ...' : language === 'fr' ? 'Chargement...' : 'Loading history...')
+                      : (language === 'ar' ? 'عرض تاريخ تحاليل التربة' : language === 'fr' ? 'Voir l’historique des analyses' : 'View soil analysis history')}
+                  </Button>
+                  {soilHistory.length > 0 && <span className="text-xs text-gray-500">{soilHistory.length} {language === 'ar' ? 'تحليل' : language === 'fr' ? 'analyses' : 'analyses'}</span>}
+                </div>
+                {soilHistoryError && <p role="alert" className="text-xs text-red-600">{soilHistoryError}</p>}
+                {soilHistory.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto rounded-md border bg-white divide-y">
+                    {soilHistory.map(record => (
+                      <div key={record.id} className="px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <span className="font-medium">{record.analysis_type === 'lab' ? 'Lab' : record.analysis_type === 'image' ? 'Image' : 'Sensor'}</span>
+                          <span className="text-gray-500"> · {record.analyzed_at ? new Date(record.analyzed_at).toLocaleString(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-FR' : 'en-US') : '—'}</span>
+                        </div>
+                        <div className="flex gap-3 text-gray-600">
+                          {record.ph_level != null && <span>pH {record.ph_level}</span>}
+                          {record.moisture_percent != null && <span>{record.moisture_percent}% {language === 'ar' ? 'رطوبة' : 'moisture'}</span>}
+                          {record.health_score != null && <span>{record.health_score}/100</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Explicit farm measurements: optional, never pre-populated */}
+              <div className="flex-shrink-0 px-4 pt-3 bg-gray-50 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFarmInputs(value => !value)}
+                >
+                  {showFarmInputs
+                    ? (language === 'ar' ? 'إخفاء بيانات المزرعة' : language === 'fr' ? 'Masquer les données' : 'Hide farm data')
+                    : (language === 'ar' ? 'إضافة قياسات المزرعة (اختياري)' : language === 'fr' ? 'Ajouter les mesures (facultatif)' : 'Add farm measurements (optional)')}
+                </Button>
+                {showFarmInputs && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 py-3">
+                    {([
+                      ['soilPh', 'Soil pH', 'pH du sol', 'pH التربة', '3', '10', '0.1'],
+                      ['soilMoisture', 'Soil moisture (%)', 'Humidité du sol (%)', 'رطوبة التربة (%)', '0', '100', '0.1'],
+                      ['organicMatter', 'Organic matter (%)', 'Matière organique (%)', 'المادة العضوية (%)', '0', '20', '0.1'],
+                      ['sand', 'Sand (%)', 'Sable (%)', 'رمل (%)', '0', '100', '0.1'],
+                      ['silt', 'Silt (%)', 'Limon (%)', 'طمي (%)', '0', '100', '0.1'],
+                      ['clay', 'Clay (%)', 'Argile (%)', 'طين (%)', '0', '100', '0.1'],
+                      ['soilQualityScore', 'Soil quality (0–1)', 'Qualité du sol (0–1)', 'جودة التربة (0–1)', '0', '1', '0.01'],
+                      ['waterAvailability', 'Water availability (0–1)', 'Disponibilité d’eau (0–1)', 'توفر المياه (0–1)', '0', '1', '0.01'],
+                      ['targetMarketPrice', 'Market price (TND/kg)', 'Prix du marché (TND/kg)', 'سعر السوق (د.ت/كغ)', '0.01', '100000', '0.01'],
+                      ['farmerExperienceYears', 'Experience (years)', 'Expérience (années)', 'الخبرة (سنوات)', '0', '100', '1'],
+                      ['availableCapital', 'Available capital (TND)', 'Capital disponible (TND)', 'رأس المال المتاح (د.ت)', '0', '100000000', '1'],
+                      ['farmSize', 'Farm size (hectares)', 'Surface (hectares)', 'مساحة الأرض (هكتار)', '0.01', '1000000', '0.01'],
+                      ['riskTolerance', 'Risk tolerance (0–1)', 'Tolérance au risque (0–1)', 'تحمل المخاطر (0–1)', '0', '1', '0.01']
+                    ] as const).map(([key, en, fr, ar, min, max, step]) => (
+                      <label key={key} className="text-xs text-gray-700 space-y-1">
+                        <span>{language === 'ar' ? ar : language === 'fr' ? fr : en}</span>
+                        <Input
+                          type="number"
+                          min={min}
+                          max={max}
+                          step={step}
+                          value={farmInputs[key]}
+                          onChange={(event) => setFarmInputs(previous => ({
+                            ...previous,
+                            [key]: event.target.value
+                          }))}
+                          placeholder={language === 'ar' ? 'أدخل قيمة مؤكدة' : language === 'fr' ? 'Valeur mesurée' : 'Enter a measured value'}
+                          disabled={isLoading}
+                        />
+                      </label>
+                    ))}
+                    <p className="sm:col-span-2 lg:col-span-3 text-xs text-gray-500">
+                      {language === 'ar'
+                        ? 'أدخل القيم المقاسة أو الموثوقة فقط. الحقول الفارغة تبقى ناقصة ولا يتم تخمينها.'
+                        : language === 'fr'
+                          ? 'Saisissez uniquement des valeurs mesurées ou vérifiées. Les champs vides ne seront pas devinés.'
+                          : 'Enter measured or verified values only. Empty fields remain missing; the system will not guess them.'}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Input Area */}
               <div className="flex-shrink-0 p-4 border-t bg-gray-50">

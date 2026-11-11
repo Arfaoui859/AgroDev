@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,7 +123,9 @@ const PublicDataDashboard = () => {
   const [productionData, setProductionData] = useState<ProductionData[]>([]);
   const [exportData, setExportData] = useState<ExportData[]>([]);
   const [weatherData, setWeatherData] = useState<WeatherData[]>([]);
-  const [apiKey, setApiKey] = useState<string>("public_demo_key_12345");
+  const [apiKey] = useState<string>(
+    import.meta.env.DEV ? "public_demo_key_12345" : "",
+  );
   const [newApiKeyData, setNewApiKeyData] = useState<APIKeyData | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,16 +142,20 @@ const PublicDataDashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Demo data and the in-memory key registry are local-development only.
+    if (!import.meta.env.DEV) return;
     fetchAllData();
-    // Set up auto-refresh every 5 minutes
     const interval = setInterval(fetchAllData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchWithAPIKey = async (endpoint: string) => {
-    const response = await fetch(
-      `${endpoint}${endpoint.includes("?") ? "&" : "?"}api_key=${apiKey}`,
-    );
+    if (!apiKey || !import.meta.env.DEV) {
+      throw new Error("Public demo data is unavailable in production.");
+    }
+    const response = await fetch(endpoint, {
+      headers: { "X-API-Key": apiKey },
+    });
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || "API request failed");
@@ -157,6 +164,7 @@ const PublicDataDashboard = () => {
   };
 
   const fetchAllData = async () => {
+    if (!import.meta.env.DEV) return;
     setRefreshing(true);
     try {
       // Fetch market prices
@@ -193,6 +201,14 @@ const PublicDataDashboard = () => {
   };
 
   const createAPIKey = async () => {
+    if (!import.meta.env.DEV) {
+      toast({
+        title: "إنشاء المفاتيح غير متاح",
+        description: "يلزم مخزن مفاتيح دائم ومراقبة إساءة الاستخدام قبل تفعيل هذه الخدمة في الإنتاج.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!keyCreationForm.name || !keyCreationForm.email) {
       toast({
         title: "خطأ",
@@ -314,19 +330,28 @@ const PublicDataDashboard = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8" dir="rtl">
+      <DataProvenanceBanner />
+      {!import.meta.env.DEV && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            لوحة البيانات العامة حالياً واجهة تجريبية فقط. بيانات السوق والإنتاج والطقس الاصطناعية وإنشاء مفاتيح API غير مفعّلة في الإنتاج حتى ربط مصادر مرخّصة ومخزن مفاتيح دائم.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
           📊 البيانات العامة الزراعية
         </h1>
         <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-          بيانات حية ومحدثة عن أسعار السوق، الإنتاج الزراعي، الصادرات، والطقس في
-          تونس
+          بيانات توضيحية تجريبية عن أسعار السوق، الإنتاج الزراعي، الصادرات، والطقس في
+          تونس؛ ليست قياسات أو أسعاراً حقيقية من مصادر رسمية
         </p>
         <div className="flex items-center justify-center gap-4">
           <Button
             onClick={fetchAllData}
-            disabled={refreshing}
+            disabled={refreshing || !import.meta.env.DEV}
             variant="outline"
             size="sm"
           >
@@ -817,9 +842,13 @@ const PublicDataDashboard = () => {
                 <Button
                   onClick={createAPIKey}
                   className="w-full"
-                  disabled={loading}
+                  disabled={loading || !import.meta.env.DEV}
                 >
-                  {loading ? "جاري الإنشاء..." : "إنشاء API Key"}
+                  {loading
+                    ? "جاري الإنشاء..."
+                    : import.meta.env.DEV
+                      ? "إنشاء API Key تجريبي"
+                      : "غير متاح في الإنتاج"}
                 </Button>
 
                 {newApiKeyData && (

@@ -101,6 +101,7 @@ import ServiceStatus from "../pages/ServiceStatus";
 import AuthTest from "../pages/AuthTest";
 import SetupDemo from "../pages/SetupDemo";
 import NotFound from "../pages/NotFound";
+import AgriculturalNews from "../pages/AgriculturalNews";
 
 export default function AppRouter() {
   const location = useLocation();
@@ -169,6 +170,7 @@ export default function AppRouter() {
           <Route path="/market-intelligence" element={<MarketIntelligence />} />
           <Route path="/price-forecasts" element={<PriceForecasts />} />
           <Route path="/market-alerts" element={<MarketAlerts />} />
+          <Route path="/agricultural-news" element={<AgriculturalNews />} />
           <Route
             path="/fertilizer-recommendations"
             element={<FertilizerRecommendations />}

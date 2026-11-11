@@ -67,7 +67,18 @@ describe("🔌 AI gateway → microservice request contracts", () => {
   test("crop recommendation renames rainfall→annual_rainfall and ph→soil_ph", async () => {
     await request(app)
       .post("/api/ai/crops/recommend")
-      .send({ ph: 6.5, temperature: 24, rainfall: 350, area_hectares: 2 });
+      .send({
+        ph: 6.5,
+        temperature: 24,
+        rainfall: 350,
+        soil_quality_score: 0.7,
+        water_availability: 0.8,
+        target_market_price: 2.5,
+        farmer_experience_years: 5,
+        available_capital: 5000,
+        area_hectares: 2,
+        risk_tolerance: 0.5,
+      });
 
     const req = lastRequest();
     expect(req.url).toContain("/recommend-crops");
@@ -159,6 +170,106 @@ describe("🔌 AI gateway → microservice request contracts", () => {
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/field_id/);
     expect(sentConfigs.length).toBe(0);
+  });
+
+  test("multi-agent orchestration forwards explicit tool inputs to the Intelligent Agent", async () => {
+    await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .send({
+        message: "Analyze my soil",
+        language: "ar-tn",
+        max_agents: 2,
+        tool_inputs: { "soil.analyze": { sensor_data: { ph: 6.5 } } },
+      });
+
+    const req = lastRequest();
+    expect(req.url).toContain("/orchestrate");
+    expect(req.data).toMatchObject({
+      message: "Analyze my soil",
+      language: "ar-tn",
+      max_agents: 2,
+      tool_inputs: { "soil.analyze": { sensor_data: { ph: 6.5 } } },
+    });
+    expect(req.timeout).toBe(90000);
+  });
+
+
+  test("canonical farm inputs are validated and adapted with provenance", async () => {
+    const res = await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .send({
+        message: "Analyze my soil and recommend crops",
+        farm_input: {
+          schema_version: "1.0.0",
+          farm_id: "farm-123",
+          location: { country_code: "TN", governorate: "Siliana" },
+          measurements: {
+            soil_ph: { value: 6.5, unit: "pH", source: "farmer_entered", verification: "unverified", observed_at: "2026-11-11T20:00:00+01:00" },
+            annual_rainfall: { value: 450, unit: "mm/year", source: "weather_provider", verification: "unverified", observed_at: "2026-11-11T20:00:00+01:00" },
+          },
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(lastRequest().data.tool_inputs).toEqual({
+      "soil.analyze": { sensor_data: { ph: 6.5 } },
+      "crop.recommend": { soil_ph: 6.5, annual_rainfall: 450 },
+    });
+    expect(res.body.input_provenance.soil_ph).toMatchObject({ source: "farmer_entered", verification: "unverified", unit: "pH" });
+    expect(res.body.farm_context).toMatchObject({ farm_id: "farm-123", location: { governorate: "Siliana" } });
+    expect(lastRequest().data.tool_inputs["crop.recommend"]).not.toHaveProperty("temperature");
+  });
+
+  test("canonical farm inputs reject false verification and conflicting legacy payloads", async () => {
+    const invalid = await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .send({
+        message: "Analyze my soil",
+        farm_input: {
+          schema_version: "1.0.0",
+          measurements: {
+            soil_ph: { value: 6.5, unit: "pH", source: "farmer_entered", verification: "verified", observed_at: "2026-11-11T20:00:00+01:00" },
+          },
+        },
+      });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error).toBe("Invalid farm_input");
+
+    const conflict = await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .send({
+        message: "Analyze my soil",
+        farm_input: {
+          schema_version: "1.0.0",
+          measurements: {
+            soil_ph: { value: 6.5, unit: "pH", source: "farmer_entered", verification: "unverified", observed_at: "2026-11-11T20:00:00+01:00" },
+          },
+        },
+        tool_inputs: { "soil.analyze": { sensor_data: { ph: 7 } } },
+      });
+    expect(conflict.status).toBe(400);
+    expect(conflict.body.error).toBe("Conflicting AI inputs");
+  });
+
+  test("multi-agent image upload is converted to the private tool input", async () => {
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .field("message", "Diagnose this leaf disease")
+      .field("language", "en")
+      .field("user_context", JSON.stringify({ region: "Siliana" }))
+      .field("tool_inputs", JSON.stringify({ "image.detect_disease": { plant_type: "tomato" } }))
+      .field("max_agents", "2")
+      .attach("file", png, { filename: "leaf.png", contentType: "image/png" });
+
+    const req = lastRequest();
+    expect(req.url).toContain("/orchestrate");
+    expect(req.data.tool_inputs["image.detect_disease"]).toMatchObject({
+      plant_type: "tomato",
+      image_base64: png.toString("base64"),
+    });
+    expect(req.data.user_context).toEqual({ region: "Siliana" });
+    expect(req.data.max_agents).toBe(2);
   });
 
   test("supply-demand forwards the fields the service requires", async () => {

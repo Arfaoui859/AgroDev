@@ -422,7 +422,7 @@ export default function EffectivenessReports() {
                       min="0"
                       max="100"
                       value={newReport.beforeHealthScore}
-                      onChange={(e) => setNewReport(prev => ({...prev, beforeHealthScore: parseInt(e.target.value) || 50}))}
+                      onChange={(e) => setNewReport(prev => ({...prev, beforeHealthScore: e.target.value}))}
                     />
                   </div>
                   <div>
@@ -433,7 +433,7 @@ export default function EffectivenessReports() {
                       min="0"
                       max="100"
                       value={newReport.afterHealthScore}
-                      onChange={(e) => setNewReport(prev => ({...prev, afterHealthScore: parseInt(e.target.value) || 70}))}
+                      onChange={(e) => setNewReport(prev => ({...prev, afterHealthScore: e.target.value}))}
                     />
                   </div>
                 </div>

@@ -1017,12 +1017,12 @@ export async function getHealthAlerts(req: Request, res: Response) {
     });
 
     const existingKeys = new Set(
-      healthAlertsDatabase.map(alert => `${alert.animalId}:${alert.type}:${alert.condition}`),
+      healthAlertsDatabase.map(alert => `${alert.animalId}:${alert.alertType}:${alert.message}`),
     );
     const freshAlerts = newAlerts.filter(alert => {
       if (severity && alert.severity !== severity) return false;
       if (resolved !== undefined && alert.isResolved !== (resolved === "true")) return false;
-      const key = `${alert.animalId}:${alert.type}:${alert.condition}`;
+      const key = `${alert.animalId}:${alert.alertType}:${alert.message}`;
       if (existingKeys.has(key)) return false;
       existingKeys.add(key);
       healthAlertsDatabase.push(alert);

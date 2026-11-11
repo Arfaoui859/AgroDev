@@ -5,7 +5,7 @@ Combined FastAPI service for SmartWeatherCropPlanner and YieldPredictorAI
 
 import os
 import threading
-from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile, Body
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional, Union
 import logging
@@ -309,8 +309,8 @@ def get_crop_yield_database():
 @app.post("/assess-climate-suitability")
 def assess_crop_climate_suitability(
     crop_type: str,
-    location: LocationData = LocationData(),
-    current_weather: WeatherData = WeatherData()
+    location: LocationData = Body(...),
+    current_weather: WeatherData = Body(...)
 ):
     """
     تقييم ملائمة المحصول للظروف المناخية
@@ -344,9 +344,9 @@ def assess_crop_climate_suitability(
 
 @app.post("/optimize-planting-schedule")
 def optimize_planting_schedule(
-    crop_types: List[str],
-    location: LocationData = LocationData(),
-    planning_months: int = 12
+    crop_types: List[str] = Body(...),
+    location: LocationData = Body(...),
+    planning_months: int = Body(12)
 ):
     """
     تحسين جدولة الزراعة للمحاصيل المختلفة

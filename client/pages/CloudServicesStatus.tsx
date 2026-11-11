@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import {
   cloudConfig,
-  checkAllServicesHealth,
   getDeploymentInfo,
   validateEnvironment,
   type ServiceStatus,
@@ -68,15 +67,26 @@ const CloudServicesStatus: React.FC = () => {
   const checkServicesHealth = async () => {
     setIsLoading(true);
     try {
-      // Check cloud services
-      const cloudServicesStatus = await checkAllServicesHealth();
-      setServicesStatus(cloudServicesStatus);
-
-      // Check AI services through main API
+      // One authoritative gateway request checks all eight private services.
       const aiHealth = await checkAIServicesHealth();
       setAiHealthStatus(aiHealth);
-
-      setLastChecked(new Date());
+      const checkedAt = new Date();
+      const services = Array.isArray(aiHealth.services) ? aiHealth.services : [];
+      setServicesStatus(
+        services.map((service: any) => ({
+          service: service.nameAr || service.name || service.key,
+          url: "Node API gateway",
+          isHealthy: service.status === "available",
+          lastChecked: service.lastChecked
+            ? new Date(service.lastChecked)
+            : checkedAt,
+          responseTime:
+            typeof service.responseTime === "number"
+              ? service.responseTime
+              : undefined,
+        })),
+      );
+      setLastChecked(checkedAt);
     } catch (error) {
       console.error("Error checking services health:", error);
     } finally {
@@ -207,7 +217,7 @@ const CloudServicesStatus: React.FC = () => {
                 خدمات الذكاء الاصطناعي السحابية
               </CardTitle>
               <CardDescription>
-                حالة الخدمات المصغرة للذكاء الاصطناعي على Railway/Render
+                حالة الخدمات الثمانية عبر بوابة API الرئيسية (الخدمات الداخلية لا تُستدعى مباشرة من المتصفح)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -349,15 +359,10 @@ const CloudServicesStatus: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Cloud className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">الخدمات السحابية</span>
+                    <span className="font-medium">مسار الاتصال</span>
                   </div>
-                  <Badge
-                    variant={
-                      deploymentInfo.useCloudServices ? "default" : "secondary"
-                    }
-                  >
-                    {deploymentInfo.useCloudServices ? "مُفعلة" : "معطلة"}
-                  </Badge>
+                  <Badge variant="default">Node API Gateway</Badge>
+                  <p className="text-xs text-muted-foreground">الخدمات الداخلية تبقى على الخادم ولا تُكشف للمتصفح</p>
                 </div>
 
                 <div className="space-y-2">
@@ -405,37 +410,13 @@ const CloudServicesStatus: React.FC = () => {
 
               <Separator />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="font-medium text-sm">تحل��ل التربة:</label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.soilAnalysisUrl}
-                  </p>
-                </div>
-                <div>
-                  <label className="font-medium text-sm">
-                    توصيات المحاصيل:
-                  </label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.cropRecommendationUrl}
-                  </p>
-                </div>
-                <div>
-                  <label className="font-medium text-sm">تشخيص الصور:</label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.imageDiagnosisUrl}
-                  </p>
-                </div>
-                <div>
-                  <label className="font-medium text-sm">
-                    التنبؤ بالأسعار:
-                  </label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.marketPredictionUrl}
-                  </p>
-                </div>
-              </div>
-            </div>
+              <Alert>
+                <Shield className="h-4 w-4" />
+                <AlertDescription>
+                  عناوين خدمات Python الداخلية تُدار في إعدادات الخادم (Render أو بيئة التشغيل).
+                  المتصفح يتصل ببوابة API فقط؛ حالة كل خدمة ومصدر النموذج يظهران في نتائج الفحص أعلاه.
+                </AlertDescription>
+              </Alert>            </div>
           </CardContent>
         </Card>
 
@@ -451,9 +432,9 @@ const CloudServicesStatus: React.FC = () => {
                   إذا كانت الخدمات السحابية غير متاحة:
                 </h4>
                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                  <li>تحقق من إعدادات النشر على Railway أو Render</li>
-                  <li>راجع logs الخدمات للبحث عن أخطاء</li>
-                  <li>تأكد من تكوين متغيرات البيئة بشكل صحيح</li>
+                  <li>تحقق من إعدادات خدمات Render وبيئة الخادم</li>
+                  <li>راجع سجلات API والخدمات الداخلية</li>
+                  <li>تأكد من عناوين الخدمات ومتغيرات البيئة في الخادم</li>
                   <li>تحقق من حالة قواعد البيانات (Supabase/Neon)</li>
                 </ul>
               </div>

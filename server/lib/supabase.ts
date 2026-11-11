@@ -1,10 +1,9 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Support multiple env var names depending on runtime (Vite prefixes vars with VITE_ for client builds)
-const supabaseUrl =
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || null;
-const supabaseAnonKey =
-  process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || null;
+// Server credentials are server-only settings. Never infer the backend's
+// database target from VITE_* browser-build variables.
+const supabaseUrl = process.env.SUPABASE_URL?.trim() || null;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY?.trim() || null;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   // Do not crash the dev server if Supabase variables are missing.
