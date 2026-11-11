@@ -21,6 +21,7 @@ import {
   getWeatherByCoordinates,
   getWeatherByLocation,
   getCropSpecificWeather,
+  getCropClimateInputs,
 } from "./routes/weather";
 import {
   getMarketData,
@@ -408,6 +409,7 @@ export function createServer() {
   app.get("/api/weather/coordinates", getWeatherByCoordinates);
   app.get("/api/weather/location", getWeatherByLocation);
   app.get("/api/weather/crop-specific", getCropSpecificWeather);
+  app.get("/api/weather/crop-climate-inputs", getCropClimateInputs);
 
   // Market API routes
   app.get("/api/market/crop/:cropId", getMarketData);
