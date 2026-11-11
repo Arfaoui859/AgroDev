@@ -257,6 +257,11 @@ def _apply_workflow_templates(
     crop_requested = "crop.recommend" in tools or any(
         term.casefold() in text for term in KEYWORD_ROUTING["crop.recommend"]
     )
+    # Keep an explicit empty payload for a selected crop tool. This lets the
+    # normal required-field validator report missing crop inputs instead of
+    # silently dropping the tool from the execution graph.
+    if crop_requested and "crop.recommend" in tools:
+        inputs.setdefault("crop.recommend", {})
     soil_payload = inputs.get("soil.analyze")
     has_soil_measurements = (
         isinstance(soil_payload, dict) and _non_empty(soil_payload.get("sensor_data"))
