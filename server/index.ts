@@ -16,6 +16,7 @@ import { getCurrentUserRecord } from "./routes/current-user";
 import { withSimulatedProvenance } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import { handleUploadError } from "./middleware/upload";
+import agriculturalNewsRoutes from "./routes/agri-news";
 import {
   getWeatherByCoordinates,
   getWeatherByLocation,
@@ -394,6 +395,9 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Live headlines from configured Tunisian agricultural news feeds.
+  app.use("/api/agri-news", agriculturalNewsRoutes);
 
   // Public, secret-free capability probes used by the SPA service-status panel.
   app.use("/api/system", systemCapabilitiesRoutes);
