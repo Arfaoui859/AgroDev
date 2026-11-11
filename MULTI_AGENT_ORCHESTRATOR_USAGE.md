@@ -175,3 +175,17 @@ end-to-end request; a configured key alone is not proof that inference works.
 - PlantVillage image metrics are not Tunisian field validation.
 - Fine-tuning is not part of this deployment change. Collect reviewed, consented and redacted
   real orchestration traces first, then train and evaluate a tool-use adapter in Colab.
+
+
+## Authenticated soil-analysis history
+
+The AI assistant's farm/field selector uses the caller's Supabase Auth access token.
+Completed soil analyses are saved only after an explicit user action:
+
+- `POST /api/soil-analysis/records` persists an allow-listed record after verified-JWT and caller-scoped farm/field checks.
+- `GET /api/soil-analysis/records?farm_id=<uuid>&field_id=<uuid>&limit=20` returns the caller-visible history for the selected farm, optionally narrowed to one field.
+- The history endpoint validates identifiers, verifies the farm and optional field through the caller-scoped client, orders by `analyzed_at DESC`, and caps the result size at 100.
+- Supabase RLS remains the final ownership boundary. Demo identities cannot read or persist durable soil records.
+- The assistant loads history only when requested and refreshes it after a successful save. Changing farm or field clears the displayed previous selection's history.
+
+The history API and UI have automated integration coverage, but live Supabase/RLS behavior and the complete browser flow still require runtime verification before deployment.
