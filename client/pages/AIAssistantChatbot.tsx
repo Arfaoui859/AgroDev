@@ -136,7 +136,11 @@ const AIAssistantChatbot: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [quickActions, setQuickActions] = useState<string[]>([]);
   const [showFarmInputs, setShowFarmInputs] = useState(false);
-  const [farms, setFarms] = useState<Array<{ id: string; name?: string; name_ar?: string }>>([]);
+  const [farms, setFarms] = useState<Array<{ id: string; name?: string; name_ar?: string; location?: unknown }>>([]);
+  const [weatherClimate, setWeatherClimate] = useState<{
+    temperature: number; annual_rainfall: number; dataSource: string; observedAt: string; method: string;
+  } | null>(null);
+  const [weatherClimateStatus, setWeatherClimateStatus] = useState<'idle' | 'loading' | 'ready' | 'unavailable'>('idle');
   const [fields, setFields] = useState<Array<{ id: string; farm_id: string; name?: string; name_ar?: string }>>([]);
   const [selectedFarmId, setSelectedFarmId] = useState('');
   const [selectedFieldId, setSelectedFieldId] = useState('');
@@ -210,6 +214,50 @@ const AIAssistantChatbot: React.FC = () => {
     setSoilHistory([]);
     setSoilHistoryError('');
   }, [selectedFarmId, selectedFieldId]);
+
+  // Fetch the selected farm's own trailing-12-month climate observations.
+  // Coordinates come only from the authenticated farm record; no generic fallback.
+  useEffect(() => {
+    let active = true;
+    const loadFarmClimate = async () => {
+      setWeatherClimate(null);
+      if (!selectedFarmId) { setWeatherClimateStatus('idle'); return; }
+      const farm = farms.find((item) => item.id === selectedFarmId);
+      let location: any = farm?.location;
+      if (typeof location === 'string') {
+        try { location = JSON.parse(location); } catch { location = null; }
+      }
+      const lat = Number(location?.lat ?? location?.latitude);
+      const lon = Number(location?.lng ?? location?.lon ?? location?.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        setWeatherClimateStatus('unavailable');
+        return;
+      }
+      setWeatherClimateStatus('loading');
+      try {
+        const response = await fetch(`/api/weather/crop-climate-inputs?lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.isRealData !== true || !payload.data ||
+            !Number.isFinite(payload.data.temperature) || !Number.isFinite(payload.data.annual_rainfall)) {
+          throw new Error(payload.error || 'Climate observations unavailable');
+        }
+        if (active) {
+          setWeatherClimate({
+            temperature: payload.data.temperature,
+            annual_rainfall: payload.data.annual_rainfall,
+            dataSource: payload.dataSource || 'Open-Meteo Archive',
+            observedAt: payload.observedAt,
+            method: payload.method,
+          });
+          setWeatherClimateStatus('ready');
+        }
+      } catch {
+        if (active) setWeatherClimateStatus('unavailable');
+      }
+    };
+    loadFarmClimate();
+    return () => { active = false; };
+  }, [selectedFarmId, farms]);
 
   useEffect(() => {
     scrollToBottom();
@@ -362,9 +410,11 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     const measurements: Record<string, {
       value: number;
       unit: string;
-      source: 'farmer_entered';
-      verification: 'unverified';
+      source: 'farmer_entered' | 'weather_provider';
+      verification: 'unverified' | 'verified';
       observed_at: string;
+      evidence_reference?: string;
+      method?: string;
     }> = {};
     const observedAt = new Date().toISOString();
     const fields: Array<[keyof typeof farmInputs, string, string]> = [
@@ -386,6 +436,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     ];
 
     fields.forEach(([formKey, contractKey, unit]) => {
+      // Provider-backed climate observations take precedence over manual values.
+      if ((formKey === 'temperature' || formKey === 'annualRainfall') && weatherClimate) return;
       const value = toNumber(farmInputs[formKey]);
       if (value !== undefined) {
         measurements[contractKey] = {
@@ -397,6 +449,19 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         };
       }
     });
+    if (weatherClimate) {
+      const evidence = `${weatherClimate.dataSource}; observedAt=${weatherClimate.observedAt}`;
+      measurements.air_temperature = {
+        value: weatherClimate.temperature, unit: '°C', source: 'weather_provider',
+        verification: 'verified', observed_at: weatherClimate.observedAt,
+        evidence_reference: evidence, method: weatherClimate.method,
+      };
+      measurements.annual_rainfall = {
+        value: weatherClimate.annual_rainfall, unit: 'mm/year', source: 'weather_provider',
+        verification: 'verified', observed_at: weatherClimate.observedAt,
+        evidence_reference: evidence, method: weatherClimate.method,
+      };
+    }
 
     if (Object.keys(measurements).length === 0 && !selectedFarmId) return undefined;
     return {
