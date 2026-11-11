@@ -134,6 +134,46 @@ describe("🌦️ Weather crop planner uses real provider data", () => {
     expect(res.body.monthlyAverages).toHaveLength(2);
   });
 
+  test("crop climate inputs aggregate observed 12-month archive data", async () => {
+    mockedHistorical.mockResolvedValue({
+      monthly: Array.from({ length: 12 }, (_, index) => ({
+        month: `2025-${String(index + 1).padStart(2, "0")}`,
+        avgTemp: 15 + index,
+        totalRainfall: 20 + index,
+        avgHumidity: 60,
+      })),
+      recentRainfall: 5,
+      recentTemperatureVariation: 8,
+      source: { provider: "Open-Meteo Archive", isRealData: true },
+    });
+    const res = await request(app)
+      .get("/api/weather/crop-climate-inputs?lat=36.08&lon=9.37");
+    expect(res.status).toBe(200);
+    expect(res.body.isRealData).toBe(true);
+    expect(res.body.dataSource).toBe("Open-Meteo Archive");
+    expect(res.body.data.temperature).toBe(20.5);
+    expect(res.body.data.annual_rainfall).toBe(306);
+    expect(mockedHistorical).toHaveBeenCalledWith(36.08, 9.37, 12);
+  });
+
+  test("crop climate inputs reject invalid coordinates", async () => {
+    const res = await request(app)
+      .get("/api/weather/crop-climate-inputs?lat=999&lon=9.37");
+    expect(res.status).toBe(400);
+    expect(res.body.dataAvailable).toBe(false);
+    expect(mockedHistorical).not.toHaveBeenCalled();
+  });
+
+  test("crop climate inputs report archive outages without fallback values", async () => {
+    mockedHistorical.mockRejectedValue(
+      new ProviderError("Open-Meteo Archive", "unconfigured", "archive plan unavailable"),
+    );
+    const res = await request(app)
+      .get("/api/weather/crop-climate-inputs?lat=36.08&lon=9.37");
+    expect(res.status).toBe(503);
+    expect(res.body.dataAvailable).toBe(false);
+  });
+
   test("an unknown location is a 404, not invented weather", async () => {
     const res = await request(app).get("/api/weather-crop-planner/alerts/atlantis");
     expect(res.status).toBe(404);
