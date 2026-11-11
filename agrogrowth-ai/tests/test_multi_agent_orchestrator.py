@@ -174,3 +174,41 @@ def test_invalid_service_url_isolated_as_agent_error(monkeypatch):
     ))
     assert result["status"] == "error"
     assert result["tool"] == "soil.analyze"
+
+
+def test_failed_upstream_agent_blocks_dependent_tool_without_fabrication(monkeypatch):
+    class NoLLMProvider:
+        def is_configured(self):
+            return False
+
+    monkeypatch.setattr(orchestrator_module, "get_provider", lambda: NoLLMProvider())
+    calls = []
+
+    async def fake_execute(tool_name, payload, timeout_s):
+        calls.append(tool_name)
+        return {
+            "tool": tool_name, "agent": "soil_agent", "status": "error",
+            "error": {"message": "soil service unavailable"},
+        }
+
+    monkeypatch.setattr(orchestrator_module, "_execute_tool", fake_execute)
+    crop_inputs = {
+        "temperature": 22, "annual_rainfall": 450,
+        "soil_ph": "$results.soil.analyze.result.properties.ph.current_value",
+        "soil_quality_score": 0.7, "water_availability": 0.8,
+        "target_market_price": 2.5, "farmer_experience_years": 5,
+        "available_capital": 5000, "farm_size": 2, "risk_tolerance": 0.5,
+    }
+    result = asyncio.run(orchestrator_module.orchestrate(
+        "Analyze soil and recommend crops",
+        language="en",
+        tool_inputs={
+            "soil.analyze": {"sensor_data": {"ph": 6.5}},
+            "crop.recommend": crop_inputs,
+        },
+    ))
+
+    assert calls == ["soil.analyze"]
+    assert "dependency_failed_or_incomplete:soil.analyze" in result["missing_inputs"]["crop.recommend"]
+    assert result["execution"]["executed"] == 1
+    assert result["execution"]["failed"] == 1
