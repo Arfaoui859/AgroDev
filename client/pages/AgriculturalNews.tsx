@@ -57,6 +57,7 @@ export default function AgriculturalNews() {
   const [sources, setSources] = useState<NewsSource[]>(referenceSources);
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -90,11 +91,13 @@ export default function AgriculturalNews() {
 
   const filteredItems = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
-    if (!term) return items;
-    return items.filter((item) =>
-      `${item.title} ${item.summary} ${item.source}`.toLocaleLowerCase().includes(term),
-    );
-  }, [items, query]);
+    return items.filter((item) => {
+      const matchesCategory = category === "all" || item.category === category;
+      const matchesSearch = !term ||
+        `${item.title} ${item.summary} ${item.source}`.toLocaleLowerCase().includes(term);
+      return matchesCategory && matchesSearch;
+    });
+  }, [items, query, category]);
 
   const connectedSources = sources.filter((source) => source.kind === "live_feed");
 
@@ -144,6 +147,24 @@ export default function AgriculturalNews() {
       </div>
 
       {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["all", "الكل"],
+          ["olive", "الزيتون"],
+          ["dates", "التمور"],
+          ["cereals", "الحبوب"],
+          ["water", "المياه والري"],
+          ["plant_health", "الأمراض والآفات"],
+          ["livestock", "تربية الماشية"],
+          ["trade_export", "السوق والتصدير"],
+          ["investment", "الاستثمار"],
+        ].map(([value, label]) => (
+          <Button key={value} size="sm" variant={category === value ? "default" : "outline"} onClick={() => setCategory(value)}>
+            {label}
+          </Button>
+        ))}
+      </div>
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
