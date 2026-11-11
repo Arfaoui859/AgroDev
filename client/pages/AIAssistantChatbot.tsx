@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Bot,
   MessageCircle,
@@ -70,6 +71,7 @@ interface ChatMessage {
     suggestions?: string[];
     actionItems?: string[];
     relatedTopics?: string[];
+    soilSave?: { farmId: string; fieldId?: string; sensorData: Record<string, number>; columns: Record<string, number>; status?: 'saved' | 'saving' | 'failed'; savedId?: string; error?: string };
   };
   attachments?: {
     type: 'image' | 'document' | 'chart';
@@ -109,6 +111,7 @@ interface Conversation {
 }
 
 const AIAssistantChatbot: React.FC = () => {
+  const { session, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -133,6 +136,12 @@ const AIAssistantChatbot: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [quickActions, setQuickActions] = useState<string[]>([]);
   const [showFarmInputs, setShowFarmInputs] = useState(false);
+  const [farms, setFarms] = useState<Array<{ id: string; name?: string; name_ar?: string }>>([]);
+  const [fields, setFields] = useState<Array<{ id: string; farm_id: string; name?: string; name_ar?: string }>>([]);
+  const [selectedFarmId, setSelectedFarmId] = useState('');
+  const [selectedFieldId, setSelectedFieldId] = useState('');
+  const [farmLoadError, setFarmLoadError] = useState('');
+  const [farmLoading, setFarmLoading] = useState(false);
   // Empty strings mean "not supplied". Never prefill agricultural measurements.
   const [farmInputs, setFarmInputs] = useState({
     soilPh: '',
@@ -156,6 +165,43 @@ const AIAssistantChatbot: React.FC = () => {
   useEffect(() => {
     initializeChatbot();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadOwnedFarms = async () => {
+      if (!session?.access_token || !isAuthenticated) {
+        setFarms([]); setFields([]); setSelectedFarmId(''); setSelectedFieldId('');
+        return;
+      }
+      setFarmLoading(true); setFarmLoadError('');
+      try {
+        const response = await fetch('/api/farms', { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.status !== 'success' || !Array.isArray(payload.data)) throw new Error(payload.message || `Farm list request failed (${response.status})`);
+        if (active) setFarms(payload.data);
+      } catch (error) {
+        if (active) setFarmLoadError(error instanceof Error ? error.message : 'Unable to load farms');
+      } finally { if (active) setFarmLoading(false); }
+    };
+    loadOwnedFarms();
+    return () => { active = false; };
+  }, [session?.access_token, isAuthenticated]);
+
+  useEffect(() => {
+    let active = true;
+    const loadOwnedFields = async () => {
+      setFields([]); setSelectedFieldId('');
+      if (!selectedFarmId || !session?.access_token) return;
+      try {
+        const response = await fetch(`/api/fields?farmId=${encodeURIComponent(selectedFarmId)}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.status !== 'success' || !Array.isArray(payload.data)) throw new Error(payload.message || `Field list request failed (${response.status})`);
+        if (active) setFields(payload.data);
+      } catch (error) { if (active) setFarmLoadError(error instanceof Error ? error.message : 'Unable to load fields'); }
+    };
+    loadOwnedFields();
+    return () => { active = false; };
+  }, [selectedFarmId, session?.access_token]);
 
   useEffect(() => {
     scrollToBottom();
@@ -344,9 +390,11 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       }
     });
 
-    if (Object.keys(measurements).length === 0) return undefined;
+    if (Object.keys(measurements).length === 0 && !selectedFarmId) return undefined;
     return {
       schema_version: '1.0.0' as const,
+      ...(selectedFarmId ? { farm_id: selectedFarmId } : {}),
+      ...(selectedFieldId ? { field_id: selectedFieldId } : {}),
       measurements,
     };
   };
@@ -373,7 +421,10 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     const farmInput = buildFarmInput();
     const response = await fetch('/api/ai/assistant/orchestrate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
       body: JSON.stringify({
         message: messageContent,
         language,
