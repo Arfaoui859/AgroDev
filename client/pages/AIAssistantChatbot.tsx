@@ -280,24 +280,41 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   };
 
   /**
-   * Ask the AgroGrowth Farm Advisor backend. The backend uses the configured LLM
-   * when available and otherwise answers from its rule-based engine, always
-   * reporting which source produced the answer.
+   * Send chat requests through the central multi-agent orchestrator.
+   * The orchestrator selects registered specialist tools and reports any
+   * missing farm measurements instead of fabricating tool arguments.
    */
   const callAdvisorApi = async (
     messageContent: string
-  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string }> => {
-    const history = messages.slice(-6).map(m => ({
-      role: m.type === 'user' ? 'user' : 'assistant',
-      content: m.content
-    }));
-    const response = await fetch('/api/ai/assistant/chat', {
+  ): Promise<{
+    response: string;
+    planner_source?: string;
+    planner_model_source?: string | null;
+    synthesis_model_source?: string | null;
+    selected_agents?: string[];
+    selected_tools?: string[];
+    missing_inputs?: Record<string, string[]>;
+    tool_results?: Array<{ tool: string; status: string; model_source?: string }>;
+    language?: string;
+  }> => {
+    const response = await fetch('/api/ai/assistant/orchestrate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: messageContent, language, history })
+      body: JSON.stringify({
+        message: messageContent,
+        language,
+        max_agents: 5,
+        user_context: {
+          farm_location: userProfile.location,
+          farm_size_hectares: userProfile.farmSize,
+          crops: userProfile.crops,
+          experience: userProfile.experience
+        },
+        tool_inputs: {}
+      })
     });
     if (!response.ok) {
-      throw new Error(`Advisor API error: ${response.status}`);
+      throw new Error(`Multi-agent orchestrator error: ${response.status}`);
     }
     return response.json();
   };
@@ -305,22 +322,30 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   const generateAIResponse = async (userInput: string): Promise<ChatMessage> => {
     try {
       const result = await callAdvisorApi(userInput);
-      const source = result.dataSource === 'llm' ? 'llm' : 'rule-based';
+      const source = result.synthesis_model_source ? 'llm' : 'rule-based';
+      const provenance = [
+        ...(result.planner_model_source ? [`Planner: ${result.planner_model_source}`] : []),
+        ...(result.synthesis_model_source ? [`Synthesis: ${result.synthesis_model_source}`] : []),
+        ...(result.selected_tools ?? []),
+        ...(result.tool_results ?? []).map(item =>
+          `${item.tool}: ${item.status}${item.model_source ? ` (${item.model_source})` : ''}`
+        )
+      ];
       return {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: result.answer,
+        content: result.response,
         timestamp: new Date().toISOString(),
         language: (result.language as 'ar' | 'en' | 'fr') || language,
         metadata: {
           dataSource: source,
-          modelSource: (result as { modelSource?: string }).modelSource,
-          sources:
-            source === 'llm'
-              ? [`نموذج لغوي (LLM): ${(result as { modelSource?: string }).modelSource ?? ''}`.trim()]
-              : ['محرك قواعد زراعية'],
+          modelSource: result.synthesis_model_source ?? result.planner_source,
+          sources: provenance.length ? provenance : ['Multi-agent orchestrator'],
           suggestions: quickActions.slice(0, 4),
-          relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
+          actionItems: Object.entries(result.missing_inputs ?? {}).flatMap(([agent, fields]) =>
+            fields.map(field => `${agent}: ${field}`)
+          ),
+          relatedTopics: result.selected_agents ?? ['زراعة', 'أسواق', 'طقس', 'استثمار']
         },
         category: 'general'
       };
