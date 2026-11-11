@@ -298,52 +298,57 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
-  const buildToolInputs = () => {
+  const buildFarmInput = () => {
     const toNumber = (value: string): number | undefined => {
       if (value.trim() === '') return undefined;
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : undefined;
     };
 
-    const soilMeasurements: Record<string, number> = {};
-    const soilFields: Array<[keyof typeof farmInputs, string]> = [
-      ['soilPh', 'ph'],
-      ['soilMoisture', 'moisture'],
-      ['organicMatter', 'organic_matter'],
-      ['sand', 'sand'],
-      ['silt', 'silt'],
-      ['clay', 'clay']
+    const measurements: Record<string, {
+      value: number;
+      unit: string;
+      source: 'farmer_entered';
+      verification: 'unverified';
+      observed_at: string;
+    }> = {};
+    const observedAt = new Date().toISOString();
+    const fields: Array<[keyof typeof farmInputs, string, string]> = [
+      ['soilPh', 'soil_ph', 'pH'],
+      ['soilMoisture', 'soil_moisture', '%'],
+      ['organicMatter', 'organic_matter', '%'],
+      ['sand', 'sand', '%'],
+      ['silt', 'silt', '%'],
+      ['clay', 'clay', '%'],
+      ['temperature', 'air_temperature', '°C'],
+      ['annualRainfall', 'annual_rainfall', 'mm/year'],
+      ['soilQualityScore', 'soil_quality_score', 'ratio'],
+      ['waterAvailability', 'water_availability', 'ratio'],
+      ['targetMarketPrice', 'market_price', 'TND/kg'],
+      ['farmerExperienceYears', 'farmer_experience_years', 'years'],
+      ['availableCapital', 'available_capital', 'TND'],
+      ['farmSize', 'farm_size', 'ha'],
+      ['riskTolerance', 'risk_tolerance', 'ratio'],
     ];
-    soilFields.forEach(([key, apiKey]) => {
-      const value = toNumber(farmInputs[key]);
-      if (value !== undefined) soilMeasurements[apiKey] = value;
-    });
-    const soilPh = soilMeasurements.ph;
-    const cropInput: Record<string, number> = {};
-    const fields: Array<[keyof typeof farmInputs, string]> = [
-      ['temperature', 'temperature'],
-      ['annualRainfall', 'annual_rainfall'],
-      ['soilQualityScore', 'soil_quality_score'],
-      ['waterAvailability', 'water_availability'],
-      ['targetMarketPrice', 'target_market_price'],
-      ['farmerExperienceYears', 'farmer_experience_years'],
-      ['availableCapital', 'available_capital'],
-      ['farmSize', 'farm_size'],
-      ['riskTolerance', 'risk_tolerance']
-    ];
-    fields.forEach(([key, apiKey]) => {
-      const value = toNumber(farmInputs[key]);
-      if (value !== undefined) cropInput[apiKey] = value;
+
+    fields.forEach(([formKey, contractKey, unit]) => {
+      const value = toNumber(farmInputs[formKey]);
+      if (value !== undefined) {
+        measurements[contractKey] = {
+          value,
+          unit,
+          source: 'farmer_entered',
+          verification: 'unverified',
+          observed_at: observedAt,
+        };
+      }
     });
 
-    const toolInputs: Record<string, Record<string, unknown>> = {};
-    if (Object.keys(soilMeasurements).length > 0) {
-      toolInputs['soil.analyze'] = { sensor_data: soilMeasurements };
-    }
-    if (Object.keys(cropInput).length > 0 || soilPh !== undefined) {
-      toolInputs['crop.recommend'] = cropInput;
-    }
-    return toolInputs;
+    if (Object.keys(measurements).length === 0) return undefined;
+    return {
+      schema_version: '1.0.0' as const,
+      measurements,
+    };
   };
 
   /**
@@ -362,8 +367,10 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     selected_tools?: string[];
     missing_inputs?: Record<string, string[]>;
     tool_results?: Array<{ tool: string; status: string; model_source?: string }>;
+    input_provenance?: Record<string, { source: string; verification: string; unit: string; observed_at: string }>;
     language?: string;
   }> => {
+    const farmInput = buildFarmInput();
     const response = await fetch('/api/ai/assistant/orchestrate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -374,9 +381,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         // This screen's profile currently contains demo defaults, not
         // verified account data. Do not present them to agents as farm facts.
         user_context: {},
-        // The orchestrator will request missing structured measurements;
-        // it must not infer them from free-form chat or demo profile values.
-        tool_inputs: buildToolInputs()
+        // Only values explicitly entered in this form are sent. The gateway
+        // labels them unverified and returns their provenance with the result.
+        ...(farmInput ? { farm_input: farmInput } : {})
       })
     });
     if (!response.ok) {
@@ -393,6 +400,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         ...(result.planner_model_source ? [`Planner: ${result.planner_model_source}`] : []),
         ...(result.synthesis_model_source ? [`Synthesis: ${result.synthesis_model_source}`] : []),
         ...(result.selected_tools ?? []),
+        ...Object.entries(result.input_provenance ?? {}).map(([key, item]) =>
+          `Input ${key}: ${item.source}/${item.verification} (${item.unit})`
+        ),
         ...(result.tool_results ?? []).map(item =>
           `${item.tool}: ${item.status}${item.model_source ? ` (${item.model_source})` : ''}`
         )
