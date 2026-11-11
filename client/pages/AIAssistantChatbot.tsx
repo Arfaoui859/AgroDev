@@ -304,12 +304,11 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         message: messageContent,
         language,
         max_agents: 5,
-        user_context: {
-          farm_location: userProfile.location,
-          farm_size_hectares: userProfile.farmSize,
-          crops: userProfile.crops,
-          experience: userProfile.experience
-        },
+        // This screen's profile currently contains demo defaults, not
+        // verified account data. Do not present them to agents as farm facts.
+        user_context: {},
+        // The orchestrator will request missing structured measurements;
+        // it must not infer them from free-form chat or demo profile values.
         tool_inputs: {}
       })
     });
