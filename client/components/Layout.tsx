@@ -68,6 +68,7 @@ import {
   TestTube,
   CreditCard,
   Package,
+  Newspaper,
 } from "lucide-react";
 import { useState } from "react";
 import UnifiedSearch from "./UnifiedSearch";
@@ -439,6 +440,15 @@ const navigationCategories: NavigationCategory[] = [
         href: "/market-alerts",
         icon: Bell,
         allowedRoles: ["farmer", "trader", "admin"],
+      },
+      {
+        name: "Agricultural News",
+        nameArabic: "الأخبار الفلاحية التونسية",
+        href: "/agricultural-news",
+        icon: Newspaper,
+        badge: "TN",
+        isNew: true,
+        allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "government", "admin"],
       },
     ],
   },
