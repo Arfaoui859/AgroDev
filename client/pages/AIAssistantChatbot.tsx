@@ -1615,6 +1615,34 @@ Comment puis-je vous aider aujourd'hui?`
                               </div>
                             )}
 
+                            {message.metadata.soilSave && (
+                              <div className="flex flex-wrap items-center gap-2 rounded-md bg-green-50 p-2">
+                                {message.metadata.soilSave.status === 'saved' ? (
+                                  <span className="text-xs text-green-700">
+                                    {language === 'ar' ? 'تم حفظ تحليل التربة' : language === 'fr' ? 'Analyse du sol enregistrée' : 'Soil analysis saved'}
+                                    {message.metadata.soilSave.savedId ? ` · ${message.metadata.soilSave.savedId}` : ''}
+                                  </span>
+                                ) : (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={message.metadata.soilSave.status === 'saving' || !session?.access_token}
+                                      onClick={() => saveSoilAnalysisForMessage(message.id)}
+                                    >
+                                      {message.metadata.soilSave.status === 'saving'
+                                        ? (language === 'ar' ? 'جارٍ الحفظ...' : language === 'fr' ? 'Enregistrement...' : 'Saving...')
+                                        : (language === 'ar' ? 'حفظ تحليل التربة في المزرعة' : language === 'fr' ? 'Enregistrer l’analyse du sol' : 'Save soil analysis to farm')}
+                                    </Button>
+                                    {message.metadata.soilSave.error && (
+                                      <span className="text-xs text-red-600">{message.metadata.soilSave.error}</span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
+
                             {/* Quick Suggestions */}
                             {message.metadata.suggestions && message.metadata.suggestions.length > 0 && (
                               <div>
@@ -1703,6 +1731,67 @@ Comment puis-je vous aider aujourd'hui?`
 
                 <div ref={messagesEndRef} />
               </CardContent>
+
+              {/* Select only farms and fields visible to the authenticated Supabase user. */}
+              <div className="flex-shrink-0 px-4 pt-3 bg-gray-50 border-t space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label className="text-xs text-gray-700 space-y-1">
+                    <span>{language === 'ar' ? 'المزرعة (اختياري للحفظ)' : language === 'fr' ? 'Exploitation (facultatif)' : 'Farm (optional for saving)'}</span>
+                    <Select
+                      value={selectedFarmId}
+                      onValueChange={setSelectedFarmId}
+                      disabled={!isAuthenticated || farmLoading || farms.length === 0}
+                    >
+                      <SelectTrigger><SelectValue placeholder={
+                        farmLoading
+                          ? (language === 'ar' ? 'جارٍ تحميل المزارع...' : 'Loading farms...')
+                          : !isAuthenticated
+                            ? (language === 'ar' ? 'سجّل الدخول لاختيار مزرعتك' : 'Sign in to select a farm')
+                            : (language === 'ar' ? 'اختر مزرعة' : language === 'fr' ? 'Choisir une exploitation' : 'Select a farm')
+                      } /></SelectTrigger>
+                      <SelectContent>
+                        {farms.map(farm => (
+                          <SelectItem key={farm.id} value={farm.id}>
+                            {farm.name_ar || farm.name || farm.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                  <label className="text-xs text-gray-700 space-y-1">
+                    <span>{language === 'ar' ? 'الحقل (اختياري)' : language === 'fr' ? 'Parcelle (facultatif)' : 'Field (optional)'}</span>
+                    <Select
+                      value={selectedFieldId}
+                      onValueChange={setSelectedFieldId}
+                      disabled={!selectedFarmId || fields.length === 0}
+                    >
+                      <SelectTrigger><SelectValue placeholder={
+                        !selectedFarmId
+                          ? (language === 'ar' ? 'اختر المزرعة أولاً' : 'Select a farm first')
+                          : (language === 'ar' ? 'اختر حقلاً' : language === 'fr' ? 'Choisir une parcelle' : 'Select a field')
+                      } /></SelectTrigger>
+                      <SelectContent>
+                        {fields.map(field => (
+                          <SelectItem key={field.id} value={field.id}>
+                            {field.name_ar || field.name || field.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </label>
+                </div>
+                {!isAuthenticated && (
+                  <p className="text-xs text-amber-700">
+                    {language === 'ar' ? 'يمكنك استعمال المساعد، لكن يلزم تسجيل الدخول لعرض مزارعك وحفظ التحاليل.' : language === 'fr' ? 'Connectez-vous pour afficher vos exploitations et enregistrer les analyses.' : 'Sign in to load your farms and save analyses.'}
+                  </p>
+                )}
+                {farmLoadError && <p role="alert" className="text-xs text-red-600">{farmLoadError}</p>}
+                {isAuthenticated && !farmLoading && !farmLoadError && farms.length === 0 && (
+                  <p className="text-xs text-gray-500">
+                    {language === 'ar' ? 'لا توجد مزارع مرتبطة بحسابك بعد.' : language === 'fr' ? 'Aucune exploitation liée à votre compte.' : 'No farms are linked to your account yet.'}
+                  </p>
+                )}
+              </div>
 
               {/* Explicit farm measurements: optional, never pre-populated */}
               <div className="flex-shrink-0 px-4 pt-3 bg-gray-50 border-t">
