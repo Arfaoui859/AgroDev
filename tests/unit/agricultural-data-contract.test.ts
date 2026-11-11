@@ -87,6 +87,7 @@ describe('provenance-aware agricultural data contract', () => {
   it('does not infer missing measurements and keeps provenance outside legacy tool payloads', () => {
     const parsed = validateFarmInputContract(farm({
       soil_ph: measurement(6.5, 'pH'),
+      soil_quality_score: measurement(0.72, 'ratio'),
       annual_rainfall: measurement(450, 'mm/year', 'weather_provider'),
     }));
     expect(parsed.success).toBe(true);
@@ -99,6 +100,7 @@ describe('provenance-aware agricultural data contract', () => {
     expect(adapted.tool_inputs['crop.recommend']).toEqual({
       annual_rainfall: 450,
       soil_ph: 6.5,
+      soil_quality_score: 0.72,
     });
     expect(adapted.tool_inputs['crop.recommend']).not.toHaveProperty('temperature');
     expect(adapted.measurement_provenance.soil_ph).toMatchObject({
