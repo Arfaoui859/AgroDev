@@ -117,7 +117,7 @@ export function parseAgriculturalRss(
   ];
   const items: AgriculturalNewsItem[] = [];
 
-  for (const [index, match] of blocks.entries()) {
+  for (const match of blocks) {
     const block = match[2];
     const title = readTag(block, "title");
     const rawLink = readTag(block, "link") ||
