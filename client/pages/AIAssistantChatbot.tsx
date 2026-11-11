@@ -132,6 +132,20 @@ const AIAssistantChatbot: React.FC = () => {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [quickActions, setQuickActions] = useState<string[]>([]);
+  const [showFarmInputs, setShowFarmInputs] = useState(false);
+  // Empty strings mean "not supplied". Never prefill agricultural measurements.
+  const [farmInputs, setFarmInputs] = useState({
+    soilPh: '',
+    temperature: '',
+    annualRainfall: '',
+    soilQualityScore: '',
+    waterAvailability: '',
+    targetMarketPrice: '',
+    farmerExperienceYears: '',
+    availableCapital: '',
+    farmSize: '',
+    riskTolerance: ''
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -279,6 +293,41 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
+  const buildToolInputs = () => {
+    const toNumber = (value: string): number | undefined => {
+      if (value.trim() === '') return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
+    const soilPh = toNumber(farmInputs.soilPh);
+    const cropInput: Record<string, number> = {};
+    const fields: Array<[keyof typeof farmInputs, string]> = [
+      ['temperature', 'temperature'],
+      ['annualRainfall', 'annual_rainfall'],
+      ['soilQualityScore', 'soil_quality_score'],
+      ['waterAvailability', 'water_availability'],
+      ['targetMarketPrice', 'target_market_price'],
+      ['farmerExperienceYears', 'farmer_experience_years'],
+      ['availableCapital', 'available_capital'],
+      ['farmSize', 'farm_size'],
+      ['riskTolerance', 'risk_tolerance']
+    ];
+    fields.forEach(([key, apiKey]) => {
+      const value = toNumber(farmInputs[key]);
+      if (value !== undefined) cropInput[apiKey] = value;
+    });
+
+    const toolInputs: Record<string, Record<string, unknown>> = {};
+    if (soilPh !== undefined) {
+      toolInputs['soil.analyze'] = { sensor_data: { ph: soilPh } };
+    }
+    if (Object.keys(cropInput).length > 0 || soilPh !== undefined) {
+      toolInputs['crop.recommend'] = cropInput;
+    }
+    return toolInputs;
+  };
+
   /**
    * Send chat requests through the central multi-agent orchestrator.
    * The orchestrator selects registered specialist tools and reports any
@@ -309,7 +358,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         user_context: {},
         // The orchestrator will request missing structured measurements;
         // it must not infer them from free-form chat or demo profile values.
-        tool_inputs: {}
+        tool_inputs: buildToolInputs()
       })
     });
     if (!response.ok) {
@@ -1505,6 +1554,60 @@ Comment puis-je vous aider aujourd'hui?`
 
                 <div ref={messagesEndRef} />
               </CardContent>
+
+              {/* Explicit farm measurements: optional, never pre-populated */}
+              <div className="flex-shrink-0 px-4 pt-3 bg-gray-50 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFarmInputs(value => !value)}
+                >
+                  {showFarmInputs
+                    ? (language === 'ar' ? 'إخفاء بيانات المزرعة' : language === 'fr' ? 'Masquer les données' : 'Hide farm data')
+                    : (language === 'ar' ? 'إضافة قياسات المزرعة (اختياري)' : language === 'fr' ? 'Ajouter les mesures (facultatif)' : 'Add farm measurements (optional)')}
+                </Button>
+                {showFarmInputs && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 py-3">
+                    {([
+                      ['soilPh', 'Soil pH', 'pH du sol', 'pH التربة', '0', '14', '0.1'],
+                      ['temperature', 'Average temperature (°C)', 'Température moyenne (°C)', 'معدل الحرارة (°C)', '-30', '60', '0.1'],
+                      ['annualRainfall', 'Annual rainfall (mm)', 'Pluie annuelle (mm)', 'الأمطار السنوية (مم)', '0', '10000', '1'],
+                      ['soilQualityScore', 'Soil quality (0–1)', 'Qualité du sol (0–1)', 'جودة التربة (0–1)', '0', '1', '0.01'],
+                      ['waterAvailability', 'Water availability (0–1)', 'Disponibilité d’eau (0–1)', 'توفر المياه (0–1)', '0', '1', '0.01'],
+                      ['targetMarketPrice', 'Market price (TND/kg)', 'Prix du marché (TND/kg)', 'سعر السوق (د.ت/كغ)', '0.01', '100000', '0.01'],
+                      ['farmerExperienceYears', 'Experience (years)', 'Expérience (années)', 'الخبرة (سنوات)', '0', '100', '1'],
+                      ['availableCapital', 'Available capital (TND)', 'Capital disponible (TND)', 'رأس المال المتاح (د.ت)', '0', '100000000', '1'],
+                      ['farmSize', 'Farm size (hectares)', 'Surface (hectares)', 'مساحة الأرض (هكتار)', '0.01', '1000000', '0.01'],
+                      ['riskTolerance', 'Risk tolerance (0–1)', 'Tolérance au risque (0–1)', 'تحمل المخاطر (0–1)', '0', '1', '0.01']
+                    ] as const).map(([key, en, fr, ar, min, max, step]) => (
+                      <label key={key} className="text-xs text-gray-700 space-y-1">
+                        <span>{language === 'ar' ? ar : language === 'fr' ? fr : en}</span>
+                        <Input
+                          type="number"
+                          min={min}
+                          max={max}
+                          step={step}
+                          value={farmInputs[key]}
+                          onChange={(event) => setFarmInputs(previous => ({
+                            ...previous,
+                            [key]: event.target.value
+                          }))}
+                          placeholder={language === 'ar' ? 'أدخل قيمة مؤكدة' : language === 'fr' ? 'Valeur mesurée' : 'Enter a measured value'}
+                          disabled={isLoading}
+                        />
+                      </label>
+                    ))}
+                    <p className="sm:col-span-2 lg:col-span-3 text-xs text-gray-500">
+                      {language === 'ar'
+                        ? 'أدخل القيم المقاسة أو الموثوقة فقط. الحقول الفارغة تبقى ناقصة ولا يتم تخمينها.'
+                        : language === 'fr'
+                          ? 'Saisissez uniquement des valeurs mesurées ou vérifiées. Les champs vides ne seront pas devinés.'
+                          : 'Enter measured or verified values only. Empty fields remain missing; the system will not guess them.'}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Input Area */}
               <div className="flex-shrink-0 p-4 border-t bg-gray-50">
