@@ -1,9 +1,9 @@
 import express from "express";
 import request from "supertest";
 
-const scopedClientFromAuthHeader = jest.fn();
+const mockScopedClientFromAuthHeader = jest.fn();
 jest.mock("../../server/lib/supabase", () => ({
-  scopedClientFromAuthHeader: (...args: unknown[]) => scopedClientFromAuthHeader(...args),
+  mockScopedClientFromAuthHeader: (...args: unknown[]) => mockScopedClientFromAuthHeader(...args),
 }));
 
 import { saveSoilAnalysis } from "../../server/routes/soil-analysis-records";
@@ -48,7 +48,7 @@ function configureDatabase(options: { farm?: unknown; field?: unknown } = {}) {
       return builder;
     }),
   };
-  scopedClientFromAuthHeader.mockReturnValue(client);
+  mockScopedClientFromAuthHeader.mockReturnValue(client);
   return { client, saved };
 }
 
@@ -60,7 +60,7 @@ describe("POST /api/soil-analysis/records", () => {
   test("requires a verified JWT identity; demo and anonymous identities cannot persist", async () => {
     const res = await request(makeApp("demo")).post("/records").send({});
     expect(res.status).toBe(401);
-    expect(scopedClientFromAuthHeader).not.toHaveBeenCalled();
+    expect(mockScopedClientFromAuthHeader).not.toHaveBeenCalled();
   });
 
   test("rejects malformed identifiers and invalid sensor payloads before database access", async () => {
@@ -69,7 +69,7 @@ describe("POST /api/soil-analysis/records", () => {
     expect(badId.status).toBe(400);
     const badData = await request(app).post("/records").send({ farm_id: FARM_ID, sensor_data: [] });
     expect(badData.status).toBe(400);
-    expect(scopedClientFromAuthHeader).not.toHaveBeenCalled();
+    expect(mockScopedClientFromAuthHeader).not.toHaveBeenCalled();
   });
 
   test("returns 404 when RLS hides a farm not owned by the caller", async () => {
@@ -107,7 +107,7 @@ describe("POST /api/soil-analysis/records", () => {
       });
 
     expect(res.status).toBe(201);
-    expect(scopedClientFromAuthHeader).toHaveBeenCalledWith("Bearer user-jwt");
+    expect(mockScopedClientFromAuthHeader).toHaveBeenCalledWith("Bearer user-jwt");
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({
       farm_id: FARM_ID,
