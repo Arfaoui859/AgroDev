@@ -187,6 +187,6 @@ Completed soil analyses are saved only after an explicit user action:
 - The history endpoint validates identifiers, verifies the farm and optional field through the caller-scoped client, orders by `analyzed_at DESC`, and caps the result size at 100.
 - Supabase RLS remains the final ownership boundary. Demo identities cannot read or persist durable soil records.
 - The assistant loads history only when requested and refreshes it after a successful save. Changing farm or field clears the displayed previous selection's history.
-- Saved `analysis_result` preserves the successful soil specialist's structured result, its `model_source`/`is_real_data` flags, input provenance and capture timestamp alongside the assistant narrative; it does not replace the specialist output with an LLM-generated summary.
+- Saved `analysis_result` preserves the successful soil specialist's structured result, its `model_source`/`is_real_data` flags, input provenance and capture timestamp alongside the assistant narrative; it does not replace the specialist output with an LLM-generated summary. A numeric soil `health_score` is copied to the indexed database column only when the specialist actually returns a finite value in the supported 0–100 range.
 
 The history API and UI have automated integration coverage, but live Supabase/RLS behavior and the complete browser flow still require runtime verification before deployment.
