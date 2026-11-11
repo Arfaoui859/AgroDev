@@ -72,6 +72,8 @@ Safety rules:
 - Sand/silt/clay are checked to total 100% (±1%) when all three are supplied.
 - The contract rejects unknown keys and does not silently convert units.
 
+The AI assistant form now sends explicitly entered values through this canonical `farm_input` envelope (including the explicit soil-quality score required by the current crop service), rather than building a legacy `tool_inputs` object in the browser. Empty fields are omitted; no demo profile location or default farm measurements are sent. Values entered in this form are tagged `farmer_entered` and `unverified`.
+
 `validateFarmInputContract()` performs structural and semantic validation.
 `toLegacyAgentInputs()` unwraps only explicitly supplied numeric values into
 the current `soil.analyze` and `crop.recommend` payload shapes, while returning
