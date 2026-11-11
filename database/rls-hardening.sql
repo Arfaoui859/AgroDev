@@ -338,7 +338,7 @@ CREATE POLICY "Admins manage system_settings" ON public.system_settings
 -- Legacy deployments may still have farm-scoped weather_data. Keep it
 -- private to the owning farm and readable by experts; skip it on clean installs
 -- where cloud-setup.sql creates weather_records/weather_forecasts instead.
-DO $
+DO $$
 BEGIN
   IF to_regclass('public.weather_data') IS NOT NULL THEN
     EXECUTE 'DROP POLICY IF EXISTS "Owners manage own weather_data" ON public.weather_data';
@@ -350,4 +350,4 @@ BEGIN
       FOR SELECT USING (public.is_expert())';
   END IF;
 END
-$;
+$$;
