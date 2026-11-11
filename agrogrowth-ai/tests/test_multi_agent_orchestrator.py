@@ -253,3 +253,47 @@ def test_successful_llm_synthesis_reports_its_model_source(monkeypatch):
     assert result["response"] == "Soil analysis completed from the supplied measurements."
     assert result["planner_model_source"] == "gemini:gemini-flash-lite-latest"
     assert result["synthesis_model_source"] == "gemini:gemini-flash-lite-latest"
+
+
+
+def test_workflow_template_builds_soil_to_crop_edge_only_from_supplied_measurements():
+    selected, inputs, edges = orchestrator_module._apply_workflow_templates(
+        "Recommend crops for my farm",
+        {"soil.analyze": {"sensor_data": {"ph": 6.5}}},
+        ["crop.recommend"],
+        5,
+    )
+    assert selected == ["crop.recommend", "soil.analyze"]
+    assert inputs["crop.recommend"]["soil_ph"] == (
+        "$results.soil.analyze.result.properties.ph.current_value"
+    )
+    assert edges == [{
+        "from": "soil.analyze",
+        "to": "crop.recommend",
+        "mapping": "result.properties.ph.current_value -> soil_ph",
+    }]
+    assert "temperature" not in inputs["crop.recommend"]
+    assert "farm_size" not in inputs["crop.recommend"]
+
+
+def test_workflow_template_does_not_create_soil_agent_without_measurements():
+    selected, inputs, edges = orchestrator_module._apply_workflow_templates(
+        "Recommend crops for my farm",
+        {"soil.analyze": {"sensor_data": {}}},
+        ["crop.recommend"],
+        5,
+    )
+    assert selected == ["crop.recommend"]
+    assert inputs["crop.recommend"] == {}
+    assert edges == []
+
+
+def test_workflow_template_respects_agent_limit():
+    selected, inputs, edges = orchestrator_module._apply_workflow_templates(
+        "Recommend crops for my farm",
+        {"soil.analyze": {"sensor_data": {"ph": 6.5}}},
+        ["crop.recommend"],
+        1,
+    )
+    assert selected == ["crop.recommend"]
+    assert edges == []
