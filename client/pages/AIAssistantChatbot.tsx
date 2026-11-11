@@ -1914,6 +1914,15 @@ Comment puis-je vous aider aujourd'hui?`
                     {language === 'ar' ? 'لا توجد مزارع مرتبطة بحسابك بعد.' : language === 'fr' ? 'Aucune exploitation liée à votre compte.' : 'No farms are linked to your account yet.'}
                   </p>
                 )}
+                {selectedFarmId && (
+                  <p className="text-xs text-gray-600" role="status">
+                    {weatherClimateStatus === 'loading'
+                      ? (language === 'ar' ? 'جارٍ جلب المناخ والأمطار التاريخية للمزرعة...' : language === 'fr' ? 'Chargement du climat historique de l’exploitation...' : 'Loading farm climate observations...')
+                      : weatherClimateStatus === 'ready'
+                        ? (language === 'ar' ? `تم جلب الحرارة والأمطار من ${weatherClimate?.dataSource} (آخر 12 شهراً).` : language === 'fr' ? `Climat récupéré depuis ${weatherClimate?.dataSource} (12 derniers mois).` : `Climate loaded from ${weatherClimate?.dataSource} (trailing 12 months).`)
+                        : (language === 'ar' ? 'بيانات المناخ غير متاحة: تحقق من إحداثيات المزرعة وإعداد مزود الطقس. لن نخمن الحرارة أو الأمطار.' : language === 'fr' ? 'Climat indisponible : vérifiez les coordonnées et le fournisseur. Aucune valeur ne sera inventée.' : 'Climate unavailable: check farm coordinates and weather provider configuration. No values will be guessed.')}
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <Button type="button" variant="outline" size="sm"
                     disabled={!selectedFarmId || soilHistoryLoading || !session?.access_token}
@@ -1965,8 +1974,6 @@ Comment puis-je vous aider aujourd'hui?`
                       ['sand', 'Sand (%)', 'Sable (%)', 'رمل (%)', '0', '100', '0.1'],
                       ['silt', 'Silt (%)', 'Limon (%)', 'طمي (%)', '0', '100', '0.1'],
                       ['clay', 'Clay (%)', 'Argile (%)', 'طين (%)', '0', '100', '0.1'],
-                      ['temperature', 'Average temperature (°C)', 'Température moyenne (°C)', 'معدل الحرارة (°C)', '-30', '60', '0.1'],
-                      ['annualRainfall', 'Annual rainfall (mm)', 'Pluie annuelle (mm)', 'الأمطار السنوية (مم)', '0', '10000', '1'],
                       ['soilQualityScore', 'Soil quality (0–1)', 'Qualité du sol (0–1)', 'جودة التربة (0–1)', '0', '1', '0.01'],
                       ['waterAvailability', 'Water availability (0–1)', 'Disponibilité d’eau (0–1)', 'توفر المياه (0–1)', '0', '1', '0.01'],
                       ['targetMarketPrice', 'Market price (TND/kg)', 'Prix du marché (TND/kg)', 'سعر السوق (د.ت/كغ)', '0.01', '100000', '0.01'],
