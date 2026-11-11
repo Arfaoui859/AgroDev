@@ -1,4 +1,4 @@
-import { parseAgriculturalHtml, parseAgriculturalRss } from "../../server/routes/agri-news";
+import { classifyAgriculturalNews, parseAgriculturalHtml, parseAgriculturalRss } from "../../server/routes/agri-news";
 
 describe("Tunisian agriculture news RSS parser", () => {
   const source = {
@@ -28,6 +28,14 @@ describe("Tunisian agriculture news RSS parser", () => {
     expect(items[0].url).toBe("https://tunisieagriculture.tn/olive-export/");
     expect(items[0].publishedAt).toBe("2026-11-10T08:00:00.000Z");
     expect(items[0].summary).toContain("صادرات");
+    expect(items[0].category).toBe("olive");
+  });
+
+  it("classifies major Tunisian agricultural topics", () => {
+    expect(classifyAgriculturalNews("صادرات زيت الزيتون التونسي")).toBe("olive");
+    expect(classifyAgriculturalNews("تطور صادرات التمور")).toBe("dates");
+    expect(classifyAgriculturalNews("مستجدات السدود والري")).toBe("water");
+    expect(classifyAgriculturalNews("بلاغ حول مرض الميلديو")).toBe("plant_health");
   });
 
   it("extracts article links from the Tunisian publisher listing when RSS is unavailable", () => {
