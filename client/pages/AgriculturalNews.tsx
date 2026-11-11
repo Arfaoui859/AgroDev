@@ -126,7 +126,7 @@ export default function AgriculturalNews() {
         </Card>
         <Card>
           <CardContent className="flex items-center justify-between p-4">
-            <div><p className="text-sm text-muted-foreground">مصادر بثّ مباشر</p><p className="mt-1 text-2xl font-bold">{connectedSources.length}</p></div>
+            <div><p className="text-sm text-muted-foreground">مصادر بثّ حي مهيّأة</p><p className="mt-1 text-2xl font-bold">{connectedSources.length}</p></div>
             <Globe2 className="h-7 w-7 text-blue-700" />
           </CardContent>
         </Card>
@@ -198,8 +198,8 @@ export default function AgriculturalNews() {
                       <p className="font-semibold">{source.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{source.url}</p>
                     </div>
-                    <Badge variant={status === "connected" ? "default" : "secondary"}>
-                      {status === "connected" ? "متصل" : status === "reference_only" ? "مرجع" : status === "unknown" ? "غير معروف" : "غير متاح"}
+                    <Badge variant={status.startsWith("connected") ? "default" : "secondary"}>
+                      {status.startsWith("connected") ? "متصل" : status === "reference_only" ? "مرجع" : status === "unknown" ? "غير معروف" : "غير متاح"}
                     </Badge>
                   </CardContent>
                 </Card>
