@@ -1,210 +1,56 @@
-# 🚀 دليل النشر السريع - AgroGrowth
+# AgroGrowth — Quick Deployment Reference
 
-## 1. إعداد قاعدة البيانات (Supabase)
+This file replaces the legacy one-click Railway deployment notes. Do not copy
+historical hostnames or put private AI service URLs into browser environment
+variables.
 
-### خطوة 1: إنشاء مشروع Supabase
-
-1. اذهب إلى [supabase.com](https://supabase.com)
-2. أنشئ حساب جديد
-3. انقر "New Project"
-4. اختر اسم المشروع: `agrogrowth-production`
-5. اختر كلمة مرور قوية للقاعدة
-6. اختر المنطقة الأقرب (Europe - Germany)
-
-### خطوة 2: تشغيل سكريبت إعداد القاعدة
-
-1. في Supabase Dashboard، اذهب إلى "SQL Editor"
-2. انسخ والصق محتوى `database/cloud-setup.sql`
-3. انقر "Run" لتنفيذ السكريبت
-4. ثم انسخ والصق محتوى `database/supabase-setup.sql`
-5. انقر "Run" مرة أخرى
-
-### خطوة 3: الحصول على متغيرات الاتصال
-
-من Settings > API:
-
-- `SUPABASE_URL`: Project URL
-- `SUPABASE_ANON_KEY`: anon public key
-- `DATABASE_URL`: من Settings > Database > Connection string
-
-## 2. إعداد Redis (Upstash)
-
-### خطوة 1: إنشاء قاعدة Redis
-
-1. اذهب إلى [upstash.com](https://upstash.com)
-2. أنشئ حساب وسجل دخول
-3. انقر "Create Database"
-4. اختر اسم: `agrogrowth-cache`
-5. اختر المنطقة: Europe (Germany)
-6. انقر "Create"
-
-### خطوة 2: الحصول على بيانات الاتصال
-
-من Database Dashboard:
-
-- `REDIS_URL`: Connection string
-- `UPSTASH_REDIS_REST_URL`: REST API URL
-- `UPSTASH_REDIS_REST_TOKEN`: REST Token
-
-## 3. نشر خدمات AI (Railway)
-
-### خطوة 1: إعداد Railway
-
-1. اذهب إلى [railway.app](https://railway.app)
-2. سجل دخول بـ GitHub
-3. انقر "New Project"
-4. اختر "Deploy from GitHub repo"
-5. اختر repository: `Arfaoui859/app-AgroGrowth-v7`
-
-### خطوة 2: إعداد الخدمات
-
-لكل خدمة AI:
-
-#### خدمة تحليل التربة:
+## Local development
 
 ```bash
-# في Railway Dashboard
-Service Name: agrogrowth-soil-analysis
-Root Directory: agrogrowth-ai/soil_analysis
-Build Command: pip install -r ../requirements.txt
-Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
-
-# متغيرات البيئة:
-PORT=8001
-SERVICE_PORT=8001
-MODEL_PATH=/app/models
-PYTHONPATH=/app
-DATABASE_URL=[نسخ من Supabase]
-REDIS_URL=[نسخ من Upstash]
+npm ci
+cp .env.example .env
+# Configure Supabase browser + server values in the local .env.
+npm run dev
 ```
 
-#### خدمة توصيات المحاصيل:
+Vite runs at http://localhost:8080 and mounts Express through the development
+plugin. For a standalone backend, run npm run server:dev separately on port 5000
+and set VITE_API_URL=http://localhost:5000/api.
+
+## Optional local AI services
 
 ```bash
-Service Name: agrogrowth-crop-recommendation
-Root Directory: agrogrowth-ai/crop_recommendation
-Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
-PORT=8002
+python3 -m venv agrogrowth-ai/.venv
+agrogrowth-ai/.venv/bin/pip install -r agrogrowth-ai/requirements.txt
+bash scripts/start-ai-services.sh
+bash scripts/start-ai-services.sh --check
 ```
 
-#### خدمة تشخيص الصور:
+The eight services use ports 8001–8008. See AI_SERVICES_DEPLOYMENT_GUIDE.md.
 
-```bash
-Service Name: agrogrowth-image-diagnosis
-Root Directory: agrogrowth-ai/image_diagnosis
-Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
-PORT=8003
-```
+## Production
 
-### خطوة 3: الحصول على URLs
+1. Use render.yaml as the deployment manifest, but inspect current provider
+   plans and costs first; the checked-in blueprint is not a free-tier guarantee.
+2. Configure SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY,
+   DATABASE_URL, DIRECT_URL, VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the
+   correct server/build secret settings.
+3. Configure private service host/port URLs only on the Node server:
+   SOIL_ANALYSIS_URL, CROP_RECOMMENDATION_URL, IMAGE_DIAGNOSIS_URL,
+   MARKET_FORECAST_URL, SMART_ASSISTANT_URL, SMART_MARKETPLACE_URL,
+   PEST_CONTROL_URL and IRRIGATION_OPTIMIZATION_URL.
+4. Configure APP_ORIGIN/CORS_ORIGINS and the selected AI provider on the server.
+5. Verify GET /api/health and GET /api/ai/health on the deployed platform.
+6. Test each live workflow and check its data/model provenance.
 
-بعد النشر، ستحصل على URLs مثل:
+The browser talks only to the Node gateway. No direct microservice VITE_* URLs
+or mock fallback are enabled by default.
 
-- `https://agrogrowth-soil-analysis-production.up.railway.app`
-- `https://agrogrowth-crop-recommendation-production.up.railway.app`
-- `https://agrogrowth-image-diagnosis-production.up.railway.app`
+## Release gates
 
-## 4. نشر Frontend (Vercel)
+Do not deploy until all required CI jobs pass on the exact SHA, Supabase RLS
+is verified, all service URLs and provenance are checked, and rollback is
+documented. Synthetic-demo models and fixture-backed workflows are not
+production-validated data.
 
-### خطوة 1: إعداد Vercel
-
-1. اذهب إلى [vercel.com](https://vercel.com)
-2. سجل دخول بـ GitHub
-3. انقر "Add New Project"
-4. اختر repository: `Arfaoui859/app-AgroGrowth-v7`
-5. اختر framework: "Vite"
-
-### خطوة 2: تكوين متغيرات البيئة
-
-في Vercel Dashboard > Settings > Environment Variables:
-
-```env
-# Database
-DATABASE_URL=[نسخ من Supabase]
-SUPABASE_URL=[نسخ من Supabase]
-SUPABASE_ANON_KEY=[نسخ من Supabase]
-REDIS_URL=[نسخ من Upstash]
-
-# Cloud Services
-VITE_USE_CLOUD_SERVICES=true
-VITE_FALLBACK_TO_MOCK=false
-
-# AI Services URLs (نسخ من Railway)
-VITE_SOIL_ANALYSIS_URL=https://agrogrowth-soil-analysis-production.up.railway.app
-VITE_CROP_RECOMMENDATION_URL=https://agrogrowth-crop-recommendation-production.up.railway.app
-VITE_IMAGE_DIAGNOSIS_URL=https://agrogrowth-image-diagnosis-production.up.railway.app
-
-# API
-VITE_API_URL=https://your-app.vercel.app/api
-
-# External APIs (اختياري)
-WEATHER_API_KEY=your_weather_api_key
-OPENAI_API_KEY=your_openai_api_key
-```
-
-### خطوة 3: النشر
-
-1. انقر "Deploy"
-2. انتظر اكتمال البناء (Build)
-3. احصل على URL النهائي
-
-## 5. الاختبار والتحقق
-
-### اختبار الخدمات
-
-```bash
-# اختبار الصحة العامة
-./scripts/test-deployment.sh --cloud \
-  -f https://your-app.vercel.app \
-  -a https://your-app.vercel.app/api
-
-# أو اختبار يدوي
-curl https://agrogrowth-soil-analysis-production.up.railway.app/health
-```
-
-### فحص الحالة في التطبيق
-
-1. اذهب إلى `https://your-app.vercel.app/cloud-status`
-2. تحقق من حالة جميع الخدمات
-3. اختبر التحليل الحقيقي
-
-## 6. خطوات إضافية (اختيارية)
-
-### تفعيل Domain مخصص
-
-1. في Vercel: Settings > Domains
-2. أضف domain مخصص مثل `app.agrogrowth.com`
-
-### تفعيل Monitoring
-
-1. في Railway: Settings > Monitoring
-2. في Vercel: Analytics & Speed Insights
-
-### Backup تلقائي
-
-- Supabase: تلقائي يومياً
-- Railway: Volume snapshots
-
-## 🎯 النتيجة المتوقعة
-
-بعد اكتمال هذه الخطوات:
-
-- ✅ خدم��ت AI حقيقية تعمل على Railway
-- ✅ قاعدة بيانات احترافية على Supabase
-- ✅ Frontend سريع على Vercel
-- ✅ تحليل حقيقي بدلاً من البيانات التجريبية
-- ✅ مراقبة شاملة للخدمات
-
-## 🆘 الدعم
-
-إذا واجهت مشاكل:
-
-1. تحقق من Logs في Railway Dashboard
-2. راجع Build Logs في Vercel
-3. استخدم `/cloud-status` للمراقبة
-4. راجع `CLOUD_DEPLOYMENT.md` للتفاصيل الكاملة
-
----
-
-⏱️ **وقت النشر المتوقع**: 30-45 دقيقة
-💰 **التكلفة**: مجاني للاستخدام المحدود، $5-20/شهر للاستخدام المكثف
+See PRODUCTION_DEPLOYMENT_CHECKLIST.md and AGROGROWTH_REMEDIATION_MASTER_PLAN.md.

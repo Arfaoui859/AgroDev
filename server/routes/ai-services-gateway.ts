@@ -144,12 +144,13 @@ const callAIService = async (
   method: "GET" | "POST" = "POST",
   data?: any,
   headers?: any,
+  timeoutMs = 30000,
 ) => {
   const url = `${serviceUrl}${endpoint}`;
   const config = {
     method,
     url,
-    timeout: 30000, // 30 seconds timeout
+    timeout: timeoutMs,
     headers: {
       "Content-Type": "application/json",
       ...headers,
@@ -890,6 +891,66 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       dataAvailable: false,
       correlationId,
     });
+  }
+};
+
+export const orchestratorUpload = upload.single("file");
+
+export const orchestrateAgriculturalQuery = async (req: Request, res: Response) => {
+  const body = req.body ?? {};
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  const correlationId = crypto.randomUUID();
+  res.set("X-Correlation-Id", correlationId);
+  if (!message) return res.status(400).json({ error: "message is required", correlationId });
+  if (message.length > MAX_USER_MESSAGE_CHARS) {
+    return res.status(413).json({ error: `الرسالة طويلة جداً (الحد ${MAX_USER_MESSAGE_CHARS} حرفاً)`, correlationId });
+  }
+  let toolInputs = body.tool_inputs ?? {};
+  if (typeof toolInputs === "string") {
+    try { toolInputs = JSON.parse(toolInputs); } catch {
+      return res.status(400).json({ error: "tool_inputs must be valid JSON", correlationId });
+    }
+  }
+  if (!toolInputs || typeof toolInputs !== "object" || Array.isArray(toolInputs)) {
+    return res.status(400).json({ error: "tool_inputs must be an object", correlationId });
+  }
+  let userContext = body.user_context ?? {};
+  if (typeof userContext === "string") {
+    try { userContext = JSON.parse(userContext); } catch {
+      return res.status(400).json({ error: "user_context must be valid JSON", correlationId });
+    }
+  }
+  if (!userContext || typeof userContext !== "object" || Array.isArray(userContext)) {
+    return res.status(400).json({ error: "user_context must be an object", correlationId });
+  }
+  if (req.file) {
+    const imagePayload = toolInputs["image.detect_disease"] ?? {};
+    if (!imagePayload || typeof imagePayload !== "object" || Array.isArray(imagePayload)) {
+      return res.status(400).json({ error: "image.detect_disease inputs must be an object", correlationId });
+    }
+    toolInputs = {
+      ...toolInputs,
+      "image.detect_disease": {
+        ...imagePayload,
+        image_base64: req.file.buffer.toString("base64"),
+      },
+    };
+  }
+  try {
+    const response = await callAIService(
+      AI_SERVICES.SMART_ASSISTANT, "/orchestrate", "POST",
+      {
+        message,
+        language: typeof body.language === "string" ? body.language : "ar",
+        user_context: userContext,
+        tool_inputs: toolInputs,
+        max_agents: Number.isInteger(Number(body.max_agents)) ? Number(body.max_agents) : 5,
+      },
+      undefined, 90000,
+    );
+    return res.json({ ...response.data, correlationId });
+  } catch (error) {
+    return handleAIServiceError(error as AxiosError, "AgroGrowth Multi-Agent Orchestrator", res);
   }
 };
 

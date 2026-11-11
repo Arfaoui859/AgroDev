@@ -15,9 +15,11 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements
 COPY requirements.txt .
+COPY image_diagnosis/requirements.txt ./image_diagnosis/requirements.txt
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -r image_diagnosis/requirements.txt
 
 # Copy common modules
 COPY ai_common ./ai_common

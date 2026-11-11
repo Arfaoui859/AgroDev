@@ -170,81 +170,7 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        {/* Demo credentials panel. Only rendered in development builds and only
-            for the non-sensitive demo accounts provisioned by /api/setup-demo-users. */}
-        {import.meta.env.DEV && (
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-base text-blue-900">
-                بيانات اختبار توضيحية (بيئة التطوير)
-              </CardTitle>
-              <CardDescription className="text-sm text-blue-700">
-                حسابات تجريبية غير حساسة — تُنشأ عبر /setup-demo
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                {
-                  title: "فلاح (Farmer)",
-                  email: "farmer@demo.com",
-                  password: "demo123",
-                },
-                {
-                  title: "خبير زراعي (Agronomist)",
-                  email: "agronomist@demo.com",
-                  password: "demo123",
-                },
-                {
-                  title: "مسؤول (Admin)",
-                  email: "admin@demo.com",
-                  password: "demo123",
-                },
-              ].map((account, index, all) => (
-                <div
-                  key={account.email}
-                  className={
-                    index === all.length - 1
-                      ? "space-y-3"
-                      : "space-y-3 pb-4 border-b border-blue-200"
-                  }
-                >
-                  <h3 className="text-sm font-bold text-blue-900">
-                    {account.title}
-                  </h3>
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-blue-800">
-                      البريد الإلكتروني:
-                    </p>
-                    <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200 break-all">
-                      {account.email}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-blue-800">
-                      كلمة المرور:
-                    </p>
-                    <p className="text-sm font-mono bg-white p-2 rounded border border-blue-200">
-                      {account.password}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      setFormData({
-                        email: account.email,
-                        password: account.password,
-                      });
-                    }}
-                  >
-                    تعبئة بيانات {account.title}
-                  </Button>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+
 
         {/* Additional Info */}
         <div className="text-center text-sm text-gray-600 space-y-2">
@@ -262,14 +188,6 @@ export default function Login() {
               className="text-green-600 hover:text-green-700 mx-1"
             >
               سياسة الخصوصية
-            </Link>
-          </p>
-          <p>
-            <Link
-              to="/setup-demo"
-              className="text-blue-600 hover:text-blue-700"
-            >
-              إنشاء حسابات اختبار توضيحية
             </Link>
           </p>
         </div>

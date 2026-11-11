@@ -47,6 +47,7 @@ services:
       - SMART_ASSISTANT_URL=http://intelligent-agent:8005
       - PEST_CONTROL_URL=http://pest-control:8007
       - SMART_MARKETPLACE_URL=http://weather-yield-intelligence:8006
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/agrogrowth
       - SUPABASE_URL=${VITE_SUPABASE_URL}
       - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
@@ -156,10 +157,31 @@ services:
       - "8005:8005"
     environment:
       - SERVICE_PORT=8005
+      - AI_PROVIDER=${AI_PROVIDER:-gemini}
+      - AI_MODEL=${AI_MODEL:-gemini-flash-lite-latest}
+      - AI_TIMEOUT_MS=${AI_TIMEOUT_MS:-25000}
+      - AI_MAX_RETRIES=${AI_MAX_RETRIES:-0}
+      - AGENT_TOOL_TIMEOUT_SECONDS=${AGENT_TOOL_TIMEOUT_SECONDS:-25}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SOIL_ANALYSIS_URL=http://soil-analysis:8001
+      - CROP_RECOMMENDATION_URL=http://crop-recommendation:8002
+      - IMAGE_DIAGNOSIS_URL=http://image-diagnosis:8003
+      - MARKET_FORECAST_URL=http://market-prediction:8004
+      - WEATHER_YIELD_INTELLIGENCE_URL=http://weather-yield-intelligence:8006
+      - PEST_CONTROL_URL=http://pest-control:8007
+      - IRRIGATION_OPTIMIZATION_URL=http://irrigation-optimization:8008
       - SUPABASE_URL=${VITE_SUPABASE_URL}
       - SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+    depends_on:
+      - soil-analysis
+      - crop-recommendation
+      - image-diagnosis
+      - market-prediction
+      - weather-yield-intelligence
+      - pest-control
+      - irrigation-optimization
     networks:
       - agrogrowth-network
 

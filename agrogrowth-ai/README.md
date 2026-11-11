@@ -10,9 +10,9 @@ gateway. The service inventory and current provenance are documented in
 |---|---|---:|---|
 | Soil analysis | `soil_analysis` | 8001 | Deterministic sensor rules; seven separate laboratory-assisted ML artifacts |
 | Crop recommendation | `crop_recommendation` | 8002 | Synthetic-demo recommender; deterministic profit arithmetic |
-| Image diagnosis | `image_diagnosis` | 8003 | Heuristic leaf analysis; optional configured vision provider |
+| Image diagnosis | `image_diagnosis` | 8003 | MobileNetV3 ONNX classifier with heuristic fallback; optional configured vision provider |
 | Market prediction | `market_prediction` | 8004 | Synthetic-demo forecasts; no licensed live price feed |
-| Intelligent agent | `intelligent_agent` | 8005 | Configured LLM provider when credentials are present |
+| Intelligent agent | `intelligent_agent` | 8005 | Configured LLM provider plus bounded multi-agent orchestration v1 |
 | Weather / yield intelligence | `weather_yield_intelligence` | 8006 | Synthetic-demo yield model |
 | Pest control | `pest_control` | 8007 | Synthetic-demo numeric model; optional LLM advisory |
 | Irrigation optimization | `irrigation_optimization` | 8008 | Synthetic-demo numeric model; optional LLM advisory |

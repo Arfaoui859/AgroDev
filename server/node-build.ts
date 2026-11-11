@@ -5,7 +5,7 @@ import { warnIfModelUnavailable } from "./services/providers/llmProvider";
 import * as express from "express";
 
 const app = createServer();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // In production, serve the built SPA files. The server bundle now lives OUTSIDE
 // the static root (build/server/node-build.mjs, see vite.config.server.ts) so
@@ -93,8 +93,8 @@ app.get("*", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Fusion Starter server running on port ${port}`);
-  console.log(`📱 Frontend: http://localhost:${port}`);
+  console.log(`🚀 AgroGrowth API server running on port ${port}`);
+  console.log(`🌱 Platform: http://localhost:${port}`);
   console.log(`🔧 API: http://localhost:${port}/api`);
 
   // Non-blocking: surface a misconfigured/unavailable AI model without ever

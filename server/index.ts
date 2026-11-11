@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import type { RequestHandler } from "express";
 import { handleDemo } from "./routes/demo";
 import {
   securityHeaders,
@@ -227,6 +228,8 @@ import {
   forecastMarketPrices,
   analyzeSupplyDemand,
   chatWithAIAssistant,
+  orchestrateAgriculturalQuery,
+  orchestratorUpload,
   generateFarmingTasks,
   getSmartAlerts,
   getSupportedCrops,
@@ -277,20 +280,10 @@ import {
   getSegmentationAnalytics,
   updateFarmerProfile,
 } from "./routes/farmer-segmentation";
-import { testSupabaseConnection } from "./routes/test-supabase";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
-import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
-import {
-  setupDemoUsers,
-  getDemoUsers,
-  deleteDemoUsers,
-} from "./routes/setup-demo-users";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
-import { debugAuth } from "./routes/debug-auth";
-import { setupInspectorUser, setupMultipleUsers } from "./routes/setup-inspector-user";
-import { setupAdminUser } from "./routes/admin-setup";
 import {
   analyzeSoilDetailed,
   analyzeSoilBatch,
@@ -299,6 +292,13 @@ import {
 
 export function createServer() {
   const app = express();
+
+  // Retired diagnostics/provisioning endpoints must never mutate a live project.
+  const retiredPrivilegedRoute: RequestHandler = (_req, res) =>
+    res.status(410).json({
+      success: false,
+      error: "This legacy endpoint is disabled. Use Supabase Auth or the secured admin workflow.",
+    });
 
   // Trust the single reverse proxy in front of the Render service.
   app.set("trust proxy", 1);
@@ -365,6 +365,20 @@ export function createServer() {
       // them). Mounted at /api/investor/* and /api/agronomist-dashboard/*.
       "/api/investor",
       "/api/agronomist-dashboard",
+      // Livestock management currently serves a fixed demo herd and feed
+      // inventory; mark every route under this router as illustrative.
+      "/api/livestock-management",
+      // Advanced livestock endpoints currently read the in-memory demo herd.
+      "/api/animals",
+      "/api/animal-health",
+      "/api/breeding-recommendations",
+      "/api/feed-recommendations",
+      "/api/optimize-feed-budget",
+      "/api/health-alerts",
+      "/api/livestock-dashboard",
+      // Public data API uses deterministic synthetic market/production/weather
+      // examples until licensed providers are connected.
+      "/api/public",
     ],
     withSimulatedProvenance("simulated"),
   );
@@ -688,6 +702,7 @@ export function createServer() {
 
   // 🧠 Smart Assistant AI Service (Future)
   app.post("/api/ai/assistant/chat", chatWithAIAssistant);
+  app.post("/api/ai/assistant/orchestrate", orchestratorUpload, orchestrateAgriculturalQuery);
   app.post("/api/ai/assistant/generate-tasks", generateFarmingTasks);
   app.get("/api/ai/assistant/alerts", getSmartAlerts);
 
@@ -700,8 +715,9 @@ export function createServer() {
   // Verified application profile (role is read from the database, never user metadata).
   app.get("/api/auth/me", requireAuth, getCurrentUserRecord);
 
-  // Supabase Connection Test
-  app.get("/api/test/supabase", requireAdminToken(), testSupabaseConnection);
+  // The legacy diagnostic route wrote a probe row into the live users table.
+  // Keep the token gate but retire it; health/capability probes are read-only.
+  app.get("/api/test/supabase", requireAdminToken(), retiredPrivilegedRoute);
   // Admin: confirm unconfirmed users (requires x-admin-token header with service role key)
   app.post("/api/admin/confirm-unconfirmed", (req, res, next) => {
     return confirmUnconfirmedUsers(req, res, next as any);
@@ -717,22 +733,15 @@ export function createServer() {
     return adminCreateUser(req, res, next as any);
   });
 
-  // Auth Test Endpoints
-  app.post("/api/test/auth/signup", requireAdminToken(), testAuthSignup);
-  app.post("/api/test/auth/signin", requireAdminToken(), testAuthSignin);
-  app.get("/api/debug/auth", requireAdminToken(), debugAuth);
-
-  // Demo User Setup
-  app.post("/api/setup-demo-users", requireAdminToken(), setupDemoUsers);
-  app.get("/api/demo-users", requireAdminToken(), getDemoUsers);
-  app.delete("/api/setup-demo-users", requireAdminToken(), deleteDemoUsers);
-
-  // Inspector User Setup
-  app.post("/api/setup-inspector", requireAdminToken(), setupInspectorUser);
-  app.post("/api/setup-users", requireAdminToken(), setupMultipleUsers);
-
-  // Admin User Setup
-  app.post("/api/setup-admin", requireAdminToken(), setupAdminUser);
+  app.post("/api/test/auth/signup", requireAdminToken(), retiredPrivilegedRoute);
+  app.post("/api/test/auth/signin", requireAdminToken(), retiredPrivilegedRoute);
+  app.get("/api/debug/auth", requireAdminToken(), retiredPrivilegedRoute);
+  app.post("/api/setup-demo-users", requireAdminToken(), retiredPrivilegedRoute);
+  app.get("/api/demo-users", requireAdminToken(), retiredPrivilegedRoute);
+  app.delete("/api/setup-demo-users", requireAdminToken(), retiredPrivilegedRoute);
+  app.post("/api/setup-inspector", requireAdminToken(), retiredPrivilegedRoute);
+  app.post("/api/setup-users", requireAdminToken(), retiredPrivilegedRoute);
+  app.post("/api/setup-admin", requireAdminToken(), retiredPrivilegedRoute);
 
   // Auth Helper Endpoints (bypass RLS)
   app.post("/api/auth/create-user-profile", requireAdminToken(), createUserWithProfile);

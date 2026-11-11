@@ -227,6 +227,9 @@ CREATE TABLE IF NOT EXISTS leaf_health_analyses (
 -- Market prices tracking
 CREATE TABLE IF NOT EXISTS market_prices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    -- Stable reference key used by the API; no FK because the current
+    -- reference crop catalogue is bundled in the application, not a DB table.
+    crop_id VARCHAR(100),
     crop_name VARCHAR(100) NOT NULL,
     variety VARCHAR(100),
     quality_grade VARCHAR(20),

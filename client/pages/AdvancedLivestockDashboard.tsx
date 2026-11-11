@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Progress } from '../components/ui/progress';
-import { 
 import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
+import {
   Users, 
   Heart, 
   Activity, 

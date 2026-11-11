@@ -20,7 +20,7 @@ export const getMarketData: RequestHandler = async (req, res) => {
 
     // Calculate statistics
     const currentPrice =
-      marketPrices.length > 0 ? marketPrices[0].price_per_kg : 0;
+      marketPrices.length > 0 ? marketPrices[0].price_per_kg : null;
     const averagePrice30Days = await CropService.getAverageMarketPrice(
       cropId,
       30,
@@ -53,9 +53,7 @@ export const getMarketData: RequestHandler = async (req, res) => {
         currency: "TND",
         unit: "kg",
         lastUpdated:
-          marketPrices.length > 0
-            ? marketPrices[0].price_date
-            : new Date().toISOString(),
+          marketPrices.length > 0 ? marketPrices[0].price_date : null,
       },
       priceHistory: marketPrices.map((price) => ({
         date: price.price_date,
@@ -64,8 +62,8 @@ export const getMarketData: RequestHandler = async (req, res) => {
         quality: price.quality_grade,
       })),
       statistics: {
-        averagePrice30Days: averagePrice30Days || 0,
-        averagePrice7Days: averagePrice7Days || 0,
+        averagePrice30Days,
+        averagePrice7Days,
         priceChange: priceChange,
         trend: !hasTrendData
           ? "غير معروف"
@@ -78,6 +76,10 @@ export const getMarketData: RequestHandler = async (req, res) => {
       },
       forecast: generatePriceForecast(marketPrices),
       lastUpdated: new Date().toISOString(),
+      dataSource: marketPrices.length > 0 ? "database" : "unavailable",
+      isRealData: marketPrices.length > 0,
+      disclaimer:
+        "سجلات قاعدة البيانات قد تكون محدودة أو قديمة؛ لا يوجد حالياً مصدر أسعار تونسي مباشر ومرخّص متصل بالمنصة.",
     };
 
     res.json({
@@ -107,32 +109,45 @@ export const getAllMarketData: RequestHandler = async (req, res) => {
     // Group by crop
     const marketData: Record<string, any> = {};
     latestPrices.forEach((price) => {
-      if (!marketData[price.crop_id]) {
-        const crop = cropById.get(price.crop_id);
-        marketData[price.crop_id] = {
+      const cropName = String(price.crop_name || "");
+      const crop =
+        cropById.get(price.crop_id) ||
+        crops.find(
+          (item) =>
+            item.name?.toLowerCase() === cropName.toLowerCase() ||
+            item.name_ar?.toLowerCase() === cropName.toLowerCase(),
+        );
+      const cropKey = String(price.crop_id || crop?.id || cropName || "unknown");
+      if (!marketData[cropKey]) {
+        marketData[cropKey] = {
           crop: crop
             ? { id: crop.id, name: crop.name, name_ar: crop.name_ar }
-            : null,
-          cropId: price.crop_id,
+            : cropName
+              ? { id: cropKey, name: cropName, name_ar: cropName }
+              : null,
+          cropId: price.crop_id || crop?.id || null,
           prices: [],
-          currentPrice: 0,
-          averagePrice: 0,
+          currentPrice: null,
+          averagePrice: null,
         };
       }
-      marketData[price.crop_id].prices.push(price);
+      marketData[cropKey].prices.push(price);
     });
 
-    // Calculate averages and current prices
-    Object.keys(marketData).forEach((cropId) => {
-      const data = marketData[cropId];
-      data.currentPrice = data.prices[0]?.price_per_kg || 0;
-      data.averagePrice =
-        data.prices.reduce((sum, p) => sum + p.price_per_kg, 0) /
-        data.prices.length;
+    // Calculate averages and current prices without inventing zero quotes.
+    Object.keys(marketData).forEach((cropKey) => {
+      const data = marketData[cropKey];
+      data.currentPrice = data.prices[0]?.price_per_kg ?? null;
+      data.averagePrice = data.prices.length
+        ? data.prices.reduce((sum, p) => sum + Number(p.price_per_kg), 0) /
+          data.prices.length
+        : null;
     });
 
     const overview = Object.values(marketData);
-    const currentPrices = overview.map((d: any) => Number(d.currentPrice ?? 0));
+    const currentPrices = overview
+      .map((d: any) => Number(d.currentPrice))
+      .filter((value) => Number.isFinite(value));
 
     const response = {
       marketOverview: overview,
@@ -147,10 +162,11 @@ export const getAllMarketData: RequestHandler = async (req, res) => {
           ? currentPrices.reduce((sum, v) => sum + v, 0) / currentPrices.length
           : null,
       },
-      dataSource: "database",
-      isRealData: true,
+      dataSource: latestPrices.length > 0 ? "database" : "unavailable",
+      isRealData: latestPrices.length > 0,
+      dataAvailable: latestPrices.length > 0,
       disclaimer:
-        "الأسعار من قاعدة بيانات المنصة وقد تكون غير محدّثة. تحقق من المصادر الرسمية قبل أي قرار تجاري.",
+        "الأسعار من سجلات قاعدة بيانات المنصة وقد تكون غير محدّثة أو غير مكتملة؛ لا يوجد حالياً مصدر أسعار تونسي مباشر ومرخّص متصل بالمنصة. تحقق من المصادر الرسمية قبل أي قرار تجاري.",
     };
 
     res.json({
@@ -201,8 +217,8 @@ export const getMarketTrends: RequestHandler = async (req, res) => {
       insights: generateMarketInsights(trends),
       recommendations: generateMarketRecommendations(trends),
       lastUpdated: new Date().toISOString(),
-      dataSource: "database",
-      isRealData: true,
+      dataSource: filteredPrices.length > 0 ? "database" : "unavailable",
+      isRealData: filteredPrices.length > 0,
       sampleSize: filteredPrices.length,
       disclaimer:
         "الاتجاهات محسوبة من الأسعار المخزّنة في قاعدة بيانات المنصة؛ قد تكون محدودة عند قلّة السجلات.",
@@ -237,17 +253,20 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
     }
 
     const marketPrices = await CropService.getMarketPricesByCropId(cropId, 50);
+    const scopedPrices = region
+      ? marketPrices.filter((price) => price.market_location === region)
+      : marketPrices;
 
     // Group by location
     const regionalData = {};
-    marketPrices.forEach((price) => {
+    scopedPrices.forEach((price) => {
       if (!regionalData[price.market_location]) {
         regionalData[price.market_location] = {
           location: price.market_location,
           prices: [],
           currentPrice: 0,
           averagePrice: 0,
-          priceChange: 0,
+          priceChange: null,
         };
       }
       regionalData[price.market_location].prices.push(price);
@@ -256,22 +275,27 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
     // Calculate regional statistics
     Object.keys(regionalData).forEach((location) => {
       const data = regionalData[location];
-      const currentPrice = data.prices[0]?.price_per_kg || 0;
-      const averagePrice =
-        data.prices.reduce((sum, p) => sum + p.price_per_kg, 0) /
-        data.prices.length;
+      const currentPrice = data.prices[0]?.price_per_kg ?? null;
+      const averagePrice = data.prices.length
+        ? data.prices.reduce((sum, p) => sum + p.price_per_kg, 0) /
+          data.prices.length
+        : null;
 
-      // Calculate price change
-      let priceChange = 0;
-      if (data.prices.length > 1) {
-        const recent =
-          data.prices.slice(0, 7).reduce((sum, p) => sum + p.price_per_kg, 0) /
-          Math.min(7, data.prices.length);
-        const older =
-          data.prices.slice(7, 14).reduce((sum, p) => sum + p.price_per_kg, 0) /
-          Math.min(7, data.prices.slice(7, 14).length);
-        priceChange = older > 0 ? ((recent - older) / older) * 100 : 0;
-      }
+      // A trend requires two non-empty, comparable windows.
+      const recentWindow = data.prices.slice(0, 7);
+      const olderWindow = data.prices.slice(7, 14);
+      const recent = recentWindow.length
+        ? recentWindow.reduce((sum, p) => sum + p.price_per_kg, 0) /
+          recentWindow.length
+        : null;
+      const older = olderWindow.length
+        ? olderWindow.reduce((sum, p) => sum + p.price_per_kg, 0) /
+          olderWindow.length
+        : null;
+      const priceChange =
+        recent !== null && older !== null && older > 0
+          ? ((recent - older) / older) * 100
+          : null;
 
       // Update with complete price data
       Object.assign(data, createCompletePriceData(currentPrice, data.prices));
@@ -286,18 +310,28 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
         nameAr: crop.name_ar,
       },
       regionalPrices: Object.values(regionalData),
-      bestPrice: Math.max(
-        ...Object.values(regionalData).map((d: any) => d.currentPrice),
-      ),
-      worstPrice: Math.min(
-        ...Object.values(regionalData).map((d: any) => d.currentPrice),
-      ),
-      averageNationalPrice:
-        (Object.values(regionalData) as any[]).reduce(
-          (sum, d) => sum + Number(d.currentPrice ?? 0),
-          0,
-        ) / Math.max(Object.keys(regionalData).length, 1),
+      bestPrice:
+        (Object.values(regionalData) as any[]).length > 0
+          ? Math.max(...(Object.values(regionalData) as any[]).map((d) => d.currentPrice).filter((v): v is number => typeof v === "number"))
+          : null,
+      worstPrice:
+        (Object.values(regionalData) as any[]).length > 0
+          ? Math.min(...(Object.values(regionalData) as any[]).map((d) => d.currentPrice).filter((v): v is number => typeof v === "number"))
+          : null,
+      averageNationalPrice: (() => {
+        const availablePrices = (Object.values(regionalData) as any[])
+          .map((d) => d.currentPrice)
+          .filter((v): v is number => typeof v === "number");
+        return availablePrices.length
+          ? availablePrices.reduce((sum, value) => sum + value, 0) / availablePrices.length
+          : null;
+      })(),
       lastUpdated: new Date().toISOString(),
+      dataSource: scopedPrices.length > 0 ? "database" : "unavailable",
+      isRealData: scopedPrices.length > 0,
+      dataAvailable: scopedPrices.length > 0,
+      disclaimer:
+        "السجلات الإقليمية قد تكون محدودة أو قديمة؛ لا يوجد حالياً مصدر أسعار تونسي مباشر ومرخّص متصل بالمنصة.",
     };
 
     res.json({
@@ -316,8 +350,8 @@ export const getRegionalPrices: RequestHandler = async (req, res) => {
 };
 
 // Helper functions
-function calculateVolatility(prices: any[]): number {
-  if (prices.length < 2) return 0;
+function calculateVolatility(prices: any[]): number | null {
+  if (prices.length < 2) return null;
 
   const priceValues = prices.map((p) => p.price_per_kg);
   const mean =
@@ -332,10 +366,13 @@ function calculateVolatility(prices: any[]): number {
 function generatePriceForecast(prices: any[]): any {
   if (prices.length < 7) {
     return {
-      nextWeek: 0,
-      nextMonth: 0,
-      confidence: "منخفضة",
-      method: "بيانات غير كافية",
+      nextWeek: null,
+      nextMonth: null,
+      confidence: "غير متاح",
+      method: "بيانات تاريخية غير كافية",
+      modelSource: "not-run",
+      isValidated: false,
+      available: false,
     };
   }
 
@@ -347,8 +384,11 @@ function generatePriceForecast(prices: any[]): any {
   return {
     nextWeek: currentPrice * (1 + trend * 0.1),
     nextMonth: currentPrice * (1 + trend * 0.3),
-    confidence: prices.length > 20 ? "عالية" : "متوسطة",
-    method: "الانحدار الخطي",
+    confidence: "غير مُعاير",
+    method: "اتجاه خطي مبسط غير مُعتمد",
+    modelSource: "deterministic-linear-trend",
+    isValidated: false,
+    available: true,
   };
 }
 
@@ -365,7 +405,7 @@ function calculateTrend(prices: any[]): number {
   return slope;
 }
 
-function createCompletePriceData(currentPrice: number, prices: any[] = []) {
+function createCompletePriceData(currentPrice: number | null, prices: any[] = []) {
   const priceValues = prices
     .map((p) => p.price_per_kg)
     .filter((p) => typeof p === "number");
@@ -375,19 +415,19 @@ function createCompletePriceData(currentPrice: number, prices: any[] = []) {
     currency: "TND",
     unit: "kg",
     lastUpdated:
-      prices.length > 0 ? prices[0].price_date : new Date().toISOString(),
+      prices.length > 0 ? prices[0].price_date : null,
     priceHistory: prices.map((price) => ({
       date: price.price_date,
       price: price.price_per_kg,
       volume: price.volume || 0,
     })),
     priceRange: {
-      min: priceValues.length > 0 ? Math.min(...priceValues) : currentPrice,
-      max: priceValues.length > 0 ? Math.max(...priceValues) : currentPrice,
+      min: priceValues.length > 0 ? Math.min(...priceValues) : null,
+      max: priceValues.length > 0 ? Math.max(...priceValues) : null,
       average:
         priceValues.length > 0
           ? priceValues.reduce((sum, p) => sum + p, 0) / priceValues.length
-          : currentPrice,
+          : null,
     },
   };
 }

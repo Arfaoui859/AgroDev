@@ -177,14 +177,23 @@ def test_yield_prediction_returns_economic_analysis():
 def test_weather_plan_is_deterministic_for_same_input():
     """The seasonal outlook must not contain random jitter between calls."""
     payload = {
-        "location": {"latitude": 35.0, "longitude": 10.0, "region": "تونس"},
+        "location": {
+            "latitude": 35.0,
+            "longitude": 10.0,
+            "elevation": 100,
+            "region": "تونس",
+        },
         "historical_weather": {"temperature": 22, "humidity": 60, "rainfall": 15, "wind_speed": 4, "solar_radiation": 20, "recent_rainfall": 10, "annual_rainfall": 450, "temperature_variation": 8},
         "current_conditions": {"temperature": 22, "humidity": 60, "rainfall": 15, "wind_speed": 4, "solar_radiation": 20, "recent_rainfall": 10, "annual_rainfall": 450, "temperature_variation": 8},
         "crop_options": ["wheat", "tomato"],
         "planning_horizon_months": 12,
     }
-    first = wy_client.post("/create-weather-plan", json=payload).json()["data"]
-    second = wy_client.post("/create-weather-plan", json=payload).json()["data"]
+    first_response = wy_client.post("/create-weather-plan", json=payload)
+    second_response = wy_client.post("/create-weather-plan", json=payload)
+    assert first_response.status_code == 200, first_response.text
+    assert second_response.status_code == 200, second_response.text
+    first = first_response.json()["data"]
+    second = second_response.json()["data"]
     assert (
         first["crop_suitability"][0]["suitability_score"]
         == second["crop_suitability"][0]["suitability_score"]

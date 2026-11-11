@@ -88,6 +88,23 @@ describe("🚀 Deployment manifest alignment", () => {
       }
     });
 
+    test("image diagnosis installs its ONNX Runtime dependency", () => {
+      const image = services.find((s) => s.name === "agrogrowth-image-diagnosis");
+      expect(image.buildCommand).toContain("image_diagnosis/requirements.txt");
+    });
+
+    test("the Intelligent Agent receives private URLs for every specialist service", () => {
+      const agent = services.find((s) => s.name === "agrogrowth-intelligent-agent");
+      const vars = agent.envVars ?? [];
+      const keys = vars.map((e: any) => e.key);
+      for (const key of [
+        "SOIL_ANALYSIS_URL", "CROP_RECOMMENDATION_URL", "IMAGE_DIAGNOSIS_URL",
+        "MARKET_FORECAST_URL", "WEATHER_YIELD_INTELLIGENCE_URL",
+        "PEST_CONTROL_URL", "IRRIGATION_OPTIMIZATION_URL",
+      ]) expect(keys).toContain(key);
+      expect(vars.find((e: any) => e.key === "AI_PROVIDER")?.value).toBe("gemini");
+    });
+
     test("the platform service wires every gateway URL key", () => {
       const platform = services.find((s) => s.name === "agrogrowth-platform");
       const keys = (platform.envVars ?? []).map((e: any) => e.key);
@@ -125,6 +142,18 @@ describe("🚀 Deployment manifest alignment", () => {
       expect(keys).not.toContain("MARKET_PREDICTION_URL");
       expect(keys).not.toContain("INTELLIGENT_AGENT_URL");
       expect(keys).not.toContain("WEATHER_YIELD_INTELLIGENCE_URL");
+    });
+
+    test("Intelligent Agent receives all specialist URLs and its LLM provider config", () => {
+      const agentEnv: string[] = doc.services["intelligent-agent"].environment;
+      const values = Object.fromEntries(agentEnv.map((entry) => entry.split("=", 2)));
+      for (const key of [
+        "SOIL_ANALYSIS_URL", "CROP_RECOMMENDATION_URL", "IMAGE_DIAGNOSIS_URL",
+        "MARKET_FORECAST_URL", "WEATHER_YIELD_INTELLIGENCE_URL",
+        "PEST_CONTROL_URL", "IRRIGATION_OPTIMIZATION_URL",
+      ]) expect(values[key]).toBeDefined();
+      expect(values.AI_PROVIDER).toContain("gemini");
+      expect(values.GEMINI_API_KEY).toBeDefined();
     });
 
     test("backend and AI service URLs agree on ports", () => {

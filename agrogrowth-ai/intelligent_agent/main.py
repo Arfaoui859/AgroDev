@@ -16,6 +16,7 @@ from intelligent_agent.farming_tasks_planner import FarmingTasksPlanner
 from intelligent_agent.alert_notifier_ai import AlertNotifierAI
 from ai_common.offload import offload
 from ai_common.llm_provider import get_provider
+from intelligent_agent.orchestrator import AGENT_TOOLS, orchestrate
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +43,14 @@ class ChatQueryRequest(BaseModel):
     message: str = Field(..., description="User's question or message in Arabic or English")
     user_context: Optional[Dict[str, Any]] = Field(None, description="Additional user context")
     conversation_id: Optional[str] = Field(None, description="Conversation identifier")
+
+class OrchestrationRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=6000)
+    language: str = Field("ar", min_length=2, max_length=12)
+    user_context: Optional[Dict[str, Any]] = None
+    tool_inputs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    max_agents: int = Field(5, ge=1, le=5)
+
 
 class TaskPlanRequest(BaseModel):
     crop_type: str = Field(..., description="Type of crop to plan for")
@@ -140,6 +149,23 @@ async def chat_with_assistant(request: ChatQueryRequest):
     except Exception as e:
         logger.error(f"Error in chat processing: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/orchestrate")
+async def orchestrate_agricultural_query(request: OrchestrationRequest):
+    """Plan and coordinate validated specialist AI services."""
+    try:
+        return await orchestrate(
+            request.message, language=request.language,
+            user_context=request.user_context, tool_inputs=request.tool_inputs,
+            max_agents=request.max_agents,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Multi-agent orchestration failed")
+        raise HTTPException(status_code=502, detail="Orchestration could not complete safely") from exc
+
 
 @app.post("/plan-season")
 async def generate_seasonal_plan(request: TaskPlanRequest):
@@ -564,6 +590,8 @@ async def health_check():
         "llm_configured": configured,
         "timestamp": datetime.now().isoformat(),
         "components": {
+            "multi_agent_orchestrator": "loaded",
+            "registered_tools": len(AGENT_TOOLS),
             "agro_chat_ai": "loaded",
             "farming_tasks_planner": "loaded",
             "alert_notifier_ai": "loaded"
@@ -573,7 +601,9 @@ async def health_check():
             "task_planning",
             "alert_management",
             "conversation_management",
-            "multilingual_support"
+            "multilingual_support",
+            "multi_agent_orchestration",
+            "validated_specialist_tool_dispatch"
         ],
         "supported_languages": ["Arabic", "Tunisian Arabic", "French", "English"],
         "active_conversations": len(agro_chat_ai.conversation_history),

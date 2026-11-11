@@ -167,7 +167,7 @@ export async function requireAdminAccess(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  // 1. Operator/service credential.
+  // 1. Dedicated operator token (ADMIN_API_TOKEN).
   if (verifyAdminToken(req)) {
     req.identitySource = "jwt";
     return next();

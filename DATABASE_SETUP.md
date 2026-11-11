@@ -1,166 +1,103 @@
-# Database Setup Guide
+# AgroGrowth — Supabase Database Setup
 
-## Issue: "TypeError: Failed to fetch" when accessing Users table
+This guide describes the safe setup path for the current repository. It does
+not certify that a particular hosted Supabase project is configured.
 
-This error occurs because the database tables (`users` and `user_profiles`) haven't been created in your Supabase database yet.
+## 1. Select the correct project
 
----
+1. Open the Supabase dashboard and select the intended development or production project.
+2. Confirm its project URL/ref with the Render deployment owner.
+3. Ensure browser and server URLs point to the same project.
+4. Never paste secret values into GitHub, issues or chat.
 
-## Quick Fix (5 minutes)
+## 2. Configure environment variables
 
-### Step 1: Open Supabase SQL Editor
-1. Go to your Supabase project: https://app.supabase.com
-2. Select your project
-3. Click **"SQL Editor"** in the left sidebar
-4. Click **"New Query"**
+The browser build needs:
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_ANON_KEY
 
-### Step 2: Copy the Setup Script
-- Open the file: `supabase-tables-setup.sql` (in your project root)
-- Copy the entire contents
+The Node server needs:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY (server-side Auth Admin operations only)
+- DATABASE_URL and DIRECT_URL when required by the selected server/database path.
 
-### Step 3: Run the Script
-1. Paste the SQL into the Supabase SQL Editor
-2. Click **"Run"** button (or press `Cmd+Enter` / `Ctrl+Enter`)
-3. Wait for the script to complete (you should see "Success" messages)
+The service-role key must never be stored in a VITE_* variable or sent as an
+x-admin-token header. Use a separate ADMIN_API_TOKEN for dedicated operator
+actions. Configure all values in the approved secret store and restart/redeploy
+after changes.
 
-### Step 4: Verify Tables Were Created
-The script output should show:
-```
-✅ Tables created successfully!
-✅ RLS policies configured
-```
+If the browser Supabase settings are missing, the client now reports that
+authentication is unavailable rather than silently connecting to a historical
+embedded project.
 
-### Step 5: Refresh Your Application
-- Refresh your browser or restart the dev server
-- The "Users table issue" error should now be gone
+## 3. Apply database migrations
 
----
+Do not use old ad-hoc SQL snippets from this guide or create a parallel schema.
+Review the versioned SQL files in database/ and apply them to the intended
+project in the documented order. At minimum, review:
+- database/cloud-setup.sql (base schema for the current cloud setup)
+- database/market-prices-compatibility.sql (adds the stable crop_id key/index while preserving legacy crop_name rows)
+- database/rls-hardening.sql
+- database/admin-user-management.sql
+- database/effectiveness-reports.sql
+- database/user-lifecycle.sql
 
-## What the Script Does
+Before applying anything to production:
+1. Take/verify a backup and record the current migration state.
+2. Review the SQL diff and target project identity.
+3. Apply first to an isolated development/staging project.
+4. Run the SQL verification scripts in tests/db/.
+5. Verify user A cannot read or mutate user B's farm, field, soil, livestock or report records.
 
-The `supabase-tables-setup.sql` script:
+Do not assume a SQL script is safe to run twice unless it is explicitly idempotent.
+Do not execute the full set blindly or against an unknown project.
 
-1. **Creates the `users` table** with fields:
-   - id, email, full_name, full_name_ar
-   - phone, role, location, specialization
-   - experience_years, verified
-   - created_at, updated_at (auto-managed)
+## 4. Create test accounts safely
 
-2. **Creates the `user_profiles` table** with fields:
-   - user_id, avatar_url, bio, bio_ar
-   - farm_size_hectares, crops_grown, certifications
-   - preferences (JSON)
-   - created_at, updated_at (auto-managed)
+Legacy demo-user provisioning endpoints, auth-debug routes and fixed demo
+credentials have been removed/retired. Create test accounts through Supabase
+Auth in a dedicated development project. Use unique, temporary passwords and
+never reuse them in production. Do not create shared demo administrator
+accounts.
 
-3. **Configures Row Level Security (RLS)** policies:
-   - Users can only see/modify their own records
-   - Service role (admin) can do everything
-   - Authenticated and anonymous users can insert during signup
+The admin dashboard must use a real, verified administrator account whose
+role is stored in public.users and whose status is active. Admin creation,
+deletion and other Auth Admin operations require the server-side service-role
+key and a verified operator/admin authorization path.
 
-4. **Sets up automatic timestamp management** via triggers
+## 5. Verify the connection and access controls
 
-5. **Creates indexes** for better performance
+- Confirm signup, login, refresh, logout and account deletion in staging.
+- Confirm /api/auth/me resolves the role from the trusted database profile.
+- Confirm anonymous users cannot access admin routes.
+- Confirm non-admin users receive 403 for admin operations.
+- Confirm cross-tenant negative tests pass for at least two separate users.
+- Confirm RLS is enabled and least-privilege policies exist for every user-owned table.
+- Confirm backups and recovery settings are enabled and documented.
 
----
+The read-only helper scripts/health endpoints may help diagnose connectivity,
+but an HTTP 200 response alone is not proof of RLS correctness or full feature
+persistence.
 
-## Alternative: If You Prefer the Dashboard
+## 6. Market data integrity
 
-You can also create tables manually via the Supabase dashboard:
+Do not insert random or illustrative market prices into market_prices. The old
+random-price seed script has been removed. Until a trusted, licensed source is
+connected and its lineage is recorded, market price/forecast features must
+remain labelled simulated/demo or unavailable.
 
-1. Go to **Tables** → **Create a new table**
-2. Name it `users`
-3. Add the columns listed above
-4. Repeat for `user_profiles`
-5. Configure RLS policies in the **RLS** tab
+## 7. Commercial weather provider
 
-However, using the SQL script is faster and ensures everything is configured correctly.
+Open-Meteo free endpoints have non-commercial restrictions. Production use must
+comply with the provider's commercial terms and use the appropriate server-side
+credential/plan. Never put a weather-provider key in a VITE_* variable. If the
+configured provider is unavailable or not entitled for the requested endpoint,
+return an explicit unavailable state rather than inventing weather.
 
----
+## Related documents
 
-## Troubleshooting
-
-### Error: "Relation "users" already exists"
-- This means the tables were already created
-- Just click **Cancel** and refresh your app
-
-### Error: "Permission denied for schema"
-- This usually means the service role key isn't correct
-- Verify your SUPABASE_SERVICE_ROLE_KEY in environment variables
-
-### Still getting "TypeError: Failed to fetch"
-- Check browser console (F12 → Console tab)
-- Verify tables exist in Supabase dashboard (Tables tab)
-- Make sure RLS policies allow your anon key to access the tables
-- Try re-running the SQL script
-
----
-
-## Commercial weather-provider configuration
-
-AgroGrowth is a commercial product. The public Open-Meteo API is restricted to
-non-commercial use; production must use the licensed customer endpoint and a
-server-side `OPEN_METEO_API_KEY`. Historical archive access for the
-weather/yield planner requires the Open-Meteo Professional plan or higher.
-Never put this key in a `VITE_*` variable. Without it, production weather
-endpoints return an explicit 503 instead of silently using the non-commercial
-free API. The development-only free endpoint can be enabled outside production.
-
-## Admin panel database connection and user management
-
-After the base tables exist, run `database/rls-hardening.sql` and then
-`database/admin-user-management.sql` in the same Supabase project's SQL Editor.
-The admin migration adds persistent account status, an administrator-only RLS
-policy for listing/updating users, and an audit table for admin CRUD actions.
-It is idempotent and does not create demonstration users.
-
-The Admin dashboard reads actual `public.users` rows. It does not seed mock users.
-Role and status updates use the verified administrator JWT and RLS. Creating and
-deleting Supabase Auth accounts additionally require a server-side
-`SUPABASE_SERVICE_ROLE_KEY` on Render; never expose it in a `VITE_*` variable.
-
-Verify that the frontend and Render `SUPABASE_URL` point to the same Supabase
-project. The signed-in account must have `public.users.role = 'admin'` and must
-not be inactive/suspended. The Admin API rejects unverified or non-admin JWTs.
-
-## Demo Users
-
-After setting up the database, you can test with:
-
-```
-Email: farmer@demo.com
-Password: demo123
-Role: Farmer
-
-Email: admin@demo.com
-Password: demo123
-Role: Admin
-```
-
-(If these don't exist, you can create them manually or use the API)
-
----
-
-## Next Steps
-
-Once the database is set up:
-
-1. ✅ Create demo users (via admin panel or API)
-2. ✅ Test user registration and login
-3. ✅ Verify AI features are working
-4. ✅ Deploy to production when ready
-
----
-
-## Need Help?
-
-If you encounter other issues:
-
-1. Check the browser console (F12)
-2. Review Supabase logs in the project dashboard
-3. Verify all environment variables are set correctly
-4. Ensure your Supabase API keys haven't expired
-
----
-
-**Last Updated**: February 2025  
-**Status**: Database setup required (one-time operation)
+- .env.example
+- SUPABASE_INTEGRATION_STATUS.md
+- PRODUCTION_DEPLOYMENT_CHECKLIST.md
+- AGROGROWTH_REMEDIATION_MASTER_PLAN.md

@@ -67,7 +67,7 @@ describe("🌱 Detailed soil analysis with a configured provider", () => {
     }
   });
 
-  test("provider output is returned and labelled as real", async () => {
+  test("provider output is labelled as AI advisory, not verified measurements", async () => {
     stubProviderJson({
       soilAnalysis: { currentStatus: { overallGrade: { grade: "جيد" } } },
     });
@@ -77,10 +77,11 @@ describe("🌱 Detailed soil analysis with a configured provider", () => {
       .send({ ph: 6.9, moisture: 30 })
       .expect(200);
 
-    expect(res.headers["x-is-real-data"]).toBe("true");
-    expect(res.headers["x-data-provenance"]).toBe("ai-provider");
-    expect(res.body.isRealData).toBe(true);
-    expect(res.body.dataSource).toBe("ai-provider");
+    expect(res.headers["x-is-real-data"]).toBe("false");
+    expect(res.headers["x-data-provenance"]).toBe("ai-advisory");
+    expect(res.headers["x-ai-provider-used"]).toBe("true");
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.dataSource).toBe("ai-advisory");
     expect(res.body.data.soilAnalysis).toBeDefined();
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });

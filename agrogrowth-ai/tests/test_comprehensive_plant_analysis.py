@@ -87,7 +87,9 @@ def test_comprehensive_result_matches_frontend_contract(fake_engines):
 
     assert result["data_source"] == "heuristic"
     assert result["is_real_data"] is False
-    assert result["model_source"] == "heuristic-demo"
+    assert result["model_source"] == (
+        "feature-based-heuristics+leaf-feature-heuristics+deterministic-aggregation"
+    )
 
 
 @pytest.mark.parametrize(
