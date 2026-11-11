@@ -73,6 +73,7 @@ export const MeasurementSchema = z.object({
 export const AgriculturalMeasurementKeySchema = z.enum([
   'soil_ph',
   'soil_moisture',
+  'soil_quality_score',
   'organic_matter',
   'sand',
   'silt',
@@ -139,6 +140,7 @@ export type FarmInputContract = z.infer<typeof FarmInputContractSchema>;
 const MEASUREMENT_RULES: Record<AgriculturalMeasurementKey, { min: number; max: number; units: string[] }> = {
   soil_ph: { min: 0, max: 14, units: ['pH'] },
   soil_moisture: { min: 0, max: 100, units: ['%', 'percent'] },
+  soil_quality_score: { min: 0, max: 1, units: ['ratio'] },
   organic_matter: { min: 0, max: 100, units: ['%', 'percent', 'g/kg'] },
   sand: { min: 0, max: 100, units: ['%', 'percent'] },
   silt: { min: 0, max: 100, units: ['%', 'percent'] },
@@ -224,6 +226,7 @@ export function toLegacyAgentInputs(farm: FarmInputContract) {
     ['air_temperature', 'temperature'],
     ['annual_rainfall', 'annual_rainfall'],
     ['soil_ph', 'soil_ph'],
+    ['soil_quality_score', 'soil_quality_score'],
     ['water_availability', 'water_availability'],
     ['market_price', 'target_market_price'],
     ['farmer_experience_years', 'farmer_experience_years'],
