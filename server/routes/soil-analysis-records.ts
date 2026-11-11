@@ -62,6 +62,22 @@ export const saveSoilAnalysis: RequestHandler = async (req, res) => {
       return res.status(400).json({ success: false, error: `INVALID_${key.toUpperCase()}` });
     }
   }
+  const numericColumns: Record<string, { min: number; max: number }> = {
+    ph_level: { min: 0, max: 14 },
+    nitrogen_level: { min: 0, max: 100000 },
+    phosphorus_level: { min: 0, max: 100000 },
+    potassium_level: { min: 0, max: 100000 },
+    organic_matter_percent: { min: 0, max: 100 },
+    moisture_percent: { min: 0, max: 100 },
+    temperature_celsius: { min: -40, max: 65 },
+  };
+  for (const [key, range] of Object.entries(numericColumns)) {
+    const value = body[key];
+    if (value !== undefined && value !== null &&
+        (typeof value !== "number" || !Number.isFinite(value) || value < range.min || value > range.max)) {
+      return res.status(400).json({ success: false, error: `INVALID_${key.toUpperCase()}` });
+    }
+  }
   if (body.health_score !== undefined && body.health_score !== null &&
       (!Number.isInteger(body.health_score) || body.health_score < 0 || body.health_score > 100)) {
     return res.status(400).json({ success: false, error: "INVALID_HEALTH_SCORE" });
