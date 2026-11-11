@@ -1,4 +1,4 @@
-import { parseAgriculturalRss } from "../../server/routes/agri-news";
+import { parseAgriculturalHtml, parseAgriculturalRss } from "../../server/routes/agri-news";
 
 describe("Tunisian agriculture news RSS parser", () => {
   const source = {
@@ -28,6 +28,19 @@ describe("Tunisian agriculture news RSS parser", () => {
     expect(items[0].url).toBe("https://tunisieagriculture.tn/olive-export/");
     expect(items[0].publishedAt).toBe("2026-11-10T08:00:00.000Z");
     expect(items[0].summary).toContain("صادرات");
+  });
+
+  it("extracts article links from the Tunisian publisher listing when RSS is unavailable", () => {
+    const html = `<html><body>
+      <h2><a href="/olive-exports/">تطور صادرات زيت الزيتون التونسي</a></h2>
+      <h2><a href="/sports/">نتائج مباراة كرة القدم</a></h2>
+      <h2><a href="https://external.example/fake">أخبار زراعية عن الزيتون</a></h2>
+    </body></html>`;
+    const items = parseAgriculturalHtml(html, source);
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toContain("زيت الزيتون");
+    expect(items[0].url).toBe("https://tunisieagriculture.tn/olive-exports/");
+    expect(items[0].publishedAt).toBeNull();
   });
 
   it("rejects article links outside the configured source domain", () => {
