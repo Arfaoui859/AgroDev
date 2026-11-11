@@ -238,6 +238,49 @@ def _keyword_plan(message: str, tool_inputs: Dict[str, Any], limit: int) -> List
     return selected[:limit]
 
 
+def _apply_workflow_templates(
+    message: str,
+    tool_inputs: Dict[str, Any],
+    selected: List[str],
+    limit: int,
+) -> tuple[List[str], Dict[str, Any], List[Dict[str, str]]]:
+    """Apply deterministic, provenance-preserving handoffs for supported workflows.
+
+    Only creates a Soil -> Crop edge when the caller supplied soil sensor data.
+    It maps measured soil pH from the soil result; all other crop inputs remain
+    caller-owned and are reported missing rather than inferred.
+    """
+    inputs = dict(tool_inputs)
+    tools = list(selected)
+    edges: List[Dict[str, str]] = []
+    text = message.casefold()
+    crop_requested = "crop.recommend" in tools or any(
+        term.casefold() in text for term in KEYWORD_ROUTING["crop.recommend"]
+    )
+    soil_payload = inputs.get("soil.analyze")
+    has_soil_measurements = (
+        isinstance(soil_payload, dict) and _non_empty(soil_payload.get("sensor_data"))
+    )
+    if crop_requested and has_soil_measurements:
+        if "soil.analyze" not in tools and len(tools) < limit:
+            tools.append("soil.analyze")
+        if "crop.recommend" not in tools and len(tools) < limit:
+            tools.append("crop.recommend")
+        if "soil.analyze" in tools and "crop.recommend" in tools:
+            crop_payload = dict(inputs.get("crop.recommend") or {})
+            if not _non_empty(crop_payload.get("soil_ph")):
+                crop_payload["soil_ph"] = (
+                    "$results.soil.analyze.result.properties.ph.current_value"
+                )
+                inputs["crop.recommend"] = crop_payload
+                edges.append({
+                    "from": "soil.analyze",
+                    "to": "crop.recommend",
+                    "mapping": "result.properties.ph.current_value -> soil_ph",
+                })
+    return tools, inputs, edges
+
+
 async def _plan_tools(message: str, language: str, tool_inputs: Dict[str, Any], limit: int) -> tuple[List[str], str]:
     provider = get_provider()
     if not provider.is_configured():
@@ -338,6 +381,9 @@ async def orchestrate(
         raise ValueError("user_context must be an object")
 
     selected, planner_source = await _plan_tools(message, language, inputs, max_agents)
+    selected, inputs, workflow_edges = _apply_workflow_templates(
+        message, inputs, selected, max_agents
+    )
 
     # Explicit result references form a small dependency graph. Add referenced
     # upstream tools only when their payload was supplied by the caller.
@@ -494,6 +540,7 @@ async def orchestrate(
         "synthesis_model_source": provider.model_source() if synthesis_used else None,
         "selected_agents": [AGENT_TOOLS[name]["agent"] for name in selected],
         "selected_tools": selected,
+        "workflow_edges": workflow_edges,
         "missing_inputs": missing,
         "clarifying_questions": [name + ": " + ", ".join(fields) for name, fields in missing.items()],
         "tool_results": results,
