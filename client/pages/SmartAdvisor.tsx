@@ -231,25 +231,56 @@ export default function SmartAdvisor() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/smart-advisor/chat', {
+      const response = await fetch('/api/ai/assistant/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: chatInput, context: decisionContext })
+        body: JSON.stringify({
+          message: chatInput,
+          language: 'ar',
+          max_agents: 5,
+          user_context: decisionContext ?? {},
+          // Do not convert incomplete dashboard summaries into measurements.
+          // Structured specialist inputs will be added only from verified forms/data.
+          tool_inputs: {}
+        })
       });
-      
+
+      if (!response.ok) {
+        throw new Error(`Multi-agent orchestrator error: ${response.status}`);
+      }
+
       const data = await response.json();
-      
+      const missing = Object.entries(data.missing_inputs ?? {})
+        .flatMap(([agent, fields]) => (fields as string[]).map(field => `${agent}: ${field}`));
+      const provenance = (data.tool_results ?? []).map((item: {
+        tool: string; status: string; model_source?: string;
+      }) => `${item.tool}: ${item.status}${item.model_source ? ` (${item.model_source})` : ''}`);
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: data.response,
-        timestamp: new Date().toISOString(),
-        recommendation_id: data.recommendation_id
+        content: data.response ?? 'The orchestrator returned no response.',
+        timestamp: new Date().toISOString()
       };
 
+      // Keep missing inputs and provenance visible in the conversation rather
+      // than implying that a recommendation ran without validated inputs.
+      const details = [
+        ...(missing.length ? [`Required inputs: ${missing.join(', ')}`] : []),
+        ...(provenance.length ? [`Agent provenance: ${provenance.join('; ')}`] : [])
+      ];
+      if (details.length) {
+        assistantMessage.content += `\n\n${details.join('\n')}`;
+      }
       setChatMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending chat message:', error);
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: 'The multi-agent advisor is currently unavailable. Please retry after the service is reachable.',
+        timestamp: new Date().toISOString()
+      };
+      setChatMessages(prev => [...prev, assistantMessage]);
     } finally {
       setIsLoading(false);
     }
