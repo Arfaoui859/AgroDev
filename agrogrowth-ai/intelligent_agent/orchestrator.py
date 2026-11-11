@@ -273,18 +273,24 @@ def _apply_workflow_templates(
             tools.append("crop.recommend")
         if "soil.analyze" in tools and "crop.recommend" in tools:
             crop_payload = dict(inputs.get("crop.recommend") or {})
-            # Only create a pH handoff when pH was actually measured.
-            # Texture-only soil submissions must not resolve a nonexistent result path.
+            # Soil pH is already an explicit input to soil.analyze. Pass that
+            # exact submitted value to crop.recommend instead of depending on a
+            # response-path shape that can vary between service versions.
+            # This is a data handoff, not an inferred or model-predicted value.
             sensor_data = soil_payload.get("sensor_data") or {}
-            if "ph" in sensor_data and not _non_empty(crop_payload.get("soil_ph")):
-                crop_payload["soil_ph"] = (
-                    "$results.soil.analyze.result.properties.ph.current_value"
-                )
+            measured_ph = sensor_data.get("ph")
+            if (
+                isinstance(measured_ph, (int, float))
+                and not isinstance(measured_ph, bool)
+                and 0 <= measured_ph <= 14
+                and not _non_empty(crop_payload.get("soil_ph"))
+            ):
+                crop_payload["soil_ph"] = measured_ph
                 inputs["crop.recommend"] = crop_payload
                 edges.append({
                     "from": "soil.analyze",
                     "to": "crop.recommend",
-                    "mapping": "result.properties.ph.current_value -> soil_ph",
+                    "mapping": "explicit sensor_data.ph -> soil_ph (unchanged)",
                 })
     return tools, inputs, edges
 
