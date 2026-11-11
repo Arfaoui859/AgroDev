@@ -98,7 +98,7 @@ Send multipart/form-data to the same endpoint with:
 - language: ar, ar-tn, fr or en.
 - tool_inputs: JSON string, for example {"image.detect_disease":{"plant_type":"tomato"}}.
 
-The Node gateway validates the uploaded image and converts it to base64 only for the private Python service call. The browser never receives private service URLs or provider credentials. The existing AIAssistantChatbot and SmartAdvisor chat screens still use their legacy chat endpoints; use the new hook from a feature screen that has collected the required structured inputs. The UI migration is an explicit remaining release task, not silently claimed as complete.
+The Node gateway validates the uploaded image and converts it to base64 only for the private Python service call. The browser never receives private service URLs or provider credentials. The AIAssistantChatbot and SmartAdvisor chat screens now call the central orchestrator endpoint. They intentionally send empty tool_inputs until validated structured farm-input forms and trusted account-data mappings are connected. General conversation can be synthesized by the configured LLM; specialist calls return exact missing inputs rather than treating demo profile defaults or incomplete dashboard summaries as measurements.
 
 ## Response
 
