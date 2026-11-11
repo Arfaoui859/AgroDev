@@ -5,6 +5,7 @@ type NewsSource = {
   name: string;
   url: string;
   feedUrl?: string;
+  pageUrl?: string;
   language: "ar" | "fr" | "en";
   kind: "live_feed" | "reference";
 };
@@ -27,6 +28,7 @@ const SOURCES: NewsSource[] = [
     name: "Tunisie Agriculture",
     url: "https://tunisieagriculture.tn/",
     feedUrl: "https://tunisieagriculture.tn/feed/",
+    pageUrl: "https://tunisieagriculture.tn/آخر-الأخبار/",
     language: "ar",
     kind: "live_feed",
   },
@@ -156,34 +158,81 @@ export function parseAgriculturalRss(
   return items;
 }
 
+export function parseAgriculturalHtml(
+  html: string,
+  source: Pick<NewsSource, "id" | "name" | "url" | "language">,
+): AgriculturalNewsItem[] {
+  const anchors = [...html.matchAll(/<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a\\s*>/gi)];
+  const seen = new Set<string>();
+  const items: AgriculturalNewsItem[] = [];
+  for (const match of anchors) {
+    const title = decodeXml(match[2]);
+    const url = safeArticleUrl(match[1], source.url);
+    if (!title || title.length < 12 || !url || !AGRICULTURE_TERMS.test(title) || seen.has(url)) continue;
+    seen.add(url);
+    items.push({
+      id: `${source.id}:${url}`,
+      title: title.slice(0, 240),
+      summary: "",
+      url,
+      publishedAt: null,
+      source: source.name,
+      sourceId: source.id,
+      language: source.language,
+      category: "agriculture",
+    });
+    if (items.length >= 30) break;
+  }
+  return items;
+}
+
 const router = Router();
 let cache: { expiresAt: number; items: AgriculturalNewsItem[]; statuses: Record<string, string> } | null = null;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
 async function fetchSource(source: NewsSource) {
-  if (!source.feedUrl) return { items: [] as AgriculturalNewsItem[], status: "reference_only" };
-  try {
-    const response = await fetch(source.feedUrl, {
-      headers: {
-        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
-        "User-Agent": "AgroGrowthNews/1.0 (+https://agrogrowth.tn)",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) {
-      return { items: [] as AgriculturalNewsItem[], status: `http_${response.status}` };
-    }
-    const xml = await response.text();
-    if (!/<(?:rss|feed|rdf:RDF)\b/i.test(xml)) {
-      return { items: [] as AgriculturalNewsItem[], status: "invalid_feed" };
-    }
-    return {
-      items: parseAgriculturalRss(xml, source),
-      status: "connected",
-    };
-  } catch {
-    return { items: [] as AgriculturalNewsItem[], status: "unavailable" };
+  if (!source.feedUrl && !source.pageUrl) {
+    return { items: [] as AgriculturalNewsItem[], status: "reference_only" };
   }
+
+  if (source.feedUrl) {
+    try {
+      const response = await fetch(source.feedUrl, {
+        headers: {
+          Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+          "User-Agent": "AgroGrowthNews/1.0 (+https://agrogrowth.tn)",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (response.ok) {
+        const xml = await response.text();
+        if (/<(?:rss|feed|rdf:RDF)\\b/i.test(xml)) {
+          return { items: parseAgriculturalRss(xml, source), status: "connected_rss" };
+        }
+      }
+    } catch {
+      // Fall through to the public news listing; never fabricate fallback items.
+    }
+  }
+
+  if (source.pageUrl) {
+    try {
+      const response = await fetch(source.pageUrl, {
+        headers: { Accept: "text/html", "User-Agent": "AgroGrowthNews/1.0 (+https://agrogrowth.tn)" },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (response.ok) {
+        const html = await response.text();
+        const items = parseAgriculturalHtml(html, source);
+        return { items, status: items.length ? "connected_html" : "connected_empty" };
+      }
+      return { items: [] as AgriculturalNewsItem[], status: `http_${response.status}` };
+    } catch {
+      return { items: [] as AgriculturalNewsItem[], status: "unavailable" };
+    }
+  }
+
+  return { items: [] as AgriculturalNewsItem[], status: "unavailable" };
 }
 
 router.get("/", async (req, res) => {
