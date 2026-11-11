@@ -114,7 +114,7 @@ export const FarmInputContractSchema = z.object({
   crop: z.string().trim().min(1).max(100).optional(),
   growth_stage: z.string().trim().min(1).max(100).optional(),
   location: FarmLocationSchema.optional(),
-  measurements: z.record(AgriculturalMeasurementKeySchema, MeasurementSchema).default({}),
+  measurements: z.partialRecord(AgriculturalMeasurementKeySchema, MeasurementSchema).default({}),
 }).strict().superRefine((farm, context) => {
   const textureKeys = ['sand', 'silt', 'clay'] as const;
   const texture = textureKeys.map((key) => farm.measurements[key]?.value);
