@@ -36,8 +36,9 @@ const SOURCES: NewsSource[] = [
     id: "apia",
     name: "وكالة النهوض بالاستثمارات الفلاحية (APIA)",
     url: "https://apia.com.tn/ar/",
+    pageUrl: "https://apia.com.tn/ar/",
     language: "ar",
-    kind: "reference",
+    kind: "live_feed",
   },
   {
     id: "onagri",
