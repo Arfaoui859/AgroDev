@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import {
   getWeatherFromOpenMeteo,
+  getHistoricalWeatherFromOpenMeteo,
   type WeatherData,
 } from "../services/providers/weatherProvider";
 import { ProviderError } from "../services/providers/http";
