@@ -207,6 +207,11 @@ const AIAssistantChatbot: React.FC = () => {
   }, [selectedFarmId, session?.access_token]);
 
   useEffect(() => {
+    setSoilHistory([]);
+    setSoilHistoryError('');
+  }, [selectedFarmId, selectedFieldId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
