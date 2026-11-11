@@ -71,7 +71,7 @@ interface ChatMessage {
     suggestions?: string[];
     actionItems?: string[];
     relatedTopics?: string[];
-    soilSave?: { farmId: string; fieldId?: string; sensorData: Record<string, number>; columns: Record<string, number>; status?: 'saved' | 'saving' | 'failed'; savedId?: string; error?: string };
+    soilSave?: { farmId: string; fieldId?: string; sensorData: Record<string, number>; columns: Record<string, number>; analysisResult: Record<string, unknown>; status?: 'saved' | 'saving' | 'failed'; savedId?: string; error?: string };
   };
   attachments?: {
     type: 'image' | 'document' | 'chart';
@@ -422,7 +422,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     selected_agents?: string[];
     selected_tools?: string[];
     missing_inputs?: Record<string, string[]>;
-    tool_results?: Array<{ tool: string; status: string; model_source?: string }>;
+    tool_results?: Array<{ tool: string; status: string; model_source?: string; is_real_data?: boolean | null; result?: Record<string, unknown> }>;
     input_provenance?: Record<string, { source: string; verification: string; unit: string; observed_at: string }>;
     language?: string;
   }> => {
@@ -474,8 +474,26 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         if (soilSensorKeys[key]) sensorData[soilSensorKeys[key]] = measurement.value;
         if (soilColumnKeys[key]) soilColumns[soilColumnKeys[key]] = measurement.value;
       });
-      const soilSave = soilToolSucceeded && selectedFarmId && Object.keys(sensorData).length > 0
-        ? { farmId: selectedFarmId, ...(selectedFieldId ? { fieldId: selectedFieldId } : {}), sensorData, columns: soilColumns }
+      const soilToolResult = (result.tool_results ?? []).find(item =>
+        item.tool === 'soil.analyze' && ['success', 'completed', 'ok'].includes(item.status.toLowerCase())
+      );
+      const soilSave = soilToolSucceeded && soilToolResult && selectedFarmId && Object.keys(sensorData).length > 0
+        ? {
+            farmId: selectedFarmId,
+            ...(selectedFieldId ? { fieldId: selectedFieldId } : {}),
+            sensorData,
+            columns: soilColumns,
+            // Preserve the specialist's structured output and provenance, not
+            // only the LLM's narrative summary shown in the chat.
+            analysisResult: {
+              agent: soilToolResult.tool,
+              agent_result: soilToolResult.result ?? null,
+              model_source: soilToolResult.model_source ?? null,
+              is_real_data: soilToolResult.is_real_data ?? null,
+              input_provenance: result.input_provenance ?? {},
+              captured_at: new Date().toISOString(),
+            },
+          }
         : undefined;
       const source = result.synthesis_model_source ? 'llm' : 'rule-based';
       const provenance = [
@@ -568,8 +586,9 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           analysis_type: 'sensor',
           sensor_data: save.sensorData,
           analysis_result: {
+            ...save.analysisResult,
             assistant_response: message.content,
-            source: message.metadata?.modelSource ?? message.metadata?.dataSource ?? 'multi-agent-orchestrator',
+            response_source: message.metadata?.modelSource ?? message.metadata?.dataSource ?? 'multi-agent-orchestrator',
             provenance: message.metadata?.sources ?? [],
           },
           ...save.columns,
