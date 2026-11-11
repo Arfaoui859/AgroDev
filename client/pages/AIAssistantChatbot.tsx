@@ -136,6 +136,11 @@ const AIAssistantChatbot: React.FC = () => {
   // Empty strings mean "not supplied". Never prefill agricultural measurements.
   const [farmInputs, setFarmInputs] = useState({
     soilPh: '',
+    soilMoisture: '',
+    organicMatter: '',
+    sand: '',
+    silt: '',
+    clay: '',
     temperature: '',
     annualRainfall: '',
     soilQualityScore: '',
@@ -300,7 +305,20 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       return Number.isFinite(parsed) ? parsed : undefined;
     };
 
-    const soilPh = toNumber(farmInputs.soilPh);
+    const soilMeasurements: Record<string, number> = {};
+    const soilFields: Array<[keyof typeof farmInputs, string]> = [
+      ['soilPh', 'ph'],
+      ['soilMoisture', 'moisture'],
+      ['organicMatter', 'organic_matter'],
+      ['sand', 'sand'],
+      ['silt', 'silt'],
+      ['clay', 'clay']
+    ];
+    soilFields.forEach(([key, apiKey]) => {
+      const value = toNumber(farmInputs[key]);
+      if (value !== undefined) soilMeasurements[apiKey] = value;
+    });
+    const soilPh = soilMeasurements.ph;
     const cropInput: Record<string, number> = {};
     const fields: Array<[keyof typeof farmInputs, string]> = [
       ['temperature', 'temperature'],
@@ -319,8 +337,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     });
 
     const toolInputs: Record<string, Record<string, unknown>> = {};
-    if (soilPh !== undefined) {
-      toolInputs['soil.analyze'] = { sensor_data: { ph: soilPh } };
+    if (Object.keys(soilMeasurements).length > 0) {
+      toolInputs['soil.analyze'] = { sensor_data: soilMeasurements };
     }
     if (Object.keys(cropInput).length > 0 || soilPh !== undefined) {
       toolInputs['crop.recommend'] = cropInput;
@@ -1570,7 +1588,12 @@ Comment puis-je vous aider aujourd'hui?`
                 {showFarmInputs && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 py-3">
                     {([
-                      ['soilPh', 'Soil pH', 'pH du sol', 'pH التربة', '0', '14', '0.1'],
+                      ['soilPh', 'Soil pH', 'pH du sol', 'pH التربة', '3', '10', '0.1'],
+                      ['soilMoisture', 'Soil moisture (%)', 'Humidité du sol (%)', 'رطوبة التربة (%)', '0', '100', '0.1'],
+                      ['organicMatter', 'Organic matter (%)', 'Matière organique (%)', 'المادة العضوية (%)', '0', '20', '0.1'],
+                      ['sand', 'Sand (%)', 'Sable (%)', 'رمل (%)', '0', '100', '0.1'],
+                      ['silt', 'Silt (%)', 'Limon (%)', 'طمي (%)', '0', '100', '0.1'],
+                      ['clay', 'Clay (%)', 'Argile (%)', 'طين (%)', '0', '100', '0.1'],
                       ['temperature', 'Average temperature (°C)', 'Température moyenne (°C)', 'معدل الحرارة (°C)', '-30', '60', '0.1'],
                       ['annualRainfall', 'Annual rainfall (mm)', 'Pluie annuelle (mm)', 'الأمطار السنوية (مم)', '0', '10000', '1'],
                       ['soilQualityScore', 'Soil quality (0–1)', 'Qualité du sol (0–1)', 'جودة التربة (0–1)', '0', '1', '0.01'],
