@@ -44,11 +44,11 @@ all service request bodies must be supplied by the caller under tool_inputs.
     }
 
 The example runs soil screening first, then resolves the explicit soil_ph binding
-from the soil agent response before running crop recommendation. The remaining
-crop inputs are illustrative caller-supplied values, not measurements created by
-the orchestrator. In production, replace them with the authenticated farm's
-validated inputs and a sourced market price. The orchestrator never fills
-missing fields with guessed values.
+from the soil agent response before running crop recommendation, but only when
+pH is present in the submitted sensor_data. Texture-only submissions do not
+create a pH reference. The remaining crop inputs in this example are
+illustrative caller-supplied values, not measurements created by the
+orchestrator. The orchestrator never fills missing fields with guessed values.
 
 ## Deterministic workflow templates
 
@@ -57,10 +57,12 @@ The orchestrator currently includes one automatic, typed handoff template:
 
 When a crop recommendation is requested and the caller supplies
 `tool_inputs["soil.analyze"].sensor_data`, the orchestrator adds the soil
-agent if needed and binds the returned
-`result.properties.ph.current_value` to `crop.recommend.soil_ph`.
-The response exposes this mapping in `workflow_edges`. The dependency is
-executed in a later workflow wave, only after soil succeeds.
+agent if needed. It binds
+`result.properties.ph.current_value` to `crop.recommend.soil_ph` only when
+the submitted sensor data actually contains `ph`. Texture-only inputs run
+soil screening but do not create an invalid pH dependency. The response
+exposes any real mapping in `workflow_edges`. The dependency is executed in
+a later workflow wave, only after soil succeeds.
 
 This template deliberately does **not** infer temperature, rainfall, soil
 quality score, water availability, market price, experience, capital, farm
@@ -98,7 +100,7 @@ Send multipart/form-data to the same endpoint with:
 - language: ar, ar-tn, fr or en.
 - tool_inputs: JSON string, for example {"image.detect_disease":{"plant_type":"tomato"}}.
 
-The Node gateway validates the uploaded image and converts it to base64 only for the private Python service call. The browser never receives private service URLs or provider credentials. The AIAssistantChatbot and SmartAdvisor chat screens now call the central orchestrator endpoint. They intentionally send empty tool_inputs until validated structured farm-input forms and trusted account-data mappings are connected. General conversation can be synthesized by the configured LLM; specialist calls return exact missing inputs rather than treating demo profile defaults or incomplete dashboard summaries as measurements.
+The Node gateway validates the uploaded image and converts it to base64 only for the private Python service call. The browser never receives private service URLs or provider credentials. The AIAssistantChatbot and SmartAdvisor chat screens call the central orchestrator endpoint. AIAssistantChatbot now offers optional, empty-by-default structured inputs for soil pH, moisture, organic matter, sand/silt/clay texture, climate, water, market price and farm economics. Values are sent only when entered by the user; the soil service validates soil measurements and the crop service validates its required recommendation fields. The form does not yet persist inputs to authenticated farm records; trusted account-data integration remains a separate step. General conversation can be synthesized by the configured LLM; specialist calls return exact missing inputs rather than treating demo profile defaults or incomplete dashboard summaries as measurements.
 
 ## Response
 
