@@ -282,6 +282,7 @@ import {
   updateFarmerProfile,
 } from "./routes/farmer-segmentation";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
+import { saveSoilAnalysis } from "./routes/soil-analysis-records";
 import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
@@ -443,6 +444,8 @@ export function createServer() {
 
   // Soil Analysis Detailed routes (AI-powered detailed analysis)
   app.post("/api/soil-analysis/analyze", analyzeSoilDetailed);
+  // Durable soil-analysis storage requires a verified JWT and caller-scoped RLS.
+  app.post("/api/soil-analysis/records", requireAuth, saveSoilAnalysis);
   app.post("/api/soil-analysis/batch", analyzeSoilBatch);
   app.get("/api/soil-analysis/report/:analysisId", getSoilAnalysisReport);
 
