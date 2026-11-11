@@ -71,7 +71,7 @@ interface ChatMessage {
     suggestions?: string[];
     actionItems?: string[];
     relatedTopics?: string[];
-    soilSave?: { farmId: string; fieldId?: string; sensorData: Record<string, number>; columns: Record<string, number>; analysisResult: Record<string, unknown>; status?: 'saved' | 'saving' | 'failed'; savedId?: string; error?: string };
+    soilSave?: { farmId: string; fieldId?: string; sensorData: Record<string, number>; columns: Record<string, number>; healthScore?: number; analysisResult: Record<string, unknown>; status?: 'saved' | 'saving' | 'failed'; savedId?: string; error?: string };
   };
   attachments?: {
     type: 'image' | 'document' | 'chart';
@@ -483,6 +483,12 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
             ...(selectedFieldId ? { fieldId: selectedFieldId } : {}),
             sensorData,
             columns: soilColumns,
+            ...(typeof soilToolResult.result?.health_score === 'number' &&
+              Number.isFinite(soilToolResult.result.health_score) &&
+              soilToolResult.result.health_score >= 0 &&
+              soilToolResult.result.health_score <= 100
+              ? { healthScore: Math.round(soilToolResult.result.health_score) }
+              : {}),
             // Preserve the specialist's structured output and provenance, not
             // only the LLM's narrative summary shown in the chat.
             analysisResult: {
@@ -592,6 +598,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
             provenance: message.metadata?.sources ?? [],
           },
           ...save.columns,
+          ...(save.healthScore !== undefined ? { health_score: save.healthScore } : {}),
         }),
       });
       const payload = await response.json().catch(() => ({}));
