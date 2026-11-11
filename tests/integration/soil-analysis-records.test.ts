@@ -98,7 +98,7 @@ describe("POST /api/soil-analysis/records", () => {
         field_id: FIELD_ID,
         analysis_type: "lab",
         sensor_data: { ph: 6.5, moisture: 45 },
-        analysis_result: { texture: "loam" },
+        analysis_result: { agent: "soil.analyze", agent_result: { properties: { ph: { current_value: 6.5 } } }, model_source: "deterministic-rules", is_real_data: false, input_provenance: { soil_ph: { source: "farmer_entered", verification: "unverified" } } },
         recommendations: [{ action: "retest" }],
         health_score: 80,
         owner_id: "attacker-controlled",
@@ -113,7 +113,7 @@ describe("POST /api/soil-analysis/records", () => {
       section_id: FIELD_ID,
       analysis_type: "lab",
       sensor_data: { ph: 6.5, moisture: 45 },
-      analysis_result: { texture: "loam" },
+      analysis_result: { agent: "soil.analyze", agent_result: { properties: { ph: { current_value: 6.5 } } }, model_source: "deterministic-rules", is_real_data: false, input_provenance: { soil_ph: { source: "farmer_entered", verification: "unverified" } } },
       recommendations: [{ action: "retest" }],
       health_score: 80,
     });
