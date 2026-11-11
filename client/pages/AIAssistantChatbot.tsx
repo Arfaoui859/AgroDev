@@ -142,6 +142,9 @@ const AIAssistantChatbot: React.FC = () => {
   const [selectedFieldId, setSelectedFieldId] = useState('');
   const [farmLoadError, setFarmLoadError] = useState('');
   const [farmLoading, setFarmLoading] = useState(false);
+  const [soilHistory, setSoilHistory] = useState<Array<{ id: string; analysis_type: string; analyzed_at: string; ph_level?: number | null; moisture_percent?: number | null; health_score?: number | null; sensor_data?: Record<string, unknown> }>>([]);
+  const [soilHistoryLoading, setSoilHistoryLoading] = useState(false);
+  const [soilHistoryError, setSoilHistoryError] = useState('');
   // Empty strings mean "not supplied". Never prefill agricultural measurements.
   const [farmInputs, setFarmInputs] = useState({
     soilPh: '',
@@ -515,6 +518,29 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
     }
   };
 
+  const loadSoilAnalysisHistory = async () => {
+    if (!selectedFarmId || !session?.access_token) return;
+    setSoilHistoryLoading(true);
+    setSoilHistoryError('');
+    try {
+      const params = new URLSearchParams({ farm_id: selectedFarmId, limit: '20' });
+      if (selectedFieldId) params.set('field_id', selectedFieldId);
+      const response = await fetch(`/api/soil-analysis/records?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success || !Array.isArray(payload.data)) {
+        throw new Error(payload.message || payload.error || `History request failed (${response.status})`);
+      }
+      setSoilHistory(payload.data);
+    } catch (error) {
+      setSoilHistoryError(error instanceof Error ? error.message : 'Unable to load soil history');
+      setSoilHistory([]);
+    } finally {
+      setSoilHistoryLoading(false);
+    }
+  };
+
   const saveSoilAnalysisForMessage = async (messageId: string) => {
     const message = messages.find(item => item.id === messageId);
     const save = message?.metadata?.soilSave;
@@ -552,6 +578,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         ? { ...item, metadata: { ...item.metadata, soilSave: { ...save, status: 'saved', savedId: payload.data.id } } }
         : item
       ));
+      await loadSoilAnalysisHistory();
     } catch (error) {
       const messageText = error instanceof Error ? error.message : 'Unable to save soil analysis';
       setMessages(previous => previous.map(item => item.id === messageId
@@ -1790,6 +1817,34 @@ Comment puis-je vous aider aujourd'hui?`
                   <p className="text-xs text-gray-500">
                     {language === 'ar' ? 'لا توجد مزارع مرتبطة بحسابك بعد.' : language === 'fr' ? 'Aucune exploitation liée à votre compte.' : 'No farms are linked to your account yet.'}
                   </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <Button type="button" variant="outline" size="sm"
+                    disabled={!selectedFarmId || soilHistoryLoading || !session?.access_token}
+                    onClick={loadSoilAnalysisHistory}>
+                    {soilHistoryLoading
+                      ? (language === 'ar' ? 'جارٍ تحميل التاريخ...' : language === 'fr' ? 'Chargement...' : 'Loading history...')
+                      : (language === 'ar' ? 'عرض تاريخ تحاليل التربة' : language === 'fr' ? 'Voir l’historique des analyses' : 'View soil analysis history')}
+                  </Button>
+                  {soilHistory.length > 0 && <span className="text-xs text-gray-500">{soilHistory.length} {language === 'ar' ? 'تحليل' : language === 'fr' ? 'analyses' : 'analyses'}</span>}
+                </div>
+                {soilHistoryError && <p role="alert" className="text-xs text-red-600">{soilHistoryError}</p>}
+                {soilHistory.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto rounded-md border bg-white divide-y">
+                    {soilHistory.map(record => (
+                      <div key={record.id} className="px-3 py-2 text-xs flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <span className="font-medium">{record.analysis_type === 'lab' ? 'Lab' : record.analysis_type === 'image' ? 'Image' : 'Sensor'}</span>
+                          <span className="text-gray-500"> · {record.analyzed_at ? new Date(record.analyzed_at).toLocaleString(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-FR' : 'en-US') : '—'}</span>
+                        </div>
+                        <div className="flex gap-3 text-gray-600">
+                          {record.ph_level != null && <span>pH {record.ph_level}</span>}
+                          {record.moisture_percent != null && <span>{record.moisture_percent}% {language === 'ar' ? 'رطوبة' : 'moisture'}</span>}
+                          {record.health_score != null && <span>{record.health_score}/100</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
