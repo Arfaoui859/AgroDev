@@ -1,12 +1,11 @@
 import express from "express";
 import request from "supertest";
 
-const mockScopedClientFromAuthHeader = jest.fn();
 jest.mock("../../server/lib/supabase", () => ({
-  mockScopedClientFromAuthHeader: (...args: unknown[]) => mockScopedClientFromAuthHeader(...args),
+  scopedClientFromAuthHeader: jest.fn(),
 }));
-
-import { saveSoilAnalysis } from "../../server/routes/soil-analysis-records";
+const { scopedClientFromAuthHeader: mockScopedClientFromAuthHeader } = require("../../server/lib/supabase");
+const { saveSoilAnalysis } = require("../../server/routes/soil-analysis-records");
 
 const FARM_ID = "11111111-1111-4111-8111-111111111111";
 const FIELD_ID = "22222222-2222-4222-8222-222222222222";
