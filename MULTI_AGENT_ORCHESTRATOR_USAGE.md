@@ -50,6 +50,40 @@ create a pH reference. The remaining crop inputs in this example are
 illustrative caller-supplied values, not measurements created by the
 orchestrator. The orchestrator never fills missing fields with guessed values.
 
+## Canonical farm input contract (v1)
+
+The shared TypeScript contract lives in `shared/agricultural-data-contract.ts`.
+It is a provenance-aware input envelope, not a database migration and not a claim
+that authenticated farm persistence is already implemented.
+
+Each measurement carries:
+- numeric value and explicit unit (no implicit unit conversion);
+- source: farmer entry, laboratory, sensor, weather provider, market provider,
+  expert verification or AI-derived;
+- verification state: unverified, verified or derived;
+- observation timestamp, with optional evidence reference and method.
+
+Safety rules:
+- Farmer-entered values are always unverified.
+- AI-derived values are always marked derived, never verified.
+- Verified laboratory/sensor/provider values require an evidence reference.
+- pH, moisture, texture, temperature, rainfall, market and farm-economics inputs
+  have explicit allowed ranges and units.
+- Sand/silt/clay are checked to total 100% (±1%) when all three are supplied.
+- The contract rejects unknown keys and does not silently convert units.
+
+`validateFarmInputContract()` performs structural and semantic validation.
+`toLegacyAgentInputs()` unwraps only explicitly supplied numeric values into
+the current `soil.analyze` and `crop.recommend` payload shapes, while returning
+`measurement_provenance` and `farm_context` separately. It does not invent
+missing crop-agent fields.
+
+Current integration boundary: the chatbot's existing request path still sends
+legacy `tool_inputs`; the new contract and adapter are not yet wired into the
+authenticated API request or a persisted farm/field record. That integration
+must follow inspection of the actual authentication, database schema and RLS
+policies. Do not treat a client-provided `farm_id` as authorization.
+
 ## Deterministic workflow templates
 
 The orchestrator currently includes one automatic, typed handoff template:
