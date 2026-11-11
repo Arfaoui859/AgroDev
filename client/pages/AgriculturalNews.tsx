@@ -185,6 +185,30 @@ export default function AgriculturalNews() {
         )}
       </section>
 
+      {connectedSources.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">حالة مصادر الأخبار المباشرة</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {connectedSources.map((source) => {
+              const status = statuses[source.id] ?? "unknown";
+              return (
+                <Card key={source.id}>
+                  <CardContent className="flex items-center justify-between gap-3 p-4">
+                    <div>
+                      <p className="font-semibold">{source.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{source.url}</p>
+                    </div>
+                    <Badge variant={status === "connected" ? "default" : "secondary"}>
+                      {status === "connected" ? "متصل" : status === "reference_only" ? "مرجع" : status === "unknown" ? "غير معروف" : "غير متاح"}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold">بوابات ومراجع تونسية</h2>
