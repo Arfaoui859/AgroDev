@@ -50,6 +50,31 @@ the orchestrator. In production, replace them with the authenticated farm's
 validated inputs and a sourced market price. The orchestrator never fills
 missing fields with guessed values.
 
+## Deterministic workflow templates
+
+The orchestrator currently includes one automatic, typed handoff template:
+**Soil analysis -> Crop recommendation**.
+
+When a crop recommendation is requested and the caller supplies
+`tool_inputs["soil.analyze"].sensor_data`, the orchestrator adds the soil
+agent if needed and binds the returned
+`result.properties.ph.current_value` to `crop.recommend.soil_ph`.
+The response exposes this mapping in `workflow_edges`. The dependency is
+executed in a later workflow wave, only after soil succeeds.
+
+This template deliberately does **not** infer temperature, rainfall, soil
+quality score, water availability, market price, experience, capital, farm
+size or risk tolerance. Those remain required caller-supplied crop inputs and
+appear in `missing_inputs` when absent. If soil measurements are absent, no
+automatic soil call or dependency is created. The template also respects
+`max_agents`; it never exceeds the caller's execution limit.
+
+Other workflows (weather -> irrigation/yield, crop -> irrigation/yield,
+vision -> pest and market-assisted crop decisions) remain explicit-input
+workflows until their service response schemas and field semantics are
+verified and covered by contract tests. No unsafe cross-service field mapping
+is inferred.
+
 ## Registered tools and required inputs
 
 | Tool | Required fields |
