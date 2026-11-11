@@ -162,7 +162,7 @@ export function parseAgriculturalHtml(
   html: string,
   source: Pick<NewsSource, "id" | "name" | "url" | "language">,
 ): AgriculturalNewsItem[] {
-  const anchors = [...html.matchAll(/<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a\\s*>/gi)];
+  const anchors = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a\s*>/gi)];
   const seen = new Set<string>();
   const items: AgriculturalNewsItem[] = [];
   for (const match of anchors) {
@@ -206,7 +206,7 @@ async function fetchSource(source: NewsSource) {
       });
       if (response.ok) {
         const xml = await response.text();
-        if (/<(?:rss|feed|rdf:RDF)\\b/i.test(xml)) {
+        if (/<(?:rss|feed|rdf:RDF)\b/i.test(xml)) {
           return { items: parseAgriculturalRss(xml, source), status: "connected_rss" };
         }
       }
