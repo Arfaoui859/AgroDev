@@ -446,6 +446,29 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
   const generateAIResponse = async (userInput: string): Promise<ChatMessage> => {
     try {
       const result = await callAdvisorApi(userInput);
+      const soilToolSucceeded = (result.tool_results ?? []).some(item =>
+        item.tool === 'soil.analyze' && ['success', 'completed', 'ok'].includes(item.status.toLowerCase())
+      );
+      const submittedMeasurements = buildFarmInput()?.measurements ?? {};
+      const sensorData: Record<string, number> = {};
+      const soilColumns: Record<string, number> = {};
+      const soilSensorKeys: Record<string, string> = {
+        soil_ph: 'ph', soil_moisture: 'moisture', organic_matter: 'organic_matter',
+        nitrogen: 'nitrogen', phosphorus: 'phosphorus', potassium: 'potassium',
+        sand: 'sand', silt: 'silt', clay: 'clay', salinity: 'salinity',
+      };
+      const soilColumnKeys: Record<string, string> = {
+        soil_ph: 'ph_level', soil_moisture: 'moisture_percent',
+        organic_matter: 'organic_matter_percent', nitrogen: 'nitrogen_level',
+        phosphorus: 'phosphorus_level', potassium: 'potassium_level',
+      };
+      Object.entries(submittedMeasurements).forEach(([key, measurement]) => {
+        if (soilSensorKeys[key]) sensorData[soilSensorKeys[key]] = measurement.value;
+        if (soilColumnKeys[key]) soilColumns[soilColumnKeys[key]] = measurement.value;
+      });
+      const soilSave = soilToolSucceeded && selectedFarmId && Object.keys(sensorData).length > 0
+        ? { farmId: selectedFarmId, ...(selectedFieldId ? { fieldId: selectedFieldId } : {}), sensorData, columns: soilColumns }
+        : undefined;
       const source = result.synthesis_model_source ? 'llm' : 'rule-based';
       const provenance = [
         ...(result.planner_model_source ? [`Planner: ${result.planner_model_source}`] : []),
@@ -472,7 +495,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           actionItems: Object.entries(result.missing_inputs ?? {}).flatMap(([agent, fields]) =>
             fields.map(field => `${agent}: ${field}`)
           ),
-          relatedTopics: result.selected_agents ?? ['زراعة', 'أسواق', 'طقس', 'استثمار']
+          relatedTopics: result.selected_agents ?? ['زراعة', 'أسواق', 'طقس', 'استثمار'],
+          ...(soilSave ? { soilSave } : {})
         },
         category: 'general'
       };
@@ -488,6 +512,52 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
       fallback.content = `${fallback.content}${suffix}`;
       fallback.metadata = { ...fallback.metadata, sources: ['إرشادات عامة محلية'] };
       return fallback;
+    }
+  };
+
+  const saveSoilAnalysisForMessage = async (messageId: string) => {
+    const message = messages.find(item => item.id === messageId);
+    const save = message?.metadata?.soilSave;
+    if (!save || !session?.access_token || save.status === 'saving' || save.status === 'saved') return;
+
+    setMessages(previous => previous.map(item => item.id === messageId
+      ? { ...item, metadata: { ...item.metadata, soilSave: { ...save, status: 'saving', error: undefined } } }
+      : item
+    ));
+    try {
+      const response = await fetch('/api/soil-analysis/records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          farm_id: save.farmId,
+          ...(save.fieldId ? { field_id: save.fieldId } : {}),
+          analysis_type: 'sensor',
+          sensor_data: save.sensorData,
+          analysis_result: {
+            assistant_response: message.content,
+            source: message.metadata?.modelSource ?? message.metadata?.dataSource ?? 'multi-agent-orchestrator',
+            provenance: message.metadata?.sources ?? [],
+          },
+          ...save.columns,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success || !payload.data?.id) {
+        throw new Error(payload.message || payload.error || `Save failed (${response.status})`);
+      }
+      setMessages(previous => previous.map(item => item.id === messageId
+        ? { ...item, metadata: { ...item.metadata, soilSave: { ...save, status: 'saved', savedId: payload.data.id } } }
+        : item
+      ));
+    } catch (error) {
+      const messageText = error instanceof Error ? error.message : 'Unable to save soil analysis';
+      setMessages(previous => previous.map(item => item.id === messageId
+        ? { ...item, metadata: { ...item.metadata, soilSave: { ...save, status: 'failed', error: messageText } } }
+        : item
+      ));
     }
   };
 
