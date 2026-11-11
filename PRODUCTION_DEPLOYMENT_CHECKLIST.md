@@ -1,7 +1,8 @@
 # AgroGrowth — Production Deployment Checklist
 
-**Branch:** `feat/ai-integration-production-hardening` · **HEAD:** `7c5b3cb`
-**Date:** 2026-11-04 · **Owner:** release engineer + platform admin
+**Remediation branch:** `fix/agrogrowth-ci-and-production-gaps-2026-11-11`
+**Base branch:** `feat/ai-integration-production-hardening`
+**Last reviewed:** 2026-11-11 · **Owner:** release engineer + platform admin
 
 Work top-to-bottom. Each item has a verification command. Do not deploy until
 every **P0** box is ticked. Tick **P1** before opening to real users.
@@ -22,8 +23,8 @@ every **P0** box is ticked. Tick **P1** before opening to real users.
 
 - [ ] `npx tsc --noEmit` → exit 0
 - [ ] `npm run lint` (`--max-warnings 0`) → exit 0
-- [ ] `npx jest --silent` → 0 failures (baseline: **575 passed, 2 skipped**)
-- [ ] `agrogrowth-ai/.venv/bin/python -m pytest tests` → 0 failures (baseline: **194 passed**)
+- [ ] All required GitHub Actions test jobs pass on the exact release SHA (do not rely on historical baseline counts).
+- [ ] `cd agrogrowth-ai && python -m pytest tests -q` → 0 failures.
 - [ ] `npm run build` → SPA in `dist/` **and** `build/server/node-build.mjs`
 - [ ] `npm audit --omit=dev` → 0 vulnerabilities
 - [ ] **No source map in the build output:**
@@ -48,6 +49,15 @@ every **P0** box is ticked. Tick **P1** before opening to real users.
 - [ ] Rotate any key that has ever been pasted into a chat/CI log.
 - [ ] Confirm the running process logs **no** secret at startup.
 
+## 2A. Authentication and demo-data security
+
+- [ ] Set a dedicated ADMIN_API_TOKEN only when operator-token endpoints are needed; never send SUPABASE_SERVICE_ROLE_KEY in an x-admin-token header.
+- [ ] Confirm VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are supplied by the target deployment; the browser client has no embedded project/key fallback.
+- [ ] Confirm legacy demo-user provisioning, auth-debug and database probe routes return 410 after authorization and cannot create users or write probe rows.
+- [ ] Confirm the old random market-price seed script is absent and no demo market prices are inserted into market_prices.
+- [ ] Confirm private Python microservices are called only by the server-side Node gateway; no VITE_* service URL points the browser directly at a private service.
+- [ ] Confirm demo/fixture-backed livestock endpoints carry X-Data-Provenance: simulated and X-Is-Real-Data: false.
+
 ## 3. AI provider verification (P0/P1)
 
 - [ ] **Pin a model that serves in your region.** Built-in default is
@@ -70,6 +80,10 @@ every **P0** box is ticked. Tick **P1** before opening to real users.
 
 ## 4. Database & RLS (P0 — B-2)
 
+- [ ] Confirm the target DB has the reviewed base schema (see DATABASE_SETUP.md).
+- [ ] Apply `database/market-prices-compatibility.sql` after confirming
+  `public.market_prices` exists; it adds the stable crop key/index and is
+  idempotent. Do not guess/backfill crop IDs from unverified crop names.
 - [ ] Apply `database/rls-hardening.sql` to the target DB (idempotent).
 - [ ] Apply `database/user-lifecycle.sql` (installs `on_auth_user_deleted`).
 - [ ] **Live RLS proof:**
@@ -97,8 +111,11 @@ every **P0** box is ticked. Tick **P1** before opening to real users.
 - [ ] If demo: confirm `/api/market-analysis/prices/current` keeps
   `X-Data-Provenance: simulated` / `X-Is-Real-Data: false`, and the UI shows the
   simulated-data notice.
-- [ ] If real: seed `market_prices` and confirm `/api/market/all` returns rows
-  with `dataSource:"database"`.
+- [ ] If real: ingest prices from a trusted/licensed provider with source,
+  location, currency, unit and observation timestamp; verify
+  `/api/market/all` returns populated rows with matching provenance.
+- [ ] Never seed illustrative/random market prices into `market_prices`; empty
+  market tables must remain unavailable rather than show zero or synthetic quotes.
 
 ## 7. CORS & static serving (P0 — S-1, S-2)
 

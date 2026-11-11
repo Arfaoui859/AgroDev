@@ -1,263 +1,145 @@
-# Fusion Starter
+# AgroGrowth — Agent and Engineering Guide
 
-A production-ready full-stack React application template with integrated Express server, featuring React Router 6 SPA mode, TypeScript, Vitest, Zod and modern tooling.
+This repository is AgroGrowth, a Tunisia-origin agriculture and nature platform.
+Do not treat it as a generic starter template. Verify behaviour in the current
+source and tests before changing it.
 
-While the starter comes with a express server, only create endpoint when strictly neccesary, for example to encapsulate logic that must leave in the server, such as private keys handling, or certain DB operations, db...
+## Product scope
 
-## Tech Stack
+AgroGrowth serves people and organisations working with agriculture and nature:
+home growers, farmers, agronomists, cooperatives, traders, livestock
+professionals, companies and institutions. The intended platform spans
+production, knowledge, services, collaboration, marketplace and investment.
 
-- **Frontend**: React 18 + React Router 6 (spa) + TypeScript + Vite + TailwindCSS 3
-- **Backend**: Express server integrated with Vite dev server
-- **Testing**: Jest
-- **UI**: Radix UI + TailwindCSS 3 + Lucide React icons
+Arabic is the primary product language with RTL support. French and English
+coverage is incomplete and must not be described as fully translated.
 
-## Project Structure
+## Verified stack and layout
 
-```
-client/                   # React SPA frontend
-├── pages/                # Route components (Index.tsx = home)
-├── components/ui/        # Pre-built UI component library
-├── App.tsx                # App entry point and with SPA routing setup
-└── global.css            # TailwindCSS 3 theming and global styles
+- Client: React 18, TypeScript, React Router, Vite, TailwindCSS and Radix UI.
+- API: Node.js + Express + TypeScript.
+- Database/auth: Supabase Postgres and Supabase Auth.
+- AI: eight Python FastAPI services under agrogrowth-ai/ (local ports 8001–8008),
+  plus server-side provider adapters and deterministic agronomy rules.
+- Tests: Jest, pytest and Cypress.
+- Deployment definitions: Docker, Render and a Vercel config. A config file is
+  not proof of a live deployment.
 
-server/                   # Express API backend
-├── index.ts              # Main server setup (express config + routes)
-└── routes/               # API handlers
+Repository areas:
+- client/ — pages, components, contexts and hooks.
+- server/ — Express routes, auth/security middleware and AI gateway.
+- shared/ — shared TypeScript contracts.
+- database/ — schema, migrations and RLS policies.
+- agrogrowth-ai/ — FastAPI services and Python tests.
+- tests/ — Node, integration, live and database tests.
+- cypress/ — browser end-to-end tests.
+- scripts/ — local service startup and deployment diagnostics.
 
-shared/                   # Types used by both client & server
-└── api.ts                # Example of how to share api interfaces
-```
+## Local development
 
-## Key Features
-
-## SPA Routing System
-
-The routing system is powered by React Router 6:
-
-- `client/pages/Index.tsx` represents the home page.
-- Routes are defined in `client/App.tsx` using the `react-router-dom` import
-- Route files are located in the `client/pages/` directory
-
-For example, routes can be defined with:
-
-```typescript
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-<Routes>
-  <Route path="/" element={<Index />} />
-  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-  <Route path="*" element={<NotFound />} />
-</Routes>;
-```
-
-### Styling System
-
-- **Primary**: TailwindCSS 3 utility classes
-- **Theme and design tokens**: Configure in `client/global.css` 
-- **UI components**: Pre-built library in `client/components/ui/`
-- **Utility**: `cn()` function combines `clsx` + `tailwind-merge` for conditional classes
-
-```typescript
-// cn utility usage
-className={cn(
-  "base-classes",
-  { "conditional-class": condition },
-  props.className  // User overrides
-)}
-```
-
-### Express Server Integration
-
-- **Development**: Single port (8080) for both frontend/backend
-- **Hot reload**: Both client and server code
-- **API endpoints**: Prefixed with `/api/`
-
-#### Example API Routes
-- `GET /api/ping` - Simple ping api
-- `GET /api/demo` - Demo endpoint  
-
-### Shared Types
-Import consistent types in both client and server:
-```typescript
-import { DemoResponse } from '@shared/api';
-```
-
-Path aliases:
-- `@shared/*` - Shared folder
-- `@/*` - Client folder
-
-## Development Commands
+Use Node 20 or 22 and npm:
 
 ```bash
-npm run dev        # Start dev server (client + server)
-npm run build      # Production build (client + SSR server -> dist/)
-npm run start      # Start production server
-npm test           # Run the test suite (Jest)
-npx tsc --noEmit   # TypeScript validation
+npm ci
+cp .env.example .env
+# Configure the browser and server Supabase values in .env.
+npm run dev
 ```
 
-## AgroGrowth — verified engineering notes
+The Vite dev server runs on port 8080 and mounts the Express app through its
+development plugin. For a standalone backend, run `npm run server:dev`
+separately; it starts server/node-build.ts on PORT=5000. Set VITE_API_URL to
+http://localhost:5000/api when the client should use that standalone backend.
+server/index.ts exports the Express app factory and is not a standalone listener.
 
-Facts below were confirmed against the running code and the live database,
-not copied from the template or the README. Treat them as the starting point
-for future work; re-verify before relying on them.
+Useful checks:
 
-### Test runner and typecheck
-- Tests run on **Jest** (`npm test`), not Vitest. Config is `jest.config.*`
-  with `tests/setup.ts`. Suites live in `tests/unit`, `tests/integration`,
-  `tests/live`, `tests/e2e`.
-- There is no `npm run typecheck` script. Use `npx tsc --noEmit`.
-- Production build output is `build/server/node-build.mjs` — deliberately
-  **outside** the static root (`dist/`) so the backend bundle and its source map
-  can never be downloaded. Run it with `PORT=<port> node build/server/node-build.mjs`
-  (it loads `.env` via `dotenv/config`). Dev runs on 8080; the built server
-  honours `PORT`. The client SPA stays in `dist/`; the server serves it and
-  hard-404s `/server/*` and `/build/*`.
-
-### Data layer (Supabase Postgres)
-- `.env` (gitignored) holds `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-  `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DIRECT_URL`,
-  `DATABASE_URL`. Never print or commit their values.
-- RLS is enabled on every table except the PostGIS system table
-  `spatial_ref_sys`. Hardening lives in `database/rls-hardening.sql`
-  (idempotent; re-runnable).
-- `public.users` has **no** FK to `auth.users`. Account deletion is kept
-  consistent by the `on_auth_user_deleted` trigger in
-  `database/user-lifecycle.sql`, which deletes the profile row and lets the
-  existing `ON DELETE CASCADE` rules clean up farms and children.
-- `anon`/`authenticated` hold broad table grants; isolation relies entirely
-  on RLS, so any new table must have RLS enabled **and** policies added.
-
-### AI layer
-- AI provider config is env-driven (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`,
-  `AI_VISION_MODEL`, timeouts/retries). When no provider is configured the
-  advisor and knowledge engine answer from a **deterministic rule-based
-  engine** and label the result honestly (`dataSource: "rule-based"`,
-  `isRealData: false`, plus a disclaimer). Do not present rule-based output
-  as model inference.
-- Specialised Python FastAPI microservices live in `agrogrowth-ai/` — eight
-  of them: `soil_analysis` (8001), `crop_recommendation` (8002),
-  `image_diagnosis` (8003), `market_prediction` (8004), `intelligent_agent`
-  (8005), `weather_yield_intelligence` (8006), `pest_control` (8007),
-  `irrigation_optimization` (8008). The backend resolves each via its env var
-  (`SOIL_ANALYSIS_URL`, `CROP_RECOMMENDATION_URL`, `IMAGE_DIAGNOSIS_URL`,
-  `MARKET_FORECAST_URL`/`MARKET_PREDICTION_URL`,
-  `SMART_ASSISTANT_URL`/`INTELLIGENT_AGENT_URL`, `WEATHER_YIELD_INTELLIGENCE_URL`
-  /`SMART_MARKETPLACE_URL`, `PEST_CONTROL_URL`, `IRRIGATION_OPTIMIZATION_URL`).
-  When a service is not running, endpoints return an honest 503 rather than
-  fabricating a result.
-- Start/verify them locally with `bash scripts/start-ai-services.sh`
-  (`--check` health-checks all eight, `--stop` stops them). Each service is a
-  FastAPI app with a `/health` endpoint that declares its `model_source`; the
-  bundled models are trained on synthetic data and report
-  `model_source: "synthetic-demo"` (or `rule-based-demo`), which the Node layer
-  surfaces as `isRealModel: false` / `modelTrainedOnSyntheticData: true`.
-- `GET /api/ai/capabilities` reports the true engine per capability. Use it
-  to see what is really available before promising a feature.
-- `GET /api/system/ai` reports whether an LLM provider is *configured*;
-  `GET /api/system/ai/health` performs a real one-token round-trip and reports
-  whether the provider actually *answers* (`reachable`, `latencyMs`, a coarse
-  `errorKind`). It is cached 60s and never returns a credential. A configured
-  key is not evidence the provider works — check the health endpoint.
-- The rule-based farm advisor is fully localised (ar/fr/en). Per-parameter
-  soil recommendation sentences are Arabic-only by design and are labelled
-  as such for fr/en callers.
-
-### Honesty conventions
-- Never invent weather, market prices, diagnoses or confidence values.
-- Weather comes from Open-Meteo (`/api/weather/coordinates` returns
-  `source.isRealData: true`). Market data is read from `market_prices` and
-  reports `dataSource: "database"`.
-- Mock/fixture-driven pages must render the shared `SimulatedDataNotice`
-  from `client/components/SimulatedDataNotice.tsx`.
-
-## Adding Features
-
-### Add new colors to the theme
-
-Open `client/global.css` and `tailwind.config.ts` and add new tailwind colors.
-
-### New API Route
-1. **Optional**: Create a shared interface in `shared/api.ts`:
-```typescript
-export interface MyRouteResponse {
-  message: string;
-  // Add other response properties here
-}
+```bash
+npx tsc --noEmit
+npm run lint
+npm test -- --runInBand
+npm run build
+cd agrogrowth-ai && python -m pytest tests -q
 ```
 
-2. Create a new route handler in `server/routes/my-route.ts`:
-```typescript
-import { RequestHandler } from "express";
-import { MyRouteResponse } from "@shared/api"; // Optional: for type safety
+Start the Python services locally only when the AI virtualenv and dependencies
+are installed:
 
-export const handleMyRoute: RequestHandler = (req, res) => {
-  const response: MyRouteResponse = {
-    message: 'Hello from my endpoint!'
-  };
-  res.json(response);
-};
+```bash
+python3 -m venv agrogrowth-ai/.venv
+agrogrowth-ai/.venv/bin/pip install -r agrogrowth-ai/requirements.txt
+bash scripts/start-ai-services.sh
+bash scripts/start-ai-services.sh --check
 ```
 
-3. Register the route in `server/index.ts`:
-```typescript
-import { handleMyRoute } from "./routes/my-route";
+The production server bundle is build/server/node-build.mjs, outside the public
+client directory dist/. Never move the server bundle or its source maps into
+the public static directory.
 
-// Add to the createServer function:
-app.get("/api/my-endpoint", handleMyRoute);
-```
+## AI architecture and provenance
 
-4. Use in React components with type safety:
-```typescript
-import { MyRouteResponse } from '@shared/api'; // Optional: for type safety
+The browser must call the Node API gateway only. Private Python service URLs
+and provider credentials belong on the server, never in VITE_* variables.
 
-const response = await fetch('/api/my-endpoint');
-const data: MyRouteResponse = await response.json();
-```
+Distinguish these output types:
+- trained ML model with verifiable dataset and evaluation evidence;
+- lab-assisted research model not field validated;
+- deterministic rules;
+- heuristic image/feature analysis;
+- synthetic-demo model;
+- external LLM/vision advisory.
 
-### New Page Route
-1. Create component in `client/pages/MyPage.tsx`
-2. Add route in `client/App.tsx`:
-```typescript
-<Route path="/my-page" element={<MyPage />} />
-```
+A /health response proves reachability, not model training or agronomic
+accuracy. The Soil AFSIS artifacts are lab-assisted and are not Tunisia field
+validation. Several other numeric AI services remain synthetic-demo. Never
+claim synthetic data is real, invent market prices, or fabricate a diagnosis.
+Keep model_source, dataSource, isRealData, isRealModel and
+modelTrainedOnSyntheticData accurate. An unavailable provider must produce an
+explicit unavailable/error state rather than a fake success.
 
-## Production Deployment
+## Security and data integrity — non-negotiable
 
-- **Standard**: `npm run build` + `npm start`
-- **Binary**: Self-contained executables (Linux, macOS, Windows)
-- **Cloud Deployment**: Use either Netlify or Vercel via their MCP integrations for easy deployment. Both providers work well with this starter template.
+- Never commit .env, passwords, tokens, provider secrets or database keys.
+- Browser Supabase uses VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY only.
+  The browser client must not embed a project URL/key fallback.
+- Server Supabase uses SUPABASE_URL and SUPABASE_ANON_KEY. Do not infer the
+  server database target from VITE_* browser settings.
+- SUPABASE_SERVICE_ROLE_KEY is server-only. Never expose it through VITE_*,
+  logs, HTTP headers or the x-admin-token field.
+- x-admin-token accepts only a dedicated ADMIN_API_TOKEN.
+- Legacy demo account provisioning, fixed demo credentials, auth-debug and
+  mutating database diagnostic routes are retired. Do not recreate them.
+- Do not seed random/illustrative market prices into market_prices.
+- Every user-owned table needs RLS and least-privilege policies. Test that user A
+  cannot read or mutate user B's farms, fields, soil, livestock or reports.
+- Validate inputs and uploads at API boundaries. Enforce authorization on the
+  server; do not trust client-supplied userId/role.
+- Avoid logging personal data, access tokens or secrets.
+- Do not run a live migration, mutate production data, change hosted secrets or
+  deploy without explicit authorization and a verified target.
 
-## Architecture Notes
+## UI and product quality
 
-- Single-port development with Vite + Express integration
-- TypeScript throughout (client, server, shared)
-- Full hot reload for rapid development
-- Production-ready with multiple deployment options
-- Comprehensive UI component library included
-- Type-safe API communication via shared interfaces
+- Keep demo/fixture pages visibly labelled with SimulatedDataNotice or
+  equivalent provenance disclosure.
+- Mock UI data is disabled by default and may be enabled only explicitly in a
+  development build; never in production.
+- Handle loading, empty, offline, timeout and provider-unavailable states.
+- Maintain Arabic RTL, French and English layouts; do not hardcode new strings
+  where the i18n system applies.
+- Test responsive/mobile behaviour and keyboard accessibility.
+- Add regression tests for every bug fix and update the relevant documentation.
 
-## AgroGrowth project conventions (verified)
+## Release discipline
 
-- **Ports**: dev/prod server on `5000` (health: `GET /api/ping`). The 8 Python
-  AI microservices run on `8001`–`8008` and answer `GET /health`.
-- **Verification commands**: `npx tsc --noEmit` (there is **no** `npm run
-  typecheck` script), `npm run lint`, `npm run build`, `npx jest`. The AI
-  microservice tests need `agrogrowth-ai/requirements-test.txt` in a venv
-  (system Python lacks pytest/PIL).
-- **Data provenance is mandatory**: any endpoint returning synthetic,
-  heuristic or rule-based data must advertise it via `X-Data-Provenance` /
-  `X-Is-Real-Data` headers (`markSimulated` / `markReal` in
-  `server/lib/provenance.ts`) or embed `dataSource`/`isRealData` in the body.
-  Never present synthetic output as observed data.
-- **AI provider**: the unified adapter is `server/services/providers/llmProvider.ts`.
-  It is configured via `AI_BASE_URL`/`AI_API_KEY`/`AI_MODEL` (or provider keys
-  such as `GEMINI_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
-  `GROQ_API_KEY`). With no provider set, answers fall back to the deterministic
-  rule-based engine and are labelled as such.
-- **Auth**: the SPA signs up/in directly against Supabase (`supabase.auth`),
-  not through an Express route. Server-side admin endpoints are guarded by
-  `requireAdminAccess` (GETs) / `requireAdminToken()` (POSTs) and fail closed
-  in production.
-- **Feature matrix**: regenerate with the live-probe script referenced in
-  `FEATURE_MATRIX.md` rather than hand-editing claims.
+Do not call the application production-ready until:
+1. Required CI jobs pass on the exact release SHA.
+2. Supabase migrations, Auth and cross-tenant RLS are verified on the target.
+3. Deployed services are reachable and expose truthful provenance.
+4. Critical workflows persist/read back authenticated records.
+5. Licensed market and agronomic data sources are connected and evaluated.
+6. Arabic RTL, French/English, accessibility, privacy, backup, monitoring and
+   rollback checks pass.
+
+See AGROGROWTH_REMEDIATION_MASTER_PLAN.md and
+PRODUCTION_DEPLOYMENT_CHECKLIST.md for current acceptance gates.

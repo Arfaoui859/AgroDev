@@ -205,17 +205,15 @@ export function jsonBodyErrorHandler(): (
 }
 
 /**
- * Guard for privileged maintenance endpoints (demo/admin user provisioning,
- * auth debug helpers). These MUST NOT be reachable anonymously in production.
+ * Guard for privileged operator endpoints. Legacy demo provisioning, auth
+ * debug and database probe routes are retired.
  *
- * Access is granted when either:
- *  - ADMIN_API_TOKEN is set and the request carries a matching
- *    `x-admin-token` header (timing-safe comparison), or
- *  - the environment is explicitly non-production AND
- *    ENABLE_DEMO_ENDPOINTS is not set to "false".
+ * Access is granted by the dedicated ADMIN_API_TOKEN in production, or by
+ * the explicitly enabled non-production demo mode. The Supabase service-role
+ * key is never accepted as an HTTP credential.
  *
- * In production with no token configured the endpoint is disabled entirely,
- * which fails closed rather than exposing privileged operations.
+ * In production with no dedicated token configured the endpoint is disabled
+ * entirely, which fails closed rather than exposing privileged operations.
  */
 export function requireAdminToken(): RequestHandler {
   const isProd = process.env.NODE_ENV === "production";

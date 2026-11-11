@@ -267,6 +267,23 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
           .expect(200);
         expect(response.body.meta.dataSource).toBe("simulated");
         expect(response.body.meta.isRealData).toBe(false);
+        expect(response.headers["x-data-provenance"]).toBe("simulated");
+        expect(response.headers["x-is-real-data"]).toBe("false");
+      });
+
+      test("public API key creation is disabled when key storage is in-memory", async () => {
+        const previousEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = "production";
+        try {
+          const response = await request(app)
+            .post("/api/public/create-key")
+            .send({ name: "Production Test", email: "nobody@example.invalid" });
+          expect(response.status).toBe(503);
+          expect(response.body.code).toBe("PUBLIC_API_KEY_STORE_UNAVAILABLE");
+        } finally {
+          if (previousEnv === undefined) delete process.env.NODE_ENV;
+          else process.env.NODE_ENV = previousEnv;
+        }
       });
 
       test("weather responses declare a real provider source", async () => {
@@ -324,17 +341,35 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
         },
       );
 
-      test("a matching x-admin-token is accepted", async () => {
+      test("a valid admin token cannot revive retired demo provisioning routes", async () => {
+        const previousEnv = process.env.NODE_ENV;
         const previousToken = process.env.ADMIN_API_TOKEN;
+        process.env.NODE_ENV = "production";
         process.env.ADMIN_API_TOKEN = "test-admin-token";
         try {
           const prodApp = createServer();
-          const response = await request(prodApp)
-            .get("/api/demo-users")
-            .set("x-admin-token", "test-admin-token");
-          expect(response.status).toBe(200);
-          expect(response.body).toHaveProperty("demoUsers");
+          const retired: Array<[string, string]> = [
+            ["post", "/api/setup-admin"],
+            ["post", "/api/setup-demo-users"],
+            ["get", "/api/demo-users"],
+            ["delete", "/api/setup-demo-users"],
+            ["post", "/api/setup-inspector"],
+            ["post", "/api/setup-users"],
+            ["get", "/api/debug/auth"],
+            ["post", "/api/test/auth/signup"],
+            ["post", "/api/test/auth/signin"],
+            ["get", "/api/test/supabase"],
+          ];
+          for (const [method, path] of retired) {
+            const response = await (request(prodApp) as any)[method](path)
+              .set("x-admin-token", "test-admin-token")
+              .send({});
+            expect(response.status).toBe(410);
+            expect(response.body.success).toBe(false);
+          }
         } finally {
+          if (previousEnv === undefined) delete process.env.NODE_ENV;
+          else process.env.NODE_ENV = previousEnv;
           if (previousToken === undefined) delete process.env.ADMIN_API_TOKEN;
           else process.env.ADMIN_API_TOKEN = previousToken;
         }
@@ -360,26 +395,5 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
       });
     });
 
-    test("demo user list never contains real personal email addresses", async () => {
-      const previousToken = process.env.ADMIN_API_TOKEN;
-      process.env.ADMIN_API_TOKEN = "test-admin-token";
-      try {
-        const prodApp = createServer();
-        const response = await request(prodApp)
-          .get("/api/demo-users")
-          .set("x-admin-token", "test-admin-token")
-          .expect(200);
-        const emails: string[] = response.body.demoUsers.map(
-          (u: any) => u.email,
-        );
-        expect(emails.length).toBeGreaterThan(0);
-        for (const email of emails) {
-          expect(email).toMatch(/@demo\.com$|@agrogrowth\.com$/);
-        }
-      } finally {
-        if (previousToken === undefined) delete process.env.ADMIN_API_TOKEN;
-        else process.env.ADMIN_API_TOKEN = previousToken;
-      }
-    });
   });
 });

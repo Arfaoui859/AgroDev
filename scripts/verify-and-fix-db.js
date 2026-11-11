@@ -1,158 +1,107 @@
 #!/usr/bin/env node
 
 /**
- * Database Verification and Setup Helper
+ * Read-only Supabase schema visibility check.
+ *
+ * This script never writes rows, lists Auth users, applies SQL, or uses the
+ * service-role key. It only checks whether the configured project exposes the
+ * expected tables to the supplied anon client. RLS/tenant isolation needs the
+ * separate database integration tests and cannot be proven by this script.
+ *
  * Usage: node scripts/verify-and-fix-db.js
- * 
- * This script helps you:
- * 1. Verify if database tables exist
- * 2. Identify what's missing
- * 3. Provide clear fix instructions
  */
 
 import { createClient } from "@supabase/supabase-js";
 import "dotenv/config";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const supabaseUrl = process.env.SUPABASE_URL?.trim();
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY?.trim();
 
-// Supabase configuration
-const supabaseUrl =
-  process.env.SUPABASE_URL || "https://jymrhhlwdbclctobhbsi.supabase.co";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error(`
-❌ CONFIGURATION ERROR
-═══════════════════════════════════════════════════════════
-Missing environment variables:
-- SUPABASE_URL: ${supabaseUrl ? "✅ Set" : "❌ Not set"}
-- SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceKey ? "✅ Set" : "❌ Not set"}
-
-Make sure your .env.local file contains these variables.
-═══════════════════════════════════════════════════════════
-  `);
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error(
+    "Configuration missing. Set SUPABASE_URL and SUPABASE_ANON_KEY in the local environment.",
+  );
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 async function checkTable(tableName) {
   try {
-    const { data, error } = await supabase
-      .from(tableName)
-      .select("*")
-      .limit(0);
+    const { error } = await supabase.from(tableName).select("id").limit(0);
+    if (!error) return { exists: true, accessible: true, error: null };
 
-    return { exists: !error, error };
-  } catch (err) {
-    return { exists: false, error: err };
+    const missingTable =
+      error.code === "PGRST205" ||
+      /could not find the table|does not exist/i.test(error.message || "");
+
+    return {
+      exists: !missingTable,
+      accessible: false,
+      error: {
+        code: error.code || "UNKNOWN",
+        message: missingTable
+          ? "Table not found in the configured project's exposed schema."
+          : "Table may exist, but the anon role cannot access it; verify RLS/policies.",
+      },
+    };
+  } catch (error) {
+    return {
+      exists: false,
+      accessible: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: error instanceof Error ? error.message : "Unknown connection error",
+      },
+    };
   }
 }
 
 async function main() {
-  console.log(`
-╔═════════════════════════════════════════════════════════════╗
-║        Database Verification & Setup Helper                ║
-║                                                             ║
-║ This script verifies your Supabase database configuration  ║
-╚═════════════════════════════════════════════════════════════╝
-  `);
+  console.log("AgroGrowth — read-only Supabase schema check");
+  console.log("Project URL:", supabaseUrl);
+  console.log("Credential: anon/public key only; no service-role key used.");
+  console.log("");
 
-  console.log("🔍 Checking Supabase connection...");
-
-  try {
-    const { data, error } = await supabase.auth.admin.listUsers();
-    if (error) throw error;
-    console.log("✅ Supabase connection successful\n");
-  } catch (err) {
-    console.error(`❌ Supabase connection failed: ${err.message}\n`);
-    process.exit(1);
-  }
-
-  // Check for required tables
   const requiredTables = ["users", "user_profiles"];
-  const tableStatus = {};
-
-  console.log("🔍 Checking required tables...\n");
+  let missing = false;
+  let inaccessible = false;
 
   for (const table of requiredTables) {
     const result = await checkTable(table);
-    tableStatus[table] = result.exists;
-
-    if (result.exists) {
-      console.log(`✅ Table "${table}" exists`);
+    if (!result.exists) {
+      missing = true;
+      console.error(`MISSING: ${table}`);
+    } else if (!result.accessible) {
+      inaccessible = true;
+      console.warn(`EXISTS/NOT ACCESSIBLE: ${table}`);
+      console.warn(`  ${result.error?.message}`);
     } else {
-      console.log(`❌ Table "${table}" is missing`);
-      if (result.error?.message) {
-        console.log(`   Error: ${result.error.message}`);
-      }
+      console.log(`VISIBLE: ${table}`);
     }
   }
 
-  console.log("\n" + "═".repeat(61));
-
-  // Summary and next steps
-  const allTablesExist = requiredTables.every((t) => tableStatus[t]);
-
-  if (allTablesExist) {
-    console.log(`
-✅ SUCCESS! All required tables exist.
-
-Your database is properly configured. If you're still seeing
-errors, try:
-1. Refreshing your browser
-2. Clearing browser cache (Ctrl+Shift+Delete)
-3. Restarting your dev server
-
-═══════════════════════════════════════════════════════════
-    `);
+  console.log("");
+  if (missing) {
+    console.error("One or more required tables were not found.");
+    console.error("Review DATABASE_SETUP.md and the versioned SQL files in database/.");
+    process.exitCode = 1;
+  } else if (inaccessible) {
+    console.warn("Table visibility is incomplete. Review grants and RLS policies.");
+    console.warn("This script does not attempt to bypass RLS or modify the project.");
+    process.exitCode = 2;
   } else {
-    const missingSql = path.join(__dirname, "../supabase-tables-setup.sql");
-    const sqlExists = fs.existsSync(missingSql);
-
-    console.log(`
-❌ DATABASE SETUP REQUIRED
-
-Missing tables: ${requiredTables.filter((t) => !tableStatus[t]).join(", ")}
-
-═════════════════════════════════════════════════════════════
-📋 QUICK FIX (5 minutes):
-═════════════════════════════════════════════════════════════
-
-1. Open Supabase SQL Editor:
-   https://app.supabase.com/projects
-
-2. Create a new query and paste this file:
-   ${sqlExists ? missingSql : "supabase-tables-setup.sql (in project root)"}
-
-3. Run the query
-
-4. Refresh your application
-
-═════════════════════════════════════════════════════════════
-    `);
-
-    if (sqlExists) {
-      console.log("\n📄 SQL Script Contents:\n");
-      const sqlContent = fs.readFileSync(missingSql, "utf-8");
-      // Print first 50 lines as preview
-      const lines = sqlContent.split("\n").slice(0, 50);
-      lines.forEach((line) => console.log("   " + line));
-      if (sqlContent.split("\n").length > 50) {
-        console.log(`   ... (${sqlContent.split("\n").length - 50} more lines)`);
-      }
-      console.log("\n   👆 Copy ALL of this SQL and run in Supabase SQL Editor\n");
-    }
+    console.log("Required tables are visible to the anon client.");
+    console.log("This does NOT prove Auth lifecycle, RLS isolation or production readiness.");
   }
-
-  console.log("═".repeat(61) + "\n");
 }
 
-main().catch((err) => {
-  console.error("❌ Error:", err.message);
-  process.exit(1);
+main().catch((error) => {
+  console.error(
+    "Supabase check failed:",
+    error instanceof Error ? error.message : "Unknown error",
+  );
+  process.exitCode = 1;
 });

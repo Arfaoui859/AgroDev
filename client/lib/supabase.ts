@@ -1,20 +1,25 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Supabase configuration (prefer Vite env vars for client builds)
-const supabaseUrl =
-  (import.meta.env.VITE_SUPABASE_URL as string) ||
-  "https://jymrhhlwdbclctobhbsi.supabase.co";
+// Client credentials must be supplied by the deployment environment.
+// The anon/publishable key is public by design, but pinning a project URL/key
+// in source can silently connect preview builds to the wrong database.
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
+const supabaseAnonKey = (
+  import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+)?.trim();
 
-// Prefer Vite public anon key; fall back to embedded key only as last resort
-const supabaseAnonKey =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjc2NzEsImV4cCI6MjA0OTYwMzY3MX0.aAGN3jLnpCjNOw7-J3Lp4iQBbwMT9X6kMzgRgQtYz7E";
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-// Create Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Keep module imports/builds safe when local developers have not configured
+// Supabase yet. This loopback target deliberately avoids connecting to any
+// real project; the UI must surface missing configuration to the user.
+export const supabase = createClient(
+  supabaseUrl || "http://127.0.0.1:54321",
+  supabaseAnonKey || "supabase-client-not-configured",
+);
 
-// Test the connection (best-effort; will log helpful guidance if key invalid)
-if (typeof window !== "undefined") {
+// Test the connection only when both public client settings are present.
+if (typeof window !== "undefined" && isSupabaseConfigured) {
   supabase.auth
     .getSession()
     .then(({ error }) => {

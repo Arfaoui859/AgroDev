@@ -15,29 +15,24 @@ describe("🌱 Detailed soil analysis provenance", () => {
     app = createServer();
   });
 
-  test("a demo analysis is labelled, not presented as real", async () => {
+  test("analysis is unavailable when no AI provider is configured", async () => {
     const res = await request(app)
       .post("/api/soil-analysis/analyze")
       .send({ ph: 7.2, moisture: 28, nitrogen: 40, phosphorus: 25, potassium: 180 })
-      .expect(200);
+      .expect(503);
 
-    // With no provider configured the engine must disclose its demo source.
-    expect(res.headers["x-is-real-data"]).toBe("false");
-    expect(res.body.isRealData).toBe(false);
-    expect(res.body.dataSource).toBe("rule-based-demo");
-    expect(res.body.data.soilAnalysis).toBeDefined();
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe("AI_PROVIDER_UNAVAILABLE");
   });
 
-  test("a batch response carries the same provenance contract", async () => {
+  test("batch analysis is unavailable when no AI provider is configured", async () => {
     const res = await request(app)
       .post("/api/soil-analysis/batch")
       .send({ soils: [{ ph: 6.8, moisture: 31 }, { ph: 7.9, moisture: 22 }] })
-      .expect(200);
+      .expect(503);
 
-    expect(res.body.totalRequested).toBe(2);
-    expect(res.body.isRealData).toBe(false);
-    expect(res.body.dataSource).toBe("rule-based-demo");
-    expect(res.headers["x-is-real-data"]).toBe("false");
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe("AI_PROVIDER_UNAVAILABLE");
   });
 
   test("batch validation still rejects malformed payloads", async () => {

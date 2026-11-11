@@ -120,7 +120,7 @@ const SIMULATED_DISCLAIMER =
 const MAX_API_KEYS = Number(process.env.PUBLIC_API_MAX_KEYS || 1000);
 const MAX_REQUEST_LOGS = Number(process.env.PUBLIC_API_MAX_LOGS || 5000);
 
-let apiKeys: APIKey[] = [
+let apiKeys: APIKey[] = process.env.NODE_ENV === "production" ? [] : [
   {
     key: "public_demo_key_12345",
     name: "Demo User",
@@ -818,20 +818,37 @@ export const getPublicStats = async (req: Request, res: Response) => {
 
 export const createAPIKey = async (req: Request, res: Response) => {
   try {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(503).json({
+        success: false,
+        code: "PUBLIC_API_KEY_STORE_UNAVAILABLE",
+        message:
+          "Public API key creation is disabled until a persistent, abuse-protected key store is configured.",
+      });
+    }
+
     const { name, email, tier = "free" } = req.body;
 
-    if (!name || !email) {
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      name.trim().length > 100 ||
+      typeof email !== "string" ||
+      email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      !Object.prototype.hasOwnProperty.call(RATE_LIMITS, tier)
+    ) {
       return res.status(400).json({
-        error: "Missing required fields",
-        message: "Name and email are required",
+        error: "Invalid request",
+        message: "Provide a valid name, email address and supported API tier.",
       });
     }
 
     // Generate new API key
     const newKey: APIKey = {
       key: `agro_${randomBytes(24).toString("base64url")}`,
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
       tier: tier as APIKey["tier"],
       requestsPerMonth:
         RATE_LIMITS[tier as keyof typeof RATE_LIMITS]?.requests * 30 || 3000, // Approximate monthly limit

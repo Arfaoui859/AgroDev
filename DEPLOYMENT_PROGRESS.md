@@ -1,113 +1,76 @@
-# 📋 تتبع تقدم النشر المجاني - AgroGrowth
+# AgroGrowth — Deployment Progress
 
-## ✅ الخطوة 1: إعداد Supabase (قاعدة البيانات)
+**Reviewed:** 2026-11-11  
+**Repository:** `Arfaoui859/AgroDev`  
+**Working branch:** `fix/agrogrowth-ci-and-production-gaps-2026-11-11`
 
-### 🎯 الهدف: إنشاء قاعدة بيانات مجانية
+This file replaces the obsolete 2024 setup checklist. It does not claim that
+hosting, Supabase, or AI services are production-ready merely because their
+configuration files exist.
 
-**الخطوات:**
+## Current repository state
 
-1. **إنشاء حساب Supabase**
+- React/Vite client + Express server build.
+- Eight FastAPI AI service definitions (ports 8001–8008).
+- Render deployment configuration is present.
+- Supabase Auth/database integration and SQL migrations are present.
+- CI includes Node 20/22 tests, code quality, build, security scan, Python AI
+  service regression tests, Docker build and isolated PostgreSQL RLS tests.
+- The remediation branch and PR are separate from the production base branch.
+  Do not deploy or merge until required CI and release gates pass.
 
-   - [ ] اذهب إلى https://supabase.com
-   - [ ] انقر "Start your project"
-   - [ ] سجل دخول بـ GitHub
-   - [ ] تأكيد البريد الإلكتروني
+## Release gates
 
-2. **إنشاء مشروع جديد**
+### 1. GitHub CI
+- [ ] All required jobs green on the exact PR head SHA.
+- [ ] No skipped required test suite without an approved reason.
+- [ ] Build and Docker image jobs pass.
+- [ ] Security scan reviewed; no unaccepted critical/high finding.
+- [ ] Python service regression suite passes.
 
-   - [ ] انقر "New Project"
-   - [ ] Organization: اختر "Personal"
-   - [ ] Name: `agrogrowth-free`
-   - [ ] Database Password: [كلمة مرور قوية - احفظها!]
-   - [ ] Region: "West Europe (Ireland)"
-   - [ ] انقر "Create new project"
-   - [ ] انتظار إنشاء المشروع (2-3 دقائق)
+### 2. Render
+- [ ] Confirm service names, branch, root directory, build command and start
+  command in the Render dashboard.
+- [ ] Configure only required environment-variable names/values in Render's
+  secret store. Never commit secrets or paste them into chat.
+- [ ] Confirm each AI URL points to the intended deployed service.
+- [ ] Verify health and one representative request for every service.
+- [ ] Confirm service provenance in responses; HTTP 200 alone is not model
+  validation.
+- [ ] Verify logs contain no credentials or personal data.
+- [ ] Perform a rollback rehearsal before production traffic.
 
-3. **تشغيل سكريپت إعداد القاعدة**
+### 3. Supabase
+- [ ] Confirm the project identity and that server/client keys match it.
+- [ ] Apply the current SQL migrations.
+- [ ] Verify RLS and tenant isolation against live users.
+- [ ] Verify Auth lifecycle and admin-role protections.
+- [ ] Confirm backup and recovery configuration.
+- [ ] Confirm no service-role key is exposed to the browser.
 
-   - [ ] اذهب إلى "SQL Editor" في Supabase Dashboard
-   - [ ] انسخ محتوى `database/cloud-setup.sql`
-   - [ ] الصق في SQL Editor وانقر "Run"
-   - [ ] انتظار اكتمال التنفيذ
-   - [ ] انسخ محتوى `database/supabase-setup.sql`
-   - [ ] الصق وانقر "Run" مرة أخرى
+### 4. AI/data readiness
+- [ ] Soil lab ML remains lab-assisted only until field/Tunisia validation.
+- [ ] Crop, market, weather/yield, pest and irrigation synthetic models remain
+  labelled as demo until trained/evaluated on real representative data.
+- [ ] Disease diagnosis requires labelled image evaluation; LLM output alone
+  is not a validated diagnosis.
+- [ ] Market features require a licensed, reliable price source.
+- [ ] Record dataset licenses, data lineage, evaluation splits, metrics and
+  model limitations.
 
-4. **الحصول على بيانات الاتصال**
-   - [ ] اذهب إلى Settings > API
-   - [ ] انسخ Project URL
-   - [ ] انسخ anon public key
-   - [ ] اذهب إلى Settings > Database
-   - [ ] ان��خ Connection string
+### 5. Product quality
+- [ ] Complete Arabic RTL, French and English localization across all routes.
+- [ ] Test mobile/responsive layouts and keyboard/screen-reader accessibility.
+- [ ] Verify loading, empty, offline, timeout and provider-unavailable states.
+- [ ] Run Cypress end-to-end tests against a staging environment.
+- [ ] Verify rate limits, upload validation, backups, privacy and monitoring.
 
-### 📋 معلومات مطلوبة:
+## Current status
 
-```env
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
-DATABASE_URL=postgresql://postgres:[password]@db.xxxxx.supabase.co:5432/postgres
-```
+**Not certified production-ready.** CI and code remediation are in progress;
+live Render/Supabase checks and real agricultural data/model validation require
+external access and evidence. Track each item in
+`AGROGROWTH_REMEDIATION_MASTER_PLAN.md`.
 
----
-
-## ⏳ الخطوة 2: نشر خدمات AI على Render
-
-### 🎯 الهدف: نشر 3 خدمات AI مجاناً
-
-**الحالة:** 🚫 لم يبدأ بعد
-
-**الخطوات:**
-
-- [ ] إنشاء حساب Render
-- [ ] ربط GitHub repository
-- [ ] نشر خدمة تحليل التربة
-- [ ] نشر خدمة توصيات المحاصيل
-- [ ] نشر خدمة تشخيص الصور
-- [ ] الحصول على URLs الخدمات
-
----
-
-## ⏳ الخطوة 3: نشر Frontend على Vercel
-
-### 🎯 الهدف: نشر الواجهة الأمامية مجاناً
-
-**الحالة:** 🚫 لم يبدأ بعد
-
-**الخطوات:**
-
-- [ ] إنشاء حساب Vercel
-- [ ] ربط GitHub repository
-- [ ] تكوين متغيرات البيئة
-- [ ] نشر التطبيق
-- [ ] الحصول على URL النهائي
-
----
-
-## ⏳ الخطوة 4: الاختبار والتحقق
-
-### 🎯 الهدف: التأكد من عمل جميع الخدمات
-
-**الحالة:** 🚫 لم يبدأ بعد
-
-**الخطوات:**
-
-- [ ] اختبار الخدمات باستخدام `/cloud-status`
-- [ ] اختبار تحليل التربة الحقيقي
-- [ ] اختبار توصيات المحاصيل
-- [ ] اختبار تشخيص الأمراض
-
----
-
-## 📊 الملخص الحالي
-
-- 🟡 **المرحلة الحالية:** إعداد Supabase
-- ⏱️ **الوقت المتوقع المتبقي:** 30 دقيقة
-- 💰 **التكلفة الحالية:** 0$ (مجاني تماماً)
-- 🔄 **التقدم الإجمالي:** 0% مكتمل
-
----
-
-## 🎯 الخطوة التالية
-
-👉 **ابدأ بإنشاء حساب Supabase الآن!**
-
-انتقل إلى https://supabase.com وابدأ الخطوات المذكورة أعلاه.
+No hosted deployment, live migration, production data mutation or environment
+change is authorized by this document.

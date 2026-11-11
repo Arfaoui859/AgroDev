@@ -68,7 +68,8 @@ export interface CropRecommendation {
 
 export interface MarketPrice {
   id: string;
-  crop_id: string;
+  crop_id?: string | null;
+  crop_name: string;
   price_per_kg: number;
   market_location: string;
   price_date: string;
@@ -215,15 +216,50 @@ export class CropService {
   // Market Price operations
   static async getMarketPricesByCropId(cropId: string, limit: number = 30) {
     if (!supabase) return [];
-    const { data, error } = await supabase
-      .from('market_prices')
-      .select('*')
-      .eq('crop_id', cropId)
-      .order('price_date', { ascending: false })
+
+    const byCropId = await supabase
+      .from("market_prices")
+      .select("*")
+      .eq("crop_id", cropId)
+      .order("price_date", { ascending: false })
       .limit(limit);
-    
-    if (error) throw error;
-    return data;
+
+    if (byCropId.error) {
+      const missingCropIdColumn =
+        byCropId.error.code === "42703" ||
+        byCropId.error.code === "PGRST204" ||
+        /column .*crop_id.* does not exist|crop_id.*schema cache/i.test(
+          byCropId.error.message || "",
+        );
+      if (!missingCropIdColumn) throw byCropId.error;
+    } else if (byCropId.data?.length) {
+      return byCropId.data;
+    }
+
+    // Older cloud schemas stored crop_name only. Preserve read compatibility
+    // without inventing a crop_id or backfilling unverified name mappings.
+    const crop = referenceCrop(cropId);
+    const cropNames = [
+      crop?.name,
+      crop?.name_ar,
+      cropId,
+    ].filter((name, index, values): name is string =>
+      Boolean(name) && values.indexOf(name) === index,
+    );
+
+    for (const cropName of cropNames) {
+      const byCropName = await supabase
+        .from("market_prices")
+        .select("*")
+        .ilike("crop_name", cropName)
+        .order("price_date", { ascending: false })
+        .limit(limit);
+
+      if (byCropName.error) throw byCropName.error;
+      if (byCropName.data?.length) return byCropName.data;
+    }
+
+    return [];
   }
 
   static async getLatestMarketPrices() {

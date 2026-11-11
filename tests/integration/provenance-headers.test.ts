@@ -71,6 +71,18 @@ describe("🗂  Simulated-data provenance headers", () => {
     "/api/trader-dashboard/orders",
     "/api/livestock-management/animals",
     "/api/livestock-management/feed-inventory",
+    "/api/public/market-prices",
+    "/api/public/production",
+    "/api/public/exports",
+    "/api/public/weather",
+    // Advanced livestock APIs read static in-memory records and must disclose it.
+    "/api/animals",
+    "/api/animal-health/animal-001",
+    "/api/breeding-recommendations",
+    "/api/feed-recommendations/animal-001",
+    "/api/optimize-feed-budget",
+    "/api/health-alerts",
+    "/api/livestock-dashboard",
     // Investor and agronomist dashboards are generated from seeded demo
     // generators: fabricated returns, portfolios and supervised farms.
     "/api/investor/dashboard",
@@ -103,6 +115,16 @@ describe("🗂  Simulated-data provenance headers", () => {
     },
   );
 
+  test("advanced livestock feed optimization is explicitly simulated", async () => {
+    const res = await request(app)
+      .post("/api/optimize-feed-budget")
+      .send({ budget: 1000 });
+    expect(res.status).toBe(200);
+    expect(res.headers["x-data-provenance"]).toBe("simulated");
+    expect(res.headers["x-is-real-data"]).toBe("false");
+    expect(res.body.dataSource).toBe("static-demo-records");
+  });
+
   test("the fixture-backed modules actually return payloads", async () => {
     // Guards against the provenance assertion above silently passing on a 404:
     // these paths are consumed by five SPA screens, so they must resolve.
@@ -111,6 +133,9 @@ describe("🗂  Simulated-data provenance headers", () => {
       "/api/logistics/vehicles",
       "/api/supply-chain/tracking",
       "/api/marketplace/listings",
+      "/api/animals",
+      "/api/breeding-recommendations",
+      "/api/livestock-dashboard",
     ]) {
       const res = await request(app).get(path);
       expect(res.status).toBe(200);

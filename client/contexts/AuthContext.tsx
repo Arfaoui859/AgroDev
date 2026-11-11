@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import type {
   User as AppUser,
   UserProfile as AppUserProfile,
@@ -72,6 +72,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Initialize auth state
   useEffect(() => {
     let mounted = true;
+
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      console.warn("Supabase client configuration is missing; authentication is unavailable.");
+      return () => {
+        mounted = false;
+      };
+    }
 
     const initializeAuth = async () => {
       try {
@@ -343,6 +351,9 @@ Row Level Security (RLS) policies are blocking access.
   ) => {
     setIsLoading(true);
     try {
+      if (!isSupabaseConfigured) {
+        throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+      }
       console.log("🔄 Starting Supabase Auth signup for:", email);
 
       const { data, error } = await supabase.auth.signUp({
@@ -498,6 +509,9 @@ Row Level Security (RLS) policies are blocking access.
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      if (!isSupabaseConfigured) {
+        throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+      }
       const result = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -583,6 +597,9 @@ Row Level Security (RLS) policies are blocking access.
   // Reset password function
   const resetPassword = async (email: string) => {
     try {
+      if (!isSupabaseConfigured) {
+        throw new Error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+      }
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
     } catch (error) {

@@ -1,10 +1,6 @@
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  cloudConfig,
-  robustCloudFetch,
-  checkServiceHealth,
-} from "@/lib/cloud-config";
+import { cloudConfig } from "@/lib/cloud-config";
 
 // Types for AI Service responses
 interface SoilAnalysisResult {
@@ -20,7 +16,7 @@ interface SoilAnalysisResult {
     confidence: number;
   };
   properties: Record<string, any>;
-  health_score: number;
+  health_score: number | null;
   fertility_level: string;
   overall_recommendations: string[];
   analysis_timestamp: string;
@@ -113,19 +109,11 @@ interface LeafAnalysisResult {
   };
 }
 
-// API base URL with cloud-aware configuration
+// All AI requests go through the Node API gateway.
 const API_BASE = cloudConfig.apiBaseUrl;
 
-// Validate and debug API configuration
 if (import.meta.env.DEV) {
-  console.group("🔧 AI Services Configuration (Cloud-Enabled)");
-  console.log("Environment:", import.meta.env.MODE);
-  console.log("Use Cloud Services:", cloudConfig.useCloudServices);
-  console.log("API Base:", API_BASE);
-  console.log("Soil Analysis URL:", cloudConfig.soilAnalysisUrl);
-  console.log("Crop Recommendation URL:", cloudConfig.cropRecommendationUrl);
-  console.log("Image Diagnosis URL:", cloudConfig.imageDiagnosisUrl);
-  console.groupEnd();
+  console.info("AgroGrowth AI gateway:", API_BASE);
 }
 
 // Robust fetch wrapper to handle external script interference
@@ -222,78 +210,32 @@ export const useAIServices = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  // Get service URL based on type
-  const getServiceUrl = (serviceType: string): string | null => {
-    switch (serviceType) {
-      case "soil":
-        return cloudConfig.soilAnalysisUrl;
-      case "crops":
-        return cloudConfig.cropRecommendationUrl;
-      case "images":
-        return cloudConfig.imageDiagnosisUrl;
-      case "market":
-        return cloudConfig.marketPredictionUrl;
-      case "agent":
-        return cloudConfig.intelligentAgentUrl;
-      default:
-        return null;
-    }
-  };
-
-  // Smart API call with cloud service detection
+  // All inference is routed through the authenticated Node API gateway.
+  // Python microservices may be private Render services and must never be
+  // called directly from the browser.
   const smartApiCall = useCallback(
     async (
       endpoint: string,
-      serviceType?: string,
+      _serviceType?: string,
       options: RequestInit = {},
     ) => {
-      // Check if we should try cloud services first
-      if (cloudConfig.useCloudServices && serviceType) {
-        const serviceUrl = getServiceUrl(serviceType);
-        if (serviceUrl) {
-          try {
-            const isHealthy = await checkServiceHealth(serviceUrl);
-            if (isHealthy) {
-              const cloudResponse = await robustCloudFetch(
-                `${serviceUrl}${endpoint.replace("/ai/" + serviceType, "")}`,
-                {
-                  headers: {
-                    "Content-Type": "application/json",
-                    ...options.headers,
-                  },
-                  ...options,
-                },
-              );
-              return cloudResponse.json();
-            }
-          } catch (cloudError) {
-            console.warn(
-              `Cloud service ${serviceType} failed, falling back to main API:`,
-              cloudError,
-            );
-          }
-        }
-      }
-
-      // Fallback to main API
       const response = await robustFetch(`${API_BASE}${endpoint}`, {
+        ...options,
         headers: {
           "Content-Type": "application/json",
-          ...options.headers,
+          ...(options.headers ? (options.headers as Record<string, string>) : {}),
         },
-        ...options,
       });
 
       if (!response.ok) {
-        // Handle specific HTTP status codes
         if (response.status === 503 || response.status === 502) {
           throw new Error(
-            `Service temporarily unavailable (${response.status}). AI microservices may not be running.`,
+            `Service temporarily unavailable (${response.status}). The AI gateway or its provider is unavailable.`,
           );
         }
         if (response.status === 404) {
           throw new Error(
-            `API endpoint not found (${response.status}). Please check if the server is running.`,
+            `API endpoint not found (${response.status}). Please check the backend route.`,
           );
         }
 
@@ -316,12 +258,13 @@ export const useAIServices = () => {
     [],
   );
 
-  // Smart file upload with cloud service support
+  // Uploads also pass through the Node gateway; private service URLs and
+  // provider credentials never reach the browser.
   const smartFileUploadCall = useCallback(
     async (
       endpoint: string,
       file: File,
-      serviceType?: string,
+      _serviceType?: string,
       additionalData?: Record<string, string>,
     ) => {
       const formData = new FormData();
@@ -333,32 +276,6 @@ export const useAIServices = () => {
         });
       }
 
-      // Try cloud service first if available
-      if (cloudConfig.useCloudServices && serviceType) {
-        const serviceUrl = getServiceUrl(serviceType);
-        if (serviceUrl) {
-          try {
-            const isHealthy = await checkServiceHealth(serviceUrl);
-            if (isHealthy) {
-              const cloudResponse = await robustCloudFetch(
-                `${serviceUrl}${endpoint.replace("/ai/" + serviceType, "")}`,
-                {
-                  method: "POST",
-                  body: formData,
-                },
-              );
-              return cloudResponse.json();
-            }
-          } catch (cloudError) {
-            console.warn(
-              `Cloud service ${serviceType} failed, falling back to main API:`,
-              cloudError,
-            );
-          }
-        }
-      }
-
-      // Fallback to main API
       const response = await robustFetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         body: formData,
@@ -388,66 +305,6 @@ export const useAIServices = () => {
     [],
   );
 
-  // Generate mock soil analysis when AI services are unavailable
-  const generateMockSoilAnalysis = (
-    sensorData: Record<string, number>,
-  ): SoilAnalysisResult => {
-    const ph = sensorData.ph || 7.0;
-    const nitrogen = sensorData.nitrogen || 45;
-    const phosphorus = sensorData.phosphorus || 25;
-    const potassium = sensorData.potassium || 180;
-    const moisture = sensorData.moisture || 35;
-    const organicMatter = sensorData.organicMatter || 2.8;
-
-    // Calculate overall health score
-    const phScore =
-      ph >= 6.0 && ph <= 7.5 ? 90 : ph >= 5.5 && ph <= 8.0 ? 70 : 50;
-    const nitrogenScore =
-      nitrogen >= 40 && nitrogen <= 60 ? 85 : nitrogen >= 30 ? 65 : 45;
-    const phosphorusScore =
-      phosphorus >= 20 && phosphorus <= 40 ? 80 : phosphorus >= 15 ? 60 : 40;
-    const potassiumScore =
-      potassium >= 150 && potassium <= 250 ? 95 : potassium >= 100 ? 75 : 55;
-
-    const overallScore = Math.round(
-      (phScore + nitrogenScore + phosphorusScore + potassiumScore) / 4,
-    );
-    const fertilityLevel =
-      overallScore >= 80
-        ? "ممتاز"
-        : overallScore >= 65
-          ? "جيد"
-          : overallScore >= 50
-            ? "متوسط"
-            : "ضعيف";
-
-    return {
-      dataSource: "estimate",
-      soil_type: {
-        classification: "تقدير محلي بناءً على المدخلات",
-        // No model was run, so confidence is unknown rather than invented.
-        confidence: 0,
-      },
-      properties: {
-        ph: ph,
-        nitrogen: nitrogen,
-        phosphorus: phosphorus,
-        potassium: potassium,
-        moisture: moisture,
-        organic_matter: organicMatter,
-      },
-      health_score: overallScore,
-      fertility_level: fertilityLevel,
-      overall_recommendations: [
-        "التربة في حالة عامة جيدة مع إمكانية للتحسين",
-        "يُنصح بإضافة المادة العضوية لتحسين بنية التربة",
-        "مراقبة مستوى الرطوبة والحفاظ على الري المنتظم",
-        "إجراء فحص دوري للعناصر الغذائية كل 3-6 أشهر",
-      ],
-      analysis_timestamp: new Date().toISOString(),
-    };
-  };
-
   // 🌱 SOIL ANALYSIS SERVICES
   const analyzeSoilData = useCallback(
     async (sensorData: Record<string, number>): Promise<SoilAnalysisResult> => {
@@ -465,38 +322,16 @@ export const useAIServices = () => {
 
         return result;
       } catch (error) {
-        console.warn("AI service unavailable, using local analysis:", error);
-
-        // Check if it's a service unavailability error
-        const isServiceUnavailable =
-          error instanceof Error &&
-          (error.message.includes("Service temporarily unavailable") ||
-            error.message.includes("503") ||
-            error.message.includes("502") ||
-            error.message.includes("Network connection failed"));
-
-        if (isServiceUnavailable || cloudConfig.fallbackToMock) {
-          // Generate mock analysis for demonstration
-          const mockResult = generateMockSoilAnalysis(sensorData);
-
-          toast({
-            title: "تم إنشاء تحليل محلي",
-            description: "تم إنشاء تحليل تقديري - سيتم التحديث عند توفر الخدمة",
-            variant: "default",
-          });
-
-          return mockResult;
-        }
-
-        // For other errors, show error message but don't throw
+        console.error("Soil analysis request failed:", error);
         toast({
-          title: "خطأ في تحليل التربة",
-          description: "سيتم استخدام تحليل تقديري بناء على البيانات المدخلة",
+          title: "تعذر إكمال تحليل التربة",
+          description:
+            error instanceof Error
+              ? error.message
+              : "خدمة التحليل غير متاحة حالياً. لم يتم إنشاء نتيجة بديلة أو بيانات تقديرية.",
           variant: "destructive",
         });
-
-        // Return mock analysis as fallback
-        return generateMockSoilAnalysis(sensorData);
+        throw error;
       } finally {
         setLoading(false);
       }

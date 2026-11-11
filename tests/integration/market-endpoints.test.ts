@@ -27,8 +27,36 @@ describe("📈 Market endpoints", () => {
     for (const key of ["highestPrice", "lowestPrice", "averagePrice"]) {
       expect(summary[key] === null || Number.isFinite(summary[key])).toBe(true);
     }
-    expect(res.body.data.isRealData).toBe(true);
-    expect(res.body.data.dataSource).toBe("database");
+    expect(res.body.data.isRealData).toBe(res.body.data.totalCrops > 0);
+    expect(res.body.data.dataAvailable).toBe(res.body.data.totalCrops > 0);
+    expect(res.body.data.dataSource).toBe(
+      res.body.data.totalCrops > 0 ? "database" : "unavailable",
+    );
+  });
+
+  test("a crop with no stored market prices does not report zero as a real quote", async () => {
+    const res = await request(app).get("/api/market/crop/wheat");
+    expect(res.status).toBe(200);
+    expect(res.body.data.currentPrice.value).toBeNull();
+    expect(res.body.data.currentPrice.lastUpdated).toBeNull();
+    expect(res.body.data.statistics.averagePrice30Days).toBeNull();
+    expect(res.body.data.statistics.averagePrice7Days).toBeNull();
+    expect(res.body.data.forecast.available).toBe(false);
+    expect(res.body.data.forecast.nextWeek).toBeNull();
+    expect(res.body.data.forecast.nextMonth).toBeNull();
+    expect(res.body.data.dataSource).toBe("unavailable");
+    expect(res.body.data.isRealData).toBe(false);
+  });
+
+  test("regional market endpoint returns nulls, not infinities, for an empty price table", async () => {
+    const res = await request(app).get("/api/market/regional/wheat");
+    expect(res.status).toBe(200);
+    expect(res.body.data.regionalPrices).toEqual([]);
+    expect(res.body.data.bestPrice).toBeNull();
+    expect(res.body.data.worstPrice).toBeNull();
+    expect(res.body.data.averageNationalPrice).toBeNull();
+    expect(res.body.data.dataSource).toBe("unavailable");
+    expect(res.body.data.isRealData).toBe(false);
   });
 
   test("GET /api/market/trends never 500s and reports its sample size", async () => {

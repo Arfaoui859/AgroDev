@@ -28,7 +28,10 @@ export interface SystemHealth {
   aiServiceIds: string[];
 }
 
-const FALLBACK_TO_MOCK = import.meta.env.VITE_FALLBACK_TO_MOCK !== 'false';
+// Mock UI data is opt-in for local development only. It is never enabled
+// by default and can never be enabled in a production build.
+const FALLBACK_TO_MOCK =
+  import.meta.env.DEV && import.meta.env.VITE_FALLBACK_TO_MOCK === "true";
 
 export const useServiceHealthChecker = () => {
 

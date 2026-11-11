@@ -67,7 +67,18 @@ describe("🔌 AI gateway → microservice request contracts", () => {
   test("crop recommendation renames rainfall→annual_rainfall and ph→soil_ph", async () => {
     await request(app)
       .post("/api/ai/crops/recommend")
-      .send({ ph: 6.5, temperature: 24, rainfall: 350, area_hectares: 2 });
+      .send({
+        ph: 6.5,
+        temperature: 24,
+        rainfall: 350,
+        soil_quality_score: 0.7,
+        water_availability: 0.8,
+        target_market_price: 2.5,
+        farmer_experience_years: 5,
+        available_capital: 5000,
+        area_hectares: 2,
+        risk_tolerance: 0.5,
+      });
 
     const req = lastRequest();
     expect(req.url).toContain("/recommend-crops");

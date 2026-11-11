@@ -1,8 +1,9 @@
 # AgroGrowth AI Services — Evidence-Based Status
 
-**Last code audit:** 2026-11-10  
+**Last code audit:** 2026-11-11  
 **Repository:** `Arfaoui859/AgroDev`  
-**Branch:** `feat/ai-integration-production-hardening`
+**Remediation branch:** `fix/agrogrowth-ci-and-production-gaps-2026-11-11`  
+**Base branch:** `feat/ai-integration-production-hardening`
 
 > **Important:** This file describes the implementation found in the repository. It is
 > not a live Render health certificate. A service returning HTTP 200 from `/health`
@@ -119,7 +120,23 @@ Other demo-backed screens remain visibly labelled as illustrative rather than li
 records. They still need real database/API integrations before they can be treated
 as operational workflows.
 
-## 5. How to verify a live deployment
+## 5. Security and operational guardrails added in the remediation branch
+
+- Browser Supabase configuration no longer contains a project URL or anon JWT fallback. The build requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY; without them the client does not silently connect to an embedded project.
+- Legacy demo-account provisioning, fixed demo credentials and auth-debug endpoints are retired. Authenticated requests to those legacy routes receive HTTP 410 after the admin-token gate; unauthenticated requests remain denied.
+- The old Supabase diagnostic endpoint that inserted and deleted a probe row in public.users has been retired. Use read-only health/capability probes for deployment monitoring.
+- The seed script that generated random market-price rows has been removed. Never populate market_prices with random/example prices and then expose them as market observations.
+- The database verification script now requires an explicit SUPABASE_URL and server-side SUPABASE_SERVICE_ROLE_KEY; it no longer defaults to a historical project URL.
+- Authentication initialization stops cleanly when the browser Supabase variables are missing and signup/signin return an explicit configuration error.
+- AI inference and file uploads in the browser now use the Node API gateway only; old hardcoded Railway/Render browser endpoints were removed. Cloud service health is obtained from the gateway's eight-service health contract.
+- Browser mock soil-analysis fallback is removed. The API's explicit deterministic rule-based path may still answer when available; an unavailable API now surfaces an error instead of manufacturing a local result.
+- Generic mock UI data can only be enabled by an explicit VITE_FALLBACK_TO_MOCK=true in a development build; it is disabled by default and cannot be enabled in production.
+- The Public Data API's deterministic market/production/weather endpoints are demo-only and carry simulated provenance headers. Its built-in demo key is loaded only outside production; production key issuance returns 503 until a durable, abuse-protected key store is implemented.
+- PublicDataDashboard does not auto-fetch synthetic data or offer API key issuance in production; the page explicitly discloses its demo-only state.
+
+These changes remove unsafe defaults and accidental demo-data mutation paths. They do not verify the live Supabase project or the currently deployed Render environment.
+
+## 6. How to verify a live deployment
 
 1. Call `GET /api/ai/health` on the deployed AgroGrowth API.
 2. Check all eight service entries and their `status` fields.
