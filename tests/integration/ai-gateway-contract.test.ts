@@ -193,6 +193,64 @@ describe("🔌 AI gateway → microservice request contracts", () => {
     expect(req.timeout).toBe(90000);
   });
 
+
+  test("canonical farm inputs are validated and adapted with provenance", async () => {
+    const res = await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .send({
+        message: "Analyze my soil and recommend crops",
+        farm_input: {
+          schema_version: "1.0.0",
+          farm_id: "farm-123",
+          location: { country_code: "TN", governorate: "Siliana" },
+          measurements: {
+            soil_ph: { value: 6.5, unit: "pH", source: "farmer_entered", verification: "unverified", observed_at: "2026-11-11T20:00:00+01:00" },
+            annual_rainfall: { value: 450, unit: "mm/year", source: "weather_provider", verification: "unverified", observed_at: "2026-11-11T20:00:00+01:00" },
+          },
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(lastRequest().data.tool_inputs).toEqual({
+      "soil.analyze": { sensor_data: { ph: 6.5 } },
+      "crop.recommend": { soil_ph: 6.5, annual_rainfall: 450 },
+    });
+    expect(res.body.input_provenance.soil_ph).toMatchObject({ source: "farmer_entered", verification: "unverified", unit: "pH" });
+    expect(res.body.farm_context).toMatchObject({ farm_id: "farm-123", location: { governorate: "Siliana" } });
+    expect(lastRequest().data.tool_inputs["crop.recommend"]).not.toHaveProperty("temperature");
+  });
+
+  test("canonical farm inputs reject false verification and conflicting legacy payloads", async () => {
+    const invalid = await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .send({
+        message: "Analyze my soil",
+        farm_input: {
+          schema_version: "1.0.0",
+          measurements: {
+            soil_ph: { value: 6.5, unit: "pH", source: "farmer_entered", verification: "verified", observed_at: "2026-11-11T20:00:00+01:00" },
+          },
+        },
+      });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error).toBe("Invalid farm_input");
+
+    const conflict = await request(app)
+      .post("/api/ai/assistant/orchestrate")
+      .send({
+        message: "Analyze my soil",
+        farm_input: {
+          schema_version: "1.0.0",
+          measurements: {
+            soil_ph: { value: 6.5, unit: "pH", source: "farmer_entered", verification: "unverified", observed_at: "2026-11-11T20:00:00+01:00" },
+          },
+        },
+        tool_inputs: { "soil.analyze": { sensor_data: { ph: 7 } } },
+      });
+    expect(conflict.status).toBe(400);
+    expect(conflict.body.error).toBe("Conflicting AI inputs");
+  });
+
   test("multi-agent image upload is converted to the private tool input", async () => {
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
     await request(app)
