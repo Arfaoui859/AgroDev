@@ -23,6 +23,7 @@ import { isLLMConfigured } from "../services/providers/llmProvider";
 import { getLLMInfo } from "../services/providers/llmProvider";
 import { probeService } from "../services/providers/serviceProbe";
 import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
+import { toLegacyAgentInputs, validateFarmInputContract } from "../../shared/agricultural-data-contract";
 
 /**
  * Model-source markers that mean "this service is not running a model trained
@@ -914,6 +915,44 @@ export const orchestrateAgriculturalQuery = async (req: Request, res: Response) 
   if (!toolInputs || typeof toolInputs !== "object" || Array.isArray(toolInputs)) {
     return res.status(400).json({ error: "tool_inputs must be an object", correlationId });
   }
+
+  // Validate the optional canonical envelope and adapt it to legacy specialist inputs.
+  // This does not load or persist a farm record; farm_id is metadata, never authorization.
+  let inputProvenance: Record<string, unknown> | undefined;
+  let farmContext: Record<string, unknown> | undefined;
+  let farmInput = body.farm_input;
+  if (typeof farmInput === "string") {
+    try { farmInput = JSON.parse(farmInput); } catch {
+      return res.status(400).json({ error: "farm_input must be valid JSON", correlationId });
+    }
+  }
+  if (farmInput !== undefined) {
+    const validatedFarmInput = validateFarmInputContract(farmInput);
+    if (!validatedFarmInput.success) {
+      return res.status(400).json({
+        error: "Invalid farm_input",
+        message: "Check measurement values, units, provenance and timestamps.",
+        issues: validatedFarmInput.error.issues,
+        correlationId,
+      });
+    }
+    const adapted = toLegacyAgentInputs(validatedFarmInput.data);
+    const conflicts = Object.keys(adapted.tool_inputs).filter((toolName) =>
+      Object.prototype.hasOwnProperty.call(toolInputs, toolName),
+    );
+    if (conflicts.length > 0) {
+      return res.status(400).json({
+        error: "Conflicting AI inputs",
+        message: "Do not send farm_input and legacy tool_inputs for the same specialist in one request.",
+        conflicts,
+        correlationId,
+      });
+    }
+    toolInputs = { ...toolInputs, ...adapted.tool_inputs };
+    inputProvenance = adapted.measurement_provenance;
+    farmContext = adapted.farm_context;
+  }
+
   let userContext = body.user_context ?? {};
   if (typeof userContext === "string") {
     try { userContext = JSON.parse(userContext); } catch {
@@ -948,7 +987,12 @@ export const orchestrateAgriculturalQuery = async (req: Request, res: Response) 
       },
       undefined, 90000,
     );
-    return res.json({ ...response.data, correlationId });
+    return res.json({
+      ...response.data,
+      ...(inputProvenance ? { input_provenance: inputProvenance } : {}),
+      ...(farmContext ? { farm_context: farmContext } : {}),
+      correlationId,
+    });
   } catch (error) {
     return handleAIServiceError(error as AxiosError, "AgroGrowth Multi-Agent Orchestrator", res);
   }
