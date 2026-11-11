@@ -288,6 +288,18 @@ def test_workflow_template_does_not_create_soil_agent_without_measurements():
     assert edges == []
 
 
+
+def test_workflow_template_does_not_reference_ph_when_only_texture_is_supplied():
+    selected, inputs, edges = orchestrator_module._apply_workflow_templates(
+        "Recommend crops for my farm",
+        {"soil.analyze": {"sensor_data": {"sand": 40, "silt": 40, "clay": 20}}},
+        ["crop.recommend"],
+        5,
+    )
+    assert selected == ["crop.recommend", "soil.analyze"]
+    assert "soil_ph" not in inputs["crop.recommend"]
+    assert edges == []
+
 def test_workflow_template_respects_agent_limit():
     selected, inputs, edges = orchestrator_module._apply_workflow_templates(
         "Recommend crops for my farm",
