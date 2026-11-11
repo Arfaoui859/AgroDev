@@ -147,7 +147,7 @@ export const getCropClimateInputs: RequestHandler = async (req, res) => {
     const monthly = history.monthly.filter((item) =>
       Number.isFinite(item.avgTemp) && Number.isFinite(item.totalRainfall)
     );
-    if (monthly.length < 10) {
+    if (monthly.length < 12) {
       return res.status(503).json({
         error: "Insufficient historical weather observations for crop planning.",
         dataAvailable: false,
