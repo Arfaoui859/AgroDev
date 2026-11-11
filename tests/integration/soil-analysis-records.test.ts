@@ -122,6 +122,15 @@ describe("POST /api/soil-analysis/records", () => {
     expect(saved[0]).not.toHaveProperty("created_at");
   });
 
+  test("rejects non-numeric and out-of-range laboratory columns", async () => {
+    configureDatabase();
+    const res = await request(makeApp()).post("/records")
+      .set("Authorization", "Bearer user-jwt")
+      .send({ farm_id: FARM_ID, sensor_data: {}, ph_level: 15 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("INVALID_PH_LEVEL");
+  });
+
   test("rejects oversized JSON payloads and out-of-range health scores", async () => {
     configureDatabase();
     const app = makeApp();
