@@ -212,3 +212,44 @@ def test_failed_upstream_agent_blocks_dependent_tool_without_fabrication(monkeyp
     assert "dependency_failed_or_incomplete:soil.analyze" in result["missing_inputs"]["crop.recommend"]
     assert result["execution"]["executed"] == 1
     assert result["execution"]["failed"] == 1
+
+
+def test_successful_llm_synthesis_reports_its_model_source(monkeypatch):
+    class ConfiguredProvider:
+        def __init__(self):
+            self.calls = 0
+
+        def is_configured(self):
+            return True
+
+        def model_source(self):
+            return "gemini:gemini-flash-lite-latest"
+
+        def chat(self, messages, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return '{"selected_tools":["soil.analyze"]}'
+            return "Soil analysis completed from the supplied measurements."
+
+    provider = ConfiguredProvider()
+    monkeypatch.setattr(orchestrator_module, "get_provider", lambda: provider)
+
+    async def fake_execute(tool_name, payload, timeout_s):
+        return {
+            "tool": tool_name,
+            "agent": "soil_agent",
+            "status": "success",
+            "result": {"properties": {"ph": {"current_value": 6.5}}},
+            "model_source": "deterministic-rules",
+        }
+
+    monkeypatch.setattr(orchestrator_module, "_execute_tool", fake_execute)
+    result = asyncio.run(orchestrator_module.orchestrate(
+        "Analyze my soil",
+        language="en",
+        tool_inputs={"soil.analyze": {"sensor_data": {"ph": 6.5}}},
+    ))
+
+    assert result["response"] == "Soil analysis completed from the supplied measurements."
+    assert result["planner_model_source"] == "gemini:gemini-flash-lite-latest"
+    assert result["synthesis_model_source"] == "gemini:gemini-flash-lite-latest"

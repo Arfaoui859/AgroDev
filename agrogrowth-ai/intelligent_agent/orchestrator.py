@@ -440,8 +440,10 @@ async def orchestrate(
                  {"role": "user", "content": json.dumps(synthesis_input, ensure_ascii=False)[:18000]}],
                 temperature=0.2, max_tokens=1200,
             )
+            synthesis_used = bool(answer and answer.strip())
         except LLMError:
             answer = ""
+            synthesis_used = False
     else:
         answer = ""
 

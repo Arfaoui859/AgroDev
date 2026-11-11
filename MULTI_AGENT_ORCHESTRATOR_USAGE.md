@@ -103,10 +103,10 @@ end-to-end request; a configured key alone is not proof that inference works.
 
 ## Current boundaries
 
-- Maximum five tools execute concurrently; each call has a bounded timeout.
-- The current planner chooses tools but does not synthesize tool arguments.
-- Tools run concurrently; dependency-aware pipelines (soil result automatically feeding crop,
-  irrigation and yield tools) are not implemented yet.
+- Maximum five tools execute concurrently within each dependency wave; each call has a bounded timeout.
+- The planner chooses registered tools but does not synthesize tool arguments or invent measurements.
+- Explicit caller-supplied `$results.<tool>.<path>` references create dependency edges. Independent tools run concurrently; dependent tools run in later waves after upstream success.
+- If an upstream tool fails, returns an incomplete result, or a reference cannot be resolved, dependent tools are blocked and the missing dependency is reported. No fallback value is guessed.
 - Market, crop, yield, pest and irrigation numeric outputs retain their existing synthetic/demo
   provenance. Orchestration does not improve their underlying model validity.
 - PlantVillage image metrics are not Tunisian field validation.
