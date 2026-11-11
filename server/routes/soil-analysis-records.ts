@@ -156,3 +156,70 @@ export const saveSoilAnalysis: RequestHandler = async (req, res) => {
     });
   }
 };
+
+
+/**
+ * Read the signed-in caller's soil-analysis history for one farm, optionally
+ * narrowed to a field. Supabase RLS remains the ownership boundary.
+ */
+export const getSoilAnalysisHistory: RequestHandler = async (req, res) => {
+  if (req.identitySource !== "jwt" || !req.userId) {
+    return res.status(401).json({ success: false, error: "AUTHENTICATION_REQUIRED" });
+  }
+
+  const farmId = req.query.farm_id;
+  const fieldId = req.query.field_id;
+  if (typeof farmId !== "string" || !UUID_RE.test(farmId)) {
+    return res.status(400).json({ success: false, error: "INVALID_FARM_ID" });
+  }
+  if (fieldId !== undefined && (typeof fieldId !== "string" || !UUID_RE.test(fieldId))) {
+    return res.status(400).json({ success: false, error: "INVALID_FIELD_ID" });
+  }
+
+  const rawLimit = req.query.limit;
+  const limit = rawLimit === undefined ? 20 : Number(rawLimit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return res.status(400).json({ success: false, error: "INVALID_LIMIT" });
+  }
+
+  const db = scopedClientFromAuthHeader(req.header("authorization"));
+  if (!db) {
+    return res.status(503).json({ success: false, error: "DATABASE_UNAVAILABLE" });
+  }
+
+  try {
+    const { data: farm, error: farmError } = await db
+      .from("farms").select("id").eq("id", farmId).maybeSingle();
+    if (farmError) throw farmError;
+    if (!farm) return res.status(404).json({ success: false, error: "FARM_NOT_FOUND" });
+
+    if (fieldId) {
+      const { data: field, error: fieldError } = await db
+        .from("farm_sections").select("id").eq("id", fieldId).eq("farm_id", farmId).maybeSingle();
+      if (fieldError) throw fieldError;
+      if (!field) return res.status(404).json({ success: false, error: "FIELD_NOT_FOUND" });
+    }
+
+    let query = db.from("soil_analyses")
+      .select("id, farm_id, section_id, analysis_type, sensor_data, analysis_result, recommendations, ph_level, nitrogen_level, phosphorus_level, potassium_level, organic_matter_percent, moisture_percent, temperature_celsius, health_score, fertility_level, location, sample_depth_cm, weather_conditions, analyzed_at, created_at")
+      .eq("farm_id", farmId);
+    if (fieldId) query = query.eq("section_id", fieldId);
+    const { data, error } = await query
+      .order("analyzed_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      data: data ?? [],
+      meta: { farm_id: farmId, field_id: fieldId ?? null, limit, count: data?.length ?? 0 },
+    });
+  } catch (error) {
+    console.error("[soil-analysis] History read failed:", error);
+    return res.status(500).json({
+      success: false,
+      error: "SOIL_ANALYSIS_HISTORY_FAILED",
+      message: "The soil-analysis history could not be loaded.",
+    });
+  }
+};
