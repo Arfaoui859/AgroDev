@@ -66,6 +66,18 @@ const SOURCES: NewsSource[] = [
 const AGRICULTURE_TERMS =
   /فلاح|فلاح[ية]|زراع|محصول|محاصيل|حبوب|زيتون|زيت الزيتون|تمور|تمور|ريّ|الري|مياه|سدود|بذور|أسمدة|تربة|مبيدات|آفات|مواشي|أبقار|أغنام|صيد بحري|agricultur|agricole|agronom|récolte|olivier|huile d'olive|dattes|irrigation|semence|engrais|sols?|pesticide|élevage|pêche|harvest|olive|dates|irrigation|crops?/i;
 
+export function classifyAgriculturalNews(text: string): string {
+  if (/زيتون|زيت الزيتون|olive|olivier|huile d'olive/i.test(text)) return "olive";
+  if (/تمور|تمر|نخيل|dates|dattes|date palm/i.test(text)) return "dates";
+  if (/حبوب|قمح|شعير|بذور|céréales|blé|orge|cereal|wheat/i.test(text)) return "cereals";
+  if (/مياه|سدود|ريّ|الري|جفاف|فيضانات|irrigation|sécheresse|eau|barrage/i.test(text)) return "water";
+  if (/مرض|أمراض|آفات|حشرات|مبيدات|mildiou|pesticide|pest|disease/i.test(text)) return "plant_health";
+  if (/مواشي|أبقار|أغنام|ماعز|أعلاف|élevage|bétail|livestock/i.test(text)) return "livestock";
+  if (/تصدير|صادرات|توريد|سوق|أسعار|export|marché|prix|commerce/i.test(text)) return "trade_export";
+  if (/استثمار|تمويل|مشروع|منحة|APIA|investissement|financement/i.test(text)) return "investment";
+  return "general";
+}
+
 function decodeXml(value: string): string {
   return value
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
@@ -151,7 +163,7 @@ export function parseAgriculturalRss(
       source: source.name,
       sourceId: source.id,
       language: source.language,
-      category: "agriculture",
+      category: classifyAgriculturalNews(title),
     });
     if (items.length >= 30) break;
   }
