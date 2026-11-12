@@ -1246,3 +1246,17 @@ were never reachable from the Node API.
 
 `npx tsc --noEmit` exit 0 · `npx jest` provenance + lab + related suites pass ·
 `pytest agrogrowth-ai/tests` 245 passed · `pytest soil_analysis/tests` 9 passed.
+
+### Image diagnosis: trained ONNX classifier made runnable — **VERIFIED**
+
+`image_diagnosis` ships a **real** MobileNetV3-Large PlantVillage classifier
+(38 classes, test accuracy 0.9968, ONNX parity PASS) but `onnxruntime` was
+absent from `requirements-test.txt`, so every local run silently fell back to
+the heuristic the service explicitly refuses to return as a diagnosis.
+
+- Added `onnxruntime>=1.20,<2` to `agrogrowth-ai/requirements-test.txt`.
+- New `agrogrowth-ai/tests/test_onnx_classifier_inference.py` (3 tests) loads
+  the *real* artifact, asserts 38 classes and a normalised top-5 distribution.
+- Live-verified: the service boots, `/health` reports
+  `production_ready: true`, `model_source: "mobilenetv3-plantvillage-v1"`, and
+  the detector runs in `onnx` inference mode.

@@ -15,5 +15,9 @@ scikit-learn>=1.3,<2
 joblib>=1.3,<2
 Pillow>=10,<12
 opencv-python-headless>=4.8,<5
+# Required by the image_diagnosis service to run its trained MobileNetV3 ONNX
+# classifier. Without it the service degrades to a heuristic that it refuses to
+# return as a diagnosis, so the real inference path must be installable in CI.
+onnxruntime>=1.20,<2
 pytest>=7,<9
 httpx>=0.27,<0.29
