@@ -29,7 +29,8 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 | 8 | Specialist agent contracts + tests | **VERIFIED** — 7 specialists, honest `insufficient_input`, 16 unit + 2 integration tests |
 | 9 | Chatbot uses the orchestrator | **VERIFIED** — chat handler runs the orchestrator and returns `usedSpecialists` + `orchestrationTrace` |
 | 10 | AI service URL config + health monitoring | **VERIFIED** — registry/env reconciled; 429 → `rate_limited` (reachable, inference unverified); production no longer reports localhost |
-| 11 | Real inference verification for all eight services | **PARTIAL** — locally all eight `/health` endpoints answer 200 and self-declare model source (only `intelligent_agent` = LLM); hosted inference remains **BLOCKED** (no network/credentials here) |
+| 11 | Real inference verification for all eight services | **PARTIAL** — locally all eight `/health` endpoints answer 200 and self-declare model source. **Real trained-model inference is now verified for two**: (a) `image_diagnosis` runs its MobileNetV3 PlantVillage ONNX classifier (38 classes) once `onnxruntime` is installed — `/health` reports `production_ready: true`; (b) `soil_analysis` lab models are reachable through `POST /api/ai/soil/predict-lab` **and** the orchestrator's `lab_soil` specialist (7/7 targets with R²). Hosted inference for the rest remains **BLOCKED** (no network/credentials here) |
+| 11a | Orchestrator uses trained lab models (`lab_soil`) | **VERIFIED** — allow-listed specialist; no network call without analytes; `trained-model-inference` provenance with per-target R²; honest `failed`/`unavailable`; live-verified 7/7 targets and sparse-input `insufficient_input` |
 
 ## P2 — News, farm management, admin monitoring
 

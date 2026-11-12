@@ -1336,6 +1336,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       ...result,
       farmContextStatus,
       usedSpecialists: orchestration?.usedSpecialists ?? [],
+      trainedModelSpecialists: orchestration?.trainedModelSpecialists ?? [],
       orchestrationTrace: orchestration?.trace ?? null,
       note: [result.note, contextNote].filter(Boolean).join(" "),
       correlationId,

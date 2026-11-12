@@ -79,6 +79,10 @@ interface ChatMessage {
     note?: string;
     disclaimer?: string;
     usedAgents?: string[];
+    /** Allow-listed specialist agents the orchestrator actually ran. */
+    usedSpecialists?: string[];
+    /** Specialists whose result came from a genuinely trained model. */
+    trainedModelSpecialists?: string[];
     /** Server trace identifier for support and log correlation. */
     correlationId?: string;
     /** Persisted disease record ID used to refresh its private image URL. */
@@ -121,6 +125,18 @@ interface Conversation {
   category: string;
   tags: string[];
 }
+
+/** Friendly labels for the orchestrator's allow-listed specialist ids. */
+const SPECIALIST_LABELS: Record<string, { ar: string; fr: string; en: string }> = {
+  soil: { ar: 'تحليل التربة', fr: 'Analyse du sol', en: 'Soil analysis' },
+  lab_soil: { ar: 'نماذج مختبرية مدرّبة', fr: 'Modèles de laboratoire', en: 'Trained lab models' },
+  weather: { ar: 'الطقس', fr: 'Météo', en: 'Weather' },
+  crop: { ar: 'توصية المحاصيل', fr: 'Recommandation de cultures', en: 'Crop recommendation' },
+  plant_health: { ar: 'صحة النبات', fr: 'Santé des plantes', en: 'Plant health' },
+  pest_control: { ar: 'مكافحة الآفات', fr: 'Lutte antiparasitaire', en: 'Pest control' },
+  irrigation: { ar: 'الري', fr: 'Irrigation', en: 'Irrigation' },
+  market: { ar: 'السوق', fr: 'Marché', en: 'Market' },
+};
 
 const AIAssistantChatbot: React.FC = () => {
   const routeLocation = useLocation();
@@ -852,7 +868,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
    */
   const callAdvisorApi = async (
     messageContent: string
-  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string; disclaimer?: string; modelSource?: string; farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable'; contextSummary?: string[]; usedAgents?: string[]; correlationId?: string; conversationId?: string | null; historyPersisted?: boolean; historyPersistenceCode?: string | null }> => {
+  ): Promise<{ answer: string; dataSource: string; language?: string; note?: string; disclaimer?: string; modelSource?: string; farmContextStatus?: 'linked' | 'no_farms' | 'anonymous' | 'unavailable'; contextSummary?: string[]; usedAgents?: string[]; usedSpecialists?: string[]; trainedModelSpecialists?: string[]; correlationId?: string; conversationId?: string | null; historyPersisted?: boolean; historyPersistenceCode?: string | null }> => {
     const history = messages.slice(-6).map(m => ({
       role: m.type === 'user' ? 'user' : 'assistant',
       content: m.content
@@ -904,6 +920,8 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
           note: [result.note, historyNote].filter(Boolean).join(' ') || undefined,
           disclaimer: result.disclaimer,
           usedAgents: result.usedAgents?.slice(0, 8),
+          usedSpecialists: result.usedSpecialists?.slice(0, 8),
+          trainedModelSpecialists: result.trainedModelSpecialists?.slice(0, 8),
           correlationId: result.correlationId,
           suggestions: quickActions.slice(0, 4),
           relatedTopics: ['زراعة', 'أسواق', 'طقس', 'استثمار']
@@ -1360,6 +1378,18 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
                                 {message.metadata.note && <p>{message.metadata.note}</p>}
                                 {message.metadata.disclaimer && <p>{message.metadata.disclaimer}</p>}
                                 {message.metadata.usedAgents?.length ? <p>{language === 'ar' ? 'مجالات السؤال التي تم توجيهها: ' : language === 'fr' ? 'Domaines détectés : ' : 'Detected question domains: '}{message.metadata.usedAgents.join(' · ')}</p> : null}
+                                {message.metadata.usedSpecialists?.length ? (
+                                  <p>
+                                    {language === 'ar' ? 'وكلاء متخصّصون اشتغلوا: ' : language === 'fr' ? 'Agents spécialisés exécutés : ' : 'Specialist agents executed: '}
+                                    {message.metadata.usedSpecialists.map((id) => SPECIALIST_LABELS[id]?.[language] ?? id).join(' · ')}
+                                  </p>
+                                ) : null}
+                                {message.metadata.trainedModelSpecialists?.length ? (
+                                  <p className="text-emerald-700">
+                                    {language === 'ar' ? 'نتائج من نماذج مدرّبة: ' : language === 'fr' ? 'Résultats de modèles entraînés : ' : 'Results from trained models: '}
+                                    {message.metadata.trainedModelSpecialists.map((id) => SPECIALIST_LABELS[id]?.[language] ?? id).join(' · ')}
+                                  </p>
+                                ) : null}
                                 {message.metadata.correlationId && <p className="font-mono text-[10px] opacity-70">{language === 'ar' ? 'مرجع التتبّع: ' : language === 'fr' ? 'Référence : ' : 'Trace ID: '}{message.metadata.correlationId}</p>}
                                 {message.metadata.contextSummary?.map((fact, index) => <p key={index}>• {fact}</p>)}
                               </div>

@@ -99,6 +99,7 @@ describe("POST /api/ai/assistant/chat — multi-agent orchestration", () => {
       // Model inference is never presented as a measured observation.
       expect(labStep.isRealData).toBe(false);
       expect(response.body.usedSpecialists).toContain("lab_soil");
+      expect(response.body.trainedModelSpecialists).toContain("lab_soil");
     } finally {
       if (saved === undefined) delete process.env.SOIL_ANALYSIS_URL;
       else process.env.SOIL_ANALYSIS_URL = saved;

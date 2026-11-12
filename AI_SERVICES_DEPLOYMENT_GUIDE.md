@@ -263,6 +263,17 @@ curl -X POST http://localhost:8002/recommend-crops \
 ---
 
 ### 3. Image Diagnosis Service (Port 8003)
+
+> **Trained model, requires `onnxruntime`.** This service ships a real
+> MobileNetV3-Large PlantVillage classifier (38 classes; test accuracy 0.9968,
+> ONNX parity verified). Without `onnxruntime` it silently falls back to a
+> heuristic detector, which the API refuses to return as a diagnosis (503
+> `DISEASE_CLASSIFIER_NOT_LOADED`). Install it and confirm `GET /health`
+> reports `production_ready: true` and
+> `model_source: mobilenetv3-plantvillage-v1`. `onnxruntime` is already pinned
+> in `agrogrowth-ai/image_diagnosis/requirements.txt`, so the Docker images and
+> Render blueprint install it automatically.
+
 **Endpoints:**
 - `GET /` - Service info
 - `GET /health` - Health check

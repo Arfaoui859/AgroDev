@@ -1301,3 +1301,16 @@ soil models (real iSDA wet-chemistry data) were reachable via
 
 See the dedicated section above (onnxruntime added, real artifact test, health
 reports `production_ready: true`).
+
+### Chatbot surfaces the multi-agent trace — VERIFIED
+
+The chat API already returned `usedSpecialists` and `orchestrationTrace`, but
+the chatbot UI discarded them, so a user could not see which specialists ran or
+that a trained model produced part of the answer.
+
+- `chatWithAIAssistant` now also returns `trainedModelSpecialists`.
+- `AIAssistantChatbot.tsx` stores `usedSpecialists` / `trainedModelSpecialists`
+  on the message metadata and renders them (localised ar/fr/en) alongside the
+  existing provenance line, with trained-model results highlighted.
+- Tests: `tests/integration/assistant-orchestration.test.ts` now asserts
+  `trainedModelSpecialists` contains `lab_soil`.
