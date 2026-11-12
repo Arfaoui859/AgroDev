@@ -29,11 +29,11 @@ ENV PYTHONUNBUFFERED=1
 RUN mkdir -p /app/models
 
 # Expose port
-EXPOSE 8005
+EXPOSE 8007
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8005/health || exit 1
+    CMD curl -f http://localhost:8007/health || exit 1
 
 # Run the application
-CMD ["python", "-m", "uvicorn", "pest_control.main:app", "--host", "0.0.0.0", "--port", "8005"]
+CMD ["sh", "-c", "python -m uvicorn pest_control.main:app --host 0.0.0.0 --port ${PORT:-${SERVICE_PORT:-8007}}"]

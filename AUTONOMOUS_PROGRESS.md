@@ -1002,3 +1002,42 @@ never elevates) then re-reads before choosing the destination. Navigation only;
 `ProtectedRoute` and server middleware remain the authorization boundary.
 
 `tsc` 0; lint 0; targeted suites green. Full gate re-run before push.
+
+---
+
+## Session 17 — AI service deployment correctness (P1)
+
+**Defect.** Four service Dockerfiles hardcoded `--port` in `CMD`, which overrides
+Render's injected `$PORT`, and declared the wrong/colliding ports:
+
+| service | Dockerfile EXPOSE was | canonical |
+|---|---|---|
+| market_prediction | 8003 | 8004 |
+| intelligent_agent | 8005 | 8005 |
+| weather_yield_intelligence | 8006 | 8006 |
+| pest_control | 8005 | 8007 |
+| irrigation_optimization | 8004 | 8008 |
+
+`docker-compose.yml` mapped container ports 8004/8006/8007/8008 while these
+images listened on 8003/8005/8006/8004, so those four services could never be
+reached through the compose network. The other four Dockerfiles ignored
+Render's `$PORT` entirely (they only worked because `render.yaml` overrides
+`startCommand`).
+
+**Fix.** All eight `Dockerfile`s now `EXPOSE` the canonical port, probe the same
+port in `HEALTHCHECK`, and start with
+`--port ${PORT:-${SERVICE_PORT:-<default>}}` so Render's `PORT` and compose's
+`SERVICE_PORT` both win over the default. `AI_SERVICES_DEPLOYMENT_GUIDE.md`
+tables, port list and env blocks were corrected to the canonical names the
+gateway actually reads (`MARKET_FORECAST_URL`, `SMART_ASSISTANT_URL`,
+`SMART_MARKETPLACE_URL`, `IRRIGATION_OPTIMIZATION_URL`) and ports.
+
+**Verification.**
+- Booted all four previously-broken services locally from `agrogrowth-ai` with
+  `python -m <service>.main`; each answered `GET /health` 200 and reported an
+  honest `status: "degraded"` / `production_ready: false` with its
+  `model_source`.
+- New regression test in `tests/integration/deployment-manifests.test.ts`
+  (8 cases) asserts every Dockerfile's `EXPOSE`, health port and env-var-honouring
+  `CMD`.
+- `tsc` 0, `eslint` 0, full suite 898 passed / 901 (3 skipped, 2 suites skipped).

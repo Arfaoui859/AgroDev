@@ -29,11 +29,11 @@ ENV PYTHONUNBUFFERED=1
 RUN mkdir -p /app/models
 
 # Expose port
-EXPOSE 8004
+EXPOSE 8008
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8004/health || exit 1
+    CMD curl -f http://localhost:8008/health || exit 1
 
 # Run the application
-CMD ["python", "-m", "uvicorn", "irrigation_optimization.main:app", "--host", "0.0.0.0", "--port", "8004"]
+CMD ["sh", "-c", "python -m uvicorn irrigation_optimization.main:app --host 0.0.0.0 --port ${PORT:-${SERVICE_PORT:-8008}}"]

@@ -144,4 +144,37 @@ describe("🚀 Deployment manifest alignment", () => {
       );
     });
   });
+
+  describe("AI service Dockerfiles", () => {
+    // The canonical port for each service, matching render.yaml, docker-compose
+    // and the gateway's localhost fallbacks.
+    const SERVICE_PORTS: Record<string, number> = {
+      soil_analysis: 8001,
+      crop_recommendation: 8002,
+      image_diagnosis: 8003,
+      market_prediction: 8004,
+      intelligent_agent: 8005,
+      weather_yield_intelligence: 8006,
+      pest_control: 8007,
+      irrigation_optimization: 8008,
+    };
+
+    for (const [service, port] of Object.entries(SERVICE_PORTS)) {
+      test(`${service}/Dockerfile declares and honours port ${port}`, () => {
+        const dockerfile = fs.readFileSync(
+          path.join(root, "agrogrowth-ai", service, "Dockerfile"),
+          "utf8",
+        );
+        const expose = dockerfile.match(/^\s*EXPOSE\s+(\d+)/m);
+        expect(expose?.[1]).toBe(String(port));
+        // The healthcheck must probe the same port the process listens on.
+        const health = dockerfile.match(/localhost:(\d+)\/health/);
+        if (health) expect(health[1]).toBe(String(port));
+        // A hardcoded --port overrides Render's injected $PORT, so the CMD must
+        // reference an env var (Render's PORT / compose's SERVICE_PORT).
+        const cmd = dockerfile.match(/^CMD .*$/m)?.[0] ?? "";
+        expect(cmd).toMatch(/\$(?:\{)?PORT/);
+      });
+    }
+  });
 });

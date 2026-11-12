@@ -28,6 +28,6 @@ ENV PYTHONUNBUFFERED=1
 
 RUN python -c "import talib, yfinance, plotly; print('Market dependencies OK')"
 
-EXPOSE 8003
+EXPOSE 8004
 
-CMD ["sh", "-c", "python -m market_prediction.main"]
+CMD ["sh", "-c", "python -m uvicorn market_prediction.main:app --host 0.0.0.0 --port ${PORT:-${SERVICE_PORT:-8004}}"]

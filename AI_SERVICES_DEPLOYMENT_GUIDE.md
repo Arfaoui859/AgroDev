@@ -10,29 +10,17 @@ Complete guide to run all AI microservices locally or in production on Railway/D
 |---|---|---|---|---|
 | Soil Analysis | 8001 | ✅ Ready | `agrogrowth-ai/soil_analysis/main.py` | Soil analysis, climate matching, soil image diagnosis |
 | Crop Recommendation | 8002 | ✅ Ready | `agrogrowth-ai/crop_recommendation/main.py` | Crop recommendations, profit estimation |
-| Image Diagnosis | 8003 | ⚠️ Conflict | `agrogrowth-ai/image_diagnosis/main.py` | Plant disease detection, leaf analysis |
-| Market Prediction | 8003 | ⚠️ Conflict | `agrogrowth-ai/market_prediction/main.py` | Market forecasting, supply-demand analysis |
-| Irrigation Optimization | 8004 | ✅ Ready | `agrogrowth-ai/irrigation_optimization/main.py` | Smart irrigation scheduling |
-| Intelligent Agent | 8005 | ⚠️ Conflict | `agrogrowth-ai/intelligent_agent/main.py` | Farming chat AI, task planning, alerts |
-| Pest Control | 8005 | ⚠️ Conflict | `agrogrowth-ai/pest_control/main.py` | Pest detection and recommendations |
+| Image Diagnosis | 8003 | ✅ Ready | `agrogrowth-ai/image_diagnosis/main.py` | Plant disease detection, leaf analysis |
+| Market Prediction | 8004 | ✅ Ready | `agrogrowth-ai/market_prediction/main.py` | Market forecasting, supply-demand analysis |
+| Intelligent Agent | 8005 | ✅ Ready | `agrogrowth-ai/intelligent_agent/main.py` | Farming chat AI, task planning, alerts |
 | Weather/Yield Intelligence | 8006 | ✅ Ready | `agrogrowth-ai/weather_yield_intelligence/main.py` | Weather analysis, yield prediction |
+| Pest Control | 8007 | ✅ Ready | `agrogrowth-ai/pest_control/main.py` | Pest detection and recommendations |
+| Irrigation Optimization | 8008 | ✅ Ready | `agrogrowth-ai/irrigation_optimization/main.py` | Smart irrigation scheduling |
 
----
-
-## ⚠️ Port Conflicts Found
-
-### Issue
-Three services have port conflicts:
-- **Port 8003**: Image Diagnosis vs Market Prediction
-- **Port 8005**: Intelligent Agent vs Pest Control
-
-### Solution
-We need to reassign ports:
-- **Image Diagnosis** → Port 8003 (keep)
-- **Market Prediction** → Port 8004 (change from 8003)
-- **Intelligent Agent** → Port 8005 (keep)
-- **Pest Control** → Port 8006 (change from 8005)
-- **Weather/Yield Intelligence** → Port 8007 (change from 8006)
+The port assignment is fixed and shared by `render.yaml`, `docker-compose.yml`
+and every service `Dockerfile` (verified by
+`tests/integration/deployment-manifests.test.ts`). An earlier draft of this
+guide proposed a different numbering; the table above is the current contract.
 
 ---
 
@@ -185,14 +173,15 @@ Create a file `.env.services` with proper port configuration:
 
 ```env
 # AI Services Port Configuration
+# AI Microservices URLs (names the backend gateway actually reads)
 SOIL_ANALYSIS_URL=http://localhost:8001
 CROP_RECOMMENDATION_URL=http://localhost:8002
 IMAGE_DIAGNOSIS_URL=http://localhost:8003
-MARKET_PREDICTION_URL=http://localhost:8004
-IRRIGATION_OPTIMIZATION_URL=http://localhost:8005
-INTELLIGENT_AGENT_URL=http://localhost:8006
+MARKET_FORECAST_URL=http://localhost:8004
+SMART_ASSISTANT_URL=http://localhost:8005
+SMART_MARKETPLACE_URL=http://localhost:8006
 PEST_CONTROL_URL=http://localhost:8007
-WEATHER_YIELD_URL=http://localhost:8008
+IRRIGATION_OPTIMIZATION_URL=http://localhost:8008
 ```
 
 ---
@@ -203,14 +192,15 @@ Update `server` environment to point to running AI services:
 
 ```env
 # AI Microservices URLs
+# AI Microservices URLs (names the backend gateway actually reads)
 SOIL_ANALYSIS_URL=http://localhost:8001
 CROP_RECOMMENDATION_URL=http://localhost:8002
 IMAGE_DIAGNOSIS_URL=http://localhost:8003
-MARKET_PREDICTION_URL=http://localhost:8004
-IRRIGATION_OPTIMIZATION_URL=http://localhost:8005
-INTELLIGENT_AGENT_URL=http://localhost:8006
+MARKET_FORECAST_URL=http://localhost:8004
+SMART_ASSISTANT_URL=http://localhost:8005
+SMART_MARKETPLACE_URL=http://localhost:8006
 PEST_CONTROL_URL=http://localhost:8007
-WEATHER_YIELD_INTELLIGENCE_URL=http://localhost:8008
+IRRIGATION_OPTIMIZATION_URL=http://localhost:8008
 
 # For production on Railway, use Railway internal URLs:
 # SOIL_ANALYSIS_URL=https://agrogrowth-soil-analysis.railway.app
@@ -314,7 +304,7 @@ curl -X POST http://localhost:8004/forecast-price \
 
 ---
 
-### 5. Irrigation Optimization Service (Port 8005)
+### 5. Irrigation Optimization Service (Port 8008)
 **Endpoints:**
 - `GET /` - Service info
 - `GET /health` - Health check
@@ -324,7 +314,7 @@ curl -X POST http://localhost:8004/forecast-price \
 
 **Example Request:**
 ```bash
-curl -X POST http://localhost:8005/optimize-irrigation \
+curl -X POST http://localhost:8008/optimize-irrigation \
   -H "Content-Type: application/json" \
   -d '{
     "crop_type": "wheat",
@@ -348,7 +338,7 @@ curl -X POST http://localhost:8005/optimize-irrigation \
 
 ---
 
-### 6. Intelligent Agent Service (Port 8006)
+### 6. Intelligent Agent Service (Port 8005)
 **Endpoints:**
 - `GET /` - Service info
 - `GET /health` - Health check
@@ -358,7 +348,7 @@ curl -X POST http://localhost:8005/optimize-irrigation \
 
 **Example Request:**
 ```bash
-curl -X POST http://localhost:8006/chat \
+curl -X POST http://localhost:8005/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "كيف يمكن تحسين محصول القمح؟",
@@ -381,7 +371,7 @@ curl -X POST http://localhost:8006/chat \
 
 ---
 
-### 8. Weather & Yield Intelligence Service (Port 8008)
+### 8. Weather & Yield Intelligence Service (Port 8006)
 **Endpoints:**
 - `GET /` - Service info
 - `GET /health` - Health check
@@ -405,10 +395,10 @@ services=(
   "Crop Recommendation:8002"
   "Image Diagnosis:8003"
   "Market Prediction:8004"
-  "Irrigation Optimization:8005"
-  "Intelligent Agent:8006"
+  "Irrigation Optimization:8008"
+  "Intelligent Agent:8005"
   "Pest Control:8007"
-  "Weather/Yield Intelligence:8008"
+  "Weather/Yield Intelligence:8006"
 )
 
 for service in "${services[@]}"; do
@@ -488,11 +478,11 @@ Once deployed, update `server/.env.production`:
 SOIL_ANALYSIS_URL=https://agrogrowth-soil-analysis.railway.app
 CROP_RECOMMENDATION_URL=https://agrogrowth-crop-recommendation.railway.app
 IMAGE_DIAGNOSIS_URL=https://agrogrowth-image-diagnosis.railway.app
-MARKET_PREDICTION_URL=https://agrogrowth-market-prediction.railway.app
-IRRIGATION_OPTIMIZATION_URL=https://agrogrowth-irrigation-optimization.railway.app
-INTELLIGENT_AGENT_URL=https://agrogrowth-intelligent-agent.railway.app
+MARKET_FORECAST_URL=https://agrogrowth-market-prediction.railway.app
+SMART_ASSISTANT_URL=https://agrogrowth-intelligent-agent.railway.app
+SMART_MARKETPLACE_URL=https://agrogrowth-weather-yield.railway.app
 PEST_CONTROL_URL=https://agrogrowth-pest-control.railway.app
-WEATHER_YIELD_INTELLIGENCE_URL=https://agrogrowth-weather-yield.railway.app
+IRRIGATION_OPTIMIZATION_URL=https://agrogrowth-irrigation-optimization.railway.app
 ```
 
 ---

@@ -39,4 +39,4 @@ EXPOSE 8005
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8005/health || exit 1
 
-CMD ["sh", "-c", "uvicorn intelligent_agent.main:app --host 0.0.0.0 --port ${PORT:-8005}"]
+CMD ["sh", "-c", "python -m uvicorn intelligent_agent.main:app --host 0.0.0.0 --port ${PORT:-${SERVICE_PORT:-8005}}"]

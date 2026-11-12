@@ -32,4 +32,4 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8001/health || exit 1
 
-CMD ["sh", "-c", "uvicorn soil_analysis.main:app --host 0.0.0.0 --port ${SERVICE_PORT}"]
+CMD ["sh", "-c", "python -m uvicorn soil_analysis.main:app --host 0.0.0.0 --port ${PORT:-${SERVICE_PORT:-8001}}"]
