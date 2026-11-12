@@ -44,7 +44,8 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 
 | # | Item | Status |
 |---|---|---|
-| 15 | RTL / mobile / empty / loading / error states | **PARTIAL** — news page ships ar/fr/en + RTL + loading/empty/error states |
+| 15 | RTL / mobile / empty / loading / error states | **PARTIAL** — news page ships ar/fr/en + RTL + loading/empty/error states; global `dir`/`lang` set by `LanguageContext` and `<html dir="rtl">` |
+| 15a | Arabic text integrity (no U+FFFD mojibake) | **VERIFIED FIXED (Session 21)** — 555 corrupted characters across ~97 source files repaired; guarded by `tests/unit/no-encoding-corruption.test.ts` |
 | 16 | Reports and documentation | **PARTIAL** |
 
 ---
