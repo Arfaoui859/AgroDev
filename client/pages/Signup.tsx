@@ -74,7 +74,7 @@ export default function Signup() {
 
   const governorateOptions = [
     { value: "tunis", label: "Tunis", labelArabic: "تونس" },
-    { value: "ariana", label: "Ariana", labelArabic: "أري��نة" },
+    { value: "ariana", label: "Ariana", labelArabic: "أريانة" },
     { value: "ben_arous", label: "Ben Arous", labelArabic: "بن عروس" },
     { value: "manouba", label: "Manouba", labelArabic: "منوبة" },
     { value: "nabeul", label: "Nabeul", labelArabic: "نابل" },

@@ -295,7 +295,7 @@ class YieldPredictorAI:
                 input_data, crop_info, current_conditions
             )
             
-            # ��حليل المخاطر والفرص
+            # تحليل المخاطر والفرص
             risk_opportunity_analysis = self._analyze_yield_risks_opportunities(
                 input_data, current_conditions, crop_info
             )
@@ -409,7 +409,7 @@ class YieldPredictorAI:
         # تقييم صحة التربة
         soil_health = self._assess_soil_health_impact(soil_data, crop_info)
         
-        # تقييم ممارسات ال��دارة
+        # تقييم ممارسات الإدارة
         management_effectiveness = self._assess_management_practices(
             management_data, crop_info
         )
@@ -643,7 +643,7 @@ class YieldPredictorAI:
         # توصيات مكافحة الآفات
         if impact_factors['management_factors']['pest_disease_control']['score'] < 0.8:
             recommendations.append({
-                'category': 'مكافحة ��لآفات',
+                'category': 'مكافحة الآفات',
                 'recommendation': 'تطبيق برنامج مكافحة متكامل للآفات والأمراض',
                 'potential_improvement': '20-30%',
                 'implementation_cost': 'متوسط',

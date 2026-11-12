@@ -159,7 +159,7 @@ const digitalMaturity = [
     ]
   },
   {
-    area: 'إدارة البيانات والتحليلا��',
+    area: 'إدارة البيانات والتحليلات',
     currentLevel: 2,
     targetLevel: 4,
     score: 2.8,
@@ -203,7 +203,7 @@ const digitalMaturity = [
     ]
   },
   {
-    area: 'الشراكات والنظا�� البيئي الرقمي',
+    area: 'الشراكات والنظام البيئي الرقمي',
     currentLevel: 2,
     targetLevel: 5,
     score: 2.3,
@@ -364,7 +364,7 @@ router.get('/innovations', (req, res) => {
     
     res.json(filteredInnovations);
   } catch (error) {
-    res.status(500).json({ error: 'حدث خطأ في جلب الا��تكارات' });
+    res.status(500).json({ error: 'حدث خطأ في جلب الابتكارات' });
   }
 });
 
@@ -405,7 +405,7 @@ router.post('/innovations/:id/vote', (req, res) => {
     innovations[innovationIndex].votes += 1;
     res.json(innovations[innovationIndex]);
   } catch (error) {
-    res.status(500).json({ error: 'حدث خطأ ف�� التصويت' });
+    res.status(500).json({ error: 'حدث خطأ في التصويت' });
   }
 });
 

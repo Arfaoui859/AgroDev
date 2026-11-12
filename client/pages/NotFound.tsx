@@ -74,7 +74,7 @@ export default function NotFound() {
       description: isArabic ? 'العودة إلى لوحة التحكم الرئيسية' : 'Return to main dashboard'
     },
     { 
-      name: isArabic ? 'تحليل ��لتربة' : 'Soil Analysis', 
+      name: isArabic ? 'تحليل التربة' : 'Soil Analysis', 
       path: '/analysis', 
       description: isArabic ? 'تحليل التربة بالذكاء الاصطناعي' : 'AI-powered soil analysis'
     },

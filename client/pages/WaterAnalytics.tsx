@@ -593,7 +593,7 @@ export default function WaterAnalytics() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>خطة التحسين المق��رحة</CardTitle>
+                  <CardTitle>خطة التحسين المقترحة</CardTitle>
                   <CardDescription>
                     خطة تدريجية لتحسين كفاءة استخدام المياه
                   </CardDescription>

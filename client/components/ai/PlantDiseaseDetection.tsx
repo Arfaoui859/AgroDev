@@ -450,7 +450,7 @@ const PlantDiseaseDetection: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger value="comprehensive">
               <Stethoscope className="w-4 h-4 ml-2" />
-              تح��يل شامل
+              تحليل شامل
             </TabsTrigger>
             <TabsTrigger value="quick">
               <Eye className="w-4 h-4 ml-2" />
@@ -464,7 +464,7 @@ const PlantDiseaseDetection: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Bug className="w-5 h-5 ml-2" />
-                  كشف ال��مراض والآفات
+                  كشف الأمراض والآفات
                 </CardTitle>
                 <CardDescription>
                   تشخيص دقيق للأمراض الفطرية والبكتيرية والآفات
@@ -620,7 +620,7 @@ const PlantDiseaseDetection: React.FC = () => {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                      جار�� تحليل الأوراق...
+                      جاري تحليل الأوراق...
                     </>
                   ) : (
                     <>
@@ -791,7 +791,7 @@ const PlantDiseaseDetection: React.FC = () => {
                           %
                         </div>
                         <div className="text-sm text-gray-600">
-                          درجة النم�� الإجمالية
+                          درجة النمو الإجمالية
                         </div>
                       </div>
                       <div>

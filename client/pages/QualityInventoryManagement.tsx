@@ -341,7 +341,7 @@ const QualityInventoryManagement: React.FC = () => {
                           <span className="ml-1">{item.location}</span>
                         </div>
                         <div>
-                          <span className="font-medium">انتهاء ��لصلاحية:</span>
+                          <span className="font-medium">انتهاء الصلاحية:</span>
                           <span className="ml-1">{new Date(item.expiryDate).toLocaleDateString('ar-TN')}</span>
                         </div>
                         <div>

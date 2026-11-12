@@ -245,7 +245,7 @@ export const ServiceNotAvailable: React.FC<ServiceNotAvailableProps> = ({
             <div>
               <code className="bg-gray-200 px-1 rounded">VITE_FALLBACK_TO_MOCK=false</code>
             </div>
-            <div>لعرض بيانا�� تجريبية، غيّر هذا الإعداد إلى <code>true</code></div>
+            <div>لعرض بيانات تجريبية، غيّر هذا الإعداد إلى <code>true</code></div>
           </div>
         </div>
       </CardContent>

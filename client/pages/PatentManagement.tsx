@@ -570,7 +570,7 @@ export default function PatentManagement() {
                 </Button>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  بر��ءة جديدة
+                  براءة جديدة
                 </Button>
               </div>
             </div>
@@ -621,7 +621,7 @@ export default function PatentManagement() {
                     <Label>الأولوية</Label>
                     <Select onValueChange={(value) => setFilters({...filters, priority: value})}>
                       <SelectTrigger>
-                        <SelectValue placeholder="جميع المستويا��" />
+                        <SelectValue placeholder="جميع المستويات" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">جميع المستويات</SelectItem>
@@ -1019,7 +1019,7 @@ export default function PatentManagement() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>تقر��ر المحفظة الشهري</CardTitle>
+                  <CardTitle>تقرير المحفظة الشهري</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">

@@ -1163,3 +1163,35 @@ All 13 schema files apply cleanly **and are idempotent** on a second run.
 **Gates after Session 20:** `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build`
 0 · `npx jest` **910 passed / 913 (3 skipped, 2 suites skipped)** · RLS 86 checks ·
 security SQL verification · PostgREST persistence 13/13 — all against real PG17.
+
+## Session 21 — P3: repo-wide Arabic (U+FFFD) encoding repair
+
+The Arabic UI — the platform's primary language — carried **555 corrupted
+characters (U+FFFD "�") across ~97 files**. Each `�` is a byte of an Arabic
+letter that was lost to a bad decode, so real labels rendered as mojibake, e.g.
+`ح��وانات` (حيوانات), `توصيا��` (توصيات), `ال��يوانية` (الحيوانية). The earlier
+"partial" encoding cleanup had only covered a handful of pages.
+
+### Fix
+
+A scripted, exact-fragment repair (source trees only; generated `dist/` and
+`coverage/` are rebuilt, never hand-edited) restored every fragment from its
+surrounding sentence, longest-match first. Two side effects the corruption had
+also eaten were repaired: a `>` before Arabic JSX text in
+`DiseaseDiagnosis.tsx` and `TreatmentSchedule.tsx`, and a doubled `{{` in
+`CropHistory.tsx`.
+
+### Guard
+
+New `tests/unit/no-encoding-corruption.test.ts` fails the build if any tracked
+source file contains U+FFFD, and asserts Arabic codepoints are still present as
+real UTF-8 in the i18n table — so this cannot silently regress.
+
+### Verification
+
+`npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 (rebuilt `dist/`
+assets contain **0** U+FFFD) · `npx jest` **912 passed / 915 (3 skipped)** ·
+`python -m compileall agrogrowth-ai` 0 · `pytest agrogrowth-ai/tests` **245
+passed** · all eight AI services still report `OK` on `--check`. Spot checks
+confirm `الإدارة المالية`, `صحة الحيوانات`, `الإنذار المبكر`, `كلوريد بوتاسيوم`
+and `مكافحة الآفات` now render correctly, including in the served bundle.

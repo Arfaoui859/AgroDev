@@ -298,7 +298,7 @@ export default function CropHistory() {
       {/* Results Count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          ��رض {filteredHistory.length} من أصل {history.length} سجل
+          عرض {filteredHistory.length} من أصل {history.length} سجل
         </p>
         <Button onClick={() => navigate('/location')} size="sm">
           <Plus className="w-4 h-4 ml-2" />

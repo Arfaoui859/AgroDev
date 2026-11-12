@@ -198,7 +198,7 @@ const ProfitabilityReports: React.FC = () => {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            لا توجد بيانات ربحية متاحة. يرجى إضافة المصروفات والإي��ادات أولاً.
+            لا توجد بيانات ربحية متاحة. يرجى إضافة المصروفات والإيرادات أولاً.
           </AlertDescription>
         </Alert>
       </div>
@@ -229,7 +229,7 @@ const ProfitabilityReports: React.FC = () => {
 
           <Select value={selectedSeason} onValueChange={setSelectedSeason}>
             <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="جميع ا��مواسم" />
+              <SelectValue placeholder="جميع المواسم" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">جميع المواسم</SelectItem>
@@ -262,7 +262,7 @@ const ProfitabilityReports: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجم��لي الإيرادات</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -452,7 +452,7 @@ const ProfitabilityReports: React.FC = () => {
                   {/* ROI Progress */}
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium">العائد على ��لاستثمار (ROI)</span>
+                      <span className="text-sm font-medium">العائد على الاستثمار (ROI)</span>
                       <span className={`text-sm font-bold ${getROIColor(crop.roi)}`}>
                         {crop.roi.toFixed(1)}%
                       </span>

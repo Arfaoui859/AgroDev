@@ -135,7 +135,7 @@ docker-compose down
 
 ```
 agrogrowth-platform/
-├��─ 📁 client/                     # Frontend React application
+├── 📁 client/                     # Frontend React application
 │   ├── 📁 components/             # Reusable UI components
 │   ├── 📁 pages/                  # Page components
 │   ├── 📁 hooks/                  # Custom React hooks

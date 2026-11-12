@@ -280,7 +280,7 @@ const LivestockProductionAnalytics: React.FC = () => {
   const getSpeciesLabel = (species: string) => {
     const labels = {
       cattle: 'أبقار',
-      sheep: 'أغن��م',
+      sheep: 'أغنام',
       goat: 'ماعز',
       chicken: 'دجاج',
       turkey: 'ديك رومي',

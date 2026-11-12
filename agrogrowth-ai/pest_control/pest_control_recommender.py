@@ -147,7 +147,7 @@ class PestControlRecommender:
                 'identification_features': {
                     'size_mm': (1, 2),
                     'color': ['أبيض', 'أصفر فاتح'],
-                    'location': 'أس��ل الأوراق الصغيرة',
+                    'location': 'أسفل الأوراق الصغيرة',
                     'season_peak': ['summer', 'autumn']
                 },
                 'damage_level': 'high',
@@ -419,7 +419,7 @@ class PestControlRecommender:
                 input_data, pest_identification
             )
             
-            # تحليل المخاط��
+            # تحليل المخاطر
             risk_analysis = self._analyze_pest_risks(
                 pest_identification, severity_assessment, input_data
             )
@@ -571,7 +571,7 @@ class PestControlRecommender:
         features = self._extract_features_for_identification(input_data)
         
         if self.is_trained and len(features) > 0:
-            # ا��تخدام النموذج المدرب
+            # الاستخدام النموذج المدرب
             features_scaled = self.scaler.transform([features])
             
             # تنبؤ الآفة
@@ -993,7 +993,7 @@ class PestControlRecommender:
             'cost_saving_tips': [
                 'اختيار التوقيت المناسب للعلاج',
                 'استخدام الجرعة الصحيحة تجنباً للهدر',
-                'دمج العلاج مع عمليات زر��عية أخرى',
+                'دمج العلاج مع عمليات زراعية أخرى',
                 'الاستفادة من الخصومات عند الشراء بكميات'
             ]
         }
@@ -1407,7 +1407,7 @@ class PestControlRecommender:
     
     def _calculate_overall_risk(self, spread_risk: Dict, economic_risk: Dict, 
                               environmental_risk: Dict) -> str:
-        """حس��ب المخاطر الإجمالية"""
+        """حساب المخاطر الإجمالية"""
         spread_score = spread_risk['risk_score']
         economic_score = economic_risk.get('potential_loss_amount', 0) / 20000  # تطبيع
         environmental_score = environmental_risk['risk_score']

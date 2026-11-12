@@ -415,7 +415,7 @@ export default function EmergencyResponse() {
             </TabsTrigger>
             <TabsTrigger value="resources" className="flex items-center gap-2">
               <Truck className="h-4 w-4" />
-              ال��وارد
+              الموارد
             </TabsTrigger>
             <TabsTrigger value="contacts" className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
@@ -655,7 +655,7 @@ export default function EmergencyResponse() {
 
           <TabsContent value="scenarios" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">سيناريوهات الطوار��</h2>
+              <h2 className="text-2xl font-bold">سيناريوهات الطوارئ</h2>
               <div className="flex gap-2">
                 <Button variant="outline">
                   <Upload className="h-4 w-4 mr-2" />

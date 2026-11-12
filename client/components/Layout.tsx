@@ -252,7 +252,7 @@ const navigationCategories: NavigationCategory[] = [
       },
       {
         name: "Smart Treatment",
-        nameArabic: "توصيا�� العلاج الذكية",
+        nameArabic: "توصيات العلاج الذكية",
         href: "/treatment-recommendations",
         icon: Stethoscope,
         allowedRoles: ["farmer", "agronomist", "veterinarian", "admin"],
@@ -310,7 +310,7 @@ const navigationCategories: NavigationCategory[] = [
     items: [
       {
         name: "Fertilizer Recommendations",
-        nameArabic: "توصيا�� الأسمدة",
+        nameArabic: "توصيات الأسمدة",
         href: "/fertilizer-recommendations",
         icon: Sprout,
         allowedRoles: ["farmer", "agronomist", "admin"],
@@ -390,7 +390,7 @@ const navigationCategories: NavigationCategory[] = [
       },
       {
         name: "Smart Task Planning",
-        nameArabic: "تخط��ط المهام الذكي",
+        nameArabic: "تخطيط المهام الذكي",
         href: "/weather-crop-planner",
         icon: Activity,
         allowedRoles: ["farmer", "agronomist", "admin"],
@@ -434,7 +434,7 @@ const navigationCategories: NavigationCategory[] = [
       },
       {
         name: "Field Analytics",
-        nameArabic: "تحليلات ا��حقول",
+        nameArabic: "تحليلات الحقول",
         href: "/field-management?tab=analytics",
         icon: BarChart3,
         allowedRoles: ["farmer", "inspector", "admin"],
@@ -463,7 +463,7 @@ const navigationCategories: NavigationCategory[] = [
       },
       {
         name: "Advanced Livestock",
-        nameArabic: "لوحة الثروة ال��يوانية المتقدمة",
+        nameArabic: "لوحة الثروة الحيوانية المتقدمة",
         href: "/advanced-livestock",
         icon: Users,
         badge: "Pro",
@@ -522,7 +522,7 @@ const navigationCategories: NavigationCategory[] = [
   },
   {
     name: "Financial Management",
-    nameArabic: "الإدارة ��لمالية",
+    nameArabic: "الإدارة المالية",
     icon: Calculator,
     allowedRoles: ["farmer", "trader", "admin"],
     items: [
@@ -571,7 +571,7 @@ const navigationCategories: NavigationCategory[] = [
     items: [
       {
         name: "System Test",
-        nameArabic: "اختب��ر النظام الشامل",
+        nameArabic: "اختبار النظام الشامل",
         href: "/system-test",
         icon: TestTube,
         badge: "TEST",

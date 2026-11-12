@@ -118,7 +118,7 @@ class AgroChatAI:
                 'بوتاسيوم': {
                     'function': 'مقاومة الأمراض وجودة الثمار',
                     'deficiency_signs': ['حروق أطراف الأوراق', 'ثمار صغيرة', 'ضعف المقاومة'],
-                    'sources': ['كل��ريد بوتاسيوم', 'سلفات بوتاسيوم', 'نترات بوتاسيوم'],
+                    'sources': ['كلوريد بوتاسيوم', 'سلفات بوتاسيوم', 'نترات بوتاسيوم'],
                     'application_timing': 'أثناء تكوين الثمار'
                 }
             },
@@ -702,7 +702,7 @@ class AgroChatAI:
             response_text += "4. تقنيات الزراعة:\n"
             response_text += "   • العمق المناسب\n"
             response_text += "   • المسافات الصحيحة\n"
-            response_text += "   • الري بعد ا��زراعة"
+            response_text += "   • الري بعد الزراعة"
         
         recommendations = [
             {
@@ -830,7 +830,7 @@ class AgroChatAI:
         
         response_text += "1. الوقاية:\n"
         response_text += "   • زراعة أصناف مقاومة\n"
-        response_text += "   • الدورة ال��راعية\n"
+        response_text += "   • الدورة الزراعية\n"
         response_text += "   • النظافة العامة للمزرعة\n"
         response_text += "   • المراقبة المستمرة\n\n"
         

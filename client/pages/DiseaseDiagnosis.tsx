@@ -402,7 +402,7 @@ export default function DiseaseDiagnosis() {
       <Tabs defaultValue="treatment" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="treatment">العلاج</TabsTrigger>
-          <TabsTrigger value="prevention">ال��قاية</TabsTrigger>
+          <TabsTrigger value="prevention">الوقاية</TabsTrigger>
           <TabsTrigger value="details">التفاصيل</TabsTrigger>
           <TabsTrigger value="images">الصور</TabsTrigger>
         </TabsList>
@@ -415,7 +415,7 @@ export default function DiseaseDiagnosis() {
                 <span>خطة العلاج الموصى بها</span>
               </CardTitle>
               <CardDescription>
-                توصيات علاجية مخصصة للمر�� المشخص
+                توصيات علاجية مخصصة للمرض المشخص
               </CardDescription>
             </CardHeader>
             <CardContent>

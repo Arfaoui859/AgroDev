@@ -21,7 +21,7 @@ const technologies = [
     requiredInvestment: 2500000,
     expectedROI: 45,
     keyBenefits: ['توفير 30% من المياه', 'زيادة الإنتاجية 25%', 'تقليل التكاليف التشغيلية'],
-    challenges: ['التكلفة الأولية العال��ة', 'الحاجة لتدريب المزارعين', 'تحديات الصيانة'],
+    challenges: ['التكلفة الأولية العالية', 'الحاجة لتدريب المزارعين', 'تحديات الصيانة'],
     competitors: ['John Deere', 'Netafim', 'Rain Bird'],
     patents: 15,
     publications: 42,
@@ -80,7 +80,7 @@ const technologies = [
     fundingReceived: 3200000,
     evaluationScore: 9.2,
     lastUpdated: '2024-02-18',
-    evaluator: 'د. محمد حس��',
+    evaluator: 'د. محمد حسن',
     sources: ['Nature Biotechnology', 'Plant Science Research', 'AgBio World']
   },
   {
@@ -362,7 +362,7 @@ router.get('/technologies/:id', (req, res) => {
     
     res.json(technology);
   } catch (error) {
-    res.status(500).json({ error: 'ح��ث خطأ في جلب التقنية' });
+    res.status(500).json({ error: 'حدث خطأ في جلب التقنية' });
   }
 });
 
@@ -492,7 +492,7 @@ router.get('/investments/:id', (req, res) => {
     
     res.json(investment);
   } catch (error) {
-    res.status(500).json({ error: 'حدث خطأ ف�� جلب الاستثمار' });
+    res.status(500).json({ error: 'حدث خطأ في جلب الاستثمار' });
   }
 });
 

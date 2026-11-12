@@ -37,7 +37,7 @@
    - [ ] انسخ Project URL
    - [ ] انسخ anon public key
    - [ ] اذهب إلى Settings > Database
-   - [ ] ان��خ Connection string
+   - [ ] انسخ Connection string
 
 ### 📋 معلومات مطلوبة:
 

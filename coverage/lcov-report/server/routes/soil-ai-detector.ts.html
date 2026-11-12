@@ -2899,7 +2899,7 @@ class SoilProblemDetector {
           id: `rec_salinity_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           problemId: problem.id,
           title: 'معالجة ملوحة التربة',
-          description: 'خطة متكاملة لتقليل ملوح�� التربة وتحسين الصرف',
+          description: 'خطة متكاملة لتقليل ملوحة� التربة وتحسين الصرف',
           steps: [
             'تحسين نظام الصرف لمنع تراكم الأملاح',
             'الري بكميات كبيرة من المياه العذبة لغسل الأملاح',
@@ -2977,7 +2977,7 @@ class SoilProblemDetector {
           id: `rec_nutrient_${nutrientName.replace(/\s+/g, '_')}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           problemId: problem.id,
           title: `معالجة نقص ${nutrientName}`,
-          description: `خطة لتعوي�� نقص عنصر ${nutrientName} في التربة`,
+          description: `خطة لتعويض� نقص عنصر ${nutrientName} في التربة`,
           steps: [
             `إضافة السماد المناسب الغني بعنصر ${nutrientName}`,
             'توزيع السماد بشكل متجانس على التربة',
@@ -3355,7 +3355,7 @@ router.patch('/alerts/:alertId/resolve', <span class="fstat-no" title="function 
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    res.status(500).json({</span>
       success: false,
-      message: 'خطأ ف�� تسوية التنبيه',
+      message: 'خطأ في� تسوية التنبيه',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

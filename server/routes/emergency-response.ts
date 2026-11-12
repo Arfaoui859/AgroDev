@@ -54,7 +54,7 @@ const emergencyScenarios = [
             completion_status: 'pending'
           }
         ],
-        prerequisites: ['توفر المياه الطارئة', 'فريق ا��استجابة السريعة'],
+        prerequisites: ['توفر المياه الطارئة', 'فريق الاستجابة السريعة'],
         success_criteria: ['الحفاظ على 80% من المحاصيل', 'تقليل الخسائر لأقل من 30%'],
         rollback_plan: ['إيقاف الري في حالة نفاد المياه', 'التركيز على المحاصيل الأساسية'],
         estimated_cost: 150000,
@@ -114,7 +114,7 @@ const emergencyScenarios = [
         availability_status: 'in_use',
         estimated_arrival_time: 'فوري',
         cost_per_unit: 0.5,
-        supplier_contact: 'شركة المياه الوط��ية - 920001234'
+        supplier_contact: 'شركة المياه الوطنية - 920001234'
       }
     ],
     success_probability: 78,
@@ -249,7 +249,7 @@ const emergencyScenarios = [
     response_plans: [
       {
         id: 'plan-3',
-        name: 'خطة التسويق الب��يل',
+        name: 'خطة التسويق البديل',
         priority: 'medium',
         execution_time: '1-2 أيام',
         steps: [
@@ -399,7 +399,7 @@ const emergencyContacts = [
     role: 'مسؤول الأمن والسلامة',
     phone: '+966504567890',
     email: 'abdulrahman.salem@agrotech.sa',
-    specialty: ['السلامة المهنية', 'إخلاء الطوارئ', 'الإس��افات الأولية'],
+    specialty: ['السلامة المهنية', 'إخلاء الطوارئ', 'الإسعافات الأولية'],
     availability: '24/7',
     response_time: '10 دقيقة',
     location: 'جميع المواقع - فريق متنقل',

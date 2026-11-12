@@ -1146,7 +1146,7 @@ class FarmingTasksPlanner:
             recommendations.append({
                 'type': 'weather_check',
                 'title': 'فحص الطقس',
-                'description': f'{len(weather_tasks)} مه��ة تعتمد على الطقس. تأكد من مراجعة توقعات الطقس قبل البدء.'
+                'description': f'{len(weather_tasks)} مهمة تعتمد على الطقس. تأكد من مراجعة توقعات الطقس قبل البدء.'
             })
         
         return recommendations

@@ -293,7 +293,7 @@ export default function TreatmentSchedule() {
             </DialogTrigger>
             <DialogContent dir="rtl">
               <DialogHeader>
-                <DialogTitle>إض��فة نشاط جديد</DialogTitle>
+                <DialogTitle>إضافة نشاط جديد</DialogTitle>
                 <DialogDescription>
                   أضف نشاط تسميد أو رش جديد إلى الجدول
                 </DialogDescription>
@@ -450,7 +450,7 @@ export default function TreatmentSchedule() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الأنشطة</SelectItem>
-              <SelectItem value="fertilizer">��لتسميد فقط</SelectItem>
+              <SelectItem value="fertilizer">التسميد فقط</SelectItem>
               <SelectItem value="pesticide">الرش فقط</SelectItem>
               <SelectItem value="monitoring">المراقبة فقط</SelectItem>
             </SelectContent>

@@ -146,7 +146,7 @@ const UnifiedAlertSystem: React.FC<UnifiedAlertSystemProps> = ({
       category: 'warning',
       priority: 'high',
       title: 'Early Blight Detected',
-      titleArabic: 'اكتشاف اللفحة ا��مبكرة',
+      titleArabic: 'اكتشاف اللفحة المبكرة',
       message: 'Early blight symptoms detected on tomato plants in greenhouse 2. Immediate treatment recommended.',
       messageArabic: 'تم اكتشاف أعراض اللفحة المبكرة على نباتات الطماطم في البيت الزجاجي 2. العلاج الفوري موصى به.',
       timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),

@@ -432,7 +432,7 @@ const ExpenseTracker: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="subcategory">التصني�� الفرعي</Label>
+                  <Label htmlFor="subcategory">التصنيف الفرعي</Label>
                   <Select value={formData.subcategory} onValueChange={(value) => 
                     setFormData({ ...formData, subcategory: value })
                   }>
@@ -450,7 +450,7 @@ const ExpenseTracker: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="amount">المبلغ (د��نار)</Label>
+                  <Label htmlFor="amount">المبلغ (دينار)</Label>
                   <Input
                     id="amount"
                     type="number"

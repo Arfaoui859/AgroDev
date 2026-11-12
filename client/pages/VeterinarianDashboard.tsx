@@ -495,7 +495,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-600">{dashboardData.metrics.treatmentComplianceRate}%</p>
-                  <p className="text-xs text-gray-600">{isArabic ? 'م��دل الالتزام بالعلاج' : 'Treatment Compliance'}</p>
+                  <p className="text-xs text-gray-600">{isArabic ? 'معدل الالتزام بالعلاج' : 'Treatment Compliance'}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-orange-600">{dashboardData.metrics.appointmentNoShows}</p>
@@ -889,7 +889,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                       <div className="space-y-1">
                         <div className="flex justify-between text-xs">
                           <span>{isArabic ? 'الحد الأدنى' : 'Min'}: {item.minStockLevel}</span>
-                          <span>{isArabic ? 'الحد ال��قصى' : 'Max'}: {item.maxStockLevel}</span>
+                          <span>{isArabic ? 'الحد الأقصى' : 'Max'}: {item.maxStockLevel}</span>
                         </div>
                         <Progress 
                           value={(item.currentStock / item.maxStockLevel) * 100} 

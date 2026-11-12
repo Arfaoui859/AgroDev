@@ -219,7 +219,7 @@ export default function DigitalTransformation() {
             إدارة التحول الرقمي والابتكار الزراعي
           </h1>
           <p className="text-xl text-gray-600">
-            منصة شاملة لإدارة مشاريع التحول الرقمي وتتبع الاب��كارات في القطاع الزراعي
+            منصة شاملة لإدارة مشاريع التحول الرقمي وتتبع الابتكارات في القطاع الزراعي
           </p>
         </div>
 
@@ -618,7 +618,7 @@ export default function DigitalTransformation() {
                 <CardContent className="p-6 text-center">
                   <DollarSign className="h-8 w-8 text-green-500 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-green-600">${getTotalBudget().toLocaleString()}</div>
-                  <div className="text-sm text-gray-500">إجمالي الاستث��ار</div>
+                  <div className="text-sm text-gray-500">إجمالي الاستثمار</div>
                 </CardContent>
               </Card>
               

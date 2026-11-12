@@ -386,7 +386,7 @@ const SaaSManagement: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                النشاط ال��خير
+                النشاط الأخير
               </CardTitle>
             </CardHeader>
             <CardContent>

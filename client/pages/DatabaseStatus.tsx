@@ -116,7 +116,7 @@ const DatabaseStatus: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Database className="h-8 w-8" />
-              حال�� قاعدة البيانات
+              حالة قاعدة البيانات
             </h1>
             <p className="text-muted-foreground mt-2">
               فحص جاهزية قاعدة البيانات للتسجيل الفعلي

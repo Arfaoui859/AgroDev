@@ -678,7 +678,7 @@ const TreatmentHistory: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
                     <Target className="h-4 w-4 text-blue-600 mt-0.5" />
-                    <span className="text-sm">ركز على الكشف المبكر ��تقليل شدة الإصابة</span>
+                    <span className="text-sm">ركز على الكشف المبكر لتقليل شدة الإصابة</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Target className="h-4 w-4 text-blue-600 mt-0.5" />

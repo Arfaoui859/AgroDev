@@ -152,7 +152,7 @@ export default function CropDetails() {
         
         timeline: [
           {
-            phase: "التحضير وا��زراعة",
+            phase: "التحضير والزراعة",
             duration: "أكتوبر - نوفمبر",
             activities: ["حرث الأرض", "إضافة السماد الأساسي", "الزراعة", "الري الأول"]
           },
@@ -211,7 +211,7 @@ export default function CropDetails() {
         ],
         
         storageAndMarketing: {
-          storageMethod: "تخزين في مخازن جافة ومه��اة",
+          storageMethod: "تخزين في مخازن جافة ومهواة",
           shelfLife: "2-3 سنوات في ظروف مناسبة",
           marketChannels: ["التعاونيات الزراعية", "التجار المحليين", "الصوامع الحكومية"],
           qualityStandards: ["رطوبة أقل من 14%", "خالي من الشوائب", "وزن اللتر 78 كجم"]
@@ -322,7 +322,7 @@ export default function CropDetails() {
         storageAndMarketing: {
           storageMethod: "تبريد سريع وتخزين في 10-12°C",
           shelfLife: "2-3 أسابيع في التبريد",
-          marketChannels: ["أسواق الجملة", "السوبر ماركت", "التصدير", "��لمصانع"],
+          marketChannels: ["أسواق الجملة", "السوبر ماركت", "التصدير", "المصانع"],
           qualityStandards: ["لون موحد", "صلابة جيدة", "خالي من العيوب", "حجم مناسب"]
         }
       }
@@ -398,7 +398,7 @@ export default function CropDetails() {
             </div>
             <div className="text-center p-4 border rounded-lg bg-white">
               <div className="text-3xl font-bold text-green-600">{cropData.estimatedProfit.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground">ر��ح متوقع (جنيه/فدان)</div>
+              <div className="text-sm text-muted-foreground">ربح متوقع (جنيه/فدان)</div>
             </div>
             <div className="text-center p-4 border rounded-lg bg-white">
               <div className="text-3xl font-bold text-blue-600">{cropData.growthDuration}</div>

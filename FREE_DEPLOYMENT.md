@@ -173,7 +173,7 @@ VITE_FALLBACK_TO_MOCK=false
 # Database
 DATABASE_URL=[نسخ من Supabase]
 SUPABASE_URL=[نسخ من Supabase]
-SUPABASE_ANON_KEY=[نسخ م�� Supabase]
+SUPABASE_ANON_KEY=[نسخ من Supabase]
 
 # AI Services (URLs from Render)
 VITE_SOIL_ANALYSIS_URL=https://agrogrowth-soil-analysis.onrender.com
@@ -281,7 +281,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 ---
 
-## 🆘 استكشاف ال��خطاء
+## 🆘 استكشاف الأخطاء
 
 ### مشكلة: خدمة Render تنام
 

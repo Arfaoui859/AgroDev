@@ -308,7 +308,7 @@ const FarmerDashboard: React.FC = () => {
 
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays === 1) return isArabic ? "منذ يوم واحد" : "1 day ago";
-    return isArabic ? `��نذ ${diffInDays} أيام` : `${diffInDays} days ago`;
+    return isArabic ? `منذ ${diffInDays} أيام` : `${diffInDays} days ago`;
   };
 
   if (loading) {
@@ -641,7 +641,7 @@ const FarmerDashboard: React.FC = () => {
                             onClick={() => handleTaskAction(task.id, "pending")}
                           >
                             <Pause className="h-3 w-3 mr-1" />
-                            {isArabic ? "إيق��ف" : "Pause"}
+                            {isArabic ? "إيقاف" : "Pause"}
                           </Button>
                           <Button
                             size="sm"

@@ -322,7 +322,7 @@ const WaterConservationAnalytics: React.FC = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setSelectedPeriod('7')}>
-                7 أي��م
+                7 أيام
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSelectedPeriod('30')}>
                 30 يوم
@@ -444,7 +444,7 @@ const WaterConservationAnalytics: React.FC = () => {
                       dataKey="actualCost" 
                       stroke="#f59e0b" 
                       strokeWidth={2}
-                      name="التكلفة ��لفعلية"
+                      name="التكلفة الفعلية"
                     />
                     <Line 
                       type="monotone" 

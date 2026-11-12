@@ -468,7 +468,7 @@ const BudgetPlanning: React.FC = () => {
                         onClick={() => updateBudgetStatus(plan.id, 'approved')}
                       >
                         <CheckCircle className="h-4 w-4 ml-1" />
-                        اعتم��د
+                        اعتماد
                       </Button>
                     )}
                     {plan.status === 'approved' && (

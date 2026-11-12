@@ -619,7 +619,7 @@ const SmartLogistics: React.FC = () => {
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">المسافة الم��طوعة:</span>
+                              <span className="text-gray-600">المسافة المقطوعة:</span>
                               <span>{vehicle.maintenance.mileage.toLocaleString('ar-TN')} كم</span>
                             </div>
                           </div>

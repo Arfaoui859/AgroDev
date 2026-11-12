@@ -481,7 +481,7 @@ class AlertNotifierAI:
                     'فحص المضخة فوراً',
                     'البحث عن تسريبات في النظام',
                     'تشغيل النظام البديل',
-                    'اتصال بفني ��لصيانة'
+                    'اتصال بفني الصيانة'
                 ],
                 estimated_impact={'irrigation_failure': 'imminent', 'crop_risk': 'critical'},
                 expires_at=current_time + timedelta(hours=2)
@@ -617,7 +617,7 @@ class AlertNotifierAI:
         
         if critical_alerts:
             status = 'critical_attention_required'
-            message = f"{len(critical_alerts)} تحذير حرج يتطلب تدخل فور��"
+            message = f"{len(critical_alerts)} تحذير حرج يتطلب تدخل فورا"
         elif high_alerts:
             status = 'high_attention_required'
             message = f"{len(high_alerts)} تحذير عالي الأولوية"

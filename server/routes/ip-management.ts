@@ -111,7 +111,7 @@ const patents = [
     jurisdiction: ['SA'],
     claims: [
       'طريقة لتحليل عينات التربة بالاستشعار',
-      'خوارزمية ��حساب الجرعة المثلى للأسمدة',
+      'خوارزمية لحساب الجرعة المثلى للأسمدة',
       'نظام توزيع دقيق للأسمدة'
     ],
     technologies: ['Precision Agriculture', 'Soil Analysis', 'Automation'],

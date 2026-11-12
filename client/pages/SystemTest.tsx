@@ -246,7 +246,7 @@ export default function SystemTest() {
               <CardContent>
                 {notFoundLogs.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">
-                    {isArabic ? 'لا توجد محاولات وصول فاش��ة' : 'No 404 attempts recorded'}
+                    {isArabic ? 'لا توجد محاولات وصول فاشلة' : 'No 404 attempts recorded'}
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-64 overflow-y-auto">

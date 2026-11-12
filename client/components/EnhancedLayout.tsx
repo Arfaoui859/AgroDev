@@ -115,7 +115,7 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
       href: "/analysis",
       icon: BarChart3,
       category: "Main",
-      categoryArabic: "الر��يسية",
+      categoryArabic: "الرئيسية",
       children: [
         {
           id: "soil-analysis",

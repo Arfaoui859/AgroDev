@@ -244,7 +244,7 @@ const AdaptiveAI: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">الذكاء الاصطناعي التكيفي</h1>
-          <p className="text-gray-600">إدارة ��لنماذج الذكية والتعلم الذاتي والتخصيص الفردي</p>
+          <p className="text-gray-600">إدارة النماذج الذكية والتعلم الذاتي والتخصيص الفردي</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -333,7 +333,7 @@ const AdaptiveAI: React.FC = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">نقاط ال��يانات</CardTitle>
+              <CardTitle className="text-sm font-medium">نقاط البيانات</CardTitle>
               <Database className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>

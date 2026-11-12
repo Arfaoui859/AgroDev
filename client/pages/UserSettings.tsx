@@ -499,7 +499,7 @@ export default function UserSettings() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{isArabic ? 'تخط��ط لوحة التحكم' : 'Dashboard Layout'}</Label>
+                  <Label>{isArabic ? 'تخطيط لوحة التحكم' : 'Dashboard Layout'}</Label>
                   <Select
                     value={localPreferences.dashboardLayout}
                     onValueChange={(value: any) => setLocalPreferences(prev => ({ ...prev, dashboardLayout: value }))}

@@ -255,7 +255,7 @@ const CloudServicesStatus: React.FC = () => {
                 حالة API الرئيسي
               </CardTitle>
               <CardDescription>
-                حالة ��لخدمات من خلال API الرئيسي
+                حالة الخدمات من خلال API الرئيسي
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -399,7 +399,7 @@ const CloudServicesStatus: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-medium text-sm">تحل��ل التربة:</label>
+                  <label className="font-medium text-sm">تحليل التربة:</label>
                   <p className="text-sm text-gray-600 mt-1 truncate">
                     {cloudConfig.soilAnalysisUrl}
                   </p>
@@ -467,7 +467,7 @@ const CloudServicesStatus: React.FC = () => {
                 </h4>
                 <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
                   <li>
-                    راجع دل��ل النشر السحابي: <code>CLOUD_DEPLOYMENT.md</code>
+                    راجع دليل النشر السحابي: <code>CLOUD_DEPLOYMENT.md</code>
                   </li>
                   <li>
                     تأكد من تكوين جميع المتغيرات في <code>.env.cloud</code>

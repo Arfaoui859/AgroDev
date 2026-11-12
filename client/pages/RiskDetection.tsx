@@ -747,7 +747,7 @@ export default function RiskDetection() {
                       </div>
 
                       <div>
-                        <h4 className="font-medium text-sm mb-2">المناطق المتأث��ة:</h4>
+                        <h4 className="font-medium text-sm mb-2">المناطق المتأثرة:</h4>
                         <div className="flex flex-wrap gap-1">
                           {risk.affected_regions.map((region, idx) => (
                             <Badge key={idx} variant="outline" className="text-xs">

@@ -669,7 +669,7 @@ const SupplyChainTracker: React.FC = () => {
                     <Progress value={metrics.qualityFailures} className="[&>*]:bg-red-500" />
                     
                     <div className="flex items-center justify-between">
-                      <span>رضا العملا��</span>
+                      <span>رضا العملاء</span>
                       <span className="font-bold text-blue-600">{metrics.customerSatisfaction}%</span>
                     </div>
                     <Progress value={metrics.customerSatisfaction} className="[&>*]:bg-blue-500" />

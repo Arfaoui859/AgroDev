@@ -425,7 +425,7 @@ const SmartMarketplace: React.FC = () => {
               <DialogHeader>
                 <DialogTitle>إضافة منتج للسوق</DialogTitle>
                 <DialogDescription>
-                  أضف منتجك ال��راعي للعرض في السوق الذكي
+                  أضف منتجك الزراعي للعرض في السوق الذكي
                 </DialogDescription>
               </DialogHeader>
               <div className="text-center py-8">

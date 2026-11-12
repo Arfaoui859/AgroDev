@@ -265,7 +265,7 @@ class SmartIrrigationOptimizer:
         # معامل المحصول
         crop_coefficient = stage_info.get('water_need', 1.0)
         
-        # الاحتياج ا��مائي اليومي
+        # الاحتياج المائي اليومي
         daily_water_need = et0 * crop_coefficient
         
         # الاحتياج الأسبوعي
@@ -516,7 +516,7 @@ class SmartIrrigationOptimizer:
     
     def _generate_smart_alerts(self, current_analysis: Dict, irrigation_schedule: List, 
                              weather_data: Dict) -> List[Dict[str, Any]]:
-        """توليد تنبيهات ذ��ية"""
+        """توليد تنبيهات ذكية"""
         alerts = []
         
         # تنبيهات الإجهاد المائي

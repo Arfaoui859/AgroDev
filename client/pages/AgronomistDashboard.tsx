@@ -634,7 +634,7 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
                         {isArabic ? analysis.cropTypeArabic : analysis.cropType}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {isArabic ? 'رفع بو��سطة' : 'Uploaded by'} {analysis.uploadedBy}
+                        {isArabic ? 'رفع بواسطة' : 'Uploaded by'} {analysis.uploadedBy}
                       </p>
                       <p className="text-xs text-gray-500">
                         {formatTimeAgo(analysis.uploadedAt)}

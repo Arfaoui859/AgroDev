@@ -1244,7 +1244,7 @@ const SmartIrrigationDashboard: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <Label>وض�� توفير المياه</Label>
+              <Label>وضع توفير المياه</Label>
               <Switch
                 checked={newSchedule.conservationMode}
                 onCheckedChange={(checked) =>

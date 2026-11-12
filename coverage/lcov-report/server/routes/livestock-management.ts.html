@@ -1883,7 +1883,7 @@ function generateVaccinationRecords(rng: () =&gt; number): VaccinationRecord[] {
   const vaccines = [
     "لقاح الحمى القلاعية",
     "لقاح الجمرة الخبيثة",
-    "لقاح ��لنيوكاسل",
+    "لقاح �النيوكاسل",
     "لقاح الطاعون البقري",
     "لقاح التهاب الكبد الوبائي",
   ];
@@ -1992,7 +1992,7 @@ function generateFeedInventory(rng: () =&gt; number = <span class="branch-0 cbra
     )
       .toISOString()
       .split("T")[0],
-    supplier: `مورد العلف ��لمحلي ${i + 1}`,
+    supplier: `مورد العلف �المحلي ${i + 1}`,
   }));
 }
 &nbsp;
@@ -2098,7 +2098,7 @@ router.get("/animals/:animalId", (req, res) =&gt; {
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    res.status(500).json({</span>
       success: false,
-      message: "خطأ في استرجاع ��يانات الحيوان",
+      message: "خطأ في استرجاع �بيانات الحيوان",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }

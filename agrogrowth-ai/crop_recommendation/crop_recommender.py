@@ -640,7 +640,7 @@ class CropRecommenderAI:
         if rainfall < 400:
             water_status = 'نقص - ري مكثف مطلوب'
         elif 400 <= rainfall < 800:
-            water_status = 'معتدل - ري ت��ميلي'
+            water_status = 'معتدل - ري تكميلي'
         else:
             water_status = 'وفرة - انتبه للصرف'
         
@@ -795,7 +795,7 @@ class CropRecommenderAI:
         if rainfall < 200:
             limitations.append("نقص شديد في الأمطار")
         elif rainfall > 2000:
-            limitations.append("أمطار مفرطة قد تسبب مشاكل صر��")
+            limitations.append("أمطار مفرطة قد تسبب مشاكل صرف")
         
         ph = input_data.get('soil_ph', 6.5)
         if ph < 5.0:

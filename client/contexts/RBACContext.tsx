@@ -360,7 +360,7 @@ const mockPermissionGroups: PermissionGroup[] = [
     name: "Administration",
     nameArabic: "الإدارة",
     description: "Administrative functions and system management",
-    descriptionArabic: "الوظائف الإداري�� وإدارة النظام",
+    descriptionArabic: "الوظائف الإدارية وإدارة النظام",
     category: "admin",
     icon: "Settings",
     order: 3,
@@ -518,7 +518,7 @@ const mockRoles: Role[] = [
       {
         id: "perm-system-config",
         name: "System Configuration",
-        nameArabic: "إعداد��ت النظام",
+        nameArabic: "إعدادات النظام",
         resource: "system",
         action: "update",
       },
@@ -533,7 +533,7 @@ const mockRoles: Role[] = [
   {
     id: "role-government",
     name: "Government Official",
-    nameArabic: "��سؤول حكومي",
+    nameArabic: "مسؤول حكومي",
     description: "Government oversight and policy management",
     descriptionArabic: "رقابة حكومية وإدارة السياسات",
     level: 2,

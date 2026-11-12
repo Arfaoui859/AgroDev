@@ -305,7 +305,7 @@ export default function BreedingManagement() {
         </div>
         <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Plus className="w-4 h-4 ml-2" />
-          خطة تن��سل جديدة
+          خطة تناسل جديدة
         </Button>
       </div>
 

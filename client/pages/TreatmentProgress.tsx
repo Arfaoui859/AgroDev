@@ -485,7 +485,7 @@ const TreatmentProgress: React.FC = () => {
                           {treatmentHistory.progress.completedSteps.includes(step) 
                             ? 'مكتملة' 
                             : treatmentHistory.progress.currentStep === step
-                            ? 'جاري��'
+                            ? 'جارية'
                             : 'في الانتظار'
                           }
                         </div>

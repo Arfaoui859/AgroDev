@@ -514,7 +514,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
               </Select>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                {isArabic ? 'منتج ج��يد' : 'Add Product'}
+                {isArabic ? 'منتج جديد' : 'Add Product'}
               </Button>
             </div>
           </div>
@@ -604,7 +604,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
                                   <span>{product.currentStock} {isArabic ? product.unitArabic : product.unit}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span>{isArabic ? 'مو��ع التخزين' : 'Storage Location'}:</span>
+                                  <span>{isArabic ? 'موقع التخزين' : 'Storage Location'}:</span>
                                   <span>{isArabic ? product.storageLocationArabic : product.storageLocation}</span>
                                 </div>
                               </div>

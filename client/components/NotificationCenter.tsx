@@ -193,7 +193,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ className }) =>
                   <SelectContent>
                     <SelectItem value="all">{isArabic ? 'الكل' : 'All'}</SelectItem>
                     <SelectItem value="unread">{isArabic ? 'غير مقروء' : 'Unread'}</SelectItem>
-                    <SelectItem value="priority">{isArabic ? 'أولوي�� عالية' : 'High Priority'}</SelectItem>
+                    <SelectItem value="priority">{isArabic ? 'أولوية عالية' : 'High Priority'}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>

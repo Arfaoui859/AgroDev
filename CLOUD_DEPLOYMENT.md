@@ -319,7 +319,7 @@ npx supabase db push
 
 ### مؤشرات المشاكل الشائعة
 
-1. **خ��مات AI غير متاحة**: تحقق من Railway deployment logs
+1. **خدمات AI غير متاحة**: تحقق من Railway deployment logs
 2. **قاعدة البيانات بطيئة**: مراجعة Supabase connection limits
 3. **Frontend لا يحمل**: تحقق من Vercel build logs
 

@@ -249,7 +249,7 @@ const PWAInstallPrompt: React.FC = () => {
               </div>
               <p className="text-xs text-blue-700">
                 {isArabic
-                  ? 'اضغط على زر المشاركة في المتصفح ثم اختر "إ��افة إلى الشاشة الرئيسية"'
+                  ? 'اضغط على زر المشاركة في المتصفح ثم اختر "إضافة إلى الشاشة الرئيسية"'
                   : 'Tap the share button in your browser, then select "Add to Home Screen"'}
               </p>
             </div>

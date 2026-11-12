@@ -246,7 +246,7 @@ export default function AnimalHealthMonitoring() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary mb-2">مراقبة صحة الحي��انات</h1>
+          <h1 className="text-3xl font-bold text-primary mb-2">مراقبة صحة الحيوانات</h1>
           <p className="text-muted-foreground">نظام متكامل للمراقبة الصحية والتطعيمات والسجلات الطبية</p>
         </div>
         <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
@@ -505,7 +505,7 @@ export default function AnimalHealthMonitoring() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CalendarIcon className="h-5 w-5" />
-                  ��قويم الفحوصات
+                  تقويم الفحوصات
                 </CardTitle>
               </CardHeader>
               <CardContent>

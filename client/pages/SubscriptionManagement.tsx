@@ -463,7 +463,7 @@ const SubscriptionManagement: React.FC = () => {
                             </p>
                           </div>
                           <div>
-                            <p className="text-gray-600">قيم�� الخصم</p>
+                            <p className="text-gray-600">قيمة الخصم</p>
                             <p className="font-bold text-green-600">
                               {promo.discountType === 'percentage' ? 
                                 `${promo.discountValue}%` : 

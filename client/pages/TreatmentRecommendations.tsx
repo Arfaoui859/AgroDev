@@ -801,7 +801,7 @@ const TreatmentRecommendations: React.FC = () => {
                           
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span>المادة الفع��لة:</span>
+                              <span>المادة الفعالة:</span>
                               <span className="font-medium">{product.activeIngredient}</span>
                             </div>
                             <div className="flex justify-between">

@@ -320,7 +320,7 @@ const CommunicationHub: React.FC<CommunicationHubProps> = ({
         "Investment Analysis",
       ],
       expertiseArabic: [
-        "التخطي�� المالي",
+        "التخطيط المالي",
         "تأمين المحاصيل",
         "اتجاهات السوق",
         "تحليل الاستثمار",
@@ -359,7 +359,7 @@ const CommunicationHub: React.FC<CommunicationHubProps> = ({
       productsServicesArabic: [
         "البذور",
         "الأسمدة",
-        "��لمبيدات",
+        "المبيدات",
         "معدات المزرعة",
       ],
       verified: true,
@@ -389,7 +389,7 @@ const CommunicationHub: React.FC<CommunicationHubProps> = ({
       verified: true,
       lastActive: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
       bio: "Wholesale buyer of fresh produce for export and local distribution.",
-      bioArabic: "مشتري بالجملة لل��نتجات الطازجة للتصدير والتوزيع المحلي.",
+      bioArabic: "مشتري بالجملة للمنتجات الطازجة للتصدير والتوزيع المحلي.",
       dealCount: 312,
       businessSince: "2016",
       paymentMethods: ["Bank Transfer", "LC", "Cash"],
@@ -621,7 +621,7 @@ const CommunicationHub: React.FC<CommunicationHubProps> = ({
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder={isArabic ? "ا��بحث..." : "Search..."}
+                    placeholder={isArabic ? "ابحث..." : "Search..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"

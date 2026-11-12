@@ -342,7 +342,7 @@ export default function TwoFactorAuth({ isOpen, onClose, method = 'authenticator
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     {isArabic 
-                      ? 'احفظ ��ذه الرموز في مكان آمن. كل رمز يمكن استخدامه مرة واحدة فقط.' 
+                      ? 'احفظ هذه الرموز في مكان آمن. كل رمز يمكن استخدامه مرة واحدة فقط.' 
                       : 'Store these codes in a safe place. Each code can only be used once.'
                     }
                   </AlertDescription>
@@ -398,7 +398,7 @@ export default function TwoFactorAuth({ isOpen, onClose, method = 'authenticator
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="disable-code">{isArabic ? 'رمز ��لتحقق' : 'Verification Code'}</Label>
+                    <Label htmlFor="disable-code">{isArabic ? 'رمز التحقق' : 'Verification Code'}</Label>
                     <Input
                       id="disable-code"
                       value={verificationCode}
@@ -605,7 +605,7 @@ export default function TwoFactorAuth({ isOpen, onClose, method = 'authenticator
                     {selectedMethod === 'email' && <Mail className="h-8 w-8 text-blue-600" />}
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
-                    {isArabic ? 'تحقق من الإع��اد' : 'Verify Setup'}
+                    {isArabic ? 'تحقق من الإعداد' : 'Verify Setup'}
                   </h3>
                   <p className="text-gray-600">
                     {selectedMethod === 'authenticator' 

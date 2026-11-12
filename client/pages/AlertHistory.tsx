@@ -493,7 +493,7 @@ const AlertHistory: React.FC = () => {
                 }
                 className="w-full border rounded px-3 py-2 text-sm text-right"
               >
-                <option value="all">ج��يع الأنواع</option>
+                <option value="all">جميع الأنواع</option>
                 <option value="Weather">طقس</option>
                 <option value="Disease">أمراض</option>
                 <option value="Irrigation">ري</option>

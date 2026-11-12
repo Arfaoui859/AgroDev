@@ -402,10 +402,10 @@ const SmartCropRecommendations: React.FC = () => {
     <div className="max-w-7xl mx-auto p-6 space-y-6" dir="rtl">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          التوصي��ت الذكية للمحاصيل
+          التوصيات الذكية للمحاصيل
         </h1>
         <p className="text-gray-600">
-          احصل على توصيات مخصصة للمحاصيل وتحليل الر��حية بالذكاء الاصطناعي
+          احصل على توصيات مخصصة للمحاصيل وتحليل الربحية بالذكاء الاصطناعي
         </p>
       </div>
 
@@ -438,7 +438,7 @@ const SmartCropRecommendations: React.FC = () => {
                 إعدادات التوصيات
               </CardTitle>
               <CardDescription>
-                أدخل معلومات مزرعتك للحصول عل�� توصيات مخصصة
+                أدخل معلومات مزرعتك للحصول على توصيات مخصصة
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1049,7 +1049,7 @@ const SmartCropRecommendations: React.FC = () => {
                       <Badge
                         className={getRiskColor(
                           profitEstimation.risk_analysis?.market_risk?.level ||
-                            "متوس��",
+                            "متوسط",
                         )}
                       >
                         {profitEstimation.risk_analysis?.market_risk?.level}
@@ -1098,7 +1098,7 @@ const SmartCropRecommendations: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <BarChart3 className="w-5 h-5 ml-2" />
-                م��ارنة المحاصيل
+                مقارنة المحاصيل
               </CardTitle>
               <CardDescription>
                 {comparison
@@ -1143,7 +1143,7 @@ const SmartCropRecommendations: React.FC = () => {
                   </div>
 
                   <div>
-                    <h4 className="font-medium mb-3">ترتيب حسب الرب�� الصافي</h4>
+                    <h4 className="font-medium mb-3">ترتيب حسب الربح الصافي</h4>
                     <div className="space-y-2">
                       {comparison.rankings?.by_net_profit
                         ?.slice(0, 3)
@@ -1344,7 +1344,7 @@ const SmartCropRecommendations: React.FC = () => {
                           الموسم: {quickRecommendation.best_crop.growing_season}
                         </div>
                         <div>
-                          العائ�� المتوقع: $
+                          العائد المتوقع: $
                           {quickRecommendation.best_crop.expected_profit_per_hectare?.toFixed(
                             0,
                           )}

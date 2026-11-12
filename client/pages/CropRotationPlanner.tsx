@@ -672,7 +672,7 @@ export default function CropRotationPlanner() {
                             }}
                             className="px-3 py-2 border rounded-md bg-background"
                           >
-                            <option value="main">محص��ل رئيسي</option>
+                            <option value="main">محصول رئيسي</option>
                             <option value="cover">محصول تغطية</option>
                             <option value="legume">بقوليات</option>
                             <option value="fallow">إراحة</option>

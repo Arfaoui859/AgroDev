@@ -411,7 +411,7 @@ const ComprehensiveOverviewCards: React.FC<ComprehensiveOverviewCardsProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-600">
-                  {isArabic ? "المساحة المز��وعة" : "Cultivated"}
+                  {isArabic ? "المساحة المزروعة" : "Cultivated"}
                 </span>
                 <span className="font-medium">
                   {land.cultivatedArea} {isArabic ? "هكتار" : "ha"}

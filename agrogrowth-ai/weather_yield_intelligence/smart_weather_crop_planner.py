@@ -102,7 +102,7 @@ class SmartWeatherCropPlanner:
             },
             'summer': {
                 'months': [6, 7, 8],
-                'name_ar': 'الزراعة ال��يفية',
+                'name_ar': 'الزراعة الكيفية',
                 'suitable_crops': ['rice', 'sorghum', 'millet', 'sesame', 'watermelon'],
                 'characteristics': {
                     'temperature_range': (25, 40),
@@ -641,7 +641,7 @@ class SmartWeatherCropPlanner:
             ],
             'alert_thresholds': {
                 'heat_wave': 'درجة حرارة > 40°م لمدة 3 أيام',
-                'drought': 'عدم هطول أمطار لمدة 30 ��وم',
+                'drought': 'عدم هطول أمطار لمدة 30 يوم',
                 'frost': 'درجة حرارة < 2°م',
                 'heavy_rain': 'أمطار > 50 مم في 24 ساعة'
             },

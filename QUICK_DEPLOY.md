@@ -189,7 +189,7 @@ curl https://agrogrowth-soil-analysis-production.up.railway.app/health
 
 بعد اكتمال هذه الخطوات:
 
-- ✅ خدم��ت AI حقيقية تعمل على Railway
+- ✅ خدمات AI حقيقية تعمل على Railway
 - ✅ قاعدة بيانات احترافية على Supabase
 - ✅ Frontend سريع على Vercel
 - ✅ تحليل حقيقي بدلاً من البيانات التجريبية

@@ -871,7 +871,7 @@ const EnhancedAgronomistDashboard: React.FC<
                             </p>
                             <p className="text-lg font-bold text-green-600 mt-1">
                               {crop.yieldProjection.toLocaleString()}{" "}
-                              {isArabic ? "كغ/هكتا��" : "kg/ha"}
+                              {isArabic ? "كغ/هكتار" : "kg/ha"}
                             </p>
                           </div>
                         </div>
