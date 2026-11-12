@@ -1041,3 +1041,21 @@ gateway actually reads (`MARKET_FORECAST_URL`, `SMART_ASSISTANT_URL`,
   (8 cases) asserts every Dockerfile's `EXPOSE`, health port and env-var-honouring
   `CMD`.
 - `tsc` 0, `eslint` 0, full suite 898 passed / 901 (3 skipped, 2 suites skipped).
+
+---
+
+## Session 18 — residual admin role-alias inconsistencies (P0 follow-up)
+
+**Defect.** Session 16b normalised the `administrator` → `admin` alias in
+`AuthContext` and `routeAccess`, but three client call sites still compared the
+raw role string, so a profile stored as `administrator` (accepted by the server,
+`ADMIN_ROLES = {admin, administrator}`) was treated as a non-admin:
+
+- `client/contexts/RBACContext.tsx` `checkPermission` (`user.role === "admin"`).
+- `client/components/NavigationTester.tsx` (`userRole !== 'admin'`).
+
+**Fix.** Both now use the shared `normalizeRole` helper. Reads of `user.role`
+elsewhere (`NotFound.tsx`) are already normalised at the source in
+`AuthContext`, so no further change was needed.
+
+`tsc` 0, `eslint` 0, full suite 898 passed / 901 (3 skipped, 2 suites skipped).

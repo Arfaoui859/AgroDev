@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { normalizeRole } from '@/lib/routeAccess';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -103,7 +104,7 @@ export default function NavigationTester() {
   const testRoute = async (route: NavigationItem): Promise<TestResult> => {
     setCurrentTest(`Testing: ${route.nameArabic} (${route.path})`);
     
-    const userRole = user?.role || 'anonymous';
+    const userRole = normalizeRole(user?.role) || 'anonymous';
     const isAllowed = route.allowedRoles.includes('all') || route.allowedRoles.includes(userRole);
     
     try {

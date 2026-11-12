@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth, UserRole } from "./AuthContext";
+import { normalizeRole } from "../lib/routeAccess";
 
 /**
  * DEMO SCAFFOLDING — NOT WIRED INTO THE APP.
@@ -594,8 +595,9 @@ export const RBACProvider: React.FC<{ children: React.ReactNode }> = ({
   ): boolean => {
     if (!user) return false;
 
-    // Admin has all permissions
-    if (user.role === "admin") return true;
+    // Admin has all permissions. `normalizeRole` folds the `administrator`
+    // synonym (accepted server-side) onto `admin` so the client agrees.
+    if (normalizeRole(user.role) === "admin") return true;
 
     // Check user's permissions
     const hasPermission = (user.permissions ?? []).some((p: any) => {
