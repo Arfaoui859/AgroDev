@@ -772,6 +772,12 @@ Then exercised the real flows:
   `/api/field-inspector/overview`, `/api/health-alerts`, `/api/budget-plans`
   → 401 without a token; `/api/veterinarian-dashboard/overview` → 503
   (fixture-backed module intentionally disabled — see `server/index.ts`).
+- **Unauthenticated sweep** of all 129 `app.get("/api/...")` routes with no
+  token: only `200` for `/api/health`, `/api/ping`, `/api/ai/health`. The rest
+  split **63×401, 3×403, 54×503 (fail-closed fixtures), 4×400 (validation),
+  2×404** — i.e. no data-bearing route is anonymously readable. Intended
+  public reads (`/api/news`, `/api/news/sources`, `/api/ai/capabilities`,
+  `/api/system/ai`) answer 200 by design.
 
 ---
 
