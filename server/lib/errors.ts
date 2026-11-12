@@ -59,6 +59,9 @@ export function sanitizeNetworkMessage(message: string): string {
   out = out
     .replace(/https?:\/\/[^\s"')]+/gi, "<redacted-url>")
     .replace(/\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b/g, "<redacted-address>")
-    .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)+\.(?:internal|local|onrender\.com)\b(?::\d+)?/gi, "<redacted-address>");
+    // Private/service hostnames (single label allowed: `svc.internal`, `db.local`).
+    .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:internal|local|onrender\.com)\b(?::\d+)?/gi, "<redacted-address>")
+    // Bare `host:port` tokens that remain.
+    .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)*:\d{2,5}\b/gi, "<redacted-address>");
   return out;
 }

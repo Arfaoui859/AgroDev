@@ -61,6 +61,13 @@ describe("sanitizeNetworkMessage", () => {
     expect(out).toContain("<redacted-url>");
   });
 
+  test("scrubs a bare two-label service host and host:port token", () => {
+    const out = sanitizeNetworkMessage("cannot reach ai-soil-analysis.internal or db.local:5432");
+    expect(out).not.toContain("ai-soil-analysis.internal");
+    expect(out).not.toContain("db.local");
+    expect(out).not.toContain("5432");
+  });
+
   test("leaves a benign message untouched", () => {
     expect(sanitizeNetworkMessage("service returned an invalid payload")).toBe(
       "service returned an invalid payload",

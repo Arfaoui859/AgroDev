@@ -111,10 +111,15 @@ export async function callMicroservice<T = any>(
 
       if (!response.ok) {
         const text = await response.text().catch(() => "");
+        // The upstream body can be an HTML error page or a proxy message naming
+        // an internal host; keep the status, but never echo it raw to clients.
+        const detail = text && !/<\s*(html|!doctype)/i.test(text)
+          ? `: ${sanitizeNetworkMessage(text.slice(0, 200))}`
+          : "";
         throw new ProviderError(
           capability,
           "http",
-          `${capability} responded with HTTP ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`,
+          `${capability} responded with HTTP ${response.status}${detail}`,
           response.status,
           response.status === 429 || response.status >= 500,
         );

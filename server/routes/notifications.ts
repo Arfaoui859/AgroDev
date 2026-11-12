@@ -183,7 +183,7 @@ export const getSensors = async (req: Request, res: Response) => {
     .order("created_at", { ascending: true })
     .limit(200);
   if (deviceError) {
-    return res.status(503).json({ success: false, code: "SENSOR_REGISTRY_READ_FAILED", message: deviceError.message, data: [], isRealData: false });
+    return res.status(503).json({ success: false, code: "SENSOR_REGISTRY_READ_FAILED", message: dbErr(deviceError), data: [], isRealData: false });
   }
   const deviceRows = devices ?? [];
   if (deviceRows.length === 0) {
@@ -199,7 +199,7 @@ export const getSensors = async (req: Request, res: Response) => {
     .order("recorded_at", { ascending: false })
     .limit(1000);
   if (readingError) {
-    return res.status(503).json({ success: false, code: "SENSOR_READINGS_READ_FAILED", message: readingError.message, data: [], isRealData: false });
+    return res.status(503).json({ success: false, code: "SENSOR_READINGS_READ_FAILED", message: dbErr(readingError), data: [], isRealData: false });
   }
 
   // Latest reading per (device, reading_type). Readings arrive newest-first.
@@ -255,7 +255,7 @@ export const getRealTimeData = async (req: Request, res: Response) => {
 
   const { data: devices, error: deviceError } = await db.from("sensor_devices").select("id").limit(200);
   if (deviceError) {
-    return res.status(503).json({ success: false, code: "SENSOR_REGISTRY_READ_FAILED", message: deviceError.message, data: [], isRealData: false });
+    return res.status(503).json({ success: false, code: "SENSOR_REGISTRY_READ_FAILED", message: dbErr(deviceError), data: [], isRealData: false });
   }
   const ids = (devices ?? []).map((d) => d.id);
   if (ids.length === 0) {

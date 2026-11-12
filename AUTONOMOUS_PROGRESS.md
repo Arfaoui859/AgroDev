@@ -904,3 +904,36 @@ host leaks.
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` OK ·
 `npx jest` **871 passed / 3 skipped / 874 total** · Python 245 + 9 passed.
+
+---
+
+## Session 16 — disclosure sweep round 2 (proxy body, two-label hosts, sensors)
+
+Extended the transport-error hardening after re-sweeping `server/services`,
+`server/lib` and `server/middleware`:
+
+- `server/services/providers/microserviceProxy.ts` — an upstream non-OK body
+  (HTML error page or a proxy message) was embedded into the client-visible
+  `ProviderError.message`; it is now sanitized, and HTML bodies are dropped
+  entirely (status preserved).
+- `server/lib/errors.ts` — `sanitizeNetworkMessage()` now also redacts bare
+  two-label service hosts (`svc.internal`, `db.local`) and stray `host:port`
+  tokens; previously only fully-qualified `*.internal`/`*.local`/`*.onrender.com`
+  names matched.
+- `server/routes/notifications.ts` — the sensor registry/readings handlers still
+  echoed `deviceError.message` / `readingError.message`; now `dbErr()`.
+
+New/updated tests: `tests/unit/microservice-proxy-disclosure.test.ts` (2),
+`tests/unit/errors.test.ts` (+1). LIVE news probe re-run and passing.
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` OK ·
+`npx jest` **874 passed / 3 skipped / 877 total**.
+
+### Verified this session
+
+| Area | Result |
+|---|---|
+| Multi-agent orchestrator | **VERIFIED** — allow-listed registry, bounded concurrency, per-step timeout+retry, dependency gating, structured trace; 18 tests. Wired into the chat handler (`usedSpecialists` + `orchestrationTrace` in the response). |
+| Tunisian news (LIVE) | **VERIFIED** — real articles fetched, publisher attribution + original links present. |
+| Role→dashboard routing | **VERIFIED** — `dashboardRouteForRole` drives the post-login redirect from the persisted profile role. |
+| Admin auth | **VERIFIED** — admin-bootstrap routes gate on `verifyAdminToken` (constant-time, fail-closed); role changes only via a verified JWT + allow-listed `admin_change_user_role` RPC. |
