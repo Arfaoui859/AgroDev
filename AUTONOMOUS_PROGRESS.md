@@ -508,6 +508,33 @@ Gates after Session 11: `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 
 `npx jest` **824 passed, 2 skipped** (826 total, 91/92 suites) · RLS suite
 (12 scenarios) **86 checks pass** · `verify-security-hardening.sql` **passes**.
 
+## Session 12 — P0 crash fix: fail-closed APIs no longer crash the UI
+
+The mission reported "opening the application sometimes returns a generic
+unexpected-error page". Root cause found: the fail-closed stub routers answer
+`503 { success:false, data:null }`. Several routed pages stored the *whole*
+parsed body in state (`setModels(data)`), so state became a truthy object; the
+next `.map`/`.filter`/`.property` access threw and the generic `ErrorBoundary`
+rendered "حدث خطأ غير متوقع" for a page that had simply received a legitimate
+"unavailable" response. It is not an auth or routing bug — it is unsafe response
+handling.
+
+### Fix
+- New `client/lib/apiPayload.ts`: `payloadList` / `payloadObject` return an
+  empty/neutral shape for a failed or unavailable call and never fabricate
+  content (a successful `{ success, data }` envelope is unwrapped; a failure is
+  not).
+- Applied in `PredictiveAnalytics`, `MarketDashboard`, `PriceForecasts`,
+  `MarketAlerts`, `WaterAnalytics`, `RiskDetection`.
+- `IrrigationScheduler` now only commits `forecast`/`schedule`/`summary` when the
+  response is OK and the field is the expected shape.
+- Regression test `tests/unit/api-payload.test.ts` (8 cases) pins the envelope
+  behaviour.
+
+### Verification
+- `tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` **836 passed, 2 skipped**
+  (838 total, 92/93 suites).
+
 ## Open / blocked
 
 | Item | Status | Blocker |

@@ -123,7 +123,11 @@ export default function IrrigationScheduler() {
       // Fetch weather forecast
       const weatherResponse = await fetch(`/api/weather-irrigation/forecast/${irrigationParams.stationId}?days=14`);
       const weatherData = await weatherResponse.json();
-      setWeatherForecast(weatherData.forecast);
+      setWeatherForecast(
+        weatherResponse.ok && Array.isArray(weatherData?.forecast)
+          ? weatherData.forecast
+          : [],
+      );
 
       // Generate irrigation schedule
       const scheduleResponse = await fetch('/api/weather-irrigation/irrigation/schedule', {
@@ -135,8 +139,14 @@ export default function IrrigationScheduler() {
       });
       
       const scheduleData = await scheduleResponse.json();
-      setSchedule(scheduleData.schedule);
-      setScheduleSummary(scheduleData.summary);
+      setSchedule(
+        scheduleResponse.ok && Array.isArray(scheduleData?.schedule)
+          ? scheduleData.schedule
+          : [],
+      );
+      if (scheduleResponse.ok && scheduleData?.summary) {
+        setScheduleSummary(scheduleData.summary);
+      }
     } catch (error) {
       console.error('Error generating irrigation schedule:', error);
     } finally {
