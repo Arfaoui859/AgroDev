@@ -535,6 +535,79 @@ handling.
 - `tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` **836 passed, 2 skipped**
   (838 total, 92/93 suites).
 
+## Session 13 — P0 crash sweep completed + runtime verification + stale artifact cleanup
+
+### Findings
+- The Session 12 crash class was not fully swept. Two more routed loaders
+  committed a fail-closed envelope straight into state:
+  - `CropPlanner` stored the whole planting-calendar body; the weather-irrigation
+    stub answers 503 with no calendar, so the render threw on
+    `climateInfo`/`generalAdvice`.
+  - `AIServicesTest` stored the monitoring body directly, so a degraded
+    `/api/ai/health` made `healthData.services.map` throw.
+- A full scan of all 95 routed pages (`AppRouter.tsx` lazy imports) for
+  `const data = await response.json()` followed by `set*(data)` found no further
+  offenders. Every remaining `set*(data.data)` site is gated by `if (data.success)`
+  or `if (!response.ok …)`, so a 503 body can no longer reach a render path.
+- Five pages that share the same envelope risk (`DigitalTraining`,
+  `DigitalTransformation`, `EmergencyResponse`, `EmergingTechAssessment`,
+  `PatentManagement`) plus the retired `SmartAdvisor` are **not routed** — they
+  are unreachable from the SPA, so they cannot cause the user-visible crash.
+
+### Fix
+- `CropPlanner` and `AIServicesTest` now validate the shape before committing
+  state and keep their empty state instead of throwing.
+
+### Runtime verification (built server, `PORT=5099`)
+- `GET /api/ping` 200; SPA `/` 200; `/server/index.ts` hard-404.
+- Fail-closed endpoints return a clean `{success:false,data:null}` envelope with
+  503 and a provenance header — exactly the shape that used to crash the pages:
+  `/api/risk-detection/alerts` (`RISK_FEEDS_NOT_VERIFIED`),
+  `/api/predictive-analytics/models` (`PREDICTIVE_MODELS_NOT_VALIDATED`),
+  `/api/market-analysis/alerts` (`MARKET_SOURCE_NOT_CONNECTED`),
+  `/api/weather-irrigation/analytics/water-usage`.
+- Admin endpoints fail closed with 401 unauthenticated (`/api/admin/overview`,
+  `/api/admin/users`, `/api/admin/news-sources`, `/api/admin/security-events`,
+  `/api/admin/system-metrics`, `/api/admin/usage-analytics`,
+  `/api/admin/activity-logs`, `/api/admin/subscriptions`).
+- `POST /api/farms` unauthenticated → 401 (`Sign in to access this resource`).
+- `GET /api/ai/health` reports 8 services, 0 available, 8 not configured —
+  honest, no fabricated availability.
+
+### Live feature verification
+- **Tunisian agricultural news** (`GET /api/news`): 139 real articles from
+  publisher RSS feeds, `X-Data-Provenance: rss-feeds`, `X-Is-Real-Data: true`.
+  Per-source status is honest (`la-presse` available; `business-news` reports
+  `available:false` with the fetch error). Search (`q=olive` → 1), category
+  filter (`élevage` → 2), language filter (`ar` → 73, all `ar`), and pagination
+  (`page=2&pageSize=5` → 5 items, `totalPages: 28`) all work.
+- **Eight AI microservices**: all eight start locally and answer `GET /health`
+  200. Each declares its true `model_source` (`deterministic-rules`,
+  `synthetic-demo`, `heuristic-demo`, `rule-based-demo`) — no service claims a
+  trained model. Python suite `245 passed`.
+- **Soil analysis end-to-end** through the Node gateway (services wired via env):
+  returns `dataSource:"rule-based"`, `modelSource:"deterministic-rules"`,
+  per-measurement `source:"user_supplied_input"`, `measurement_verified:false`,
+  and refuses to classify texture or interpret N/P/K without a unit/lab method —
+  no fabricated values.
+- **Multi-agent orchestration** via `POST /api/ai/assistant/chat`: the planner
+  selects specialists and returns a trace
+  `soil:insufficient_input, weather:insufficient_input, crop:ok`, with
+  `usedSpecialists:["crop"]` and `dataSource:"rule-based"` — missing inputs are
+  reported as `insufficient_input`, not invented.
+- **Irrigation / pest gateways**: honestly refuse synthetic microservice output
+  (`MODEL_PROVENANCE_UNVERIFIED`, 503) instead of presenting it as real.
+
+### Cleanup
+- Removed seven stale, git-tracked `*.backup` / `*.before-*` artifacts of the
+  deliberately-retired disease-treatment module (the current route is a 6-line
+  fail-closed 503). History still preserves them.
+
+### Verification
+- `tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` **836 passed, 2 skipped**
+  (838 total, 92/93 suites) · `npm run build` OK · `agrogrowth-ai` pytest
+  **245 passed**.
+
 ## Open / blocked
 
 | Item | Status | Blocker |
