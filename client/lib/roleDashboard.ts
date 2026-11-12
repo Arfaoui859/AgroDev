@@ -12,7 +12,9 @@ export type UserRole =
   | "trader"
   | "veterinarian"
   | "admin"
-  | "inspector";
+  | "inspector"
+  | "government"
+  | "investor";
 
 export const ROLE_DASHBOARD_ROUTES: Record<UserRole, string> = {
   farmer: "/farmer-dashboard",
@@ -21,6 +23,8 @@ export const ROLE_DASHBOARD_ROUTES: Record<UserRole, string> = {
   veterinarian: "/veterinarian-dashboard",
   inspector: "/field-inspector-dashboard",
   admin: "/admin-panel",
+  government: "/government-dashboard",
+  investor: "/investor-dashboard",
 };
 
 export function dashboardRouteForRole(role: string | null | undefined): string {

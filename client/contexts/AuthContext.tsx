@@ -17,7 +17,9 @@ export type UserRole =
   | "trader"
   | "veterinarian"
   | "admin"
-  | "inspector";
+  | "inspector"
+  | "government"
+  | "investor";
 
 export { ROLE_DASHBOARD_ROUTES, dashboardRouteForRole } from "../lib/roleDashboard";
 import { dashboardRouteForRole } from "../lib/roleDashboard";

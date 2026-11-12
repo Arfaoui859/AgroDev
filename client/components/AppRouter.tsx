@@ -172,7 +172,14 @@ export default function AppRouter() {
           />
           <Route path="/disease-history" element={<DiseaseHistory />} />
           <Route path="/disease-guide" element={<DiseaseGuide />} />
-          <Route path="/market-dashboard" element={<MarketDashboard />} />
+          <Route
+            path="/market-dashboard"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <MarketDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/enhanced-market"
             element={<EnhancedMarketDashboard />}
@@ -201,13 +208,34 @@ export default function AppRouter() {
             path="/weather-crop-planner"
             element={<WeatherCropPlanner />}
           />
-          <Route path="/livestock-dashboard" element={<LivestockDashboard />} />
+          <Route
+            path="/livestock-dashboard"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <LivestockDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/animal-health-monitoring"
             element={<AnimalHealthMonitoring />}
           />
-          <Route path="/breeding-management" element={<BreedingManagement />} />
-          <Route path="/feed-management" element={<FeedManagement />} />
+          <Route
+            path="/breeding-management"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <BreedingManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feed-management"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <FeedManagement />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/soil-problem-detection"
             element={<SoilProblemDetection />}
@@ -248,7 +276,14 @@ export default function AppRouter() {
             path="/water-conservation"
             element={<WaterConservationAnalytics />}
           />
-          <Route path="/financial-dashboard" element={<FinancialDashboard />} />
+          <Route
+            path="/financial-dashboard"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <FinancialDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/expense-tracker" element={<ExpenseTracker />} />
           <Route path="/revenue-analysis" element={<RevenueAnalysis />} />
           <Route
@@ -273,12 +308,26 @@ export default function AppRouter() {
             path="/livestock-production-analytics"
             element={<LivestockProductionAnalytics />}
           />
-          <Route path="/farmer-dashboard" element={<UnifiedFarmerDashboard />} />
+          <Route
+            path="/farmer-dashboard"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <UnifiedFarmerDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/agronomist-dashboard" element={<ProtectedRoute allowedRoles={["agronomist", "admin"]} fallbackRoute="/farmer-dashboard"><AgronomistDashboard /></ProtectedRoute>} />
           <Route path="/enhanced-agronomist" element={<ProtectedRoute allowedRoles={["agronomist", "admin"]} fallbackRoute="/farmer-dashboard"><EnhancedAgronomistDashboard /></ProtectedRoute>} />
           <Route path="/trader-dashboard" element={<ProtectedRoute allowedRoles={["trader", "admin"]} fallbackRoute="/farmer-dashboard"><TraderDashboard /></ProtectedRoute>} />
           <Route path="/veterinarian-dashboard" element={<ProtectedRoute allowedRoles={["veterinarian", "admin"]} fallbackRoute="/farmer-dashboard"><VeterinarianDashboard /></ProtectedRoute>} />
-          <Route path="/comprehensive-farm-management" element={<ComprehensiveFarmManagement />} />
+          <Route
+            path="/comprehensive-farm-management"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <ComprehensiveFarmManagement />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/field-inspector-dashboard" element={<ProtectedRoute allowedRoles={["inspector", "admin"]} fallbackRoute="/farmer-dashboard"><FieldInspectorDashboard /></ProtectedRoute>} />
           <Route
             path="/admin-panel"
@@ -290,11 +339,22 @@ export default function AppRouter() {
           />
           <Route
             path="/government-dashboard"
-            element={<GovernmentDashboard />}
+            element={
+              <ProtectedRoute allowedRoles={["government", "admin"]} fallbackRoute="/farmer-dashboard">
+                <GovernmentDashboard />
+              </ProtectedRoute>
+            }
           />
           <Route path="/field-management" element={<FieldManagement />} />
           <Route path="/ai-intelligence" element={<AIIntelligenceDashboard />} />
-          <Route path="/ai-intelligence-dashboard" element={<AIIntelligenceDashboard />} />
+          <Route
+            path="/ai-intelligence-dashboard"
+            element={
+              <ProtectedRoute fallbackRoute="/login">
+                <AIIntelligenceDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/ai-assistant" element={<AIAssistantChatbot />} />
           <Route path="/ai-chatbot" element={<AIAssistantChatbot />} />
           <Route path="/smart-advisor" element={<Navigate to="/ai-assistant" replace />} />
@@ -308,7 +368,14 @@ export default function AppRouter() {
             element={<WeatherYieldPlanner />}
           />
           <Route path="/gamification" element={<GamificationDashboard />} />
-          <Route path="/investor-dashboard" element={<InvestorDashboard />} />
+          <Route
+            path="/investor-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["investor", "admin"]} fallbackRoute="/farmer-dashboard">
+                <InvestorDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/public-data" element={<PublicDataDashboard />} />
           <Route
             path="/farmer-collaboration"
