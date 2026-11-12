@@ -732,6 +732,47 @@ from regressing.
 - Pushed to `origin/feat/soil-analysis-professional-report` (fast-forward, no
   force, **no PR**).
 
+### Independent DB verification (fresh `agro_verify` database)
+
+Applied the exact CI sequence to a brand-new PostgreSQL 17 database
+(`local-rls-shim` → `cloud-setup` → `supabase-setup` → `autonomous-farm-agent`
+→ `admin-role-management` → `rls-hardening` → `user-lifecycle` →
+`farm-finance-persistence` → `livestock-persistence` →
+`budget-planning-persistence` → the three migrations). All 13 applied with
+`ON_ERROR_STOP=1`.
+
+Then exercised the real flows:
+
+- **Signup** — inserting an `auth.users` row with
+  `raw_user_meta_data.requested_role = 'agronomist'` produced a `public.users`
+  profile with `role = 'farmer'` and `requested_role = 'agronomist'` (default
+  role granted; the request is stored for admin approval, never auto-granted).
+- **Escalation blocked** — as the authenticated user, `UPDATE users SET
+  role='admin'` and `UPDATE users SET requested_role='admin'` both raised
+  `42501` (privilege). Ordinary users cannot self-assign a role.
+- **Admin approval** — `admin_change_user_role(actor, target, 'agronomist')`
+  as an admin flipped the role, cleared `requested_role`, and wrote one
+  `admin_audit_logs` row.
+- **Guard rails** — a non-admin caller was rejected (`42501`); demoting the
+  last active admin was refused (`23514`); mutating `admin_audit_logs` was
+  blocked (append-only).
+- `tests/db/rls-verification.sql` — "all checks passed";
+  `database/verify-security-hardening.sql` — "security verification passed".
+- Python AI suite: `python -m pytest agrogrowth-ai/tests -q` → **245 passed**
+  (run the CI way; a bare `pytest` from the repo root mis-collects because each
+  service keeps `soil_analyzer.py` beside its tests).
+
+### Hosted HTTP smoke (built server, no provider configured)
+`PORT=5000 node build/server/node-build.mjs` then:
+- `GET /api/ping` → 200, `GET /api/ai/capabilities` → 200 (reports the true
+  engine per capability: `rule-based` where a deterministic engine exists,
+  `unavailable` where a microservice is not configured).
+- `GET /api/news/sources` → 200 with the real publisher list.
+- Auth fail-closed: `/api/revenues`, `/api/financial-summary`,
+  `/api/field-inspector/overview`, `/api/health-alerts`, `/api/budget-plans`
+  → 401 without a token; `/api/veterinarian-dashboard/overview` → 503
+  (fixture-backed module intentionally disabled — see `server/index.ts`).
+
 ---
 
 ## Open / blocked
