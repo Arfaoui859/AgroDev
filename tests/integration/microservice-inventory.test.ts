@@ -72,3 +72,46 @@ describe("🐍 Python microservice inventory", () => {
     }
   });
 });
+
+/**
+ * Regression: a hosted runtime must never fall back to a localhost service URL.
+ *
+ * The pest-control, irrigation-optimization and weather-yield routers used to
+ * hardcode `http://localhost:80xx` as their fallback. On Render that produced a
+ * self-referential loopback URL that can never resolve to the sibling service.
+ * They must route the fallback through `localServiceFallback()`, which returns
+ * "" when NODE_ENV=production or RENDER is set, so the caller fails closed.
+ */
+describe("🐍 microservice URLs never fall back to localhost in production", () => {
+  const ROUTERS = [
+    "server/routes/pest-control.ts",
+    "server/routes/irrigation-optimization.ts",
+    "server/routes/weather-yield-intelligence.ts",
+  ];
+
+  test.each(ROUTERS)("%s uses localServiceFallback, not a literal localhost URL", (rel) => {
+    const src = fs.readFileSync(path.resolve(__dirname, "../..", rel), "utf8");
+    expect(src).not.toMatch(/["']http:\/\/localhost:\d+["']/);
+    expect(src).toContain("localServiceFallback");
+  });
+
+  test("localServiceFallback returns an empty string on a hosted runtime", async () => {
+    const { localServiceFallback } = await import("../../server/routes/ai-services-gateway");
+    const prevNode = process.env.NODE_ENV;
+    const prevRender = process.env.RENDER;
+    try {
+      process.env.NODE_ENV = "production";
+      delete process.env.RENDER;
+      expect(localServiceFallback(8007)).toBe("");
+      process.env.NODE_ENV = "development";
+      process.env.RENDER = "true";
+      expect(localServiceFallback(8007)).toBe("");
+      delete process.env.RENDER;
+      expect(localServiceFallback(8007)).toBe("http://localhost:8007");
+    } finally {
+      process.env.NODE_ENV = prevNode;
+      if (prevRender === undefined) delete process.env.RENDER;
+      else process.env.RENDER = prevRender;
+    }
+  });
+});

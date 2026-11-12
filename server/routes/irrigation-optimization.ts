@@ -17,11 +17,12 @@ import {
   respondServiceError,
   serviceBaseUrl,
 } from "../services/providers/microserviceProxy";
+import { localServiceFallback } from "./ai-services-gateway";
 
 const router = Router();
 
 const IRRIGATION_SERVICE = () =>
-  serviceBaseUrl(process.env.IRRIGATION_OPTIMIZATION_URL, "http://localhost:8008");
+  serviceBaseUrl(process.env.IRRIGATION_OPTIMIZATION_URL, localServiceFallback(8008));
 
 const CAPABILITY = "irrigation-optimizer";
 

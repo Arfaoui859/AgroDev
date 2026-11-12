@@ -17,6 +17,7 @@ import {
   respondServiceError,
   serviceBaseUrl,
 } from "../services/providers/microserviceProxy";
+import { localServiceFallback } from "./ai-services-gateway";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ const WEATHER_YIELD_SERVICE = () =>
   serviceBaseUrl(
     process.env.WEATHER_YIELD_INTELLIGENCE_URL ??
       process.env.SMART_MARKETPLACE_URL,
-    "http://localhost:8006",
+    localServiceFallback(8006),
   );
 
 const CAPABILITY = "weather-yield-planner";

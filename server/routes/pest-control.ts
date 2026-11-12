@@ -18,11 +18,12 @@ import {
   respondServiceError,
   serviceBaseUrl,
 } from "../services/providers/microserviceProxy";
+import { localServiceFallback } from "./ai-services-gateway";
 
 const router = Router();
 
 const PEST_SERVICE = () =>
-  serviceBaseUrl(process.env.PEST_CONTROL_URL, "http://localhost:8007");
+  serviceBaseUrl(process.env.PEST_CONTROL_URL, localServiceFallback(8007));
 
 const CAPABILITY = "pest-control";
 
