@@ -474,15 +474,33 @@ Row Level Security (RLS) policies are blocking access.
       // This is navigation only: ProtectedRoute and server middleware remain
       // the actual authorization boundaries.
       let destination = "/";
-      const { data: roleProfile, error: roleError } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
+      const readRole = async () => {
+        const { data, error } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        return error ? null : (data?.role ?? null);
+      };
 
-      if (!roleError) {
-        destination = dashboardRouteForRole(roleProfile?.role);
+      let role = await readRole();
+      if (!role) {
+        // The signup trigger may not have provisioned the profile row on this
+        // database. Ask the JWT-scoped server endpoint to create the default
+        // (`farmer`) row, then re-read, so a new farmer lands on the farmer
+        // dashboard instead of the generic home page.
+        try {
+          const response = await apiFetch("/api/auth/ensure-profile", {
+            method: "POST",
+            headers: { Accept: "application/json" },
+          });
+          if (response.ok) role = await readRole();
+        } catch (e) {
+          console.warn("Profile self-heal after signIn failed:", e);
+        }
       }
+
+      destination = dashboardRouteForRole(role);
 
       try {
         navigate(destination);

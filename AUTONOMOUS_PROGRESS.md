@@ -984,3 +984,21 @@ guarded the two library sites with `typeof message === "string"`.
 **Tests.** `tests/unit/error-message.test.ts` (12 cases incl. `undefined`, `{}`,
 `{message:42}`, bare string). Suite: **890 passed / 3 skipped / 893 total**;
 `tsc` 0; lint 0; `npm run build` OK.
+
+---
+
+## Session 16d — farmer lands on the farmer dashboard after sign-in (P0)
+
+**Defect.** `AuthContext.signIn()` chose the post-login destination from a
+single `users.role` read. If the signup trigger had not provisioned the profile
+row (the documented failure mode on databases missing the trigger), the read
+returned nothing, the destination fell back to `/`, and the new farmer never
+reached `/farmer-dashboard` — the reported "registration succeeds but the farmer
+cannot enter the dashboard".
+
+**Fix.** `signIn()` now reads the role, and on a missing row calls the existing
+JWT-scoped `POST /api/auth/ensure-profile` (idempotent, always creates `farmer`,
+never elevates) then re-reads before choosing the destination. Navigation only;
+`ProtectedRoute` and server middleware remain the authorization boundary.
+
+`tsc` 0; lint 0; targeted suites green. Full gate re-run before push.
