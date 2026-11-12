@@ -154,6 +154,26 @@ for future work; re-verify before relying on them.
   surfaces as `isRealModel: false` / `modelTrainedOnSyntheticData: true`.
 - `GET /api/ai/capabilities` reports the true engine per capability. Use it
   to see what is really available before promising a feature.
+- **Multi-agent orchestrator** lives in
+  `server/services/ai/agriculturalOrchestrator.ts`: an allow-listed specialist
+  registry (ids: `soil`, `lab_soil`, `weather`, `crop`, `irrigation`,
+  `plant_health`, `market`, `agri_news`, `pest_control`, `finance`), a
+  dependency-aware plan, a bounded-concurrency executor with per-step timeout
+  and retries, and a structured trace. It is deliberately network-free — it
+  composes only the verified context the gateway assembled. Network I/O happens
+  in `server/routes/ai-services-gateway.ts`, which injects labelled
+  `platformRecords` (e.g. `LIVE WEATHER FROM OPEN-METEO`, `Recorded market price`,
+  `AGRI NEWS [...]`) that the specialists parse. Add a capability as a specialist
+  there, never as a bare HTTP endpoint the chatbot calls directly.
+- `agri_news` is the news specialist: the gateway fetches
+  `getTunisianAgriNews()` only when the question asks for news (bounded by a
+  4.5s race) and injects `AGRI NEWS [publisher=…; date=…; title=…; link=…]`
+  records; the specialist returns `dataSource: "rss-feeds"` / `isRealData: true`
+  or an honest `unavailable` with no findings. Headlines are never invented.
+- `pest_control` calls the pest service's honest `POST /identify-pest` keyword
+  matcher (never its disabled synthetic endpoints) and is always `rule-based` /
+  `isRealData: false`; the UI path is
+  `POST /api/pest-control/identify-from-symptoms`.
 - `GET /api/system/ai` reports whether an LLM provider is *configured*;
   `GET /api/system/ai/health` performs a real one-token round-trip and reports
   whether the provider actually *answers* (`reachable`, `latencyMs`, a coarse
