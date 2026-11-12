@@ -208,3 +208,52 @@ Still **BLOCKED** (unchanged): live AI microservice inference (no credentials /
 the hosts rate-limit), and end-to-end farmer CRUD persistence (no Supabase
 `.env` in this environment).
 
+
+## 11. Session 3 update (2026-11-11, latest) — AI ecosystem verification
+
+Continuing the "production-grade AI" mission without fabricating anything.
+
+**Delivered and committed**
+
+- `agri_news` orchestrator specialist — the chatbot now answers Tunisian
+  agricultural-news questions by coordinating the *real* news service rather
+  than only via `/news`. The gateway fetches `getTunisianAgriNews()` only when
+  the question asks for news (bounded by a 4.5s race) and injects
+  `AGRI NEWS [publisher=…; date=…; title=…; link=…]` records; the specialist
+  returns `dataSource: "rss-feeds"` / `isRealData: true`, or an honest
+  `unavailable` with **no findings** when nothing was fetched. Headlines are
+  never invented.
+- Chatbot UI labels for `agri_news` and `finance` (previously the raw id would
+  leak into the "specialist agents executed" line). Guarded by a new test that
+  every registry id has a label.
+- Dropped the over-broad news keywords `جديد`/`jdid` ("new" in general), which
+  would have triggered a pointless news fetch for e.g. "محصول جديد".
+
+**LIVE VERIFIED this session**
+
+- **Tunisian news sources** — `NEWS_LIVE_TESTS=1 npx jest
+  tests/live/news-live-probe.test.ts` PASS: real articles with publisher,
+  date and original `https://` link. A direct probe fetched 4 agriculture
+  articles (`isRealData: true`, `dataSource: "rss-feeds"`), and the orchestrator's
+  `agri_news` step reported `ok` / `isRealData: true` with those headlines.
+- **`soil_analysis` trained lab models (service 8001)** — real inference via
+  `POST /predict-lab-soil`: with full 15-feature input it returns `status:
+  success`, **7/7 targets `predicted`** with per-target R² (ph 0.53, carbon_organic
+  0.86, nitrogen_total 0.83, EC 0.47, P 0.34, K 0.63, Zn 0.45). With sparse input
+  (<80% coverage) it honestly returns `insufficient_input` and `prediction: null`.
+  `prediction_scope: lab_assisted_only`, `field_validated: false`.
+- **`image_diagnosis` trained classifier (service 8003)** — real ONNX inference
+  via `POST /detect-disease`: `detection_method: "mobilenetv3_onnx"`,
+  `data_source: "trained-ml"`, `model_source: "mobilenetv3-plantvillage-v1"`,
+  38-class PlantVillage model. It reports an honest low confidence (0.09) and
+  `field_validated: false` rather than a fabricated certainty.
+
+**Status of the eight services** — all eight answer `/health` 200 locally. Two
+(8001 soil lab models, 8003 image diagnosis) are proven to run **real trained
+models**; the other six self-declare `synthetic-demo` / `deterministic-rules`
+and the Node layer surfaces that honestly (`isRealModel: false`) and fails
+closed (503) rather than presenting synthetic output as observation. Hosted
+(Render) inference remains **BLOCKED** — no credentials/network here.
+
+**Gates (all green):** `npx tsc --noEmit` 0 · `npm run lint` 0 ·
+`npm run build` 0 · `npx jest` 959 passed / 3 skipped.
