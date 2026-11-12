@@ -13,6 +13,8 @@ import {
   orchestrateAgriculturalQuestion,
   SPECIALISTS,
 } from "../../server/services/ai/agriculturalOrchestrator";
+import fs from "node:fs";
+import path from "node:path";
 
 describe("planSpecialists", () => {
   test("only returns allow-listed registry ids", () => {
@@ -496,5 +498,18 @@ describe("planSpecialistsWithLLM (allow-list enforced, deterministic fallback)",
       labAnalytes: { ph: 6.4, carbon_organic: 1.2 },
     });
     expect(result.plan).toContain("lab_soil");
+  });
+});
+
+describe("chatbot UI labels cover every specialist id", () => {
+  test("SPECIALIST_LABELS has an entry for each registry id", () => {
+    const src = fs.readFileSync(
+      path.join(__dirname, "../../client/pages/AIAssistantChatbot.tsx"),
+      "utf8",
+    );
+    for (const spec of SPECIALISTS) {
+      // A missing label would leak the raw id (e.g. "agri_news") into the UI.
+      expect(src).toMatch(new RegExp(`\\b${spec.id}:\\s*\\{`));
+    }
   });
 });

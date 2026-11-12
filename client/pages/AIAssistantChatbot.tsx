@@ -138,6 +138,8 @@ const SPECIALIST_LABELS: Record<string, { ar: string; fr: string; en: string }> 
   pest_control: { ar: 'مكافحة الآفات', fr: 'Lutte antiparasitaire', en: 'Pest control' },
   irrigation: { ar: 'الري', fr: 'Irrigation', en: 'Irrigation' },
   market: { ar: 'السوق', fr: 'Marché', en: 'Market' },
+  agri_news: { ar: 'الأخبار الزراعية', fr: 'Actualités agricoles', en: 'Agricultural news' },
+  finance: { ar: 'المالية الزراعية', fr: 'Finance agricole', en: 'Agricultural finance' },
 };
 
 const AIAssistantChatbot: React.FC = () => {
