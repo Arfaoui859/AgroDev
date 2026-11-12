@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
 import { verifyAdminToken } from "../lib/adminAuth";
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export const ADMIN_EMAIL_PATTERN = /^[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+$/;
 
@@ -36,7 +37,7 @@ export const adminCreateUser: RequestHandler = async (req, res) => {
     let userId = authData.user?.id;
     if (authError) {
       if (!authError.message.toLowerCase().includes("already registered")) {
-        return res.status(400).json({ success: false, error: authError.message });
+        return res.status(400).json({ success: false, error: sanitizeNetworkMessage(authError.message) });
       }
 
       const { data: listed, error: listError } =

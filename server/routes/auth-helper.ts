@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { supabaseAdmin } from "../lib/supabase";
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export const createUserWithProfile: RequestHandler = async (req, res) => {
   try {
@@ -37,7 +38,7 @@ export const createUserWithProfile: RequestHandler = async (req, res) => {
       console.error("❌ Error creating user record:", userError);
       return res.status(500).json({
         success: false,
-        error: userError.message,
+        error: sanitizeNetworkMessage(userError.message),
         code: userError.code,
       });
     }
@@ -80,7 +81,7 @@ export const createUserWithProfile: RequestHandler = async (req, res) => {
     console.error("❌ Server error creating user:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: sanitizeNetworkMessage(error.message),
     });
   }
 };
@@ -98,7 +99,7 @@ export const checkUserExists: RequestHandler = async (req, res) => {
     if (error) {
       return res.json({
         exists: false,
-        error: error.message,
+        error: sanitizeNetworkMessage(error.message),
       });
     }
 
@@ -109,7 +110,7 @@ export const checkUserExists: RequestHandler = async (req, res) => {
   } catch (error: any) {
     res.status(500).json({
       exists: false,
-      error: error.message,
+      error: sanitizeNetworkMessage(error.message),
     });
   }
 };

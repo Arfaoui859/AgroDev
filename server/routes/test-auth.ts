@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import { supabase } from '../lib/supabase';
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export const testAuthSignup: RequestHandler = async (req, res) => {
   try {
@@ -24,7 +25,7 @@ export const testAuthSignup: RequestHandler = async (req, res) => {
       console.error('❌ Auth signup error:', error);
       return res.status(400).json({
         status: 'error',
-        message: error.message,
+        message: sanitizeNetworkMessage(error.message),
         error_details: error
       });
     }
@@ -48,7 +49,7 @@ export const testAuthSignup: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Auth test failed',
-      error: error.message
+      error: sanitizeNetworkMessage(error.message)
     });
   }
 };
@@ -76,7 +77,7 @@ export const testAuthSignin: RequestHandler = async (req, res) => {
       console.error('❌ Auth signin error:', error);
       return res.status(400).json({
         status: 'error',
-        message: error.message,
+        message: sanitizeNetworkMessage(error.message),
         error_details: error
       });
     }
@@ -99,7 +100,7 @@ export const testAuthSignin: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Auth signin test failed',
-      error: error.message
+      error: sanitizeNetworkMessage(error.message)
     });
   }
 };

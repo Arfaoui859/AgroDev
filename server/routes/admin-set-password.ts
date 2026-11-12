@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { verifyAdminToken } from '../lib/adminAuth';
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export const adminSetPassword: RequestHandler = async (req, res) => {
   if (!verifyAdminToken(req)) {
@@ -64,6 +65,6 @@ export const adminSetPassword: RequestHandler = async (req, res) => {
 
     return res.json({ success: true, userId: user.id, email: user.email, result: updateResult });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: sanitizeNetworkMessage(error.message) });
   }
 };

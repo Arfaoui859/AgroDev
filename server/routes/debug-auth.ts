@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import { supabase } from '../lib/supabase';
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export const debugAuth: RequestHandler = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ export const debugAuth: RequestHandler = async (req, res) => {
       signInTest: {
         success: !signInError,
         error: signInError ? {
-          message: signInError.message,
+          message: sanitizeNetworkMessage(signInError.message),
           status: signInError.status
         } : null
       }
@@ -42,7 +43,7 @@ export const debugAuth: RequestHandler = async (req, res) => {
       demoPasswordTest: {
         success: !demoSignInError,
         error: demoSignInError ? {
-          message: demoSignInError.message,
+          message: sanitizeNetworkMessage(demoSignInError.message),
           status: demoSignInError.status
         } : null
       }
@@ -59,7 +60,7 @@ export const debugAuth: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Debug auth failed',
-      error: error.message
+      error: sanitizeNetworkMessage(error.message)
     });
   }
 };

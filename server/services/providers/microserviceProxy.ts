@@ -200,7 +200,7 @@ export function respondServiceError(
         data: null,
         code: "MODEL_PROVENANCE_UNVERIFIED",
         error: `${capability} unavailable`,
-        message: error.message,
+        message: sanitizeNetworkMessage(error.message),
         status,
       });
       return;
@@ -209,7 +209,7 @@ export function respondServiceError(
     // caller can never mistake an unreachable service for a fabricated success.
     res.status(status).json({
       error: `${capability} unavailable`,
-      message: error.message,
+      message: sanitizeNetworkMessage(error.message),
       status,
     });
     return;

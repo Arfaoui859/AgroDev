@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { safeInsert } from '../lib/supabaseHelpers';
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 interface UserSetupRequest {
   email: string;
@@ -46,7 +47,7 @@ export const setupInspectorUser: RequestHandler = async (req, res) => {
       if (!authError.message.toLowerCase().includes("already registered")) {
         return res.status(400).json({
           success: false,
-          error: authError.message,
+          error: sanitizeNetworkMessage(authError.message),
         });
       }
 
@@ -120,7 +121,7 @@ export const setupInspectorUser: RequestHandler = async (req, res) => {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to set up inspector";
     console.error("Setup inspector user error:", message);
-    return res.status(500).json({ success: false, error: message });
+    return res.status(500).json({ success: false, error: sanitizeNetworkMessage(message) });
   }
 };
 
@@ -186,7 +187,7 @@ export const setupMultipleUsers: RequestHandler = async (req, res) => {
         } else {
           results.failed.push({
             email: userConfig.email,
-            reason: authError.message || 'Failed to create auth user',
+            reason: sanitizeNetworkMessage(authError.message || 'Failed to create auth user'),
           });
           continue;
         }
@@ -235,7 +236,7 @@ export const setupMultipleUsers: RequestHandler = async (req, res) => {
     } catch (error: any) {
       results.failed.push({
         email: userConfig.email,
-        reason: error.message || 'Unknown error',
+        reason: sanitizeNetworkMessage(error.message || 'Unknown error'),
       });
     }
   }

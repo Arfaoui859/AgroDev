@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { supabase, supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export const testSupabaseConnection: RequestHandler = async (req, res) => {
   try {
@@ -27,7 +28,7 @@ export const testSupabaseConnection: RequestHandler = async (req, res) => {
 
     if (usersError) {
       console.error("❌ Users table error:", {
-        message: usersError.message,
+        message: sanitizeNetworkMessage(usersError.message),
         code: usersError.code,
         details: usersError.details,
         hint: usersError.hint,
@@ -44,7 +45,7 @@ export const testSupabaseConnection: RequestHandler = async (req, res) => {
 
     if (profilesError) {
       console.error("❌ User_profiles table error:", {
-        message: profilesError.message,
+        message: sanitizeNetworkMessage(profilesError.message),
         code: profilesError.code,
         details: profilesError.details,
         hint: profilesError.hint,
@@ -77,7 +78,7 @@ export const testSupabaseConnection: RequestHandler = async (req, res) => {
       } else {
         insertTest = "failed";
         console.error("❌ Insert test failed (admin client):", {
-          message: error.message,
+          message: sanitizeNetworkMessage(error.message),
           code: error.code,
           details: error.details,
           hint: error.hint,
@@ -100,21 +101,21 @@ export const testSupabaseConnection: RequestHandler = async (req, res) => {
       errors: {
         users_error: usersError
           ? {
-              message: usersError.message,
+              message: sanitizeNetworkMessage(usersError.message),
               code: usersError.code,
               hint: usersError.hint,
             }
           : null,
         profiles_error: profilesError
           ? {
-              message: profilesError.message,
+              message: sanitizeNetworkMessage(profilesError.message),
               code: profilesError.code,
               hint: profilesError.hint,
             }
           : null,
         insert_error: insertError
           ? {
-              message: insertError.message,
+              message: sanitizeNetworkMessage(insertError.message),
               code: insertError.code,
               hint: insertError.hint,
             }
@@ -134,7 +135,7 @@ export const testSupabaseConnection: RequestHandler = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Supabase connection test failed",
-      error: error.message,
+      error: sanitizeNetworkMessage(error.message),
     });
   }
 };

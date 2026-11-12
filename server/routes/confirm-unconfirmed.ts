@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import { supabaseAdmin, isSupabaseConfigured } from '../lib/supabase';
 import { verifyAdminToken } from '../lib/adminAuth';
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export const confirmUnconfirmedUsers: RequestHandler = async (req, res) => {
   // Protected by the dedicated ADMIN_API_TOKEN via x-admin-token
@@ -63,12 +64,12 @@ export const confirmUnconfirmedUsers: RequestHandler = async (req, res) => {
 
         results.push({ id: u.id, email: u.email, confirmed: true, result: updateResult });
       } catch (e: any) {
-        results.push({ id: u.id, email: u.email, confirmed: false, error: e.message });
+        results.push({ id: u.id, email: u.email, confirmed: false, error: sanitizeNetworkMessage(e.message) });
       }
     }
 
     return res.json({ success: true, attempted: toConfirm.length, results });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: sanitizeNetworkMessage(error.message) });
   }
 };

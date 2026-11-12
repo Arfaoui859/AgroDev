@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -42,7 +43,7 @@ export const setupAdminUser: RequestHandler = async (req, res) => {
       if (!authError.message?.toLowerCase().includes("already registered")) {
         return res.status(400).json({
           success: false,
-          error: authError.message || "Failed to create administrator identity",
+          error: sanitizeNetworkMessage(authError.message || "Failed to create administrator identity"),
         });
       }
 
@@ -74,7 +75,7 @@ export const setupAdminUser: RequestHandler = async (req, res) => {
       if (passwordError) {
         return res.status(400).json({
           success: false,
-          error: passwordError.message || "Failed to update administrator password",
+          error: sanitizeNetworkMessage(passwordError.message || "Failed to update administrator password"),
         });
       }
     } else {
