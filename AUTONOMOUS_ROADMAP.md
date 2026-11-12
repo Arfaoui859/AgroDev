@@ -77,3 +77,23 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 - Live AI inference: network access to the eight Render hosts.
 - Verifying email-confirmation → `email_verified` sync: a real Supabase auth
   flow (the trigger sets it only at first insert; see audit note).
+
+---
+
+## Session 13 — final hardening sweep (evidence)
+
+| Area | Result |
+|---|---|
+| Unauthenticated route sweep (129 `GET /api/*`) | **VERIFIED** — only `/api/health`, `/api/ping`, `/api/ai/health` return 200; 63×401, 3×403, 54×503 (fail-closed fixtures), 4×400, 2×404. No data-bearing route is anonymously readable. |
+| News feature (live) | **VERIFIED** — 139 real articles / 6 sources; `?q=` (ar), `?language=ar|fr`, `?category=<facet>`, pagination (cap 50) all work; every article carries a publisher name + original link. |
+| Public endpoint URL leakage | **VERIFIED** — `/api/ai/capabilities` and `/api/system/ai` expose no internal `http(s)` service URLs or credentials. |
+| SSRF | **VERIFIED (none)** — microservice base URLs come only from env (`serviceBaseUrl`); no route accepts a client-supplied URL. |
+| Hardcoded secrets / localhost | **VERIFIED (none)** — no `sk-…`, `onrender.com`, or `localhost` in non-test server/client source. |
+| Weather/yield provenance | **VERIFIED** — router now forwards to the real port-8006 microservice and tags declared provenance; fabricated `Math.random()` yields removed. |
+| Remaining `Math.random` | `farmer-collaboration` (in-memory, fail-closed 503) and `field-management` (comment only) — neither reaches a client as persisted data. `http.ts` use is legitimate retry jitter. |
+| Admin auth | **VERIFIED** — 51 tests across 4 admin suites; role change requires a verified JWT + allow-listed role via `admin_change_user_role` RPC. |
+| Role→dashboard routing | **VERIFIED** — `dashboardRouteForRole` + `ProtectedRoute`; login redirects from the persisted profile role. |
+| render.yaml env wiring | **FIXED** — weather/yield now sets both `WEATHER_YIELD_INTELLIGENCE_URL` and `SMART_MARKETPLACE_URL`; stale TODO removed. |
+
+**Gates (all green):** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npx jest`
+860 passed / 3 skipped · Python per-service 245 passed.
