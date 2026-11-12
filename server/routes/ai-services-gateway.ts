@@ -1303,6 +1303,40 @@ function serviceRegistry() {
   ];
 }
 
+/**
+ * The health snapshot is a public, secret-free probe consumed by the SPA and
+ * by monitoring. It must never disclose the internal service topology (private
+ * host:port endpoints, Render private-service names). Strip the address while
+ * keeping the reachability/configuration signal callers actually need.
+ */
+function redactServiceTopology<T extends Record<string, unknown>>(service: T): T {
+  const { url: _url, ...rest } = service as Record<string, unknown>;
+  return rest as T;
+}
+
+/**
+ * Map a transport failure to a coarse, address-free category. Raw Node/axios
+ * messages embed the private hostname ("getaddrinfo ENOTFOUND <host>"), so they
+ * must never reach the public health snapshot.
+ */
+function safeProbeError(error: unknown): string {
+  const code = (error as { code?: string } | undefined)?.code;
+  switch (code) {
+    case "ENOTFOUND":
+    case "EAI_AGAIN":
+      return "dns_resolution_failed";
+    case "ECONNREFUSED":
+      return "connection_refused";
+    case "ECONNRESET":
+      return "connection_reset";
+    case "ETIMEDOUT":
+    case "ECONNABORTED":
+      return "timeout";
+    default:
+      return "probe_failed";
+  }
+}
+
 export const getAIServicesHealth = async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
@@ -1380,24 +1414,26 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
             lastChecked: new Date().toISOString(),
             error: statusCode === 429
               ? "HTTP 429: health endpoint rate-limited; host responded, inference availability remains unverified"
-              : (error as Error).message
+              // Never echo the raw transport error: it embeds the private
+              // service hostname (e.g. "getaddrinfo ENOTFOUND <host>"). Report
+              // a coarse, address-free category instead.
+              : safeProbeError(error)
           };
         }
       })
     );
 
     const serviceResults = healthChecks.map((check, index) => {
-      if (check.status === "fulfilled") {
-        return check.value;
-      } else {
-        return {
-          ...services[index],
-          status: "unavailable",
-          responseTime: undefined,
-          lastChecked: new Date().toISOString(),
-          error: "Connection failed"
-        };
-      }
+      const raw = check.status === "fulfilled"
+        ? check.value
+        : {
+            ...services[index],
+            status: "unavailable",
+            responseTime: undefined,
+            lastChecked: new Date().toISOString(),
+            error: "Connection failed"
+          };
+      return redactServiceTopology(raw);
     });
 
     const availableCount = serviceResults.filter(s => s.status === "available").length;
@@ -1458,7 +1494,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     const fallback = serviceRegistry().map((s) => ({
       name: s.name,
       nameAr: s.nameAr,
-      url: s.url,
+      key: s.key,
       status: s.url ? "unavailable" : "not_configured",
     }));
     res.json({

@@ -394,7 +394,9 @@ async function capabilityPayload(
     status: telemetry.status,
     engine,
     microserviceConfigured: cap.microserviceConfigured ?? false,
-    microserviceUrl: cap.microserviceUrl || null,
+    // Never disclose internal service topology on this public probe; the
+    // reachability flag is the signal callers need.
+    microserviceUrl: null,
     microserviceReachable: reachable,
     modelSource,
     dataSource: engine,
@@ -403,7 +405,7 @@ async function capabilityPayload(
     provenanceAr: cap.provenanceAr,
     requiresConfiguration:
       !available && configured
-        ? `Configured service at ${cap.microserviceUrl} is not reachable`
+        ? "A microservice is configured for this capability but is not reachable."
         : cap.requiresConfiguration,
     /** Observability: last error category (never a stack trace) and latency. */
     lastError: telemetry.lastError,

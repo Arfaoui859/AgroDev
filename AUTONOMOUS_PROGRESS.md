@@ -787,6 +787,47 @@ Then exercised the real flows:
 
 ---
 
+## Session 14 — AI topology disclosure fix (security)
+
+**Defect (P0, security):** the public, unauthenticated AI probes leaked the
+backend's internal service topology.
+
+- `GET /api/ai/health` echoed each service's configured `url`
+  (e.g. `http://127.0.0.1:8001`, `https://ai-soil-analysis.onrender.com`) and,
+  on a transport failure, the raw Node message
+  `getaddrinfo ENOTFOUND <private-host>`. Two SPA pages rendered that field.
+- `GET /api/ai/capabilities/:id` echoed `microserviceUrl` and embedded the
+  address in `requiresConfiguration`.
+
+**Fix** (`server/routes/ai-services-gateway.ts`, `server/routes/ai-capabilities.ts`,
+`client/pages/AIServicesTest.tsx`, `client/pages/AIIntelligenceDashboard.tsx`):
+
+- `redactServiceTopology()` strips `url` from every health-snapshot service.
+- `safeProbeError()` maps transport failures to address-free categories
+  (`dns_resolution_failed`, `connection_refused`, `connection_reset`, `timeout`,
+  `probe_failed`).
+- `capabilityPayload()` always returns `microserviceUrl: null`; the
+  `requiresConfiguration` message no longer contains the address.
+- The two SPA pages show the stable `key` instead of the address; the dashboard
+  classifier keys off the coarse error codes.
+
+Reachability/configuration signals (`microserviceReachable`,
+`microserviceConfigured`, `status`, `modelSource`) are preserved, so monitoring
+still works without disclosing where the services live.
+
+**Verified live** (server on :5055 with all eight local microservices up):
+`/api/ai/health` and `/api/ai/capabilities/soil-analysis` each contain **0**
+occurrences of `127.0.0.1`, while `microserviceReachable=true` /
+`microserviceConfigured=true` remain accurate.
+
+**Regression test:** `tests/integration/ai-topology-disclosure.test.ts`
+(3 checks) — fails on the pre-fix code, passes now.
+
+**Gates after fix:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build`
+OK · `npx jest` **863 passed / 3 skipped** (96/98 suites).
+
+---
+
 ## Open / blocked
 
 | Item | Status | Blocker |

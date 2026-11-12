@@ -27,7 +27,7 @@ function classify(service:AIService) {
   if(service.status==="available") return {label:"متصل",tone:"success" as const};
   if(error.includes("service_url_not_configured")) return {label:"عنوان الخدمة غير مضبوط",tone:"danger" as const};
   if(service.status==="rate_limited"||error.includes("429")||error.includes("too many requests")) return {label:"الخادم مستجيب · فحص محدود (429)",tone:"warning" as const};
-  if((service.url||"").includes("localhost")||error.includes("econnrefused")) return {label:"إعداد عنوان خاطئ",tone:"danger" as const};
+  if(error.includes("connection_refused")||error.includes("dns_resolution_failed")||error.includes("econnrefused")) return {label:"تعذّر الاتصال بالخدمة",tone:"danger" as const};
   return {label:"غير متاح",tone:"danger" as const};
 }
 
@@ -81,7 +81,7 @@ export default function AIIntelligenceDashboard(){
           const state=classify(service);
           return <div key={service.key} className="rounded-xl border p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="space-y-1"><p className="font-semibold">{service.nameAr||service.name}</p><p className="text-xs text-muted-foreground" dir="ltr">{service.url||service.key}</p></div>
+              <div className="space-y-1"><p className="font-semibold">{service.nameAr||service.name}</p><p className="text-xs text-muted-foreground" dir="ltr">{service.key}</p></div>
               <Badge variant={state.tone==="success"?"default":state.tone==="warning"?"secondary":"destructive"}>{state.label}</Badge>
             </div>
             <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">

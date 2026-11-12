@@ -19,8 +19,9 @@ import {
 interface ServiceHealth {
   name: string;
   nameAr: string;
+  /** Stable service identifier. Internal host addresses are never disclosed. */
+  key: string;
   status: 'available' | 'unavailable' | 'unknown';
-  url: string;
   lastChecked: string;
   responseTime?: number;
   error?: string;
@@ -285,7 +286,7 @@ const AIServicesTest: React.FC = () => {
                       <div>
                         <h3 className="font-medium">{service.nameAr}</h3>
                         <p className="text-sm text-muted-foreground">{service.name}</p>
-                        <p className="text-xs text-muted-foreground">{service.url}</p>
+                        <p className="text-xs text-muted-foreground">{service.key}</p>
                       </div>
                     </div>
                     
