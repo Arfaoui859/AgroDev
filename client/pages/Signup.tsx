@@ -138,10 +138,19 @@ export default function Signup() {
         specialization: formData.specialization,
       };
 
-      await signUp(formData.email, formData.password, userData);
+      const { needsEmailConfirmation } = await signUp(
+        formData.email,
+        formData.password,
+        userData,
+      );
 
-      // Show success message and redirect
-      alert("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول.");
+      if (needsEmailConfirmation) {
+        alert(
+          "تم إنشاء الحساب! يرجى فحص بريدك الإلكتروني لتأكيد الحساب قبل تسجيل الدخول.",
+        );
+      } else {
+        alert("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول.");
+      }
       navigate("/login");
     } catch (error: any) {
       console.error("Signup error:", error);

@@ -14,15 +14,23 @@ import express from "express";
 import request from "supertest";
 import { createServer } from "../../server/index";
 
+const mockSentUrls: string[] = [];
+
 jest.mock("axios", () => {
-  const callable: any = jest.fn(async () => ({ data: { ok: true }, status: 200 }));
+  const callable: any = jest.fn(async (config: any) => {
+    mockSentUrls.push(config?.url ?? config);
+    return { data: { ok: true }, status: 200 };
+  });
   callable.__esModule = true;
   callable.default = callable;
   callable.post = callable;
-  callable.get = jest.fn(async () => ({
-    data: { status: "healthy", model_source: "gemini", is_real_model: true },
-    status: 200,
-  }));
+  callable.get = jest.fn(async (config: any) => {
+    mockSentUrls.push(config?.url ?? config);
+    return {
+      data: { status: "healthy", model_source: "gemini", is_real_model: true },
+      status: 200,
+    };
+  });
   return callable;
 });
 
@@ -57,9 +65,20 @@ describe("🩺 AI service health coverage", () => {
   });
 
   test("alerts with a farmer id reach the per-farmer endpoint", async () => {
-    const res = await request(app)
-      .get("/api/ai/assistant/alerts?farmer_id=farmer-9")
-      .expect(200);
-    expect(res.body).toHaveProperty("dataSource");
+    process.env.SMART_ASSISTANT_URL = "http://127.0.0.1:8005";
+    mockSentUrls.length = 0;
+    const res = await request(app).get("/api/ai/assistant/alerts?farmer_id=farmer-9");
+    // The regression this guards: the request must go to the per-farmer path,
+    // not a non-existent /smart-alerts route. Whether the response carries real
+    // data depends on the service's provenance; an honest 503 is acceptable and
+    // must never be a fabricated 200.
+    expect(mockSentUrls.some((u) => String(u).includes("/alerts/farmer-9"))).toBe(true);
+    expect(mockSentUrls.every((u) => !String(u).includes("/smart-alerts"))).toBe(true);
+    if (res.status === 200) {
+      expect(res.body).toHaveProperty("dataSource");
+    } else {
+      expect(res.status).toBe(503);
+      expect(res.body.success).toBe(false);
+    }
   });
 });

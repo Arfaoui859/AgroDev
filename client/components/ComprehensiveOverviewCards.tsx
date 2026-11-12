@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
 import {
   TrendingUp,
   TrendingDown,
@@ -373,6 +374,18 @@ const ComprehensiveOverviewCards: React.FC<ComprehensiveOverviewCardsProps> = ({
 
   return (
     <div className={`space-y-6 ${isArabic ? "rtl" : "ltr"}`}>
+      {/* Several figures below fall back to illustrative values when a domain
+          has no connected source (no labour register, no licensed market feed,
+          livestock/analytics endpoints not yet persisted). Disclose that so a
+          farmer never reads them as measured data. */}
+      <SimulatedDataNotice
+        title={isArabic ? "بيانات توضيحية" : "Illustrative data"}
+        description={
+          isArabic
+            ? "بعض الأرقام المعروضة هنا (المواشي، التحليلات، بعض مؤشرات الأرض) قيم توضيحية عند غياب مصدر بيانات مرتبط، وليست قياسات حقيقية. الأرقام المستمدّة من سجلاتك تظهر كما هي."
+            : "Some figures here (livestock, analytics, and some land indicators) fall back to illustrative values when no data source is connected; they are not real measurements. Values derived from your own records are shown as-is."
+        }
+      />
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Land Overview */}

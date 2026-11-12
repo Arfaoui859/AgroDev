@@ -9,6 +9,7 @@ import {
   answerAgriculturalQuestion,
   detectLanguage,
 } from "../services/ai/farmAdvisor";
+import { orchestrateAgriculturalQuestion } from "../services/ai/agriculturalOrchestrator";
 import {
   diagnosePlantImage,
   type VisionDiagnosis,
@@ -258,8 +259,11 @@ const respondFromImageMicroservice = (
       message: "Image analysis is unavailable because no approved trained model provenance was returned.",
       productionReady: false,
       dataSource: "unavailable",
+      data_source: "unavailable",
       isRealData: false,
+      is_real_data: false,
       modelSource: source || null,
+      model_source: source || null,
     });
   }
 
@@ -387,41 +391,6 @@ export const getSmartCropRecommendations = async (
   if (soilPh === undefined || soilPh < 0 || soilPh > 14)
     requiredErrors.push("soil_ph must be between 0 and 14");
 
-  // Only forward optional values that satisfy the Python API constraints.
-  const optionalNumber = (
-    value: unknown,
-    min: number,
-    max = Number.POSITIVE_INFINITY,
-  ): number | undefined => {
-    const n = toNumber(value);
-    return n !== undefined && n >= min && n <= max ? n : undefined;
-  };
-
-  const experience = optionalNumber(
-    body.farmer_experience_years,
-    0,
-  );
-
-  const requestPayload = {
-    temperature,
-    annual_rainfall: rainfall,
-    soil_ph: soilPh,
-    soil_quality_score: optionalNumber(body.soil_quality_score, 0, 1),
-    water_availability: optionalNumber(body.water_availability, 0, 1),
-    target_market_price: optionalNumber(body.target_market_price, 0),
-    farmer_experience_years:
-      experience !== undefined && Number.isInteger(experience)
-        ? experience
-        : undefined,
-    available_capital: optionalNumber(body.available_capital, 0),
-    farm_size: optionalNumber(body.farm_size ?? body.area_hectares, 0.000001),
-    risk_tolerance: optionalNumber(body.risk_tolerance, 0, 1),
-    location: normaliseLocation(body.location),
-    language: ["ar", "ar-tn", "fr", "en"].includes(body.language)
-      ? body.language
-      : undefined,
-  };
-
   // Never manufacture defaults or return an unvalidated local substitute.
   if (requiredErrors.length > 0) {
     return res.status(422).json({
@@ -433,25 +402,10 @@ export const getSmartCropRecommendations = async (
     });
   }
 
+  // The bundled crop-recommendation model is trained on synthetic data and is
+  // not validated for production agronomic advice, so this endpoint fails
+  // closed rather than presenting unvalidated inference as a recommendation.
   return res.status(503).json({ success: false, code: "CROP_MODEL_NOT_VALIDATED", message: "Crop recommendation model is not validated for production use.", data: null, dataAvailable: false, isRealData: false });
-
-  try {
-    const response = await callAIService(
-      AI_SERVICES.CROP_RECOMMENDATION,
-      "/recommend-crops",
-      "POST",
-      requestPayload,
-    );
-
-    return await respondFromMicroservice(
-      res,
-      response.data,
-      AI_SERVICES.CROP_RECOMMENDATION,
-    );
-  } catch (error) {
-    console.warn("Crop recommendation service unavailable:", (error as AxiosError).message);
-    return handleAIServiceError(error as AxiosError, "Crop Recommendation", res);
-  }
 };
 
 export const getQuickCropRecommendation = async (
@@ -678,7 +632,7 @@ export const analyzeLeafHealth = [
         },
       );
 
-      await respondFromImageMicroservice(res, response.data);
+      await respondFromImageMicroservice(res, response.data, true);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Leaf Analysis", res);
     }
@@ -723,7 +677,7 @@ export const comprehensivePlantAnalysis = [
         },
       );
 
-      await respondFromImageMicroservice(res, response.data);
+      await respondFromImageMicroservice(res, response.data, true);
     } catch (error) {
       handleAIServiceError(
         error as AxiosError,
@@ -760,7 +714,7 @@ export const quickPlantHealthCheck = [
         },
       );
 
-      await respondFromImageMicroservice(res, response.data);
+      await respondFromImageMicroservice(res, response.data, true);
     } catch (error) {
       handleAIServiceError(error as AxiosError, "Quick Health Check", res);
     }
@@ -1111,10 +1065,43 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       }
     }
 
+    const resolvedLanguage = language || detectLanguage(userMessage);
+
+    // Central multi-agent orchestration: build and run an explicit, bounded
+    // plan over the allow-listed specialist registry. This is deterministic and
+    // network-free (it only uses the verified context already assembled above),
+    // so it always returns. Its grounded facts are then handed to the advisor
+    // as trusted evidence so the LLM composes around them instead of inventing.
+    let orchestration: Awaited<ReturnType<typeof orchestrateAgriculturalQuestion>> | null = null;
+    try {
+      orchestration = await orchestrateAgriculturalQuestion({
+        question: userMessage,
+        language: resolvedLanguage,
+        context: farmContext,
+      });
+    } catch (orchestrationError) {
+      console.warn(
+        `Orchestrator failed [${correlationId}]:`,
+        orchestrationError instanceof Error ? orchestrationError.name : "unknown",
+      );
+    }
+
+    const advisorContext = orchestration
+      ? {
+          ...(farmContext ?? {}),
+          platformRecords: [
+            ...(farmContext?.platformRecords ?? []),
+            ...(orchestration.groundedFacts.length
+              ? ["MULTI-AGENT ORCHESTRATION FINDINGS (rule-based/derived; see per-step provenance):", ...orchestration.groundedFacts]
+              : []),
+          ],
+        }
+      : farmContext;
+
     const result = await answerAgriculturalQuestion({
       question: userMessage,
-      language: language || detectLanguage(userMessage),
-      context: farmContext,
+      language: resolvedLanguage,
+      context: advisorContext,
       history: safeHistory,
     });
     const contextNote = farmContextStatus === "linked"
@@ -1142,6 +1129,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             correlationId,
             farmContextStatus,
             usedAgents: result.usedAgents.slice(0, 8),
+            usedSpecialists: (orchestration?.usedSpecialists ?? []).slice(0, 8),
             contextSummary: result.contextSummary.slice(0, 8),
           },
         });
@@ -1154,6 +1142,8 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     res.json({
       ...result,
       farmContextStatus,
+      usedSpecialists: orchestration?.usedSpecialists ?? [],
+      orchestrationTrace: orchestration?.trace ?? null,
       note: [result.note, contextNote].filter(Boolean).join(" "),
       correlationId,
       conversationId: persistedConversationId,
@@ -1295,19 +1285,28 @@ export const getSupportedDiseases = async (req: Request, res: Response) => {
 const AI_SERVICES_HEALTH_CACHE_TTL_MS = 30_000;
 let aiServicesHealthCache: { payload: Record<string, any>; checkedAt: number; key: string } | null = null;
 
+/**
+ * The eight specialised microservices, resolved lazily so a URL set after this
+ * module loads is picked up. Shared by the live health check and its error
+ * fallback so both always report the same, complete registry.
+ */
+function serviceRegistry() {
+  return [
+    { name: "Soil Analysis", nameAr: "تحليل التربة", url: AI_SERVICES.SOIL_ANALYSIS, key: "soil_analysis" },
+    { name: "Crop Recommendation", nameAr: "توصيات المحاصيل", url: AI_SERVICES.CROP_RECOMMENDATION, key: "crop_recommendation" },
+    { name: "Image Diagnosis", nameAr: "تشخيص الصور", url: AI_SERVICES.IMAGE_DIAGNOSIS, key: "image_diagnosis" },
+    { name: "Market Forecast", nameAr: "توقعات السوق", url: AI_SERVICES.MARKET_FORECAST, key: "market_forecast" },
+    { name: "Smart Assistant", nameAr: "المساعد الذكي", url: AI_SERVICES.SMART_ASSISTANT, key: "smart_assistant" },
+    { name: "Weather & Yield Intelligence", nameAr: "الطقس والمردودية", url: AI_SERVICES.SMART_MARKETPLACE, key: "weather_yield" },
+    { name: "Pest Control", nameAr: "مكافحة الآفات", url: AI_SERVICES.PEST_CONTROL, key: "pest_control" },
+    { name: "Irrigation Optimization", nameAr: "تحسين الري", url: AI_SERVICES.IRRIGATION_OPTIMIZATION, key: "irrigation_optimization" },
+  ];
+}
+
 export const getAIServicesHealth = async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
-    const cacheKey = [
-      AI_SERVICES.SOIL_ANALYSIS,
-      AI_SERVICES.CROP_RECOMMENDATION,
-      AI_SERVICES.IMAGE_DIAGNOSIS,
-      AI_SERVICES.MARKET_FORECAST,
-      AI_SERVICES.SMART_ASSISTANT,
-      AI_SERVICES.SMART_MARKETPLACE,
-      AI_SERVICES.PEST_CONTROL,
-      AI_SERVICES.IRRIGATION_OPTIMIZATION,
-    ].join("|");
+    const cacheKey = serviceRegistry().map((s) => s.url).join("|");
     const cacheAgeMs = aiServicesHealthCache ? startTime - aiServicesHealthCache.checkedAt : Infinity;
     if (req.query.force !== "true" && aiServicesHealthCache && aiServicesHealthCache.key === cacheKey && cacheAgeMs < AI_SERVICES_HEALTH_CACHE_TTL_MS) {
       return res.json({
@@ -1318,56 +1317,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
     }
 
     // Define services with Arabic names
-    const services = [
-      {
-        name: "Soil Analysis",
-        nameAr: "تحليل التربة",
-        url: AI_SERVICES.SOIL_ANALYSIS,
-        key: "soil_analysis"
-      },
-      {
-        name: "Crop Recommendation",
-        nameAr: "توصيات المحاصيل",
-        url: AI_SERVICES.CROP_RECOMMENDATION,
-        key: "crop_recommendation"
-      },
-      {
-        name: "Image Diagnosis",
-        nameAr: "تشخيص الصور",
-        url: AI_SERVICES.IMAGE_DIAGNOSIS,
-        key: "image_diagnosis"
-      },
-      {
-        name: "Market Forecast",
-        nameAr: "توقعات السوق",
-        url: AI_SERVICES.MARKET_FORECAST,
-        key: "market_forecast"
-      },
-      {
-        name: "Smart Assistant",
-        nameAr: "المساعد الذكي",
-        url: AI_SERVICES.SMART_ASSISTANT,
-        key: "smart_assistant"
-      },
-      {
-        name: "Weather & Yield Intelligence",
-        nameAr: "الطقس والمردودية",
-        url: AI_SERVICES.SMART_MARKETPLACE,
-        key: "weather_yield"
-      },
-      {
-        name: "Pest Control",
-        nameAr: "مكافحة الآفات",
-        url: AI_SERVICES.PEST_CONTROL,
-        key: "pest_control"
-      },
-      {
-        name: "Irrigation Optimization",
-        nameAr: "تحسين الري",
-        url: AI_SERVICES.IRRIGATION_OPTIMIZATION,
-        key: "irrigation_optimization"
-      }
-    ];
+    const services = serviceRegistry();
 
     // Use a shorter timeout to avoid long delays when services are down
     const healthChecks = await Promise.allSettled(
@@ -1407,7 +1357,17 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
             lastChecked: new Date().toISOString()
           };
         } catch (error) {
-          const statusCode = (error as AxiosError)?.response?.status;
+          const axiosError = error as AxiosError;
+          const statusCode = axiosError?.response?.status;
+          // Respect a Retry-After header when the host rate-limits the probe so
+          // the monitoring view can report when the next probe is sensible.
+          const retryAfterHeader =
+            statusCode === 429 ? axiosError?.response?.headers?.["retry-after"] : undefined;
+          const retryAfterSeconds = Number.parseInt(String(retryAfterHeader ?? ""), 10);
+          const retryAfterMs =
+            Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0
+              ? retryAfterSeconds * 1000
+              : null;
           return {
             ...service,
             // An HTTP 429 is a real response from the service host: the host is
@@ -1415,6 +1375,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
             // it as an available inference service or claim the model is healthy.
             status: statusCode === 429 ? "rate_limited" : "unavailable",
             reachable: statusCode === 429,
+            retryAfterMs,
             responseTime: Date.now() - checkStart,
             lastChecked: new Date().toISOString(),
             error: statusCode === 429
@@ -1494,22 +1455,25 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
   } catch (error) {
     // Return a 200 response with unavailable status instead of 500 error
     console.warn("AI services health check failed:", error);
+    const fallback = serviceRegistry().map((s) => ({
+      name: s.name,
+      nameAr: s.nameAr,
+      url: s.url,
+      status: s.url ? "unavailable" : "not_configured",
+    }));
     res.json({
       overview: {
-        totalServices: 5,
+        totalServices: fallback.length,
         availableServices: 0,
-        unavailableServices: 5,
+        reachableServices: 0,
+        unavailableServices: fallback.filter((s) => s.status === "unavailable").length,
+        notConfiguredServices: fallback.filter((s) => s.status === "not_configured").length,
+        rateLimitedServices: 0,
         syntheticModelServices: 0,
         lastUpdated: new Date().toISOString(),
         checkDuration: 0
       },
-      services: [
-        { name: "Soil Analysis", nameAr: "تحليل التربة", url: AI_SERVICES.SOIL_ANALYSIS, status: "unavailable" },
-        { name: "Crop Recommendation", nameAr: "توصيات المحاصيل", url: AI_SERVICES.CROP_RECOMMENDATION, status: "unavailable" },
-        { name: "Image Diagnosis", nameAr: "تشخيص الصور", url: AI_SERVICES.IMAGE_DIAGNOSIS, status: "unavailable" },
-        { name: "Market Forecast", nameAr: "توقعات السوق", url: AI_SERVICES.MARKET_FORECAST, status: "unavailable" },
-        { name: "Smart Assistant", nameAr: "المساعد الذكي", url: AI_SERVICES.SMART_ASSISTANT, status: "unavailable" }
-      ],
+      services: fallback,
       error: "فشل في فحص خدمات الذكاء الاصطناعي - هذا طبيعي عندما لا تكون الخدمات قيد التشغيل"
     });
   }

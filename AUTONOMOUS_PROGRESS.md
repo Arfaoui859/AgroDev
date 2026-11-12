@@ -1,0 +1,400 @@
+# AgroGrowth — Autonomous Mission Progress
+
+**Baseline commit:** `649de66082c0aa8da2611856bc61c9b7b2f418f1`
+**Branch:** `feat/soil-analysis-professional-report`
+**Last updated:** 2026-11-11 (second pass)
+
+Legend: **VERIFIED** (proven by real execution this session) ·
+**IMPLEMENTED BUT NOT VERIFIED** · **EXPERIMENTAL** · **BLOCKED** ·
+**NOT IMPLEMENTED**.
+
+---
+
+## Completed this pass
+
+| Item | Status | Evidence |
+|---|---|---|
+| Fertilizer/smart-irrigation routers reverted to baseline fail-closed stubs | **VERIFIED** | `git checkout HEAD -- server/routes/fertilizer-recommender.ts server/routes/smart-irrigation.ts`; both answer 503 `FERTILIZER_REFERENCE_NOT_VERIFIED` / `SMART_IRRIGATION_NOT_VALIDATED` |
+| `agro-endpoints-hardening.test.ts` reconciled to fail-closed contract | **VERIFIED** | 17/17 pass |
+| Signup no longer claims success when email confirmation is pending | **VERIFIED** | `client/pages/Signup.tsx` + `signUp` returns `{ needsEmailConfirmation }` |
+| Role→dashboard routing map + unit test | **VERIFIED** | `client/lib/roleDashboard.ts`, `tests/unit/role-dashboard-routing.test.ts` 6/6 pass |
+| ErrorBoundary: no silent auto-redirect; hardened localStorage read | **VERIFIED** | `client/components/ErrorBoundary.tsx` |
+| Full suite | **VERIFIED** | `npx jest` → 642 passed, 2 skipped, 644 total |
+| Typecheck / lint / build | **VERIFIED** | `tsc --noEmit` exit 0; eslint exit 0; `npm run build` exit 0 |
+
+## Session 2 — P1 multi-agent orchestrator + P2 Tunisian news
+
+### Central multi-agent orchestrator — **VERIFIED**
+
+- `server/services/ai/agriculturalOrchestrator.ts` — allow-listed specialist
+  registry (soil, weather, crop, plant_health, pest_control, irrigation, market),
+  a planner with transitive dependencies, a bounded-concurrency executor with
+  dependency gating (a dependent step is `blocked` when its upstream failed),
+  per-step timeouts/retries, an honest `insufficient_input` status, and a
+  provenance-preserving composer. It runs network-free over already-verified
+  context, so it can never invent inputs.
+- Wired into the chat handler `POST /api/ai/assistant/chat`
+  (`server/routes/ai-services-gateway.ts`): the orchestration's grounded facts
+  are appended to the advisor context as labelled evidence, and the response now
+  carries `usedSpecialists` and a structured `orchestrationTrace`.
+- Tests: `tests/unit/agricultural-orchestrator.test.ts` (16) +
+  `tests/integration/assistant-orchestration.test.ts` (2) — all pass.
+
+### Tunisian agricultural news — **VERIFIED (live)**
+
+- `server/lib/rssParser.ts` — dependency-free RSS 2.0 / Atom parser
+  (entity decoding, CDATA/tag stripping, no evaluation).
+- `server/services/news/tunisianAgriNews.ts` — real sources
+  (La Presse, Business News, African Manager, Mosaïque FM + Google News
+  agriculture feeds), per-source failure isolation, agriculture filtering,
+  dedup, search, category/language filter, pagination, TTL caching.
+- `server/routes/tunisian-news.ts` — `GET /api/news`,
+  `GET /api/news/sources`, stamped `X-Is-Real-Data: true` / `dataSource:
+  "rss-feeds"`.
+- `client/pages/TunisianAgriNews.tsx` + route `/news` + Layout nav entry
+  (ar/fr/en, RTL-aware).
+- Tests: `tests/unit/rss-parser.test.ts` (6),
+  `tests/unit/tunisian-news.test.ts` (11),
+  `tests/integration/tunisian-news-api.test.ts` (3) — all pass.
+- Live verification (built server, real internet): all 6 sources UP,
+  `total: 132`, `isRealData: true`, articles attributed + dated, search works.
+- Two real bugs found and fixed while verifying live: (1) JS `\b` does not work
+  for Arabic, so `/ري\b/` matched inside "حريقا" and leaked non-agricultural
+  articles — replaced with Unicode-aware boundaries; (2) the derived category
+  "irrigation & eau" self-matched the keyword filter — agriculture
+  classification now uses raw headline/summary/publisher categories only.
+
+### AI service health monitoring — **VERIFIED (hardened)**
+
+- `server/routes/ai-services-gateway.ts`: the health fallback (error path) had a
+  hardcoded 5-service list that disagreed with the real 8-service registry.
+  Extracted a single `serviceRegistry()` helper used by both the live check and
+  the fallback, so `totalServices`/`notConfiguredServices` are always correct.
+- 429 handling was already honest (host reachable, inference unverified) and is
+  covered by `tests/integration/ai-service-health-coverage.test.ts`.
+
+### Admin — real news-source status — **VERIFIED (live)**
+
+- New `GET /api/admin/news-sources` (`getAdminNewsSourceStatus` in
+  `server/routes/admin-panel.ts`), gated by `requireAdminAccess`. Returns the
+  live per-source availability from the same probe the public news endpoint uses
+  — real data, never fake counters.
+- Admin UI (`client/pages/AdminPanel.tsx`): new "News Sources" tab rendering
+  per-source up/down status, item counts and errors.
+- Verified live: anonymous → 401; authorized → 200 with 6/6 sources UP,
+  132 articles. Test: `tests/integration/admin-authorization.test.ts` now covers
+  the endpoint (26/26 pass).
+
+### AI capability reporting — production localhost leak — **VERIFIED FIXED**
+
+- Real bug: `server/routes/ai-capabilities.ts` defaulted every unset service URL
+  to `http://localhost:<port>`. In a hosted runtime this reported
+  `microserviceConfigured: true` (and `microserviceUrl: "http://localhost:..."`)
+  for services that cannot exist there, and treated microservice-primary
+  capabilities as *available* merely because a URL string existed.
+- Fix: reuse the gateway's `normalizeServiceUrl` + `localServiceFallback`
+  (which returns `""` under `NODE_ENV=production` / Render). Empty URLs are now
+  reported as `null`, and `resolveEngine` degrades a microservice-primary
+  capability to its declared fallback (`unavailable`) when no URL is set.
+- Regression test: `tests/integration/capability-no-localhost.test.ts`
+  (production posture → no capability contains "localhost"; unset
+  pest/irrigation/weather/market capabilities are `unavailable` + unconfigured).
+
+### Admin Panel — dead tabs (System/Security/Subscriptions) — **VERIFIED FIXED**
+
+- Real UI bug: `client/pages/AdminPanel.tsx` declared `TabsTrigger`s for
+  `system`, `security` and `subscriptions` but no matching `TabsContent`, so
+  clicking them showed a blank panel.
+- Added honest content: the System tab shows real runtime metrics when the
+  endpoint is connected and an explicit "monitoring not connected" alert
+  otherwise; Security and Subscriptions show honest unavailable states (never a
+  fabricated zero count). Removed the duplicate "System Health" card above the
+  tabs.
+- Regression test: `tests/unit/admin-panel-tabs.test.ts` asserts every trigger
+  has matching content.
+
+## Session 3 — honest disclosure for fixture-backed routed pages
+
+- `client/pages/DynamicPricing.tsx` and
+  `client/pages/QualityInventoryManagement.tsx` seed hardcoded arrays inside a
+  `setTimeout` behind a "// Simulate API calls" comment, then render them as if
+  live — no `SimulatedDataNotice`, against the AGENTS.md convention. Added the
+  notice to both.
+- `client/pages/WaterConservationAnalytics.tsx` renders `sampleUsageData` /
+  `sampleInsights` fixture objects (the real fetch is commented out) with no
+  disclosure. Added the notice.
+- Regression test: `tests/unit/simulated-page-disclosure.test.ts` — every page
+  file containing a fixture marker ("Simulate API call", "Mock data for
+  demonstration") must import `SimulatedDataNotice` or `DataProvenanceBanner`.
+
+## Session 4 — dead action buttons in routed pages
+
+Audited every `<Button>` in the routed pages the prior pass flagged as "loads
+real data". Four rendered with no handler and did nothing on click:
+
+- `client/pages/ExpenseTracker.tsx` — "تصدير" had no `onClick`. Added
+  `exportToCSV()` (BOM-prefixed CSV of `filteredExpenses`, RFC-4180 quoting,
+  disabled when the list is empty).
+- `client/pages/ProfitabilityReports.tsx` — "تصدير التقرير" had no `onClick`.
+  Added `exportReport()` (JSON of summary + per-crop rows + AI analysis).
+- `client/pages/DiseaseDiagnosis.tsx` — "مشاركة" had no `onClick`. Added
+  `shareDiagnosis()` using `navigator.share` with a clipboard fallback; the
+  shared text preserves the `isRealData` provenance label.
+- `client/pages/DiseaseGuide.tsx` — the "زيارة الموقع" resource button ignored
+  the `resource.link` it was rendered from. Wrapped in `<a target="_blank"
+  rel="noopener noreferrer">`.
+
+Regression test: `tests/unit/dead-action-buttons.test.ts` (brace-depth-aware JSX
+tag extractor, so `onClick={() => ...}` does not truncate the tag).
+
+## Prior-pass work preserved (verified still green)
+
+- AI gateway image-microservice response handling
+  (`respondFromImageMicroservice(res, data, true)`).
+- Top-level `ErrorBoundary` mounted in `client/App.tsx`.
+- Test-harness reconciliation for fail-closed mounts (route-contract,
+  client-server-contract, ai-gateway-contract, ai-service-health-coverage).
+- `client/pages/AIAssistantChatbot.tsx` evidence-url template-literal fix.
+
+## Session 5 — real admin monitoring (no fake counters)
+
+The admin System and Analytics tabs previously showed nothing: both endpoints
+returned a blanket 503. They now serve real data.
+
+- `GET /api/admin/system-metrics` (was `ADMIN_SYSTEM_METRICS_NOT_CONNECTED`):
+  measures the real Node process — CPU via a `process.cpuUsage()` delta over a
+  120 ms window, RSS as a share of `os.totalmem()`, disk via `fs.statfsSync`,
+  event-loop lag via a `setTimeout(0)` scheduling delay, plus uptime, CPU count,
+  load/CPU and Node version. `diskUsage` is `null` when the filesystem stats are
+  unavailable. Provenance: `node-process` / `verified`.
+- `GET /api/admin/usage-analytics` (was `ADMIN_USAGE_ANALYTICS_NOT_CONNECTED`):
+  live counts from `public.users` / `public.farms` (total, active, new-30d,
+  prior-30d, growth %, per-role breakdown). `retentionRate`, `totalRevenue` and
+  `monthlyRecurringRevenue` are **null** — there is no session-analytics or
+  billing source, and null is never rendered as 0.
+- `GET /api/admin/security-events` (was `ADMIN_SECURITY_EVENTS_NOT_CONNECTED`):
+  derived from the append-only `public.admin_audit_logs`; severity is a fixed
+  mapping of the recorded action, not an inferred score.
+- `client/pages/AdminPanel.tsx`: System tab renders the measured values (with
+  `formatUptime`, honest `—` for unavailable disk/lag); Analytics tab shows live
+  counts, an explicit "revenue not connected" notice, and a per-role breakdown.
+
+Tests: `tests/integration/admin-monitoring.test.ts` (4) and an added case in
+`tests/integration/admin-authorization.test.ts`. The stale assertion that
+system-metrics was DB-gated (expecting 503) was corrected — it is process-backed,
+not DB-backed.
+
+## Session 6 — AI health check is rate-limit aware
+
+`GET /api/ai/health` now parses `Retry-After` from a 429 health response and
+reports `retryAfterMs` per service, so a rate-limited-but-reachable host is
+reported honestly (`status: "rate_limited"`, `reachable: true`) and never counted
+as available. Regression: `tests/integration/ai-health-rate-limit.test.ts`.
+
+## Session 7 — Python AI service verification (real)
+
+Created `agrogrowth-ai/.venv` from `requirements-test.txt` and ran the real
+suite: **245 passed**. Individually imported each of the eight FastAPI apps and
+hit `/health`; every one answered HTTP 200 and self-declared its model source:
+
+| Service | `/health` | `model_source` |
+|---|---|---|
+| soil_analysis | 200 | deterministic-rules |
+| crop_recommendation | 200 | synthetic-demo-disabled |
+| image_diagnosis | 200 | heuristic-demo |
+| market_prediction | 200 | synthetic-demo |
+| intelligent_agent | 200 | gemini:gemini-flash-latest |
+| weather_yield_intelligence | 200 | synthetic-demo |
+| pest_control | 200 | synthetic-demo |
+| irrigation_optimization | 200 | synthetic-demo |
+
+This confirms the honesty contract: only `intelligent_agent` self-reports an LLM
+provider; the rest are deterministic/synthetic and are labelled as such by the
+Node gateway (`isRealModel: false`, `modelTrainedOnSyntheticData: true`). These
+are **local** results — not evidence that any hosted deployment is reachable.
+
+## Session 8 — farm-management dashboard: real persistence, no random data
+
+The comprehensive farm dashboard (`/api/farm-management/*`) previously generated
+random alerts, crops, weather, market prices, equipment and payroll figures, and
+a prior pass had reduced it to a blanket 503. Rebuilt it on real, tenant-scoped
+persistence instead:
+
+- `server/routes/comprehensive-farm-management.ts` now reads the caller's own
+  rows through `scopedClientFromAuthHeader` (so RLS evaluates `auth.uid()`):
+  `farms`, `farm_sections`, `crop_cultivations`, `farm_tasks`, `farm_equipment`,
+  `farm_revenues`, `notifications`, public `market_prices`, and stored
+  `weather_records`.
+- Nothing is invented. Domains with no connected source report `null`/empty
+  (`summary.workersPresent = null`, `crops[].soilMoisture = null`,
+  `market[].priceChange = null`, `weather = null` when no record) rather than a
+  plausible number. `/api/farm-management/labor` fails closed with 503
+  `FARM_LABOR_NOT_CONNECTED`.
+- The pure mapping `buildFarmOverview` is exported and unit-tested.
+- The overview now also returns real `equipment` (from `farm_equipment`) and
+  `financial` (from `farm_expenses` + `farm_revenues`) blocks, with
+  `profitMargin` null when there is no revenue.
+- `client/components/ComprehensiveOverviewCards.tsx` (rendered on the farmer
+  overview tab) fell back to hardcoded figures (25.5 ha, 87% soil health,
+  245 animals, 156 780 TND revenue) with no disclosure — against the AGENTS.md
+  convention. Added the required `SimulatedDataNotice`; the page's own summary
+  card now shows `—` instead of `0` for the unavailable worker count.
+- `client/pages/ComprehensiveFarmManagement.tsx`: the header weather card and
+  the whole Weather tab (current conditions + a fabricated 7-day forecast) and
+  the Market tab (six invented crop prices) no longer fall back to invented
+  numbers — they render `—` / an honest empty state. Equipment status filters
+  were aligned to the real `active` enum value and unpersisted telemetry
+  (usage/fuel/next-maintenance) shows `—`.
+
+Tests: `tests/unit/farm-management-overview.test.ts` (7) and
+`tests/integration/farm-management-route.test.ts` (3 — anonymous rejected,
+verified farmer scoped, labour fails closed). Full suite: **770 passed, 2
+skipped**; TSC 0, lint 0, build 0. Built server probed live: `/api/ping` 200;
+`/api/farm-management/{overview,labor}` fail closed with 401 for an anonymous
+caller (no `.env` here, so authenticated persistence paths remain unverified
+locally).
+
+
+## Session 8 — P0 auth/authorization defects (route guard + role fabrication)
+
+Two real, exploitable frontend authorization defects were found and fixed.
+
+### 1. `ProtectedRoute` failed OPEN when the profile had not loaded — **VERIFIED FIXED**
+
+- `client/components/ProtectedRoute.tsx` guarded with
+  `allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)`.
+  When `user === null` — an authenticated session whose `public.users` row had
+  not loaded (or whose read failed) — the `user &&` term short-circuited the
+  entire check, so the guarded element rendered. During that window
+  `/admin-panel` was reachable by a non-admin, and every role-gated dashboard
+  rendered for the wrong role.
+- Fix: the access decision is now a pure, tested function
+  `resolveRouteAccess` in `client/lib/routeAccess.ts` that fails closed — a
+  role-gated route renders only once the trusted profile has loaded
+  (`roleVerified`) and its role is in the allow-list. Anonymous callers still
+  go to `/login`; a denied/unknown role goes to the route's `fallbackRoute`
+  (no redirect loop: role dashboards fall back to the ungated
+  `/farmer-dashboard`, the admin panel to `/`).
+- Regression test: `tests/unit/route-access.test.ts` (8 cases), including
+  "fails closed when the trusted role has not loaded" and "fails closed when
+  the role read failed even if a role is present".
+
+### 2. `AuthContext` fabricated `role: "farmer"` on profile-read failure — **VERIFIED FIXED**
+
+- `client/contexts/AuthContext.tsx` `loadUserData` fell back, when the
+  `public.users` read failed, to a minimal user object with a hardcoded
+  `role: "farmer"` — the direct cause of the reported "wrong dashboard / wrong
+  user state". A real admin whose profile read transiently failed would be
+  treated as a farmer (and vice-versa the guard above would leak).
+- Fix: the context now exposes `roleVerified`, true only after the trusted row
+  is read. The failure fallback keeps the authenticated identity for display but
+  sets `roleVerified = false`, so role-gated routes deny instead of guessing.
+  All `setUser(null)`/sign-out paths reset `roleVerified` too.
+- The sign-up path was already server-authoritative (no client role accepted;
+  `public.users` is provisioned by the `handle_new_auth_user` trigger as
+  `farmer`, with `prevent_self_role_escalation` blocking self-elevation) —
+  audited and left unchanged.
+
+### 3. Stale-deploy chunk-load → generic error page — **VERIFIED FIXED**
+
+- The generic "حدث خطأ غير متوقع" page was most commonly the ErrorBoundary
+  catching a Vite chunk-load failure after a redeploy (an open tab references
+  old hashed chunk names). Added `client/lib/lazyWithRetry.ts` and applied it to
+  all 95 lazy routes: a chunk-load error triggers one guarded full reload
+  (session-storage window prevents a loop); other errors still surface honestly.
+- Regression test: `tests/unit/lazy-with-retry.test.ts` (9 cases).
+
+### Re-verified this session (live / local)
+
+- Built server (`node build/server/node-build.mjs`) probed live: `/api/ping`
+  200; `/api/admin/users` 401; `PATCH /api/admin/users/:id/role` 401
+  (`Administrator sign-in is required.`); `/api/farm-management/overview` 401.
+  The production build inlines `NODE_ENV=production`, so the demo fallback in
+  `requireAdminAccess`/`requireAdminToken` is dead code and every admin route
+  fails closed.
+- `GET /api/news` live: `total: 66`, `isRealData: true`, `dataSource:
+  "rss-feeds"`, attributed + dated articles (real publisher RSS).
+- All 8 Python AI services started locally via `scripts/start-ai-services.sh`;
+  `/health` 200 on every port 8001–8008, each reporting honest `model_source`
+  (`deterministic-rules` / `synthetic-demo` / `heuristic-demo` /
+  `synthetic-demo-disabled`); pest `/analyze-pest-problem` honestly refuses
+  synthetic diagnosis (`PEST_MODEL_NOT_VALIDATED`). Services stopped afterwards.
+- Python suite as CI runs it: `pytest agrogrowth-ai/tests` → **245 passed**.
+
+Gates after the fixes: `tsc --noEmit` 0 · `eslint` 0 · `npm run build` 0 ·
+`npx jest` **789 passed, 2 skipped** (791 total, 87/88 suites).
+
+
+## Session 9 — Database layer verified against a real Postgres
+
+Previously the database/RLS items were **BLOCKED** ("no live DB here"). That is
+no longer true: a real PostgreSQL 17 cluster (with PostGIS) was provisioned
+locally and the repository's own CI database procedure was executed end-to-end.
+
+### What was run (exactly the CI sequence)
+
+```
+initdb + pg_ctl start (PostgreSQL 17.11, PostGIS 3)
+psql -f database/local-rls-shim.sql
+psql -f database/cloud-setup.sql
+psql -f database/supabase-setup.sql
+psql -f database/autonomous-farm-agent.sql
+psql -f database/rls-hardening.sql
+psql -f database/farm-finance-persistence.sql
+psql -f database/migrations/20261110_farm_equipment_tasks.sql
+psql -f database/migrations/20261111_auth_user_sync.sql      # new this session
+# re-apply (idempotency) then:
+psql -f tests/db/rls-verification.sql            -> all checks passed
+psql -f database/verify-security-hardening.sql   -> passed
+```
+
+Every step exited 0. This converts **B-2 (RLS / ownership)** in
+`FINAL_BLOCKERS.md` from BLOCKED to **VERIFIED against Postgres** (still to be
+re-run against the real Supabase project, but the policy logic is now proven
+executable, not just inspected).
+
+### Two real defects found and fixed in the DB layer
+
+1. **`email_verified` / `last_login` never updated after signup.**
+   `handle_new_auth_user` fires only on `auth.users` INSERT, so a user who
+   confirmed their email later kept `email_verified = false` forever (admins saw
+   them as unverified), and `last_login` was never recorded. Fixed by an
+   idempotent `AFTER UPDATE` trigger `sync_auth_user_to_profile`
+   (`database/migrations/20261111_auth_user_sync.sql`, mirrored into
+   `database/rls-hardening.sql`). It only ever sets `email_verified` **true** and
+   only fills `last_login`, so it cannot downgrade trust.
+2. **`local-rls-shim.sql` `auth.role()`/`auth.uid()` crashed on an empty
+   `request.jwt.claims`.** After a `SET LOCAL` + `ROLLBACK` in the same psql
+   session, the GUC is left as an empty string, and `''::json` raised
+   `invalid input syntax for type json` — which aborted the signup trigger. This
+   made the CI RLS suite order-dependent. Fixed with `NULLIF(..., '')` guards.
+
+### New regression coverage
+
+- `tests/db/rls-verification.sql` **SCENARIO 8**: new signup is provisioned as
+  `farmer`; a client-supplied `{"role":"admin"}` in metadata is ignored;
+  `email_verified` starts false; confirmation flips it true; sign-in records
+  `last_login`; the sync trigger cannot downgrade `email_verified`. All pass.
+- `tests/db/rls-verification.sql` **SCENARIO 9**: deleting the `auth.users` row
+  removes the `public.users` profile and cascades to that user's farms
+  (`database/user-lifecycle.sql`). Passes.
+- `.github/workflows/ci.yml` now applies `20261111_auth_user_sync.sql` **and**
+  `database/user-lifecycle.sql` in both the initial and idempotency steps.
+  `user-lifecycle.sql` was previously **never applied in CI** — the
+  account-deletion trigger had no automated coverage at all; it now does.
+
+Gates after Session 9: `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` **793 passed, 2 skipped** (795 total, 88/89 suites) · RLS (9 scenarios)
++ security SQL verification **passed** against real Postgres.
+
+
+## Open / blocked
+
+| Item | Status | Blocker |
+|---|---|---|
+| Tunisian agricultural news | **VERIFIED (live)** | Delivered; see Session 2 above |
+| Central multi-agent orchestrator (explicit plan + trace) | **VERIFIED** | `agriculturalOrchestrator.ts`, wired into the chat handler |
+| Admin system/analytics/security monitoring | **VERIFIED** | Session 5 (metrics) + live DB counts (analytics) |
+| AI service `/health` contracts (all eight) | **VERIFIED (local)** | Session 7; hosted reachability still unverified |
+| Live AI microservice inference (hosted) | **BLOCKED** | No credentials/network here; hosts 429/unconfigured |
+| Farmer CRUD persistence end-to-end | **BLOCKED** | No Supabase `.env` in this environment; **but** schema + RLS + triggers are now VERIFIED against a real Postgres (Session 9) |

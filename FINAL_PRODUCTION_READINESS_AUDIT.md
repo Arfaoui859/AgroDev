@@ -313,3 +313,28 @@ Three confirmed defects were fixed with regression coverage — most importantly
 source map (full server source, including admin auth code). The remaining gaps
 are **external-resource blockers** (live DB/RLS proof, a real market feed,
 trained models) plus incremental i18n — none is a code regression.
+
+---
+
+## Addendum — 2026-11-11 (baseline `649de66`, branch `feat/soil-analysis-professional-report`)
+
+A second independent pass audited the auth → profile → role → route chain
+against the running code and the built server. Four defects were reproduced and
+fixed, each with regression coverage; full detail in `FINAL_BLOCKERS.md`
+(Addendum) and `AUTONOMOUS_PROGRESS.md` (Session 8). Summary:
+
+| # | Defect | Status |
+|---|---|---|
+| A-1 | `ProtectedRoute` failed **open** when the profile had not loaded (`user &&` short-circuit) — `/admin-panel` reachable by a non-admin during that window | **VERIFIED FIXED** (`resolveRouteAccess`, fails closed) |
+| A-2 | `AuthContext` fabricated `role: "farmer"` on profile-read failure — the reported wrong-dashboard symptom | **VERIFIED FIXED** (`roleVerified` gate) |
+| A-3 | Generic error page caused by stale-deploy Vite chunk-load failures | **VERIFIED FIXED** (`lazyWithRetry`, one guarded reload) |
+| A-4 | No compensating path when the signup trigger had not created `public.users` — new user locked out | **VERIFIED FIXED** (`POST /api/auth/ensure-profile`, JWT-scoped, idempotent, always `farmer`) |
+
+Re-verified live on the built server: every admin route fails closed
+(`/api/admin/users` 401, role PATCH 401); `ensure-profile` 401 anon / 503 forged
+JWT; `/api/news` returns real publisher RSS. Gates after the pass:
+`tsc --noEmit` 0 · `eslint` 0 · `npm run build` 0 · `npx jest` **793 passed,
+2 skipped** · `pytest agrogrowth-ai/tests` **245 passed**. The
+live-DB/RLS proof (Area 8) and a licensed market feed (Area 5) remain the only
+external blockers.
+

@@ -590,9 +590,11 @@ export default function DiseaseGuide() {
                     <div key={index} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                       <h4 className="font-medium mb-1">{resource.title}</h4>
                       <p className="text-sm text-muted-foreground mb-2">{resource.description}</p>
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="w-3 h-3 ml-1" />
-                        زيارة الموقع
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={resource.link} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                          زيارة الموقع
+                        </a>
                       </Button>
                     </div>
                   ))}

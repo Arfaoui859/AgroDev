@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SimulatedDataNotice } from '@/components/SimulatedDataNotice';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -278,6 +279,10 @@ const WaterConservationAnalytics: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-7xl" dir="rtl">
+      <SimulatedDataNotice
+        title="بيانات استدامة المياه توضيحية"
+        description="مؤشرات استهلاك المياه والتوفير والاستدامة المعروضة هنا نماذج توضيحية ثابتة في الواجهة، وليست قياسات حقيقية من عدّادات أو أجهزة استشعار ميدانية."
+      />
       <div className="flex items-center justify-between">
         <div className="flex gap-3">
           <Button

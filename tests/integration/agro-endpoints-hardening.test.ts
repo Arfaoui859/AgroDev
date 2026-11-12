@@ -1,12 +1,15 @@
 /**
- * Regression tests for endpoints that previously crashed (500) on partial or
- * empty input, or that returned fabricated numbers presented as real data.
+ * Regression tests for the fertilizer and irrigation modules.
  *
- * - POST /api/fertilizer/track/effectiveness  500 on a partial payload
- * - POST /api/smart-irrigation/schedule       500 "Cannot read properties of
- *                                             undefined (reading 'moistureLevel')"
- * - GET  /api/smart-irrigation/weather/:loc   invented random weather
- * - GET  /api/fertilizer/inventory            random availability labels
+ * Both routers are fail-closed at the baseline: the bundled fertilizer /
+ * pesticide catalogue carries invented doses, application rates, pre-harvest
+ * intervals and supplier names, and the irrigation scheduler fabricates weather
+ * and soil-moisture values. Presenting any of that as agronomic advice is
+ * forbidden, so both routers answer an explicit 503 until a verified local
+ * product registry and field telemetry are connected.
+ *
+ * The water-usage analytics, trader-order and notification blocks pin the
+ * related fail-closed / authorization contracts.
  */
 import request from "supertest";
 import express from "express";
@@ -17,258 +20,108 @@ beforeAll(() => {
   app = createServer();
 });
 
-describe("🧪 Fertilizer effectiveness tracking", () => {
-  const URL = "/api/fertilizer/track/effectiveness";
+describe("🧴 Fertilizer module fails closed (no verified product registry)", () => {
+  const cases: Array<[string, "get" | "post"]> = [
+    ["/api/fertilizer/track/effectiveness", "post"],
+    ["/api/fertilizer/inventory", "get"],
+    ["/api/fertilizer/recommendations/fertilizer", "post"],
+    ["/api/fertilizer/recommendations/pesticide", "post"],
+    ["/api/fertilizer/schedule/comprehensive", "post"],
+  ];
 
-  test("computes a score from a full payload", async () => {
-    const res = await request(app)
-      .post(URL)
-      .send({
-        applicationId: "app-1",
-        productName: "NPK",
-        beforeCondition: { healthScore: 50 },
-        afterCondition: { healthScore: 72 },
-        weatherConditions: { temperature: 20, wind: 10 },
-        userRating: 5,
-      })
-      .expect(200);
-    expect(typeof res.body.effectivenessScore).toBe("number");
-    expect(res.body.isRealData).toBe(false);
-    expect(res.body.dataSource).toBe("rule-based");
-  });
-
-  test("rejects a partial payload instead of throwing a 500", async () => {
-    const res = await request(app).post(URL).send({ applicationId: "a1" });
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe("INVALID_INPUT");
-  });
-
-  test("an empty body is a 400, not a crash", async () => {
-    const res = await request(app).post(URL).send({});
-    expect(res.status).toBe(400);
-  });
-
-  test("does not report a health regression as an improvement", async () => {
-    const res = await request(app)
-      .post(URL)
-      .send({
-        beforeCondition: { healthScore: 80 },
-        afterCondition: { healthScore: 60 },
-      })
-      .expect(200);
-    expect(res.body.improvements.join(" ")).toContain("تراجع");
-  });
-});
-
-describe("💧 Smart irrigation", () => {
-  test("creates a schedule for a known field and labels it simulated", async () => {
-    const res = await request(app)
-      .post("/api/smart-irrigation/schedule")
-      .send({ fieldId: "field-tomato-01", cropType: "tomato", stage: "Vegetative" })
-      .expect(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.dataSource).toBe("simulated");
-    expect(res.body.isRealData).toBe(false);
-    expect(res.body.data.scheduleId).toBeTruthy();
-  });
-
-  test("an unknown field returns 409, never a 500", async () => {
-    const res = await request(app)
-      .post("/api/smart-irrigation/schedule")
-      .send({ fieldId: "does-not-exist", cropType: "tomato", stage: "Vegetative" });
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe("DATA_UNAVAILABLE");
-  });
-
-  test("missing required fields return 400", async () => {
-    const res = await request(app)
-      .post("/api/smart-irrigation/schedule")
-      .send({ fieldId: "field-tomato-01" });
-    expect(res.status).toBe(400);
-  });
-
-  test("soil-moisture responses are labelled simulated", async () => {
-    const res = await request(app)
-      .get("/api/smart-irrigation/soil-moisture/field-tomato-01")
-      .expect(200);
-    expect(res.body.isRealData).toBe(false);
-    expect(res.body.dataSource).toBe("simulated");
-  });
-
-  test("weather is either real provider data or an explicit 503", async () => {
-    const res = await request(app).get("/api/smart-irrigation/weather/Tunis");
-    if (res.status === 200) {
-      expect(res.body.isRealData).toBe(true);
-      expect(res.body.source.provider).toBeTruthy();
-      // A real observation, not a random number in a plausible range.
-      expect(typeof res.body.data.temperature).toBe("number");
-      expect(res.body.data.forecast.next7Days.length).toBeGreaterThan(0);
-    } else {
+  test.each(cases)(
+    "%s answers an explicit 503, never fabricated dosages",
+    async (url, method) => {
+      const res = await (request(app) as any)[method](url).send({});
       expect(res.status).toBe(503);
-      expect(res.body.dataAvailable).toBe(false);
-    }
-  });
+      expect(res.body.success).toBe(false);
+      expect(res.body.code).toBe("FERTILIZER_REFERENCE_NOT_VERIFIED");
+      expect(res.body.data).toBeNull();
+    },
+  );
 });
 
-describe("🧴 Fertilizer inventory", () => {
-  test("availability is never a random in-stock/out-of-stock guess", async () => {
-    const a = await request(app).get("/api/fertilizer/inventory").expect(200);
-    const b = await request(app).get("/api/fertilizer/inventory").expect(200);
-    expect(a.body.fertilizers.map((f: any) => f.availability)).toEqual(
-      b.body.fertilizers.map((f: any) => f.availability),
-    );
-    expect(a.body.dataSource).toBe("reference-catalogue");
-    expect(a.body.isRealData).toBe(false);
-  });
+describe("💧 Smart irrigation fails closed (no verified field telemetry)", () => {
+  const cases: Array<[string, "get" | "post"]> = [
+    ["/api/smart-irrigation/schedule", "post"],
+    ["/api/smart-irrigation/soil-moisture/field-tomato-01", "get"],
+    ["/api/smart-irrigation/weather/Tunis", "get"],
+    ["/api/smart-irrigation/schedules/user-123", "get"],
+    ["/api/smart-irrigation/recommend", "post"],
+    ["/api/smart-irrigation/start", "post"],
+  ];
+
+  test.each(cases)(
+    "%s answers an explicit 503, never fabricated telemetry",
+    async (url, method) => {
+      const res = await (request(app) as any)[method](url).send({});
+      expect(res.status).toBe(503);
+      expect(res.body.success).toBe(false);
+      expect(res.body.code).toBe("SMART_IRRIGATION_NOT_VALIDATED");
+      expect(res.body.data).toBeNull();
+    },
+  );
 });
 
-describe("🌱 Fertilizer recommendation input validation", () => {
-  const URL = "/api/fertilizer/recommendations/fertilizer";
-
-  test("returns ranked recommendations for a full payload", async () => {
-    const res = await request(app)
-      .post(URL)
-      .send({
-        cropType: "tomato",
-        soilData: { ph: 6.8, nitrogen: 18, phosphorus: 12, potassium: 22, organicMatter: 2.1 },
-        farmSize: 2,
-        budget: 500,
-        organicPreference: true,
-        growthStage: "growth",
-        season: "spring",
-      })
-      .expect(200);
-    expect(Array.isArray(res.body.recommendations)).toBe(true);
-    expect(res.body.recommendations.length).toBeGreaterThan(0);
-    expect(res.body.soilAnalysis).toBeTruthy();
-  });
-
-  test("rejects an empty body with 400 instead of a 500", async () => {
-    const res = await request(app).post(URL).send({});
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBeTruthy();
-  });
-
-  test("rejects a body missing cropType with 400", async () => {
-    const res = await request(app).post(URL).send({ soilData: { ph: 7 } });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Missing cropType");
-  });
-
-  test("rejects a non-object body with 400", async () => {
-    const res = await request(app)
-      .post(URL)
-      .set("Content-Type", "application/json")
-      .send(JSON.stringify([1, 2, 3]));
-    expect(res.status).toBe(400);
-  });
-});
-
-describe("🧴 Pesticide recommendation input validation", () => {
-  const URL = "/api/fertilizer/recommendations/pesticide";
-
-  test("an empty object does not crash (no fabricated pesticides)", async () => {
-    const res = await request(app).post(URL).send({}).expect(200);
-    expect(Array.isArray(res.body.recommendations)).toBe(true);
-    expect(res.body.recommendations).toHaveLength(0);
-  });
-
-  test("rejects a non-object body with 400", async () => {
-    const res = await request(app)
-      .post(URL)
-      .set("Content-Type", "application/json")
-      .send(JSON.stringify([1, 2, 3]));
-    expect(res.status).toBe(400);
-  });
-
-  test("accepts a full payload", async () => {
-    const res = await request(app)
-      .post(URL)
-      .send({
-        cropType: "tomato",
-        detectedDiseases: [],
-        detectedPests: [],
-        farmSize: 1,
-        organicPreference: false,
-        environmentalConcern: true,
-      })
-      .expect(200);
-    expect(Array.isArray(res.body.recommendations)).toBe(true);
-  });
-});
-
-describe("💧 Irrigation water-usage analytics hardening", () => {
+describe("💧 Irrigation water-usage analytics fail closed (no metered telemetry)", () => {
   const URL = "/api/weather-irrigation/analytics/water-usage";
 
-  test("does not crash (500) on an empty body", async () => {
-    const res = await request(app).post(URL).send({}).expect(200);
+  test("an empty body is an explicit 503, never a fabricated 200 or a 500", async () => {
+    const res = await request(app).post(URL).send({});
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("IRRIGATION_ANALYTICS_NOT_VERIFIED");
     expect(res.body.isRealData).toBe(false);
-    expect(res.body.dataSource).toBe("simulated");
-    expect(Array.isArray(res.body.breakdown)).toBe(true);
   });
 
-  test("returns a labelled breakdown for a full payload", async () => {
+  test("a full payload is still refused: the platform has no water metering", async () => {
     const res = await request(app)
       .post(URL)
-      .send({ farmId: "farm-001", period: "month", cropTypes: ["olive", "tomato"] })
-      .expect(200);
-    expect(res.body.breakdown).toHaveLength(2);
-    expect(res.body.disclaimer).toBeTruthy();
+      .send({ farmId: "farm-001", period: "month", cropTypes: ["olive", "tomato"] });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("IRRIGATION_ANALYTICS_NOT_VERIFIED");
+    expect(res.body.data).toBeNull();
   });
 });
 
 describe("🌦️ Irrigation schedule station validation", () => {
   const URL = "/api/weather-irrigation/irrigation/schedule";
 
-  test("rejects a missing stationId with 400 (not a misleading 404)", async () => {
+  test("a missing stationId is an explicit 503, never a misleading 404 or a 500", async () => {
     const res = await request(app).post(URL).send({ cropType: "olive" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Missing stationId");
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("IRRIGATION_ANALYTICS_NOT_VERIFIED");
   });
 });
 
-describe("🗓️ Fertilizer comprehensive schedule validation", () => {
-  const URL = "/api/fertilizer/schedule/comprehensive";
-
-  test("rejects a missing plantingDate with 400 instead of a 500", async () => {
-    const res = await request(app).post(URL).send({ cropType: "olive" });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Invalid plantingDate");
-  });
-
-  test("builds a 12-week schedule for a valid plantingDate", async () => {
-    const res = await request(app)
-      .post(URL)
-      .send({ cropType: "olive", farmSize: 2, plantingDate: "2026-03-01" })
-      .expect(200);
-    expect(res.body.schedule).toHaveLength(12);
-  });
-});
-
-describe("📦 Trader order creation validation", () => {
+describe("📦 Trader order creation requires an authorized trader session", () => {
   const URL = "/api/trader-dashboard/orders";
 
-  test("rejects an order with no products with 400 instead of a 500", async () => {
+  // Since the Nov-10 hardening the trader dashboard is mounted behind
+  // requireRole(["trader"]). An anonymous caller is rejected (401/403) before
+  // order validation runs, so it can never receive a fabricated order total.
+  test("an anonymous order is rejected before validation or persistence", async () => {
     const res = await request(app).post(URL).send({});
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Missing products");
+    expect([401, 403]).toContain(res.status);
+    expect(res.body.data).toBeUndefined();
   });
 
-  test("accepts an order with at least one product", async () => {
+  test("an anonymous order with products is still rejected (no fabricated total)", async () => {
     const res = await request(app)
       .post(URL)
-      .send({ type: "sale", clientName: "Ali", products: [{ name: "seed", totalPrice: 30 }] })
-      .expect(200);
-    expect(res.body.data.totalAmount).toBe(30);
+      .send({ type: "sale", clientName: "Ali", products: [{ name: "seed", totalPrice: 30 }] });
+    expect([401, 403]).toContain(res.status);
+    expect(res.body.data).toBeUndefined();
   });
 });
 
 describe("🔔 Notification feed requires persisted, user-scoped records", () => {
-  test("does not expose a fabricated feed when no authenticated database session is present", async () => {
-    const res = await request(app).get("/api/notifications").expect(503);
-    expect(res.body.success).toBe(false);
-    expect(res.body.code).toBe("NOTIFICATION_DATABASE_UNAVAILABLE");
-    expect(res.body.dataAvailable).not.toBe(true);
+  test("does not expose a fabricated feed without an authenticated database session", async () => {
+    const res = await request(app).get("/api/notifications");
+    // The feed is guarded by requireAuth + requireVerifiedAuth: an anonymous or
+    // demo caller is rejected (401/403) before any query runs. It never returns
+    // a fabricated feed, and never a 200 with invented notifications.
+    expect([401, 403]).toContain(res.status);
+    expect(res.body.success).not.toBe(true);
     expect(Array.isArray(res.body.data)).not.toBe(true);
   });
 });

@@ -331,6 +331,32 @@ const ExpenseTracker: React.FC = () => {
     return methods[method as keyof typeof methods] || method;
   };
 
+  const exportToCSV = () => {
+    if (filteredExpenses.length === 0) return;
+    const header = ['التاريخ', 'الفئة', 'الفئة الفرعية', 'المبلغ', 'العملة', 'طريقة الدفع', 'المورد', 'الوصف'];
+    const escape = (value: string) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = filteredExpenses.map((expense) => [
+      expense.date,
+      getCategoryLabel(expense.category),
+      expense.subcategory,
+      String(expense.amount),
+      expense.currency,
+      getPaymentMethodLabel(expense.paymentMethod),
+      expense.supplier || '',
+      expense.description
+    ].map(escape).join(','));
+    const csv = '\uFEFF' + [header.map(escape).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const filteredExpenses = expenses.filter(expense => {
     const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          expense.subcategory.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -712,7 +738,7 @@ const ExpenseTracker: React.FC = () => {
           <CardTitle className="flex items-center justify-between">
             <span>قائمة المصروفات</span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={exportToCSV} disabled={filteredExpenses.length === 0}>
                 <Download className="h-4 w-4 ml-2" />
                 تصدير
               </Button>

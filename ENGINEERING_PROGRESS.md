@@ -224,3 +224,34 @@ database is listed under "Remaining work" or "Known limitations".
 
 - Market, marketplace and notification feeds are demo content, now clearly
   labelled as simulated rather than real.
+
+---
+
+## Addendum — 2026-11-11 · auth/route hardening (baseline `649de66`)
+
+Independent pass on the auth → profile → role → route chain. Four defects fixed
+with regression tests; details in `FINAL_BLOCKERS.md` (Addendum).
+
+1. **`ProtectedRoute` failed open.** The guard
+   `allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)`
+   short-circuited to *allow* when `user` was `null` (authenticated session whose
+   profile had not loaded), so `/admin-panel` could render for a non-admin. The
+   decision is now a pure `resolveRouteAccess()` (`client/lib/routeAccess.ts`)
+   that fails closed. Test: `tests/unit/route-access.test.ts`.
+2. **`AuthContext` fabricated a role.** On a failed profile read it defaulted to
+   `role: "farmer"`, causing the wrong-dashboard symptom. Now exposes
+   `roleVerified` (true only after a trusted `public.users` read); gated routes
+   deny while it is false.
+3. **Stale-deploy chunk-load error page.** Added `client/lib/lazyWithRetry.ts`
+   (one session-guarded reload on a chunk-load failure) across all lazy routes.
+   Test: `tests/unit/lazy-with-retry.test.ts`.
+4. **Missing profile provisioning path.** Added idempotent, JWT-scoped
+   `POST /api/auth/ensure-profile` (always creates `farmer`; never trusts a
+   client role/id) and a client self-heal on a missing-row read. Test:
+   `tests/integration/ensure-profile-auth.test.ts`.
+
+Gates: `tsc --noEmit` 0 · `eslint` 0 · `npm run build` 0 · `npx jest`
+**793 passed, 2 skipped** · `pytest agrogrowth-ai/tests` **245 passed**.
+Live: admin routes fail closed (401), `ensure-profile` 401/503, `/api/news`
+returns real publisher RSS.
+

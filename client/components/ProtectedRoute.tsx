@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { resolveRouteAccess } from '@/lib/routeAccess';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,11 +16,20 @@ export default function ProtectedRoute({
   requiresAuth = true,
   fallbackRoute = '/'
 }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, roleVerified } = useAuth();
   const location = useLocation();
 
+  const decision = resolveRouteAccess({
+    isLoading,
+    requiresAuth,
+    isAuthenticated,
+    allowedRoles,
+    userRole: user?.role ?? null,
+    roleVerified,
+  });
+
   // Show loading state while checking authentication
-  if (isLoading) {
+  if (decision === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -30,15 +40,14 @@ export default function ProtectedRoute({
     );
   }
 
-  // Check authentication requirement
-  if (requiresAuth && !isAuthenticated) {
+  if (decision === 'redirect-login') {
     console.warn(`Access denied: User not authenticated for ${location.pathname}`);
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Enforce role restrictions without storing personal access logs in
-  // browser storage or scheduling a full-page redirect.
-  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+  // Role restrictions fail closed: a null/unverified profile or a role outside
+  // the allow-list is sent to the fallback rather than rendering the content.
+  if (decision === 'redirect-fallback') {
     return (
       <Navigate
         to={fallbackRoute}
@@ -48,6 +57,5 @@ export default function ProtectedRoute({
     );
   }
 
-  // Render the protected content
   return <>{children}</>;
 }

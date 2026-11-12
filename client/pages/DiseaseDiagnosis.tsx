@@ -153,6 +153,31 @@ export default function DiseaseDiagnosis() {
     'whole-plant': 'النبات كاملاً'
   };
 
+  const shareDiagnosis = async () => {
+    if (!diagnosisData) return;
+    const provenance = diagnosisData.isRealData === false
+      ? "تحليل إرشادي (غير تشخيص مختبري)"
+      : "تشخيص بالذكاء الاصطناعي";
+    const summary = [
+      `نتيجة التشخيص: ${diagnosisData.diagnosis.disease}`,
+      `المحصول: ${cropTypeMap[diagnosisData.cropType] || diagnosisData.cropType}`,
+      `الثقة: ${diagnosisData.diagnosis.confidence}%`,
+      `المصدر: ${provenance}`
+    ].join('\n');
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: 'نتيجة تشخيص المرض', text: summary });
+        return;
+      }
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(summary);
+        alert('تم نسخ ملخص التشخيص إلى الحافظة.');
+      }
+    } catch {
+      // User cancelled the share sheet, or clipboard access was denied.
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -162,7 +187,7 @@ export default function DiseaseDiagnosis() {
           العودة للتشخيص
         </Button>
         <div className="flex space-x-2 rtl:space-x-reverse">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => void shareDiagnosis()} disabled={!diagnosisData}>
             <Share2 className="w-4 h-4 ml-2" />
             مشاركة
           </Button>

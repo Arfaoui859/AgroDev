@@ -135,7 +135,9 @@ describe("🔌 Client/backend route contract", () => {
     }));
     // These routers deliberately expose a fail-closed router.use handler rather
     // than individual data routes until a verified persistence layer is wired.
-    for (const prefix of ["/api/agronomist-dashboard","/api/livestock-management","/api/farmer-dashboard","/api/government-dashboard","/api/trader-dashboard","/api/market-analysis","/api/fertilizer","/api/weather-irrigation","/api/smart-crop-alerts","/api/disease-treatment","/api/digital-transformation","/api/emergency-response","/api/emerging-tech","/api/ip-management","/api/smart-advisor","/api/predictive-analytics","/api/risk-detection","/api/smart-irrigation","/api/irrigation-optimization","/api/pest-control","/api/weather-yield-intelligence"]) {
+    // /api/alerts and /api/tasks are stamped by the shared blockSimulatedData
+    // guard in index.ts, so they answer 503 for every path under the prefix.
+    for (const prefix of ["/api/alerts","/api/tasks","/api/smart-crop-suggestions","/api/agronomist-dashboard","/api/livestock-management","/api/farmer-dashboard","/api/government-dashboard","/api/trader-dashboard","/api/market-analysis","/api/fertilizer","/api/weather-irrigation","/api/smart-crop-alerts","/api/disease-treatment","/api/digital-transformation","/api/emergency-response","/api/emerging-tech","/api/ip-management","/api/smart-advisor","/api/predictive-analytics","/api/risk-detection","/api/smart-irrigation","/api/irrigation-optimization","/api/pest-control","/api/weather-yield-intelligence"]) {
       matchers.push({ method: "ALL", regex: new RegExp("^" + prefix + "(?:/.*)?$"), pattern: prefix + "/*" });
     }
     calls = clientCalls();

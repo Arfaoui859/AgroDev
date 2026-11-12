@@ -92,6 +92,42 @@ export async function fetchJson<T = unknown>(
   url: string,
   options: FetchOptions = {},
 ): Promise<T> {
+  const response = await fetchResponse(url, options);
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new ProviderError(
+      options.provider ?? "external",
+      "parse",
+      `${options.provider ?? "external"} returned a non-JSON response`,
+    );
+  }
+}
+
+/**
+ * Fetch a text/XML body with the same timeout, retry and error-normalisation
+ * behaviour as fetchJson. Used for RSS/Atom feeds and other non-JSON sources.
+ */
+export async function fetchText(
+  url: string,
+  options: FetchOptions = {},
+): Promise<string> {
+  const response = await fetchResponse(url, options);
+  try {
+    return await response.text();
+  } catch {
+    throw new ProviderError(
+      options.provider ?? "external",
+      "parse",
+      `${options.provider ?? "external"} returned an unreadable response body`,
+    );
+  }
+}
+
+async function fetchResponse(
+  url: string,
+  options: FetchOptions = {},
+): Promise<Response> {
   const {
     timeoutMs = DEFAULT_TIMEOUT_MS,
     retries = DEFAULT_RETRIES,
@@ -124,15 +160,7 @@ export async function fetchJson<T = unknown>(
         );
       }
 
-      try {
-        return (await response.json()) as T;
-      } catch {
-        throw new ProviderError(
-          provider,
-          "parse",
-          `${provider} returned a non-JSON response`,
-        );
-      }
+      return response;
     } catch (error) {
       clearTimeout(timer);
 

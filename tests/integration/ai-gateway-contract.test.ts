@@ -64,17 +64,17 @@ describe("🔌 AI gateway → microservice request contracts", () => {
     });
   });
 
-  test("crop recommendation renames rainfall→annual_rainfall and ph→soil_ph", async () => {
-    await request(app)
+  test("crop recommendation refuses to proxy the unvalidated synthetic model", async () => {
+    // The bundled crop-recommendation model is trained on synthetic data and is
+    // not validated for production advice, so the gateway fails closed and
+    // never forwards the request to it.
+    const response = await request(app)
       .post("/api/ai/crops/recommend")
       .send({ ph: 6.5, temperature: 24, rainfall: 350, area_hectares: 2 });
 
-    const req = lastRequest();
-    expect(req.url).toContain("/recommend-crops");
-    expect(req.data.soil_ph).toBe(6.5);
-    expect(req.data.annual_rainfall).toBe(350);
-    expect(req.data.temperature).toBe(24);
-    expect(req.data.farm_size).toBe(2);
+    expect(response.status).toBe(503);
+    expect(response.body.success).toBe(false);
+    expect(lastRequest()).toBeUndefined();
   });
 
   test("market forecast refuses to proxy the unvalidated synthetic market model", async () => {

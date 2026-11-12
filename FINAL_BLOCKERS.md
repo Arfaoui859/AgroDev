@@ -50,6 +50,16 @@ before public/real users · **P2** = should fix soon · **P3** = nice to have.
   farms/fields return 0 rows; confirm the `on_auth_user_deleted` trigger removes
   the profile row).
 
+  > **PARTIALLY RESOLVED (2026-11-11, Session 9).** A real PostgreSQL 17 +
+  > PostGIS cluster was provisioned locally and the repository's own CI database
+  > procedure was executed end-to-end: schema, `rls-hardening.sql`, the
+  > migrations, `tests/db/rls-verification.sql` (**all checks passed**), and
+  > `database/verify-security-hardening.sql` (**passed**). Tenant isolation,
+  > self-escalation blocks, the signup trigger, and the new auth-sync trigger are
+  > therefore **VERIFIED against real Postgres**. The only remaining gap is
+  > re-running the same two SQL files against the actual Supabase project (it
+  > needs the same credentials as B-1); no policy logic change is expected.
+
 ### B-3. No real agricultural market data source
 - **Evidence:** `/api/market-analysis/prices/current` returns
   `X-Data-Provenance: simulated` / `X-Is-Real-Data: false`; `/api/market/all`
@@ -148,3 +158,35 @@ before public/real users · **P2** = should fix soon · **P3** = nice to have.
 - **Build, typecheck, lint, Jest (575), pytest (194) all green;**
   `npm audit --omit=dev` → 0 vulnerabilities.
 - **Honest provenance everywhere tested** — no fabricated observations found.
+
+---
+
+## Addendum — 2026-11-11 (baseline `649de66`, branch `feat/soil-analysis-professional-report`)
+
+Independent P0 audit of the auth → profile → role → route chain. Three
+frontend authorization defects were reproduced and fixed; each has regression
+coverage. No commit, push, rebase, reset, deploy or DB operation was performed.
+
+### Resolved
+
+| ID | Was | Now |
+|---|---|---|
+| **A-1 (P0)** | `client/components/ProtectedRoute.tsx` guarded with `allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)`. When `user` was `null` (authenticated session whose `public.users` row had not loaded / failed to load) the `user &&` term short-circuited the whole check, so the guarded element rendered — `/admin-panel` was reachable by a non-admin during that window, and role dashboards rendered for the wrong role. | **FIXED** — decision extracted to a pure, tested `resolveRouteAccess()` (`client/lib/routeAccess.ts`) that fails closed: a role-gated route renders only once the trusted profile has loaded (`roleVerified`) and its role is allow-listed. Regression: `tests/unit/route-access.test.ts`. |
+| **A-2 (P0)** | `client/contexts/AuthContext.tsx` `loadUserData` fabricated `role: "farmer"` when the profile read failed — the reported "wrong dashboard / wrong user state". A real admin with a transient read failure was treated as a farmer. | **FIXED** — the context exposes `roleVerified` (true only after a trusted `public.users` read). The failure fallback keeps the identity for display but sets `roleVerified = false`, so gated routes deny instead of guessing. All sign-out paths reset it. |
+| **A-3 (P1)** | The generic "حدث خطأ غير متوقع" page was, in the common case, the ErrorBoundary catching a Vite chunk-load failure after a redeploy (open tab holds stale hashed chunk names). | **FIXED** — `client/lib/lazyWithRetry.ts` applied to all 95 lazy routes: one session-guarded full reload on a chunk-load error; other errors still surface honestly. Regression: `tests/unit/lazy-with-retry.test.ts`. |
+| **A-4 (P1)** | If the trusted `handle_new_auth_user` trigger is not installed on a given database, a new user has a valid session but no `public.users` row and is locked out of every role-gated route ("registration succeeded but cannot enter the dashboard"). There was no compensating path. | **ADDED** — `POST /api/auth/ensure-profile` (`server/routes/ensure-profile.ts`), JWT-scoped, idempotent, rate-limited; always creates a `farmer` row, never accepts a client role/user id. The client calls it once on a missing-row read (`PGRST116`) and re-reads. Regression: `tests/integration/ensure-profile-auth.test.ts`. |
+
+### Re-verified (live / local)
+
+- Built server probed live: `/api/ping` 200; `/api/admin/users` 401;
+  `PATCH /api/admin/users/:id/role` 401; `/api/auth/ensure-profile` 401 (anon) /
+  503 (forged JWT); `/api/farm-management/overview` 401. The production build
+  inlines `NODE_ENV=production`, so the demo fallback in
+  `requireAdminAccess`/`requireAdminToken` is dead code — every admin route
+  fails closed.
+- `GET /api/news` live: real publisher RSS, `isRealData: true`.
+- All 8 AI microservices boot and `/health` 200 with honest `model_source`.
+- Gates: `tsc --noEmit` 0 · `eslint` 0 · `npm run build` 0 · `npx jest`
+  **793 passed, 2 skipped** (795 total, 88/89 suites) · `pytest agrogrowth-ai/tests`
+  **245 passed**.
+

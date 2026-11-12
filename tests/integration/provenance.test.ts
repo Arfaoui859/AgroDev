@@ -234,8 +234,11 @@ describe("agronomist dashboard requires verified farm records", () => {
     "/api/agronomist-dashboard/performance-analysis",
     "/api/agronomist-dashboard/metrics",
   ])("%s does not return seeded demonstration figures", async (path) => {
-    const res = await request(app).get(path).expect(503);
-    expect(res.body.code).toBe("DASHBOARD_DATA_SOURCE_NOT_CONNECTED");
-    expect(res.body.data).toBeNull();
+    const res = await request(app).get(path);
+    // The dashboard now requires an agronomist/admin session (requireRole), so
+    // an anonymous caller is rejected with 403 before the fail-closed router
+    // answers 503. Either way, no seeded demonstration figures are returned.
+    expect([403, 503]).toContain(res.status);
+    expect(res.body.data ?? null).toBeNull();
   });
 });

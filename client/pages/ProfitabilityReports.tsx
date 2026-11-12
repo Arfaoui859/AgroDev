@@ -155,6 +155,26 @@ const ProfitabilityReports: React.FC = () => {
   const cropTypes = ['قمح', 'شعير', 'زيتون', 'حمضيات', 'طماطم', 'خضروات'];
   const seasons = ['2024', '2023', '2022'];
 
+  const exportReport = () => {
+    if (!data) return;
+    const report = {
+      generatedAt: new Date().toISOString(),
+      filters: { crop: selectedCrop || 'all', season: selectedSeason || 'all' },
+      summary: data.summary,
+      profitability: data.profitabilityData,
+      aiAnalysis: data.aiAnalysis
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `profitability-report-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
@@ -218,7 +238,7 @@ const ProfitabilityReports: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={exportReport} disabled={!data}>
             <Download className="h-4 w-4" />
             تصدير التقرير
           </Button>

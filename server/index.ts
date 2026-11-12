@@ -10,12 +10,13 @@ import {
   keyMintRateLimiter,
   adminBootstrapRateLimiter,
   adminPasswordResetRateLimiter,
+  profileProvisionRateLimiter,
 } from "./middleware/security";
 import { requireAuth, requireAdminAccess, requireRole, requireVerifiedAuth } from "./middleware/auth";
 import { blockSimulatedData } from "./lib/provenance";
 import systemCapabilitiesRoutes from "./routes/system-capabilities";
 import farmOperationsRoutes from "./routes/farm-operations";
-import { handleUploadError } from "./middleware/upload";
+import { handleUploadError, requireRealImages } from "./middleware/upload";
 import {
   getWeatherByCoordinates,
   getWeatherByLocation,
@@ -52,6 +53,7 @@ import digitalTrainingRoutes from "./routes/digital-training";
 import predictiveAnalyticsRoutes from "./routes/predictive-analytics";
 import riskDetectionRoutes from "./routes/risk-detection";
 import aiCapabilitiesRoutes from "./routes/ai-capabilities";
+import tunisianNewsRoutes from "./routes/tunisian-news";
 import smartIrrigationRoutes from "./routes/smart-irrigation";
 import { irrigationOptimizationRouter } from "./routes/irrigation-optimization";
 import { pestControlRouter } from "./routes/pest-control";
@@ -124,6 +126,7 @@ import {
   getAdminSecurityEvents,
   getAdminActivityLogs,
   getAdminSubscriptions,
+  getAdminNewsSourceStatus,
   updateAdminUserRole,
   setAdminUserActive,
 } from "./routes/admin-panel";
@@ -291,6 +294,7 @@ import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
 import { testAuthSignup, testAuthSignin } from "./routes/test-auth";
 import { createUserWithProfile, checkUserExists } from "./routes/auth-helper";
+import { ensureUserProfile } from "./routes/ensure-profile";
 import { debugAuth } from "./routes/debug-auth";
 import { setupInspectorUser, setupMultipleUsers } from "./routes/setup-inspector-user";
 import { setupAdminUser } from "./routes/admin-setup";
@@ -353,7 +357,10 @@ export function createServer() {
       "/api/saas",
       "/api/subscription",
       "/api/logistics",
-      "/api/soil-ai-detector",
+      // NOTE: /api/soil-ai-detector is NOT listed here. It has a dedicated
+      // router that fails closed with the precise code
+      // LEGACY_SOIL_DETECTOR_DISABLED; a blanket stamp here would shadow it and
+      // report the generic SIMULATED_DATA_DISABLED instead.
       // Further fixture-backed modules: the routers below build their records
       // from fixed in-memory arrays (see the "Mock data for demonstration"
       // block at the top of each). They have no database or licensed feed
@@ -397,7 +404,7 @@ export function createServer() {
   // AI Recommendation routes
 
   // Disease Detection routes
-  app.post("/api/disease/analyze", uploadMiddleware, analyzePlantImages);
+  app.post("/api/disease/analyze", uploadMiddleware, requireRealImages(), analyzePlantImages);
   app.get("/api/disease/history", getDiseaseHistory);
   app.get("/api/disease/info/:diseaseId", getDiseaseInfo);
   app.get("/api/disease/all", getAllDiseases);
@@ -581,6 +588,7 @@ export function createServer() {
   app.get("/api/admin/security-events", requireAdminAccess, getAdminSecurityEvents);
   app.get("/api/admin/activity-logs", requireAdminAccess, getAdminActivityLogs);
   app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
+  app.get("/api/admin/news-sources", requireAdminAccess, getAdminNewsSourceStatus);
   app.patch("/api/admin/users/:userId/role", requireAdminAccess, updateAdminUserRole);
   app.patch("/api/admin/users/:userId/status", requireAdminAccess, setAdminUserActive);
 
@@ -731,6 +739,9 @@ export function createServer() {
   // AI capability discovery + honest provenance for every client AI feature
   app.use("/api/ai", aiCapabilitiesRoutes);
 
+  // Tunisian agricultural news (real publisher RSS feeds; fail-closed per source)
+  app.use("/api", tunisianNewsRoutes);
+
   // Supabase Connection Test
   app.get("/api/test/supabase", requireAdminToken(), testSupabaseConnection);
   // Admin: confirm unconfirmed users (requires x-admin-token header matching ADMIN_API_TOKEN)
@@ -762,6 +773,10 @@ export function createServer() {
 
   // Auth Helper Endpoints (bypass RLS)
   app.post("/api/auth/create-user-profile", requireAdminToken(), createUserWithProfile);
+  // Idempotent, JWT-scoped self-provisioning of the caller's profile row. Fills
+  // the gap when the trusted auth.users trigger is not installed; never accepts
+  // a client-supplied role or user id.
+  app.post("/api/auth/ensure-profile", profileProvisionRateLimiter(), requireAuth, ensureUserProfile);
   app.get("/api/auth/check-user/:userId", requireAdminToken(), checkUserExists);
 
   // 🎮 GAMIFICATION SYSTEM ROUTES

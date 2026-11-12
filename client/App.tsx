@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import AppRouter from "./components/AppRouter";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { SearchProvider } from "./contexts/SearchContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -19,25 +20,27 @@ import "./utils/verifyTables";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <LanguageProvider>
-          <SearchProvider>
-            <NotificationProvider>
-              <UserPreferencesProvider>
-                <AppRouter />
-              </UserPreferencesProvider>
-            </NotificationProvider>
-          </SearchProvider>
-          </LanguageProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary fallbackRoute="/">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <LanguageProvider>
+            <SearchProvider>
+              <NotificationProvider>
+                <UserPreferencesProvider>
+                  <AppRouter />
+                </UserPreferencesProvider>
+              </NotificationProvider>
+            </SearchProvider>
+            </LanguageProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 // Initialize React app

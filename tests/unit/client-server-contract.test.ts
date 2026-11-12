@@ -15,6 +15,38 @@ import * as path from "path";
 
 const ROOT = path.resolve(__dirname, "../..");
 
+/**
+ * Routers and shared guards that answer 503 for every path under a prefix
+ * (fail-closed until a verified data source is connected). A client call to any
+ * path beneath one of these resolves to a real, intentional response.
+ */
+const FAIL_CLOSED_PREFIXES = [
+  "/api/alerts",
+  "/api/tasks",
+  "/api/smart-crop-suggestions",
+  "/api/agronomist-dashboard",
+  "/api/livestock-management",
+  "/api/farmer-dashboard",
+  "/api/government-dashboard",
+  "/api/trader-dashboard",
+  "/api/market-analysis",
+  "/api/fertilizer",
+  "/api/weather-irrigation",
+  "/api/smart-crop-alerts",
+  "/api/disease-treatment",
+  "/api/digital-transformation",
+  "/api/emergency-response",
+  "/api/emerging-tech",
+  "/api/ip-management",
+  "/api/smart-advisor",
+  "/api/predictive-analytics",
+  "/api/risk-detection",
+  "/api/smart-irrigation",
+  "/api/irrigation-optimization",
+  "/api/pest-control",
+  "/api/weather-yield-intelligence",
+];
+
 function walk(dir: string, exts: string[]): string[] {
   const out: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -59,7 +91,9 @@ function serverApiPaths(): Set<string> {
   const routes = new Set<string>();
   const add = (p: string) => p.startsWith("/api") && routes.add(normalize(p));
   // Explicit catch-all fail-closed routers are valid mounted API surfaces.
-  for (const prefix of ["/api/agronomist-dashboard","/api/livestock-management","/api/farmer-dashboard","/api/government-dashboard","/api/trader-dashboard","/api/market-analysis","/api/fertilizer","/api/weather-irrigation","/api/smart-crop-alerts","/api/disease-treatment","/api/digital-transformation","/api/emergency-response","/api/emerging-tech","/api/ip-management","/api/smart-advisor","/api/predictive-analytics","/api/risk-detection","/api/smart-irrigation","/api/irrigation-optimization","/api/pest-control","/api/weather-yield-intelligence"]) add(prefix + "/*");
+  // They answer 503 for every path under the prefix, so they are matched as
+  // prefix wildcards (see FAIL_CLOSED_PREFIXES below) rather than one segment.
+  for (const prefix of FAIL_CLOSED_PREFIXES) add(prefix);
 
   // Direct handlers in index.ts
   for (const m of indexSrc.matchAll(
@@ -110,7 +144,11 @@ describe("🔌 Client fetch paths resolve to server routes", () => {
   test("every /api path the client fetches has a matching route", () => {
     const segsOf = (p: string) => normalize(p).split("/");
 
+    const underFailClosedPrefix = (p: string) =>
+      FAIL_CLOSED_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + "/"));
+
     const matches = (clientPath: string) => {
+      if (underFailClosedPrefix(normalize(clientPath))) return true;
       const c = segsOf(clientPath);
       for (const route of serverRoutes) {
         const s = segsOf(route);

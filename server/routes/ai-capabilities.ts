@@ -21,6 +21,7 @@ import { isVisionConfigured } from "../services/providers/visionProvider";
 import { probeService } from "../services/providers/serviceProbe";
 import { capabilityStatus } from "../services/providers/aiTelemetry";
 import { firstEnv } from "../lib/env";
+import { localServiceFallback, normalizeServiceUrl } from "./ai-services-gateway";
 
 const router = express.Router();
 
@@ -77,26 +78,23 @@ async function capabilities(): Promise<Capability[]> {
     ? "يُحلّل بواسطة نموذج لغوي متعدد الوسائط مُهيّأ (AI_VISION_MODEL)."
     : "يُحوّل إلى خدمة الرؤية المُهيّأة (يُتحقّق من توفرها فعلياً).";
   // Resolve each capability's backing service the same way the AI gateway
-  // does: an explicit env URL, else the gateway's localhost default. Reading
-  // only the env var made a running default service (e.g. market_prediction on
-  // :8004) look "not configured", so the UI reported the capability as
-  // unavailable even though the gateway would have reached it.
-  const soilUrl = firstEnv("SOIL_ANALYSIS_URL") ?? "http://localhost:8001";
-  const cropUrl = firstEnv("CROP_RECOMMENDATION_URL") ?? "http://localhost:8002";
-  const visionUrlDefault =
-    firstEnv("IMAGE_DIAGNOSIS_URL") ?? "http://localhost:8003";
-  const visionUrl = visionUrlDefault;
-  const pestUrl = firstEnv("PEST_CONTROL_URL") ?? "http://localhost:8007";
-  const irrigationUrl =
-    firstEnv("IRRIGATION_OPTIMIZATION_URL") ?? "http://localhost:8008";
-  const weatherYieldUrl =
-    firstEnv(
-      "WEATHER_YIELD_INTELLIGENCE_URL",
-      "SMART_MARKETPLACE_URL",
-    ) ?? "http://localhost:8006";
-  const marketForecastUrl =
-    firstEnv("MARKET_FORECAST_URL", "MARKET_PREDICTION_URL") ??
-    "http://localhost:8004";
+  // does: an explicit env URL, else the gateway's localhost default — but only
+  // in a local runtime. `localServiceFallback()` returns "" in a hosted
+  // runtime, so production never advertises a `http://localhost` service (or
+  // reports one as "configured") when no URL was set.
+  const soilUrl = normalizeServiceUrl(firstEnv("SOIL_ANALYSIS_URL"), localServiceFallback(8001));
+  const cropUrl = normalizeServiceUrl(firstEnv("CROP_RECOMMENDATION_URL"), localServiceFallback(8002));
+  const visionUrl = normalizeServiceUrl(firstEnv("IMAGE_DIAGNOSIS_URL"), localServiceFallback(8003));
+  const pestUrl = normalizeServiceUrl(firstEnv("PEST_CONTROL_URL"), localServiceFallback(8007));
+  const irrigationUrl = normalizeServiceUrl(firstEnv("IRRIGATION_OPTIMIZATION_URL"), localServiceFallback(8008));
+  const weatherYieldUrl = normalizeServiceUrl(
+    firstEnv("WEATHER_YIELD_INTELLIGENCE_URL", "SMART_MARKETPLACE_URL"),
+    localServiceFallback(8006),
+  );
+  const marketForecastUrl = normalizeServiceUrl(
+    firstEnv("MARKET_FORECAST_URL", "MARKET_PREDICTION_URL"),
+    localServiceFallback(8004),
+  );
 
   return [
     {
@@ -329,7 +327,12 @@ async function resolveEngine(cap: Capability): Promise<{
   modelSource: string | null;
 }> {
   if (!cap.microserviceUrl) {
-    return { engine: cap.engine, reachable: null, configured: false, modelSource: null };
+    // No backing service is configured. A capability whose primary engine is
+    // the microservice must degrade to its declared fallback (usually
+    // "unavailable"); an in-process engine (rule-based) stays usable.
+    const engine =
+      cap.engine === "microservice" ? (cap.fallbackEngine ?? "unavailable") : cap.engine;
+    return { engine, reachable: null, configured: false, modelSource: null };
   }
   const probe = await probeService(cap.microserviceUrl);
   if (!probe.reachable) {
@@ -391,7 +394,7 @@ async function capabilityPayload(
     status: telemetry.status,
     engine,
     microserviceConfigured: cap.microserviceConfigured ?? false,
-    microserviceUrl: cap.microserviceUrl ?? null,
+    microserviceUrl: cap.microserviceUrl || null,
     microserviceReachable: reachable,
     modelSource,
     dataSource: engine,

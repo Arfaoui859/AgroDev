@@ -27,7 +27,21 @@ const ADMIN_ENDPOINTS = [
   "/api/admin/security-events",
   "/api/admin/activity-logs",
   "/api/admin/subscriptions",
+  "/api/admin/news-sources",
 ];
+
+/**
+ * The subset that depends on Supabase. With no DB configured they must fail
+ * closed with an explicit `_NOT_CONNECTED` code.
+ *
+ * Two endpoints are excluded because they are NOT database-backed:
+ *  - `/api/admin/news-sources` is backed by the live RSS probe.
+ *  - `/api/admin/system-metrics` reports real Node process/host measurements.
+ * Both are asserted separately below.
+ */
+const DB_GATED_ADMIN_ENDPOINTS = ADMIN_ENDPOINTS.filter(
+  (p) => p !== "/api/admin/news-sources" && p !== "/api/admin/system-metrics",
+);
 
 describe("🔐 Admin panel authorization (production posture)", () => {
   describe("no admin token configured", () => {
@@ -103,15 +117,44 @@ describe("🔐 Admin panel authorization (production posture)", () => {
       process.env = ORIGINAL;
     });
 
-    test.each(ADMIN_ENDPOINTS)(
+    test.each(DB_GATED_ADMIN_ENDPOINTS)(
       "%s authenticates the caller before returning real data or an explicit unavailable response",
       async (path) => {
         const res = await request(app).get(path).set("x-admin-token", TOKEN);
         expect(res.status).toBe(503);
-        expect(res.body.code).toBe("DASHBOARD_DATA_SOURCE_NOT_CONNECTED");
+        // The exact code is per-endpoint (ADMIN_*_NOT_CONNECTED); all of them
+        // declare an explicit unavailable data source instead of fake counters.
+        expect(res.body.code).toMatch(/_NOT_CONNECTED$/);
         expect(res.body.success).toBe(false);
       },
     );
+
+    test("/api/admin/news-sources returns live source status to an authorized admin", async () => {
+      // Backed by the real RSS probe (network stubbed in this environment by
+      // the test setup), not the database: an authorized admin gets the real
+      // per-source availability, never fake counters.
+      const res = await request(app)
+        .get("/api/admin/news-sources")
+        .set("x-admin-token", TOKEN);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data.sources)).toBe(true);
+      expect(typeof res.body.data.total).toBe("number");
+    });
+
+    test("/api/admin/system-metrics returns real process metrics to an authorized admin", async () => {
+      // Backed by the Node process/host, not the database: even with no DB
+      // configured an authorized admin gets real measurements (never a fake
+      // counter and never a blank 503).
+      const res = await request(app)
+        .get("/api/admin/system-metrics")
+        .set("x-admin-token", TOKEN);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.server).toBeDefined();
+      expect(typeof res.body.data.server.cpuUsage).toBe("number");
+      expect(res.body.data.server.nodeVersion).toMatch(/^v\d+\./);
+    });
 
     test("a wrong admin token is rejected", async () => {
       const res = await request(app)

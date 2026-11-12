@@ -1022,7 +1022,7 @@ Je peux communiquer en arabe, anglais et français. Comment puis-je vous aider a
         const recordId = message.metadata?.diseaseRecordId;
         if (message.type !== "assistant" || typeof recordId !== "string") return message;
         try {
-          const evidenceResponse = await fetch("/api/assistant/disease-detections/" + encodeURIComponent(recordId) + "/evidence-url", {
+          const evidenceResponse = await fetch(`/api/assistant/disease-detections/${encodeURIComponent(recordId)}/evidence-url`, {
             headers: { Authorization: "Bearer " + session.access_token }
           });
           const evidencePayload = await evidenceResponse.json();

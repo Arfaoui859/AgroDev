@@ -461,7 +461,7 @@ const ComprehensiveFarmManagement: React.FC<
                   {isArabic ? "العمال الحاضرون" : "Workers"}
                 </p>
                 <p className="text-2xl font-bold text-teal-600">
-                  {dashboardData.summary?.workersPresent || 0}
+                  {dashboardData.summary?.workersPresent ?? "—"}
                 </p>
               </div>
               <Users className="h-8 w-8 text-teal-600" />
@@ -493,9 +493,9 @@ const ComprehensiveFarmManagement: React.FC<
                   {isArabic ? "الطقس" : "Weather"}
                 </p>
                 <p className="text-sm font-bold text-blue-600">
-                  {formatTemperature(
-                    dashboardData.weather?.current?.temperature || 0,
-                  )}
+                  {dashboardData.weather?.current
+                    ? formatTemperature(dashboardData.weather.current.temperature)
+                    : "—"}
                 </p>
               </div>
               {getWeatherIcon(
@@ -1198,15 +1198,15 @@ const ComprehensiveFarmManagement: React.FC<
                 <div className="space-y-4">
                   <div className="text-center">
                     <p className="text-4xl font-bold text-blue-600">
-                      {formatTemperature(
-                        dashboardData.weather?.current?.temperature || 27,
-                      )}
+                      {dashboardData.weather?.current
+                        ? formatTemperature(dashboardData.weather.current.temperature)
+                        : "—"}
                     </p>
                     <p className="text-gray-600">
                       {isArabic
                         ? dashboardData.weather?.current?.conditionArabic ||
-                          "مشمس"
-                        : dashboardData.weather?.current?.condition || "Sunny"}
+                          "غير متاح"
+                        : dashboardData.weather?.current?.condition || "Not available"}
                     </p>
                   </div>
 
@@ -1217,7 +1217,9 @@ const ComprehensiveFarmManagement: React.FC<
                         {isArabic ? "الرطوبة" : "Humidity"}
                       </p>
                       <p className="font-bold">
-                        {dashboardData.weather?.current?.humidity || 65}%
+                        {dashboardData.weather?.current
+                          ? `${dashboardData.weather.current.humidity}%`
+                          : "—"}
                       </p>
                     </div>
                     <div className="text-center p-3 bg-green-50 rounded-lg">
@@ -1226,7 +1228,9 @@ const ComprehensiveFarmManagement: React.FC<
                         {isArabic ? "الرياح" : "Wind"}
                       </p>
                       <p className="font-bold">
-                        {dashboardData.weather?.current?.windSpeed || 12} km/h
+                        {dashboardData.weather?.current
+                          ? `${dashboardData.weather.current.windSpeed} km/h`
+                          : "—"}
                       </p>
                     </div>
                   </div>
@@ -1238,7 +1242,7 @@ const ComprehensiveFarmManagement: React.FC<
                         {isArabic ? "الأشعة فوق البنفسجية" : "UV Index"}
                       </p>
                       <p className="font-bold">
-                        {dashboardData.weather?.current?.uvIndex || 6}
+                        {dashboardData.weather?.current?.uvIndex ?? "—"}
                       </p>
                     </div>
                     <div className="text-center p-3 bg-purple-50 rounded-lg">
@@ -1247,7 +1251,9 @@ const ComprehensiveFarmManagement: React.FC<
                         {isArabic ? "الضغط" : "Pressure"}
                       </p>
                       <p className="font-bold">
-                        {dashboardData.weather?.current?.pressure || 1013} hPa
+                        {dashboardData.weather?.current
+                          ? `${dashboardData.weather.current.pressure} hPa`
+                          : "—"}
                       </p>
                     </div>
                   </div>
@@ -1265,35 +1271,35 @@ const ComprehensiveFarmManagement: React.FC<
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(
-                    dashboardData.weather?.forecast || [
-                      { day: "اليوم", high: 32, low: 18, condition: "sunny" },
-                      { day: "غداً", high: 30, low: 16, condition: "cloudy" },
-                      { day: "الخميس", high: 28, low: 15, condition: "rainy" },
-                      { day: "الجمعة", high: 31, low: 17, condition: "sunny" },
-                      { day: "السبت", high: 33, low: 19, condition: "sunny" },
-                      { day: "الأحد", high: 29, low: 16, condition: "cloudy" },
-                      { day: "الاثنين", high: 27, low: 14, condition: "rainy" },
-                    ]
-                  ).map((day: any, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 border rounded"
-                    >
-                      <div className="flex items-center space-x-3">
-                        {getWeatherIcon(day.condition)}
-                        <span className="font-medium">
-                          {isArabic ? day.dayArabic || day.day : day.day}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <span className="text-sm text-gray-600">
-                          {formatTemperature(day.low)} /{" "}
-                          {formatTemperature(day.high)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                  {(dashboardData.weather?.forecast || []).length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      {isArabic
+                        ? "لا تتوفر توقعات مخزّنة لهذه المزرعة."
+                        : "No stored forecast is available for this farm."}
+                    </p>
+                  ) : (
+                    (dashboardData.weather?.forecast || []).map(
+                      (day: any, index: number) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 border rounded"
+                        >
+                          <div className="flex items-center space-x-3">
+                            {getWeatherIcon(day.condition)}
+                            <span className="font-medium">
+                              {isArabic ? day.dayArabic || day.day : day.day}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <span className="text-sm text-gray-600">
+                              {formatTemperature(day.low)} /{" "}
+                              {formatTemperature(day.high)}
+                            </span>
+                          </div>
+                        </div>
+                      ),
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1340,64 +1346,14 @@ const ComprehensiveFarmManagement: React.FC<
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(
-              dashboardData.market || [
-                {
-                  id: 1,
-                  cropName: "القمح",
-                  cropNameArabic: "القمح",
-                  currentPrice: 45.5,
-                  priceChange: 2.3,
-                  unit: "كغ",
-                  demand: "high",
-                },
-                {
-                  id: 2,
-                  cropName: "الذرة",
-                  cropNameArabic: "الذرة",
-                  currentPrice: 38.2,
-                  priceChange: -1.8,
-                  unit: "كغ",
-                  demand: "medium",
-                },
-                {
-                  id: 3,
-                  cropName: "الأرز",
-                  cropNameArabic: "الأرز",
-                  currentPrice: 52.1,
-                  priceChange: 5.2,
-                  unit: "كغ",
-                  demand: "high",
-                },
-                {
-                  id: 4,
-                  cropName: "الشعير",
-                  cropNameArabic: "الشعير",
-                  currentPrice: 42.75,
-                  priceChange: 0.8,
-                  unit: "كغ",
-                  demand: "low",
-                },
-                {
-                  id: 5,
-                  cropName: "الطماطم",
-                  cropNameArabic: "الطماطم",
-                  currentPrice: 12.3,
-                  priceChange: -3.2,
-                  unit: "كغ",
-                  demand: "high",
-                },
-                {
-                  id: 6,
-                  cropName: "البطاطس",
-                  cropNameArabic: "البطاطس",
-                  currentPrice: 8.9,
-                  priceChange: 1.5,
-                  unit: "كغ",
-                  demand: "medium",
-                },
-              ]
-            ).map((item: any) => (
+            {(dashboardData.market || []).length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 col-span-full text-center">
+                {isArabic
+                  ? "لا تتوفر أسعار سوق مخزّنة بعد. لا تُعرض أسعار تقديرية."
+                  : "No stored market quotes yet. Estimated prices are not shown."}
+              </p>
+            ) : (
+              (dashboardData.market || []).map((item: any) => (
               <Card key={item.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -1487,7 +1443,8 @@ const ComprehensiveFarmManagement: React.FC<
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              ))
+            )}
           </div>
         </TabsContent>
 
@@ -1502,7 +1459,7 @@ const ComprehensiveFarmManagement: React.FC<
             <div className="flex items-center space-x-2">
               <Badge variant="outline">
                 {(dashboardData.equipment || []).filter(
-                  (eq: any) => eq.status === "operational",
+                  (eq: any) => eq.status === "active",
                 ).length || 0}{" "}
                 {isArabic ? "تشغيلية" : "Operational"}
               </Badge>
@@ -1533,7 +1490,7 @@ const ComprehensiveFarmManagement: React.FC<
                     </CardTitle>
                     <Badge
                       className={
-                        equipment.status === "operational"
+                        equipment.status === "active"
                           ? "bg-green-100 text-green-800"
                           : equipment.status === "maintenance"
                             ? "bg-red-100 text-red-800"
@@ -1541,7 +1498,7 @@ const ComprehensiveFarmManagement: React.FC<
                       }
                     >
                       {isArabic
-                        ? equipment.status === "operational"
+                        ? equipment.status === "active"
                           ? "تشغيلية"
                           : equipment.status === "maintenance"
                             ? "صيانة"
@@ -1561,10 +1518,10 @@ const ComprehensiveFarmManagement: React.FC<
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>{isArabic ? "الاستخدام" : "Usage"}</span>
-                        <span>{equipment.usage}%</span>
+                        <span>{equipment.usage == null ? "—" : `${equipment.usage}%`}</span>
                       </div>
                       <Progress
-                        value={equipment.usage}
+                        value={equipment.usage ?? 0}
                         className={`w-full ${equipment.usage > 90 ? "text-red-600" : equipment.usage > 70 ? "text-yellow-600" : "text-green-600"}`}
                       />
                     </div>
@@ -1573,10 +1530,10 @@ const ComprehensiveFarmManagement: React.FC<
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>{isArabic ? "مستوى الوقود" : "Fuel Level"}</span>
-                        <span>{equipment.fuel}%</span>
+                        <span>{equipment.fuel == null ? "—" : `${equipment.fuel}%`}</span>
                       </div>
                       <Progress
-                        value={equipment.fuel}
+                        value={equipment.fuel ?? 0}
                         className={`w-full ${equipment.fuel < 20 ? "text-red-600" : equipment.fuel < 50 ? "text-yellow-600" : "text-green-600"}`}
                       />
                     </div>
@@ -1587,15 +1544,15 @@ const ComprehensiveFarmManagement: React.FC<
                           {isArabic ? "الصيانة القادمة" : "Next Maintenance"}
                         </span>
                         <span className="font-medium">
-                          {new Date(
-                            equipment.nextMaintenance,
-                          ).toLocaleDateString()}
+                          {equipment.nextMaintenance
+                            ? new Date(equipment.nextMaintenance).toLocaleDateString()
+                            : "—"}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex space-x-2 mt-4">
-                      {equipment.status === "operational" && (
+                      {equipment.status === "active" && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -1677,11 +1634,13 @@ const ComprehensiveFarmManagement: React.FC<
                           {isArabic ? "هامش الربح" : "Profit Margin"}
                         </span>
                         <span className="font-semibold">
-                          {dashboardData.financial.profitMargin}%
+                          {dashboardData.financial.profitMargin == null
+                            ? "—"
+                            : `${dashboardData.financial.profitMargin.toFixed(1)}%`}
                         </span>
                       </div>
                       <Progress
-                        value={dashboardData.financial.profitMargin}
+                        value={dashboardData.financial.profitMargin ?? 0}
                         className="w-full"
                       />
                     </div>

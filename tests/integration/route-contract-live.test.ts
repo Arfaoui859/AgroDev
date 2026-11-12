@@ -84,11 +84,14 @@ function routeTable(app: express.Application): RouteEntry[] {
 
 function collectClientPaths(): string[] {
   const found = new Set<string>();
-  const literal = /["'`](\/api\/[A-Za-z0-9_\-./:${}]*)/g;
+  // Capture the whole quoted literal (up to the closing quote/backtick) so
+  // template holes containing parentheses — e.g.
+  // `/api/admin/users/${encodeURIComponent(id)}/status` — are not truncated.
+  const literal = /["'`](\/api\/[^"'`]*)/g;
   for (const file of walk(path.join(process.cwd(), "client"))) {
     const src = fs.readFileSync(file, "utf8");
     for (const match of src.matchAll(literal)) {
-      const url = match[1].replace(/\$\{[^}]*\}/g, ":param").replace(/\/+$/, "");
+      const url = match[1].split("?")[0].replace(/\$\{[^}]*\}/g, ":param").replace(/\/+$/, "");
       if (url && url !== "/api") found.add(url);
     }
   }
@@ -102,6 +105,14 @@ function toRegExp(routePath: string): RegExp {
   return new RegExp(`^${pattern}$`);
 }
 
+/**
+ * Client paths whose variable segment is built at runtime (e.g. the collection
+ * name in `/api/farm-operations/${kind}/${id}`), so they cannot be resolved to
+ * a single literal route statically. The server serves both branches
+ * (`/equipment/:id`, `/tasks/:id`).
+ */
+const ALLOWED_DYNAMIC_PATHS = new Set(["/api/farm-operations/:param/:param"]);
+
 describe("🔌 client ⇄ server route contract", () => {
   const routes = routeTable(createServer());
   const matchers = routes.map((r) => ({ methods: r.methods, re: toRegExp(r.path) }));
@@ -113,7 +124,8 @@ describe("🔌 client ⇄ server route contract", () => {
   test("every client /api path resolves to a server route", () => {
     const unresolved = collectClientPaths()
       .filter((url) => !ALLOWED_NON_ENDPOINTS.has(url))
-      .filter((url) => !["/api/agronomist-dashboard","/api/livestock-management","/api/farmer-dashboard","/api/government-dashboard","/api/trader-dashboard","/api/market-analysis","/api/fertilizer","/api/weather-irrigation","/api/smart-crop-alerts","/api/disease-treatment","/api/digital-transformation","/api/emergency-response","/api/emerging-tech","/api/ip-management","/api/smart-advisor","/api/predictive-analytics","/api/risk-detection","/api/smart-irrigation","/api/irrigation-optimization","/api/pest-control","/api/weather-yield-intelligence"].some((prefix) => url === prefix || url.startsWith(prefix + "/")))
+      .filter((url) => !ALLOWED_DYNAMIC_PATHS.has(url))
+      .filter((url) => !["/api/alerts","/api/tasks","/api/smart-crop-suggestions","/api/agronomist-dashboard","/api/livestock-management","/api/farmer-dashboard","/api/government-dashboard","/api/trader-dashboard","/api/market-analysis","/api/fertilizer","/api/weather-irrigation","/api/smart-crop-alerts","/api/disease-treatment","/api/digital-transformation","/api/emergency-response","/api/emerging-tech","/api/ip-management","/api/smart-advisor","/api/predictive-analytics","/api/risk-detection","/api/smart-irrigation","/api/irrigation-optimization","/api/pest-control","/api/weather-yield-intelligence"].some((prefix) => url === prefix || url.startsWith(prefix + "/")))
       .filter((url) => !matchers.some((m) => m.re.test(url)));
     expect(unresolved).toEqual([]);
   });

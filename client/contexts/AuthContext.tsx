@@ -6,6 +6,7 @@ import type {
   UserProfile as AppUserProfile,
 } from "../lib/supabase";
 import { retryWithBackoff } from "../lib/retry";
+import { apiFetch } from "../lib/apiFetch";
 import { Session } from "@supabase/supabase-js";
 
 // =============== TYPES & INTERFACES ===============
@@ -17,6 +18,9 @@ export type UserRole =
   | "veterinarian"
   | "admin"
   | "inspector";
+
+export { ROLE_DASHBOARD_ROUTES, dashboardRouteForRole } from "../lib/roleDashboard";
+import { dashboardRouteForRole } from "../lib/roleDashboard";
 export type Permission = string;
 
 interface AuthContextType {
@@ -25,11 +29,17 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  /**
+   * True only when the caller's trusted `public.users` row (and therefore its
+   * role) has been read successfully. False while the profile is loading or if
+   * the read failed, so role-gated UI can fail closed.
+   */
+  roleVerified: boolean;
   signUp: (
     email: string,
     password: string,
     userData: Partial<AppUser>,
-  ) => Promise<void>;
+  ) => Promise<{ needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<unknown>;
   signOut: () => Promise<void>;
   logout?: () => Promise<void>; // Alias for signOut
@@ -66,6 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [userProfile, setUserProfile] = useState<AppUserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // True only once the trusted `public.users` row has been read. While false,
+  // role-gated routes must deny (see ProtectedRoute / routeAccess).
+  const [roleVerified, setRoleVerified] = useState(false);
   const navigate = useNavigate();
 
   // Initialize auth and subscribe to subsequent Supabase auth changes.
@@ -92,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!nextSession?.user) {
         setUser(null);
         setUserProfile(null);
+        setRoleVerified(false);
       } else if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         // Defer database reads until the auth callback has returned to avoid
         // re-entering Supabase Auth while it is notifying listeners.
@@ -143,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         } else {
           setUser(null);
           setUserProfile(null);
+          setRoleVerified(false);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -177,6 +192,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return data;
       };
 
+      // Self-heal a missing profile row. The trusted auth.users trigger
+      // provisions public.users on signup; if it is not installed on this
+      // database the authenticated user has a session but no profile row, which
+      // would otherwise lock them out of every role-gated route. The server
+      // endpoint is JWT-scoped, idempotent, and always creates a `farmer` row.
+      const ensureProfileRow = async () => {
+        const response = await apiFetch("/api/auth/ensure-profile", {
+          method: "POST",
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) return false;
+        const body = await response.json().catch(() => null);
+        return Boolean(body?.success);
+      };
+
       let userData: any = null;
       let userError: any = null;
       try {
@@ -197,6 +227,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       } catch (e: any) {
         userError = e;
+      }
+
+      // A missing row (PostgREST PGRST116 "no rows") means the signup trigger
+      // did not provision the profile. Try the server-side self-heal once, then
+      // re-read; only fall through to the unverified state if it still fails.
+      const code = String(userError?.code || "");
+      const noRow =
+        code === "PGRST116" ||
+        userError?.message?.includes("0 rows") ||
+        userError?.message?.includes("no rows");
+      if (userError && noRow) {
+        try {
+          if (await ensureProfileRow()) {
+            userData = await userQuery();
+            userError = null;
+          }
+        } catch (e) {
+          console.warn("Profile self-heal failed; continuing unverified", e);
+        }
       }
 
       if (userError) {
@@ -236,7 +285,11 @@ Row Level Security (RLS) policies are blocking access.
           );
         }
 
-        // Fallback: create minimal user object from auth data
+        // The trusted profile could not be read. Do NOT fabricate a role: a
+        // guessed role can land the user on the wrong dashboard and would let a
+        // role-gated route render for someone whose real role is unknown.
+        // Surface the authenticated identity with an unverified marker and let
+        // role-gated routes fail closed until a real profile read succeeds.
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -254,11 +307,13 @@ Row Level Security (RLS) policies are blocking access.
             created_at: user.created_at,
             updated_at: user.updated_at || user.created_at,
           });
+          setRoleVerified(false);
         }
         return;
       }
 
       setUser(userData);
+      setRoleVerified(true);
 
       // Try to load user profile with timeout and retries
       const profileQuery = async () => {
@@ -359,20 +414,18 @@ Row Level Security (RLS) policies are blocking access.
           console.log(
             "📧 Email confirmation required - user must check their email",
           );
-          // Show message to user about email confirmation
-          alert(
-            "تم إنشاء الحساب! يرجى فحص بريدك الإلكترو��ي لتأكيد الحساب قبل تسجيل الدخول.",
-          );
+          // public.users is provisioned by the trusted auth.users database trigger.
+          // Never accept a role or create privileged profile records from the browser.
+          return { needsEmailConfirmation: true };
         }
 
         // public.users is provisioned by the trusted auth.users database trigger.
         // Never accept a role or create privileged profile records from the browser.
-        if (data.session) {
-          await loadUserData(data.user.id);
-        }
-
-
+        await loadUserData(data.user.id);
+        return { needsEmailConfirmation: false };
       }
+
+      return { needsEmailConfirmation: false };
     } catch (error) {
       console.error("Sign up error:", error);
       throw error;
@@ -421,10 +474,8 @@ Row Level Security (RLS) policies are blocking access.
         .eq("id", user.id)
         .maybeSingle();
 
-      if (!roleError && ["admin", "administrator"].includes(
-        String(roleProfile?.role || "").toLowerCase(),
-      )) {
-        destination = "/admin-panel";
+      if (!roleError) {
+        destination = dashboardRouteForRole(roleProfile?.role);
       }
 
       try {
@@ -452,6 +503,7 @@ Row Level Security (RLS) policies are blocking access.
       setUser(null);
       setUserProfile(null);
       setSession(null);
+      setRoleVerified(false);
     } catch (error) {
       console.error("Sign out error:", error);
       throw error;
@@ -507,6 +559,7 @@ Row Level Security (RLS) policies are blocking access.
     session,
     isLoading,
     isAuthenticated: !!session?.user,
+    roleVerified,
     signUp,
     signIn,
     signOut,

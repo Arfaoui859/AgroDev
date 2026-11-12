@@ -145,15 +145,17 @@ describe("👁 diagnosePlantImage", () => {
 });
 
 /**
- * End-to-end: /api/disease/analyze must use the real vision model when one is
- * configured, and never fabricate a diagnosis when it is not.
+ * End-to-end: the legacy /api/disease/analyze route no longer runs a
+ * route-local vision or reference-table heuristic. Image diagnosis is served
+ * only by the trained-model-gated /api/ai/images/* gateway, so this legacy
+ * route fails closed even when an LLM is configured.
  */
 import request from "supertest";
 import express from "express";
 import { createServer } from "../../server/index";
 
-describe("🌿 /api/disease/analyze uses the vision model", () => {
-  test("returns model provenance when a multimodal LLM is configured", async () => {
+describe("🌿 /api/disease/analyze fails closed (no reference-table diagnosis)", () => {
+  test("an uploaded image is refused rather than diagnosed from an unverified source", async () => {
     upstream = await startChatService({
       disease: "لفحة الأوراق",
       confidence: 0.9,
@@ -172,9 +174,8 @@ describe("🌿 /api/disease/analyze uses the vision model", () => {
       .field("plantPart", "leaves")
       .attach("images", PNG, { filename: "leaf.png", contentType: "image/png" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.metadata.isRealData).toBe(true);
-    expect(res.body.metadata.dataSource).toBe("model");
-    expect(res.body.diagnosis.disease).toBe("لفحة الأوراق");
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("DISEASE_REFERENCE_NOT_VERIFIED");
+    expect(res.body.data).toBeNull();
   });
 });

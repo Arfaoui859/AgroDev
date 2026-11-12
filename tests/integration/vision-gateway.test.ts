@@ -105,7 +105,9 @@ describe("🔎 Vision gateway forwarding", () => {
       .expect(503);
     expect(res.body.dataSource).toBe("unavailable");
     expect(res.body.isRealData).toBe(false);
-    expect(res.body.modelSource).toBe("heuristic-demo");
+    // The gateway reports whatever model source the service declared; this
+    // fixture declares none, so it is null rather than a trusted source.
+    expect(res.body.modelSource).toBeNull();
   });
 
   test("preserves valid request-level vision-model provenance", async () => {
@@ -148,6 +150,14 @@ describe("🔎 Vision gateway forwarding", () => {
   });
 
   test("forwards the optional plant_type field", async () => {
+    // A real model provenance is required for the gateway to accept the
+    // response; the forwarding itself is what this test asserts.
+    nextResponsePayload = {
+      ...heuristicPayload,
+      data_source: "vision-model",
+      is_real_data: true,
+      model_source: "provider:test-vision-model",
+    };
     await request(app)
       .post("/api/ai/images/detect-disease")
       .field("plant_type", "tomato")
@@ -157,6 +167,12 @@ describe("🔎 Vision gateway forwarding", () => {
   });
 
   test("routes leaf and comprehensive analyses to their endpoints", async () => {
+    nextResponsePayload = {
+      ...heuristicPayload,
+      data_source: "vision-model",
+      is_real_data: true,
+      model_source: "provider:test-vision-model",
+    };
     await request(app)
       .post("/api/ai/images/analyze-leaf")
       .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })

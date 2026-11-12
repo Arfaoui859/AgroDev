@@ -5,6 +5,7 @@ import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Progress } from '../components/ui/progress';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { SimulatedDataNotice } from '../components/SimulatedDataNotice';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -276,6 +277,10 @@ const DynamicPricing: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
+      <SimulatedDataNotice
+        title="بيانات تسعير توضيحية غير مرتبطة بالسوق"
+        description="قواعد التسعير وجلسات التفاوض وبيانات السوق المعروضة هنا نماذج توضيحية ثابتة في الواجهة، وليست أسعاراً حقيقية من السوق، ولا تُحفظ عند تعديلها. لا تعتمد عليها لاتخاذ قرارات تجارية."
+      />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

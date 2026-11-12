@@ -61,15 +61,16 @@ CREATE TABLE IF NOT EXISTS auth.users (
   id uuid PRIMARY KEY,
   email text,
   raw_user_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb,
-  email_confirmed_at timestamptz
+  email_confirmed_at timestamptz,
+  last_sign_in_at timestamptz
 );
 
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE AS $$
   SELECT NULLIF(
     COALESCE(
-      current_setting('request.jwt.claims', true)::json ->> 'sub',
-      current_setting('request.jwt.claim.sub', true)
+      NULLIF(current_setting('request.jwt.claims', true), '')::json ->> 'sub',
+      NULLIF(current_setting('request.jwt.claim.sub', true), '')
     ),
     ''
   )::uuid
@@ -78,15 +79,15 @@ $$;
 CREATE OR REPLACE FUNCTION auth.role() RETURNS text
 LANGUAGE sql STABLE AS $$
   SELECT COALESCE(
-    current_setting('request.jwt.claims', true)::json ->> 'role',
-    current_setting('request.jwt.claim.role', true),
+    NULLIF(current_setting('request.jwt.claims', true), '')::json ->> 'role',
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
     'anon'
   )
 $$;
 
 CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb
 LANGUAGE sql STABLE AS $$
-  SELECT COALESCE(current_setting('request.jwt.claims', true)::jsonb, '{}'::jsonb)
+  SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
 $$;
 
 -- Supabase's request-role helper, used by some policies.

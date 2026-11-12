@@ -33,16 +33,22 @@ describe("📊 Market endpoints survive a missing `crops` table", () => {
   });
 });
 
-describe("🏡 Farm/field lookups answer 404 instead of 500", () => {
-  test("GET /api/farms/:farmId returns 404 for an unknown farm", async () => {
+describe("🏡 Farm/field lookups never 500 (auth-guarded since the Nov-10 hardening)", () => {
+  // These routes now require a verified farmer session (requireRole), so an
+  // anonymous sweep is rejected with 401/403 before the lookup runs. The
+  // regression they guard — a missing id turning into a 500 — is preserved:
+  // the response must be a client error, never a server error.
+  test("GET /api/farms/:farmId is a client error, never 500", async () => {
     const res = await request(app).get(`/api/farms/${MISSING_ID}`);
-    expect(res.status).toBe(404);
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
   });
 
-  test("PUT /api/fields/:fieldId returns 404 for an unknown field", async () => {
+  test("PUT /api/fields/:fieldId is a client error, never 500", async () => {
     const res = await request(app)
       .put(`/api/fields/${MISSING_ID}`)
       .send({ name: "x" });
-    expect(res.status).toBe(404);
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
   });
 });

@@ -1,5 +1,4 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import { Navigate } from "react-router-dom";
 
 interface Props {
   children: ReactNode;
@@ -24,15 +23,10 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-
-    // Log error for monitoring
     this.logError(error, errorInfo);
-
-    // Auto-redirect after longer delay to allow debugging
-    setTimeout(() => {
-      this.setState({ hasError: false });
-      window.location.href = this.props.fallbackRoute || "/";
-    }, 5000);
+    // No automatic redirect: bouncing the user to the home page silently
+    // discards their session state and is itself a cause of "the app shows the
+    // wrong page". The user decides whether to retry or go home.
   }
 
   private logError(error: Error, errorInfo: ErrorInfo) {
@@ -50,22 +44,26 @@ class ErrorBoundary extends Component<Props, State> {
       userAgent: navigator.userAgent,
     };
 
-    // Store error in localStorage for debugging
-    const existingErrors = JSON.parse(
-      localStorage.getItem("agrogrowth_errors") || "[]",
-    );
-    existingErrors.push(errorReport);
-
-    // Keep only last 10 errors
-    if (existingErrors.length > 10) {
-      existingErrors.shift();
+    // Store error in localStorage for debugging. Reading the existing log can
+    // throw on a corrupt value, which would crash the boundary itself.
+    try {
+      const raw = localStorage.getItem("agrogrowth_errors");
+      const existingErrors = raw ? JSON.parse(raw) : [];
+      const list = Array.isArray(existingErrors) ? existingErrors : [];
+      list.push(errorReport);
+      if (list.length > 10) list.shift();
+      localStorage.setItem("agrogrowth_errors", JSON.stringify(list));
+    } catch (e) {
+      console.warn("Could not persist error report:", e);
     }
 
-    localStorage.setItem("agrogrowth_errors", JSON.stringify(existingErrors));
-
-    // Report to console
     console.error("AgroGrowth Error Report:", errorReport);
   }
+
+  private goHome = () => {
+    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    window.location.assign(this.props.fallbackRoute || "/");
+  };
 
   render() {
     if (this.state.hasError) {
@@ -93,23 +91,29 @@ class ErrorBoundary extends Component<Props, State> {
                 حدث خطأ غير متوقع
               </h1>
 
-              <p className="text-gray-600 mb-6">
-                سيتم توجيهك إلى الصفحة الرئيسية خلال ثوانٍ قليلة...
+              <p className="text-gray-600 mb-2">
+                تعذّر عرض هذه الصفحة. يمكنك إعادة المحاولة أو العودة إلى الصفحة
+                الرئيسية. لم يتم فقدان بياناتك المحفوظة.
               </p>
 
-              <div className="space-y-3">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-600 h-2 rounded-full animate-pulse"
-                    style={{ width: "100%" }}
-                  ></div>
-                </div>
+              {this.state.error?.message ? (
+                <p className="text-xs text-gray-400 mb-6 break-words">
+                  {this.state.error.message}
+                </p>
+              ) : (
+                <div className="mb-6" />
+              )}
 
+              <div className="space-y-3">
                 <button
-                  onClick={() =>
-                    (window.location.href = this.props.fallbackRoute || "/")
-                  }
+                  onClick={() => window.location.reload()}
                   className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+                >
+                  إعادة المحاولة
+                </button>
+                <button
+                  onClick={this.goHome}
+                  className="w-full bg-white text-green-700 border border-green-600 py-2 px-4 rounded-md hover:bg-green-50 transition-colors"
                 >
                   العودة إلى الصفحة الرئيسية
                 </button>

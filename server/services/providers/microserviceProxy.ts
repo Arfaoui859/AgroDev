@@ -78,6 +78,10 @@ export async function callMicroservice<T = any>(
       // or process production user data through this proxy.
       const probe = await probeService(baseUrl);
       if (!probe.reachable || !probe.modelSource || probe.heuristic) {
+        // An unreachable host is a transport failure; a reachable host whose
+        // provenance is synthetic/missing is a policy rejection. They are
+        // reported with different error kinds so callers can tell them apart.
+        const kind: ProviderError["kind"] = !probe.reachable ? "network" : "provenance";
         const reason = !probe.reachable
           ? "Microservice health/provenance could not be verified."
           : probe.heuristic
@@ -85,7 +89,7 @@ export async function callMicroservice<T = any>(
             : "Microservice did not declare a model source.";
         const provenanceError = new ProviderError(
           capability,
-          "provenance",
+          kind,
           reason,
           503,
           false,
@@ -182,10 +186,22 @@ export function respondServiceError(
 ): void {
   if (error instanceof ProviderError) {
     const status = error.kind === "timeout" ? 504 : error.kind === "network" ? 503 : error.status ?? 502;
+    if (error.kind === "provenance") {
+      // The service answered but its model provenance was rejected. Return a
+      // structured envelope so callers can distinguish "disabled" from "down".
+      res.status(status).json({
+        success: false,
+        data: null,
+        code: "MODEL_PROVENANCE_UNVERIFIED",
+        error: `${capability} unavailable`,
+        message: error.message,
+        status,
+      });
+      return;
+    }
+    // Transport/service failure: no `success` flag and no `data` field, so a
+    // caller can never mistake an unreachable service for a fabricated success.
     res.status(status).json({
-      success: false,
-      data: null,
-      code: error.kind === "provenance" ? "MODEL_PROVENANCE_UNVERIFIED" : "MICROSERVICE_UNAVAILABLE",
       error: `${capability} unavailable`,
       message: error.message,
       status,

@@ -215,6 +215,21 @@ export function adminPasswordResetRateLimiter(): RequestHandler {
   });
 }
 
+/** Throttle idempotent profile self-provisioning so it cannot be hammered. */
+export function profileProvisionRateLimiter(): RequestHandler {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: Number(process.env.PROFILE_PROVISION_MAX_REQUESTS || 20),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: "PROFILE_PROVISION_RATE_LIMITED",
+      message: "Too many profile provisioning attempts. Try again later.",
+    },
+  });
+}
+
 /** Reject oversized JSON bodies early with a clear 413 instead of a crash. */
 export function jsonBodyErrorHandler(): (
   err: any,

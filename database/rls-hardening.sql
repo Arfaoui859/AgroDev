@@ -196,6 +196,37 @@ CREATE TRIGGER on_auth_user_created_agrogrowth
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
 
+-- Keep the profile in sync after the initial insert: flip email_verified once
+-- the address is confirmed and record last_login. Without this the row kept its
+-- signup values forever. Sets email_verified only to true and only fills
+-- last_login, so it cannot downgrade trust. Mirrors
+-- database/migrations/20261111_auth_user_sync.sql.
+CREATE OR REPLACE FUNCTION public.sync_auth_user_to_profile()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  UPDATE public.users
+     SET email_verified = CASE
+           WHEN NEW.email_confirmed_at IS NOT NULL THEN true
+           ELSE email_verified
+         END,
+         last_login = COALESCE(NEW.last_sign_in_at, last_login),
+         updated_at = now()
+   WHERE id = NEW.id;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_updated_agrogrowth ON auth.users;
+CREATE TRIGGER on_auth_user_updated_agrogrowth
+  AFTER UPDATE ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.sync_auth_user_to_profile();
+
+
 DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
 CREATE POLICY "Admins can manage users" ON public.users
   FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());

@@ -1,0 +1,666 @@
+/**
+ * AgroGrowth — central agricultural multi-agent orchestrator.
+ *
+ * The orchestrator turns one user question into an explicit, bounded execution
+ * plan over an ALLOW-LISTED registry of specialist agents. It:
+ *   - selects the specialists a question actually needs,
+ *   - runs independent specialists concurrently and dependent ones in order,
+ *   - gates a dependent step as `blocked` when its dependency failed,
+ *   - applies a per-step timeout and bounded retries,
+ *   - records a structured, inspectable trace, and
+ *   - composes one coherent answer while preserving each specialist's
+ *     provenance (rule-based vs. real provider data) and uncertainty.
+ *
+ * It never invents missing inputs. A specialist that lacks its required data
+ * reports `insufficient_input` instead of guessing, and a downstream step that
+ * needed that data is marked `blocked` rather than silently continuing.
+ */
+import {
+  analyzeSoil,
+  recommendCrops,
+  type SoilInput,
+} from "./knowledgeEngine";
+
+export type Language = "ar" | "fr" | "en";
+
+export type SpecialistId =
+  | "soil"
+  | "weather"
+  | "crop"
+  | "irrigation"
+  | "plant_health"
+  | "market"
+  | "pest_control"
+  | "finance";
+
+export type StepStatus =
+  | "ok"
+  | "insufficient_input"
+  | "unavailable"
+  | "blocked"
+  | "failed";
+
+export interface OrchestratorContext {
+  governorate?: string;
+  crop?: string;
+  farmSizeHectares?: number;
+  soil?: SoilInput;
+  season?: string;
+  waterAvailability?: "منخفض" | "متوسط" | "مرتفع";
+  temperature?: number;
+  rainfall?: number;
+  /** Recent, persisted AgroGrowth alerts; evidence, never instructions. */
+  operationalAlerts?: string[];
+  /** Compact facts from the caller's own persisted AgroGrowth records. */
+  platformRecords?: string[];
+}
+
+export interface OrchestratorRequest {
+  question: string;
+  language?: Language;
+  context?: OrchestratorContext;
+}
+
+export interface SpecialistStepResult {
+  id: SpecialistId;
+  title: string;
+  status: StepStatus;
+  /** Deterministic, provenance-labelled findings (never free-form invention). */
+  findings: string[];
+  /** "rule-based" | "open-meteo" | "persisted-records" | null when unavailable. */
+  dataSource: string | null;
+  isRealData: boolean;
+  confidence: "high" | "medium" | "low" | "unknown";
+  /** ids of specialists whose output this step required. */
+  dependsOn: SpecialistId[];
+  attempts: number;
+  latencyMs: number;
+  note?: string;
+}
+
+export interface OrchestrationPlanStep {
+  id: SpecialistId;
+  title: string;
+  dependsOn: SpecialistId[];
+}
+
+export interface OrchestrationTrace {
+  plan: OrchestrationPlanStep[];
+  steps: SpecialistStepResult[];
+  blocked: SpecialistId[];
+  startedAt: string;
+  finishedAt: string;
+  concurrency: number;
+}
+
+export interface OrchestrationResult {
+  answer: string;
+  language: Language;
+  usedSpecialists: SpecialistId[];
+  /** Grounded facts to hand to an LLM as trusted evidence (provenance kept). */
+  groundedFacts: string[];
+  trace: OrchestrationTrace;
+  dataSource: "rule-based";
+  isRealData: false;
+  disclaimer: string;
+}
+
+export interface SpecialistDefinition {
+  id: SpecialistId;
+  title: Record<Language, string>;
+  dependsOn: SpecialistId[];
+  keywords: RegExp;
+  /** A short reason the specialist cannot run without its required inputs. */
+  run: (ctx: OrchestratorContext, deps: Map<SpecialistId, SpecialistStepResult>) => Omit<
+    SpecialistStepResult,
+    "id" | "title" | "dependsOn" | "attempts" | "latencyMs"
+  > | Promise<
+    Omit<SpecialistStepResult, "id" | "title" | "dependsOn" | "attempts" | "latencyMs">
+  >;
+}
+
+const TITLES: Record<SpecialistId, Record<Language, string>> = {
+  soil: { ar: "تحليل التربة", fr: "Analyse du sol", en: "Soil analysis" },
+  weather: { ar: "الطقس", fr: "Météo", en: "Weather" },
+  crop: { ar: "توصية المحاصيل", fr: "Recommandation de cultures", en: "Crop recommendation" },
+  irrigation: { ar: "تحسين الري", fr: "Optimisation de l'irrigation", en: "Irrigation optimization" },
+  plant_health: { ar: "صحة النبات", fr: "Santé des plantes", en: "Plant health" },
+  market: { ar: "معلومات السوق", fr: "Information marché", en: "Market intelligence" },
+  pest_control: { ar: "مكافحة الآفات", fr: "Lutte contre les ravageurs", en: "Pest control" },
+  finance: { ar: "المالية الزراعية", fr: "Finance agricole", en: "Agricultural finance" },
+};
+
+function hasSoilMeasurements(soil?: SoilInput): boolean {
+  if (!soil) return false;
+  return Object.values(soil).some((v) => typeof v === "number" && Number.isFinite(v));
+}
+
+function marketRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) =>
+    /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(r),
+  );
+}
+
+function cultivationRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) => /^Cultivation /.test(r));
+}
+
+function weatherRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) =>
+    /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast)/.test(r),
+  );
+}
+
+function plantHealthRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) =>
+    /^(Saved plant-health record|Saved leaf-health analysis)/.test(r),
+  );
+}
+
+/**
+ * The allow-listed registry. Only these ids can ever run; nothing from user
+ * input is used as an agent name.
+ */
+export const SPECIALISTS: SpecialistDefinition[] = [
+  {
+    id: "soil",
+    title: TITLES.soil,
+    dependsOn: [],
+    keywords: /(تربة|ph|آزوت|فوسفور|بوتاس|ملوحة|خصوبة|soil|sol\b|torba|mlou7a|azot|fosfor)/i,
+    run: (ctx) => {
+      if (!hasSoilMeasurements(ctx.soil)) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No soil measurements in context; pH / N / P / K / organic matter are required.",
+        };
+      }
+      const soil = analyzeSoil(ctx.soil!);
+      const findings = soil.findings
+        .filter((f) => f.status !== "missing")
+        .map((f) => `${f.labelAr}: ${f.value} — ${f.status}`);
+      if (soil.missingMeasurements.length) {
+        findings.push(`قياسات ناقصة: ${soil.missingMeasurements.join("، ")}`);
+      }
+      findings.unshift(`مؤشر صحة التربة: ${soil.healthScore}/100 (${soil.fertilityLevelAr})`);
+      return {
+        status: "ok",
+        findings,
+        dataSource: "rule-based",
+        isRealData: false,
+        confidence: soil.missingMeasurements.length > 3 ? "low" : "medium",
+        note: soil.disclaimer,
+      };
+    },
+  },
+  {
+    id: "weather",
+    title: TITLES.weather,
+    dependsOn: [],
+    keywords: /(طقس|مطر|حرارة|ري|weather|météo|irrigation|arrosage|meteo|matar|skhouna|bard|jaw|ri7|nrawi|ndvi|قمر صناعي)/i,
+    run: (ctx) => {
+      const hasLive = weatherRecords(ctx).some((r) => /^LIVE WEATHER FROM OPEN-METEO/.test(r));
+      if (ctx.temperature === undefined && ctx.rainfall === undefined && weatherRecords(ctx).length === 0) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No live or recorded weather in context; farm coordinates are required for a real forecast.",
+        };
+      }
+      const findings: string[] = [];
+      if (ctx.temperature !== undefined) findings.push(`درجة الحرارة: ${ctx.temperature}°م`);
+      if (ctx.rainfall !== undefined) findings.push(`الأمطار: ${ctx.rainfall} مم`);
+      for (const record of weatherRecords(ctx).slice(0, 5)) findings.push(record);
+      return {
+        status: "ok",
+        findings,
+        dataSource: hasLive ? "open-meteo" : "persisted-records",
+        isRealData: hasLive,
+        confidence: hasLive ? "high" : "medium",
+      };
+    },
+  },
+  {
+    id: "crop",
+    title: TITLES.crop,
+    dependsOn: ["soil", "weather"],
+    keywords: /(محصول|بذور|زراعة|نزرع|نغرس|crop|semis|culture|ma7soul|ghars|zra3a|tmatem|tomat|zitoun|9amh|felfel)/i,
+    run: (ctx, deps) => {
+      // Soft dependency: if soil/weather ran but returned no data we still
+      // produce a neutral recommendation and state the limitation explicitly.
+      const soil = deps.get("soil");
+      const weather = deps.get("weather");
+      const soilUnavailable = !soil || soil.status !== "ok";
+      const weatherUnavailable = !weather || weather.status !== "ok";
+      const result = recommendCrops({
+        ph: ctx.soil?.ph,
+        temperature: ctx.temperature,
+        rainfall: ctx.rainfall,
+        salinity: ctx.soil?.salinity,
+        waterAvailability: ctx.waterAvailability,
+        season: ctx.season,
+      });
+      const findings = result.recommendations
+        .slice(0, 3)
+        .map((c, i) => `${i + 1}. ${c.nameAr} (ملاءمة ${c.suitabilityScore}%، احتياج مائي: ${c.waterNeedAr})`);
+      const missing: string[] = [];
+      if (soilUnavailable) missing.push("تحليل التربة");
+      if (weatherUnavailable) missing.push("بيانات الطقس");
+      const confidence =
+        soilUnavailable || weatherUnavailable ? "low" : result.recommendations[0]?.suitabilityScore >= 80 ? "high" : "medium";
+      return {
+        status: "ok",
+        findings,
+        dataSource: "rule-based",
+        isRealData: false,
+        confidence,
+        note: missing.length
+          ? `التوصية مبنية على معطيات جزئية؛ تنقص: ${missing.join("، ")}.`
+          : result.disclaimer,
+      };
+    },
+  },
+  {
+    id: "irrigation",
+    title: TITLES.irrigation,
+    dependsOn: ["crop", "weather"],
+    keywords: /(ري|سقي|ماء|irrigation|arrosage|eau|nrawi|ns9i|s9i|ri7)/i,
+    run: (ctx, deps) => {
+      const crop = deps.get("crop");
+      if (!crop || crop.status !== "ok") {
+        return {
+          status: "blocked",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "Irrigation depends on a crop recommendation, which is unavailable.",
+        };
+      }
+      if (ctx.rainfall === undefined && weatherRecords(ctx).length === 0) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "Water requirement needs rainfall or a recorded weather/soil-moisture source; none is available.",
+        };
+      }
+      const findings: string[] = [
+        "لا يوجد نظام قياس مياه ميداني موثّق؛ التقدير التالي نوعي فقط وليس جدولة ري مؤكدة.",
+      ];
+      if (ctx.rainfall !== undefined) findings.push(`أمطار حديثة: ${ctx.rainfall} مم — خفّف الري بعد أمطار كافية.`);
+      if (ctx.waterAvailability) findings.push(`توفر المياه المسجل: ${ctx.waterAvailability}.`);
+      return {
+        status: "ok",
+        findings,
+        dataSource: "rule-based",
+        isRealData: false,
+        confidence: "low",
+        note: "Qualitative guidance only: no verified crop-water coefficients or field telemetry are connected.",
+      };
+    },
+  },
+  {
+    id: "plant_health",
+    title: TITLES.plant_health,
+    dependsOn: [],
+    keywords: /(مرض|حشرة|آفة|أوراق|disease|maladie|pest|ravageur|mardh|7achra|doud|feuille)/i,
+    run: (ctx) => {
+      const records = plantHealthRecords(ctx);
+      if (records.length === 0) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No saved plant-health record. A clear leaf/plant image is required for diagnosis; the platform never guesses a disease.",
+        };
+      }
+      return {
+        status: "ok",
+        findings: records.slice(0, 5),
+        dataSource: "persisted-records",
+        isRealData: false,
+        confidence: "medium",
+        note: "Saved model/inspection results, not a confirmed field diagnosis.",
+      };
+    },
+  },
+  {
+    id: "market",
+    title: TITLES.market,
+    dependsOn: [],
+    keywords: /(سعر|سوق|تصدير|price|marché|market|sou9|souq|sou3|prix)/i,
+    run: (ctx) => {
+      const records = marketRecords(ctx);
+      if (records.length === 0) {
+        return {
+          status: "unavailable",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No dated, sourced market record for this crop. Prices are never invented.",
+        };
+      }
+      return {
+        status: "ok",
+        findings: records.slice(0, 6),
+        dataSource: "persisted-records",
+        isRealData: false,
+        confidence: "medium",
+        note: "Historical recorded quotes, not guaranteed live prices.",
+      };
+    },
+  },
+  {
+    id: "pest_control",
+    title: TITLES.pest_control,
+    dependsOn: [],
+    keywords: /(مبيد|مكافحة|آفة|حشرة|pesticide|traitement|lutte|7achra|doud)/i,
+    run: () => ({
+      status: "insufficient_input",
+      findings: [],
+      dataSource: null,
+      isRealData: false,
+      confidence: "unknown",
+      note:
+        "Treatment advice requires a verified Tunisian product registry (active ingredient, dose, pre-harvest interval). " +
+        "None is connected, so no product or dose is suggested.",
+    }),
+  },
+  {
+    id: "finance",
+    title: TITLES.finance,
+    dependsOn: [],
+    keywords: /(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|profit|cost|expense|budget|investment|finance|rentabilité|masrouf|rb7)/i,
+    run: (ctx) => {
+      const withFigures = cultivationRecords(ctx).filter((r) =>
+        /(?:total_cost|revenue|profit)=(-?\d+(?:\.\d+)?)(?:;|\])/i.test(r),
+      );
+      if (withFigures.length === 0) {
+        return {
+          status: "unavailable",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No numeric cost/revenue/profit records in context; figures are never invented.",
+        };
+      }
+      return {
+        status: "ok",
+        findings: withFigures.slice(0, 6),
+        dataSource: "persisted-records",
+        isRealData: false,
+        confidence: "medium",
+        note: "Figures come from user records; verify currency, period and method before an investment decision.",
+      };
+    },
+  },
+];
+
+const REGISTRY = new Map(SPECIALISTS.map((s) => [s.id, s]));
+
+/**
+ * Choose the specialists a question needs. Only registry ids can be returned.
+ * Dependencies are pulled in transitively so a dependent step always has its
+ * prerequisite in the plan.
+ */
+export function planSpecialists(
+  question: string,
+  context?: OrchestratorContext,
+): SpecialistId[] {
+  const q = question || "";
+  const selected = new Set<SpecialistId>();
+  for (const spec of SPECIALISTS) {
+    if (spec.keywords.test(q)) selected.add(spec.id);
+  }
+  // If a question is purely about a topic we have no keyword for, fall back to
+  // soil + crop, which is the platform's core advisory pair.
+  if (selected.size === 0) {
+    selected.add("soil");
+    selected.add("crop");
+  }
+  // Pull in dependencies transitively.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const id of Array.from(selected)) {
+      for (const dep of REGISTRY.get(id)?.dependsOn ?? []) {
+        if (!selected.has(dep)) {
+          selected.add(dep);
+          changed = true;
+        }
+      }
+    }
+  }
+  // Keep a deterministic order: registry order.
+  return SPECIALISTS.map((s) => s.id).filter((id) => selected.has(id));
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+interface RunOptions {
+  timeoutMs?: number;
+  retries?: number;
+  concurrency?: number;
+  /**
+   * Registry override (testing / future plug-in specialists). Defaults to the
+   * built-in allow-list. Keys not present here can never run.
+   */
+  registry?: Map<SpecialistId, SpecialistDefinition>;
+}
+
+/**
+ * Execute the plan. Independent specialists run concurrently (bounded);
+ * dependent steps run after their prerequisites. A step whose dependency did
+ * not reach `ok` is recorded as `blocked` and is not executed.
+ */
+export async function executePlan(
+  plan: SpecialistId[],
+  context: OrchestratorContext,
+  language: Language,
+  options: RunOptions = {},
+): Promise<{ steps: SpecialistStepResult[]; concurrency: number }> {
+  const timeoutMs = options.timeoutMs ?? (Number(process.env.ORCHESTRATOR_STEP_TIMEOUT_MS) || 8000);
+  const retries = options.retries ?? (Number(process.env.ORCHESTRATOR_STEP_RETRIES) || 1);
+  const concurrency = Math.max(1, options.concurrency ?? (Number(process.env.ORCHESTRATOR_CONCURRENCY) || 4));
+  const registry = options.registry ?? REGISTRY;
+
+  const results = new Map<SpecialistId, SpecialistStepResult>();
+  const remaining = new Set(plan);
+
+  const runStep = async (id: SpecialistId): Promise<SpecialistStepResult> => {
+    const spec = registry.get(id)!;
+    const title = spec.title[language];
+    const deps = new Map<SpecialistId, SpecialistStepResult>();
+    for (const dep of spec.dependsOn) {
+      const depResult = results.get(dep);
+      if (depResult) deps.set(dep, depResult);
+    }
+    const startedAt = Date.now();
+    let attempts = 0;
+    let lastError: Error | null = null;
+    const hardDependencyFailed = spec.dependsOn.some((dep) => {
+      const r = results.get(dep);
+      return r && (r.status === "failed" || r.status === "blocked");
+    });
+
+    if (hardDependencyFailed) {
+      return {
+        id,
+        title,
+        status: "blocked",
+        findings: [],
+        dataSource: null,
+        isRealData: false,
+        confidence: "unknown",
+        dependsOn: [...spec.dependsOn],
+        attempts: 0,
+        latencyMs: 0,
+        note: "A required upstream specialist failed; this step was not executed.",
+      };
+    }
+
+    const maxAttempts = Math.max(1, retries + 1);
+    while (attempts < maxAttempts) {
+      attempts += 1;
+      try {
+        const partial = await withTimeout(
+          Promise.resolve().then(() => spec.run(context, deps)),
+          timeoutMs,
+          id,
+        );
+        return {
+          id,
+          title,
+          dependsOn: [...spec.dependsOn],
+          attempts,
+          latencyMs: Date.now() - startedAt,
+          ...partial,
+        };
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (attempts < maxAttempts) await sleep(150 * attempts);
+      }
+    }
+
+    return {
+      id,
+      title,
+      status: "failed",
+      findings: [],
+      dataSource: null,
+      isRealData: false,
+      confidence: "unknown",
+      dependsOn: [...spec.dependsOn],
+      attempts,
+      latencyMs: Date.now() - startedAt,
+      note: lastError?.message,
+    };
+  };
+
+  while (remaining.size > 0) {
+    const ready = Array.from(remaining).filter((id) =>
+      (registry.get(id)?.dependsOn ?? []).every((dep) => results.has(dep) || !remaining.has(dep)),
+    );
+    const batch = ready.length ? ready : Array.from(remaining); // safety: never deadlock
+
+    // Bounded-concurrency pool over the ready batch.
+    for (let i = 0; i < batch.length; i += concurrency) {
+      const slice = batch.slice(i, i + concurrency);
+      const settled = await Promise.all(slice.map((id) => runStep(id)));
+      settled.forEach((result, idx) => {
+        results.set(slice[idx], result);
+        remaining.delete(slice[idx]);
+      });
+    }
+  }
+
+  return { steps: plan.map((id) => results.get(id)!).filter(Boolean), concurrency };
+}
+
+const HEADINGS: Record<Language, { header: string; evidence: string; limits: string }> = {
+  ar: { header: "تنسيق متعدد الوكلاء", evidence: "أدلة الوكلاء", limits: "حدود وقيود" },
+  fr: { header: "Orchestration multi-agents", evidence: "Éléments des agents", limits: "Limites" },
+  en: { header: "Multi-agent orchestration", evidence: "Agent findings", limits: "Limitations" },
+};
+
+function composeAnswer(
+  language: Language,
+  steps: SpecialistStepResult[],
+): string {
+  const h = HEADINGS[language];
+  const ok = steps.filter((s) => s.status === "ok");
+  const notOk = steps.filter((s) => s.status !== "ok");
+  const lines: string[] = [`${h.header}:`];
+  for (const step of ok) {
+    lines.push(`\n${step.title}${step.isRealData ? " (بيانات حقيقية)" : ""}:`);
+    for (const f of step.findings) lines.push(`• ${f}`);
+    if (step.note) lines.push(`(${step.note})`);
+  }
+  if (notOk.length) {
+    lines.push(`\n${h.limits}:`);
+    for (const step of notOk) {
+      lines.push(`• ${step.title} — ${step.status}${step.note ? `: ${step.note}` : ""}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+const DISCLAIMERS: Record<Language, string> = {
+  ar: "هذه إجابة مُنسّقة من وكلاء متخصصين. القيم محسوبة بقواعد زراعية أو مأخوذة من سجلات محفوظة أو من مزوّد بيانات حقيقي كما هو موضّح لكل وكيل، وليست ناتجة عن نموذج تعلّم آلي مدرَّب ما لم يُذكر خلاف ذلك.",
+  fr: "Réponse orchestrée par des agents spécialisés. Les valeurs proviennent de règles agronomiques, d'enregistrements stockés ou d'un fournisseur réel, comme indiqué par agent; elles ne proviennent pas d'un modèle ML entraîné sauf mention contraire.",
+  en: "This answer is orchestrated from specialist agents. Values are rule-based, from stored records, or from a real provider as labelled per agent; they are not from a trained ML model unless stated.",
+};
+
+/**
+ * Plan, execute and compose one orchestrated answer. Deterministic and
+ * network-free: specialists only use the context they are given.
+ */
+export async function orchestrateAgriculturalQuestion(
+  request: OrchestratorRequest,
+  options: RunOptions = {},
+): Promise<OrchestrationResult> {
+  const language = request.language ?? "ar";
+  const context = request.context ?? {};
+  const startedAt = new Date().toISOString();
+  const plan = planSpecialists(request.question, context);
+  const { steps, concurrency } = await executePlan(plan, context, language, options);
+
+  const groundedFacts: string[] = [];
+  for (const step of steps) {
+    if (step.status !== "ok") continue;
+    for (const f of step.findings) groundedFacts.push(`[${step.title}] ${f}`);
+  }
+
+  const trace: OrchestrationTrace = {
+    plan: plan.map((id) => ({
+      id,
+      title: REGISTRY.get(id)!.title[language],
+      dependsOn: [...(REGISTRY.get(id)!.dependsOn ?? [])],
+    })),
+    steps,
+    blocked: steps.filter((s) => s.status === "blocked").map((s) => s.id),
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    concurrency,
+  };
+
+  return {
+    answer: composeAnswer(language, steps),
+    language,
+    usedSpecialists: steps.filter((s) => s.status === "ok").map((s) => s.id),
+    groundedFacts,
+    trace,
+    dataSource: "rule-based",
+    isRealData: false,
+    disclaimer: DISCLAIMERS[language],
+  };
+}

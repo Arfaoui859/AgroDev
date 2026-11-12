@@ -461,6 +461,98 @@ SELECT public.assert_true(public.is_admin() IS TRUE,
   'is_admin() resolves without infinite recursion in policy context');
 ROLLBACK;
 
+-- ---------------------------------------------------------------------------
+-- SCENARIO 8 — signup + sync triggers keep the profile trustworthy.
+-- Proves the production triggers on auth.users: a new user is provisioned as
+-- farmer (a client-supplied role in metadata is ignored), and a later email
+-- confirmation flips email_verified without any ability to downgrade trust.
+-- ---------------------------------------------------------------------------
+BEGIN;
+DELETE FROM public.user_profiles WHERE user_id IN (
+  '77777777-7777-7777-7777-777777777777',
+  '88888888-8888-8888-8888-888888888888');
+DELETE FROM public.users WHERE id IN (
+  '77777777-7777-7777-7777-777777777777',
+  '88888888-8888-8888-8888-888888888888');
+DELETE FROM auth.users WHERE id IN (
+  '77777777-7777-7777-7777-777777777777',
+  '88888888-8888-8888-8888-888888888888');
+
+INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
+  ('77777777-7777-7777-7777-777777777777', 'new.farmer@rls.test', '{}'::jsonb),
+  ('88888888-8888-8888-8888-888888888888', 'attacker@rls.test', '{"role":"admin"}'::jsonb);
+
+SELECT public.assert_true(
+  (SELECT role FROM public.users WHERE id = '77777777-7777-7777-7777-777777777777') = 'farmer',
+  'new signup is provisioned as farmer');
+SELECT public.assert_true(
+  (SELECT email_verified FROM public.users WHERE id = '77777777-7777-7777-7777-777777777777') IS FALSE,
+  'email_verified starts false before confirmation');
+SELECT public.assert_true(
+  (SELECT role FROM public.users WHERE id = '88888888-8888-8888-8888-888888888888') = 'farmer',
+  'client-supplied admin role in metadata is ignored');
+
+UPDATE auth.users
+   SET email_confirmed_at = now(), last_sign_in_at = now()
+ WHERE id = '77777777-7777-7777-7777-777777777777';
+SELECT public.assert_true(
+  (SELECT email_verified FROM public.users WHERE id = '77777777-7777-7777-7777-777777777777') IS TRUE,
+  'email confirmation flips email_verified to true');
+SELECT public.assert_true(
+  (SELECT last_login FROM public.users WHERE id = '77777777-7777-7777-7777-777777777777') IS NOT NULL,
+  'sign-in records last_login');
+
+UPDATE auth.users
+   SET email_confirmed_at = NULL, last_sign_in_at = NULL
+ WHERE id = '77777777-7777-7777-7777-777777777777';
+SELECT public.assert_true(
+  (SELECT email_verified FROM public.users WHERE id = '77777777-7777-7777-7777-777777777777') IS TRUE,
+  'sync trigger cannot downgrade email_verified');
+
+DELETE FROM public.user_profiles WHERE user_id IN (
+  '77777777-7777-7777-7777-777777777777',
+  '88888888-8888-8888-8888-888888888888');
+DELETE FROM public.users WHERE id IN (
+  '77777777-7777-7777-7777-777777777777',
+  '88888888-8888-8888-8888-888888888888');
+DELETE FROM auth.users WHERE id IN (
+  '77777777-7777-7777-7777-777777777777',
+  '88888888-8888-8888-8888-888888888888');
+ROLLBACK;
+
+-- ---------------------------------------------------------------------------
+-- SCENARIO 9 — account deletion cascades (database/user-lifecycle.sql).
+-- Deleting the auth.users row must remove the public.users profile, which in
+-- turn cascades to that user's farms. Requires user-lifecycle.sql to be applied.
+-- ---------------------------------------------------------------------------
+BEGIN;
+DELETE FROM public.farms WHERE owner_id = '33333333-3333-3333-3333-333333333333';
+DELETE FROM public.user_profiles WHERE user_id = '33333333-3333-3333-3333-333333333333';
+DELETE FROM public.users WHERE id = '33333333-3333-3333-3333-333333333333';
+DELETE FROM auth.users WHERE id = '33333333-3333-3333-3333-333333333333';
+
+INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES
+  ('33333333-3333-3333-3333-333333333333', 'delete.me@rls.test', '{}'::jsonb);
+INSERT INTO public.farms (id, owner_id, name, location, size_hectares) VALUES
+  ('f0000000-0000-0000-0000-0000000000c1',
+   '33333333-3333-3333-3333-333333333333',
+   'Delete Me Farm', '{"lat":36.8,"lng":10.1}'::jsonb, 1.0);
+
+SELECT public.assert_true(
+  (SELECT count(*) FROM public.users WHERE id = '33333333-3333-3333-3333-333333333333') = 1,
+  'account exists before deletion');
+
+DELETE FROM auth.users WHERE id = '33333333-3333-3333-3333-333333333333';
+
+SELECT public.assert_true(
+  (SELECT count(*) FROM public.users WHERE id = '33333333-3333-3333-3333-333333333333') = 0,
+  'deleting the auth user removes the profile row');
+SELECT public.assert_true(
+  (SELECT count(*) FROM public.farms WHERE owner_id = '33333333-3333-3333-3333-333333333333') = 0,
+  'deleting the auth user cascades to owned farms');
+
+ROLLBACK;
+
 -- Remove the uniquely named public reference-data fixture as well.
 DELETE FROM public.market_prices
 WHERE crop_name = 'rls-test-tomato' AND market_location = 'RLS verification fixture';

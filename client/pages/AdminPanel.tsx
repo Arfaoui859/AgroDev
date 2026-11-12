@@ -80,7 +80,8 @@ import {
   Pause,
   Play,
   Square,
-  RotateCcw
+  RotateCcw,
+  Newspaper
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -102,6 +103,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [securityEvents, setSecurityEvents] = useState<any[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [newsSources, setNewsSources] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -149,6 +151,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         ['/api/admin/security-events', setSecurityEvents],
         ['/api/admin/activity-logs', setActivityLogs],
         ['/api/admin/subscriptions', setSubscriptions],
+        ['/api/admin/news-sources', setNewsSources],
       ] as const;
 
       await Promise.all(optionalEndpoints.map(async ([url, setter]) => {
@@ -174,6 +177,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       setSecurityEvents([]);
       setActivityLogs([]);
       setSubscriptions([]);
+      setNewsSources(null);
       console.error('Error fetching admin data:', message);
     } finally {
       setLoading(false);
@@ -405,8 +409,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('ar-TN').format(num);
+  const formatNumber = (num: number, fractionDigits?: number) => {
+    return new Intl.NumberFormat('ar-TN', {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(num);
   };
 
   if (loading && !dashboardData) {
@@ -571,61 +578,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </Card>
       </div>
 
-      {/* System Health Overview */}
-      {systemMetrics && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Monitor className="h-5 w-5 mr-2" />
-              {isArabic ? 'صحة النظام' : 'System Health'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="flex flex-col items-center">
-                <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                  <Cpu className="h-8 w-8 text-blue-600" />
-                </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.cpuUsage?.toFixed(1) || 0}%</p>
-                <p className="text-xs text-gray-600">{isArabic ? 'استخدام المعالج' : 'CPU Usage'}</p>
-                <Progress value={systemMetrics.server?.cpuUsage || 0} className="w-full mt-2" />
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                  <MemoryStick className="h-8 w-8 text-green-600" />
-                </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.memoryUsage?.toFixed(1) || 0}%</p>
-                <p className="text-xs text-gray-600">{isArabic ? 'استخدام الذاكرة' : 'Memory Usage'}</p>
-                <Progress value={systemMetrics.server?.memoryUsage || 0} className="w-full mt-2" />
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mb-2">
-                  <HardDrive className="h-8 w-8 text-purple-600" />
-                </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.diskUsage?.toFixed(1) || 0}%</p>
-                <p className="text-xs text-gray-600">{isArabic ? 'استخدام القرص' : 'Disk Usage'}</p>
-                <Progress value={systemMetrics.server?.diskUsage || 0} className="w-full mt-2" />
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center mb-2">
-                  <Zap className="h-8 w-8 text-orange-600" />
-                </div>
-                <p className="text-2xl font-bold">{systemMetrics.server?.responseTime || 0}ms</p>
-                <p className="text-xs text-gray-600">{isArabic ? 'زمن الاستجابة' : 'Response Time'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
           <TabsTrigger value="overview">{isArabic ? 'نظرة عامة' : 'Overview'}</TabsTrigger>
           <TabsTrigger value="users">{isArabic ? 'المستخدمون' : 'Users'}</TabsTrigger>
           <TabsTrigger value="system">{isArabic ? 'النظام' : 'System'}</TabsTrigger>
           <TabsTrigger value="security">{isArabic ? 'الأمان' : 'Security'}</TabsTrigger>
           <TabsTrigger value="analytics">{isArabic ? 'التحليلات' : 'Analytics'}</TabsTrigger>
+          <TabsTrigger value="news">{isArabic ? 'مصادر الأخبار' : 'News Sources'}</TabsTrigger>
           <TabsTrigger value="subscriptions">{isArabic ? 'الاشتراكات' : 'Subscriptions'}</TabsTrigger>
           <TabsTrigger value="activity">{isArabic ? 'الأنشطة' : 'Activity'}</TabsTrigger>
         </TabsList>
@@ -953,7 +914,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         <TabsContent value="analytics" className="space-y-6">
           {analytics && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* User Growth */}
+              {/* User Growth — live counts from public.users */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -980,15 +941,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">{isArabic ? 'معدل الاحتفاظ' : 'Retention Rate'}</span>
-                        <span className="font-semibold">{analytics.overview.retentionRate}%</span>
+                        <span className="font-semibold">
+                          {analytics.overview.retentionRate == null ? '—' : `${analytics.overview.retentionRate}%`}
+                        </span>
                       </div>
-                      <Progress value={analytics.overview.retentionRate} className="w-full" />
+                      {analytics.overview.retentionRate == null ? (
+                        <p className="text-xs text-muted-foreground">
+                          {isArabic
+                            ? 'لا يوجد مصدر لتحليلات الجلسات؛ لا تُقدَّر القيمة.'
+                            : 'No session-analytics source is connected; the value is not estimated.'}
+                        </p>
+                      ) : (
+                        <Progress value={analytics.overview.retentionRate} className="w-full" />
+                      )}
                     </div>
+                    {analytics.overview.userGrowthPercent != null && (
+                      <p className="text-xs text-muted-foreground">
+                        {isArabic ? 'نمو المستخدمين الجدد (30 يوماً): ' : 'New-user growth (30d): '}
+                        {analytics.overview.userGrowthPercent}%
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Revenue Analytics */}
+              {/* Revenue Analytics — no billing source connected */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -997,33 +974,261 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <p className="text-xl font-bold text-green-600">{formatCurrency(analytics.subscriptions.totalRevenue)}</p>
-                        <p className="text-xs text-gray-600">{isArabic ? 'إجمالي الإيرادات' : 'Total Revenue'}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xl font-bold text-blue-600">{formatCurrency(analytics.subscriptions.monthlyRecurringRevenue)}</p>
-                        <p className="text-xs text-gray-600">{isArabic ? 'إيرادات شهرية' : 'Monthly Recurring'}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {Object.entries(analytics.subscriptions.subscriptionsByPlan).map(([plan, data]: [string, any]) => (
-                        <div key={plan} className="flex items-center justify-between">
-                          <span className="text-sm capitalize">{plan}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium">{formatNumber(data.count)} {isArabic ? 'مستخدم' : 'users'}</span>
-                            <span className="text-sm text-green-600">+{data.growth}%</span>
-                          </div>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>{isArabic ? 'الإيرادات غير متصلة' : 'Revenue is not connected'}</AlertTitle>
+                    <AlertDescription>
+                      {isArabic
+                        ? 'لا يوجد جدول اشتراكات أو فواتير مرتبط، لذلك لا تُعرض أرقام إيرادات. لا يتم اختراع أي قيمة.'
+                        : 'No subscription or billing table is connected, so no revenue figure is shown. Nothing is invented.'}
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+
+              {/* User breakdown by role — live counts */}
+              {analytics.usersByRole && Object.keys(analytics.usersByRole).length > 0 && (
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>{isArabic ? 'المستخدمون حسب الدور' : 'Users by Role'}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {Object.entries(analytics.usersByRole).map(([role, value]: [string, any]) => (
+                        <div key={role} className="text-center">
+                          <p className="text-xl font-bold">{value == null ? '—' : formatNumber(value)}</p>
+                          <p className="text-xs text-gray-600 capitalize">{role}</p>
                         </div>
                       ))}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
+        </TabsContent>
+
+        {/* System — real runtime metrics when connected, honest unavailable state otherwise */}
+        <TabsContent value="system" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Monitor className="h-5 w-5 mr-2" />
+                {isArabic ? 'صحة النظام' : 'System Health'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {systemMetrics ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">{formatNumber(systemMetrics.server?.cpuUsage, 1)}%</p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'استخدام المعالج' : 'CPU Usage'}</p>
+                      <Progress value={systemMetrics.server?.cpuUsage || 0} className="w-full mt-2" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">{formatNumber(systemMetrics.server?.memoryUsage, 1)}%</p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'استخدام الذاكرة' : 'Memory Usage'}</p>
+                      <Progress value={systemMetrics.server?.memoryUsage || 0} className="w-full mt-2" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">
+                        {systemMetrics.server?.diskUsage == null
+                          ? '—'
+                          : `${formatNumber(systemMetrics.server.diskUsage, 1)}%`}
+                      </p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'استخدام القرص' : 'Disk Usage'}</p>
+                      <Progress value={systemMetrics.server?.diskUsage || 0} className="w-full mt-2" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">
+                        {systemMetrics.server?.eventLoopLagMs == null
+                          ? '—'
+                          : `${formatNumber(systemMetrics.server.eventLoopLagMs, 1)}ms`}
+                      </p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'تأخر حلقة الأحداث' : 'Event-loop Lag'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">{isArabic ? 'مدة التشغيل' : 'Uptime'}: </span>
+                      <span className="font-medium">
+                        {systemMetrics.server?.uptimeSeconds != null
+                          ? formatUptime(systemMetrics.server.uptimeSeconds)
+                          : '—'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">{isArabic ? 'الأنوية' : 'CPUs'}: </span>
+                      <span className="font-medium">{systemMetrics.server?.cpuCount ?? '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">{isArabic ? 'حمل (نواة واحدة)' : 'Load / CPU'}: </span>
+                      <span className="font-medium">{systemMetrics.server?.loadPerCpu1m ?? '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">{isArabic ? 'الإصدار' : 'Node'}: </span>
+                      <span className="font-medium">{systemMetrics.server?.nodeVersion ?? '—'}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic
+                      ? 'قياسات حقيقية لعملية الخادم هذه (Node.js). لا تُقدَّر أي قيمة.'
+                      : 'Real measurements for this server process (Node.js). No figure is estimated.'}
+                  </p>
+                </div>
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>{isArabic ? 'مراقبة النظام غير متصلة' : 'System monitoring is not connected'}</AlertTitle>
+                  <AlertDescription>
+                    {isArabic
+                      ? 'لا يتوفر مصدر قياسات موثوق. لا تُعرض أرقام تقديرية.'
+                      : 'No verified metrics source is configured, so no figures are shown. Nothing is estimated or invented.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Security — honest unavailable state; alerts are never fabricated */}
+        <TabsContent value="security" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                {isArabic ? 'الأمان' : 'Security'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {securityEvents && securityEvents.length > 0 ? (
+                <ScrollArea className="h-80">
+                  <div className="divide-y rounded-lg border">
+                    {securityEvents.map((event: any, index: number) => (
+                      <div key={event.id ?? index} className="flex items-start justify-between gap-3 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{event.event_type || event.type || 'event'}</p>
+                          <p className="text-xs text-muted-foreground">{event.created_at || event.timestamp || ''}</p>
+                        </div>
+                        <Badge variant="outline">{event.severity || 'info'}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>{isArabic ? 'مراقبة الأمان غير متصلة' : 'Security monitoring is not connected'}</AlertTitle>
+                  <AlertDescription>
+                    {isArabic
+                      ? 'لا يوجد مصدر أحداث أمنية موثوق. لا يتم عرض صفر تنبيهات على أنه "لا توجد مخاطر".'
+                      : 'No verified security-event source is connected. This is not the same as "no alerts" — no count is shown.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Subscriptions — honest unavailable state */}
+        <TabsContent value="subscriptions" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CreditCard className="h-5 w-5 mr-2" />
+                {isArabic ? 'الاشتراكات' : 'Subscriptions'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Array.isArray(subscriptions) && subscriptions.length > 0 ? (
+                <div className="divide-y rounded-lg border">
+                  {subscriptions.map((sub: any, index: number) => (
+                    <div key={sub.id ?? index} className="flex items-center justify-between gap-3 p-3">
+                      <span className="truncate">{sub.plan || sub.id}</span>
+                      <Badge variant="outline">{sub.status || ''}</Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>{isArabic ? 'بيانات الاشتراكات غير متصلة' : 'Subscription data is not connected'}</AlertTitle>
+                  <AlertDescription>
+                    {isArabic
+                      ? 'لا يوجد مصدر اشتراكات موثوق مُهيّأ بعد.'
+                      : 'No verified subscription source is configured yet.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Agricultural news source status — real per-source availability */}
+        <TabsContent value="news" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Newspaper className="h-5 w-5 mr-2" />
+                {isArabic ? 'حالة مصادر الأخبار الفلاحية' : 'Agricultural News Source Status'}
+              </CardTitle>
+              <CardDescription>
+                {isArabic
+                  ? 'توفّر كل مصدر حقيقي يُفحَص مباشرة. المصدر غير المتاح يُبلَّغ عنه ولا يُستبدَل بأخبار مُصطنعة.'
+                  : 'Live availability of each real publisher feed. A source that is down is reported as such — never replaced with fabricated articles.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!newsSources ? (
+                <p className="text-sm text-muted-foreground">
+                  {isArabic ? 'لا تتوفر بيانات حالة المصادر حالياً.' : 'News source status is not available right now.'}
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <Badge variant="outline">
+                      {isArabic ? 'متاح' : 'Available'}: {newsSources.available}/{newsSources.total}
+                    </Badge>
+                    <Badge variant="outline">
+                      {isArabic ? 'إجمالي المقالات' : 'Articles'}: {formatNumber(newsSources.totalArticles)}
+                    </Badge>
+                    <span className="text-muted-foreground">
+                      {isArabic ? 'آخر تحديث' : 'Updated'}: {newsSources.generatedAt ? new Date(newsSources.generatedAt).toLocaleString() : '—'}
+                    </span>
+                  </div>
+                  <div className="divide-y rounded-lg border">
+                    {(newsSources.sources || []).map((source: any) => (
+                      <div key={source.id} className="flex items-center justify-between gap-3 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{source.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {source.language?.toUpperCase()} · {source.kind}
+                            {source.error ? ` · ${source.error}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {source.available ? (
+                            <>
+                              <Badge className="bg-emerald-100 text-emerald-800">
+                                {formatNumber(source.itemCount)} {isArabic ? 'خبر' : 'items'}
+                              </Badge>
+                              <CheckCircle className="h-5 w-5 text-emerald-600" />
+                            </>
+                          ) : (
+                            <>
+                              <Badge className="bg-red-100 text-red-800">{isArabic ? 'غير متاح' : 'Unavailable'}</Badge>
+                              <XCircle className="h-5 w-5 text-red-600" />
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Immutable administrator audit trail */}

@@ -190,17 +190,22 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/supabase-setup.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/autonomous-farm-agent.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
+          # Account-deletion integrity: public.users has no FK to auth.users.
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/user-lifecycle.sql
           # Apply the same tenant-owned persistence migrations used by the app.
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/farm-finance-persistence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
 
       - name: 🔁 Re-apply hardening (must be idempotent)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agrogrowth
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/user-lifecycle.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/farm-finance-persistence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
 
       - name: 🔒 Verify tenant isolation and RLS policies
         env:

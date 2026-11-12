@@ -124,6 +124,11 @@ export async function requireAuth(
 /**
  * Require requireAuth to have established a verified Supabase JWT.
  * Use for persisted user-owned resources that are available to multiple roles.
+ *
+ * Demo identities are rejected here: these routes perform persisted,
+ * user-scoped reads/writes, so only a real Supabase session is trusted. The
+ * non-production demo fallback still works for routes that only need an
+ * identity (see requireAuth).
  */
 export function requireVerifiedAuth(
   req: Request,

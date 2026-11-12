@@ -1,5 +1,40 @@
 import type { Request, Response } from 'express';
+import os from 'node:os';
+import fs from 'node:fs';
 import { isSupabaseAdminConfigured, supabaseAdmin } from '../lib/supabase';
+import { getTunisianAgriNews } from '../services/news/tunisianAgriNews';
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/** Measure this process's CPU usage as a percentage of one core. */
+async function sampleCpuPercent(): Promise<number | null> {
+  try {
+    const start = process.cpuUsage();
+    const startWall = Date.now();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const delta = process.cpuUsage(start);
+    const elapsedMs = Date.now() - startWall;
+    if (elapsedMs <= 0) return null;
+    const cpuMs = (delta.user + delta.system) / 1000;
+    return round2((cpuMs / elapsedMs) * 100);
+  } catch {
+    return null;
+  }
+}
+
+/** Measure event-loop scheduling lag: how late a 0ms timer actually fires. */
+async function sampleEventLoopLagMs(): Promise<number | null> {
+  try {
+    const start = process.hrtime.bigint();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const elapsedNs = Number(process.hrtime.bigint() - start);
+    return round2(elapsedNs / 1e6);
+  } catch {
+    return null;
+  }
+}
 
 function unavailable(res: Response, code = 'DASHBOARD_DATA_SOURCE_NOT_CONNECTED'): void {
   res.setHeader('X-AgroGrowth-Data-Status', 'unavailable');
@@ -421,14 +456,221 @@ export async function getAdminUsers(req: Request, res: Response): Promise<void> 
   }
 }
 
+/**
+ * Real runtime metrics for THIS server process. Nothing here is estimated:
+ * CPU is a measured `process.cpuUsage()` delta, memory/disk come from the OS,
+ * and event-loop lag is a measured `setTimeout(0)` scheduling delay. When a
+ * figure cannot be measured on this platform it is returned as null.
+ */
 export async function getAdminSystemMetrics(_req: Request, res: Response): Promise<void> {
-  unavailable(res, 'ADMIN_SYSTEM_METRICS_NOT_CONNECTED');
+  try {
+    const cpu = await sampleCpuPercent();
+    const eventLoopLagMs = await sampleEventLoopLagMs();
+    const mem = process.memoryUsage();
+    const totalMem = os.totalmem();
+    const cpuCount = os.cpus().length || 1;
+    const load = os.loadavg();
+
+    let diskUsage: number | null = null;
+    try {
+      const stat = fs.statfsSync('/');
+      const used = stat.blocks - stat.bfree;
+      diskUsage = stat.blocks > 0 ? round2((used / stat.blocks) * 100) : null;
+    } catch {
+      diskUsage = null;
+    }
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'node-process');
+    res.json({
+      success: true,
+      data: {
+        server: {
+          // Percentage of a single core, measured over a short sample window.
+          cpuUsage: cpu,
+          // Resident memory as a share of total system memory.
+          memoryUsage: totalMem > 0 ? round2((mem.rss / totalMem) * 100) : null,
+          diskUsage,
+          // Not a synthetic "response time": measured event-loop scheduling lag.
+          eventLoopLagMs,
+          heapUsedBytes: mem.heapUsed,
+          heapTotalBytes: mem.heapTotal,
+          rssBytes: mem.rss,
+          totalMemoryBytes: totalMem,
+          freeMemoryBytes: os.freemem(),
+          cpuCount,
+          loadAverage1m: round2(load[0]),
+          loadPerCpu1m: round2(load[0] / cpuCount),
+          uptimeSeconds: Math.round(process.uptime()),
+          nodeVersion: process.version,
+          platform: `${os.platform()} ${os.release()}`,
+        },
+      },
+      provenance: {
+        source: 'node:process, node:os, node:fs.statfs',
+        verified: true,
+        model_source: null,
+        limitations: [
+          'Metrics describe this application server process/host only.',
+          'diskUsage is null when the filesystem stats are unavailable.',
+        ],
+      },
+    });
+  } catch (error) {
+    console.error('Admin system metrics failed:', error);
+    unavailable(res, 'ADMIN_SYSTEM_METRICS_READ_FAILED');
+  }
 }
+
+/**
+ * Real, database-derived platform analytics. Every figure is a live count from
+ * the persisted `users`/`farms` tables. Revenue, subscription and retention
+ * figures have no connected source, so they are returned as null rather than
+ * estimated.
+ */
 export async function getAdminUsageAnalytics(_req: Request, res: Response): Promise<void> {
-  unavailable(res, 'ADMIN_USAGE_ANALYTICS_NOT_CONNECTED');
+  if (!databaseReady(res)) return;
+  try {
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const since30 = new Date(now - 30 * day).toISOString();
+    const since60 = new Date(now - 60 * day).toISOString();
+    const admin = supabaseAdmin!;
+
+    const [totalUsers, activeUsers, newUsers, priorNewUsers, totalFarms, newFarms] = await Promise.all([
+      admin.from('users').select('id', { count: 'exact', head: true }),
+      admin.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      admin.from('users').select('id', { count: 'exact', head: true }).gte('created_at', since30),
+      admin
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', since60)
+        .lt('created_at', since30),
+      admin.from('farms').select('id', { count: 'exact', head: true }),
+      admin.from('farms').select('id', { count: 'exact', head: true }).gte('created_at', since30),
+    ]);
+
+    const coreErrors = [totalUsers.error, activeUsers.error, newUsers.error].filter(Boolean);
+    if (coreErrors.length) {
+      console.error('Admin analytics query failed:', coreErrors.map((e) => e?.message));
+      unavailable(res, 'ADMIN_USAGE_ANALYTICS_QUERY_FAILED');
+      return;
+    }
+
+    const roles = ['farmer', 'agronomist', 'trader', 'veterinarian', 'inspector', 'government', 'investor', 'admin'];
+    const roleResults = await Promise.all(
+      roles.map((role) => admin.from('users').select('id', { count: 'exact', head: true }).eq('role', role)),
+    );
+    const roleBreakdownError = roleResults.some((r) => r.error);
+    const usersByRole = Object.fromEntries(
+      roles.map((role, i) => [role, roleResults[i].error ? null : roleResults[i].count ?? 0]),
+    );
+
+    const prev = priorNewUsers.error ? null : priorNewUsers.count ?? 0;
+    const curr = newUsers.count ?? 0;
+    const userGrowthPercent = prev && prev > 0 ? round2(((curr - prev) / prev) * 100) : null;
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase');
+    res.json({
+      success: true,
+      data: {
+        overview: {
+          totalUsers: totalUsers.count ?? 0,
+          activeUsers: activeUsers.count ?? 0,
+          newUsers: curr,
+          priorPeriodNewUsers: prev,
+          userGrowthPercent,
+          // No cohort/session retention source is connected; never estimated.
+          retentionRate: null,
+        },
+        farms: {
+          total: totalFarms.error ? null : totalFarms.count ?? 0,
+          newLast30Days: newFarms.error ? null : newFarms.count ?? 0,
+        },
+        usersByRole,
+        // No subscription/billing table exists; revenue is not invented.
+        subscriptions: {
+          totalRevenue: null,
+          monthlyRecurringRevenue: null,
+          subscriptionsByPlan: {},
+        },
+      },
+      provenance: {
+        source: 'supabase.public.users, public.farms',
+        verified: true,
+        model_source: null,
+        limitations: [
+          'Revenue, subscription and retention figures have no connected data source and are null.',
+          ...(roleBreakdownError ? ['Per-role user counts are partially unavailable.'] : []),
+          ...(totalFarms.error ? ['Farm counts are unavailable.'] : []),
+        ],
+      },
+    });
+  } catch (error) {
+    console.error('Admin usage analytics failed:', error);
+    unavailable(res, 'ADMIN_USAGE_ANALYTICS_FAILED');
+  }
 }
-export async function getAdminSecurityEvents(_req: Request, res: Response): Promise<void> {
-  unavailable(res, 'ADMIN_SECURITY_EVENTS_NOT_CONNECTED');
+/**
+ * Security events are derived from the append-only administrator audit log —
+ * the only trustworthy, persisted record of privileged actions. Severity is a
+ * fixed mapping of the recorded action, never an inferred risk score.
+ */
+const SECURITY_ACTION_SEVERITY: Record<string, string> = {
+  'user.role.changed': 'high',
+  'user.suspended': 'high',
+  'user.activated': 'medium',
+  'user.password_reset.requested': 'medium',
+  'user.created': 'low',
+  'user.profile.updated': 'low',
+};
+
+export async function getAdminSecurityEvents(req: Request, res: Response): Promise<void> {
+  if (!databaseReady(res)) return;
+  const limit = Math.max(1, Math.min(200, Number.parseInt(String(req.query.limit || '50'), 10) || 50));
+  try {
+    const actions = Object.keys(SECURITY_ACTION_SEVERITY);
+    const { data, error } = await supabaseAdmin!
+      .from('admin_audit_logs')
+      .select('id,actor_user_id,action,target_user_id,created_at')
+      .in('action', actions)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) {
+      console.error('Admin security events query failed:', error.message);
+      unavailable(res, 'ADMIN_SECURITY_EVENTS_NOT_READY');
+      return;
+    }
+    const events = (data || []).map((row: any) => ({
+      id: row.id,
+      event_type: row.action,
+      type: row.action,
+      severity: SECURITY_ACTION_SEVERITY[row.action] || 'info',
+      actor_user_id: row.actor_user_id,
+      target_user_id: row.target_user_id,
+      created_at: row.created_at,
+      timestamp: row.created_at,
+    }));
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'supabase');
+    res.json({
+      success: true,
+      data: events,
+      provenance: {
+        source: 'supabase.public.admin_audit_logs',
+        verified: true,
+        model_source: null,
+        limitations: [
+          'Only privileged administrator actions that are recorded in the audit log appear here.',
+          'Login attempts and network-level events are not captured.',
+        ],
+      },
+    });
+  } catch (error) {
+    console.error('Admin security events failed:', error);
+    unavailable(res, 'ADMIN_SECURITY_EVENTS_QUERY_FAILED');
+  }
 }
 export async function getAdminActivityLogs(req: Request, res: Response): Promise<void> {
   if (!databaseReady(res)) return;
@@ -471,6 +713,34 @@ export async function getAdminActivityLogs(req: Request, res: Response): Promise
 }
 export async function getAdminSubscriptions(_req: Request, res: Response): Promise<void> {
   unavailable(res, 'ADMIN_SUBSCRIPTIONS_NOT_CONNECTED');
+}
+
+/**
+ * Live availability of the Tunisian agricultural news sources. This is real
+ * data: the same per-source probe the public news endpoint uses. A source that
+ * is down is reported as unavailable with its error — never replaced with
+ * fabricated articles or a fake "OK".
+ */
+export async function getAdminNewsSourceStatus(_req: Request, res: Response): Promise<void> {
+  try {
+    const result = await getTunisianAgriNews({ page: 1, pageSize: 1 });
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'rss-feeds');
+    res.json({
+      success: true,
+      data: {
+        sources: result.sources,
+        available: result.sources.filter((s) => s.available).length,
+        total: result.sources.length,
+        totalArticles: result.total,
+        generatedAt: result.generatedAt,
+      },
+      provenance: { source: 'rss-feeds', verified: true, model_source: null },
+    });
+  } catch (error) {
+    console.error('Admin news source probe failed:', error);
+    unavailable(res, 'ADMIN_NEWS_SOURCES_PROBE_FAILED');
+  }
 }
 
 
