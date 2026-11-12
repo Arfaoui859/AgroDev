@@ -11,6 +11,7 @@
 
 import type { Response } from "express";
 import { ProviderError } from "./http";
+import { sanitizeNetworkMessage } from "../../lib/errors";
 import { probeService } from "./serviceProbe";
 import { recordSuccess, recordFailure } from "./aiTelemetry";
 
@@ -143,7 +144,7 @@ export async function callMicroservice<T = any>(
         lastError = new ProviderError(
           capability,
           "network",
-          `${capability} request failed: ${(error as Error)?.message ?? "unknown error"}`,
+          `${capability} request failed: ${sanitizeNetworkMessage((error as Error)?.message ?? "unknown error")}`,
         );
       }
       if (attempt === retries) {

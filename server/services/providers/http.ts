@@ -6,6 +6,8 @@
  * explicit errors (never as fabricated data).
  */
 
+import { sanitizeNetworkMessage } from "../../lib/errors";
+
 export class ProviderError extends Error {
   readonly provider: string;
   readonly status?: number;
@@ -180,7 +182,7 @@ async function fetchResponse(
         lastError = new ProviderError(
           provider,
           "network",
-          `${provider} request failed: ${(error as Error)?.message ?? "unknown error"}`,
+          `${provider} request failed: ${sanitizeNetworkMessage((error as Error)?.message ?? "unknown error")}`,
         );
       }
 

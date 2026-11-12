@@ -829,8 +829,16 @@ host). Added `getPublicLLMInfo()` (omits `baseUrl`) and switched the three
 public response builders (`/api/ai/health`, `/api/ai/capabilities`,
 `/api/ai/capabilities/:id`) to it. `/api/system/ai` already omitted `baseUrl`.
 
+**Third leak (same class, wider blast radius):** provider transport failures
+built messages like `request failed: getaddrinfo ENOTFOUND <private-host>`,
+which every AI route returns to clients via `respondServiceError` /
+`handleAIServiceError`. Added `sanitizeNetworkMessage()` in `server/lib/errors.ts`
+(coarse categories + URL/IPv4/private-host scrubbing) and applied it in
+`providers/http.ts` and `providers/microserviceProxy.ts`, so no AI endpoint can
+echo an internal address.
+
 **Gates after fix:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build`
-OK · `npx jest` **864 passed / 3 skipped** (96/98 suites).
+OK · `npx jest` **867 passed / 3 skipped** (96/98 suites).
 
 ---
 

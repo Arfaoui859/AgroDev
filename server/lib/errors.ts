@@ -36,3 +36,29 @@ export function safeErrorMessage(error: unknown, fallback = "Internal error"): s
   const err = error as { expose?: boolean; message?: string };
   return err?.expose === true && typeof err.message === "string" ? err.message : fallback;
 }
+
+/**
+ * Strip internal network topology from a transport-error message before it can
+ * reach a client.
+ *
+ * Node/axios failure messages embed the resolved host — `getaddrinfo ENOTFOUND
+ * ai-soil-analysis.internal`, `connect ECONNREFUSED 10.0.0.7:8001`, or a full
+ * `http://host:port/path` — which discloses private service addresses. Replace
+ * every URL, bare IPv4 address and `host:port` token with a placeholder and
+ * collapse the DNS/refused prefixes to a coarse category, keeping the message
+ * useful without leaking where the service lives.
+ */
+export function sanitizeNetworkMessage(message: string): string {
+  let out = message;
+  // Coarse categories for the common Node transport failures.
+  if (/ENOTFOUND|EAI_AGAIN/i.test(out)) return "dns_resolution_failed";
+  if (/ECONNREFUSED/i.test(out)) return "connection_refused";
+  if (/ECONNRESET/i.test(out)) return "connection_reset";
+  if (/ETIMEDOUT|ECONNABORTED/i.test(out)) return "timeout";
+  // Otherwise scrub any remaining address-shaped tokens.
+  out = out
+    .replace(/https?:\/\/[^\s"')]+/gi, "<redacted-url>")
+    .replace(/\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b/g, "<redacted-address>")
+    .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)+\.(?:internal|local|onrender\.com)\b(?::\d+)?/gi, "<redacted-address>");
+  return out;
+}
