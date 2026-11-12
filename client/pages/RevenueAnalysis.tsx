@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   Card,
   CardContent,
@@ -163,7 +164,7 @@ const RevenueAnalysis: React.FC = () => {
       if (filterSeason && filterSeason !== "all")
         params.append("seasonYear", filterSeason);
 
-      const response = await fetch(`/api/revenues?${params}`);
+      const response = await apiFetch(`/api/revenues?${params}`);
       const data = await response.json();
 
       if (data.success) {
@@ -253,7 +254,7 @@ const RevenueAnalysis: React.FC = () => {
         : "/api/revenues";
       const method = editingRevenue ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -297,7 +298,7 @@ const RevenueAnalysis: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (confirm("هل أنت متأكد من حذف هذا السجل؟")) {
       try {
-        const response = await fetch(`/api/revenues/${id}`, {
+        const response = await apiFetch(`/api/revenues/${id}`, {
           method: "DELETE",
         });
 

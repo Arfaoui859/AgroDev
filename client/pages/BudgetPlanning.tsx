@@ -102,7 +102,7 @@ const BudgetPlanning: React.FC = () => {
       const params = new URLSearchParams();
       if (selectedStatus) params.append('status', selectedStatus);
       
-      const response = await fetch(`/api/budget-plans?${params}`);
+      const response = await apiFetch(`/api/budget-plans?${params}`);
       const data = await response.json();
       
       if (data.success) {

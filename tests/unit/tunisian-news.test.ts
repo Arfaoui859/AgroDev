@@ -54,7 +54,7 @@ describe("tunisianAgriNews", () => {
     expect(article).toBeTruthy();
     expect(article.link).toBe("https://lapresse.tn/1");
     expect(article.sourceName).toBe("La Presse de Tunisie");
-    expect(article.sourceUrl).toBe("https://lapresse.tn");
+    expect(article.sourceUrl).toBe("https://www.lapresse.tn");
     expect(article.publishedAt).toBe("2026-11-11T21:08:10.000Z");
     expect(result.isRealData).toBe(true);
     expect(result.dataSource).toBe("rss-feeds");

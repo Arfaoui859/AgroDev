@@ -1,5 +1,6 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,13 +97,13 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
         treatmentsResponse,
         financialResponse
       ] = await Promise.all([
-        fetch('/api/veterinarian-dashboard/overview'),
-        fetch('/api/veterinarian-dashboard/patients'),
-        fetch('/api/veterinarian-dashboard/appointments'),
-        fetch('/api/veterinarian-dashboard/emergencies'),
-        fetch('/api/veterinarian-dashboard/inventory'),
-        fetch('/api/veterinarian-dashboard/treatments'),
-        fetch('/api/veterinarian-dashboard/financial-summary')
+        apiFetch('/api/veterinarian-dashboard/overview'),
+        apiFetch('/api/veterinarian-dashboard/patients'),
+        apiFetch('/api/veterinarian-dashboard/appointments'),
+        apiFetch('/api/veterinarian-dashboard/emergencies'),
+        apiFetch('/api/veterinarian-dashboard/inventory'),
+        apiFetch('/api/veterinarian-dashboard/treatments'),
+        apiFetch('/api/veterinarian-dashboard/financial-summary')
       ]);
 
       const [

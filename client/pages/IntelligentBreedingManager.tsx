@@ -125,7 +125,7 @@ const IntelligentBreedingManager: React.FC = () => {
 
   const fetchBreedingRecommendations = async () => {
     try {
-      const response = await fetch('/api/breeding-recommendations');
+      const response = await apiFetch('/api/breeding-recommendations');
       const data = await response.json();
       
       if (data.success) {

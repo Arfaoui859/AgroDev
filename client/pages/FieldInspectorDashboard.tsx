@@ -1,5 +1,6 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -122,12 +123,12 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
         reportsResponse,
         trackingResponse
       ] = await Promise.all([
-        fetch('/api/field-inspector/overview'),
-        fetch('/api/field-inspector/visits'),
-        fetch('/api/field-inspector/notes'),
-        fetch('/api/field-inspector/quality-assessments'),
-        fetch('/api/field-inspector/reports'),
-        fetch('/api/field-inspector/recommendation-tracking')
+        apiFetch('/api/field-inspector/overview'),
+        apiFetch('/api/field-inspector/visits'),
+        apiFetch('/api/field-inspector/notes'),
+        apiFetch('/api/field-inspector/quality-assessments'),
+        apiFetch('/api/field-inspector/reports'),
+        apiFetch('/api/field-inspector/recommendation-tracking')
       ]);
 
       const [

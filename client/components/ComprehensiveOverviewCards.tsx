@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   Card,
   CardContent,
@@ -154,7 +155,7 @@ const ComprehensiveOverviewCards: React.FC<ComprehensiveOverviewCardsProps> = ({
 
       try {
         // Fetch farm overview data
-        const farmResponse = await fetch("/api/farm-management/overview");
+        const farmResponse = await apiFetch("/api/farm-management/overview");
         let farmData = null;
         if (farmResponse.ok) {
           farmData = await farmResponse.json();
@@ -170,21 +171,21 @@ const ComprehensiveOverviewCards: React.FC<ComprehensiveOverviewCardsProps> = ({
         }
 
         // Fetch livestock data
-        const livestockResponse = await fetch("/api/livestock-dashboard");
+        const livestockResponse = await apiFetch("/api/livestock-dashboard");
         let livestockData = null;
         if (livestockResponse.ok) {
           livestockData = await livestockResponse.json();
         }
 
         // Fetch financial data
-        const financialResponse = await fetch("/api/financial-summary");
+        const financialResponse = await apiFetch("/api/financial-summary");
         let financialData = null;
         if (financialResponse.ok) {
           financialData = await financialResponse.json();
         }
 
         // Fetch crop data
-        const cropsResponse = await fetch("/api/farm-management/crops");
+        const cropsResponse = await apiFetch("/api/farm-management/crops");
         let cropsData = null;
         if (cropsResponse.ok) {
           cropsData = await cropsResponse.json();

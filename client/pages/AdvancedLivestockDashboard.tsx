@@ -165,7 +165,7 @@ const AdvancedLivestockDashboard: React.FC = () => {
 
   const fetchHealthAlerts = async () => {
     try {
-      const response = await fetch('/api/health-alerts');
+      const response = await apiFetch('/api/health-alerts');
       if (!response.ok) {
         setServiceUnavailable(true);
         setHealthAlerts([]);

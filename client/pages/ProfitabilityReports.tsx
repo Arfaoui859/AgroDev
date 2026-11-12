@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../lib/apiFetch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -103,7 +104,7 @@ const ProfitabilityReports: React.FC = () => {
       if (selectedCrop) params.append('cropType', selectedCrop);
       if (selectedSeason) params.append('seasonYear', selectedSeason);
       
-      const response = await fetch(`/api/profitability-analysis?${params}`);
+      const response = await apiFetch(`/api/profitability-analysis?${params}`);
       const result = await response.json();
       
       if (result.success) {
