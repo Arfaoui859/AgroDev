@@ -1,11 +1,15 @@
 """
 The image diagnosis endpoint must label its diagnosis honestly.
 
-The service ships a heuristic detector. When a multimodal provider is
-configured it must be used and the result labelled real; when it is not (or it
-fails) the heuristic result must be labelled as heuristic. This mirrors the
-Node-side contract so a farmer is never shown a heuristic guess as a model
-prediction.
+The service ships a trained MobileNetV3 PlantVillage ONNX classifier (38
+classes) plus an optional multimodal vision provider. These tests pin the
+contract for the case where the trained classifier is *not* available: a
+configured provider must then be used and the result labelled as a vision-model
+output; when no provider is configured (or it fails) the endpoint must fail
+closed rather than return a heuristic guess as a diagnosis.
+
+The classifier is forced absent with a fixture so the test is deterministic
+regardless of whether `onnxruntime` is installed in the environment.
 
 No network call is made: the provider's vision method is monkeypatched.
 """
@@ -34,6 +38,17 @@ ENV_KEYS = ["AI_PROVIDER", "AI_BASE_URL", "AI_API_KEY", "AI_MODEL", "GEMINI_API_
 def clean_env(monkeypatch):
     for key in ENV_KEYS:
         monkeypatch.delenv(key, raising=False)
+    yield
+
+
+@pytest.fixture(autouse=True)
+def force_no_onnx_classifier(monkeypatch):
+    """Force the trained classifier to be absent so the fail-closed / provider
+    paths are exercised even when `onnxruntime` (and the ONNX artifact) are
+    available in the test environment."""
+    detector = image_main.get_disease_detector()
+    monkeypatch.setattr(detector, "ml_classifier", None, raising=False)
+    monkeypatch.setattr(detector, "inference_mode", "heuristic", raising=False)
     yield
 
 
