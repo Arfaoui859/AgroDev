@@ -57,10 +57,16 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 2. Add an Admin "news source status" panel backed by `GET /api/news/sources`.
    *(Done — `GET /api/admin/news-sources`, backed by the real news service.)*
 3. Continue hardening farm-management workflows against live Supabase.
-4. Give the dead-button demo pages (e.g. DigitalTraining, DynamicPricing) a
+4. ~~Give the dead-button demo pages (e.g. DigitalTraining, DynamicPricing) a
    `SimulatedDataNotice` where they are routed, or wire their buttons — they
-   currently render no-op CTAs with no disclosure.
-5. ~~Sensor registry (`GET /api/sensors`) and budget planning (`/api/budget-plans`)
+   currently render no-op CTAs with no disclosure.~~ **Done — all routed
+   demo/mock pages carry `SimulatedDataNotice` (`tests/unit/simulated-page-disclosure.test.ts`, 106 checks).**
+5. ~~Every SPA call to an authenticated `/api/...` path must attach the bearer
+   token.~~ **Done — Session 12: 29 bare-`fetch` call sites (revenue, vet,
+   inspector, breeding, profitability, budget, overview cards, livestock
+   alerts) switched to `apiFetch`; guarded by
+   `tests/unit/client-auth-fetch.test.ts`.**
+6. ~~Sensor registry (`GET /api/sensors`) and budget planning (`/api/budget-plans`)
    returned unconditional 501/503.~~ **Done — Session 11.** Both now persist
    under owner-scoped RLS; budget projections derive from the caller's own
    ledger and are labelled `derived:user-history`.

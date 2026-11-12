@@ -2,7 +2,7 @@
 
 **Baseline commit:** `649de66082c0aa8da2611856bc61c9b7b2f418f1`
 **Branch:** `feat/soil-analysis-professional-report`
-**Last updated:** 2026-11-12 (fourth pass — signup requested-role + admin SQL fix)
+**Last updated:** 2026-11-12 (fifth pass — client auth-fetch + live news/source verification)
 
 Legend: **VERIFIED** (proven by real execution this session) ·
 **IMPLEMENTED BUT NOT VERIFIED** · **EXPERIMENTAL** · **BLOCKED** ·
@@ -670,6 +670,67 @@ silently downgraded with no approval signal.
   `tests/db/rls-verification.sql` all checks passed ·
   `database/verify-security-hardening.sql` passed ·
   all 13 migrations apply cleanly and re-apply idempotently.
+
+---
+
+## Session 12 — P0 client auth-fetch (silent 401s) + live news/source verification (2026-11-12)
+
+### Defect: 29 authenticated API calls used a bare fetch() — **FIXED (VERIFIED)**
+
+Per-user endpoints resolve identity from the verified Supabase JWT. Any SPA
+call to them with a bare `fetch("/api/...")` carries no `Authorization` header
+and is rejected, so the screen silently renders an empty/error state while the
+endpoint itself is healthy. This is the class of bug behind "buttons do not
+persist" and "wrong/empty dashboard".
+
+Fixed 29 call sites to use the authenticated `apiFetch` helper:
+
+- `client/pages/RevenueAnalysis.tsx` (3): revenues list/save/delete were
+  entirely dead.
+- `client/components/ComprehensiveOverviewCards.tsx` (4).
+- `client/pages/FieldInspectorDashboard.tsx` (6).
+- `client/pages/VeterinarianDashboard.tsx` (7).
+- `client/pages/BudgetPlanning.tsx` (1), `IntelligentBreedingManager.tsx` (1),
+  `ProfitabilityReports.tsx` (1), `AdvancedLivestockDashboard.tsx` (1).
+
+New `tests/unit/client-auth-fetch.test.ts` statically extracts every
+`/api/...` path the server mounts behind `requireAuth` (direct handlers and
+mounted routers), then fails if any client file calls one with a bare `fetch(`
+that does not attach an Authorization header. This prevents the whole class
+from regressing.
+
+### Tunisian agricultural news — **VERIFIED (LIVE)**
+
+- Ran an opt-in live probe (`tests/live/news-live-probe.test.ts`,
+  `NEWS_LIVE_TESTS=1`) against the real publisher feeds. All **6** sources
+  returned real articles (**139** total this run): La Presse de Tunisie,
+  Business News, African Manager, Mosaïque FM, and two Google News
+  aggregator feeds (fr + ar). Every article carried its publisher name,
+  original link and publication date.
+- Updated three sources from their 301-redirecting URLs to the canonical
+  targets (`www.lapresse.tn/feed/`, `businessnews.com.tn/feed/`,
+  `africanmanager.com/feed/`); adjusted the one unit assertion that pinned the
+  old homepage.
+
+### AI microservices — **VERIFIED (LOCAL)**
+
+- All eight services start and answer `GET /health` 200 via
+  `scripts/start-ai-services.sh --check`.
+- Real inference exercised on soil analysis (`POST /analyze-soil` with
+  `sensor_data`): returns `source:"user_supplied_input"`,
+  `measurement_verified:false`, refuses to classify texture without
+  sand/silt/clay, and refuses to interpret N/P/K without a unit/lab method —
+  no fabricated values. Invalid input is rejected 422.
+- Each service self-reports its true `model_source`
+  (`deterministic-rules` / `synthetic-demo` / `heuristic-demo` /
+  `rule-based-demo`) and `production_ready:false` for the synthetic ones.
+
+### Verification
+- `tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` **860 passed, 3 skipped**
+  (863 total, 95/97 suites; the 3 skips are the opt-in live probes) ·
+  `npm run build` OK.
+- Pushed to `origin/feat/soil-analysis-professional-report` (fast-forward, no
+  force, **no PR**).
 
 ---
 
