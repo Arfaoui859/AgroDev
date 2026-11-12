@@ -401,20 +401,32 @@ export async function getAdminUsers(req: Request, res: Response): Promise<void> 
   const status = typeof req.query.status === 'string' ? req.query.status.trim().toLowerCase() : '';
 
   try {
-    let query = supabaseAdmin!.from('users')
-      .select('id,email,full_name,role,is_active,email_verified,created_at,last_login', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range((page - 1) * pageSize, page * pageSize - 1);
+    const buildQuery = (withRequestedRole: boolean) => {
+      const columns = withRequestedRole
+        ? 'id,email,full_name,role,requested_role,is_active,email_verified,created_at,last_login'
+        : 'id,email,full_name,role,is_active,email_verified,created_at,last_login';
+      let q = supabaseAdmin!.from('users')
+        .select(columns, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1);
 
-    if (search) {
-      const safeSearch = search.replace(/[^\p{L}\p{N}@._+ -]/gu, '');
-      if (safeSearch) query = query.or(`email.ilike.%${safeSearch}%,full_name.ilike.%${safeSearch}%`);
+      if (search) {
+        const safeSearch = search.replace(/[^\p{L}\p{N}@._+ -]/gu, '');
+        if (safeSearch) q = q.or(`email.ilike.%${safeSearch}%,full_name.ilike.%${safeSearch}%`);
+      }
+      if (role && role !== 'all') q = q.eq('role', role);
+      if (status === 'active') q = q.eq('is_active', true);
+      if (status === 'inactive' || status === 'suspended') q = q.eq('is_active', false);
+      return q;
+    };
+
+    // `requested_role` arrives with migration 20261112_requested_role.sql. Until
+    // that is applied the column is absent; degrade to the legacy column set
+    // rather than failing the whole listing.
+    let { data, error, count } = await buildQuery(true);
+    if (error && /requested_role/.test(error.message || '')) {
+      ({ data, error, count } = await buildQuery(false));
     }
-    if (role && role !== 'all') query = query.eq('role', role);
-    if (status === 'active') query = query.eq('is_active', true);
-    if (status === 'inactive' || status === 'suspended') query = query.eq('is_active', false);
-
-    const { data, error, count } = await query;
     if (error) {
       console.error('Admin user listing failed:', error.message);
       unavailable(res, 'ADMIN_USERS_QUERY_FAILED');
@@ -425,6 +437,10 @@ export async function getAdminUsers(req: Request, res: Response): Promise<void> 
       const fullName = String(row.full_name || row.email || 'User');
       const parts = fullName.trim().split(/\s+/);
       const normalizedRole = String(row.role || 'farmer');
+      const requestedRole =
+        typeof row.requested_role === 'string' && row.requested_role
+          ? row.requested_role
+          : null;
       return {
         id: row.id,
         email: row.email,
@@ -435,6 +451,8 @@ export async function getAdminUsers(req: Request, res: Response): Promise<void> 
         lastNameArabic: parts.slice(1).join(' '),
         role: normalizedRole,
         roleArabic: roleArabic(normalizedRole),
+        requestedRole,
+        requestedRoleArabic: requestedRole ? roleArabic(requestedRole) : null,
         status: row.is_active ? 'active' : 'inactive',
         emailVerified: Boolean(row.email_verified),
         createdAt: row.created_at,

@@ -189,6 +189,10 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/cloud-setup.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/supabase-setup.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/autonomous-farm-agent.sql
+          # Admin role-change RPC + append-only audit log (admin_change_user_role,
+          # admin_set_user_active). Must run before the requested_role migration,
+          # which re-creates admin_change_user_role to also clear requested_role.
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/admin-role-management.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
           # Account-deletion integrity: public.users has no FK to auth.users.
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/user-lifecycle.sql
@@ -198,11 +202,13 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/budget-planning-persistence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261112_requested_role.sql
 
       - name: 🔁 Re-apply hardening (must be idempotent)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agrogrowth
         run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/admin-role-management.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/user-lifecycle.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/farm-finance-persistence.sql
@@ -210,6 +216,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/budget-planning-persistence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261112_requested_role.sql
 
       - name: 🔒 Verify tenant isolation and RLS policies
         env:

@@ -36,11 +36,22 @@ export const ensureUserProfile: RequestHandler = async (req, res) => {
   }
 
   try {
-    const { data: existing, error: readError } = await supabaseAdmin
-      .from("users")
-      .select("id,email,full_name,role,email_verified,is_active")
-      .eq("id", userId)
-      .maybeSingle();
+    const PROFILE_COLUMNS =
+      "id,email,full_name,role,requested_role,email_verified,is_active";
+    const LEGACY_PROFILE_COLUMNS =
+      "id,email,full_name,role,email_verified,is_active";
+
+    const readProfile = (columns: string) =>
+      supabaseAdmin!
+        .from("users")
+        .select(columns)
+        .eq("id", userId)
+        .maybeSingle();
+
+    let { data: existing, error: readError } = await readProfile(PROFILE_COLUMNS);
+    if (readError && /requested_role/.test(readError.message || "")) {
+      ({ data: existing, error: readError } = await readProfile(LEGACY_PROFILE_COLUMNS));
+    }
 
     if (readError) {
       console.error("[ensure-profile] users read failed:", readError.message);
@@ -77,27 +88,55 @@ export const ensureUserProfile: RequestHandler = async (req, res) => {
       (typeof meta.full_name === "string" && meta.full_name.trim()) ||
       (email ? email.split("@")[0] : "User");
 
-    const { data: created, error: insertError } = await supabaseAdmin
-      .from("users")
-      .insert({
-        id: userId,
-        email,
-        full_name: fullName,
-        role: "farmer",
-        email_verified: Boolean(authUser.user.email_confirmed_at),
-        is_active: true,
-      })
-      .select("id,email,full_name,role,email_verified,is_active")
-      .maybeSingle();
+    // Record (but never grant) the role the user asked for at signup, so an
+    // administrator has a signal to approve. The account itself is always
+    // created as `farmer`.
+    const REQUESTABLE_ROLES = new Set([
+      "farmer",
+      "agronomist",
+      "trader",
+      "veterinarian",
+      "inspector",
+    ]);
+    const requestedRole =
+      typeof meta.requested_role === "string" &&
+      REQUESTABLE_ROLES.has(meta.requested_role)
+        ? meta.requested_role
+        : null;
+
+    const baseRow: Record<string, unknown> = {
+      id: userId,
+      email,
+      full_name: fullName,
+      role: "farmer",
+      email_verified: Boolean(authUser.user.email_confirmed_at),
+      is_active: true,
+    };
+
+    const insertProfile = (row: Record<string, unknown>) =>
+      supabaseAdmin!
+        .from("users")
+        .insert(row)
+        .select("id,email,full_name,role,requested_role,email_verified,is_active")
+        .maybeSingle();
+
+    // `requested_role` arrives with migration 20261112_requested_role.sql; if the
+    // column is absent, fall back to the legacy insert instead of failing.
+    let { data: created, error: insertError } = await insertProfile({
+      ...baseRow,
+      requested_role: requestedRole,
+    });
+    if (insertError && /requested_role/.test(insertError.message || "")) {
+      ({ data: created, error: insertError } = await insertProfile(baseRow));
+    }
 
     if (insertError) {
       // A concurrent request may have created the row between the read and the
       // insert; re-read rather than failing.
-      const { data: raced } = await supabaseAdmin
-        .from("users")
-        .select("id,email,full_name,role,email_verified,is_active")
-        .eq("id", userId)
-        .maybeSingle();
+      let { data: raced } = await readProfile(PROFILE_COLUMNS);
+      if (!raced) {
+        ({ data: raced } = await readProfile(LEGACY_PROFILE_COLUMNS));
+      }
       if (raced) {
         return res.json({ success: true, created: false, profile: raced });
       }

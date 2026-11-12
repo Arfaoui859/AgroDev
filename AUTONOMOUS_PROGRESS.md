@@ -2,7 +2,7 @@
 
 **Baseline commit:** `649de66082c0aa8da2611856bc61c9b7b2f418f1`
 **Branch:** `feat/soil-analysis-professional-report`
-**Last updated:** 2026-11-11 (third pass — livestock module)
+**Last updated:** 2026-11-12 (fourth pass — signup requested-role + admin SQL fix)
 
 Legend: **VERIFIED** (proven by real execution this session) ·
 **IMPLEMENTED BUT NOT VERIFIED** · **EXPERIMENTAL** · **BLOCKED** ·
@@ -607,6 +607,71 @@ handling.
 - `tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` **836 passed, 2 skipped**
   (838 total, 92/93 suites) · `npm run build` OK · `agrogrowth-ai` pytest
   **245 passed**.
+
+---
+
+## Session 11 — P0 signup requested-role + admin SQL integrity (2026-11-12)
+
+### Defect: admin role-change RPC could never be created — **FIXED (VERIFIED)**
+
+`database/admin-role-management.sql` contained a corrupted dollar-quote
+(`AS $` … `$;` instead of `AS $$` … `$$;`) on
+`prevent_admin_audit_log_mutation()`. The file therefore failed to parse with
+`ERROR: syntax error at or near "$"`, so `admin_change_user_role`,
+`admin_set_user_active`, and the append-only `admin_audit_logs` table were
+**never created** on any database that tried to apply it. The file was also
+absent from the CI apply/idempotency sequence, so nothing caught it.
+
+- Fixed the quote; the file now applies cleanly and idempotently.
+- Added `database/admin-role-management.sql` to both the CI apply step and the
+  CI idempotency re-apply step (before `20261112_requested_role.sql`, which
+  re-creates `admin_change_user_role`).
+- New `tests/unit/sql-integrity.test.ts` (5 tests) parses every `database/*.sql`
+  and `database/migrations/*.sql` and fails on unbalanced dollar-quotes, a bare
+  `AS $`/`$;` line, or a missing admin RPC.
+
+### Defect: signup role choice was silently discarded — **FIXED (VERIFIED)**
+
+The signup form lets a user request farmer/agronomist/trader/veterinarian/
+inspector, stored as `requested_role` in auth metadata. The trusted
+`handle_new_auth_user()` trigger always provisioned `farmer` and dropped the
+request, and the admin panel had no visibility — so a would-be agronomist was
+silently downgraded with no approval signal.
+
+- `database/migrations/20261112_requested_role.sql`: adds
+  `users.requested_role` (nullable, constrained to the five requestable roles);
+  `handle_new_auth_user()` copies it from signup metadata; the
+  `prevent_self_role_escalation` trigger now also blocks a user rewriting their
+  own `requested_role`; `admin_change_user_role` clears it on approval and
+  records it in the audit trail.
+- `server/routes/admin-panel.ts`: `getAdminUsers` returns
+  `requestedRole` / `requestedRoleArabic`, with a graceful fallback to the
+  legacy column set until the migration is applied.
+- `server/routes/ensure-profile.ts`: the self-provisioning fallback now records
+  the requested role (allow-listed) and degrades safely when the column is
+  absent.
+- `client/pages/AdminPanel.tsx`: the user table and detail dialog show a
+  "pending approval" badge for a requested role that differs from the assigned
+  one (ar + en).
+
+**Security invariants re-verified against a real Postgres** (full apply of all
+13 migrations in CI order, then a live scenario):
+- signup with `requested_role: "agronomist"` → assigned `farmer`,
+  `requested_role = agronomist`;
+- authenticated self-`UPDATE role='admin'` → rejected `42501`;
+- authenticated self-`UPDATE requested_role='admin'` → rejected `42501`;
+- `admin_change_user_role(admin, user, 'agronomist')` → role becomes
+  `agronomist`, `requested_role` becomes NULL, and an append-only audit row is
+  written.
+
+### Verification
+- `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` OK ·
+  `npx jest` **858 passed, 2 skipped** (860 total, 94/95 suites) ·
+  `tests/db/rls-verification.sql` all checks passed ·
+  `database/verify-security-hardening.sql` passed ·
+  all 13 migrations apply cleanly and re-apply idempotently.
+
+---
 
 ## Open / blocked
 

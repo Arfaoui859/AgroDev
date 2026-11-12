@@ -813,6 +813,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <Badge className={getRoleColor(user.role)}>
                               {isArabic ? user.roleArabic : user.role}
                             </Badge>
+                            {user.requestedRole && user.requestedRole !== user.role && (
+                              <Badge
+                                variant="outline"
+                                className="ml-1 border-amber-400 text-amber-700"
+                                title={isArabic ? 'الدور المطلوب بانتظار الموافقة' : 'Requested role pending approval'}
+                              >
+                                {isArabic ? `طلب: ${user.requestedRoleArabic || user.requestedRole}` : `req: ${user.requestedRole}`}
+                              </Badge>
+                            )}
                           </td>
                           <td className="px-4 py-4">
                             <Badge className={getStatusColor(user.status)}>
@@ -1385,6 +1394,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     {isArabic ? selectedUser.roleArabic : selectedUser.role}
                   </Badge>
                 </div>
+                {selectedUser.requestedRole && selectedUser.requestedRole !== selectedUser.role && (
+                  <div>
+                    <label className="text-sm font-medium">{isArabic ? 'الدور المطلوب' : 'Requested role'}</label>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-amber-400 text-amber-700">
+                        {isArabic ? (selectedUser.requestedRoleArabic || selectedUser.requestedRole) : selectedUser.requestedRole}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {isArabic ? 'بانتظار الموافقة' : 'pending approval'}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium">{isArabic ? 'الحالة' : 'Status'}</label>
                   <Badge className={getStatusColor(selectedUser.status)}>

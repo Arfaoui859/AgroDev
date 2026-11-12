@@ -25,12 +25,12 @@ CREATE OR REPLACE FUNCTION public.prevent_admin_audit_log_mutation()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = ''
-AS $
+AS $$
 BEGIN
   RAISE EXCEPTION 'Administrator audit logs are append-only'
     USING ERRCODE = '42501';
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS admin_audit_logs_append_only ON public.admin_audit_logs;
 CREATE TRIGGER admin_audit_logs_append_only
