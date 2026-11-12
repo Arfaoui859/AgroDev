@@ -11,6 +11,7 @@ import {
   detectLanguage,
 } from "../services/ai/farmAdvisor";
 import { orchestrateAgriculturalQuestion } from "../services/ai/agriculturalOrchestrator";
+import { sanitiseLabAnalytes } from "../services/ai/labSoilClient";
 import {
   diagnosePlantImage,
   type VisionDiagnosis,
@@ -381,63 +382,9 @@ export const diagnoseSoilFromImage = [
 // the whole service. These lab models are a distinct, verifiable capability, so
 // they are surfaced through a dedicated route that reports their own metadata
 // (model type, R², MAE, coverage) rather than through the rule-engine gate.
-
-/** The 16 analytes the lab models understand (from the service manifest). */
-const LAB_ANALYTES = [
-  "aluminium_extractable",
-  "boron_extractable",
-  "calcium_extractable",
-  "carbon_organic",
-  "copper_extractable",
-  "electrical_conductivity",
-  "iron_extractable",
-  "magnesium_extractable",
-  "manganese_extractable",
-  "nitrogen_total",
-  "ph",
-  "phosphorus_extractable",
-  "potassium_extractable",
-  "sodium_extractable",
-  "sulphur_extractable",
-  "zinc_extractable",
-] as const;
-
-/**
- * Validate a caller-supplied lab-value map. Only the 16 known analytes are
- * accepted; every value must be a finite number. This is deliberately strict:
- * a string, boolean, NaN or Infinity must be rejected here rather than reaching
- * the model (which validates finiteness but not JSON types the same way).
- */
-function parseLabValues(input: unknown): {
-  values: Record<string, number>;
-  rejected: string[];
-} | { error: string } {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return { error: "lab_values must be an object of numeric analyte measurements" };
-  }
-  const allowed = new Set<string>(LAB_ANALYTES);
-  const values: Record<string, number> = {};
-  const rejected: string[] = [];
-
-  for (const [key, raw] of Object.entries(input as Record<string, unknown>)) {
-    if (!allowed.has(key)) {
-      rejected.push(key);
-      continue;
-    }
-    if (typeof raw !== "number" || !Number.isFinite(raw)) {
-      return { error: `lab_values.${key} must be a finite number` };
-    }
-    values[key] = raw;
-  }
-
-  if (Object.keys(values).length === 0) {
-    return {
-      error:
-        "no recognised analyte measurements supplied; expected keys such as ph, carbon_organic, nitrogen_total",
-    };
-  }
-  return { values, rejected };
-}
+//
+// The model-call client lives in `server/services/ai/labSoilClient.ts` so the
+// multi-agent orchestrator can reuse it without duplicating the analyte list.
 
 /**
  * Persist a lab-assisted analysis against the caller's own section/farm, using
@@ -502,13 +449,23 @@ async function persistLabAnalysis(
 
 /** POST /api/ai/soil/predict-lab — real lab-assisted model inference. */
 export const predictLabAssistedSoil = async (req: Request, res: Response) => {
-  const parsed = parseLabValues(req.body?.lab_values ?? req.body?.labValues);
-  if ("error" in parsed) {
+  const raw = req.body?.lab_values ?? req.body?.labValues;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return res.status(400).json({
       success: false,
       code: "INVALID_LAB_VALUES",
       error: "Invalid laboratory measurements",
-      message: parsed.error,
+      message: "lab_values must be an object of numeric analyte measurements",
+    });
+  }
+  const { values, rejected } = sanitiseLabAnalytes(raw);
+  if (Object.keys(values).length === 0) {
+    return res.status(400).json({
+      success: false,
+      code: "INVALID_LAB_VALUES",
+      error: "Invalid laboratory measurements",
+      message:
+        "no recognised analyte measurements supplied; expected keys such as ph, carbon_organic, nitrogen_total",
     });
   }
 
@@ -526,7 +483,7 @@ export const predictLabAssistedSoil = async (req: Request, res: Response) => {
   try {
     const response = await axios.post(
       `${serviceUrl}/predict-lab-soil`,
-      { lab_values: parsed.values },
+      { lab_values: values },
       { timeout: 60000, headers: { "Content-Type": "application/json" } },
     );
 
@@ -534,7 +491,7 @@ export const predictLabAssistedSoil = async (req: Request, res: Response) => {
     const persistence = await persistLabAnalysis(
       req,
       req.body?.section_id ?? req.body?.fieldId,
-      parsed.values,
+      values,
       result,
     );
 
@@ -548,7 +505,7 @@ export const predictLabAssistedSoil = async (req: Request, res: Response) => {
       predictionScope: result.prediction_scope ?? "lab_assisted_only",
       fieldValidated: false,
       tunisiaValidated: false,
-      rejectedInputFields: parsed.rejected,
+      rejectedInputFields: rejected,
       persistence,
       disclaimer:
         "قيم متوقّعة من نماذج تعلّم آلي مدرّبة على بيانات مرجعية مخبرية؛ ليست قياسات ميدانية مُتحقَّق منها. تأكد من الوحدات وطريقة الاستخلاص وعمق العينة.",
@@ -992,6 +949,9 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
 export const chatWithAIAssistant = async (req: Request, res: Response) => {
   const { message, question, history, language, conversationId } = req.body ?? {};
   const userMessage: string = (message || question || "").toString();
+  // Caller-supplied laboratory analytes, if any. Sanitised below against the
+  // allow-list the trained lab models understand; never trusted as free text.
+  const labAnalytesInput = req.body?.lab_values ?? req.body?.labValues;
   const correlationId = crypto.randomUUID();
   res.set("X-Correlation-Id", correlationId);
 
@@ -1025,6 +985,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       rainfall?: number;
       operationalAlerts?: string[];
       platformRecords?: string[];
+      labAnalytes?: Record<string, number>;
     } | undefined;
     let farmContextStatus: "linked" | "no_farms" | "anonymous" | "unavailable" = "anonymous";
 
@@ -1302,10 +1263,14 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     // as trusted evidence so the LLM composes around them instead of inventing.
     let orchestration: Awaited<ReturnType<typeof orchestrateAgriculturalQuestion>> | null = null;
     try {
+      const { values: labAnalytes } = sanitiseLabAnalytes(labAnalytesInput);
       orchestration = await orchestrateAgriculturalQuestion({
         question: userMessage,
         language: resolvedLanguage,
-        context: farmContext,
+        context: {
+          ...(farmContext ?? {}),
+          ...(Object.keys(labAnalytes).length ? { labAnalytes } : {}),
+        },
       });
     } catch (orchestrationError) {
       console.warn(

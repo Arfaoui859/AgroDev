@@ -2,7 +2,7 @@
 
 **Baseline commit:** `649de66082c0aa8da2611856bc61c9b7b2f418f1`
 **Branch:** `feat/soil-analysis-professional-report`
-**Last updated:** 2026-11-12 (fifth pass — client auth-fetch + live news/source verification)
+**Last updated:** 2026-11-11 (session 3 — orchestrator lab specialist + ONNX runtime)
 
 Legend: **VERIFIED** (proven by real execution this session) ·
 **IMPLEMENTED BUT NOT VERIFIED** · **EXPERIMENTAL** · **BLOCKED** ·
@@ -1260,3 +1260,44 @@ the heuristic the service explicitly refuses to return as a diagnosis.
 - Live-verified: the service boots, `/health` reports
   `production_ready: true`, `model_source: "mobilenetv3-plantvillage-v1"`, and
   the detector runs in `onnx` inference mode.
+
+## Session 3 — trained lab soil models inside the orchestrator + ONNX runtime
+
+### Multi-agent orchestrator: trained lab models as a first-class specialist — VERIFIED
+
+The orchestrator was network-free by design. Its specialists only consumed
+context already assembled by the gateway, so the seven *genuinely trained* lab
+soil models (real iSDA wet-chemistry data) were reachable via
+`POST /api/ai/soil/predict-lab` but **never** used inside a multi-agent plan.
+
+- New `server/services/ai/labSoilClient.ts`: the single analyte allow-list (16
+  keys), a strict `sanitiseLabAnalytes` guard (finite numbers only), and a
+  bounded `predictLabSoil()` that returns a discriminated result rather than
+  throwing.
+- New allow-listed `lab_soil` specialist (`agriculturalOrchestrator.ts`):
+  - `insufficient_input` (no network call) when no analytes are supplied;
+  - calls the trained models only when real measurements are present;
+  - `trained-model-inference` provenance and per-target out-of-fold R2 in each
+    finding, so a caller can see the models are only lightly trained for some
+    targets (e.g. extractable P R2 ~0.34);
+  - `failed`/`unavailable` — never fabricated — when the service is down;
+  - claims `trained-model-inference` only when at least one target was actually
+    predicted (a coverage-only response is `insufficient_input`).
+- `planSpecialists` selects `lab_soil` whenever analytes are present, even if
+  the wording does not mention a lab.
+- The chat handler (`chatWithAIAssistant`) accepts `lab_values`, sanitises them,
+  and passes them into the orchestrator; the composed answer labels the step as
+  a trained model.
+- The gateway now reuses the shared sanitiser (no duplicated analyte list).
+- Live-verified against the real FastAPI service on 127.0.0.1:8001: 16/16
+  analytes -> 7 targets predicted with R2 (ph 0.53, carbon_organic 0.86,
+  nitrogen_total 0.83, EC 0.47, P 0.34, K 0.63, Zn 0.45); a sparse 6-analyte
+  payload correctly returns `insufficient_input` at the 80% coverage gate.
+- Tests: `tests/unit/agricultural-orchestrator.test.ts` 21 pass (4 new),
+  `tests/integration/assistant-orchestration.test.ts` 3 pass (1 new),
+  `tests/integration/lab-soil-gateway.test.ts` 5 pass.
+
+### Image diagnosis ONNX runtime — VERIFIED
+
+See the dedicated section above (onnxruntime added, real artifact test, health
+reports `production_ready: true`).

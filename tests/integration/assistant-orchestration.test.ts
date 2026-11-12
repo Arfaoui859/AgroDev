@@ -52,4 +52,57 @@ describe("POST /api/ai/assistant/chat — multi-agent orchestration", () => {
     expect(pest.status).toBe("insufficient_input");
     expect(pest.findings).toEqual([]);
   });
+
+  test("runs the trained lab models when the caller supplies analytes", async () => {
+    const http = await import("node:http");
+    const server = http.createServer((req, res) => {
+      if ((req.url ?? "").startsWith("/predict-lab-soil")) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            status: "success",
+            prediction_scope: "lab_assisted_only",
+            field_validated: false,
+            models: {
+              ph: { status: "predicted", prediction: 6.68, coverage: 1, metrics: { r2: 0.52 } },
+            },
+          }),
+        );
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+    const url = await new Promise<string>((resolve) => {
+      server.listen(0, "127.0.0.1", () => {
+        const addr = server.address() as { port: number };
+        resolve(`http://127.0.0.1:${addr.port}`);
+      });
+    });
+    const saved = process.env.SOIL_ANALYSIS_URL;
+    process.env.SOIL_ANALYSIS_URL = url;
+    try {
+      const response = await request(app)
+        .post("/api/ai/assistant/chat")
+        .send({
+          message: "حلّل هذه القيم المخبرية للتربة",
+          language: "ar",
+          lab_values: { ph: 7.0, carbon_organic: 12 },
+        })
+        .expect(200);
+
+      const labStep = (response.body.orchestrationTrace?.steps ?? []).find(
+        (s: any) => s.id === "lab_soil",
+      );
+      expect(labStep).toBeTruthy();
+      expect(labStep.dataSource).toBe("trained-model-inference");
+      // Model inference is never presented as a measured observation.
+      expect(labStep.isRealData).toBe(false);
+      expect(response.body.usedSpecialists).toContain("lab_soil");
+    } finally {
+      if (saved === undefined) delete process.env.SOIL_ANALYSIS_URL;
+      else process.env.SOIL_ANALYSIS_URL = saved;
+      await new Promise<void>((done) => server.close(() => done()));
+    }
+  });
 });

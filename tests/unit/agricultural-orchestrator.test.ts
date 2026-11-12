@@ -44,6 +44,11 @@ describe("planSpecialists", () => {
     const plan = planSpecialists("أي مبيد أستعمل للحشرة؟");
     expect(plan).toContain("pest_control");
   });
+
+  test("selects the trained lab models when analytes are supplied", () => {
+    const plan = planSpecialists("hello", { labAnalytes: { ph: 6.5 } });
+    expect(plan).toContain("lab_soil");
+  });
 });
 
 describe("executePlan", () => {
@@ -127,6 +132,83 @@ describe("executePlan", () => {
       concurrency: 2,
     });
     expect(concurrency).toBe(2);
+  });
+
+  test("lab_soil is insufficient_input without analytes and never calls out", async () => {
+    const { steps } = await executePlan(["lab_soil"], {}, "ar");
+    expect(steps[0].status).toBe("insufficient_input");
+    expect(steps[0].findings).toEqual([]);
+    expect(steps[0].dataSource).toBeNull();
+  });
+
+  test("lab_soil returns trained-model provenance when the service answers", async () => {
+    // Stand up a throwaway server that mimics the real /predict-lab-soil route.
+    const http = await import("node:http");
+    const server = http.createServer((req, res) => {
+      if ((req.url ?? "").startsWith("/predict-lab-soil")) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            status: "success",
+            prediction_scope: "lab_assisted_only",
+            field_validated: false,
+            models: {
+              ph: { status: "predicted", prediction: 6.68, coverage: 1, metrics: { r2: 0.52 } },
+              phosphorus_extractable: {
+                status: "predicted",
+                prediction: 12.1,
+                coverage: 0.9,
+                metrics: { r2: 0.34 },
+                imputed_features: ["iron_extractable"],
+              },
+            },
+          }),
+        );
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+    const url = await new Promise<string>((resolve) => {
+      server.listen(0, "127.0.0.1", () => {
+        const addr = server.address() as { port: number };
+        resolve(`http://127.0.0.1:${addr.port}`);
+      });
+    });
+    const saved = process.env.SOIL_ANALYSIS_URL;
+    process.env.SOIL_ANALYSIS_URL = url;
+    try {
+      const { steps } = await executePlan(
+        ["lab_soil"],
+        { labAnalytes: { ph: 7.0, carbon_organic: 12 } },
+        "ar",
+      );
+      expect(steps[0].status).toBe("ok");
+      expect(steps[0].dataSource).toBe("trained-model-inference");
+      // Inference is never claimed as a measured/real observation.
+      expect(steps[0].isRealData).toBe(false);
+      expect(steps[0].findings.join(" ")).toMatch(/ph.*6\.68/);
+      expect(steps[0].findings.join(" ")).toMatch(/R²/);
+    } finally {
+      if (saved === undefined) delete process.env.SOIL_ANALYSIS_URL;
+      else process.env.SOIL_ANALYSIS_URL = saved;
+      await new Promise<void>((done) => server.close(() => done()));
+    }
+  });
+
+  test("lab_soil reports unavailable (not fabricated) when the service is down", async () => {
+    const saved = process.env.SOIL_ANALYSIS_URL;
+    // A port nothing is listening on.
+    process.env.SOIL_ANALYSIS_URL = "http://127.0.0.1:1";
+    try {
+      const { steps } = await executePlan(["lab_soil"], { labAnalytes: { ph: 7 } }, "ar");
+      expect(steps[0].status).toBe("failed");
+      expect(steps[0].findings).toEqual([]);
+      expect(steps[0].note).toMatch(/no prediction was produced/i);
+    } finally {
+      if (saved === undefined) delete process.env.SOIL_ANALYSIS_URL;
+      else process.env.SOIL_ANALYSIS_URL = saved;
+    }
   });
 });
 

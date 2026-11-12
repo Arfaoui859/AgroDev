@@ -20,11 +20,13 @@ import {
   recommendCrops,
   type SoilInput,
 } from "./knowledgeEngine";
+import { predictLabSoil, sanitiseLabAnalytes, type LabSoilPredictionResult } from "./labSoilClient";
 
 export type Language = "ar" | "fr" | "en";
 
 export type SpecialistId =
   | "soil"
+  | "lab_soil"
   | "weather"
   | "crop"
   | "irrigation"
@@ -53,6 +55,13 @@ export interface OrchestratorContext {
   operationalAlerts?: string[];
   /** Compact facts from the caller's own persisted AgroGrowth records. */
   platformRecords?: string[];
+  /**
+   * Explicitly supplied laboratory analytes (the 16 keys the trained lab models
+   * understand). Only set when the caller actually provided measurements — the
+   * `lab_soil` specialist never invents them, and performs no network call when
+   * they are absent.
+   */
+  labAnalytes?: Record<string, number>;
 }
 
 export interface OrchestratorRequest {
@@ -100,6 +109,12 @@ export interface OrchestrationResult {
   /** Grounded facts to hand to an LLM as trusted evidence (provenance kept). */
   groundedFacts: string[];
   trace: OrchestrationTrace;
+  /**
+   * Specialists whose result came from a genuinely trained model artifact
+   * (currently only `lab_soil`). Empty when none ran. The per-step `dataSource`
+   * in the trace remains the authoritative provenance for each step.
+   */
+  trainedModelSpecialists: SpecialistId[];
   dataSource: "rule-based";
   isRealData: false;
   disclaimer: string;
@@ -121,6 +136,7 @@ export interface SpecialistDefinition {
 
 const TITLES: Record<SpecialistId, Record<Language, string>> = {
   soil: { ar: "تحليل التربة", fr: "Analyse du sol", en: "Soil analysis" },
+  lab_soil: { ar: "نماذج التربة المخبرية", fr: "Modèles de sol en laboratoire", en: "Laboratory soil models" },
   weather: { ar: "الطقس", fr: "Météo", en: "Weather" },
   crop: { ar: "توصية المحاصيل", fr: "Recommandation de cultures", en: "Crop recommendation" },
   irrigation: { ar: "تحسين الري", fr: "Optimisation de l'irrigation", en: "Irrigation optimization" },
@@ -155,6 +171,31 @@ function plantHealthRecords(ctx: OrchestratorContext): string[] {
   return (ctx.platformRecords ?? []).filter((r) =>
     /^(Saved plant-health record|Saved leaf-health analysis)/.test(r),
   );
+}
+
+/**
+ * Format a lab-model prediction into a short, provenance-labelled finding.
+ * Every predicted target states its out-of-fold R² so the caller can judge how
+ * much to trust the number — the models are trained, but only lightly for some
+ * targets (e.g. extractable phosphorus R²≈0.34).
+ */
+function formatLabFindings(result: LabSoilPredictionResult): string[] {
+  const findings: string[] = [];
+  for (const [target, entry] of Object.entries(result.models ?? {})) {
+    if (entry.status !== "predicted" || typeof entry.prediction !== "number") {
+      findings.push(
+        `${target}: غير متوقّع — التغطية ${Math.round((entry.coverage ?? 0) * 100)}% (المطلوبة 80%)`,
+      );
+      continue;
+    }
+    const r2 = entry.metrics?.r2;
+    const r2Label = typeof r2 === "number" ? `، R² خارج العيّنة ${r2.toFixed(2)}` : "";
+    const imputed = entry.imputed_features?.length
+      ? `، قيم مُستكملة: ${entry.imputed_features.join("، ")}`
+      : "";
+    findings.push(`${target}: ${entry.prediction.toFixed(3)}${r2Label}${imputed}`);
+  }
+  return findings;
 }
 
 /**
@@ -193,6 +234,58 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         isRealData: false,
         confidence: soil.missingMeasurements.length > 3 ? "low" : "medium",
         note: soil.disclaimer,
+      };
+    },
+  },
+  {
+    id: "lab_soil",
+    title: TITLES.lab_soil,
+    dependsOn: [],
+    keywords: /(تحليل مخبري|مختبر|قيمة مخبرية|lab\b|laboratoire|lab_values|tahlil|3ayna)/i,
+    run: async (ctx) => {
+      const { values, rejected } = sanitiseLabAnalytes(ctx.labAnalytes);
+      if (Object.keys(values).length === 0) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No laboratory analyte measurements were supplied; the trained lab models require real measured values and never impute missing ones.",
+        };
+      }
+      const outcome = await predictLabSoil(values, { timeoutMs: 7000 });
+      if (outcome.ok === false) {
+        const reason = outcome.reason;
+        const detail = outcome.detail;
+        return {
+          status: reason === "not_configured" ? "unavailable" : "failed",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note:
+            reason === "not_configured"
+              ? "The laboratory soil service is not configured; no prediction was produced."
+              : `The laboratory soil service did not answer (${detail ?? reason}); no prediction was produced.`,
+        };
+      }
+      const findings = formatLabFindings(outcome.result);
+      const predictedCount = Object.values(outcome.result.models ?? {}).filter(
+        (m) => m.status === "predicted",
+      ).length;
+      if (rejected.length) findings.push(`قياسات مُتجاهَلة (غير معروفة للنموذج): ${rejected.join("، ")}`);
+      return {
+        status: predictedCount > 0 ? "ok" : "insufficient_input",
+        findings,
+        // Only claim model inference when a target was actually predicted; a
+        // coverage-only response produced no model output.
+        dataSource: predictedCount > 0 ? "trained-model-inference" : null,
+        isRealData: false,
+        confidence: predictedCount >= 5 ? "medium" : "low",
+        note:
+          `نماذج تعلّم آلي مدرّبة (${predictedCount} هدف/أهداف) على مجموعة iSDA المرجعية؛ ` +
+          "القيم مُستنتَجة وليست قياسات ميدانية، وتُترك التغطية/R² لتقدير درجة الثقة.",
       };
     },
   },
@@ -425,6 +518,11 @@ export function planSpecialists(
   for (const spec of SPECIALISTS) {
     if (spec.keywords.test(q)) selected.add(spec.id);
   }
+  // If the caller actually supplied laboratory analytes, run the trained lab
+  // models even when the wording does not mention them — the data is present.
+  if (context?.labAnalytes && Object.keys(context.labAnalytes).length > 0) {
+    selected.add("lab_soil");
+  }
   // If a question is purely about a topic we have no keyword for, fall back to
   // soil + crop, which is the platform's core advisory pair.
   if (selected.size === 0) {
@@ -586,10 +684,25 @@ export async function executePlan(
   return { steps: plan.map((id) => results.get(id)!).filter(Boolean), concurrency };
 }
 
-const HEADINGS: Record<Language, { header: string; evidence: string; limits: string }> = {
-  ar: { header: "تنسيق متعدد الوكلاء", evidence: "أدلة الوكلاء", limits: "حدود وقيود" },
-  fr: { header: "Orchestration multi-agents", evidence: "Éléments des agents", limits: "Limites" },
-  en: { header: "Multi-agent orchestration", evidence: "Agent findings", limits: "Limitations" },
+const HEADINGS: Record<Language, { header: string; evidence: string; limits: string; trained: string }> = {
+  ar: {
+    header: "تنسيق متعدد الوكلاء",
+    evidence: "أدلة الوكلاء",
+    limits: "حدود وقيود",
+    trained: "نموذج مدرَّب",
+  },
+  fr: {
+    header: "Orchestration multi-agents",
+    evidence: "Éléments des agents",
+    limits: "Limites",
+    trained: "modèle entraîné",
+  },
+  en: {
+    header: "Multi-agent orchestration",
+    evidence: "Agent findings",
+    limits: "Limitations",
+    trained: "trained model",
+  },
 };
 
 function composeAnswer(
@@ -601,7 +714,12 @@ function composeAnswer(
   const notOk = steps.filter((s) => s.status !== "ok");
   const lines: string[] = [`${h.header}:`];
   for (const step of ok) {
-    lines.push(`\n${step.title}${step.isRealData ? " (بيانات حقيقية)" : ""}:`);
+    const label = step.dataSource === "trained-model-inference"
+      ? ` (${h.trained})`
+      : step.isRealData
+        ? " (بيانات حقيقية)"
+        : "";
+    lines.push(`\n${step.title}${label}:`);
     for (const f of step.findings) lines.push(`• ${f}`);
     if (step.note) lines.push(`(${step.note})`);
   }
@@ -621,8 +739,14 @@ const DISCLAIMERS: Record<Language, string> = {
 };
 
 /**
- * Plan, execute and compose one orchestrated answer. Deterministic and
- * network-free: specialists only use the context they are given.
+ * Plan, execute and compose one orchestrated answer.
+ *
+ * Deterministic and, by default, network-free: specialists only use the context
+ * they are given. The one exception is `lab_soil`, which calls the trained lab
+ * models over HTTP *only* when the caller actually supplied analyte
+ * measurements; every other specialist is pure and offline. A failed or
+ * unreachable lab service is reported as `failed`/`unavailable` — never
+ * fabricated.
  */
 export async function orchestrateAgriculturalQuestion(
   request: OrchestratorRequest,
@@ -659,6 +783,9 @@ export async function orchestrateAgriculturalQuestion(
     usedSpecialists: steps.filter((s) => s.status === "ok").map((s) => s.id),
     groundedFacts,
     trace,
+    trainedModelSpecialists: steps
+      .filter((s) => s.status === "ok" && s.dataSource === "trained-model-inference")
+      .map((s) => s.id),
     dataSource: "rule-based",
     isRealData: false,
     disclaimer: DISCLAIMERS[language],
