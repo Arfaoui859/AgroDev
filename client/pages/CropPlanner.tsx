@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { payloadObject } from "@/lib/apiPayload";
 
 interface MonthlyActivity {
   month: string;
@@ -187,8 +188,9 @@ export default function CropPlanner() {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/weather-irrigation/planting-calendar/${selectedGovernorate}?year=${selectedYear}`);
-      const data = await response.json();
-      setPlantingCalendar(data);
+      setPlantingCalendar(
+        payloadObject<PlantingCalendar>(response, await response.json()),
+      );
     } catch (error) {
       console.error('Error fetching planting calendar:', error);
     } finally {

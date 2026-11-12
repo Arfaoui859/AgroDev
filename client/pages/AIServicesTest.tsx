@@ -66,7 +66,11 @@ const AIServicesTest: React.FC = () => {
     try {
       const response = await fetch('/api/ai/health');
       const data = await response.json();
-      setHealthData(data);
+      // The monitoring payload always carries a `services` array; a degraded
+      // response must not leave the page calling `.map` on undefined.
+      setHealthData(
+        data && Array.isArray(data.services) ? data : null,
+      );
       setLastChecked(new Date().toLocaleString('ar-TN'));
     } catch (error) {
       console.error('Error fetching AI services health:', error);
