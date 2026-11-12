@@ -1389,3 +1389,36 @@ symptoms. It now calls the real `pest_control` service's keyword matcher
 
 **Gates:** `npx tsc --noEmit` 0 · `npx jest` 951 passed / 3 skipped ·
 Python `agrogrowth-ai` 266 passed / 1 warning.
+
+### Pest Control screen: honest rule-based path — VERIFIED
+
+The Pest Control screen called `POST /api/pest-control/analyze-problem`, which
+the provenance-guarded proxy **correctly refuses** (503): the pest service's
+`/health` declares `synthetic-demo` and disables its analysis/treatment models.
+So the screen was permanently broken — an honest refusal shown as a dead button.
+
+The service's `POST /identify-pest`, however, is a genuine deterministic keyword
+matcher (`model_source: "symptom-keyword-rules"`, `confidence_score: 0`,
+`field_validated: false`) — the same endpoint the orchestrator's `pest_control`
+specialist already uses. It is honest to call directly.
+
+- Added `POST /api/pest-control/identify-from-symptoms`, which reuses the tested
+  `pestControlClient` (no duplicated HTTP logic). It labels the result
+  `dataSource: "rule-based"` / `isRealData: false` /
+  `modelSource: "symptom-keyword-rules"`, reports `confidence_score: 0` (never a
+  fabricated probability), and returns `400 SYMPTOMS_REQUIRED` without symptoms,
+  `503` when no service is configured, `502` when it is unreachable — never a
+  guessed pest.
+- Rewired `client/pages/PestControl.tsx` to that endpoint. Removed the dead
+  "affected area" / "plant health" sliders (they were only consumed by the
+  disabled endpoint) and the severity/treatment cards, which could only ever be
+  empty. The screen now shows the pest candidate, the identification method, and
+  an explicit note that this is keyword matching, not a trained model or a
+  confirmed field diagnosis. Treatment stays fail-closed with an honest
+  "unavailable" message — no product, dose or pre-harvest interval is invented.
+- Live-verified against the real service on `127.0.0.1:8007`: explicit Arabic
+  symptoms and free-text clauses both resolve to `aphids (المن)` with the
+  service's own honesty note; a down service returns `ok:false`.
+- Tests: `tests/integration/microservice-proxy.test.ts` (+3).
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` 954 passed / 3 skipped.

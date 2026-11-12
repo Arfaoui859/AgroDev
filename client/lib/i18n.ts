@@ -212,6 +212,31 @@ export const translations: Record<string, Entry> = {
     fr: "Aucune recommandation disponible.",
     en: "No recommendations available.",
   },
+  "pest.identify": {
+    ar: "تحديد الآفة من الأعراض",
+    fr: "Identifier le ravageur à partir des symptômes",
+    en: "Identify pest from symptoms",
+  },
+  "pest.identifying": {
+    ar: "جارٍ التحديد...",
+    fr: "Identification en cours…",
+    en: "Identifying...",
+  },
+  "pest.ruleBasedNote": {
+    ar: "هذا التحديد مبني على مطابقة الكلمات المفتاحية للأعراض التي وصفتها، وليس على نموذج تعلّم آلي مدرّب، ولا يشكّل تشخيصاً مؤكداً في الميدان.",
+    fr: "Cette identification repose sur la correspondance de mots-clés avec les symptômes décrits, et non sur un modèle ML entraîné ; ce n'est pas un diagnostic confirmé sur le terrain.",
+    en: "This identification matches keywords against the symptoms you described. It is not a trained ML model and not a confirmed field diagnosis.",
+  },
+  "pest.method": {
+    ar: "طريقة التحديد",
+    fr: "Méthode d'identification",
+    en: "Identification method",
+  },
+  "pest.treatmentUnavailable": {
+    ar: "لا تتوفر توصيات علاج موثوقة: تتطلّب معرفة المنتج المسجّل في تونس، والمادة الفعّالة، والجرعة، وفترة ما قبل الحصاد. لم يتم اختراع أي منتج أو جرعة.",
+    fr: "Aucune recommandation de traitement fiable n'est disponible : elle exige le produit homologué en Tunisie, la matière active, la dose et le délai avant récolte. Aucun produit ni dose n'a été inventé.",
+    en: "No reliable treatment recommendation is available: it requires the Tunisian-registered product, active ingredient, dose and pre-harvest interval. No product or dose has been invented.",
+  },
   "symptom.curledLeaves": { ar: "أوراق مجعدة", fr: "Feuilles frisées", en: "Curled leaves" },
   "symptom.honeydew": { ar: "إفرازات لزجة", fr: "Miellat collant", en: "Sticky honeydew" },
   "symptom.yellowSpots": {

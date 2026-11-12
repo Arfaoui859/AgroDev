@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -18,8 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import {
   Bug,
   Loader2,
@@ -37,10 +34,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 /**
  * Pest control advisor screen.
  *
- * Backed by POST /api/pest-control/analyze-problem, which forwards to the
- * pest_control microservice. The response carries provenance (dataSource /
- * isRealData), rendered by AIProvenanceNotice so a heuristic result is never
- * mistaken for a trained model prediction.
+ * Backed by POST /api/pest-control/identify-from-symptoms, which calls the
+ * pest_control microservice's deterministic keyword matcher (`/identify-pest`).
+ * The service's full analysis/treatment models are disabled (synthetic), so the
+ * provenance-guarded proxy refuses them; the keyword matcher, by contrast,
+ * declares `model_source: "symptom-keyword-rules"` and is honest to use.
+ *
+ * The response is labelled `rule-based` / `isRealData: false` and rendered by
+ * AIProvenanceNotice, so a keyword match is never mistaken for a trained-model
+ * diagnosis. No treatment, active ingredient, dose or pre-harvest interval is
+ * ever shown — that requires a verified Tunisian product registry.
  */
 
 const CROPS = [
@@ -71,8 +74,10 @@ interface PestAnalysis {
     pest_name_ar?: string;
     confidence_score?: number;
     category?: string;
+    identification_method?: string;
     top_predictions?: Array<{ pest: string; name_ar: string; probability: number }>;
   };
+  symptoms_used?: string[];
   severity_assessment?: {
     severity_level?: string;
     severity_score?: number;
@@ -93,12 +98,10 @@ interface PestAnalysis {
 }
 
 export default function PestControl() {
-  const { language, dir, t } = useLanguage();
+  const { dir, t } = useLanguage();
 
   const [cropType, setCropType] = useState("tomato");
   const [symptoms, setSymptoms] = useState<string[]>([]);
-  const [affectedArea, setAffectedArea] = useState(20);
-  const [plantHealth, setPlantHealth] = useState(0.7);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PestAnalysis | null>(null);
@@ -109,7 +112,7 @@ export default function PestControl() {
     );
   };
 
-  const analyze = async () => {
+  const identify = async () => {
     if (symptoms.length === 0) {
       setError(t("pest.selectSymptom"));
       return;
@@ -118,15 +121,12 @@ export default function PestControl() {
     setError(null);
     setResult(null);
     try {
-      const response = await apiFetch("/api/pest-control/analyze-problem", {
+      const response = await apiFetch("/api/pest-control/identify-from-symptoms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           crop_type: cropType,
           symptoms,
-          affected_area_percentage: affectedArea,
-          plant_health_score: plantHealth,
-          language,
         }),
       });
       const body = await response.json();
@@ -147,7 +147,6 @@ export default function PestControl() {
   };
 
   const identification = result?.pest_identification;
-  const severity = result?.severity_assessment;
   const treatments = result?.treatment_recommendations ?? [];
 
   return (
@@ -205,44 +204,16 @@ export default function PestControl() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>
-                {t("pest.affectedArea")}: {affectedArea}%
-              </Label>
-              <Input
-                type="range"
-                min={0}
-                max={100}
-                value={affectedArea}
-                onChange={(e) => setAffectedArea(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>
-                {t("pest.plantHealth")}:{" "}
-                {plantHealth.toFixed(2)}
-              </Label>
-              <Input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={plantHealth}
-                onChange={(e) => setPlantHealth(Number(e.target.value))}
-              />
-            </div>
-
-            <Button onClick={analyze} disabled={loading} className="w-full">
+            <Button onClick={identify} disabled={loading} className="w-full">
               {loading ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  {t("pest.analyzing")}
+                  {t("pest.identifying")}
                 </>
               ) : (
                 <>
                   <Bug className="me-2 h-4 w-4" />
-                  {t("pest.analyze")}
+                  {t("pest.identify")}
                 </>
               )}
             </Button>
@@ -286,25 +257,15 @@ export default function PestControl() {
                     </span>
                     <Badge variant="secondary">{identification?.category}</Badge>
                   </div>
-                  {typeof identification?.confidence_score === "number" && (
-                    <div>
-                      <div className="mb-1 flex justify-between text-sm">
-                        <span>{t("pest.confidence")}</span>
-                        <span>{(identification.confidence_score * 100).toFixed(0)}%</span>
-                      </div>
-                      <Progress value={identification.confidence_score * 100} />
+                  {identification?.identification_method && (
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>{t("pest.method")}</span>
+                      <span dir="ltr">{identification.identification_method}</span>
                     </div>
                   )}
-                  {severity?.severity_level && (
-                    <div className="flex items-center justify-between rounded border p-2">
-                      <span>{t("pest.severity")}</span>
-                      <Badge
-                        variant={severity.above_threshold ? "destructive" : "secondary"}
-                      >
-                        {severity.severity_level}
-                      </Badge>
-                    </div>
-                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {t("pest.ruleBasedNote")}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -314,14 +275,11 @@ export default function PestControl() {
                     <ClipboardList className="h-5 w-5 text-blue-600" />
                     {t("pest.treatments")}
                   </CardTitle>
-                  <CardDescription>
-                    {t("pest.plannedApplications", { count: result.treatment_schedule?.total_applications ?? 0 })}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {treatments.length === 0 ? (
                     <p className="text-muted-foreground">
-                      {t("pest.noRecommendations")}
+                      {t("pest.treatmentUnavailable")}
                     </p>
                   ) : (
                     treatments.map((treatment, index) => (

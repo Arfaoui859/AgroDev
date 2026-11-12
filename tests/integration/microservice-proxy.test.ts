@@ -183,3 +183,96 @@ describe("🛡️ Real microservice proxies (no mock payloads)", () => {
     expect(res.body.error).toBeDefined();
   });
 });
+
+describe("🐛 Pest identification is honest rule-based, not a model", () => {
+  let app: express.Application;
+  const savedEnv: Record<string, string | undefined> = {};
+  const ENV_KEYS = ["PEST_CONTROL_URL"];
+
+  beforeAll(() => {
+    for (const key of ENV_KEYS) savedEnv[key] = process.env[key];
+  });
+
+  afterAll(() => {
+    for (const key of ENV_KEYS) {
+      if (savedEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = savedEnv[key];
+    }
+  });
+
+  afterEach(() => {
+    resetServiceProbeCache();
+  });
+
+  test("returns a rule-based identification labelled not-real-data", async () => {
+    const fake = await startFakeService((path) =>
+      path.startsWith("/identify-pest")
+        ? {
+            body: {
+              success: true,
+              data: {
+                identification: {
+                  identified_pest: "aphids",
+                  pest_name_ar: "المن",
+                  category: "حشرات",
+                  identification_method: "symptom_based",
+                  confidence_score: 0,
+                },
+              },
+              model_source: "symptom-keyword-rules",
+              message: "keyword match only; not a trained model",
+            },
+          }
+        : { body: { success: true, data: {} } },
+    );
+    process.env.PEST_CONTROL_URL = fake.url;
+    app = createServer();
+
+    const res = await request(app)
+      .post("/api/pest-control/identify-from-symptoms")
+      .send({ crop_type: "tomato", symptoms: ["أوراق مجعدة"] })
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.pest_identification.identified_pest).toBe("aphids");
+    // The keyword matcher is not calibrated: confidence is reported as 0 and
+    // the result is never presented as model inference.
+    expect(res.body.data.pest_identification.confidence_score).toBe(0);
+    expect(res.body.dataSource).toBe("rule-based");
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.modelSource).toBe("symptom-keyword-rules");
+    expect(fake.calls).toContain("/identify-pest");
+
+    await fake.close();
+  });
+
+  test("refuses without symptoms and never calls the service", async () => {
+    const fake = await startFakeService(() => ({ body: { success: true, data: {} } }));
+    process.env.PEST_CONTROL_URL = fake.url;
+    app = createServer();
+
+    const res = await request(app)
+      .post("/api/pest-control/identify-from-symptoms")
+      .send({ crop_type: "tomato", symptoms: [] })
+      .expect(400);
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.code).toBe("SYMPTOMS_REQUIRED");
+    expect(fake.calls).not.toContain("/identify-pest");
+
+    await fake.close();
+  });
+
+  test("fails closed when the service is down instead of inventing a pest", async () => {
+    process.env.PEST_CONTROL_URL = "http://127.0.0.1:1";
+    app = createServer();
+
+    const res = await request(app)
+      .post("/api/pest-control/identify-from-symptoms")
+      .send({ crop_type: "tomato", symptoms: ["أوراق مجعدة"] });
+
+    expect(res.status).toBeGreaterThanOrEqual(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.data).toBeNull();
+  });
+});

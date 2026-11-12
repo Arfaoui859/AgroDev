@@ -20,6 +20,11 @@ import {
   serviceBaseUrl,
 } from "../services/providers/microserviceProxy";
 import { localServiceFallback } from "./ai-services-gateway";
+import {
+  deriveSymptomsFromQuestion,
+  identifyPestFromSymptoms,
+  sanitiseSymptoms,
+} from "../services/ai/pestControlClient";
 
 const router = Router();
 
@@ -75,6 +80,89 @@ router.post("/identify", async (req, res) => {
   } catch (error) {
     respondServiceError(res, CAPABILITY, error);
   }
+});
+
+/**
+ * Rule-based symptom identification.
+ *
+ * The pest service's `/health` declares `synthetic-demo` (its full analysis and
+ * treatment models are disabled), so the provenance-guarded proxy above
+ * correctly refuses to route through it. But `/identify-pest` itself is an
+ * honest, deterministic keyword matcher — it declares
+ * `model_source: "symptom-keyword-rules"`, `confidence_score: 0`,
+ * `field_validated: false` — and is safe to call directly, exactly as the
+ * orchestrator's `pest_control` specialist does.
+ *
+ * This endpoint is the one the Pest Control screen uses. It returns a pest
+ * candidate labelled `rule-based` / `isRealData: false` and never a product,
+ * active ingredient, dose or pre-harvest interval. When the service is down or
+ * the symptoms match no rule it fails closed rather than inventing a diagnosis.
+ */
+router.post("/identify-from-symptoms", async (req, res) => {
+  const body = req.body ?? {};
+  const explicit = sanitiseSymptoms(body.symptoms);
+  const question = typeof body.question === "string" ? body.question : "";
+  // Explicit symptoms win; otherwise select the user's own symptom-like clauses.
+  // Never invented — derived only from the text they wrote.
+  const symptoms = explicit.length ? explicit : deriveSymptomsFromQuestion(question);
+  if (symptoms.length === 0) {
+    res.status(400).json({
+      success: false,
+      data: null,
+      code: "SYMPTOMS_REQUIRED",
+      error: "symptoms required",
+      message: "Provide at least one described symptom; the service matches keywords and never guesses.",
+    });
+    return;
+  }
+
+  const cropType = typeof body.crop_type === "string" && body.crop_type.trim()
+    ? body.crop_type.trim().slice(0, 80)
+    : "unknown";
+
+  const outcome = await identifyPestFromSymptoms(symptoms, cropType, { timeoutMs: 12_000 });
+  if (outcome.ok === false) {
+    const status = outcome.reason === "not_configured" ? 503 : 502;
+    res.status(status).json({
+      success: false,
+      data: null,
+      code:
+        outcome.reason === "not_configured"
+          ? "PEST_SERVICE_NOT_CONFIGURED"
+          : outcome.reason === "invalid_response"
+            ? "PEST_SERVICE_INVALID_RESPONSE"
+            : "PEST_SERVICE_UNAVAILABLE",
+      error: "pest-control unavailable",
+      message:
+        outcome.reason === "not_configured"
+          ? "No pest-control service is configured; no identification is guessed."
+          : "The pest-control service could not be reached; no identification is guessed.",
+      status,
+    });
+    return;
+  }
+
+  const result = outcome.outcome;
+  res.json({
+    success: true,
+    data: {
+      pest_identification: {
+        identified_pest: result.pest ?? null,
+        pest_name_ar: result.pestNameAr ?? null,
+        category: result.category ?? null,
+        identification_method: result.method ?? "symptom_based",
+        // The service's keyword matcher is not calibrated; it reports 0 and we
+        // never present a fabricated probability as a confidence score.
+        confidence_score: 0,
+      },
+      symptoms_used: symptoms,
+    },
+    dataSource: "rule-based",
+    isRealData: false,
+    modelSource: "symptom-keyword-rules",
+    modelKind: "rule-based",
+    message: result.serviceMessage ?? "تمت مطابقة الأعراض مع قواعد الكلمات المفتاحية.",
+  });
 });
 
 // Pest / disease reference database
