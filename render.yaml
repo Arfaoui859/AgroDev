@@ -81,8 +81,14 @@ services:
           type: pserv
           name: agrogrowth-intelligent-agent
           property: hostport
-      # TODO: confirm the real variable name the server reads for the weather/yield service
-      # (the old file mapped it to SMART_MARKETPLACE_URL, which looks wrong).
+      # The server reads either WEATHER_YIELD_INTELLIGENCE_URL or its legacy
+      # alias SMART_MARKETPLACE_URL (see server/lib/env.ts firstEnv); set both so
+      # neither name is ever the reason a running service looks unconfigured.
+      - key: WEATHER_YIELD_INTELLIGENCE_URL
+        fromService:
+          type: pserv
+          name: agrogrowth-weather-yield
+          property: hostport
       - key: SMART_MARKETPLACE_URL
         fromService:
           type: pserv
