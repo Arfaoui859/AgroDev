@@ -16,7 +16,7 @@
 import { safeErrorMessage } from '../lib/errors';
 import express, { Request, Response } from "express";
 import { analyzeSoilForUI, recommendCropsForUI } from "../services/ai/cropAdvisor";
-import { isLLMConfigured, getLLMInfo } from "../services/providers/llmProvider";
+import { isLLMConfigured, getPublicLLMInfo } from "../services/providers/llmProvider";
 import { isVisionConfigured } from "../services/providers/visionProvider";
 import { probeService } from "../services/providers/serviceProbe";
 import { capabilityStatus } from "../services/providers/aiTelemetry";
@@ -377,7 +377,7 @@ async function capabilityPayload(
   const { engine, reachable, configured, modelSource } = await resolveEngine(cap);
   const available = engine !== "unavailable";
   const isReal = engine === "llm" || engine === "vision-model";
-  const llm = getLLMInfo();
+  const llm = getPublicLLMInfo();
   // A capability is "configured" when a real engine is set up for it, or a
   // microservice URL is present. Rule-based engines are always available but
   // never count as an external provider.
@@ -448,7 +448,7 @@ router.get("/capabilities", async (_req, res) => {
         (c) => c.engine === "llm" || c.engine === "vision-model",
       ).length,
     },
-    llm: getLLMInfo(),
+    llm: getPublicLLMInfo(),
   });
 });
 

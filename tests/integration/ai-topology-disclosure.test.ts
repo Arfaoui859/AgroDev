@@ -24,6 +24,8 @@ describe("🔒 AI service topology is never disclosed on public probes", () => {
     delete process.env.RENDER;
     delete process.env.RENDER_SERVICE_ID;
     process.env.SOIL_ANALYSIS_URL = PRIVATE_URL;
+    process.env.AI_BASE_URL = "http://172.28.0.1:11434/v1";
+    process.env.AI_API_KEY = "test-key";
     resetServiceProbeCache();
     app = createServer();
   });
@@ -54,5 +56,19 @@ describe("🔒 AI service topology is never disclosed on public probes", () => {
     const res = await request(app).get("/api/ai/capabilities/soil-analysis").expect(200);
     expect(res.body.microserviceUrl).toBeNull();
     expect(JSON.stringify(res.body)).not.toContain("ai-soil-analysis.internal");
+  });
+
+  test("public AI payloads never disclose the LLM provider baseUrl", async () => {
+    const health = await request(app).get("/api/ai/health").expect(200);
+    expect(JSON.stringify(health.body)).not.toContain("172.28.0.1");
+    expect(health.body.llm).toBeDefined();
+    expect(health.body.llm).not.toHaveProperty("baseUrl");
+
+    const caps = await request(app).get("/api/ai/capabilities").expect(200);
+    expect(JSON.stringify(caps.body)).not.toContain("172.28.0.1");
+    expect(caps.body.llm).not.toHaveProperty("baseUrl");
+
+    const cap = await request(app).get("/api/ai/capabilities/soil-analysis").expect(200);
+    expect(cap.body.llm).not.toHaveProperty("baseUrl");
   });
 });

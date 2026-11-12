@@ -15,7 +15,7 @@ import {
   type VisionDiagnosis,
 } from "../services/providers/visionProvider";
 import { isLLMConfigured } from "../services/providers/llmProvider";
-import { getLLMInfo } from "../services/providers/llmProvider";
+import { getPublicLLMInfo } from "../services/providers/llmProvider";
 import { probeService } from "../services/providers/serviceProbe";
 import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
 import { resolveUserIdFromJwt } from "../middleware/auth";
@@ -1467,7 +1467,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
         checkDuration: Date.now() - startTime,
       },
       services: serviceResults,
-      llm: getLLMInfo(),
+      llm: getPublicLLMInfo(),
       fallbackEngine: {
         available: true,
         type: "rule-based",

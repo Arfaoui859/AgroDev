@@ -821,10 +821,16 @@ occurrences of `127.0.0.1`, while `microserviceReachable=true` /
 `microserviceConfigured=true` remain accurate.
 
 **Regression test:** `tests/integration/ai-topology-disclosure.test.ts`
-(3 checks) — fails on the pre-fix code, passes now.
+(4 checks) — fails on the pre-fix code, passes now.
+
+**Second leak (same class):** the public AI payloads spread `getLLMInfo()`,
+which includes `baseUrl` — the LLM provider endpoint (e.g. a private Ollama
+host). Added `getPublicLLMInfo()` (omits `baseUrl`) and switched the three
+public response builders (`/api/ai/health`, `/api/ai/capabilities`,
+`/api/ai/capabilities/:id`) to it. `/api/system/ai` already omitted `baseUrl`.
 
 **Gates after fix:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build`
-OK · `npx jest` **863 passed / 3 skipped** (96/98 suites).
+OK · `npx jest` **864 passed / 3 skipped** (96/98 suites).
 
 ---
 

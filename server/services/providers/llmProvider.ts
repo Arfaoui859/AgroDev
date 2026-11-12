@@ -236,6 +236,17 @@ export function getLLMInfo(): {
   };
 }
 
+/**
+ * Public-safe view of the LLM configuration for HTTP responses. Identical to
+ * {@link getLLMInfo} except it omits `baseUrl`: the provider endpoint can be an
+ * internal address (e.g. a private Ollama host) and must not be disclosed to
+ * untrusted callers.
+ */
+export function getPublicLLMInfo(): Omit<ReturnType<typeof getLLMInfo>, "baseUrl"> {
+  const { baseUrl: _baseUrl, ...rest } = getLLMInfo();
+  return rest;
+}
+
 function resolveTimeout(options: ChatOptions): number {
   return options.timeoutMs ?? (Number(process.env.AI_TIMEOUT_MS) || 30_000);
 }
