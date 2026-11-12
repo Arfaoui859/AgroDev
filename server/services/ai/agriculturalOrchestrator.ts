@@ -35,6 +35,7 @@ export type SpecialistId =
   | "irrigation"
   | "plant_health"
   | "market"
+  | "agri_news"
   | "pest_control"
   | "finance";
 
@@ -160,6 +161,7 @@ const TITLES: Record<SpecialistId, Record<Language, string>> = {
   irrigation: { ar: "تحسين الري", fr: "Optimisation de l'irrigation", en: "Irrigation optimization" },
   plant_health: { ar: "صحة النبات", fr: "Santé des plantes", en: "Plant health" },
   market: { ar: "معلومات السوق", fr: "Information marché", en: "Market intelligence" },
+  agri_news: { ar: "الأخبار الزراعية", fr: "Actualités agricoles", en: "Agricultural news" },
   pest_control: { ar: "مكافحة الآفات", fr: "Lutte contre les ravageurs", en: "Pest control" },
   finance: { ar: "المالية الزراعية", fr: "Finance agricole", en: "Agricultural finance" },
 };
@@ -173,6 +175,16 @@ function marketRecords(ctx: OrchestratorContext): string[] {
   return (ctx.platformRecords ?? []).filter((r) =>
     /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(r),
   );
+}
+
+/**
+ * Real, fetched agricultural-news items the gateway injected. Each line is
+ * tagged `AGRI NEWS` and carries publisher, date and the original link — never
+ * a synthesised headline. The gateway only adds these after a real fetch from
+ * the publisher RSS feeds, so their presence is itself evidence of a live pull.
+ */
+function newsRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) => /^AGRI NEWS/.test(r));
 }
 
 function cultivationRecords(ctx: OrchestratorContext): string[] {
@@ -470,6 +482,36 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         isRealData: false,
         confidence: "medium",
         note: "Historical recorded quotes, not guaranteed live prices.",
+      };
+    },
+  },
+  {
+    id: "agri_news",
+    title: TITLES.agri_news,
+    dependsOn: [],
+    keywords:
+      /(أخبار|خبر|جديد|مستجدات|صحافة|news|actualit|presse|jdid|akhbar|khabar|newspaper)/i,
+    run: (ctx) => {
+      const records = newsRecords(ctx);
+      if (records.length === 0) {
+        return {
+          status: "unavailable",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note:
+            "No fetched news item in context. The gateway only injects these after a real publisher-RSS fetch; headlines are never invented.",
+        };
+      }
+      return {
+        status: "ok",
+        findings: records.slice(0, 6),
+        dataSource: "rss-feeds",
+        isRealData: true,
+        confidence: "high",
+        note:
+          "Real fetched headlines with publisher, date and original link. Report them as published reporting, not as AgroGrowth's own findings or recommendations.",
       };
     },
   },

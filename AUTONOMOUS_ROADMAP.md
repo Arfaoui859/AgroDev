@@ -38,7 +38,7 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 
 | # | Item | Status |
 |---|---|---|
-| 12 | Tunisian agricultural news (fetch, parse, search, filter, cache) | **VERIFIED (live)** — real RSS sources, per-source status, search/filter/pagination/cache; UI at `/news` |
+| 12 | Tunisian agricultural news (fetch, parse, search, filter, cache) | **VERIFIED (live)** — real RSS sources, per-source status, search/filter/pagination/cache; UI at `/news`. The chatbot now also answers news questions through the `agri_news` orchestrator specialist (real fetched headlines with publisher + original link; `unavailable`/no findings when no feed answers). |
 | 13 | Farm management workflows (farms, fields, crops, cycles, activities) | **VERIFIED (server)** — the comprehensive dashboard (`/api/farm-management/*`) was rewritten from random demo data to caller-scoped Supabase reads (farms, sections, cultivations, tasks, equipment, revenues, notifications, market quotes, stored weather). Domains with no persisted source report `null`/empty or fail closed (labour = 503), never a fabricated figure. 5 unit + 3 integration tests added. |
 | 13a | Livestock module (herds, animals, weights, health, reproduction, feed) | **VERIFIED (schema+RLS+API)** — `database/livestock-persistence.sql` (6 owner-scoped tables, RLS, indexes) + `server/routes/livestock.ts` caller-scoped CRUD; the synthetic demo router was removed. RLS SCENARIO 10 (9 checks) passes against real PG17; 14 + 7 integration tests; frontend wired via `apiFetch` with a working add-animal flow. |
 | 14 | Admin monitoring / analytics from real data | **VERIFIED (server)** — System tab: real Node process metrics; Analytics tab: live DB counts + per-role breakdown; Security tab: append-only audit-log events. Subscriptions remain honestly unavailable (no billing source). |
@@ -55,9 +55,9 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 
 ## Next actionable steps (no blocker)
 
-1. Extend the orchestrator's `market`/`pest_control` specialists to consume the
-   news service and any licensed registry once available (they currently fail
-   closed with `insufficient_input`).
+1. Extend the orchestrator's `market` specialist to consume a licensed market
+   registry once available (it currently fails closed with `insufficient_input`).
+   The `agri_news` specialist is now wired to the real news service. *(Done.)*
 2. Add an Admin "news source status" panel backed by `GET /api/news/sources`.
    *(Done — `GET /api/admin/news-sources`, backed by the real news service.)*
 3. Continue hardening farm-management workflows against live Supabase.

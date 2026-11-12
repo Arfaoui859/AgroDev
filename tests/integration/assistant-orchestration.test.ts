@@ -122,4 +122,44 @@ describe("POST /api/ai/assistant/chat — multi-agent orchestration", () => {
       await new Promise<void>((done) => server.close(() => done()));
     }
   });
+
+  test("an agricultural-news question never yields an invented headline", async () => {
+    // Force every publisher feed to fail fast so the honest-failure path is
+    // deterministic and no real network call is required.
+    const savedTimeout = process.env.NEWS_FETCH_TIMEOUT_MS;
+    const savedRetries = process.env.NEWS_FETCH_RETRIES;
+    process.env.NEWS_FETCH_TIMEOUT_MS = "1";
+    process.env.NEWS_FETCH_RETRIES = "0";
+    const { clearNewsCache } = await import("../../server/services/news/tunisianAgriNews");
+    clearNewsCache();
+    try {
+      const response = await request(app)
+        .post("/api/ai/assistant/chat")
+        .send({ message: "شنوما آخر الأخبار الزراعية في تونس؟", language: "ar" })
+        .expect(200);
+
+      const news = (response.body.orchestrationTrace?.steps ?? []).find(
+        (s: any) => s.id === "agri_news",
+      );
+      expect(news).toBeTruthy();
+      // With no feed reachable the step is honestly unavailable and carries no
+      // findings — a headline is never fabricated to fill the gap.
+      if (news.status !== "ok") {
+        expect(news.findings).toEqual([]);
+        expect(news.isRealData).toBe(false);
+      } else {
+        // If a feed did answer, every finding must be a real, linked headline.
+        for (const finding of news.findings) {
+          expect(finding).toMatch(/publisher=/);
+          expect(finding).toMatch(/link=https?:\/\//);
+        }
+      }
+    } finally {
+      if (savedTimeout === undefined) delete process.env.NEWS_FETCH_TIMEOUT_MS;
+      else process.env.NEWS_FETCH_TIMEOUT_MS = savedTimeout;
+      if (savedRetries === undefined) delete process.env.NEWS_FETCH_RETRIES;
+      else process.env.NEWS_FETCH_RETRIES = savedRetries;
+      clearNewsCache();
+    }
+  });
 });

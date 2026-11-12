@@ -1422,3 +1422,32 @@ specialist already uses. It is honest to call directly.
 - Tests: `tests/integration/microservice-proxy.test.ts` (+3).
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` 954 passed / 3 skipped.
+
+### Orchestrator: `agri_news` specialist wired to the real news service — VERIFIED
+
+The mission brief asks the chatbot to answer questions about Tunisian
+agricultural news by *coordinating* real sources rather than only listing them
+on a separate page. The orchestrator was deliberately network-free (it composes
+only verified context), and the gateway does the network I/O — so the news
+fetch belongs in the gateway, exactly like the Open-Meteo weather pull.
+
+- New allow-listed specialist `agri_news` (keywords: أخبار/خبر/جديد/مستجدات/
+  news/actualité/presse/jdid/akhbar/…). It reads `AGRI NEWS` records the gateway
+  injected and returns `dataSource: "rss-feeds"` / `isRealData: true` /
+  `confidence: "high"` — the only specialist besides `weather` that reports real
+  provider data. With no record it is `unavailable` with **no findings** (a
+  headline is never invented).
+- The gateway now fetches `getTunisianAgriNews()` only when the question asks
+  for news, bounded by a hard 4.5s `Promise.race` so a slow feed can never stall
+  a chat. Each injected record carries publisher, date, a length-capped title and
+  the **original link**, and is labelled "published reporting, not AgroGrowth's
+  own advice". A failed/timed-out fetch injects nothing.
+- Live-verified: the real news service returned 4 articles from the publisher
+  feeds (`isRealData: true`, `dataSource: "rss-feeds"`), and the orchestrator's
+  `agri_news` step reported `ok` / `isRealData: true` with those headlines.
+- Tests: `tests/unit/agricultural-orchestrator.test.ts` (+3) and
+  `tests/integration/assistant-orchestration.test.ts` (+1, pins the
+  no-invented-headline invariant through the real chat endpoint).
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` 958 passed / 3 skipped.

@@ -337,6 +337,41 @@ describe("orchestrateAgriculturalQuestion", () => {
     expect(market.findings).toEqual([]);
   });
 
+  test("an agri_news question selects the news specialist", () => {
+    const plan = planSpecialists("chnowa jdid fi akhbar flaha?");
+    expect(plan).toContain("agri_news");
+  });
+
+  test("agri_news is unavailable without fetched records, never invents a headline", async () => {
+    const result = await orchestrateAgriculturalQuestion({
+      question: "what is the latest agricultural news?",
+      language: "en",
+    });
+    const news = result.trace.steps.find((s) => s.id === "agri_news")!;
+    expect(news.status).toBe("unavailable");
+    expect(news.findings).toEqual([]);
+    expect(news.note).toMatch(/never invented/i);
+  });
+
+  test("agri_news reports real fetched headlines with publisher and link", async () => {
+    const result = await orchestrateAgriculturalQuestion({
+      question: "أخبار زراعية؟",
+      language: "ar",
+      context: {
+        platformRecords: [
+          "AGRI NEWS [publisher=ONAGRI; date=2026-11-10T00:00:00.000Z; title=ارتفاع أسعار زيت الزيتون; link=https://example.tn/a]. Real fetched headline from the publisher feed; report as published reporting, not as AgroGrowth's own advice.",
+        ],
+      },
+    });
+    const news = result.trace.steps.find((s) => s.id === "agri_news")!;
+    expect(news.status).toBe("ok");
+    // Real, fetched publisher data — unlike the rule-based specialists.
+    expect(news.isRealData).toBe(true);
+    expect(news.dataSource).toBe("rss-feeds");
+    expect(news.findings.join(" ")).toMatch(/ONAGRI/);
+    expect(news.findings.join(" ")).toMatch(/https:\/\/example\.tn\/a/);
+  });
+
   test("never claims model inference", async () => {
     const result = await orchestrateAgriculturalQuestion({
       question: "test",

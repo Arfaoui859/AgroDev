@@ -26,6 +26,7 @@ import { resolveUserIdFromJwt } from "../middleware/auth";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
 import { persistTrustedAssistantTurn } from "./assistant-conversations";
 import { getWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
+import { getTunisianAgriNews } from "../services/news/tunisianAgriNews";
 
 /**
  * Model-source classification is centralised in
@@ -1259,6 +1260,36 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     }
 
     const resolvedLanguage = language || detectLanguage(userMessage);
+
+    // Agricultural news: only when the question actually asks for news, fetch
+    // real publisher headlines and inject them as labelled evidence for the
+    // `agri_news` specialist. Bounded by a hard timeout so a slow feed can never
+    // stall the chat; a timed-out or failed fetch simply injects nothing and the
+    // specialist reports `unavailable` rather than inventing a headline.
+    const wantsNews =
+      /(أخبار|خبر|جديد|مستجدات|صحافة|news|actualit|presse|jdid|akhbar|khabar|newspaper)/i.test(userMessage);
+    if (wantsNews) {
+      try {
+        const news = await Promise.race([
+          getTunisianAgriNews({ pageSize: 6, agricultureOnly: true }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 4500)),
+        ]);
+        const live = (news?.articles ?? []).slice(0, 6).map((a) =>
+          "AGRI NEWS [publisher=" + a.sourceName + "; date=" + (a.publishedAt || "undated") + "; title=" + a.title.slice(0, 200) + "; link=" + a.link + "]. Real fetched headline from the publisher feed; report as published reporting, not as AgroGrowth's own advice.",
+        );
+        if (live.length) {
+          farmContext = {
+            ...(farmContext ?? {}),
+            platformRecords: [...(farmContext?.platformRecords ?? []), ...live],
+          };
+        }
+      } catch (newsError) {
+        console.warn(
+          `Agricultural news fetch skipped [${correlationId}]:`,
+          newsError instanceof Error ? newsError.name : "unknown",
+        );
+      }
+    }
 
     // Central multi-agent orchestration: build and run an explicit, bounded
     // plan over the allow-listed specialist registry. This is deterministic and
