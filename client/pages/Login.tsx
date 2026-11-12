@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import Logo from "@/components/ui/Logo";
+import { errorMessageIncludes } from "@/lib/errorMessage";
 
 export default function Login() {
   const { signIn, isLoading } = useAuth();
@@ -42,13 +43,13 @@ export default function Login() {
 
       let errorMessage = "فشل في تسجيل الدخول. يرجى المحاولة مرة أخرى";
 
-      if (error.message === "Invalid login credentials") {
+      if (errorMessageIncludes(error, "Invalid login credentials")) {
         errorMessage =
           "بيانات الدخول غير صحيحة. تأكد من البريد الإلكتروني وكلمة المرور.";
-      } else if (error.message.includes("Email not confirmed")) {
+      } else if (errorMessageIncludes(error, "Email not confirmed")) {
         errorMessage =
           "يرجى تأكيد البريد الإلكتروني أولاً من خلال الرابط المرسل إليك.";
-      } else if (error.message.includes("Invalid email")) {
+      } else if (errorMessageIncludes(error, "Invalid email")) {
         errorMessage = "البريد الإلكتروني غير صحيح.";
       }
 

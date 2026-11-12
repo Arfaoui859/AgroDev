@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { errorMessageIncludes } from "@/lib/errorMessage";
 import {
   Leaf,
   Mail,
@@ -155,7 +156,7 @@ export default function Signup() {
     } catch (error: any) {
       console.error("Signup error:", error);
       setError(
-        error.message.includes("already registered")
+        errorMessageIncludes(error, "already registered")
           ? "هذا البريد الإلكتروني مُسجل مسبقاً"
           : "فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى",
       );

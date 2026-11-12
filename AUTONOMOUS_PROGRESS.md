@@ -963,3 +963,24 @@ but the client compared raw strings:
 **Tests.** `tests/unit/route-access.test.ts` +4 (administrator → allow;
 case/whitespace; alias does not widen a farmer-only allow-list; unknown role
 still denied). Suite: **878 passed / 3 skipped / 881 total**; `tsc` 0; lint 0.
+
+---
+
+## Session 16c — generic unexpected-error page root cause (P0)
+
+**Defect.** `Login.tsx` and `Signup.tsx` did `catch (error: any)` then
+`error.message.includes(...)`. When the rejection is not an `Error` with a
+string `message` (a bare string, a PostgrestError-shaped object, `undefined`),
+the `.includes` call throws a `TypeError` *inside the catch block*; that
+secondary throw is unhandled, unmounts the page, and the ErrorBoundary renders
+the generic "حدث خطأ غير متوقع" page. The same unguarded pattern existed in
+`client/lib/supabaseHelpers.ts` (schema-cache retry) and `client/lib/supabase.ts`
+(API-key probe).
+
+**Fix.** Added `client/lib/errorMessage.ts` (`errorMessageText` /
+`errorMessageIncludes`, both throw-proof), used in `Login.tsx` and `Signup.tsx`;
+guarded the two library sites with `typeof message === "string"`.
+
+**Tests.** `tests/unit/error-message.test.ts` (12 cases incl. `undefined`, `{}`,
+`{message:42}`, bare string). Suite: **890 passed / 3 skipped / 893 total**;
+`tsc` 0; lint 0; `npm run build` OK.

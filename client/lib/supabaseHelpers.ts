@@ -14,7 +14,7 @@ export async function safeInsert(
 
         // If error indicates missing column in schema cache, try to remove that column and retry
     // Example message: "Could not find the 'location' column of 'users' in the schema cache"
-    if (error.code === 'PGRST204' && /Could not find the '\w+' column of/.test(error.message)) {
+    if (error.code === 'PGRST204' && typeof error.message === 'string' && /Could not find the '\w+' column of/.test(error.message)) {
       const m = error.message.match(/Could not find the '(.+?)' column of/);
       if (m && m[1]) {
         const col = m[1];

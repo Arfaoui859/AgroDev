@@ -21,7 +21,7 @@ if (typeof window !== "undefined") {
       if (error) {
         console.error("Supabase connection error:", error.message);
 
-        if (error.message.includes("Invalid API key")) {
+        if (typeof error.message === "string" && error.message.includes("Invalid API key")) {
           console.error(`\n🔑 SUPABASE API KEY ERROR
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 The Supabase API key used by the client appears invalid. To fix:
