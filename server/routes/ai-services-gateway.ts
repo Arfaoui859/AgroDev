@@ -12,6 +12,7 @@ import {
 } from "../services/ai/farmAdvisor";
 import { orchestrateAgriculturalQuestion } from "../services/ai/agriculturalOrchestrator";
 import { sanitiseLabAnalytes } from "../services/ai/labSoilClient";
+import { sanitiseSymptoms, deriveSymptomsFromQuestion } from "../services/ai/pestControlClient";
 import {
   diagnosePlantImage,
   type VisionDiagnosis,
@@ -952,6 +953,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
   // Caller-supplied laboratory analytes, if any. Sanitised below against the
   // allow-list the trained lab models understand; never trusted as free text.
   const labAnalytesInput = req.body?.lab_values ?? req.body?.labValues;
+  // Caller-described symptoms, if any. Sanitised to bounded strings; the pest
+  // specialist never invents symptoms and stays insufficient_input without them.
+  const symptomsInput = sanitiseSymptoms(req.body?.symptoms);
   const correlationId = crypto.randomUUID();
   res.set("X-Correlation-Id", correlationId);
 
@@ -1264,12 +1268,18 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     let orchestration: Awaited<ReturnType<typeof orchestrateAgriculturalQuestion>> | null = null;
     try {
       const { values: labAnalytes } = sanitiseLabAnalytes(labAnalytesInput);
+      // Explicit symptoms win; otherwise select the user's own symptom-like
+      // clauses from the question. Never invented — derived only from their text.
+      const symptoms = symptomsInput.length
+        ? symptomsInput
+        : deriveSymptomsFromQuestion(userMessage);
       orchestration = await orchestrateAgriculturalQuestion({
         question: userMessage,
         language: resolvedLanguage,
         context: {
           ...(farmContext ?? {}),
           ...(Object.keys(labAnalytes).length ? { labAnalytes } : {}),
+          ...(symptoms.length ? { symptoms } : {}),
         },
       });
     } catch (orchestrationError) {
@@ -1337,6 +1347,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       farmContextStatus,
       usedSpecialists: orchestration?.usedSpecialists ?? [],
       trainedModelSpecialists: orchestration?.trainedModelSpecialists ?? [],
+      plannedBy: orchestration?.trace.plannedBy ?? null,
       orchestrationTrace: orchestration?.trace ?? null,
       note: [result.note, contextNote].filter(Boolean).join(" "),
       correlationId,
@@ -1561,6 +1572,18 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           };
         }
         try {
+          // Probe the lightweight readiness endpoint first: it never loads a
+          // model artifact, so a load balancer or a repeated monitoring poll
+          // cannot force model loading. Provenance still comes from the deep
+          // /health check below.
+          let ready: boolean | null = null;
+          try {
+            const readyResponse = await axios.get(`${service.url}/ready`, { timeout: 2000 });
+            ready = readyResponse.status === 200 && readyResponse.data?.ready !== false;
+          } catch {
+            // /ready may be absent on an older deployment; fall through to /health.
+            ready = null;
+          }
           const response = await axios.get(`${service.url}/health`, { timeout: 3000 });
           // A reachable service is not evidence of a trained model: the bundled
           // services self-report "synthetic-demo"/"heuristic-demo" in their own
@@ -1575,6 +1598,7 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           return {
             ...service,
             status: "available",
+            ready,
             modelSource,
             modelKind: kind === "unknown" ? "unknown" : kind === "trained" ? "model" : kind,
             // Deterministic rules and synthetic demos are not trained ML models.

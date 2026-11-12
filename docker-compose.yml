@@ -78,6 +78,12 @@ services:
       - ./models/soil_analysis:/app/models
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8001/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   crop-recommendation:
     build:
@@ -96,6 +102,12 @@ services:
       - ./models/crop_recommendation:/app/models
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8002/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   image-diagnosis:
     build:
@@ -114,6 +126,12 @@ services:
       - ./models/image_diagnosis:/app/models
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8003/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   market-prediction:
     build:
@@ -132,6 +150,12 @@ services:
       - ./models/market_prediction:/app/models
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8004/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   irrigation-optimization:
     build:
@@ -147,6 +171,12 @@ services:
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8008/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   intelligent-agent:
     build:
@@ -162,6 +192,12 @@ services:
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8005/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   pest-control:
     build:
@@ -177,6 +213,12 @@ services:
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8007/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   weather-yield-intelligence:
     build:
@@ -192,6 +234,12 @@ services:
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
     networks:
       - agrogrowth-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8006/ready', timeout=3).status==200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   # =====================================
   # Database Services

@@ -14,6 +14,7 @@ import uvicorn
 from irrigation_optimization.smart_irrigation_optimizer import create_smart_irrigation_optimizer
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
+from ai_common.base_service import register_service_probes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +25,8 @@ app = FastAPI(
     description="نظام ذكي لتحسين الري وإدارة المياه",
     version="1.0.0"
 )
+
+register_service_probes(app, "Smart Irrigation Optimizer AI")
 
 # Initialize the irrigation optimizer
 irrigation_optimizer = create_smart_irrigation_optimizer()

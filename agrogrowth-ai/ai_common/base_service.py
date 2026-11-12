@@ -97,6 +97,8 @@ class BaseAIService:
                 "docs": "/docs",
                 "health": "/health"
             }
+
+        register_readiness_route(self.app, self.service_name)
     
     def add_prediction_endpoint(self, path: str, handler: callable, 
                               request_model: BaseModel = PredictionRequest,
@@ -121,6 +123,59 @@ class BaseAIService:
         uvicorn.run(self.app, host=host, port=port, **kwargs)
 
 import asyncio
+
+def register_service_probes(app: FastAPI, service_name: str) -> None:
+    """Register lightweight operational probes on a FastAPI app.
+
+    `/health` performs a deep check (it reports model provenance and, for some
+    services, model load state). These probes answer narrower operational
+    questions without touching a model artifact:
+
+    * `GET /ready`   -- is this process up and able to accept traffic?
+    * `GET /metrics` -- real process-level counters (uptime, request count,
+      resident memory). These are measured, not synthesised.
+    """
+    import os
+    from datetime import datetime
+
+    started_at = datetime.now()
+    counters = {"requests": 0}
+
+    @app.middleware("http")
+    async def _count_requests(request, call_next):
+        counters["requests"] += 1
+        return await call_next(request)
+
+    @app.get("/ready")
+    async def readiness_check():
+        return {
+            "status": "ready",
+            "ready": True,
+            "service": service_name,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    @app.get("/metrics")
+    async def metrics():
+        uptime_seconds = (datetime.now() - started_at).total_seconds()
+        resident_bytes = None
+        try:
+            import resource
+
+            resident_bytes = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+        except Exception:  # pragma: no cover - platform dependent
+            resident_bytes = None
+        return {
+            "service": service_name,
+            "pid": os.getpid(),
+            "uptime_seconds": round(uptime_seconds, 3),
+            "requests_total": counters["requests"],
+            "resident_memory_bytes": resident_bytes,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+# Backwards-compatible alias: the readiness probe was the first one added.
+register_readiness_route = register_service_probes
 
 # Utility decorators
 def log_prediction(func):

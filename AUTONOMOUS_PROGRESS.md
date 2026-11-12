@@ -1331,3 +1331,61 @@ regression models honestly:
   inference is not presented as measured data).
 - Tests: `tests/integration/capability-reachability.test.ts` covers both the
   available and not-loaded cases (5 tests).
+
+## Session 22 — Pest-control specialist wired to the real service + operational probes
+
+### Pest-control specialist now consumes the real microservice — VERIFIED
+
+The `pest_control` specialist in `agriculturalOrchestrator.ts` previously
+returned an unconditional `insufficient_input` even when the user described
+symptoms. It now calls the real `pest_control` service's keyword matcher
+(`POST /identify-pest`) through a dedicated, honesty-preserving client.
+
+- New `server/services/ai/pestControlClient.ts`:
+  - `sanitiseSymptoms()` keeps only non-empty, trimmed, length-bounded strings
+    (max 20 symptoms, 200 chars each) — a caller cannot inject a huge payload
+    or non-string values.
+  - `deriveSymptomsFromQuestion()` selects the user's own symptom-like clauses
+    from free text (leaf/root/fruit/stem or a visible sign: yellowing, wilting,
+    spots, holes, rot, honeydew, insects...). It never adds a symptom the user
+    did not write, and a unit test asserts every derived clause is a substring
+    of the question.
+  - `identifyPestFromSymptoms()` returns a discriminated result rather than
+    throwing, so an unavailable service is reported honestly, never guessed.
+- The specialist is always labelled `dataSource: "rule-based"` /
+  `isRealData: false` with `confidence: "low"`, because the service is an
+  explicit keyword matcher (`model_source: "symptom-keyword-rules"`,
+  `field_validated: false`) — never a trained classifier, and its confidence is
+  never presented as calibrated. No product, active ingredient, dose or
+  pre-harvest interval is ever produced; that path stays fail-closed until a
+  verified Tunisian product registry is connected.
+- `OrchestratorContext.symptoms` was added; the chat handler sanitises an
+  explicit `symptoms` array and otherwise derives clauses from the question.
+- Live-verified against the real `pest_control` service on `127.0.0.1:8007`:
+  an Arabic symptom sentence ("أوراق الطماطم صفراء ولزجة وفيها حشرات صغيرة")
+  identifies `aphids (المن)` with the service's own honesty note.
+- Tests: `tests/unit/agricultural-orchestrator.test.ts` (+3),
+  `tests/unit/pest-control-client.test.ts` (new, 6),
+  `tests/integration/assistant-orchestration.test.ts` updated to pin the real
+  invariant (rule-based provenance, never a product/dose).
+
+### Lightweight operational probes on all eight services — VERIFIED
+
+`ai_common/base_service.py` now exposes `register_service_probes(app, name)`
+(`/ready` and `/metrics`), registered in all eight `main.py` files.
+
+- `GET /ready` is a cheap liveness/readiness signal that never loads a model
+  artifact (it must not report `model_source`; `/health` keeps the deep check).
+- `GET /metrics` reports real process counters: `pid`, `uptime_seconds`,
+  `requests_total`, `resident_memory_bytes`, `timestamp` — measured, not
+  synthesised.
+- `GET /api/ai/health` now probes `/ready` (2s) before the deep `/health` (3s)
+  and surfaces a `ready` boolean per service, so a repeated monitoring poll can
+  never force model loading.
+- `docker-compose.yml` gained a `/ready` healthcheck for each of the eight AI
+  services.
+- Live-verified: all eight services on ports 8001–8008 answer `/ready` 200.
+- Tests: `tests/test_readiness_endpoints.py` (16 checks, 8 services × 2 probes).
+
+**Gates:** `npx tsc --noEmit` 0 · `npx jest` 951 passed / 3 skipped ·
+Python `agrogrowth-ai` 266 passed / 1 warning.

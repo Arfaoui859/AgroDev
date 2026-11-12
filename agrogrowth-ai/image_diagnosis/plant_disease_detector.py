@@ -259,6 +259,24 @@ class PlantDiseaseDetector:
             
             # Environmental analysis
             environmental_analysis = self._analyze_environmental_factors(image_features)
+            # Honesty: the classification above may come from a trained model,
+            # but severity, health score, affected area, treatment and risk are
+            # derived from image-colour heuristics — NOT model output and NOT
+            # field-validated. Tag each derived block so a caller can never
+            # present these estimates as measured or model-inferred values.
+            derived_source = "image-feature-heuristics"
+            for block in (
+                severity_assessment,
+                health_score,
+                affected_areas,
+                treatment_plan,
+                risk_assessment,
+                environmental_analysis,
+            ):
+                if isinstance(block, dict):
+                    block.setdefault("source", derived_source)
+                    block["field_validated"] = False
+                    block["derived_from"] = "image-colour-heuristics"
             
             return {
                 'disease_detection': disease_predictions,
@@ -270,7 +288,11 @@ class PlantDiseaseDetector:
                 'risk_assessment': risk_assessment,
                 'environmental_analysis': environmental_analysis,
                 'monitoring_recommendations': self._generate_monitoring_recommendations(disease_predictions),
-                'analysis_timestamp': datetime.now().isoformat()
+                'analysis_timestamp': datetime.now().isoformat(),
+                # Only the classification is model-derived; every other block
+                # is heuristic and not field-validated.
+                'derived_analysis_source': derived_source,
+                'field_validated': False,
             }
             
         except Exception as e:

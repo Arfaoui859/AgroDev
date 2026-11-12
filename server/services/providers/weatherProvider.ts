@@ -9,7 +9,7 @@
  * no UI changes are required, while all values now come from a real source.
  */
 
-import { fetchJson, round } from "./http";
+import { fetchJson, round, ProviderError } from "./http";
 
 export interface WeatherData {
   location: { name: string; lat: number; lon: number };
@@ -196,6 +196,17 @@ export async function getWeatherFromOpenMeteo(
     `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
     { provider: "Open-Meteo", timeoutMs: 12_000, retries: 2 },
   );
+
+  // A 200 with a missing/empty payload is not usable data. Fail as a
+  // provider error (route -> 502) instead of letting a downstream
+  // TypeError surface as an unexpected 500.
+  if (!data || typeof data !== "object" || !data.current || !data.daily) {
+    throw new ProviderError(
+      "Open-Meteo",
+      "parse",
+      "Open-Meteo returned no current/daily observations",
+    );
+  }
 
   const current = data.current ?? {};
   const daily = data.daily ?? {};

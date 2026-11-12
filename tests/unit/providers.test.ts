@@ -24,6 +24,7 @@ import {
   PROBE_TIMEOUT_FLOOR_MS,
 } from "../../server/services/providers/llmProvider";
 import { geminiGenerateContent } from "../../server/services/providers/gemini";
+import { getWeatherFromOpenMeteo } from "../../server/services/providers/weatherProvider";
 
 const originalFetch = global.fetch;
 
@@ -127,6 +128,50 @@ describe("http provider helpers", () => {
   test("round handles non-numeric input safely", () => {
     expect(round("abc", 2)).toBe(0);
     expect(round(3.14159, 2)).toBe(3.14);
+  });
+});
+
+describe("Open-Meteo weather provider payload guard", () => {
+  test("a 200 response with no current/daily block is a parse error, not a crash", async () => {
+    mockFetch(async () => new Response(JSON.stringify({ latitude: 36.8 }), { status: 200 }));
+    await expect(
+      getWeatherFromOpenMeteo({ lat: 36.8, lon: 10.2 }),
+    ).rejects.toMatchObject({ kind: "parse" });
+  });
+
+  test("a 200 response with current but no daily block is rejected", async () => {
+    mockFetch(
+      async () =>
+        new Response(JSON.stringify({ current: { temperature_2m: 22 } }), { status: 200 }),
+    );
+    await expect(
+      getWeatherFromOpenMeteo({ lat: 36.8, lon: 10.2 }),
+    ).rejects.toMatchObject({ kind: "parse" });
+  });
+
+  test("a well-formed payload returns real data with provenance", async () => {
+    mockFetch(
+      async () =>
+        new Response(
+          JSON.stringify({
+            current: { temperature_2m: 24, relative_humidity_2m: 60, weather_code: 0 },
+            daily: {
+              time: ["2026-11-11", "2026-11-12"],
+              weather_code: [0, 1],
+              temperature_2m_max: [26, 27],
+              temperature_2m_min: [16, 17],
+              precipitation_sum: [0, 1.2],
+              relative_humidity_2m_mean: [60, 62],
+              et0_fao_evapotranspiration: [3.1, 3.4],
+            },
+          }),
+          { status: 200 },
+        ),
+    );
+    const data = await getWeatherFromOpenMeteo({ lat: 36.8, lon: 10.2 });
+    expect(data.source.isRealData).toBe(true);
+    expect(data.source.provider).toBe("Open-Meteo");
+    expect(data.forecast.daily.length).toBe(2);
   });
 });
 

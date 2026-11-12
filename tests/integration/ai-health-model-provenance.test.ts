@@ -17,6 +17,10 @@ import { createServer } from "../../server/index";
 jest.mock("axios", () => {
   const callable: any = jest.fn(async (first: any) => {
     const url: string = typeof first === "string" ? first : (first?.url ?? "");
+    // The gateway probes the lightweight /ready endpoint before /health.
+    if (url.includes("/ready")) {
+      return { data: { status: "ready", ready: true }, status: 200 };
+    }
     // Port 8001 declares a synthetic model; port 8002 a real one.
     const modelSource = url.includes(":8001")
       ? "synthetic-demo"
@@ -69,10 +73,19 @@ describe("🧪 AI health model provenance", () => {
 
   test("counts HTTP 429 as reachable but not inference-available", async () => {
     const axios = require("axios");
-    (axios.get as jest.Mock).mockImplementationOnce(async () => {
-      const error: any = new Error("rate limited");
-      error.response = { status: 429 };
-      throw error;
+    // Rate-limit only the soil service's deep /health probe; its /ready stays
+    // answerable (the host responded), matching a real upstream 429.
+    (axios.get as jest.Mock).mockImplementation(async (first: any) => {
+      const url: string = typeof first === "string" ? first : (first?.url ?? "");
+      if (url.includes(":8001") && url.includes("/health")) {
+        const error: any = new Error("rate limited");
+        error.response = { status: 429 };
+        throw error;
+      }
+      if (url.includes("/ready")) {
+        return { data: { status: "ready", ready: true }, status: 200 };
+      }
+      return { data: { status: "healthy", model_source: "field-validated-v2" }, status: 200 };
     });
 
     const res = await request(app).get("/api/ai/health?force=true").expect(200);

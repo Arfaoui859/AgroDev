@@ -21,6 +21,9 @@ import {
   type SoilInput,
 } from "./knowledgeEngine";
 import { predictLabSoil, sanitiseLabAnalytes, type LabSoilPredictionResult } from "./labSoilClient";
+import { identifyPestFromSymptoms, sanitiseSymptoms } from "./pestControlClient";
+import { chatCompleteJson, isLLMConfigured } from "../providers/llmProvider";
+import { wrapUntrusted } from "../../lib/promptSafety";
 
 export type Language = "ar" | "fr" | "en";
 
@@ -62,6 +65,12 @@ export interface OrchestratorContext {
    * they are absent.
    */
   labAnalytes?: Record<string, number>;
+  /**
+   * Free-text symptoms the user actually described (e.g. "yellow leaves",
+   * "sticky honeydew"). Only set when supplied — the `pest_control` specialist
+   * never invents symptoms, and without them it stays `insufficient_input`.
+   */
+  symptoms?: string[];
 }
 
 export interface OrchestratorRequest {
@@ -100,6 +109,15 @@ export interface OrchestrationTrace {
   startedAt: string;
   finishedAt: string;
   concurrency: number;
+  /**
+   * How the plan was chosen. `"llm"` means a configured language model read the
+   * question and proposed the specialist set (validated against the allow-list);
+   * `"keywords"` is the deterministic keyword planner. This is the only LLM use
+   * in the orchestrator — agent selection, never computation.
+   */
+  plannedBy: "llm" | "keywords";
+  /** Ids the LLM proposed but were dropped because they are not allow-listed. */
+  rejectedPlanIds: string[];
 }
 
 export interface OrchestrationResult {
@@ -460,16 +478,63 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     title: TITLES.pest_control,
     dependsOn: [],
     keywords: /(مبيد|مكافحة|آفة|حشرة|pesticide|traitement|lutte|7achra|doud)/i,
-    run: () => ({
-      status: "insufficient_input",
-      findings: [],
-      dataSource: null,
-      isRealData: false,
-      confidence: "unknown",
-      note:
-        "Treatment advice requires a verified Tunisian product registry (active ingredient, dose, pre-harvest interval). " +
-        "None is connected, so no product or dose is suggested.",
-    }),
+    run: async (ctx) => {
+      const symptoms = sanitiseSymptoms(ctx.symptoms);
+      if (symptoms.length === 0) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note:
+            "No symptoms were described. The pest service matches keywords against described symptoms only, and " +
+            "treatment advice requires a verified Tunisian product registry (active ingredient, dose, pre-harvest " +
+            "interval). None is connected, so no product or dose is suggested.",
+        };
+      }
+      const outcome = await identifyPestFromSymptoms(symptoms, ctx.crop ?? "unknown", { timeoutMs: 12_000 });
+      if (outcome.ok === false) {
+        return {
+          status: "unavailable",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note:
+            outcome.reason === "not_configured"
+              ? "No pest-control service is configured; no identification is guessed."
+              : "The pest-control service could not be reached; no identification is guessed.",
+        };
+      }
+      const result = outcome.outcome;
+      if (!result.identified || !result.pest) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "The described symptoms did not match any known pest keyword rule; no pest is guessed.",
+        };
+      }
+      const label = result.pestNameAr ? `${result.pest} (${result.pestNameAr})` : result.pest;
+      const findings = [
+        `آفة محتملة بحسب مطابقة الأعراض: ${label}${result.category ? ` — التصنيف: ${result.category}` : ""}`,
+      ];
+      return {
+        status: "ok",
+        findings,
+        // Keyword matching against a fixed symptom table — a deterministic rule
+        // engine, never a trained classifier or a calibrated confidence.
+        dataSource: "rule-based",
+        isRealData: false,
+        confidence: "low",
+        note:
+          "مطابقة كلمات مفتاحية للأعراض فقط — ليست نتيجة نموذج مدرّب ولا تشخيصاً مؤكداً. لا يُقترح أي منتج أو جرعة " +
+          "دون سجل منتجات تونسي موثّق.",
+      };
+    },
   },
   {
     id: "finance",
@@ -529,21 +594,97 @@ export function planSpecialists(
     selected.add("soil");
     selected.add("crop");
   }
-  // Pull in dependencies transitively.
+  return closeOverDependencies(selected);
+}
+
+/** Pull a specialist set's dependencies in transitively; ids must be allow-listed. */
+function closeOverDependencies(selected: Iterable<SpecialistId>): SpecialistId[] {
+  const set = new Set<SpecialistId>(selected);
   let changed = true;
   while (changed) {
     changed = false;
-    for (const id of Array.from(selected)) {
+    for (const id of Array.from(set)) {
       for (const dep of REGISTRY.get(id)?.dependsOn ?? []) {
-        if (!selected.has(dep)) {
-          selected.add(dep);
+        if (!set.has(dep)) {
+          set.add(dep);
           changed = true;
         }
       }
     }
   }
-  // Keep a deterministic order: registry order.
-  return SPECIALISTS.map((s) => s.id).filter((id) => selected.has(id));
+  return SPECIALISTS.map((s) => s.id).filter((id) => set.has(id));
+}
+
+export interface SmartPlan {
+  plan: SpecialistId[];
+  plannedBy: "llm" | "keywords";
+  rejected: string[];
+}
+
+/**
+ * Ask a configured LLM which specialists a question needs.
+ *
+ * The model only ever *selects* from the allow-listed registry — it never runs a
+ * tool, invents a specialist, or performs a calculation. Its answer is parsed
+ * strictly: unknown ids are dropped (and reported), dependencies are added
+ * transitively, and any parse/transport failure falls back to the deterministic
+ * keyword planner. Disable with `ORCHESTRATOR_LLM_PLANNER=false`.
+ */
+export async function planSpecialistsWithLLM(
+  question: string,
+  context?: OrchestratorContext,
+): Promise<SmartPlan> {
+  const fallback: SmartPlan = {
+    plan: planSpecialists(question, context),
+    plannedBy: "keywords",
+    rejected: [],
+  };
+  if (process.env.ORCHESTRATOR_LLM_PLANNER === "false") return fallback;
+  if (!isLLMConfigured()) return fallback;
+
+  const catalogue = SPECIALISTS.map((s) => `- ${s.id}: ${s.title.en}`).join("\n");
+  // Bound the planner tightly: it is a routing decision, not an answer. Respect
+  // a global AI_TIMEOUT_MS so a slow provider cannot stall the whole request.
+  const planTimeoutMs =
+    Number(process.env.ORCHESTRATOR_LLM_PLAN_TIMEOUT_MS) ||
+    Math.min(Number(process.env.AI_TIMEOUT_MS) || 6000, 6000);
+  try {
+    const parsed = await chatCompleteJson<{ specialists?: unknown }>(
+      [
+        {
+          role: "system",
+          content:
+            "You are an agricultural task router. Choose which specialist agents should answer the user's question. " +
+            "Reply with JSON only: {\"specialists\": [\"id\", ...]}. Use ONLY these ids:\n" +
+            `${catalogue}\n` +
+            "Pick the smallest set that genuinely applies. Never invent ids. If nothing clearly applies, return an empty array.",
+        },
+        { role: "user", content: wrapUntrusted(question, "user_message").content },
+      ],
+      { temperature: 0, maxTokens: 120, timeoutMs: planTimeoutMs },
+    );
+    const proposed = Array.isArray(parsed?.specialists) ? parsed.specialists : null;
+    if (!proposed) return fallback;
+
+    const accepted = new Set<SpecialistId>();
+    const rejected: string[] = [];
+    for (const raw of proposed) {
+      const id = typeof raw === "string" ? raw.trim() : "";
+      if (!id) continue;
+      if (REGISTRY.has(id as SpecialistId)) accepted.add(id as SpecialistId);
+      else rejected.push(id);
+    }
+    // The LLM may return nothing useful; keep the deterministic plan then.
+    if (accepted.size === 0) return { ...fallback, rejected };
+    // Lab analytes present is a hard signal the model cannot see — always keep it.
+    if (context?.labAnalytes && Object.keys(context.labAnalytes).length > 0) {
+      accepted.add("lab_soil");
+    }
+    return { plan: closeOverDependencies(accepted), plannedBy: "llm", rejected };
+  } catch {
+    // Provider error, timeout, or unparseable output: deterministic planning.
+    return fallback;
+  }
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -755,7 +896,7 @@ export async function orchestrateAgriculturalQuestion(
   const language = request.language ?? "ar";
   const context = request.context ?? {};
   const startedAt = new Date().toISOString();
-  const plan = planSpecialists(request.question, context);
+  const { plan, plannedBy, rejected } = await planSpecialistsWithLLM(request.question, context);
   const { steps, concurrency } = await executePlan(plan, context, language, options);
 
   const groundedFacts: string[] = [];
@@ -775,6 +916,8 @@ export async function orchestrateAgriculturalQuestion(
     startedAt,
     finishedAt: new Date().toISOString(),
     concurrency,
+    plannedBy,
+    rejectedPlanIds: rejected,
   };
 
   return {

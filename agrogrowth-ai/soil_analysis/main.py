@@ -43,6 +43,7 @@ from soil_analysis.soil_image_diagnosis import create_soil_image_diagnosis
 from soil_analysis.lab_assisted_predictor import LabAssistedSoilPredictor
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
+from ai_common.base_service import register_service_probes
 
 
 # ---------------------------------------------------------------------
@@ -207,6 +208,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+register_service_probes(app, "Soil Analysis AI")
 
 
 # ---------------------------------------------------------------------

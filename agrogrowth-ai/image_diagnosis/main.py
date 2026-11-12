@@ -24,6 +24,7 @@ from image_diagnosis.leaf_scan_ai import create_leaf_scan_ai
 from ai_common.llm_provider import get_provider, LLMError
 from ai_common.vision_bridge import diagnose_with_vision, merge_into_detection
 from ai_common.offload import offload
+from ai_common.base_service import register_service_probes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -128,6 +129,11 @@ class PlantDiseaseResponse(BaseModel):
     data_source: Optional[str] = None
     is_real_data: Optional[bool] = None
     model_source: Optional[str] = None
+    # Severity, health score, affected area, treatment and risk are derived from
+    # image-colour heuristics regardless of how the classification was made.
+    # These two fields make that explicit at the top level.
+    derived_analysis_source: Optional[str] = None
+    field_validated: Optional[bool] = None
 
 class LeafAnalysisResponse(BaseModel):
     leaf_nutrition: Dict[str, Any]
@@ -152,6 +158,8 @@ app = FastAPI(
     description="AI-powered plant disease detection and leaf analysis",
     version="1.0.0"
 )
+
+register_service_probes(app, "Image Diagnosis AI")
 
 # CORS: set IMAGE_DIAGNOSIS_CORS_ORIGINS to comma-separated frontend origins.
 # Wildcard remains the default for backward compatibility; credentials are disabled.
@@ -348,6 +356,10 @@ def _run_disease_detection(image_data: bytes, content_type: str, plant_type: Opt
             "data_source": "vision-model",
             "is_real_data": True,
             "model_source": vision.get("model_source", "configured-vision-provider"),
+            # Even a vision-model classification has no validated severity/area
+            # scoring behind it; those blocks are reported unavailable above.
+            "derived_analysis_source": None,
+            "field_validated": False,
         }
 
     result = detector.detect_plant_disease(image_data, plant_type)

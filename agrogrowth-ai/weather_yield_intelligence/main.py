@@ -19,6 +19,7 @@ from ai_common.utils import to_json_safe
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
 from ai_common.offload import offload
+from ai_common.base_service import register_service_probes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +30,8 @@ app = FastAPI(
     description="نظام ذكي للتخطيط المناخي وتوقع المردودية",
     version="1.0.0"
 )
+
+register_service_probes(app, "Weather & Yield Intelligence AI")
 
 # Both components train sklearn models on synthetic data at construction time
 # (~45s and ~60s). Doing that at import blocked the event loop for over a minute,

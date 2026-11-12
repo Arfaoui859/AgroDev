@@ -51,6 +51,41 @@ def test_health_reports_heuristic_when_onnx_model_is_unavailable(monkeypatch):
     assert health["disease_detector_inference_mode"] == "heuristic"
 
 
+# ---------------------------------------------------------------------------
+# Derived-block honesty: severity / health score / affected area / treatment /
+# risk are computed from image-colour heuristics even when the *classification*
+# came from the trained ONNX model. Each derived block must be labelled as
+# heuristic and not field-validated, so a caller can never present an estimate
+# as model inference or a measured value.
+# ---------------------------------------------------------------------------
+def test_derived_analysis_blocks_are_labelled_heuristic():
+    import numpy as np
+
+    from image_diagnosis.plant_disease_detector import create_plant_disease_detector
+
+    detector = create_plant_disease_detector()
+    # A plain green image is enough to exercise the full analysis pipeline.
+    image = np.zeros((224, 224, 3), dtype=np.uint8)
+    image[:, :, 1] = 180
+
+    result = detector.detect_plant_disease(image, "tomato")
+
+    assert result["derived_analysis_source"] == "image-feature-heuristics"
+    assert result["field_validated"] is False
+    for block_name in (
+        "severity_assessment",
+        "health_score",
+        "affected_areas",
+        "treatment_plan",
+        "risk_assessment",
+        "environmental_analysis",
+    ):
+        block = result[block_name]
+        assert block["source"] == "image-feature-heuristics", block_name
+        assert block["field_validated"] is False, block_name
+        assert block["derived_from"] == "image-colour-heuristics", block_name
+
+
 def test_render_installs_image_diagnosis_runtime_requirements():
     from pathlib import Path
 

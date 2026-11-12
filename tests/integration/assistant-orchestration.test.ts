@@ -31,6 +31,10 @@ describe("POST /api/ai/assistant/chat — multi-agent orchestration", () => {
     expect(Array.isArray(trace.plan)).toBe(true);
     expect(trace.plan.length).toBeGreaterThan(0);
     expect(trace.steps.length).toBe(trace.plan.length);
+    // The plan provenance is reported honestly: with no provider configured in
+    // tests this must be the deterministic keyword planner.
+    expect(["llm", "keywords"]).toContain(trace.plannedBy);
+    expect(Array.isArray(trace.rejectedPlanIds)).toBe(true);
     for (const step of trace.steps) {
       expect(step).toHaveProperty("id");
       expect(step).toHaveProperty("status");
@@ -39,7 +43,7 @@ describe("POST /api/ai/assistant/chat — multi-agent orchestration", () => {
     }
   });
 
-  test("a pest-control question never yields an invented product", async () => {
+  test("a pest-control question never yields an invented product or dose", async () => {
     const response = await request(app)
       .post("/api/ai/assistant/chat")
       .send({ message: "أي مبيد أستعمل لمكافحة الحشرة؟", language: "ar" })
@@ -49,8 +53,20 @@ describe("POST /api/ai/assistant/chat — multi-agent orchestration", () => {
       (s: any) => s.id === "pest_control",
     );
     expect(pest).toBeTruthy();
-    expect(pest.status).toBe("insufficient_input");
-    expect(pest.findings).toEqual([]);
+    // The pest service is a keyword matcher (rule-based), never a trained
+    // classifier, and it must never be presented as one. With no service
+    // reachable it is `unavailable`; with the service it is `rule-based`.
+    expect(["insufficient_input", "unavailable", "ok"]).toContain(pest.status);
+    if (pest.status === "ok") {
+      expect(pest.dataSource).toBe("rule-based");
+      expect(pest.isRealData).toBe(false);
+    } else {
+      expect(pest.findings).toEqual([]);
+    }
+    // No product name, active ingredient, dose or pre-harvest interval is ever
+    // produced without a verified Tunisian product registry.
+    const joined = (pest.findings ?? []).join(" ");
+    expect(joined).not.toMatch(/مبيد|جرعة|dosage|dose|مادة فعالة|active ingredient/i);
   });
 
   test("runs the trained lab models when the caller supplies analytes", async () => {

@@ -17,6 +17,7 @@ from ai_common.utils import to_json_safe
 from ai_common.offload import offload
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
+from ai_common.base_service import register_service_probes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,8 @@ app = FastAPI(
     description="نظام ذكي لتوصية علاج الآفات والأمراض النباتية",
     version="1.0.0"
 )
+
+register_service_probes(app, "Pest Control Recommender AI")
 
 # Initialize the pest control recommender
 pest_recommender = create_pest_control_recommender()

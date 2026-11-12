@@ -8,6 +8,7 @@
  */
 import {
   planSpecialists,
+  planSpecialistsWithLLM,
   executePlan,
   orchestrateAgriculturalQuestion,
   SPECIALISTS,
@@ -210,6 +211,84 @@ describe("executePlan", () => {
       else process.env.SOIL_ANALYSIS_URL = saved;
     }
   });
+
+  test("pest_control stays insufficient_input when no symptoms are described", async () => {
+    const { steps } = await executePlan(["pest_control"], {}, "ar");
+    expect(steps[0].status).toBe("insufficient_input");
+    expect(steps[0].findings).toEqual([]);
+    expect(steps[0].dataSource).toBeNull();
+  });
+
+  test("pest_control returns rule-based provenance (never trained-model) from the service", async () => {
+    const http = await import("node:http");
+    const server = http.createServer((req, res) => {
+      if ((req.url ?? "").startsWith("/identify-pest")) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            success: true,
+            data: {
+              identification: {
+                identified_pest: "aphids",
+                pest_name_ar: "المن",
+                category: "حشرات",
+                identification_method: "symptom_based",
+                confidence_score: 0,
+              },
+            },
+            model_source: "symptom-keyword-rules",
+            field_validated: false,
+            message: "keyword match only; not a trained model",
+          }),
+        );
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+    const url = await new Promise<string>((resolve) => {
+      server.listen(0, "127.0.0.1", () => {
+        const addr = server.address() as { port: number };
+        resolve(`http://127.0.0.1:${addr.port}`);
+      });
+    });
+    const saved = process.env.PEST_CONTROL_URL;
+    process.env.PEST_CONTROL_URL = url;
+    try {
+      const { steps } = await executePlan(
+        ["pest_control"],
+        { symptoms: ["yellow leaves", "sticky honeydew"] },
+        "ar",
+      );
+      expect(steps[0].status).toBe("ok");
+      // Keyword rules, not a trained classifier.
+      expect(steps[0].dataSource).toBe("rule-based");
+      expect(steps[0].isRealData).toBe(false);
+      expect(steps[0].findings.join(" ")).toMatch(/aphids/);
+      expect(steps[0].note).toMatch(/ليست نتيجة نموذج مدرّب/);
+    } finally {
+      if (saved === undefined) delete process.env.PEST_CONTROL_URL;
+      else process.env.PEST_CONTROL_URL = saved;
+      await new Promise<void>((done) => server.close(() => done()));
+    }
+  });
+
+  test("pest_control reports unavailable (not fabricated) when the service is down", async () => {
+    const saved = process.env.PEST_CONTROL_URL;
+    process.env.PEST_CONTROL_URL = "http://127.0.0.1:1";
+    try {
+      const { steps } = await executePlan(
+        ["pest_control"],
+        { symptoms: ["yellow leaves"] },
+        "ar",
+      );
+      expect(steps[0].status).toBe("unavailable");
+      expect(steps[0].findings).toEqual([]);
+    } finally {
+      if (saved === undefined) delete process.env.PEST_CONTROL_URL;
+      else process.env.PEST_CONTROL_URL = saved;
+    }
+  });
 });
 
 describe("orchestrateAgriculturalQuestion", () => {
@@ -301,5 +380,86 @@ describe("orchestrateAgriculturalQuestion", () => {
     // The answer is still honestly labelled as rule-based, not model inference.
     expect(result.dataSource).toBe("rule-based");
     expect(result.isRealData).toBe(false);
+  });
+});
+
+describe("planSpecialistsWithLLM (allow-list enforced, deterministic fallback)", () => {
+  const savedEnv: Record<string, string | undefined> = {};
+  const ENV_KEYS = ["AI_BASE_URL", "AI_API_KEY", "AI_MODEL", "AI_PROVIDER", "OPENAI_API_KEY", "OPENAI_BASE_URL", "ORCHESTRATOR_LLM_PLANNER"];
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    for (const key of ENV_KEYS) savedEnv[key] = process.env[key];
+  });
+  afterEach(() => {
+    global.fetch = originalFetch;
+    for (const key of ENV_KEYS) {
+      if (savedEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = savedEnv[key];
+    }
+  });
+
+  function configureProvider(reply: string) {
+    process.env.AI_BASE_URL = "http://127.0.0.1:1/v1";
+    process.env.AI_API_KEY = "test-key";
+    process.env.AI_MODEL = "planner-test";
+    process.env.AI_PROVIDER = "planner-test";
+    global.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: reply }, finish_reason: "stop" }],
+          usage: { total_tokens: 5 },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      )) as typeof fetch;
+  }
+
+  test("uses the deterministic keyword planner when no provider is configured", async () => {
+    delete process.env.AI_BASE_URL;
+    delete process.env.AI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_BASE_URL;
+    const result = await planSpecialistsWithLLM("كيف أختار محصولاً؟");
+    expect(result.plannedBy).toBe("keywords");
+    expect(result.plan).toContain("crop");
+  });
+
+  test("drops ids the model proposes that are not allow-listed and reports them", async () => {
+    configureProvider('{"specialists":["crop","run_shell","delete_farm"]}');
+    const result = await planSpecialistsWithLLM("ما أفضل محصول؟");
+    expect(result.plannedBy).toBe("llm");
+    expect(result.plan).toContain("crop");
+    expect(result.plan).not.toContain("run_shell" as never);
+    expect(result.rejected).toEqual(expect.arrayContaining(["run_shell", "delete_farm"]));
+  });
+
+  test("pulls in dependencies the model omitted", async () => {
+    configureProvider('{"specialists":["irrigation"]}');
+    const result = await planSpecialistsWithLLM("كيف أسقي؟");
+    // irrigation depends on crop + weather
+    expect(result.plan).toEqual(expect.arrayContaining(["irrigation", "crop", "weather"]));
+  });
+
+  test("falls back to the keyword planner on unparseable output", async () => {
+    configureProvider("not json at all");
+    const result = await planSpecialistsWithLLM("كيف أختار محصولاً؟");
+    expect(result.plannedBy).toBe("keywords");
+    expect(result.plan).toContain("crop");
+  });
+
+  test("ORCHESTRATOR_LLM_PLANNER=false disables the LLM planner", async () => {
+    configureProvider('{"specialists":["pest_control"]}');
+    process.env.ORCHESTRATOR_LLM_PLANNER = "false";
+    const result = await planSpecialistsWithLLM("كيف أختار محصولاً؟");
+    expect(result.plannedBy).toBe("keywords");
+    expect(result.plan).toContain("crop");
+  });
+
+  test("keeps lab_soil when real analytes are supplied even if the model omits it", async () => {
+    configureProvider('{"specialists":["crop"]}');
+    const result = await planSpecialistsWithLLM("حلّل هذه القياسات", {
+      labAnalytes: { ph: 6.4, carbon_organic: 1.2 },
+    });
+    expect(result.plan).toContain("lab_soil");
   });
 });

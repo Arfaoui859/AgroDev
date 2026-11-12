@@ -32,6 +32,7 @@ from crop_recommendation.crop_recommender import create_crop_recommender
 from crop_recommendation.profit_estimator import create_profit_estimator
 from ai_common.llm_provider import get_provider
 from ai_common.advisory import narrate
+from ai_common.base_service import register_service_probes
 
 
 # ---------------------------------------------------------
@@ -388,6 +389,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+register_service_probes(app, "Crop Recommendation AI")
 
 
 # ---------------------------------------------------------
