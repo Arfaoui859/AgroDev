@@ -115,6 +115,24 @@ async function capabilities(): Promise<Capability[]> {
         "محرك قواعد زراعية (pH، NPK، الملوحة، المادة العضوية) وليس نموذجاً مدرّباً.",
     },
     {
+      id: "lab-soil-models",
+      name: "Laboratory Soil Models",
+      nameAr: "نماذج تحليل التربة المخبرية",
+      // Seven genuinely trained regression models (iSDA reference dataset) that
+      // impute missing lab analytes. This is model inference, not a rule engine,
+      // but the predictions are lab-assisted estimates and are never
+      // field-validated — the response says so explicitly.
+      engine: "microservice",
+      microserviceUrl: soilUrl,
+      microserviceConfigured: Boolean(soilUrl),
+      fallbackEngine: "unavailable",
+      requiresConfiguration: "SOIL_ANALYSIS_URL pointing at the soil_analysis service",
+      provenance:
+        "Seven trained regression models (iSDA wet-chemistry reference data) served by the soil_analysis microservice at /predict-lab-soil; predictions are lab-assisted estimates, not field-validated measurements, and report per-target R2.",
+      provenanceAr:
+        "سبعة نماذج انحدار مدرّبة على بيانات iSDA المرجعية عبر خدمة soil_analysis؛ القيم مُستنتَجة مخبرياً وليست قياسات ميدانية مُتحقّق منها، وتُرفَق معاملات R² لكل هدف.",
+    },
+    {
       id: "crop-recommendation",
       name: "Smart Crop Recommendations",
       nameAr: "توصيات المحاصيل",
@@ -348,6 +366,27 @@ async function resolveEngine(cap: Capability): Promise<{
   }
   // The service is up. Report what it actually is instead of advertising a
   // synthetic/heuristic/deterministic-rule service as a trained model.
+  // The trained lab models live behind the soil service's separate
+  // /predict-lab-soil route; the service's own model_source is its rule engine,
+  // so reachability + the declared lab model count is the honest signal.
+  if (cap.id === "lab-soil-models") {
+    if (!probe.reachable || !probe.labModelsAvailable) {
+      return {
+        engine: "unavailable",
+        reachable: probe.reachable,
+        configured: true,
+        modelSource: null,
+        modelKind: "unknown",
+      };
+    }
+    return {
+      engine: "microservice",
+      reachable: true,
+      configured: true,
+      modelSource: "lab-assisted-soil-models",
+      modelKind: "trained",
+    };
+  }
   if (probe.kind === "synthetic" && cap.engine === "vision-model") {
     return {
       engine: "heuristic",

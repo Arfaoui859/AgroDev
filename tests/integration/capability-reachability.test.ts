@@ -110,4 +110,46 @@ describe("🔎 AI capability reachability reflects the live service", () => {
     delete process.env.IMAGE_DIAGNOSIS_URL;
     await fake.close();
   });
+
+  test("trained lab soil models are reported available only when the service declares loadable models", async () => {
+    const fake = await startFakeService({
+      status: "healthy",
+      model_source: "deterministic-rules",
+      // Matches the real soil service /health shape: the lab artifacts are
+      // available to load, so metadata_ready is true.
+      lab_assisted: { loaded: false, metadata_ready: true, expected_models: 7 },
+    });
+    process.env.SOIL_ANALYSIS_URL = fake.url;
+    resetServiceProbeCache();
+    app = createServer();
+
+    const res = await request(app)
+      .get("/api/ai/capabilities/lab-soil-models")
+      .expect(200);
+    expect(res.body.available).toBe(true);
+    expect(res.body.engine).toBe("microservice");
+    expect(res.body.microserviceReachable).toBe(true);
+
+    await fake.close();
+  });
+
+  test("lab soil models are unavailable when the service loads no trained models", async () => {
+    const fake = await startFakeService({
+      status: "healthy",
+      model_source: "deterministic-rules",
+      lab_assisted: { loaded: false, metadata_ready: false, models_available: 0, expected_models: 7 },
+    });
+    process.env.SOIL_ANALYSIS_URL = fake.url;
+    resetServiceProbeCache();
+    app = createServer();
+
+    const res = await request(app)
+      .get("/api/ai/capabilities/lab-soil-models")
+      .expect(200);
+    // Reachable host, but no trained model is loaded: never advertise one.
+    expect(res.body.available).toBe(false);
+    expect(res.body.engine).toBe("unavailable");
+
+    await fake.close();
+  });
 });

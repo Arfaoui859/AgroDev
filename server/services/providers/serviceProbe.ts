@@ -25,6 +25,13 @@ export interface ServiceProbe {
   kind: ProvenanceKind;
   /** True when the service self-reports a deterministic rule engine. */
   ruleBased: boolean;
+  /**
+   * True only when the service's /health declares its trained lab models are
+   * loadable (`lab_assisted.models_available > 0`). The soil service's overall
+   * `model_source` is `deterministic-rules` (its rule analyzer), so this
+   * separate signal is required to detect the trained lab capability.
+   */
+  labModelsAvailable: boolean;
 }
 
 const TTL_MS = 30_000;
@@ -36,6 +43,7 @@ const UNREACHABLE: ServiceProbe = {
   heuristic: false,
   kind: "unknown",
   ruleBased: false,
+  labModelsAvailable: false,
 };
 
 export async function probeService(
@@ -55,11 +63,18 @@ export async function probeService(
     });
     if (response.ok) {
       let modelSource: string | null = null;
+      let labModelsAvailable = false;
       try {
         const body = (await response.json()) as Record<string, unknown>;
         const declared =
           body.model_source ?? body.modelSource ?? body.engine ?? body.mode;
         if (typeof declared === "string") modelSource = declared;
+        const lab = body.lab_assisted as Record<string, unknown> | undefined;
+        const available = lab?.models_available;
+        if (typeof available === "number" && available > 0) labModelsAvailable = true;
+        // The soil service reports readiness as metadata_ready (the seven model
+        // manifests are readable, so the artifacts are available to load).
+        else if (lab?.metadata_ready === true) labModelsAvailable = true;
       } catch {
         // Non-JSON health body: reachable, provenance unknown.
       }
@@ -69,6 +84,7 @@ export async function probeService(
         heuristic: isSyntheticModelSource(modelSource),
         kind: classifyModelSource(modelSource),
         ruleBased: classifyModelSource(modelSource) === "rule-based",
+        labModelsAvailable,
       };
     } else if (response.status === 429) {
       // Rate limiting is an HTTP response from the target host. Preserve
@@ -79,6 +95,7 @@ export async function probeService(
         heuristic: false,
         kind: "unknown",
         ruleBased: false,
+        labModelsAvailable: false,
       };
     }
   } catch {

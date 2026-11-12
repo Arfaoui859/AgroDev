@@ -1314,3 +1314,20 @@ that a trained model produced part of the answer.
   existing provenance line, with trained-model results highlighted.
 - Tests: `tests/integration/assistant-orchestration.test.ts` now asserts
   `trainedModelSpecialists` contains `lab_soil`.
+
+### Trained lab soil models are discoverable — VERIFIED
+
+`GET /api/ai/capabilities/lab-soil-models` now reports the seven trained iSDA
+regression models honestly:
+
+- `serviceProbe` reads the soil service's `/health` `lab_assisted` block
+  (`metadata_ready` / `models_available`) and exposes `labModelsAvailable`.
+- `resolveEngine` returns `microservice` + `modelSource: lab-assisted-soil-models`
+  only when the service is reachable **and** declares loadable lab models;
+  otherwise the capability is `unavailable`. A reachable host alone is never
+  enough (mirrors the existing 429/heuristic handling).
+- Live-verified against the real `soil_analysis` service on `127.0.0.1:8001`:
+  `available: true`, `engine: microservice`, `isRealData: false` (model
+  inference is not presented as measured data).
+- Tests: `tests/integration/capability-reachability.test.ts` covers both the
+  available and not-loaded cases (5 tests).
