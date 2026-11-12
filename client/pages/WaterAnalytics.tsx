@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { payloadObject } from "@/lib/apiPayload";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,8 +94,7 @@ export default function WaterAnalytics() {
           cropTypes: selectedCrops
         }),
       });
-      const data = await response.json();
-      setWaterData(data);
+      setWaterData(payloadObject<WaterUsageData>(response, await response.json()));
     } catch (error) {
       console.error('Error fetching water analytics:', error);
     } finally {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
+import { payloadList } from "@/lib/apiPayload";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -97,8 +98,7 @@ export default function MarketAlerts() {
     setIsLoading(true);
     try {
       const response = await fetch('/api/market-analysis/alerts');
-      const data = await response.json();
-      setAlerts(data);
+      setAlerts(payloadList<MarketAlert>(response, await response.json()));
     } catch (error) {
       console.error('Error fetching alerts:', error);
     } finally {

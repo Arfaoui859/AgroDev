@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TrendingUp, TrendingDown, DollarSign, BarChart3, AlertTriangle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readProvenance, type DataProvenance } from "@/lib/dataProvenance";
+import { payloadList, payloadObject } from "@/lib/apiPayload";
 import { MarketProvenanceNotice } from "@/components/market/MarketProvenanceNotice";
 
 interface MarketPrice {
@@ -62,16 +63,15 @@ export default function MarketDashboard() {
     try {
       // Fetch current prices
       const pricesResponse = await fetch('/api/market-analysis/prices/current');
-      const prices = await pricesResponse.json();
-      setMarketPrices(prices);
+      const pricesBody = await pricesResponse.json();
+      setMarketPrices(payloadList<MarketPrice>(pricesResponse, pricesBody));
       // Prices are synthetic: surface the server's provenance header so the UI
       // never presents simulated TND figures as a live market feed.
-      setProvenance(readProvenance(pricesResponse.headers, prices));
+      setProvenance(readProvenance(pricesResponse.headers, pricesBody));
 
       // Fetch dashboard data
       const dashboardResponse = await fetch('/api/market-analysis/dashboard');
-      const dashboard = await dashboardResponse.json();
-      setDashboardData(dashboard);
+      setDashboardData(payloadObject<DashboardData>(dashboardResponse, await dashboardResponse.json()));
 
       setLastUpdate(new Date());
     } catch (error) {

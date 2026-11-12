@@ -1,5 +1,6 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
 import React, { useState, useEffect } from 'react';
+import { payloadList } from '../lib/apiPayload';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -172,8 +173,7 @@ export default function RiskDetection() {
   const loadRiskAlerts = async () => {
     try {
       const response = await fetch('/api/risk-detection/alerts');
-      const data = await response.json();
-      setRiskAlerts(data);
+      setRiskAlerts(payloadList<RiskAlert>(response, await response.json()));
     } catch (error) {
       console.error('Error loading risk alerts:', error);
     }
@@ -182,8 +182,7 @@ export default function RiskDetection() {
   const loadWeatherRisks = async () => {
     try {
       const response = await fetch('/api/risk-detection/weather-risks');
-      const data = await response.json();
-      setWeatherRisks(data);
+      setWeatherRisks(payloadList<WeatherRisk>(response, await response.json()));
     } catch (error) {
       console.error('Error loading weather risks:', error);
     }
@@ -192,8 +191,7 @@ export default function RiskDetection() {
   const loadDiseaseDetections = async () => {
     try {
       const response = await fetch('/api/risk-detection/diseases');
-      const data = await response.json();
-      setDiseaseDetections(data);
+      setDiseaseDetections(payloadList<DiseaseDetection>(response, await response.json()));
     } catch (error) {
       console.error('Error loading disease detections:', error);
     }
@@ -202,8 +200,7 @@ export default function RiskDetection() {
   const loadMarketRisks = async () => {
     try {
       const response = await fetch('/api/risk-detection/market-risks');
-      const data = await response.json();
-      setMarketRisks(data);
+      setMarketRisks(payloadList<MarketRisk>(response, await response.json()));
     } catch (error) {
       console.error('Error loading market risks:', error);
     }
@@ -212,8 +209,7 @@ export default function RiskDetection() {
   const loadSensorData = async () => {
     try {
       const response = await fetch('/api/risk-detection/sensors');
-      const data = await response.json();
-      setSensorData(data);
+      setSensorData(payloadList<SensorData>(response, await response.json()));
     } catch (error) {
       console.error('Error loading sensor data:', error);
     }

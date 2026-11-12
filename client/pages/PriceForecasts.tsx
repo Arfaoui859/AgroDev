@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { TrendingUp, TrendingDown, Brain, Calendar, AlertCircle, Target, CloudRain, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { payloadObject } from "@/lib/apiPayload";
 
 interface Prediction {
   date: string;
@@ -67,8 +68,7 @@ export default function PriceForecasts() {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/market-analysis/predictions/${selectedCrop}?days=${forecastPeriod}`);
-      const data = await response.json();
-      setPredictionData(data);
+      setPredictionData(payloadObject<PredictionData>(response, await response.json()));
     } catch (error) {
       console.error('Error fetching predictions:', error);
     } finally {

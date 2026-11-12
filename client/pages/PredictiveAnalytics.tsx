@@ -1,4 +1,5 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
+import { payloadList } from "../lib/apiPayload";
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -195,8 +196,7 @@ export default function PredictiveAnalytics() {
   const loadModels = async () => {
     try {
       const response = await fetch('/api/predictive-analytics/models');
-      const data = await response.json();
-      setModels(data);
+      setModels(payloadList<PredictionModel>(response, await response.json()));
     } catch (error) {
       console.error('Error loading models:', error);
     }
@@ -205,8 +205,7 @@ export default function PredictiveAnalytics() {
   const loadPredictions = async () => {
     try {
       const response = await fetch('/api/predictive-analytics/predictions');
-      const data = await response.json();
-      setPredictions(data);
+      setPredictions(payloadList<PredictionResult>(response, await response.json()));
     } catch (error) {
       console.error('Error loading predictions:', error);
     }
@@ -215,8 +214,7 @@ export default function PredictiveAnalytics() {
   const loadAnalyses = async () => {
     try {
       const response = await fetch('/api/predictive-analytics/analyses');
-      const data = await response.json();
-      setAnalyses(data);
+      setAnalyses(payloadList<DataAnalysis>(response, await response.json()));
     } catch (error) {
       console.error('Error loading analyses:', error);
     }
@@ -225,8 +223,7 @@ export default function PredictiveAnalytics() {
   const loadPerformance = async () => {
     try {
       const response = await fetch('/api/predictive-analytics/performance');
-      const data = await response.json();
-      setPerformance(data);
+      setPerformance(payloadList<ModelPerformance>(response, await response.json()));
     } catch (error) {
       console.error('Error loading performance:', error);
     }
@@ -235,8 +232,7 @@ export default function PredictiveAnalytics() {
   const loadDataSources = async () => {
     try {
       const response = await fetch('/api/predictive-analytics/data-sources');
-      const data = await response.json();
-      setDataSources(data);
+      setDataSources(payloadList<DataSource>(response, await response.json()));
     } catch (error) {
       console.error('Error loading data sources:', error);
     }
