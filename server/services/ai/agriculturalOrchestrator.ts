@@ -490,7 +490,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     title: TITLES.agri_news,
     dependsOn: [],
     keywords:
-      /(أخبار|خبر|جديد|مستجدات|صحافة|news|actualit|presse|jdid|akhbar|khabar|newspaper)/i,
+      /(أخبار|الأخبار|خبر|مستجدات|صحافة|news|actualit|presse|akhbar|khabar|newspaper)/i,
     run: (ctx) => {
       const records = newsRecords(ctx);
       if (records.length === 0) {

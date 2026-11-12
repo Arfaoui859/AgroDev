@@ -1267,7 +1267,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     // stall the chat; a timed-out or failed fetch simply injects nothing and the
     // specialist reports `unavailable` rather than inventing a headline.
     const wantsNews =
-      /(أخبار|خبر|جديد|مستجدات|صحافة|news|actualit|presse|jdid|akhbar|khabar|newspaper)/i.test(userMessage);
+      /(أخبار|الأخبار|خبر|مستجدات|صحافة|news|actualit|presse|akhbar|khabar|newspaper)/i.test(userMessage);
     if (wantsNews) {
       try {
         const news = await Promise.race([
