@@ -778,6 +778,12 @@ Then exercised the real flows:
   2×404** — i.e. no data-bearing route is anonymously readable. Intended
   public reads (`/api/news`, `/api/news/sources`, `/api/ai/capabilities`,
   `/api/system/ai`) answer 200 by design.
+- **News feature (live)**: `GET /api/news` → 139 articles from 6 real sources;
+  `?q=` Arabic search matches (URL-encoded), `?language=ar` → 72 /
+  `?language=fr` → 67, `?category=<facet>` filters the derived categories
+  (`marché & export`, `maraîchage`, `olive & huile`, `céréales`, `irrigation &
+  eau`, `élevage`, `climat`, `agriculture`), pagination capped at 50/page. No
+  article lacks a publisher name or original `http(s)` link.
 
 ---
 
