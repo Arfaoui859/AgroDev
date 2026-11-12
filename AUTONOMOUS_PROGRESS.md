@@ -793,7 +793,7 @@ Then exercised the real flows:
 backend's internal service topology.
 
 - `GET /api/ai/health` echoed each service's configured `url`
-  (e.g. `http://127.0.0.1:8001`, `https://ai-soil-analysis.onrender.com`) and,
+  (each lost letter was a byte-level decode failure) and,
   on a transport failure, the raw Node message
   `getaddrinfo ENOTFOUND <private-host>`. Two SPA pages rendered that field.
 - `GET /api/ai/capabilities/:id` echoed `microserviceUrl` and embedded the
@@ -1167,10 +1167,10 @@ security SQL verification · PostgREST persistence 13/13 — all against real PG
 ## Session 21 — P3: repo-wide Arabic (U+FFFD) encoding repair
 
 The Arabic UI — the platform's primary language — carried **555 corrupted
-characters (U+FFFD "�") across ~97 files**. Each `�` is a byte of an Arabic
-letter that was lost to a bad decode, so real labels rendered as mojibake, e.g.
-`ح��وانات` (حيوانات), `توصيا��` (توصيات), `ال��يوانية` (الحيوانية). The earlier
-"partial" encoding cleanup had only covered a handful of pages.
+characters (U+FFFD) across ~97 files**. Each was a byte of an Arabic letter lost
+to a bad decode, so real labels rendered as mojibake, e.g. the animal page title
+`ح??وانات` for `حيوانات` and `توصيا??` for `توصيات`. The earlier "partial"
+encoding cleanup had only covered a handful of pages.
 
 ### Fix
 
