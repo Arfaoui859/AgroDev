@@ -13,6 +13,7 @@ import type { Response } from "express";
 import { ProviderError } from "./http";
 import { sanitizeNetworkMessage } from "../../lib/errors";
 import { probeService } from "./serviceProbe";
+import { classifyModelSource, provenanceDataSource, type ProvenanceKind } from "./modelProvenance";
 import { recordSuccess, recordFailure } from "./aiTelemetry";
 
 const DEFAULT_TIMEOUT_MS = 45_000;
@@ -47,6 +48,10 @@ export interface MicroserviceResult<T = any> {
   modelSource: string | null;
   /** True when the service self-reports synthetic/heuristic output. */
   heuristic: boolean;
+  /** Full classification of the declared source (trained/rule-based/llm/...). */
+  kind: ProvenanceKind;
+  /** True when the service self-reports a deterministic rule engine. */
+  ruleBased: boolean;
 }
 
 /**
@@ -78,16 +83,18 @@ export async function callMicroservice<T = any>(
       // inference request. A reachable demo/heuristic service must not receive
       // or process production user data through this proxy.
       const probe = await probeService(baseUrl);
-      if (!probe.reachable || !probe.modelSource || probe.heuristic) {
+      if (!probe.reachable || !probe.modelSource || probe.heuristic || probe.ruleBased) {
         // An unreachable host is a transport failure; a reachable host whose
-        // provenance is synthetic/missing is a policy rejection. They are
-        // reported with different error kinds so callers can tell them apart.
+        // provenance is synthetic/rule-based/missing is a policy rejection. They
+        // are reported with different error kinds so callers can tell them apart.
         const kind: ProviderError["kind"] = !probe.reachable ? "network" : "provenance";
         const reason = !probe.reachable
           ? "Microservice health/provenance could not be verified."
           : probe.heuristic
             ? "Synthetic or heuristic microservice output is disabled for production responses."
-            : "Microservice did not declare a model source.";
+            : probe.ruleBased
+              ? "Deterministic rule-engine microservice output is not a trained model and is disabled for production responses."
+              : "Microservice did not declare a model source.";
         const provenanceError = new ProviderError(
           capability,
           kind,
@@ -133,6 +140,8 @@ export async function callMicroservice<T = any>(
         raw,
         modelSource: probe.modelSource,
         heuristic: probe.heuristic,
+        kind: probe.kind,
+        ruleBased: probe.ruleBased,
       };
     } catch (error) {
       clearTimeout(timer);
@@ -163,19 +172,57 @@ export async function callMicroservice<T = any>(
 }
 
 /**
+ * Legacy provenance vocabulary for the proxy routes. `isRealData` here means
+ * "produced by a genuinely trained model" (the historical meaning on these
+ * routes) — synthetic, heuristic and deterministic-rule engines are all false.
+ */
+function provenanceFields(kind: ProvenanceKind): { dataSource: string; isRealData: boolean } {
+  switch (kind) {
+    case "trained":
+      return { dataSource: "microservice", isRealData: true };
+    case "llm":
+      return { dataSource: "llm-generated", isRealData: false };
+    case "rule-based":
+      return { dataSource: "rule-based", isRealData: false };
+    case "synthetic":
+      return { dataSource: "heuristic", isRealData: false };
+    default:
+      return { dataSource: "unavailable", isRealData: false };
+  }
+}
+
+/**
+ * Shared provenance fields for the legacy `{ success, data, message }` routes.
+ * Keeps every proxy caller on the same classification (no per-route regex).
+ */
+export function legacyProvenance(
+  result: Pick<MicroserviceResult, "modelSource" | "heuristic"> &
+    Partial<Pick<MicroserviceResult, "kind">>,
+): { dataSource: string; isRealData: boolean; modelSource: string | null; modelKind: ProvenanceKind } {
+  const kind = result.kind ?? classifyModelSource(result.modelSource);
+  return {
+    ...provenanceFields(kind),
+    modelSource: result.modelSource,
+    modelKind: kind,
+  };
+}
+
+/**
  * Send a microservice result to the client, tagging provenance so a heuristic
  * answer is never presented as model inference.
  */
 export function respondWithProvenance(
   res: Response,
-  result: Pick<MicroserviceResult, "data" | "modelSource" | "heuristic">,
+  result: Pick<MicroserviceResult, "data" | "modelSource" | "heuristic"> &
+    Partial<Pick<MicroserviceResult, "kind" | "ruleBased">>,
   status = 200,
 ): void {
   const data = result.data;
+  const kind = result.kind ?? classifyModelSource(result.modelSource);
   const provenance = {
-    dataSource: result.heuristic ? "heuristic" : "microservice",
-    isRealData: !result.heuristic,
+    ...provenanceFields(kind),
     modelSource: result.modelSource,
+    modelKind: kind,
   };
   const payload =
     data && typeof data === "object" && !Array.isArray(data)

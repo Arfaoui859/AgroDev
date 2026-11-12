@@ -288,8 +288,18 @@ async def health_check():
     """
     Report service availability and model metadata state.
 
-    Lab model artifacts are never loaded by this endpoint.
+    Lab model artifacts are never loaded by this endpoint; only the manifest
+    (metadata) is read, so readiness of the seven trained lab models is reported
+    without paying the memory cost of loading them.
     """
+
+    lab_metadata_ready = False
+    lab_metadata_error = None
+    try:
+        # Metadata-only: reads the manifest, never a joblib artifact.
+        lab_metadata_ready = len(get_lab_predictor().models) == 7
+    except Exception as exc:  # pragma: no cover - defensive
+        lab_metadata_error = str(exc)
 
     def service_status(service):
         return {
@@ -329,12 +339,12 @@ async def health_check():
         },
         "lab_assisted": {
             "loaded": False,
-            "metadata_ready": _lab_predictor is not None,
+            "metadata_ready": lab_metadata_ready,
             "expected_models": 7,
             "prediction_scope": "lab_assisted_only",
             "field_validated": False,
             "tunisia_validated": False,
-            "load_error": _lab_predictor_error,
+            "load_error": lab_metadata_error,
         },
     }
 

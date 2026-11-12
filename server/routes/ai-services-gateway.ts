@@ -18,6 +18,7 @@ import {
 import { isLLMConfigured } from "../services/providers/llmProvider";
 import { getPublicLLMInfo } from "../services/providers/llmProvider";
 import { probeService } from "../services/providers/serviceProbe";
+import { classifyModelSource, isNonModelSource } from "../services/providers/modelProvenance";
 import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
 import { resolveUserIdFromJwt } from "../middleware/auth";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
@@ -25,14 +26,11 @@ import { persistTrustedAssistantTurn } from "./assistant-conversations";
 import { getWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
 
 /**
- * Model-source markers that mean "this service is not running a model trained
- * on real field data". Shared with the health view so a reachable-but-synthetic
- * service is labelled honestly instead of shown as production inference.
+ * Model-source classification is centralised in
+ * `server/services/providers/modelProvenance.ts` so the probe, the proxy, this
+ * gateway and `/api/ai/health` can never disagree about what a provenance
+ * string means (e.g. `deterministic-rules` is a rule engine, not trained ML).
  */
-const HEURISTIC_MODEL_SOURCE_RE =
-  /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i;
-const RULE_BASED_MODEL_SOURCE_RE =
-  /deterministic[-_ ]?rules?|rule[-_ ]?based|knowledge[-_ ]?engine/i;
 
 /**
  * Normalize a service base URL. Render's `fromService` `hostport` property yields
@@ -201,7 +199,7 @@ const respondFromMicroservice = async (
 ) => {
   const probe = serviceUrl
     ? await probeService(serviceUrl)
-    : { reachable: false, modelSource: null as string | null, heuristic: false };
+    : { reachable: false, modelSource: null as string | null, heuristic: false, kind: "unknown" as const, ruleBased: false };
 
   // Reachability is not proof of model provenance. Fail closed when the
   // service is unreachable, declares synthetic/demo logic, or omits a source.
@@ -221,8 +219,8 @@ const respondFromMicroservice = async (
   }
 
   const source = probe.modelSource;
-  const ruleBased = /deterministic-rules|rule-based/i.test(source);
-  const llmBased = /openrouter|gemini|gpt|llm/i.test(source);
+  const ruleBased = probe.kind === "rule-based";
+  const llmBased = probe.kind === "llm";
   const provenance = {
     dataSource: ruleBased
       ? "rule-based"
@@ -260,8 +258,7 @@ const respondFromImageMicroservice = (
   const rawModelSource = payload.model_source ?? payload.modelSource;
   const source =
     typeof rawModelSource === "string" ? rawModelSource.trim() : "";
-  const syntheticSource =
-    !source || /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i.test(source);
+  const syntheticSource = !source || isNonModelSource(source);
 
   const validVisionSource =
     rawDataSource === "vision-model" || rawDataSource === "llm" || rawDataSource === "trained-ml" || rawDataSource === "trained-model-inference";
@@ -372,6 +369,222 @@ export const diagnoseSoilFromImage = [
     }
   },
 ];
+
+// 🧪 LABORATORY-ASSISTED SOIL PREDICTION
+//
+// The soil microservice ships seven *genuinely trained* models (random-forest /
+// extra-trees / gradient-boosting) fitted on the iSDA wet-chemistry reference
+// dataset (`synthetic_data_used: false`). They are loaded one at a time and
+// released (memory-aware) and the /health of the service reports
+// `model_source: "deterministic-rules"` for its *rule* analyzer — so the
+// generic provenance gate in `respondFromMicroservice` would (correctly) reject
+// the whole service. These lab models are a distinct, verifiable capability, so
+// they are surfaced through a dedicated route that reports their own metadata
+// (model type, R², MAE, coverage) rather than through the rule-engine gate.
+
+/** The 16 analytes the lab models understand (from the service manifest). */
+const LAB_ANALYTES = [
+  "aluminium_extractable",
+  "boron_extractable",
+  "calcium_extractable",
+  "carbon_organic",
+  "copper_extractable",
+  "electrical_conductivity",
+  "iron_extractable",
+  "magnesium_extractable",
+  "manganese_extractable",
+  "nitrogen_total",
+  "ph",
+  "phosphorus_extractable",
+  "potassium_extractable",
+  "sodium_extractable",
+  "sulphur_extractable",
+  "zinc_extractable",
+] as const;
+
+/**
+ * Validate a caller-supplied lab-value map. Only the 16 known analytes are
+ * accepted; every value must be a finite number. This is deliberately strict:
+ * a string, boolean, NaN or Infinity must be rejected here rather than reaching
+ * the model (which validates finiteness but not JSON types the same way).
+ */
+function parseLabValues(input: unknown): {
+  values: Record<string, number>;
+  rejected: string[];
+} | { error: string } {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { error: "lab_values must be an object of numeric analyte measurements" };
+  }
+  const allowed = new Set<string>(LAB_ANALYTES);
+  const values: Record<string, number> = {};
+  const rejected: string[] = [];
+
+  for (const [key, raw] of Object.entries(input as Record<string, unknown>)) {
+    if (!allowed.has(key)) {
+      rejected.push(key);
+      continue;
+    }
+    if (typeof raw !== "number" || !Number.isFinite(raw)) {
+      return { error: `lab_values.${key} must be a finite number` };
+    }
+    values[key] = raw;
+  }
+
+  if (Object.keys(values).length === 0) {
+    return {
+      error:
+        "no recognised analyte measurements supplied; expected keys such as ph, carbon_organic, nitrogen_total",
+    };
+  }
+  return { values, rejected };
+}
+
+/**
+ * Persist a lab-assisted analysis against the caller's own section/farm, using
+ * the caller-scoped RLS client so a browser-supplied farmId can never be used to
+ * write into another user's farm. Never throws: a persistence failure is
+ * reported honestly in the response instead of failing the analysis.
+ */
+async function persistLabAnalysis(
+  req: Request,
+  sectionId: string | undefined,
+  labValues: Record<string, number>,
+  serviceResult: Record<string, unknown>,
+): Promise<{ persisted: boolean; analysisId?: string; reason?: string }> {
+  if (!sectionId) return { persisted: false, reason: "FIELD_NOT_SELECTED" };
+  const db = scopedClientFromAuthHeader(req.header("authorization"));
+  if (!db) return { persisted: false, reason: "DATABASE_OR_SESSION_UNAVAILABLE" };
+
+  try {
+    const { data: section, error: sectionError } = await db
+      .from("farm_sections")
+      .select("id,farm_id")
+      .eq("id", sectionId)
+      .maybeSingle();
+    if (sectionError) return { persisted: false, reason: "FIELD_LOOKUP_FAILED" };
+    if (!section?.farm_id) return { persisted: false, reason: "FIELD_NOT_FOUND_OR_NOT_OWNED" };
+
+    const models = (serviceResult.models ?? {}) as Record<
+      string,
+      { status?: string; prediction?: number | null }
+    >;
+    const predicted = (target: string): number | null => {
+      const entry = models[target];
+      return entry?.status === "predicted" && typeof entry.prediction === "number"
+        ? entry.prediction
+        : null;
+    };
+
+    const { data: saved, error } = await db
+      .from("soil_analyses")
+      .insert({
+        farm_id: section.farm_id,
+        section_id: section.id,
+        analysis_type: "lab",
+        sensor_data: labValues,
+        analysis_result: serviceResult,
+        recommendations: [],
+        ph_level: predicted("ph"),
+        nitrogen_level: predicted("nitrogen_total"),
+        phosphorus_level: predicted("phosphorus_extractable"),
+        potassium_level: predicted("potassium_extractable"),
+        organic_matter_percent: predicted("carbon_organic"),
+        analyzed_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error) return { persisted: false, reason: "INSERT_FAILED" };
+    return { persisted: true, analysisId: saved.id };
+  } catch {
+    return { persisted: false, reason: "PERSISTENCE_ERROR" };
+  }
+}
+
+/** POST /api/ai/soil/predict-lab — real lab-assisted model inference. */
+export const predictLabAssistedSoil = async (req: Request, res: Response) => {
+  const parsed = parseLabValues(req.body?.lab_values ?? req.body?.labValues);
+  if ("error" in parsed) {
+    return res.status(400).json({
+      success: false,
+      code: "INVALID_LAB_VALUES",
+      error: "Invalid laboratory measurements",
+      message: parsed.error,
+    });
+  }
+
+  const serviceUrl = AI_SERVICES.SOIL_ANALYSIS;
+  if (!serviceUrl) {
+    return res.status(503).json({
+      success: false,
+      code: "SOIL_SERVICE_NOT_CONFIGURED",
+      message: "Soil analysis service is not configured.",
+      dataSource: "unavailable",
+      isRealData: false,
+    });
+  }
+
+  try {
+    const response = await axios.post(
+      `${serviceUrl}/predict-lab-soil`,
+      { lab_values: parsed.values },
+      { timeout: 60000, headers: { "Content-Type": "application/json" } },
+    );
+
+    const result = (response.data ?? {}) as Record<string, unknown>;
+    const persistence = await persistLabAnalysis(
+      req,
+      req.body?.section_id ?? req.body?.fieldId,
+      parsed.values,
+      result,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      // Model inference, not a measured or field-validated result.
+      dataSource: "trained-model-inference",
+      isRealData: false,
+      modelSource: "lab-assisted-soil-models",
+      predictionScope: result.prediction_scope ?? "lab_assisted_only",
+      fieldValidated: false,
+      tunisiaValidated: false,
+      rejectedInputFields: parsed.rejected,
+      persistence,
+      disclaimer:
+        "قيم متوقّعة من نماذج تعلّم آلي مدرّبة على بيانات مرجعية مخبرية؛ ليست قياسات ميدانية مُتحقَّق منها. تأكد من الوحدات وطريقة الاستخلاص وعمق العينة.",
+    });
+  } catch (error) {
+    handleAIServiceError(error as AxiosError, "Lab-Assisted Soil Prediction", res);
+  }
+};
+
+/** GET /api/ai/soil/lab-models — model metadata (no artifact is loaded). */
+export const getLabModelStatus = async (_req: Request, res: Response) => {
+  const serviceUrl = AI_SERVICES.SOIL_ANALYSIS;
+  if (!serviceUrl) {
+    return res.status(503).json({
+      success: false,
+      code: "SOIL_SERVICE_NOT_CONFIGURED",
+      dataSource: "unavailable",
+      isRealData: false,
+    });
+  }
+  try {
+    const response = await axios.get(`${serviceUrl}/lab-models/status`, {
+      timeout: 10000,
+    });
+    res.json({
+      success: true,
+      data: response.data,
+      dataSource: "trained-model-inference",
+      isRealData: false,
+      modelSource: "lab-assisted-soil-models",
+      fieldValidated: false,
+    });
+  } catch (error) {
+    handleAIServiceError(error as AxiosError, "Lab Soil Models", res);
+  }
+};
 
 // 🌾 CROP RECOMMENDATION ENDPOINTS
 export const getSmartCropRecommendations = async (
@@ -1390,17 +1603,16 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           const declared =
             response.data?.model_source ?? response.data?.modelSource ?? null;
           const modelSource = typeof declared === "string" ? declared : null;
-          const heuristic =
-            modelSource !== null && HEURISTIC_MODEL_SOURCE_RE.test(modelSource);
-          const ruleBased =
-            modelSource !== null && RULE_BASED_MODEL_SOURCE_RE.test(modelSource);
+          const kind = classifyModelSource(modelSource);
+          const heuristic = kind === "synthetic";
+          const ruleBased = kind === "rule-based";
           return {
             ...service,
             status: "available",
             modelSource,
-            modelKind: !modelSource ? "unknown" : heuristic ? "synthetic" : ruleBased ? "rule-based" : "model",
+            modelKind: kind === "unknown" ? "unknown" : kind === "trained" ? "model" : kind,
             // Deterministic rules and synthetic demos are not trained ML models.
-            isRealModel: modelSource !== null && !heuristic && !ruleBased,
+            isRealModel: kind === "trained",
             modelTrainedOnSyntheticData: heuristic,
             responseTime: Date.now() - checkStart,
             lastChecked: new Date().toISOString()

@@ -222,6 +222,8 @@ import {
   analyzeSoilData,
   matchCropToClimate,
   diagnoseSoilFromImage,
+  predictLabAssistedSoil,
+  getLabModelStatus,
   getSmartCropRecommendations,
   estimateCropProfitability,
   compareCropProfitability,
@@ -710,6 +712,10 @@ export function createServer() {
   app.post("/api/ai/soil/analyze", analyzeSoilData);
   app.post("/api/ai/soil/match-crops", matchCropToClimate);
   app.post("/api/ai/soil/diagnose-image", diagnoseSoilFromImage);
+  // Laboratory-assisted prediction uses seven genuinely trained models; it is
+  // authenticated because it accepts (and may persist) the caller's own lab data.
+  app.post("/api/ai/soil/predict-lab", requireAuth, predictLabAssistedSoil);
+  app.get("/api/ai/soil/lab-models", getLabModelStatus);
 
   // 🌾 Crop Recommendation AI Service
   app.post("/api/ai/crops/recommend", getSmartCropRecommendations);

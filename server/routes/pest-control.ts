@@ -15,6 +15,7 @@
 import { Router } from "express";
 import {
   callMicroservice,
+  legacyProvenance,
   respondServiceError,
   serviceBaseUrl,
 } from "../services/providers/microserviceProxy";
@@ -30,16 +31,19 @@ const CAPABILITY = "pest-control";
 /** Attach provenance without breaking the legacy {success,data,message} shape. */
 function sendLegacy(
   res: Parameters<typeof respondServiceError>[0],
-  result: { data: unknown; modelSource: string | null; heuristic: boolean },
+  result: {
+    data: unknown;
+    modelSource: string | null;
+    heuristic: boolean;
+    kind?: import("../services/providers/modelProvenance").ProvenanceKind;
+  },
   message: string,
 ) {
   res.json({
     success: true,
     data: result.data,
     message,
-    dataSource: result.heuristic ? "heuristic" : "microservice",
-    isRealData: !result.heuristic,
-    modelSource: result.modelSource,
+    ...legacyProvenance(result),
   });
 }
 

@@ -1195,3 +1195,54 @@ assets contain **0** U+FFFD) · `npx jest` **912 passed / 915 (3 skipped)** ·
 passed** · all eight AI services still report `OK` on `--check`. Spot checks
 confirm `الإدارة المالية`, `صحة الحيوانات`, `الإنذار المبكر`, `كلوريد بوتاسيوم`
 and `مكافحة الآفات` now render correctly, including in the served bundle.
+
+---
+
+## Session — production-grade AI transformation (provenance + lab soil)
+
+### Unified model-provenance classification — **VERIFIED**
+
+A defect was found while auditing: `serviceProbe.HEURISTIC_MARKERS` did **not**
+match `deterministic-rules` (the source the soil microservice declares for its
+rule analyzer), so `probeService().heuristic` was `false` for a rule engine.
+The gateway compensated with a *second* regex (`RULE_BASED_MODEL_SOURCE_RE`),
+but `microserviceProxy` did not — so a deterministic-rule service could be
+labelled `isRealData: true` on the legacy proxy routes.
+
+- New `server/services/providers/modelProvenance.ts` — single classifier
+  (`classifyModelSource`, `isSyntheticModelSource`, `isNonModelSource`,
+  `isTrainedModelSource`, `provenanceDataSource`, `ProvenanceKind`).
+- `serviceProbe.ts` now exposes the full `kind`/`ruleBased`; the proxy refuses
+  synthetic **and** rule-based services before sending user data.
+- `ai-services-gateway.ts`, `ai-capabilities.ts` and the three legacy routers
+  (pest / irrigation / weather-yield) all use the shared classifier — the
+  duplicate regexes are gone.
+- `ai-capabilities` now downgrades a microservice that self-reports a rule
+  engine to `engine: "rule-based"` instead of advertising it as a model.
+- Tests: `tests/unit/model-provenance.test.ts` (9) + existing provenance suites
+  (`microservice-proxy`, `ai-health-model-provenance`, `capability-reachability`,
+  `vision-gateway`) all pass.
+
+### Laboratory-assisted soil prediction surfaced through the gateway — **VERIFIED**
+
+The soil microservice ships **seven genuinely trained models** (random-forest /
+extra-trees / gradient-boosting) fitted on the iSDA wet-chemistry reference
+dataset (`synthetic_data_used: false`, 2 134 samples, spatial GroupKFold). They
+were never reachable from the Node API.
+
+- `POST /api/ai/soil/predict-lab` (authenticated) validates the 16 known
+  analytes (finite numbers only), forwards to `/predict-lab-soil`, tags the
+  result `dataSource: "trained-model-inference"` / `isRealData: false` (model
+  inference, not a measured result) and optionally persists to `soil_analyses`
+  through the caller-scoped RLS client (never a browser-supplied farmId).
+- `GET /api/ai/soil/lab-models` returns model metadata without loading artifacts.
+- `main.py` `/health` now reports `lab_assisted.metadata_ready` (manifest only,
+  no artifact load).
+- Tests: `tests/integration/lab-soil-gateway.test.ts` (5) pass. Live-verified:
+  the service boots under the venv, `/lab-models/status` → `ready 7/7`, and
+  `/predict-lab-soil` returns real predictions (ph 6.68, R² 0.53).
+
+### Verification this session
+
+`npx tsc --noEmit` exit 0 · `npx jest` provenance + lab + related suites pass ·
+`pytest agrogrowth-ai/tests` 245 passed · `pytest soil_analysis/tests` 9 passed.

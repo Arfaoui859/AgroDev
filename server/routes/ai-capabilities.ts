@@ -19,6 +19,7 @@ import { analyzeSoilForUI, recommendCropsForUI } from "../services/ai/cropAdviso
 import { isLLMConfigured, getPublicLLMInfo } from "../services/providers/llmProvider";
 import { isVisionConfigured } from "../services/providers/visionProvider";
 import { probeService } from "../services/providers/serviceProbe";
+import type { ProvenanceKind } from "../services/providers/modelProvenance";
 import { capabilityStatus } from "../services/providers/aiTelemetry";
 import { firstEnv } from "../lib/env";
 import { localServiceFallback, normalizeServiceUrl } from "./ai-services-gateway";
@@ -325,6 +326,7 @@ async function resolveEngine(cap: Capability): Promise<{
   reachable: boolean | null;
   configured: boolean;
   modelSource: string | null;
+  modelKind: ProvenanceKind;
 }> {
   if (!cap.microserviceUrl) {
     // No backing service is configured. A capability whose primary engine is
@@ -332,7 +334,7 @@ async function resolveEngine(cap: Capability): Promise<{
     // "unavailable"); an in-process engine (rule-based) stays usable.
     const engine =
       cap.engine === "microservice" ? (cap.fallbackEngine ?? "unavailable") : cap.engine;
-    return { engine, reachable: null, configured: false, modelSource: null };
+    return { engine, reachable: null, configured: false, modelSource: null, modelKind: "unknown" };
   }
   const probe = await probeService(cap.microserviceUrl);
   if (!probe.reachable) {
@@ -341,16 +343,27 @@ async function resolveEngine(cap: Capability): Promise<{
       reachable: false,
       configured: true,
       modelSource: null,
+      modelKind: "unknown",
     };
   }
-  // The service is up. If it self-reports heuristic/demo inference, report
-  // that honestly instead of advertising it as a trained model.
-  if (probe.heuristic && cap.engine === "vision-model") {
+  // The service is up. Report what it actually is instead of advertising a
+  // synthetic/heuristic/deterministic-rule service as a trained model.
+  if (probe.kind === "synthetic" && cap.engine === "vision-model") {
     return {
       engine: "heuristic",
       reachable: true,
       configured: true,
       modelSource: probe.modelSource,
+      modelKind: probe.kind,
+    };
+  }
+  if (probe.kind === "rule-based" && cap.engine === "microservice") {
+    return {
+      engine: "rule-based",
+      reachable: true,
+      configured: true,
+      modelSource: probe.modelSource,
+      modelKind: probe.kind,
     };
   }
   return {
@@ -358,6 +371,7 @@ async function resolveEngine(cap: Capability): Promise<{
     reachable: true,
     configured: true,
     modelSource: probe.modelSource,
+    modelKind: probe.kind,
   };
 }
 

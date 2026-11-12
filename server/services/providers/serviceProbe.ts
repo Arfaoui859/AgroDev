@@ -9,24 +9,33 @@
  * Results are cached briefly to avoid a health call on every request.
  */
 
+import { classifyModelSource, isSyntheticModelSource, type ProvenanceKind } from "./modelProvenance";
+
 export interface ServiceProbe {
   reachable: boolean;
   /** Model provenance declared by the service's own /health payload. */
   modelSource: string | null;
   /** True when the service reports it runs on synthetic/heuristic logic. */
   heuristic: boolean;
+  /**
+   * Full classification of the declared source. Unlike `heuristic`, this also
+   * distinguishes deterministic rule engines (which are NOT trained ML) and
+   * language-model providers from a genuine trained model.
+   */
+  kind: ProvenanceKind;
+  /** True when the service self-reports a deterministic rule engine. */
+  ruleBased: boolean;
 }
 
 const TTL_MS = 30_000;
 const cache = new Map<string, { probe: ServiceProbe; at: number }>();
 
-const HEURISTIC_MARKERS =
-  /heuristic|demo|simulat|synthetic|mock|random|placeholder|dummy/i;
-
 const UNREACHABLE: ServiceProbe = {
   reachable: false,
   modelSource: null,
   heuristic: false,
+  kind: "unknown",
+  ruleBased: false,
 };
 
 export async function probeService(
@@ -57,7 +66,9 @@ export async function probeService(
       probe = {
         reachable: true,
         modelSource,
-        heuristic: modelSource !== null && HEURISTIC_MARKERS.test(modelSource),
+        heuristic: isSyntheticModelSource(modelSource),
+        kind: classifyModelSource(modelSource),
+        ruleBased: classifyModelSource(modelSource) === "rule-based",
       };
     } else if (response.status === 429) {
       // Rate limiting is an HTTP response from the target host. Preserve
@@ -66,6 +77,8 @@ export async function probeService(
         reachable: true,
         modelSource: null,
         heuristic: false,
+        kind: "unknown",
+        ruleBased: false,
       };
     }
   } catch {
