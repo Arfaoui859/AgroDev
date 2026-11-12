@@ -5,6 +5,7 @@ import {
 } from "../services/providers/weatherProvider";
 import { ProviderError } from "../services/providers/http";
 import { markReal } from "../lib/provenance";
+import { sanitizeNetworkMessage } from "../lib/errors";
 
 export type { WeatherData };
 
@@ -64,7 +65,7 @@ function providerErrorResponse(
     console.error(`Weather provider error (${error.kind}): ${error.message}`);
     return res.status(status).json({
       error: fallbackMessage,
-      message: error.message,
+      message: sanitizeNetworkMessage(error.message),
       provider: error.provider,
       reason: error.kind,
       // Explicitly signal that no real data was returned, so the client never

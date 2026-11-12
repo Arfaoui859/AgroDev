@@ -70,6 +70,13 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
    returned unconditional 501/503.~~ **Done — Session 11.** Both now persist
    under owner-scoped RLS; budget projections derive from the caller's own
    ledger and are labelled `derived:user-history`.
+7. ~~Raw provider/Postgres error messages reached clients from public
+   endpoints.~~ **Done — Session 15.** `notifications`, `autonomous-farm-agent`,
+   `weather` and the AI gateway now log server-side and return fixed/coarse
+   messages; `tests/integration/error-disclosure.test.ts` pins it.
+8. ~~Verify the eight AI services locally.~~ **Done — Session 14.** All eight
+   boot and answer `/health` 200; soil inference is real, the rest fail closed
+   with `*_MODEL_NOT_VALIDATED`. Remaining: hosted inference (external).
 
 ## Steps that need an external resource
 

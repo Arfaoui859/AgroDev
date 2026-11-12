@@ -5,6 +5,7 @@ import axios, { AxiosError } from "axios";
 import FormData from "form-data";
 import multer from "multer";
 import { uploadError, requireRealImages } from "../middleware/upload";
+import { sanitizeNetworkMessage } from "../lib/errors";
 import {
   answerAgriculturalQuestion,
   detectLanguage,
@@ -122,10 +123,24 @@ const handleAIServiceError = (
   console.error(`Error calling ${serviceName}:`, error.message);
 
   if (error.response) {
+    const raw = error.response.data as unknown;
+    // Upstream services return intentional structured errors as JSON objects
+    // (e.g. MODEL_NOT_VALIDATED) — pass those through unchanged so the UI can
+    // explain the refusal. HTML error pages and transport strings are replaced
+    // with a coarse message instead of being echoed (they can name internal hosts).
+    let message: unknown;
+    if (raw !== null && typeof raw === "object") {
+      message = raw;
+    } else {
+      const text = String(raw ?? error.message);
+      message = /<\s*(html|!doctype)/i.test(text)
+        ? "Upstream service returned an unexpected error response"
+        : sanitizeNetworkMessage(text);
+    }
     res.status(error.response.status).json({
       success: false,
       error: `${serviceName} service error`,
-      message: error.response.data || error.message,
+      message,
       status: error.response.status,
     });
   } else if (error.request) {
@@ -139,7 +154,7 @@ const handleAIServiceError = (
     res.status(500).json({
       success: false,
       error: "Internal server error",
-      message: error.message,
+      message: sanitizeNetworkMessage(error.message),
       status: 500,
     });
   }

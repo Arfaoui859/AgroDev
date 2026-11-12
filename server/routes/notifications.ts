@@ -1,8 +1,19 @@
 import type { Request, Response } from "express";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
+import { safeErrorMessage } from "../lib/errors";
 
 function callerDb(req: Request) {
   return scopedClientFromAuthHeader(req.header("authorization"));
+}
+
+/**
+ * Log the raw Postgres/Supabase error server-side and return a fixed, non-
+ * disclosing message to the client. The raw error can name tables, columns and
+ * constraints, so it must never reach the response body.
+ */
+function dbErr(error: unknown): string {
+  console.error("[notifications] persistence error:", error);
+  return safeErrorMessage(error, "Notification store is temporarily unavailable");
 }
 
 function unavailable(res: Response, code: string) {
@@ -30,7 +41,7 @@ export async function getNotifications(req: Request, res: Response) {
   if (req.query.archived === "true") query = query.not("archived_at", "is", null);
   else if (req.query.archived !== "all") query = query.is("archived_at", null);
   const { data, error } = await query;
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_READ_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_READ_FAILED", message: dbErr(error) });
   res.set("X-Data-Provenance", "supabase.notifications");
   res.set("X-Is-Real-Data", "true");
   return res.json({ success: true, data: data ?? [], count: data?.length ?? 0, source: "supabase.notifications", isRealData: true });
@@ -42,7 +53,7 @@ export async function getNotificationById(req: Request, res: Response) {
   const { data, error } = await db.from("notifications")
     .select("id,user_id,type,title,message,priority,category,action_url,metadata,read_at,is_starred,archived_at,created_at")
     .eq("id", req.params.id).eq("user_id", req.userId).maybeSingle();
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_READ_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_READ_FAILED", message: dbErr(error) });
   if (!data) return res.status(404).json({ success: false, code: "NOTIFICATION_NOT_FOUND" });
   return res.json({ success: true, data });
 }
@@ -65,7 +76,7 @@ export async function createNotification(req: Request, res: Response) {
     action_url: typeof action_url === "string" ? action_url.slice(0, 500) : null,
     metadata: metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata : {},
   }).select("*").single();
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_CREATE_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_CREATE_FAILED", message: dbErr(error) });
   return res.status(201).json({ success: true, data });
 }
 
@@ -81,7 +92,7 @@ export async function updateNotification(req: Request, res: Response) {
   if (!Object.keys(updates).length) return res.status(400).json({ success: false, code: "NO_VALID_NOTIFICATION_FIELDS" });
   const { data, error } = await db.from("notifications").update(updates)
     .eq("id", req.params.id).eq("user_id", req.userId).select("*").maybeSingle();
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_UPDATE_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_UPDATE_FAILED", message: dbErr(error) });
   if (!data) return res.status(404).json({ success: false, code: "NOTIFICATION_NOT_FOUND" });
   return res.json({ success: true, data });
 }
@@ -91,7 +102,7 @@ async function updateOwnedNotification(req: Request, res: Response, updates: Rec
   if (!db || !req.userId) return unavailable(res, "NOTIFICATION_DATABASE_UNAVAILABLE");
   const { data, error } = await db.from("notifications").update(updates)
     .eq("id", req.params.id).eq("user_id", req.userId).select("*").maybeSingle();
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_UPDATE_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_UPDATE_FAILED", message: dbErr(error) });
   if (!data) return res.status(404).json({ success: false, code: "NOTIFICATION_NOT_FOUND" });
   return res.json({ success: true, data });
 }
@@ -105,7 +116,7 @@ export const toggleStar = async (req: Request, res: Response) => {
   if (!db || !req.userId) return unavailable(res, "NOTIFICATION_DATABASE_UNAVAILABLE");
   const { data: current, error } = await db.from("notifications").select("is_starred")
     .eq("id", req.params.id).eq("user_id", req.userId).maybeSingle();
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_READ_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_READ_FAILED", message: dbErr(error) });
   if (!current) return res.status(404).json({ success: false, code: "NOTIFICATION_NOT_FOUND" });
   return updateOwnedNotification(req, res, { is_starred: !current.is_starred });
 };
@@ -117,7 +128,7 @@ export async function deleteNotification(req: Request, res: Response) {
   if (!db || !req.userId) return unavailable(res, "NOTIFICATION_DATABASE_UNAVAILABLE");
   const { data, error } = await db.from("notifications").delete()
     .eq("id", req.params.id).eq("user_id", req.userId).select("id").maybeSingle();
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_DELETE_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_DELETE_FAILED", message: dbErr(error) });
   if (!data) return res.status(404).json({ success: false, code: "NOTIFICATION_NOT_FOUND" });
   return res.json({ success: true, deletedId: data.id });
 }
@@ -133,14 +144,14 @@ export async function bulkUpdateNotifications(req: Request, res: Response) {
   if (action === "delete") {
     const { data, error } = await db.from("notifications").delete()
       .eq("user_id", req.userId).in("id", ids).select("id");
-    if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_BULK_DELETE_FAILED", message: error.message });
+    if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_BULK_DELETE_FAILED", message: dbErr(error) });
     return res.json({ success: true, deletedCount: data?.length ?? 0 });
   }
   const updates = action === "read" ? { read_at: new Date().toISOString() } :
     action === "unread" ? { read_at: null } : { archived_at: new Date().toISOString() };
   const { data, error } = await db.from("notifications").update(updates)
     .eq("user_id", req.userId).in("id", ids).select("id");
-  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_BULK_UPDATE_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "NOTIFICATION_BULK_UPDATE_FAILED", message: dbErr(error) });
   return res.json({ success: true, updatedCount: data?.length ?? 0 });
 }
 
@@ -261,7 +272,7 @@ export const getRealTimeData = async (req: Request, res: Response) => {
     .order("recorded_at", { ascending: false })
     .limit(limit);
   if (error) {
-    return res.status(503).json({ success: false, code: "SENSOR_READINGS_READ_FAILED", message: error.message, data: [], isRealData: false });
+    return res.status(503).json({ success: false, code: "SENSOR_READINGS_READ_FAILED", message: dbErr(error), data: [], isRealData: false });
   }
   const rows = data ?? [];
   res.set("X-Data-Provenance", "supabase.sensor_readings");

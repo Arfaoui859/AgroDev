@@ -854,3 +854,53 @@ OK · `npx jest` **867 passed / 3 skipped** (96/98 suites).
 | Live AI microservice inference (hosted) | **BLOCKED** | No credentials/network here; hosts 429/unconfigured |
 | Farmer CRUD persistence end-to-end | **BLOCKED** | No Supabase `.env` in this environment; **but** schema + RLS + triggers are now VERIFIED against a real Postgres (Session 9/10) |
 | Feed-ration optimization / breeding recommendation engines | **NOT IMPLEMENTED** | Require validated nutritional + genetic reference tables; endpoints report this honestly rather than inventing output |
+
+---
+
+## Session 14 — P1 evidence: eight AI services verified locally
+
+Started all eight FastAPI services from `agrogrowth-ai/.venv` (detached
+`uvicorn`, ports 8001–8008) and exercised them directly:
+
+- `/health` on all eight → **200**, each declaring its true provenance:
+  `soil_analysis: deterministic-rules` (healthy), `intelligent_agent:
+  rule-based-demo` (healthy), and `synthetic-demo*` for the rest.
+- Inference round-trips:
+  - `POST /analyze-soil` (valid) → real analysis, `health_score 80.0`,
+    `data_source: user_supplied_input`; invalid `ph=99` → **422** with a precise
+    message. **Real, honest.**
+  - `POST /recommend-crops` → **503 `CROP_MODEL_NOT_VALIDATED`** (synthetic
+    training data, production disabled). **Fails closed, honest.**
+  - `POST /forecast-price` → **503 `LIVE_MARKET_FEED_NOT_CONFIGURED`**.
+  - `POST /predict-crop-yield` → **503 `YIELD_MODEL_NOT_VALIDATED`**.
+  - `POST /analyze-pest-problem` → **503 `PEST_MODEL_NOT_VALIDATED`**.
+  - `POST /optimize-irrigation` → **503 `IRRIGATION_MODEL_NOT_VALIDATED`**.
+- Python suites: `tests/` **245 passed**; `soil_analysis/tests` **9 passed**.
+
+Conclusion: the eight service *implementations* are VERIFIED locally and refuse
+to emit unvalidated output (no synthetic claims). **Hosted** inference remains
+**BLOCKED** (no network/credentials here; hosts 429/unconfigured).
+
+---
+
+## Session 15 — security sweep: transport-error disclosure closed
+
+Found and fixed the last class of raw-error disclosure. Public endpoints
+returned `error.message` verbatim from Supabase/Postgres and axios:
+
+- `server/routes/notifications.ts` (10 sites) — raw Postgres errors (table/column
+  names) → now `dbErr()` logs server-side and returns a fixed message.
+- `server/routes/autonomous-farm-agent.ts` (5 sites) — same treatment; per-user
+  scan failures now log server-side and report `code: "SCAN_FAILED"`.
+- `server/routes/weather.ts` — `ProviderError.message` (embeds the resolved host)
+  → `sanitizeNetworkMessage()`.
+- `server/routes/ai-services-gateway.ts` — `handleAIServiceError` now passes
+  structured JSON refusals through unchanged but replaces HTML error pages and
+  transport strings (no host echo).
+
+Regression suite `tests/integration/error-disclosure.test.ts` (4 tests) drives
+the real handlers with address-bearing upstream failures and asserts no internal
+host leaks.
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` OK ·
+`npx jest` **871 passed / 3 skipped / 874 total** · Python 245 + 9 passed.

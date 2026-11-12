@@ -1,10 +1,17 @@
 import crypto from "crypto";
 import type { Request, Response } from "express";
 import { scopedClientFromAuthHeader, supabaseAdmin } from "../lib/supabase";
+import { safeErrorMessage } from "../lib/errors";
 import { runFarmAgentScan } from "../services/ai/autonomousFarmAgent";
 
 function callerDb(req: Request) {
   return scopedClientFromAuthHeader(req.header("authorization"));
+}
+
+/** Log the raw persistence error server-side; return a non-disclosing message. */
+function dbErr(scope: string, error: unknown): string {
+  console.error(`[autonomous-farm-agent] ${scope} error:`, error);
+  return safeErrorMessage(error, "Agent store is temporarily unavailable");
 }
 
 export async function getAutonomousAgentStatus(req: Request, res: Response) {
@@ -15,7 +22,7 @@ export async function getAutonomousAgentStatus(req: Request, res: Response) {
     db.from("farms").select("id").eq("owner_id", req.userId),
   ]);
   if (settingsError || farmsError) {
-    return res.status(503).json({ success: false, code: "AGENT_STATUS_UNAVAILABLE", message: settingsError?.message || farmsError?.message });
+    return res.status(503).json({ success: false, code: "AGENT_STATUS_UNAVAILABLE", message: dbErr("status", settingsError || farmsError) });
   }
   const cadence = settings?.cadence_minutes ?? 60;
   const lastScan = settings?.last_scan_at ? new Date(settings.last_scan_at) : null;
@@ -52,7 +59,7 @@ export async function updateAutonomousAgentSettings(req: Request, res: Response)
     ...(cadence !== undefined ? { cadence_minutes: Number(cadence) } : {}),
     updated_at: new Date().toISOString(),
   }, { onConflict: "user_id" }).select("enabled,cadence_minutes,last_scan_at,last_events_count").single();
-  if (error) return res.status(503).json({ success: false, code: "AGENT_SETTINGS_SAVE_FAILED", message: error.message });
+  if (error) return res.status(503).json({ success: false, code: "AGENT_SETTINGS_SAVE_FAILED", message: dbErr("settings-save", error) });
   return res.json({ success: true, data });
 }
 
@@ -63,9 +70,8 @@ export async function runAutonomousAgentNow(req: Request, res: Response) {
     const result = await runFarmAgentScan(db, req.userId, { ignoreDisabled: true });
     return res.json({ success: true, data: result });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "AGENT_SCAN_FAILED";
-    console.error("Autonomous farm-agent scan failed:", message);
-    return res.status(503).json({ success: false, code: "AGENT_SCAN_FAILED", message });
+    console.error("Autonomous farm-agent scan failed:", error);
+    return res.status(503).json({ success: false, code: "AGENT_SCAN_FAILED", message: dbErr("scan", error) });
   }
 }
 
@@ -93,13 +99,13 @@ export async function runScheduledAutonomousAgent(req: Request, res: Response) {
     .from("farms")
     .select("owner_id")
     .not("owner_id", "is", null);
-  if (farmsError) return res.status(503).json({ success: false, code: "FARM_SCAN_SOURCE_UNAVAILABLE", message: farmsError.message });
+  if (farmsError) return res.status(503).json({ success: false, code: "FARM_SCAN_SOURCE_UNAVAILABLE", message: dbErr("farm-scan-source", farmsError) });
 
   const userIds = Array.from(new Set((farms ?? []).map((farm: any) => farm.owner_id).filter(Boolean))) as string[];
   const { data: settingsRows, error: settingsError } = userIds.length
     ? await supabaseAdmin.from("farm_agent_settings").select("user_id,enabled,cadence_minutes,last_scan_at").in("user_id", userIds)
     : { data: [], error: null };
-  if (settingsError) return res.status(503).json({ success: false, code: "AGENT_SETTINGS_SOURCE_UNAVAILABLE", message: settingsError.message });
+  if (settingsError) return res.status(503).json({ success: false, code: "AGENT_SETTINGS_SOURCE_UNAVAILABLE", message: dbErr("settings-source", settingsError) });
 
   const settingsByUser = new Map((settingsRows ?? []).map((row: any) => [row.user_id, row]));
   const now = new Date();
@@ -120,7 +126,8 @@ export async function runScheduledAutonomousAgent(req: Request, res: Response) {
       summary.eventsDetected += result.eventsDetected;
     } catch (error) {
       summary.usersFailed += 1;
-      failures.push({ userIndex: userIndex + 1, code: error instanceof Error ? error.message.slice(0, 120) : "UNKNOWN" });
+      console.error("[autonomous-farm-agent] scan failed for a user:", error);
+      failures.push({ userIndex: userIndex + 1, code: "SCAN_FAILED" });
     }
   }
 
