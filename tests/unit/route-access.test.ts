@@ -63,4 +63,26 @@ describe("resolveRouteAccess", () => {
       }),
     ).toBe("allow");
   });
+
+  // Regression: the server treats `administrator` as an alias of `admin`
+  // (`ADMIN_ROLES`), but the guard compared raw strings, so an `administrator`
+  // profile was denied `/admin-panel` and bounced to the home page.
+  test("treats an `administrator` profile as an admin (server-alias parity)", () => {
+    expect(resolveRouteAccess({ ...base, userRole: "administrator" })).toBe("allow");
+  });
+
+  test("matches the alias case-insensitively and with surrounding whitespace", () => {
+    expect(resolveRouteAccess({ ...base, userRole: " Administrator " })).toBe("allow");
+    expect(resolveRouteAccess({ ...base, userRole: "ADMIN" })).toBe("allow");
+  });
+
+  test("does not widen an allow-list: administrator is still denied a farmer route", () => {
+    expect(
+      resolveRouteAccess({ ...base, allowedRoles: ["farmer"], userRole: "administrator" }),
+    ).toBe("redirect-fallback");
+  });
+
+  test("an unknown role still fails closed", () => {
+    expect(resolveRouteAccess({ ...base, userRole: "superuser" })).toBe("redirect-fallback");
+  });
 });

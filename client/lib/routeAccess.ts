@@ -17,6 +17,23 @@ export type RouteAccessDecision =
   | "redirect-fallback"
   | "allow";
 
+/**
+ * Canonicalise a profile role before comparing it against an allow-list.
+ *
+ * The database and server middleware treat `administrator` as a synonym of
+ * `admin` (`ADMIN_ROLES` in `server/middleware/auth.ts`). Without this, an
+ * `administrator` profile was denied `/admin-panel` (which lists only `admin`)
+ * and bounced to the home page — the reported "admin does not see the admin
+ * dashboard" symptom. Normalisation only ever maps an alias onto the canonical
+ * role; it never invents a role, so an unknown role still fails closed.
+ */
+export function normalizeRole(role: string | null | undefined): string | null {
+  if (!role) return null;
+  const normalized = String(role).trim().toLowerCase();
+  if (!normalized) return null;
+  return normalized === "administrator" ? "admin" : normalized;
+}
+
 export interface RouteAccessInput {
   isLoading: boolean;
   requiresAuth: boolean;
@@ -44,7 +61,9 @@ export function resolveRouteAccess({
     // No verified identity, or an unverified role, or a role outside the
     // allow-list: deny. Never fall through to rendering privileged content.
     if (!userRole || !roleVerified) return "redirect-fallback";
-    if (!allowedRoles.includes(userRole)) return "redirect-fallback";
+    const role = normalizeRole(userRole);
+    const allowed = allowedRoles.map((r) => normalizeRole(r));
+    if (!role || !allowed.includes(role)) return "redirect-fallback";
   }
 
   return "allow";

@@ -23,6 +23,7 @@ export type UserRole =
 
 export { ROLE_DASHBOARD_ROUTES, dashboardRouteForRole } from "../lib/roleDashboard";
 import { dashboardRouteForRole } from "../lib/roleDashboard";
+import { normalizeRole } from "../lib/routeAccess";
 export type Permission = string;
 
 interface AuthContextType {
@@ -314,7 +315,10 @@ Row Level Security (RLS) policies are blocking access.
         return;
       }
 
-      setUser(userData);
+      setUser({
+        ...userData,
+        role: normalizeRole(userData?.role) ?? userData?.role,
+      });
       setRoleVerified(true);
 
       // Try to load user profile with timeout and retries

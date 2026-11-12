@@ -937,3 +937,29 @@ New/updated tests: `tests/unit/microservice-proxy-disclosure.test.ts` (2),
 | Tunisian news (LIVE) | **VERIFIED** — real articles fetched, publisher attribution + original links present. |
 | Role→dashboard routing | **VERIFIED** — `dashboardRouteForRole` drives the post-login redirect from the persisted profile role. |
 | Admin auth | **VERIFIED** — admin-bootstrap routes gate on `verifyAdminToken` (constant-time, fail-closed); role changes only via a verified JWT + allow-listed `admin_change_user_role` RPC. |
+
+---
+
+## Session 16b — admin dashboard role-alias fix (P0)
+
+**Defect (root cause of "admin does not see the admin dashboard").** The
+database and the server middleware treat `administrator` as a synonym of
+`admin` (`ADMIN_ROLES = {admin, administrator}` in `server/middleware/auth.ts`),
+but the client compared raw strings:
+
+- `client/lib/routeAccess.ts` — `/admin-panel` lists only `admin`, so a profile
+  whose stored role is `administrator` was denied and bounced to `/`.
+- `client/lib/roleDashboard.ts` — already mapped the alias (unchanged).
+- `Layout.tsx` filtered nav items by `allowedRoles.includes(user.role)`, so an
+  `administrator` also lost the Admin nav entry.
+
+**Fix.** Added `normalizeRole()` (single canonicalisation point) and applied it:
+
+- `resolveRouteAccess()` normalises both the caller role and the allow-list
+  before comparing (never invents a role; unknown roles still fail closed).
+- `AuthContext.loadUserData()` stores the normalised role, so the nav, RBAC and
+  guards all agree.
+
+**Tests.** `tests/unit/route-access.test.ts` +4 (administrator → allow;
+case/whitespace; alias does not widen a farmer-only allow-list; unknown role
+still denied). Suite: **878 passed / 3 skipped / 881 total**; `tsc` 0; lint 0.
