@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Progress } from '../components/ui/progress';
+import { apiFetch } from '../lib/apiFetch';
 import { 
   Plus, 
   Edit, 
@@ -66,6 +67,7 @@ const BudgetPlanning: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<BudgetPlan | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     cropType: '',
@@ -120,7 +122,7 @@ const BudgetPlanning: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/budget-plans', {
+      const response = await apiFetch('/api/budget-plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -146,7 +148,7 @@ const BudgetPlanning: React.FC = () => {
 
   const updateBudgetStatus = async (planId: string, newStatus: BudgetPlan['status']) => {
     try {
-      const response = await fetch(`/api/budget-plans/${planId}`, {
+      const response = await apiFetch(`/api/budget-plans/${planId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -165,7 +167,7 @@ const BudgetPlanning: React.FC = () => {
   const deleteBudgetPlan = async (planId: string) => {
     if (confirm('هل أنت متأكد من حذف هذه الخطة؟')) {
       try {
-        const response = await fetch(`/api/budget-plans/${planId}`, {
+        const response = await apiFetch(`/api/budget-plans/${planId}`, {
           method: 'DELETE'
         });
 
@@ -266,7 +268,7 @@ const BudgetPlanning: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">تخطيط الميزانية</h1>
-          <p className="text-gray-600">تخطيط مالي ذكي للمواسم القادمة بتوصيات الذكاء الاصطناعي</p>
+          <p className="text-gray-600">تخطيط مالي مبني على مصاريفك وإيراداتك المسجّلة، مع توصيات حسابية موثّقة المصدر</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -407,7 +409,7 @@ const BudgetPlanning: React.FC = () => {
                 <div className="flex gap-4 pt-4">
                   <Button onClick={generateAIBudget} className="flex-1 gap-2">
                     <Lightbulb className="h-4 w-4" />
-                    إنشاء ميزانية بالذكاء الاصطناعي
+                    إنشاء خطة الميزانية
                   </Button>
                   <Button 
                     variant="outline" 
@@ -423,12 +425,21 @@ const BudgetPlanning: React.FC = () => {
       </div>
 
       {/* Budget Plans */}
+      {loadError && (
+        <Alert variant="destructive" role="alert">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{loadError}</AlertDescription>
+        </Alert>
+      )}
+
       {budgetPlans.length === 0 ? (
         <Card>
           <CardContent className="text-center py-8">
             <Calculator className="mx-auto h-12 w-12 mb-4 text-gray-300" />
             <p className="text-gray-500 mb-2">لا توجد خطط ميزانية</p>
-            <p className="text-sm text-gray-400">ابدأ بإنشاء أول خطة ميزانية لك</p>
+            <p className="text-sm text-gray-400">
+              ابدأ بإنشاء أول خطة ميزانية لك. تُبنى الأرقام من مصاريفك وإيراداتك المسجّلة، ولن نعرض أي بيانات افتراضية.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -571,6 +582,9 @@ const BudgetPlanning: React.FC = () => {
 
                   <TabsContent value="risks" className="space-y-4">
                     <div className="space-y-3">
+                      {plan.riskFactors.length === 0 && (
+                        <p className="text-sm text-gray-500">لا توجد مخاطر مسجّلة لهذه الخطة.</p>
+                      )}
                       {plan.riskFactors.map((risk, index) => (
                         <Alert key={index}>
                           <AlertTriangle className="h-4 w-4" />
@@ -582,6 +596,9 @@ const BudgetPlanning: React.FC = () => {
 
                   <TabsContent value="recommendations" className="space-y-4">
                     <div className="space-y-3">
+                      {plan.aiRecommendations.length === 0 && (
+                        <p className="text-sm text-gray-500">لا توجد توصيات متاحة لهذه الخطة.</p>
+                      )}
                       {plan.aiRecommendations.map((recommendation, index) => (
                         <Alert key={index}>
                           <Lightbulb className="h-4 w-4" />

@@ -60,6 +60,10 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 4. Give the dead-button demo pages (e.g. DigitalTraining, DynamicPricing) a
    `SimulatedDataNotice` where they are routed, or wire their buttons — they
    currently render no-op CTAs with no disclosure.
+5. ~~Sensor registry (`GET /api/sensors`) and budget planning (`/api/budget-plans`)
+   returned unconditional 501/503.~~ **Done — Session 11.** Both now persist
+   under owner-scoped RLS; budget projections derive from the caller's own
+   ledger and are labelled `derived:user-history`.
 
 ## Steps that need an external resource
 

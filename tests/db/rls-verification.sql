@@ -27,6 +27,12 @@ GRANT EXECUTE ON FUNCTION public.assert_true(boolean, text) TO anon, authenticat
 -- ---------------------------------------------------------------------------
 -- Fixtures: two farmers, one expert, one admin.
 -- ---------------------------------------------------------------------------
+DELETE FROM public.sensor_readings WHERE device_id IN (
+  'e1000000-0000-0000-0000-0000000000a1',
+  'e1000000-0000-0000-0000-0000000000b1');
+DELETE FROM public.sensor_devices WHERE id IN (
+  'e1000000-0000-0000-0000-0000000000a1',
+  'e1000000-0000-0000-0000-0000000000b1');
 DELETE FROM public.farms WHERE owner_id IN (
   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
@@ -644,6 +650,95 @@ BEGIN
     RAISE NOTICE 'ok - farmer A cannot write weights for farmer B animal';
   END;
 END $livestock$;
+ROLLBACK;
+
+-- ---------------------------------------------------------------------------
+-- SCENARIO 11 — sensor registry is tenant-scoped (sensor_devices / sensor_readings).
+-- Farmer A must see only their own farm's devices and readings, must not see
+-- farmer B's, and must not attach a device to a farm they do not own.
+-- ---------------------------------------------------------------------------
+BEGIN;
+DELETE FROM public.sensor_readings WHERE device_id IN (
+  'e1000000-0000-0000-0000-0000000000a1',
+  'e1000000-0000-0000-0000-0000000000b1');
+DELETE FROM public.sensor_devices WHERE id IN (
+  'e1000000-0000-0000-0000-0000000000a1',
+  'e1000000-0000-0000-0000-0000000000b1');
+INSERT INTO public.sensor_devices (id, farm_id, device_id, device_type, location) VALUES
+  ('e1000000-0000-0000-0000-0000000000a1', 'f0000000-0000-0000-0000-0000000000a1',
+   'SENS-A-1', 'soil_sensor', '{"lat":36.8,"lng":10.1}'::jsonb),
+  ('e1000000-0000-0000-0000-0000000000b1', 'f0000000-0000-0000-0000-0000000000b1',
+   'SENS-B-1', 'soil_sensor', '{"lat":34.7,"lng":10.7}'::jsonb);
+INSERT INTO public.sensor_readings (device_id, reading_type, value, unit, recorded_at) VALUES
+  ('e1000000-0000-0000-0000-0000000000a1', 'soil_ph', 6.8, 'pH', NOW()),
+  ('e1000000-0000-0000-0000-0000000000b1', 'soil_ph', 7.4, 'pH', NOW());
+SET LOCAL request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+
+DO $sensor$
+BEGIN
+  IF (SELECT count(*) FROM public.sensor_devices) <> 1 THEN
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A sees % devices', (SELECT count(*) FROM public.sensor_devices);
+  END IF;
+  RAISE NOTICE 'ok - farmer A sees only their own sensor device';
+
+  IF EXISTS (SELECT 1 FROM public.sensor_devices WHERE device_id = 'SENS-B-1') THEN
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A can see farmer B device';
+  END IF;
+  RAISE NOTICE 'ok - farmer A cannot see farmer B device';
+
+  IF (SELECT count(*) FROM public.sensor_readings) <> 1 THEN
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A sees % readings', (SELECT count(*) FROM public.sensor_readings);
+  END IF;
+  RAISE NOTICE 'ok - farmer A sees only readings from their own device';
+
+  BEGIN
+    INSERT INTO public.sensor_devices (farm_id, device_id, device_type, location)
+    VALUES ('f0000000-0000-0000-0000-0000000000b1', 'SENS-A-X', 'soil_sensor', '{}'::jsonb);
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A attached a device to farmer B farm';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot attach a device to farmer B farm';
+  END;
+END $sensor$;
+ROLLBACK;
+
+-- ---------------------------------------------------------------------------
+-- SCENARIO 12 — budget plans are tenant-scoped (database/budget-planning-persistence.sql).
+-- Farmer A must see only their own plans and must not attach a plan to farmer
+-- B's farm or read farmer B's plan.
+-- ---------------------------------------------------------------------------
+BEGIN;
+DELETE FROM public.farm_budget_plans WHERE id IN (
+  'b1000000-0000-0000-0000-0000000000a1',
+  'b1000000-0000-0000-0000-0000000000b1');
+INSERT INTO public.farm_budget_plans (id, user_id, crop_type, season_year, planned_area_hectares) VALUES
+  ('b1000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'tomato', 2026, 2.5),
+  ('b1000000-0000-0000-0000-0000000000b1', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'olive', 2026, 5.0);
+SET LOCAL request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+DO $budget$
+BEGIN
+  IF (SELECT count(*) FROM public.farm_budget_plans) <> 1 THEN
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A sees % budget plans', (SELECT count(*) FROM public.farm_budget_plans);
+  END IF;
+  RAISE NOTICE 'ok - farmer A sees only their own budget plan';
+
+  BEGIN
+    INSERT INTO public.farm_budget_plans (user_id, farm_id, crop_type, season_year, planned_area_hectares)
+    VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'f0000000-0000-0000-0000-0000000000b1', 'wheat', 2026, 1.0);
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A attached a budget plan to farmer B farm';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot attach a budget plan to farmer B farm';
+  END;
+
+  BEGIN
+    INSERT INTO public.farm_budget_plans (user_id, crop_type, season_year, planned_area_hectares)
+    VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'wheat', 2026, 1.0);
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A wrote a plan owned by farmer B';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot spoof another owner on a budget plan';
+  END;
+END $budget$;
 ROLLBACK;
 
 -- Remove the uniquely named public reference-data fixture as well.

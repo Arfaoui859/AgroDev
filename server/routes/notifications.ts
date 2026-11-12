@@ -157,11 +157,118 @@ export async function getNotificationStats(req: Request, res: Response) {
   return res.json({ success: true, data: { total: all.count ?? 0, unread: unread.count ?? 0, urgent: urgent.count ?? 0 } });
 }
 
-// These capabilities stay explicitly unavailable until real sensor ingestion,
-// notification-rule persistence, and external delivery providers are installed.
-export const getSensors = (_req: Request, res: Response) => unavailable(res, "SENSOR_REGISTRY_NOT_CONNECTED");
-export const getRealTimeData = (_req: Request, res: Response) => unavailable(res, "SENSOR_STREAM_NOT_CONNECTED");
+// Notification-rule persistence and external delivery stay explicitly
+// unavailable until a rules table and a delivery provider are installed.
 export const getNotificationRules = (_req: Request, res: Response) => unavailable(res, "NOTIFICATION_RULES_NOT_CONNECTED");
+
+/** Devices owned by the caller, each paired with its latest reading per metric. */
+export const getSensors = async (req: Request, res: Response) => {
+  const db = callerDb(req);
+  if (!db || !req.userId) return unavailable(res, "SENSOR_REGISTRY_NOT_CONNECTED");
+
+  const { data: devices, error: deviceError } = await db
+    .from("sensor_devices")
+    .select("id,farm_id,section_id,device_id,device_type,device_model,location,battery_level,signal_strength,status,installation_date,last_maintenance_date")
+    .order("created_at", { ascending: true })
+    .limit(200);
+  if (deviceError) {
+    return res.status(503).json({ success: false, code: "SENSOR_REGISTRY_READ_FAILED", message: deviceError.message, data: [], isRealData: false });
+  }
+  const deviceRows = devices ?? [];
+  if (deviceRows.length === 0) {
+    res.set("X-Data-Provenance", "supabase.sensor_devices");
+    res.set("X-Is-Real-Data", "true");
+    return res.json({ success: true, data: [], count: 0, source: "supabase.sensor_devices", isRealData: true });
+  }
+
+  const { data: readings, error: readingError } = await db
+    .from("sensor_readings")
+    .select("id,device_id,reading_type,value,unit,quality_indicator,recorded_at")
+    .in("device_id", deviceRows.map((d) => d.id))
+    .order("recorded_at", { ascending: false })
+    .limit(1000);
+  if (readingError) {
+    return res.status(503).json({ success: false, code: "SENSOR_READINGS_READ_FAILED", message: readingError.message, data: [], isRealData: false });
+  }
+
+  // Latest reading per (device, reading_type). Readings arrive newest-first.
+  const latest = new Map<string, { value: number; unit: string; quality: string | null; recordedAt: string }>();
+  for (const r of readings ?? []) {
+    const key = `${r.device_id}::${r.reading_type}`;
+    if (latest.has(key)) continue;
+    latest.set(key, {
+      value: Number(r.value),
+      unit: r.unit,
+      quality: r.quality_indicator ?? null,
+      recordedAt: r.recorded_at,
+    });
+  }
+
+  type DeviceRow = (typeof deviceRows)[number];
+  const byDevice = new Map<string, DeviceRow>();
+  for (const d of deviceRows) byDevice.set(d.id, d);
+
+  const data = [...latest.entries()].map(([key, reading]) => {
+    const [deviceId, readingType] = key.split("::");
+    const device = byDevice.get(deviceId);
+    return {
+      id: `${deviceId}:${readingType}`,
+      deviceId,
+      deviceName: device?.device_id ?? null,
+      deviceType: device?.device_type ?? null,
+      farmId: device?.farm_id ?? null,
+      sectionId: device?.section_id ?? null,
+      location: device?.location ?? null,
+      status: device?.status ?? null,
+      batteryLevel: device?.battery_level ?? null,
+      signalStrength: device?.signal_strength ?? null,
+      lastMaintenanceDate: device?.last_maintenance_date ?? null,
+      type: readingType,
+      lastReading: reading,
+    };
+  });
+
+  res.set("X-Data-Provenance", "supabase.sensor_devices,sensor_readings");
+  res.set("X-Is-Real-Data", "true");
+  return res.json({ success: true, data, count: data.length, source: "supabase.sensors", isRealData: true });
+};
+
+/**
+ * Recent readings across the caller's own devices. `streamConnected` is true
+ * only when at least one reading exists; an empty registry is reported as an
+ * empty stream, never back-filled with synthetic values.
+ */
+export const getRealTimeData = async (req: Request, res: Response) => {
+  const db = callerDb(req);
+  if (!db || !req.userId) return unavailable(res, "SENSOR_STREAM_NOT_CONNECTED");
+
+  const { data: devices, error: deviceError } = await db.from("sensor_devices").select("id").limit(200);
+  if (deviceError) {
+    return res.status(503).json({ success: false, code: "SENSOR_REGISTRY_READ_FAILED", message: deviceError.message, data: [], isRealData: false });
+  }
+  const ids = (devices ?? []).map((d) => d.id);
+  if (ids.length === 0) {
+    res.set("X-Data-Provenance", "supabase.sensor_readings");
+    res.set("X-Is-Real-Data", "true");
+    return res.json({ success: true, data: [], count: 0, streamConnected: false, source: "supabase.sensor_readings", isRealData: true });
+  }
+
+  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
+  const { data, error } = await db
+    .from("sensor_readings")
+    .select("id,device_id,reading_type,value,unit,quality_indicator,metadata,recorded_at")
+    .in("device_id", ids)
+    .order("recorded_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    return res.status(503).json({ success: false, code: "SENSOR_READINGS_READ_FAILED", message: error.message, data: [], isRealData: false });
+  }
+  const rows = data ?? [];
+  res.set("X-Data-Provenance", "supabase.sensor_readings");
+  res.set("X-Is-Real-Data", "true");
+  return res.json({ success: true, data: rows, count: rows.length, streamConnected: rows.length > 0, source: "supabase.sensor_readings", isRealData: true });
+};
+
 export const createNotificationRule = (_req: Request, res: Response) => unavailable(res, "NOTIFICATION_RULES_NOT_CONNECTED");
 export const updateNotificationRule = (_req: Request, res: Response) => unavailable(res, "NOTIFICATION_RULES_NOT_CONNECTED");
 export const deleteNotificationRule = (_req: Request, res: Response) => unavailable(res, "NOTIFICATION_RULES_NOT_CONNECTED");

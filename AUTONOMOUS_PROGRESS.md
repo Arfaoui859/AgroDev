@@ -465,6 +465,49 @@ Gates after Session 10: `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 
 (10 scenarios) **passed** against real Postgres.
 
 
+## Session 11 — Sensor registry + budget planning persistence (P1)
+
+Both surfaces returned an unconditional 501/503 even though real tables and a
+live UI consumer already existed. They now read/write tenant-scoped persisted
+rows, fail closed without a database, and carry explicit provenance.
+
+### Sensors — `GET /api/sensors`, `GET /api/real-time-data`
+- `sensor_devices` / `sensor_readings` already exist (cloud-setup) with
+  owner-scoped RLS. `getSensors` now lists the caller's own devices paired with
+  their latest reading per metric; `getRealTimeData` reads the caller's own
+  recent readings. Empty registry is reported honestly (no synthetic back-fill).
+- Removed a duplicate `getNotificationRules` stub left mid-refactor.
+
+### Budget planning — `POST/GET/PUT/DELETE /api/budget-plans`
+- New table `public.farm_budget_plans` (`database/budget-planning-persistence.sql`):
+  owner-scoped RLS, `authenticated` grants, season index, status check.
+- `budgetPlanPayload` forces `user_id` from the verified identity (never the
+  body), validates crop/area/season/revenue/farm-id, and drops malformed lines.
+- `buildBudgetPlanRecord` derives `actualAmount`/variance and any revenue
+  projection from the caller's **own** `farm_expenses`/`farm_revenues` history,
+  labelling each value `user` / `derived:user-history` / `none`. Recommendation
+  strings are deterministic arithmetic notes (provenance `recommendationSource:
+  rule-based`, `isRealModel: false`) — never presented as model output.
+- `client/pages/BudgetPlanning.tsx` migrated from bare `fetch` to `apiFetch`
+  (attaches the Supabase JWT), added a load-error state, honest empty/risk/
+  recommendation states, and relabelled the "AI budget" button.
+
+### Verification
+- `tests/db/rls-verification.sql` SCENARIO 11 (sensors) + SCENARIO 12 (budget
+  plans): own-row visibility, cross-tenant read denial, foreign-farm attach
+  denial, ownership-spoof denial. RLS suite now **86 checks, all pass** against
+  a real PostgreSQL 17 (up from 79).
+- `tests/integration/sensors-api.test.ts`, `tests/integration/budget-planning.test.ts`
+  (new); `tests/integration/financial-crud.test.ts` updated to the real contract.
+- CI applies `budget-planning-persistence.sql` (initial + idempotency re-run).
+- Fresh-DB pipeline (local-rls-shim → cloud-setup → supabase-setup →
+  autonomous-farm-agent → rls-hardening → user-lifecycle → farm-finance →
+  livestock → budget-planning → migrations) applies clean and is idempotent.
+
+Gates after Session 11: `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` **824 passed, 2 skipped** (826 total, 91/92 suites) · RLS suite
+(12 scenarios) **86 checks pass** · `verify-security-hardening.sql` **passes**.
+
 ## Open / blocked
 
 | Item | Status | Blocker |
