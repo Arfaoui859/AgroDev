@@ -185,4 +185,39 @@ describe("orchestrateAgriculturalQuestion", () => {
     expect(result.isRealData).toBe(false);
     expect(result.disclaimer).toMatch(/not from a trained ML model/i);
   });
+
+  test("runs the full soil→weather→crop→irrigation workflow on real-shaped records", async () => {
+    // The shape the gateway assembles from a farmer's own persisted rows. The
+    // specialist extractors key on these exact prefixes, so this pins the
+    // contract between the context builder and the orchestrator.
+    const platformRecords = [
+      "Recorded soil analysis [type=lab; pH=6.5; N=45; P=22; K=180; organic matter=2.1%; moisture=18%; farm_id=f1]",
+      "LIVE WEATHER FROM OPEN-METEO for the selected farm Ferme A [provider=Open-Meteo; current_temperature=28 C; humidity=55%; rainfall_today=0 mm; ET0=4.2]",
+      "Cultivation Tomato [status=active; variety=Rio Grande; stage=flowering; planted=2026-10-01; farm=Ferme A; cultivation_id=c1]",
+      "Recorded market price [crop=Tomato; price=1.85 TND/kg; market=Bizerte; date=2026-11-08; source=ONAGRI]",
+    ];
+    const result = await orchestrateAgriculturalQuestion({
+      question: "أي محصول أزرع في هذا الحقل وكيف أسقيه؟",
+      language: "ar",
+      context: {
+        soil: { ph: 6.5, nitrogen: 45, phosphorus: 22, potassium: 180 },
+        platformRecords,
+      },
+    });
+
+    const byId = Object.fromEntries(result.trace.steps.map((s) => [s.id, s]));
+    expect(byId.soil.status).toBe("ok");
+    expect(byId.weather.status).toBe("ok");
+    expect(byId.weather.dataSource).toBe("open-meteo");
+    expect(byId.weather.isRealData).toBe(true);
+    expect(byId.crop.status).toBe("ok");
+    expect(byId.irrigation.status).toBe("ok");
+    // No step is blocked when every upstream input is present.
+    expect(result.trace.blocked).toEqual([]);
+    // Live weather provenance survives into the grounded facts handed to the LLM.
+    expect(result.groundedFacts.some((f) => /open-meteo/i.test(f))).toBe(true);
+    // The answer is still honestly labelled as rule-based, not model inference.
+    expect(result.dataSource).toBe("rule-based");
+    expect(result.isRealData).toBe(false);
+  });
 });

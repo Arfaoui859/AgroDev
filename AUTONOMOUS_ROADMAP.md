@@ -15,7 +15,7 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 | 3 | Role→dashboard routing (farmer/agronomist/trader/vet/inspector/admin) | **VERIFIED FIXED** — map + unit test |
 | 4 | Admin authorization (server-side, fail-closed) | **VERIFIED** (existing `requireAdminAccess`, `requireRole`; suites pass) |
 | 5 | No fabricated agronomic data (fertilizer doses, PHIs, irrigation telemetry) | **VERIFIED** — routers fail closed at baseline |
-| 6 | Farmer CRUD persistence end-to-end | **BLOCKED** — needs live Supabase |
+| 6 | Farmer CRUD persistence end-to-end | **VERIFIED** — a real Postgres 17 + PostgREST stack was stood up locally and the SPA's own REST path exercised with real HS256 JWTs: a farmer creates/reads their own farm, a second farmer and anon see nothing, cross-tenant update/delete affect 0 rows, ownership spoof is denied (`42501`), self-role-escalation is denied, `admin_change_user_role` is not client-callable and rejects a non-admin actor, and `admin_audit_logs` is unreachable by clients. Reproduced by `scripts/verify-local-persistence.sh` (13 checks) and wired into CI. |
 | 6a | Route guard fails **closed** when the trusted role is unloaded/unreadable | **VERIFIED FIXED** — `resolveRouteAccess` (`client/lib/routeAccess.ts`); 8 unit tests. Previously `ProtectedRoute` failed open (`user &&` short-circuit), leaking `/admin-panel` to a non-admin mid-load |
 | 6b | `AuthContext` never fabricates a role | **VERIFIED FIXED** — `roleVerified` gate; fallback no longer defaults to `farmer` |
 | 6c | Generic "unexpected error" page after a redeploy | **VERIFIED FIXED** — `lazyWithRetry` (guarded reload on chunk-load failure); 9 unit tests |
@@ -25,7 +25,7 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 
 | # | Item | Status |
 |---|---|---|
-| 7 | Central orchestrator with explicit plan/trace | **VERIFIED** — `agriculturalOrchestrator.ts`: allow-listed registry, dependency-aware plan, bounded-concurrency executor, per-step trace, dependency gating |
+| 7 | Central orchestrator with explicit plan/trace | **VERIFIED** — `agriculturalOrchestrator.ts`: allow-listed registry, dependency-aware plan, bounded-concurrency executor, per-step trace, dependency gating. The full soil→weather→crop→irrigation workflow now has a regression test built from real-shaped persisted records (`tests/unit/agricultural-orchestrator.test.ts`, 17 tests) |
 | 8 | Specialist agent contracts + tests | **VERIFIED** — 7 specialists, honest `insufficient_input`, 16 unit + 2 integration tests |
 | 9 | Chatbot uses the orchestrator | **VERIFIED** — chat handler runs the orchestrator and returns `usedSpecialists` + `orchestrationTrace` |
 | 10 | AI service URL config + health monitoring | **VERIFIED** — registry/env reconciled; 429 → `rate_limited` (reachable, inference unverified); production no longer reports localhost |

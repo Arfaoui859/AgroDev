@@ -1098,3 +1098,68 @@ client/server route contract.
 **Verification.** `tsc` 0, `eslint` 0, full suite **909 passed / 912 (3 skipped,
 2 suites skipped)**. Live news probe (`NEWS_LIVE_TESTS=1`) fetched real
 attributed articles from publisher RSS feeds.
+
+## Session 20 — P0 persistence proven against a real Postgres + PostgREST stack
+
+The last remaining P0 item (farmer CRUD persistence end-to-end) was recorded as
+**BLOCKED — needs live Supabase**. That blocker is now closed without touching
+production: a **PostgreSQL 17.11 + PostGIS 3** cluster and **PostgREST 12.2.3**
+were stood up locally, the repository's own CI schema sequence was applied, and
+the SPA's real REST path was exercised with real HS256 JWTs.
+
+### What was run
+
+```
+initdb + pg_ctl start                       # PostgreSQL 17.11 + PostGIS 3
+psql -f database/local-rls-shim.sql
+psql -f database/cloud-setup.sql
+psql -f database/supabase-setup.sql
+psql -f database/autonomous-farm-agent.sql
+psql -f database/admin-role-management.sql
+psql -f database/rls-hardening.sql
+psql -f database/user-lifecycle.sql
+psql -f database/farm-finance-persistence.sql
+psql -f database/livestock-persistence.sql
+psql -f database/budget-planning-persistence.sql
+psql -f database/migrations/20261110_farm_equipment_tasks.sql
+psql -f database/migrations/20261111_auth_user_sync.sql
+psql -f database/migrations/20261112_requested_role.sql
+# re-applied the hardening set (idempotency) -> all exit 0
+psql -f tests/db/rls-verification.sql              # 86 checks pass
+psql -f database/verify-security-hardening.sql     # passes
+# then PostgREST + scripts/verify-local-persistence.sh -> 13/13 pass
+```
+
+All 13 schema files apply cleanly **and are idempotent** on a second run.
+
+### Real end-to-end results (VERIFIED)
+
+| Assertion | Result |
+|---|---|
+| Farmer A creates a farm over REST (JWT A) | row persisted, returned |
+| Farmer A reads own farm | 1 row |
+| Farmer B reads farms | 0 rows (RLS denies) |
+| Anonymous reads farms | 0 rows |
+| Farmer B PATCH/DELETE A's farm | 0 rows affected; name unchanged |
+| Farmer B INSERTs a farm owned by A (spoof) | denied `42501` |
+| Farmer self-escalates `role` to `admin` | denied; role stays `farmer` |
+| Signup trigger on a new `auth.users` row | profile created as `farmer`; `requested_role=admin` ignored |
+| Client calls `admin_change_user_role` | refused (not granted to `anon`/`authenticated`) |
+| `service_role` RPC with a **non-admin actor** | rejected `42501 Administrator privileges required` |
+| `service_role` RPC with an **admin actor** | succeeds; exactly 1 `admin_audit_logs` row written |
+| Client reads/updates/deletes `admin_audit_logs` | `42501 permission denied` for both `authenticated` and `anon` |
+| Child table (`farm_sections`) isolation | A sees own; B and anon see 0 |
+
+### Artefacts
+
+- `scripts/verify-local-persistence.sh` — reproducible 13-check suite (seeds via
+  a privileged connection, drives traffic through PostgREST as `authenticator`).
+- `.github/workflows/ci.yml` — new `🌐 End-to-end persistence through PostgREST`
+  step in the `database-rls` job, so this stays proven on every push.
+- `tests/unit/agricultural-orchestrator.test.ts` — new regression test that runs
+  the full soil→weather→crop→irrigation workflow from real-shaped persisted
+  records, closing the orchestrator context-shape investigation.
+
+**Gates after Session 20:** `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build`
+0 · `npx jest` **910 passed / 913 (3 skipped, 2 suites skipped)** · RLS 86 checks ·
+security SQL verification · PostgREST persistence 13/13 — all against real PG17.

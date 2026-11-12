@@ -225,6 +225,35 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/rls-verification.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/verify-security-hardening.sql
 
+      - name: 🌐 End-to-end persistence through PostgREST (real JWT + RLS)
+        env:
+          SEED_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/agrogrowth
+          PGREST_URL: http://127.0.0.1:3001
+        run: |
+          # The RLS suite proves the policies with role switching. This proves a
+          # real HTTP client carrying a real JWT can create/read its own rows and
+          # cannot touch another tenant's — the Supabase path the SPA actually uses.
+          psql "$SEED_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE authenticator LOGIN NOINHERIT PASSWORD 'authpass';
+          GRANT anon, authenticated, service_role TO authenticator;
+          GRANT USAGE ON SCHEMA public, auth, storage TO authenticator, anon, authenticated, service_role;
+          ALTER ROLE service_role BYPASSRLS;
+          SQL
+          curl -sSL -o /tmp/postgrest.tar.xz \
+            https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz
+          tar -xJf /tmp/postgrest.tar.xz -C /tmp
+          cat > /tmp/pgrest.conf <<'CONF'
+          db-uri = "postgres://authenticator:authpass@127.0.0.1:5432/agrogrowth"
+          db-schemas = "public"
+          db-anon-role = "anon"
+          jwt-secret = "super-secret-jwt-token-with-at-least-32-characters-long"
+          server-port = 3001
+          CONF
+          /tmp/postgrest /tmp/pgrest.conf & echo $! > /tmp/pgrest.pid
+          for i in $(seq 1 30); do curl -s -o /dev/null "http://127.0.0.1:3001/" && break; sleep 1; done
+          bash scripts/verify-local-persistence.sh
+          kill "$(cat /tmp/pgrest.pid)"
+
   # =====================================
   # DOCKER BUILD (production target)
   # =====================================
