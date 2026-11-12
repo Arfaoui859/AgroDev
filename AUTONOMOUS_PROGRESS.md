@@ -1059,3 +1059,42 @@ elsewhere (`NotFound.tsx`) are already normalised at the source in
 `AuthContext`, so no further change was needed.
 
 `tsc` 0, `eslint` 0, full suite 898 passed / 901 (3 skipped, 2 suites skipped).
+
+---
+
+## Session 19 — fixture-backed module disclosure sweep (P2, honesty)
+
+**Audit.** Enumerated every server route that builds records from in-memory
+fixtures or `Math.random()` and checked whether it carries a provenance marker.
+Every such module is either (a) already fail-closed with a `router.use`
+handler, or (b) mounted behind the shared `blockSimulatedData()` guard in
+`server/index.ts`. Confirmed by probing each prefix at runtime:
+
+| prefix | status | code |
+|---|---|---|
+| `/api/collaboration/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/digital-transformation/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/disease-treatment/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/subscription/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/emergency-response/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/ip-management/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/emerging-tech/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/government-dashboard/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/segmentation/*` | 503 | `SIMULATED_DATA_DISABLED` |
+| `/api/alerts`, `/api/tasks` | 503 | `SIMULATED_DATA_DISABLED` |
+
+All answer with `X-Is-Real-Data: false`. No synthetic record can be presented
+to a user as a live platform record.
+
+**Gap.** Only `/api/saas` and `/api/logistics` had a runtime assertion pinning
+this behaviour; the remaining prefixes were covered only by the static
+client/server route contract.
+
+**Fix.** Added an 11-case `test.each` table to
+`tests/integration/provenance-headers.test.ts` asserting status 503, code
+`SIMULATED_DATA_DISABLED`, body `isRealData: false` and header
+`X-Is-Real-Data: false` for every blocked prefix.
+
+**Verification.** `tsc` 0, `eslint` 0, full suite **909 passed / 912 (3 skipped,
+2 suites skipped)**. Live news probe (`NEWS_LIVE_TESTS=1`) fetched real
+attributed articles from publisher RSS feeds.

@@ -74,6 +74,34 @@ describe("🗂  Fixture-backed data is disabled", () => {
     }
   });
 
+  // Every prefix mounted behind `blockSimulatedData()` in server/index.ts. Each
+  // must answer 503 with a machine-readable code and an explicit `isRealData:
+  // false`, so the SPA can never render these fixed in-memory fixtures as live
+  // platform records. A new fixture module added to that list should extend
+  // this table.
+  test.each([
+    "/api/collaboration/chat-rooms",
+    "/api/digital-transformation/projects",
+    "/api/disease-treatment/treatments",
+    "/api/subscription/plans",
+    "/api/emergency-response/plans",
+    "/api/ip-management/patents",
+    "/api/emerging-tech/technologies",
+    "/api/government-dashboard/overview",
+    "/api/segmentation/segments",
+    "/api/alerts",
+    "/api/tasks",
+  ])(
+    "fixture-backed module %s fails closed with explicit provenance",
+    async (path) => {
+      const res = await request(app).get(path);
+      expect(res.status).toBe(503);
+      expect(res.body.code).toBe("SIMULATED_DATA_DISABLED");
+      expect(res.body.isRealData).toBe(false);
+      expect(res.headers["x-is-real-data"]).toBe("false");
+    },
+  );
+
   test("marketplace and supply chain require persisted records", async () => {
     const marketplace = await request(app).get("/api/marketplace/listings").expect(503);
     expect(marketplace.body.code).toBe("MARKETPLACE_STORE_NOT_CONNECTED");
