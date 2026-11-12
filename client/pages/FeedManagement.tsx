@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiFetch';
 import { useState, useEffect } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,11 +95,11 @@ export default function FeedManagement() {
   const fetchFeedData = async () => {
     try {
       // Fetch feed inventory
-      const inventoryResponse = await fetch('/api/livestock-management/feed-inventory');
+      const inventoryResponse = await apiFetch('/api/livestock-management/feed-inventory');
       const inventoryData = await inventoryResponse.json();
       
       // Fetch feed optimization
-      const optimizationResponse = await fetch('/api/livestock-management/feed-optimization', {
+      const optimizationResponse = await apiFetch('/api/livestock-management/feed-optimization', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetCosts: 'medium', nutritionalGoals: 'balanced' })

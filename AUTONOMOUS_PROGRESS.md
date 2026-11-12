@@ -2,7 +2,7 @@
 
 **Baseline commit:** `649de66082c0aa8da2611856bc61c9b7b2f418f1`
 **Branch:** `feat/soil-analysis-professional-report`
-**Last updated:** 2026-11-11 (second pass)
+**Last updated:** 2026-11-11 (third pass — livestock module)
 
 Legend: **VERIFIED** (proven by real execution this session) ·
 **IMPLEMENTED BUT NOT VERIFIED** · **EXPERIMENTAL** · **BLOCKED** ·
@@ -388,6 +388,83 @@ Gates after Session 9: `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0
 + security SQL verification **passed** against real Postgres.
 
 
+## Session 10 — Livestock: synthetic demo replaced with real tenant-scoped persistence
+
+The livestock module previously served a **hard-coded synthetic herd** (animals,
+weights, vaccinations, breeding history, feed stock, production analytics) and
+was then disabled outright (503 `LIVESTOCK_DATA_STORE_NOT_CONNECTED`) to stop
+presenting that demo data as real farm intelligence. The frontend pages
+(`LivestockDashboard`, `AnimalHealthMonitoring`, `BreedingManagement`,
+`FeedManagement`, `AdvancedLivestockDashboard`, `IntelligentBreedingManager`,
+`LivestockProductionAnalytics`) already fetched real endpoints — the endpoints
+were the problem. This session builds the real data store behind them.
+
+### New persistence layer — **VERIFIED against real Postgres**
+
+`database/livestock-persistence.sql` (idempotent) adds six owner-scoped tables:
+
+| Table | Purpose |
+|---|---|
+| `livestock_herds` | groups / batches |
+| `livestock_animals` | individual animals (ear tag, species, sex, breed, weights, status, dam/sire) |
+| `livestock_weight_records` | weight history |
+| `livestock_health_events` | veterinary history (checkup/vaccination/treatment/illness/…) |
+| `livestock_reproduction_events` | heat/insemination/pregnancy/birth/weaning |
+| `livestock_feed_inventory` | feed stock with reorder levels |
+
+Every table has RLS enabled and policies that require `user_id = auth.uid()`
+**and** (where a farm/herd/animal is referenced) that the parent row belongs to
+the caller — so a user cannot attach an animal to a farm they do not own, read
+another user's herd, or write a weight against another user's animal. `anon` is
+revoked; `authenticated` gets CRUD; indexes cover the hot paths.
+
+### Real API — **VERIFIED**
+
+`server/routes/livestock.ts` implements caller-scoped CRUD through the
+JWT-scoped Supabase client (`scopedClientFromAuthHeader`), so PostgREST enforces
+RLS as the signed-in user. `server/routes/livestock-management.ts` and
+`server/routes/advanced-livestock-management.ts` now delegate to it (the demo
+router is gone). `server/index.ts` mounts the router behind `requireAuth`.
+
+- `GET/POST /api/livestock-management/animals`, `GET/PATCH/DELETE .../animals/:id`
+- `GET/POST .../animals/:id/weights`
+- `GET/POST .../health-events`, `PATCH .../health-events/:id/resolve`, `GET .../health-alerts`
+- `GET/POST .../reproduction-events`
+- `GET/POST .../herds`
+- `GET/POST .../feed-inventory`
+
+Responses carry `X-Data-Provenance` / `X-Is-Real-Data: true` and a `provenance`
+body field. Health alerts, dashboard totals and breeding history are **derived
+only from the caller's persisted rows** — nothing is invented. Endpoints that
+genuinely cannot be computed yet (feed ration optimization, breeding
+recommendations) return an explicit `computed: false` / `isRealData: false`
+state with a reason code instead of fabricated numbers.
+
+### Frontend — **IMPLEMENTED (build-verified)**
+
+- All livestock pages now use `apiFetch` (attaches the Supabase JWT); previously
+  they used bare `fetch` and would have been rejected as unauthenticated.
+- `LivestockDashboard` gained a working **"إضافة حيوان جديد"** dialog that POSTs
+  and reloads from the DB, plus honest empty/error states (no demo fallback).
+
+### Verification
+
+- `tests/db/rls-verification.sql` **SCENARIO 10** — 9 livestock isolation checks
+  (own-row visibility, cross-tenant read denial, foreign-farm attach denial,
+  ownership spoof denial, cross-animal weight denial) all pass against real PG17.
+- `tests/integration/livestock-api.test.ts` — 14 tests (anonymous/forged-token
+  denial, payload validation, `user_id` can never be client-supplied, honest
+  not-computed states).
+- `tests/integration/livestock-consistency.test.ts` — rewritten to the new
+  contract (verified session required; no fabricated dataset in any response).
+- CI (`.github/workflows/ci.yml`) applies `livestock-persistence.sql` in both the
+  initial and idempotency steps.
+
+Gates after Session 10: `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` **809 passed, 2 skipped** (811 total, 89/90 suites) · RLS suite
+(10 scenarios) **passed** against real Postgres.
+
+
 ## Open / blocked
 
 | Item | Status | Blocker |
@@ -395,6 +472,8 @@ Gates after Session 9: `tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0
 | Tunisian agricultural news | **VERIFIED (live)** | Delivered; see Session 2 above |
 | Central multi-agent orchestrator (explicit plan + trace) | **VERIFIED** | `agriculturalOrchestrator.ts`, wired into the chat handler |
 | Admin system/analytics/security monitoring | **VERIFIED** | Session 5 (metrics) + live DB counts (analytics) |
+| Livestock module (herds/animals/health/breeding/feed) | **VERIFIED (schema+RLS+API)** | Session 10; needs a Supabase `.env` to exercise end-to-end in the hosted app |
 | AI service `/health` contracts (all eight) | **VERIFIED (local)** | Session 7; hosted reachability still unverified |
 | Live AI microservice inference (hosted) | **BLOCKED** | No credentials/network here; hosts 429/unconfigured |
-| Farmer CRUD persistence end-to-end | **BLOCKED** | No Supabase `.env` in this environment; **but** schema + RLS + triggers are now VERIFIED against a real Postgres (Session 9) |
+| Farmer CRUD persistence end-to-end | **BLOCKED** | No Supabase `.env` in this environment; **but** schema + RLS + triggers are now VERIFIED against a real Postgres (Session 9/10) |
+| Feed-ration optimization / breeding recommendation engines | **NOT IMPLEMENTED** | Require validated nutritional + genetic reference tables; endpoints report this honestly rather than inventing output |

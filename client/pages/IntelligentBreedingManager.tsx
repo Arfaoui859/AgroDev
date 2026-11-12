@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiFetch';
 import React, { useState, useEffect } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -109,7 +110,7 @@ const IntelligentBreedingManager: React.FC = () => {
       const params = new URLSearchParams();
       if (selectedSpecies) params.append('species', selectedSpecies);
       
-      const response = await fetch(`/api/animals?${params}`);
+      const response = await apiFetch(`/api/animals?${params}`);
       const data = await response.json();
       
       if (data.success) {

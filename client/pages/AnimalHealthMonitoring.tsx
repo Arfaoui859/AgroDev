@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiFetch';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -103,11 +104,11 @@ export default function AnimalHealthMonitoring() {
   const fetchHealthData = async () => {
     try {
       // Fetch animals
-      const animalsResponse = await fetch('/api/livestock-management/animals');
+      const animalsResponse = await apiFetch('/api/livestock-management/animals');
       const animalsData = await animalsResponse.json();
       
       // Fetch health alerts
-      const alertsResponse = await fetch('/api/livestock-management/health-alerts');
+      const alertsResponse = await apiFetch('/api/livestock-management/health-alerts');
       const alertsData = await alertsResponse.json();
       
       if (animalsData.success) setAnimals(animalsData.data);

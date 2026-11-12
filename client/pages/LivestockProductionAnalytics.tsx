@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiFetch';
 import React, { useState, useEffect } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -137,7 +138,7 @@ const LivestockProductionAnalytics: React.FC = () => {
   const fetchAnimals = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/animals');
+      const response = await apiFetch('/api/animals');
       const data = await response.json();
       
       if (data.success) {

@@ -194,6 +194,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/user-lifecycle.sql
           # Apply the same tenant-owned persistence migrations used by the app.
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/farm-finance-persistence.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/livestock-persistence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
 
@@ -204,6 +205,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/rls-hardening.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/user-lifecycle.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/farm-finance-persistence.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/livestock-persistence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261110_farm_equipment_tasks.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
 

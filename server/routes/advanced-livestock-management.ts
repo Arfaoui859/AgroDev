@@ -1,55 +1,47 @@
-import type { Request, Response } from 'express';
-
 /**
- * This module previously generated livestock records and calculated health,
- * breeding and feed outputs from hard-coded example animals. Those outputs
- * were not backed by a verified farm data store and must not be presented as
- * real farm intelligence.
+ * Advanced livestock handlers (legacy route registrations in server/index.ts).
  *
- * Keep the exported handlers for existing route registrations, but fail
- * closed until authenticated, tenant-scoped persistence and validated
- * veterinary/feed rules are connected.
+ * Delegates to the real, tenant-scoped implementations in ./livestock. These
+ * exports previously returned synthetic demo data, then failed closed; they now
+ * serve the caller's own persisted records.
  */
-function unavailable(_req: Request, res: Response): void {
-  res.setHeader('X-AgroGrowth-Data-Status', 'unavailable');
-  res.setHeader('X-AgroGrowth-Data-Provenance', 'unverified');
-  res.status(503).json({
-    success: false,
-    code: 'LIVESTOCK_DATA_STORE_NOT_CONNECTED',
-    message: 'Livestock records and validated analysis are not currently available.',
-    data: null,
-    provenance: {
-      source: null,
-      verified: false,
-      model_source: null,
-    },
+import type { Request, Response } from "express";
+import { listAnimals, getHealthAlerts, getLivestockDashboard, listHealthEvents } from "./livestock";
+
+export { listAnimals as getAnimals, getHealthAlerts, getLivestockDashboard };
+
+/** Per-animal health summary from persisted events. */
+export async function getAnimalHealth(req: Request, res: Response): Promise<void> {
+  req.query.animalId = String(req.params.animalId ?? "");
+  await listHealthEvents(req, res, () => {});
+}
+
+/** Breeding recommendations require validated genetics data; not computed yet. */
+export async function getBreedingRecommendations(_req: Request, res: Response): Promise<void> {
+  res.setHeader("X-Data-Provenance", "not-computed");
+  res.setHeader("X-Is-Real-Data", "false");
+  res.json({
+    success: true,
+    data: [],
+    computed: false,
+    isRealData: false,
+    reason: "GENETIC_DATA_REQUIRED",
+    message: "لا يمكن اقتراح تزويج دون سلالات موثّقة وتاريخ تناسلي كافٍ. لم تُختلق أي توصيات.",
   });
 }
 
-export async function getAnimals(req: Request, res: Response): Promise<void> {
-  unavailable(req, res);
+/** Feed recommendations require validated nutritional tables; not computed yet. */
+export async function getFeedRecommendations(_req: Request, res: Response): Promise<void> {
+  res.setHeader("X-Data-Provenance", "not-computed");
+  res.setHeader("X-Is-Real-Data", "false");
+  res.json({
+    success: true,
+    data: [],
+    computed: false,
+    isRealData: false,
+    reason: "NUTRITIONAL_PROFILE_REQUIRED",
+    message: "لا يمكن حساب حصة العلف دون جدول تحليلي موثّق لمكوّنات الأعلاف ومتطلبات كل نوع ووزن.",
+  });
 }
 
-export async function getAnimalHealth(req: Request, res: Response): Promise<void> {
-  unavailable(req, res);
-}
-
-export async function getBreedingRecommendations(req: Request, res: Response): Promise<void> {
-  unavailable(req, res);
-}
-
-export async function getFeedRecommendations(req: Request, res: Response): Promise<void> {
-  unavailable(req, res);
-}
-
-export async function optimizeFeedBudget(req: Request, res: Response): Promise<void> {
-  unavailable(req, res);
-}
-
-export async function getHealthAlerts(req: Request, res: Response): Promise<void> {
-  unavailable(req, res);
-}
-
-export async function getLivestockDashboard(req: Request, res: Response): Promise<void> {
-  unavailable(req, res);
-}
+export { optimizeFeedBudget } from "./livestock";

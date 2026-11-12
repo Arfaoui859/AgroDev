@@ -553,6 +553,99 @@ SELECT public.assert_true(
 
 ROLLBACK;
 
+-- ---------------------------------------------------------------------------
+-- SCENARIO 10 — livestock records are tenant-scoped (database/livestock-persistence.sql).
+-- Farmer A must see only their own animals/weights/health/feed, must not read
+-- farmer B's animals, and must not be able to attach an animal to a farm they
+-- do not own or spoof another user's ownership.
+-- ---------------------------------------------------------------------------
+BEGIN;
+-- Fixtures (as the privileged owner, before switching roles).
+DELETE FROM public.livestock_weight_records WHERE animal_id IN (
+  'd2000000-0000-0000-0000-0000000000a1',
+  'd2000000-0000-0000-0000-0000000000b1');
+DELETE FROM public.livestock_health_events WHERE animal_id IN (
+  'd2000000-0000-0000-0000-0000000000a1',
+  'd2000000-0000-0000-0000-0000000000b1');
+DELETE FROM public.livestock_reproduction_events WHERE animal_id IN (
+  'd2000000-0000-0000-0000-0000000000a1',
+  'd2000000-0000-0000-0000-0000000000b1');
+DELETE FROM public.livestock_animals WHERE id IN (
+  'd2000000-0000-0000-0000-0000000000a1',
+  'd2000000-0000-0000-0000-0000000000b1');
+DELETE FROM public.livestock_herds WHERE id IN (
+  'd1000000-0000-0000-0000-0000000000a1',
+  'd1000000-0000-0000-0000-0000000000b1');
+DELETE FROM public.livestock_feed_inventory WHERE id = 'd3000000-0000-0000-0000-0000000000f1';
+
+INSERT INTO public.livestock_herds (id, user_id, farm_id, name, species, purpose) VALUES
+  ('d1000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'f0000000-0000-0000-0000-0000000000a1', 'Herd A', 'beef_cattle', 'beef'),
+  ('d1000000-0000-0000-0000-0000000000b1', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+   'f0000000-0000-0000-0000-0000000000b1', 'Herd B', 'dairy_cattle', 'dairy');
+INSERT INTO public.livestock_animals (id, user_id, farm_id, ear_tag, species, sex, health_status) VALUES
+  ('d2000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'f0000000-0000-0000-0000-0000000000a1', 'TAG-A1', 'beef_cattle', 'female', 'good'),
+  ('d2000000-0000-0000-0000-0000000000b1', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+   'f0000000-0000-0000-0000-0000000000b1', 'TAG-B1', 'dairy_cattle', 'female', 'good');
+INSERT INTO public.livestock_weight_records (user_id, animal_id, weight_kg) VALUES
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'd2000000-0000-0000-0000-0000000000a1', 420),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'd2000000-0000-0000-0000-0000000000b1', 510);
+INSERT INTO public.livestock_feed_inventory (id, user_id, farm_id, feed_name, feed_type, quantity_kg) VALUES
+  ('d3000000-0000-0000-0000-0000000000f1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'f0000000-0000-0000-0000-0000000000a1', 'Hay A', 'hay', 1000);
+
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","role":"authenticated"}';
+
+SELECT public.assert_true((SELECT count(*) FROM public.livestock_animals) = 1,
+  'farmer A sees only own animal');
+SELECT public.assert_true((SELECT ear_tag FROM public.livestock_animals) = 'TAG-A1',
+  'the visible animal belongs to farmer A');
+SELECT public.assert_true((SELECT count(*) FROM public.livestock_weight_records) = 1,
+  'farmer A sees only own weight records');
+SELECT public.assert_true((SELECT count(*) FROM public.livestock_feed_inventory) = 1,
+  'farmer A sees only own feed inventory');
+
+DO $livestock$
+BEGIN
+  -- Cannot read farmer B's animal directly.
+  PERFORM 1 FROM public.livestock_animals WHERE id = 'd2000000-0000-0000-0000-0000000000b1';
+  IF FOUND THEN
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A can read farmer B animal';
+  END IF;
+  RAISE NOTICE 'ok - farmer A cannot read farmer B animal';
+
+  -- Cannot attach an animal to a farm they do not own.
+  BEGIN
+    INSERT INTO public.livestock_animals (user_id, farm_id, ear_tag, species, sex)
+    VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'f0000000-0000-0000-0000-0000000000b1',
+            'TAG-A-FOREIGN', 'beef_cattle', 'male');
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A attached animal to farmer B farm';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot attach an animal to farmer B farm';
+  END;
+
+  -- Cannot spoof ownership.
+  BEGIN
+    INSERT INTO public.livestock_animals (user_id, ear_tag, species, sex)
+    VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'TAG-SPOOF', 'beef_cattle', 'male');
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A spoofed animal ownership';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot spoof animal ownership';
+  END;
+
+  -- Cannot write a weight record against farmer B's animal.
+  BEGIN
+    INSERT INTO public.livestock_weight_records (user_id, animal_id, weight_kg)
+    VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'd2000000-0000-0000-0000-0000000000b1', 500);
+    RAISE EXCEPTION 'RLS CHECK FAILED: farmer A wrote a weight for farmer B animal';
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'ok - farmer A cannot write weights for farmer B animal';
+  END;
+END $livestock$;
+ROLLBACK;
+
 -- Remove the uniquely named public reference-data fixture as well.
 DELETE FROM public.market_prices
 WHERE crop_name = 'rls-test-tomato' AND market_location = 'RLS verification fixture';

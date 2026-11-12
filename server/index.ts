@@ -421,8 +421,9 @@ export function createServer() {
   // Weather-Based Crop Planner routes
   app.use("/api/weather-crop-planner", weatherCropPlannerRoutes);
 
-  // Livestock Management routes
-  app.use("/api/livestock-management", livestockManagementRoutes);
+  // Livestock Management routes. Tenant-scoped: requireAuth resolves the
+  // caller's JWT and the router reads/writes only that user's rows under RLS.
+  app.use("/api/livestock-management", requireAuth, livestockManagementRoutes);
 
   // Soil AI Detector routes
   app.use("/api/soil-ai-detector", soilAiDetectorRoutes);

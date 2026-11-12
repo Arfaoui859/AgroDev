@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiFetch';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -113,7 +114,7 @@ const AdvancedLivestockDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('/api/livestock-dashboard');
+      const response = await apiFetch('/api/livestock-dashboard');
       if (!response.ok) {
         setServiceUnavailable(true);
         setDashboardData(null);
@@ -140,7 +141,7 @@ const AdvancedLivestockDashboard: React.FC = () => {
       if (selectedSpecies) params.append('species', selectedSpecies);
       if (selectedStatus) params.append('status', selectedStatus);
       
-      const response = await fetch(`/api/animals?${params}`);
+      const response = await apiFetch(`/api/animals?${params}`);
       if (!response.ok) {
         setServiceUnavailable(true);
         setAnimals([]);

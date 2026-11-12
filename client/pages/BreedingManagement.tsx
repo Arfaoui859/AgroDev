@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiFetch';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -105,7 +106,7 @@ export default function BreedingManagement() {
 
   const fetchBreedingData = async () => {
     try {
-      const response = await fetch('/api/livestock-management/animals');
+      const response = await apiFetch('/api/livestock-management/animals');
       const data = await response.json();
 
       if (data.success) {

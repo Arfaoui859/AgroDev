@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiFetch';
 import { useState, useEffect } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,9 @@ import {
   Milk
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 interface Animal {
   id: string;
@@ -92,6 +96,18 @@ export default function LivestockDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState<string>('all');
   const [selectedHealthStatus, setSelectedHealthStatus] = useState<string>('all');
+  const [loadError, setLoadError] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    earTag: '',
+    species: 'cattle',
+    gender: 'female',
+    breed: '',
+    birthDate: '',
+    weight: '',
+  });
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchLivestockData();
@@ -100,23 +116,63 @@ export default function LivestockDashboard() {
 
   const fetchLivestockData = async () => {
     try {
-      const response = await fetch('/api/livestock-management/animals');
+      const response = await apiFetch('/api/livestock-management/animals');
       const data = await response.json();
       
       if (data.success) {
         setAnimals(data.data);
         setSummary(data.summary);
+        setLoadError(false);
+      } else {
+        setLoadError(true);
       }
     } catch (error) {
       console.error('Error fetching livestock data:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
   };
 
+  const createAnimal = async () => {
+    if (!form.earTag.trim()) {
+      toast({ title: 'رقم العلامة مطلوب', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await apiFetch('/api/livestock-management/animals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          earTag: form.earTag.trim(),
+          species: form.species,
+          gender: form.gender,
+          breed: form.breed.trim(),
+          birthDate: form.birthDate || null,
+          weight: form.weight === '' ? null : Number(form.weight),
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({ title: 'تمت إضافة الحيوان' });
+        setAddOpen(false);
+        setForm({ earTag: '', species: 'cattle', gender: 'female', breed: '', birthDate: '', weight: '' });
+        await fetchLivestockData();
+      } else {
+        toast({ title: 'تعذّر الحفظ', description: data.message ?? data.code ?? '', variant: 'destructive' });
+      }
+    } catch (error) {
+      console.error('Error creating animal:', error);
+      toast({ title: 'تعذّر الحفظ', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const fetchHealthAlerts = async () => {
     try {
-      const response = await fetch('/api/livestock-management/health-alerts');
+      const response = await apiFetch('/api/livestock-management/health-alerts');
       const data = await response.json();
       
       if (data.success) {
@@ -173,10 +229,26 @@ export default function LivestockDashboard() {
   if (animals.length === 0) {
     return (
       <main className="mx-auto max-w-4xl p-6" dir="rtl">
-        <h1 className="mb-4 text-2xl font-bold">إدارة الثروة الحيوانية</h1>
-        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
-          لا توجد سجلات حيوانات موثقة متاحة. مؤشرات الإنتاج والصحة والإيرادات غير معروضة إلى حين ربط قاعدة بيانات حقيقية؛ لن نولّد أرقاماً يومية افتراضية.
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold">إدارة الثروة الحيوانية</h1>
+          <Button onClick={() => setAddOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="w-4 h-4 ml-2" />
+            إضافة حيوان جديد
+          </Button>
         </div>
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-sm leading-7 text-amber-950">
+          {loadError
+            ? 'تعذّر تحميل سجلات الثروة الحيوانية. تأكد من تسجيل الدخول ومن تطبيق database/livestock-persistence.sql في قاعدة البيانات.'
+            : 'لا توجد سجلات حيوانات بعد. أضف أول حيوان لتظهر مؤشرات الإنتاج والصحة والإيرادات — كل الأرقام تُحسب من سجلاتك الحقيقية، ولن نولّد أي بيانات افتراضية.'}
+        </div>
+        <AnimalFormDialog
+          open={addOpen}
+          saving={saving}
+          form={form}
+          setForm={setForm}
+          onOpenChange={setAddOpen}
+          onSubmit={createAnimal}
+        />
       </main>
     );
   }
@@ -190,7 +262,7 @@ export default function LivestockDashboard() {
           <h1 className="text-3xl font-bold text-primary mb-2">إدارة الثروة الحيوانية</h1>
           <p className="text-muted-foreground">نظام متكامل لإدارة ومراقبة الحيوانات والإنتاج</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button onClick={() => setAddOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Plus className="w-4 h-4 ml-2" />
           إضافة حيوان جديد
         </Button>
@@ -479,6 +551,124 @@ export default function LivestockDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AnimalFormDialog
+        open={addOpen}
+        saving={saving}
+        form={form}
+        setForm={setForm}
+        onOpenChange={setAddOpen}
+        onSubmit={createAnimal}
+      />
     </div>
+  );
+}
+
+interface AnimalFormState {
+  earTag: string;
+  species: string;
+  gender: string;
+  breed: string;
+  birthDate: string;
+  weight: string;
+}
+
+function AnimalFormDialog({
+  open,
+  saving,
+  form,
+  setForm,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean;
+  saving: boolean;
+  form: AnimalFormState;
+  setForm: (updater: (prev: AnimalFormState) => AnimalFormState) => void;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent dir="rtl">
+        <DialogHeader>
+          <DialogTitle>إضافة حيوان جديد</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label htmlFor="earTag">رقم العلامة</Label>
+            <Input
+              id="earTag"
+              value={form.earTag}
+              onChange={(e) => setForm((p) => ({ ...p, earTag: e.target.value }))}
+              placeholder="TN-0001"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>النوع</Label>
+              <select
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={form.species}
+                onChange={(e) => setForm((p) => ({ ...p, species: e.target.value }))}
+              >
+                <option value="cattle">أبقار</option>
+                <option value="dairy_cattle">أبقار حلوب</option>
+                <option value="beef_cattle">أبقار لحم</option>
+                <option value="sheep">أغنام</option>
+                <option value="goat">ماعز</option>
+                <option value="poultry">دواجن</option>
+                <option value="camel">إبل</option>
+                <option value="other">أخرى</option>
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <Label>الجنس</Label>
+              <select
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={form.gender}
+                onChange={(e) => setForm((p) => ({ ...p, gender: e.target.value }))}
+              >
+                <option value="female">أنثى</option>
+                <option value="male">ذكر</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="breed">السلالة</Label>
+              <Input id="breed" value={form.breed} onChange={(e) => setForm((p) => ({ ...p, breed: e.target.value }))} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="weight">الوزن (كغ)</Label>
+              <Input
+                id="weight"
+                type="number"
+                min="0"
+                value={form.weight}
+                onChange={(e) => setForm((p) => ({ ...p, weight: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="birthDate">تاريخ الميلاد</Label>
+            <Input
+              id="birthDate"
+              type="date"
+              value={form.birthDate}
+              onChange={(e) => setForm((p) => ({ ...p, birthDate: e.target.value }))}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            إلغاء
+          </Button>
+          <Button onClick={onSubmit} disabled={saving}>
+            {saving ? 'جارٍ الحفظ...' : 'حفظ'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

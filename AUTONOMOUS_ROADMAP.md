@@ -37,6 +37,7 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 |---|---|---|
 | 12 | Tunisian agricultural news (fetch, parse, search, filter, cache) | **VERIFIED (live)** — real RSS sources, per-source status, search/filter/pagination/cache; UI at `/news` |
 | 13 | Farm management workflows (farms, fields, crops, cycles, activities) | **VERIFIED (server)** — the comprehensive dashboard (`/api/farm-management/*`) was rewritten from random demo data to caller-scoped Supabase reads (farms, sections, cultivations, tasks, equipment, revenues, notifications, market quotes, stored weather). Domains with no persisted source report `null`/empty or fail closed (labour = 503), never a fabricated figure. 5 unit + 3 integration tests added. |
+| 13a | Livestock module (herds, animals, weights, health, reproduction, feed) | **VERIFIED (schema+RLS+API)** — `database/livestock-persistence.sql` (6 owner-scoped tables, RLS, indexes) + `server/routes/livestock.ts` caller-scoped CRUD; the synthetic demo router was removed. RLS SCENARIO 10 (9 checks) passes against real PG17; 14 + 7 integration tests; frontend wired via `apiFetch` with a working add-animal flow. |
 | 14 | Admin monitoring / analytics from real data | **VERIFIED (server)** — System tab: real Node process metrics; Analytics tab: live DB counts + per-role breakdown; Security tab: append-only audit-log events. Subscriptions remain honestly unavailable (no billing source). |
 
 ## P3 — UX, reports, performance, docs

@@ -1,27 +1,9 @@
 /**
- * Livestock endpoints are intentionally unavailable until real, tenant-scoped
- * animal, veterinary, breeding, production and feed records are persisted.
+ * Livestock management router (mounted at /api/livestock-management).
  *
- * The previous router generated a synthetic herd, invented animal identities,
- * vaccinations, weights, prices, feed stock, production histories and health
- * alerts. That entire runtime demo implementation has been removed.
+ * Delegates to the real, tenant-scoped handlers in ./livestock. The previous
+ * router generated a synthetic herd and feed stock at runtime; that demo
+ * implementation is gone. Every response now comes from the caller's own
+ * persisted records, or fails closed with an explicit migration/RLS code.
  */
-import express from "express";
-
-const router = express.Router();
-
-router.use((_req, res) => {
-  res.set("X-Data-Provenance", "unavailable");
-  res.set("X-Is-Real-Data", "false");
-  return res.status(503).json({
-    success: false,
-    code: "LIVESTOCK_DATA_STORE_NOT_CONNECTED",
-    message: "Livestock records are unavailable until persistent, user-scoped records are connected.",
-    data: [],
-    dataAvailable: false,
-    isRealData: false,
-    productionReady: false,
-  });
-});
-
-export default router;
+export { default } from "./livestock";
