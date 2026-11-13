@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sprout, Tractor, Wallet, RefreshCw, ArrowUpRight, MapPin, CalendarDays, Plus, Leaf, AlertCircle } from "lucide-react";
+import { Sprout, Tractor, Wallet, RefreshCw, ArrowUpRight, MapPin, CalendarDays, Plus, Leaf, AlertCircle, Newspaper, Store, CloudSun, Droplets, Bug, HeartPulse, Sparkles } from "lucide-react";
 
 type Farm = { id: string; name: string; size_hectares: number; location?: unknown };
 type Cultivation = { id: string; farm_id: string; crop_name: string; planting_date: string; area_hectares: number; status: string };
@@ -29,7 +29,16 @@ export default function FarmOverviewPanel() {
       noFarms: "ما فما حتى مزرعة مسجلة في الحساب.", addFarm: "إضافة مزرعة", noCrops: "ما فما حتى محصول مسجل بعد.",
       addCrop: "إضافة محصول", viewAll: "إدارة المحاصيل", noFinance: "لا توجد بيانات مالية متاحة حالياً.", financeDesc: "القيم التالية مأخوذة من القيود المالية المحفوظة فقط.",
       login: "يلزم تسجيل الدخول.", loadError: "تعذّر تحميل المزارع.", unknown: "الموقع غير محدد",
-      status: "السجل", loading: "جاري تحميل بياناتك..."
+      status: "السجل", loading: "جاري تحميل بياناتك...",
+      quickTitle: "الوصول السريع", quickDesc: "افتح الأدوات والخدمات الزراعية المرتبطة بحسابك مباشرة.",
+      news: "الأخبار الفلاحية", newsDesc: "عناوين حقيقية من ناشرين تونسيين مع الرابط الأصلي.",
+      market: "ذكاء السوق", marketDesc: "أسعار مسجّلة وتحليلات السوق المتاحة.",
+      weather: "الطقس والإنذارات", weatherDesc: "توقّعات حقيقية من مزوّد الطقس.",
+      irrigation: "إدارة الري", irrigationDesc: "خطط الري بناءً على بياناتك.",
+      pest: "مكافحة الآفات", pestDesc: "مراجعة الإصابة وتسجيلها بالأدلة.",
+      livestock: "إدارة المواشي", livestockDesc: "القطعان والوزن والصحة والإنتاج.",
+      ai: "الذكاء الزراعي", aiDesc: "أدوات التشخيص والتوصيات الذكية.",
+      financeTool: "المالية", financeToolDesc: "المصاريف والمداخيل والصافي.",
     },
     fr: {
       title: "Vue d’ensemble de votre activité agricole", subtitle: "Résumé des données enregistrées dans votre compte, sans chiffres estimés ni données fictives.",
@@ -39,7 +48,16 @@ export default function FarmOverviewPanel() {
       noFarms: "Aucune exploitation n’est encore enregistrée.", addFarm: "Ajouter une exploitation", noCrops: "Aucune culture enregistrée.",
       addCrop: "Ajouter une culture", viewAll: "Gérer les cultures", noFinance: "Aucune donnée financière disponible.", financeDesc: "Valeurs issues uniquement des écritures financières enregistrées.",
       login: "Connexion requise.", loadError: "Impossible de charger les exploitations.", unknown: "Emplacement non précisé",
-      status: "Statut", loading: "Chargement de vos données..."
+      status: "Statut", loading: "Chargement de vos données...",
+      quickTitle: "Accès rapide", quickDesc: "Ouvrez directement les outils et services liés à votre compte.",
+      news: "Actualités agricoles", newsDesc: "Titres réels d’éditeurs tunisiens avec lien d’origine.",
+      market: "Intelligence marché", marketDesc: "Prix enregistrés et analyses disponibles.",
+      weather: "Météo et alertes", weatherDesc: "Prévisions réelles d’un fournisseur météo.",
+      irrigation: "Gestion de l’irrigation", irrigationDesc: "Plans d’irrigation à partir de vos données.",
+      pest: "Lutte contre les ravageurs", pestDesc: "Examiner et enregistrer une infestation avec preuves.",
+      livestock: "Gestion du bétail", livestockDesc: "Troupeaux, poids, santé et production.",
+      ai: "Intelligence agricole", aiDesc: "Diagnostic et recommandations assistés.",
+      financeTool: "Finance", financeToolDesc: "Dépenses, revenus et solde.",
     },
     en: {
       title: "Your agricultural overview", subtitle: "A live summary of records saved to your account, with no estimated or fabricated figures.",
@@ -49,7 +67,16 @@ export default function FarmOverviewPanel() {
       noFarms: "No farm has been registered yet.", addFarm: "Add a farm", noCrops: "No crop has been recorded yet.",
       addCrop: "Add a crop", viewAll: "Manage crops", noFinance: "Financial data is not available yet.", financeDesc: "Figures below come only from saved financial entries.",
       login: "Sign in is required.", loadError: "Could not load farms.", unknown: "Location not specified",
-      status: "Status", loading: "Loading your data..."
+      status: "Status", loading: "Loading your data...",
+      quickTitle: "Quick access", quickDesc: "Open the agricultural tools and services linked to your account.",
+      news: "Agricultural news", newsDesc: "Real headlines from Tunisian publishers with the original link.",
+      market: "Market intelligence", marketDesc: "Recorded prices and available market analysis.",
+      weather: "Weather & alerts", weatherDesc: "Real forecasts from a weather provider.",
+      irrigation: "Irrigation management", irrigationDesc: "Irrigation plans from your own data.",
+      pest: "Pest control", pestDesc: "Review and record an infestation with evidence.",
+      livestock: "Livestock management", livestockDesc: "Herds, weight, health and production.",
+      ai: "Agricultural intelligence", aiDesc: "Assisted diagnosis and recommendations.",
+      financeTool: "Finance", financeToolDesc: "Expenses, revenue and net balance.",
     }
   }[language] || {
     title: "Your agricultural overview", subtitle: "A live summary of records saved to your account.",
@@ -59,7 +86,16 @@ export default function FarmOverviewPanel() {
     noFarms: "No farm has been registered yet.", addFarm: "Add a farm", noCrops: "No crop has been recorded yet.",
     addCrop: "Add a crop", viewAll: "Manage crops", noFinance: "Financial data is not available yet.",
     login: "Sign in is required.", loadError: "Could not load farms.", unknown: "Location not specified",
-    status: "Status", loading: "Loading your data..."
+    status: "Status", loading: "Loading your data...",
+    quickTitle: "Quick access", quickDesc: "Open the agricultural tools and services linked to your account.",
+    news: "Agricultural news", newsDesc: "Real headlines from Tunisian publishers with the original link.",
+    market: "Market intelligence", marketDesc: "Recorded prices and available market analysis.",
+    weather: "Weather & alerts", weatherDesc: "Real forecasts from a weather provider.",
+    irrigation: "Irrigation management", irrigationDesc: "Irrigation plans from your own data.",
+    pest: "Pest control", pestDesc: "Review and record an infestation with evidence.",
+    livestock: "Livestock management", livestockDesc: "Herds, weight, health and production.",
+    ai: "Agricultural intelligence", aiDesc: "Assisted diagnosis and recommendations.",
+    financeTool: "Finance", financeToolDesc: "Expenses, revenue and net balance.",
   };
   const locale = language === "ar" ? "ar-TN" : language === "fr" ? "fr-TN" : "en-US";
   const number = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
@@ -106,6 +142,17 @@ export default function FarmOverviewPanel() {
     { label: t.net, value: finance ? money(Number(finance.netProfit) || 0) : t.unavailable, icon: Wallet, accent: "bg-sky-50 text-sky-700" }
   ];
 
+  const quickLinks = [
+    { to: "/news", label: t.news, desc: t.newsDesc, icon: Newspaper, accent: "bg-rose-50 text-rose-700" },
+    { to: "/market-dashboard", label: t.market, desc: t.marketDesc, icon: Store, accent: "bg-amber-50 text-amber-700" },
+    { to: "/weather-alerts", label: t.weather, desc: t.weatherDesc, icon: CloudSun, accent: "bg-sky-50 text-sky-700" },
+    { to: "/smart-irrigation", label: t.irrigation, desc: t.irrigationDesc, icon: Droplets, accent: "bg-blue-50 text-blue-700" },
+    { to: "/pest-control", label: t.pest, desc: t.pestDesc, icon: Bug, accent: "bg-red-50 text-red-700" },
+    { to: "/livestock-dashboard", label: t.livestock, desc: t.livestockDesc, icon: HeartPulse, accent: "bg-indigo-50 text-indigo-700" },
+    { to: "/ai-intelligence", label: t.ai, desc: t.aiDesc, icon: Sparkles, accent: "bg-violet-50 text-violet-700" },
+    { to: "/financial-dashboard", label: t.financeTool, desc: t.financeToolDesc, icon: Wallet, accent: "bg-emerald-50 text-emerald-700" }
+  ];
+
   return (
     <section className="space-y-6" dir={dir}>
       <header className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-800 p-5 text-white shadow-sm sm:p-7">
@@ -140,6 +187,36 @@ export default function FarmOverviewPanel() {
           );
         })}
       </div>
+
+      <Card className="border-slate-200/80 shadow-sm">
+        <CardHeader className="space-y-1">
+          <CardTitle>{t.quickTitle}</CardTitle>
+          <CardDescription>{t.quickDesc}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {quickLinks.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="group flex min-h-[92px] items-start gap-3 rounded-xl border border-slate-200/80 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                >
+                  <span className={"shrink-0 rounded-lg p-2 " + item.accent}><Icon className="h-5 w-5" /></span>
+                  <span className="min-w-0 space-y-1">
+                    <span className="flex items-center gap-1 font-semibold">
+                      {item.label}
+                      <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </span>
+                    <span className="block text-xs leading-5 text-muted-foreground">{item.desc}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="border-slate-200/80 shadow-sm">

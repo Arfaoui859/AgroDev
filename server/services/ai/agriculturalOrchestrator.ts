@@ -37,7 +37,11 @@ export type SpecialistId =
   | "market"
   | "agri_news"
   | "pest_control"
-  | "finance";
+  | "finance"
+  | "yield_intel"
+  | "livestock"
+  | "marketplace"
+  | "advisor";
 
 export type StepStatus =
   | "ok"
@@ -164,6 +168,10 @@ const TITLES: Record<SpecialistId, Record<Language, string>> = {
   agri_news: { ar: "الأخبار الزراعية", fr: "Actualités agricoles", en: "Agricultural news" },
   pest_control: { ar: "مكافحة الآفات", fr: "Lutte contre les ravageurs", en: "Pest control" },
   finance: { ar: "المالية الزراعية", fr: "Finance agricole", en: "Agricultural finance" },
+  yield_intel: { ar: "ذكاء المردود", fr: "Intelligence de rendement", en: "Yield intelligence" },
+  livestock: { ar: "المواشي والصحة الحيوانية", fr: "Bétail et santé animale", en: "Livestock & veterinary" },
+  marketplace: { ar: "السوق التجاري", fr: "Intelligence commerciale", en: "Marketplace intelligence" },
+  advisor: { ar: "المستشار الزراعي العام", fr: "Conseiller agricole général", en: "General agricultural advisor" },
 };
 
 function hasSoilMeasurements(soil?: SoilInput): boolean {
@@ -201,6 +209,36 @@ function plantHealthRecords(ctx: OrchestratorContext): string[] {
   return (ctx.platformRecords ?? []).filter((r) =>
     /^(Saved plant-health record|Saved leaf-health analysis)/.test(r),
   );
+}
+
+/**
+ * Cultivation records that actually carry a recorded `estimated_yield`. The
+ * `yield_intel` specialist never invents a yield: without a recorded estimate
+ * it stays `insufficient_input`.
+ */
+function yieldRecords(ctx: OrchestratorContext): string[] {
+  return cultivationRecords(ctx).filter((r) =>
+    /estimated_yield=(?!not recorded)/i.test(r),
+  );
+}
+
+/**
+ * Real, caller-scoped livestock facts the gateway injected (herds, animals,
+ * production, health events). Each line is tagged `LIVESTOCK`. The gateway only
+ * emits these from the caller's own persisted rows, so their presence is
+ * evidence of a real read; absence means the account has no livestock records.
+ */
+function livestockRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) => /^LIVESTOCK/.test(r));
+}
+
+/**
+ * Real, caller-scoped marketplace/supply-chain facts the gateway injected. The
+ * store is not connected yet, so this is normally empty and the specialist
+ * reports `unavailable` — it never fabricates a listing or a buyer.
+ */
+function marketplaceRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) => /^MARKETPLACE/.test(r));
 }
 
 /**
@@ -604,6 +642,127 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         isRealData: false,
         confidence: "medium",
         note: "Figures come from user records; verify currency, period and method before an investment decision.",
+      };
+    },
+  },
+  {
+    id: "yield_intel",
+    title: TITLES.yield_intel,
+    dependsOn: [],
+    keywords: /(مردود|إنتاجية|محصول متوقع|غلّة|yield|rendement|productivité|ghalla|intaijia|mardoud)/i,
+    run: (ctx) => {
+      const records = yieldRecords(ctx);
+      if (records.length === 0) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No crop cultivation carries a recorded estimated yield; a yield figure is never invented. Record an expected/actual yield for a cultivation first.",
+        };
+      }
+      return {
+        status: "ok",
+        findings: records.slice(0, 6),
+        dataSource: "persisted-records",
+        isRealData: false,
+        confidence: "low",
+        note: "These are the yields you recorded, not a model prediction and not independently verified. No trained yield model is connected.",
+      };
+    },
+  },
+  {
+    id: "livestock",
+    title: TITLES.livestock,
+    dependsOn: [],
+    keywords: /(مواشي|ماشية|بقر|غنم|ماعز|دجاج|أغنام|علف|تطعيم|حلوبة|vache|mouton|chèvre|volaille|bétail|b9ar|ghnem|ma3za|djej|3laf|livestock|cattle|sheep|goat|poultry|herd|animal)/i,
+    run: (ctx) => {
+      const records = livestockRecords(ctx);
+      if (records.length === 0) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No livestock records in this account. Add a herd/animal (and its weight, health or production records) before asking for livestock analysis.",
+        };
+      }
+      return {
+        status: "ok",
+        findings: records.slice(0, 8),
+        dataSource: "persisted-records",
+        isRealData: false,
+        confidence: "medium",
+        note: "Your own saved livestock records. Not a veterinary diagnosis; no treatment or drug dose is suggested without a verified product registry and a veterinarian.",
+      };
+    },
+  },
+  {
+    id: "marketplace",
+    title: TITLES.marketplace,
+    dependsOn: [],
+    keywords: /(تسويق|بيع المحصول|شراء محصول|سوق زراعي|مزاد|marketplace|commercialis|vente|achat|fournisseur|acheteur|listing)/i,
+    run: (ctx) => {
+      const records = marketplaceRecords(ctx);
+      if (records.length === 0) {
+        return {
+          status: "unavailable",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "The marketplace/supply-chain store is not connected, so there are no persisted listings, buyers or prices to report. No commercial figure is invented.",
+        };
+      }
+      return {
+        status: "ok",
+        findings: records.slice(0, 6),
+        dataSource: "persisted-records",
+        isRealData: false,
+        confidence: "medium",
+        note: "Your own persisted listings/inquiries. Not a verified market price; verify before a commercial commitment.",
+      };
+    },
+  },
+  {
+    id: "advisor",
+    title: TITLES.advisor,
+    dependsOn: [],
+    keywords: /(نصيحة|مشورة|كيف أبدأ|توجيه عام|advice|conseil|how to start|guidance|نصايح)/i,
+    run: (ctx) => {
+      const hasAny =
+        hasSoilMeasurements(ctx.soil) ||
+        (ctx.platformRecords?.length ?? 0) > 0 ||
+        ctx.crop !== undefined ||
+        ctx.governorate !== undefined;
+      if (!hasAny) {
+        return {
+          status: "insufficient_input",
+          findings: [],
+          dataSource: null,
+          isRealData: false,
+          confidence: "unknown",
+          note: "No farm/field context to advise on. Add a farm, a crop or a soil analysis, or describe the situation, before asking for general guidance.",
+        };
+      }
+      const lines: string[] = [
+        "إرشاد عام مبني على سياقك المحفوظ؛ ليس تشخيصاً ميدانياً ولا حكماً نهائياً.",
+      ];
+      if (ctx.crop) lines.push(`المحصول المذكور: ${ctx.crop}`);
+      if (ctx.governorate) lines.push(`الجهة: ${ctx.governorate}`);
+      if (ctx.season) lines.push(`الموسم: ${ctx.season}`);
+      lines.push(
+        "للحصول على توصية دقيقة، استعمل المحاور المتخصّصة: تحليل التربة، توصية المحاصيل، الري، صحة النبات، المواشي.",
+      );
+      return {
+        status: "ok",
+        findings: lines,
+        dataSource: "rule-based",
+        isRealData: false,
+        confidence: "low",
+        note: "Generic orientation only; the specialised agents carry the evidence-based detail.",
       };
     },
   },

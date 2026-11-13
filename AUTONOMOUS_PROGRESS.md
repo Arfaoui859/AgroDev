@@ -1579,3 +1579,43 @@ depends on env vars that are unset in production.
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
 `npx jest` 958 passed / 3 skipped.
+
+### Session 6 — closed multi-agent registry + dashboard/entry-point gaps
+
+Prior session routed every client AI call through the provenance-gated gateway.
+This session closed the remaining roadmap gaps identified by inspecting the
+live code, not by re-reading the README.
+
+- **Specialist registry completed (10 → 14).** `agriculturalOrchestrator.ts`
+  gained four allow-listed specialists the mission required but the registry
+  lacked: `yield_intel`, `livestock`, `marketplace`, `advisor`. Each follows the
+  existing contract (declared `dependsOn`, `keywords`, validated inputs, honest
+  `insufficient_input`/`unavailable`, provenance `dataSource`, no fabrication):
+  - `yield_intel` reports only a *recorded* `estimated_yield` (persisted-records),
+    and stays `insufficient_input` otherwise — a yield is never invented.
+  - `livestock` reports the caller's own herd/animal/production/health rows and
+    explicitly refuses to suggest a treatment or drug dose.
+  - `marketplace` reports `unavailable` (never a fabricated listing or buyer)
+    until the supply-chain store is connected.
+  - `advisor` gives rule-based orientation from saved context only.
+- **Real livestock data wired into the gateway context.** New
+  `collectLivestockRecords(db, userId)` in `ai-services-gateway.ts` reads the
+  caller's `livestock_animals` / `livestock_production_records` /
+  `livestock_health_events` (RLS-scoped, `user_id`-filtered) and emits
+  provenance-tagged `LIVESTOCK …` context lines. A missing/empty table yields
+  `[]` so chat still works and the specialist reports honestly. Used by both the
+  linked-farm and no-farm branches.
+- **Chatbot labels + tests.** `SPECIALIST_LABELS` in `AIAssistantChatbot.tsx`
+  gained the four ids (the existing test fails if a label leaks the raw id).
+  `tests/unit/agricultural-orchestrator.test.ts` +9 cases (planner selection and
+  per-specialist honesty). New `tests/unit/news-entry-point.test.ts` (4 cases)
+  pins the news path: dashboard card → `/news` route → real `/api/news` fetch,
+  and asserts every quick-access destination is a declared route.
+- **News entry point added to the farmer workspace.** `FarmOverviewPanel.tsx`
+  (the overview tab of `UnifiedFarmerDashboard`) had no link to the working
+  Agricultural News feature; it now has an AR/FR/EN quick-access grid linking the
+  real tools (news, market, weather, irrigation, pest, livestock, AI, finance),
+  all pointing at declared routes.
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` (see below).

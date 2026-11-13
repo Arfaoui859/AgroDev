@@ -140,6 +140,10 @@ const SPECIALIST_LABELS: Record<string, { ar: string; fr: string; en: string }> 
   market: { ar: 'السوق', fr: 'Marché', en: 'Market' },
   agri_news: { ar: 'الأخبار الزراعية', fr: 'Actualités agricoles', en: 'Agricultural news' },
   finance: { ar: 'المالية الزراعية', fr: 'Finance agricole', en: 'Agricultural finance' },
+  yield_intel: { ar: 'ذكاء المردود', fr: 'Intelligence de rendement', en: 'Yield intelligence' },
+  livestock: { ar: 'المواشي والصحة الحيوانية', fr: 'Bétail et santé animale', en: 'Livestock & veterinary' },
+  marketplace: { ar: 'السوق التجاري', fr: 'Intelligence commerciale', en: 'Marketplace intelligence' },
+  advisor: { ar: 'المستشار الزراعي العام', fr: 'Conseiller agricole général', en: 'General agricultural advisor' },
 };
 
 const AIAssistantChatbot: React.FC = () => {

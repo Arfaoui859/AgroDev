@@ -52,6 +52,19 @@ describe("planSpecialists", () => {
     const plan = planSpecialists("hello", { labAnalytes: { ph: 6.5 } });
     expect(plan).toContain("lab_soil");
   });
+
+  test("a livestock question selects the livestock specialist", () => {
+    expect(planSpecialists("عندي 20 رأس غنم، شنوة نعمل للعلف؟")).toContain("livestock");
+    expect(planSpecialists("how many cattle do I have?")).toContain("livestock");
+  });
+
+  test("a yield question selects the yield specialist", () => {
+    expect(planSpecialists("ما هو المردود المتوقع للمحصول؟")).toContain("yield_intel");
+  });
+
+  test("a marketplace question selects the commercial specialist", () => {
+    expect(planSpecialists("نحب نبيع المحصول، شكون المشتري؟")).toContain("marketplace");
+  });
 });
 
 describe("executePlan", () => {
@@ -290,6 +303,69 @@ describe("executePlan", () => {
       if (saved === undefined) delete process.env.PEST_CONTROL_URL;
       else process.env.PEST_CONTROL_URL = saved;
     }
+  });
+
+  test("yield_intel invents no yield without a recorded estimate", async () => {
+    const { steps } = await executePlan(["yield_intel"], {}, "ar");
+    expect(steps[0].status).toBe("insufficient_input");
+    expect(steps[0].findings).toEqual([]);
+    expect(steps[0].note).toMatch(/never invented/i);
+  });
+
+  test("yield_intel reports a recorded yield as persisted, never as a model prediction", async () => {
+    const { steps } = await executePlan(
+      ["yield_intel"],
+      { platformRecords: ["Cultivation tomato [status=active; estimated_yield=42]"] },
+      "ar",
+    );
+    expect(steps[0].status).toBe("ok");
+    expect(steps[0].dataSource).toBe("persisted-records");
+    expect(steps[0].isRealData).toBe(false);
+    expect(steps[0].findings.join(" ")).toMatch(/42/);
+  });
+
+  test("livestock stays insufficient_input with no records and never diagnoses", async () => {
+    const { steps } = await executePlan(["livestock"], {}, "ar");
+    expect(steps[0].status).toBe("insufficient_input");
+    expect(steps[0].findings).toEqual([]);
+  });
+
+  test("livestock reports persisted records and refuses to suggest a treatment", async () => {
+    const { steps } = await executePlan(
+      ["livestock"],
+      {
+        platformRecords: [
+          "LIVESTOCK summary [animal records: total=12; by species=cattle:8, sheep:4]. Caller's own saved livestock registry.",
+        ],
+      },
+      "ar",
+    );
+    expect(steps[0].status).toBe("ok");
+    expect(steps[0].dataSource).toBe("persisted-records");
+    expect(steps[0].isRealData).toBe(false);
+    expect(steps[0].note).toMatch(/no treatment|drug dose|veterinary/i);
+  });
+
+  test("marketplace reports unavailable (never a fabricated listing) with no store", async () => {
+    const { steps } = await executePlan(["marketplace"], {}, "ar");
+    expect(steps[0].status).toBe("unavailable");
+    expect(steps[0].findings).toEqual([]);
+    expect(steps[0].note).toMatch(/not connected|invented/i);
+  });
+
+  test("advisor gives orientation from context and is never a field diagnosis", async () => {
+    const withContext = await executePlan(
+      ["advisor"],
+      { crop: "tomato", governorate: "Sfax" },
+      "ar",
+    );
+    expect(withContext.steps[0].status).toBe("ok");
+    expect(withContext.steps[0].dataSource).toBe("rule-based");
+    expect(withContext.steps[0].isRealData).toBe(false);
+    expect(withContext.steps[0].note).toMatch(/orientation|generic/i);
+
+    const withoutContext = await executePlan(["advisor"], {}, "ar");
+    expect(withoutContext.steps[0].status).toBe("insufficient_input");
   });
 });
 

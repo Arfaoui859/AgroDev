@@ -24,6 +24,7 @@ import { classifyModelSource, isNonModelSource } from "../services/providers/mod
 import { MAX_USER_MESSAGE_CHARS } from "../lib/promptSafety";
 import { resolveUserIdFromJwt } from "../middleware/auth";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { persistTrustedAssistantTurn } from "./assistant-conversations";
 import { getWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
 import { getTunisianAgriNews } from "../services/news/tunisianAgriNews";
@@ -1051,7 +1052,8 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           for (const prediction of (publicPredictionsResult.error ? [] : publicPredictionsResult.data ?? [])) {
             basePlatformRecords.push("Public stored market prediction [crop=" + prediction.crop_name + "; period=" + (prediction.prediction_period || "unreported") + "; range=" + JSON.stringify(prediction.predicted_price_range ?? {}).slice(0, 200) + "; confidence=" + (prediction.confidence_level ?? "unreported") + "; valid=" + prediction.valid_from + " to " + prediction.valid_until + "; created=" + prediction.created_at + "]. Prediction, not a current market quote or guaranteed price.");
           }
-          farmContext = { platformRecords: basePlatformRecords };
+          const noFarmLivestockLines = await collectLivestockRecords(db, userId);
+          farmContext = { platformRecords: [...basePlatformRecords, ...noFarmLivestockLines] };
           farmContextStatus = "no_farms";
         } else {
           const farms = farmsResult.data ?? [];
@@ -1109,6 +1111,11 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .limit(12)
             : { data: [], error: null };
 
+          // Caller-scoped livestock facts. Any error yields an empty set (the
+          // livestock specialist then reports insufficient_input honestly);
+          // a missing table must not break the whole chat context.
+          const livestockLines = await collectLivestockRecords(db, userId);
+
           if (cropResult.error || soilResult.error) {
             farmContextStatus = "unavailable";
           } else {
@@ -1157,6 +1164,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .limit(8)
             : { data: [], error: null };
           const platformRecords: string[] = [...basePlatformRecords];
+          for (const line of livestockLines) platformRecords.push(line);
             if (farms.length > 1 && !selectedFarm) {
               platformRecords.push(
                 "Farm selection required: this account has multiple farms and the current question does not identify exactly one. The following farm records belong to different farms; do not combine their soil, crop, weather, sensor or financial measurements. Ask the user which farm they mean before giving farm-specific conclusions."
@@ -1482,6 +1490,79 @@ export const getSmartAlerts = async (req: Request, res: Response) => {
 function toNumber(value: unknown): number | undefined {
   const n = typeof value === "number" ? value : parseFloat(value as string);
   return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Build provenance-tagged `LIVESTOCK …` context lines from the caller's own
+ * persisted rows. Returns [] when the tables are empty or unreadable, so the
+ * `livestock` orchestrator specialist reports `insufficient_input` honestly
+ * rather than the chat failing. Every line states that the values are the
+ * farmer's own records and never a veterinary diagnosis.
+ */
+async function collectLivestockRecords(
+  db: SupabaseClient,
+  userId: string,
+): Promise<string[]> {
+  const [animalsResult, productionResult, healthResult] = await Promise.all([
+    db.from("livestock_animals")
+      .select("id,herd_id,species,breed,sex,health_status,reproductive_status,lifecycle_status,current_weight_kg,birth_date,farm_id")
+      .eq("user_id", userId).limit(40),
+    db.from("livestock_production_records")
+      .select("animal_id,production_type,quantity,unit,quality,recorded_at")
+      .eq("user_id", userId).order("recorded_at", { ascending: false }).limit(60),
+    db.from("livestock_health_events")
+      .select("animal_id,event_type,severity,diagnosis,resolved,event_date")
+      .eq("user_id", userId).order("event_date", { ascending: false }).limit(40),
+  ]);
+  const lines: string[] = [];
+  const animalRows = animalsResult.error ? [] : animalsResult.data ?? [];
+  if (animalRows.length === 0) return lines;
+
+  const speciesCounts = new Map<string, number>();
+  for (const animal of animalRows) {
+    const species = typeof animal.species === "string" ? animal.species : "unknown";
+    speciesCounts.set(species, (speciesCounts.get(species) ?? 0) + 1);
+  }
+  lines.push(
+    "LIVESTOCK summary [animal records: total=" + animalRows.length +
+      "; by species=" + Array.from(speciesCounts.entries()).map(([s, n]) => s + ":" + n).join(", ") +
+      "]. Caller's own saved livestock registry.",
+  );
+  for (const animal of animalRows.slice(0, 12)) {
+    lines.push(
+      "LIVESTOCK animal [species=" + animal.species + "; breed=" + (animal.breed || "not recorded") +
+        "; sex=" + animal.sex + "; health=" + (animal.health_status || "not recorded") +
+        "; reproduction=" + (animal.reproductive_status || "not recorded") +
+        "; lifecycle=" + (animal.lifecycle_status || "not recorded") +
+        "; current_weight_kg=" + (animal.current_weight_kg ?? "not recorded") +
+        "; birth_date=" + (animal.birth_date || "not recorded") + "]. User-recorded, not a veterinary assessment.",
+    );
+  }
+  const production = productionResult.error ? [] : productionResult.data ?? [];
+  if (production.length) {
+    const byType = new Map<string, { qty: number; unit: string }>();
+    for (const row of production) {
+      const key = String(row.production_type);
+      const prev = byType.get(key) ?? { qty: 0, unit: String(row.unit ?? "") };
+      prev.qty += Number(row.quantity) || 0;
+      byType.set(key, prev);
+    }
+    lines.push(
+      "LIVESTOCK production [records=" + production.length + "; totals=" +
+        Array.from(byType.entries()).map(([t, v]) => t + "=" + v.qty.toFixed(2) + " " + v.unit).join(", ") +
+        "]. Totals summed from the farmer's own production records; not independently verified.",
+    );
+  }
+  const health = healthResult.error ? [] : healthResult.data ?? [];
+  const unresolved = health.filter((event: any) => event.resolved !== true);
+  if (unresolved.length) {
+    lines.push(
+      "LIVESTOCK open health events [count=" + unresolved.length + "; latest=" +
+        unresolved.slice(0, 3).map((event: any) => (event.event_type || "event") + (event.severity ? "/" + event.severity : "") + (event.diagnosis ? " (" + String(event.diagnosis).slice(0, 60) + ")" : "")).join("; ") +
+        "]. User/vet-recorded events; not a diagnosis produced by AgroGrowth.",
+    );
+  }
+  return lines;
 }
 
 function normaliseLocation(raw: any): { latitude: number; longitude: number } | undefined {
