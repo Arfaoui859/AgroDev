@@ -224,8 +224,10 @@ export default function EffectivenessReports() {
     cropType: 'olive',
     userRating: 5,
     notes: '',
-    beforeHealthScore: 50,
-    afterHealthScore: 70
+    // null until the farmer types a real measurement; never pre-filled with a
+    // plausible-looking score that would be submitted as if it were observed.
+    beforeHealthScore: null as number | null,
+    afterHealthScore: null as number | null,
   });
 
   useEffect(() => {
@@ -253,6 +255,10 @@ export default function EffectivenessReports() {
 
   const addNewReport = async () => {
     setSubmitError(null);
+    if (newReport.beforeHealthScore == null || newReport.afterHealthScore == null) {
+      setSubmitError('أدخل قيم صحة النبات قبل وبعد التطبيق.');
+      return;
+    }
     // The fertilizer effectiveness model is not verified (the backend route
     // fails closed with 503). We only ever send the values the farmer actually
     // entered, and we never invent a score locally: if the server does not
@@ -300,8 +306,8 @@ export default function EffectivenessReports() {
         cropType: 'olive',
         userRating: 5,
         notes: '',
-        beforeHealthScore: 50,
-        afterHealthScore: 70
+        beforeHealthScore: null,
+        afterHealthScore: null,
       });
     } catch (error) {
       console.error('Error submitting report:', error);
@@ -448,8 +454,11 @@ export default function EffectivenessReports() {
                       type="number"
                       min="0"
                       max="100"
-                      value={newReport.beforeHealthScore}
-                      onChange={(e) => setNewReport(prev => ({...prev, beforeHealthScore: parseInt(e.target.value) || 50}))}
+                      value={newReport.beforeHealthScore ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                        setNewReport(prev => ({...prev, beforeHealthScore: Number.isFinite(v as number) ? v : null}));
+                      }}
                     />
                   </div>
                   <div>
@@ -459,8 +468,11 @@ export default function EffectivenessReports() {
                       type="number"
                       min="0"
                       max="100"
-                      value={newReport.afterHealthScore}
-                      onChange={(e) => setNewReport(prev => ({...prev, afterHealthScore: parseInt(e.target.value) || 70}))}
+                      value={newReport.afterHealthScore ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                        setNewReport(prev => ({...prev, afterHealthScore: Number.isFinite(v as number) ? v : null}));
+                      }}
                     />
                   </div>
                 </div>
@@ -506,7 +518,14 @@ export default function EffectivenessReports() {
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                   إلغاء
                 </Button>
-                <Button onClick={addNewReport}>
+                <Button
+                  onClick={addNewReport}
+                  disabled={
+                    !newReport.productName.trim() ||
+                    newReport.beforeHealthScore == null ||
+                    newReport.afterHealthScore == null
+                  }
+                >
                   إضافة التقرير
                 </Button>
               </DialogFooter>

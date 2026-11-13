@@ -29,9 +29,9 @@ export default function FinancialDashboard(){
   <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-bold">اللوحة المالية للمزرعة</h1><p className="text-sm text-muted-foreground">المبالغ محسوبة من المصاريف والمداخيل المسجلة في حسابك فقط.</p></div><Button variant="outline" onClick={()=>void load()} disabled={loading}><RefreshCw className={"ml-2 h-4 w-4 "+(loading?"animate-spin":"")}/>تحديث</Button></header>
   {error&&<Alert variant="destructive"><AlertDescription>{error} تأكد من تسجيل الدخول وتطبيق ترحيل قاعدة البيانات المالية.</AlertDescription></Alert>}
   <div className="grid gap-3 md:grid-cols-3">
-   <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><TrendingDown className="h-4 w-4"/>إجمالي المصاريف</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{loading?"…":money(summary?.totalExpenses||0)}</CardContent></Card>
-   <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><TrendingUp className="h-4 w-4"/>إجمالي المداخيل</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{loading?"…":money(summary?.totalRevenue||0)}</CardContent></Card>
-   <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><Wallet className="h-4 w-4"/>الصافي المسجل</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{loading?"…":money(summary?.netProfit||0)}</CardContent></Card>
+   <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><TrendingDown className="h-4 w-4"/>إجمالي المصاريف</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{loading?"…":summary?money(summary.totalExpenses):"—"}</CardContent></Card>
+   <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><TrendingUp className="h-4 w-4"/>إجمالي المداخيل</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{loading?"…":summary?money(summary.totalRevenue):"—"}</CardContent></Card>
+   <Card><CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><Wallet className="h-4 w-4"/>الصافي المسجل</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{loading?"…":summary?money(summary.netProfit):"—"}</CardContent></Card>
   </div>
   <div className="grid gap-4 lg:grid-cols-2">
    <Card><CardHeader><CardTitle>حركة الحساب</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">

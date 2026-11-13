@@ -1890,3 +1890,19 @@ and covered by regression tests.
 
 **Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npx jest` →
 **1040 passed**, 3 skipped, 1043 total.
+
+### Session 13 (cont. 2) — EffectivenessReports + FinancialDashboard honesty
+
+- **`EffectivenessReports`**: the before/after plant-health inputs were
+  pre-filled with `50`/`70` and an empty field was coerced back to those values
+  (`parseInt(...) || 50`), so a report could carry scores the farmer never
+  entered. Both now start `null`, render empty, and the submit button is
+  disabled until real values are typed (the backend model is unverified and
+  fails closed with 503 anyway).
+- **`FinancialDashboard`**: `money(summary?.totalX || 0)` displayed an
+  unavailable/erroring summary as a real `0.000 TND` balance. Now renders `—`
+  until a real summary loads.
+- Regression tests added for both.
+
+**Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npm run build` 0 ·
+`npx jest` → **1042 passed**, 3 skipped, 1045 total.

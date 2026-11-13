@@ -274,3 +274,40 @@ describe("EnhancedLayout does not fabricate an account email", () => {
     expect(src).not.toContain("user@agrogrowth.com");
   });
 });
+
+/**
+ * Regression: `EffectivenessReports` pre-filled the before/after plant-health
+ * inputs with 50/70 and coerced an empty field back to those values
+ * (`parseInt(...) || 50`), so a report could be submitted with scores the
+ * farmer never entered. The scores must start null and stay null until typed.
+ */
+describe("EffectivenessReports never invents plant-health scores", () => {
+  const src = read("client/pages/EffectivenessReports.tsx");
+
+  test("starts the scores empty and does not coerce to a constant", () => {
+    expect(src).not.toContain("beforeHealthScore: 50");
+    expect(src).not.toContain("afterHealthScore: 70");
+    expect(src).not.toMatch(/beforeHealthScore:\s*parseInt\([^)]*\)\s*\|\|\s*50/);
+    expect(src).not.toMatch(/afterHealthScore:\s*parseInt\([^)]*\)\s*\|\|\s*70/);
+  });
+
+  test("blocks submission while a score is missing", () => {
+    expect(src).toContain("newReport.beforeHealthScore == null");
+    expect(src).toContain("newReport.afterHealthScore == null");
+  });
+});
+
+/**
+ * Regression: `FinancialDashboard` rendered `money(summary?.totalX || 0)`, so an
+ * unavailable/erroring summary was shown as a real "0.000 TND" balance instead
+ * of an honest "not available". A null summary must render the placeholder.
+ */
+describe("FinancialDashboard fails closed on a missing summary", () => {
+  const src = read("client/pages/FinancialDashboard.tsx");
+
+  test("does not coerce a missing summary to zero", () => {
+    expect(src).not.toMatch(/money\(summary\?\.\w+\s*\|\|\s*0\)/);
+    expect(src).toContain('summary?money(summary.totalExpenses):"—"');
+    expect(src).toContain('summary?money(summary.netProfit):"—"');
+  });
+});
