@@ -2,6 +2,12 @@
 
 Complete guide to run all AI microservices locally or in production on Railway/Docker.
 
+> **⚠️ Note:** any `agrogrowth-*.onrender.com` hostnames below are illustrative
+> placeholders, not deployed services. The actual verified public endpoints for
+> all eight services (with their declared `model_source`) are listed in
+> `.env.example` under "Verified public Render endpoints". Do not copy the
+> placeholder hostnames into production.
+
 ---
 
 ## 📊 AI Services Overview

@@ -1,5 +1,11 @@
 # 🆓 دليل النشر المجاني 100% - AgroGrowth
 
+> **⚠️ تنبيه:** أسماء المضيفين في هذا الدليل
+> (`agrogrowth-soil-analysis.onrender.com` ...) هي أمثلة فقط وقد لا تكون منشورة
+> فعلاً. الأسماء الحقيقية المنشورة حالياً لكل خدمة من الخدمات الثماني (مع
+> `model_source` المُعلن) موثّقة في `.env.example` تحت عنوان
+> "Verified public Render endpoints". لا تنسخ أسماء الأمثلة إلى بيئة الإنتاج.
+
 ## 🎯 المنصات المجانية المقترحة
 
 ### 1. **Render.com** - خدمات AI (مجاني)
@@ -166,22 +172,18 @@ Install Command: npm install
 #### خطوة 3: متغيرات البيئة
 
 ```env
-# Cloud Services
-VITE_USE_CLOUD_SERVICES=true
-VITE_FALLBACK_TO_MOCK=false
-
 # Database
 DATABASE_URL=[نسخ من Supabase]
 SUPABASE_URL=[نسخ من Supabase]
 SUPABASE_ANON_KEY=[نسخ من Supabase]
 
-# AI Services (URLs from Render)
-VITE_SOIL_ANALYSIS_URL=https://agrogrowth-soil-analysis.onrender.com
-VITE_CROP_RECOMMENDATION_URL=https://agrogrowth-crop-recommendation.onrender.com
-VITE_IMAGE_DIAGNOSIS_URL=https://agrogrowth-image-diagnosis.onrender.com
-
-# API
+# API (backend base URL used by the SPA)
 VITE_API_URL=https://your-app.vercel.app/api
+
+# AI microservice URLs are SERVER-SIDE only (SOIL_ANALYSIS_URL, ...).
+# The browser never calls them directly: every AI request goes through the
+# backend gateway /api/ai/*, which verifies model provenance and fails closed
+# for synthetic/unverified output. Do NOT add VITE_*_URL service hostnames.
 
 # Redis (اختياري - يمكن تجاهله للمرحلة الأولى)
 REDIS_URL=redis://localhost:6379

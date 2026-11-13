@@ -351,6 +351,110 @@ export const createWeight: RequestHandler = async (req, res) => {
   return res.status(201).json({ success: true, data, provenance: { source: "supabase.livestock_weight_records", persisted: true } });
 };
 
+// --- Production records ---------------------------------------------------
+const PRODUCTION_TYPES = new Set(["milk", "eggs", "wool", "meat", "weight_gain", "other"]);
+const PRODUCTION_UNITS = new Set(["liters", "kg", "pieces", "grams"]);
+const PRODUCTION_QUALITY = new Set(["A", "B", "C", "Premium", "rejected"]);
+
+/** Build the persisted row for a production record, validating every field. */
+export function productionRecordPayload(body: any, userId: string) {
+  const animalId = optionalUuid(body.animalId ?? body.animal_id);
+  if (!animalId) return { error: "ANIMAL_ID_REQUIRED" as const };
+  const productionType = str(body.productionType ?? body.production_type ?? body.type, 20);
+  if (!PRODUCTION_TYPES.has(productionType)) return { error: "INVALID_PRODUCTION_TYPE" as const };
+  const quantity = num(body.quantity);
+  if (quantity === null || Number.isNaN(quantity as number) || (quantity as number) <= 0) {
+    return { error: "INVALID_QUANTITY" as const };
+  }
+  const unit = str(body.unit, 20);
+  if (!PRODUCTION_UNITS.has(unit)) return { error: "INVALID_UNIT" as const };
+  const quality = str(body.quality ?? "A", 20);
+  if (!PRODUCTION_QUALITY.has(quality)) return { error: "INVALID_QUALITY" as const };
+  const recordedAt = body.recordedAt ?? body.recorded_at ?? body.date ?? new Date().toISOString().slice(0, 10);
+  if (!isValidISODate(String(recordedAt))) return { error: "INVALID_DATE" as const };
+  const price = num(body.pricePerUnit ?? body.price_per_unit ?? body.price);
+  if (price !== null && (Number.isNaN(price) || price < 0)) return { error: "INVALID_PRICE" as const };
+  const fat = num(body.fatContent ?? body.fat_content);
+  const protein = num(body.proteinContent ?? body.protein_content);
+  const temperature = num(body.temperature ?? body.temperature_c);
+  return {
+    payload: {
+      user_id: userId,
+      animal_id: animalId,
+      production_type: productionType,
+      quantity: quantity as number,
+      unit,
+      quality,
+      recorded_at: String(recordedAt),
+      price_per_unit: price === null || Number.isNaN(price) ? null : price,
+      fat_content: fat === null || Number.isNaN(fat) ? null : fat,
+      protein_content: protein === null || Number.isNaN(protein) ? null : protein,
+      temperature_c: temperature === null || Number.isNaN(temperature) ? null : temperature,
+      notes: str(body.notes),
+    },
+  };
+}
+
+export const listProductionRecords: RequestHandler = async (req, res) => {
+  const db = dbFor(req);
+  if (!db) return unavailable(res);
+  let query = db
+    .from("livestock_production_records")
+    .select("*")
+    .eq("user_id", req.userId)
+    .order("recorded_at", { ascending: false });
+  if (req.query.animalId && UUID_PATTERN.test(String(req.query.animalId))) {
+    query = query.eq("animal_id", String(req.query.animalId));
+  }
+  if (req.query.productionType) query = query.eq("production_type", String(req.query.productionType));
+  const { data, error } = await query;
+  if (error) return unavailable(res, error);
+  return res.json({
+    success: true,
+    data: data ?? [],
+    provenance: { source: "supabase.livestock_production_records", persisted: true },
+  });
+};
+
+export const createProductionRecord: RequestHandler = async (req, res) => {
+  const db = dbFor(req);
+  if (!db) return unavailable(res);
+  const parsed = productionRecordPayload(req.body, req.userId!);
+  if ("error" in parsed) {
+    return res.status(400).json({ success: false, code: parsed.error, message: "بيانات سجل الإنتاج غير صالحة." });
+  }
+  const owned = await requireOwnedAnimal(db, req.userId!, parsed.payload.animal_id);
+  if (owned.error) return unavailable(res, owned.error);
+  if (!owned.owned) return res.status(404).json({ success: false, code: "ANIMAL_NOT_FOUND" });
+  const { data, error } = await db
+    .from("livestock_production_records")
+    .insert(parsed.payload)
+    .select("*")
+    .single();
+  if (error) return unavailable(res, error);
+  return res.status(201).json({
+    success: true,
+    data,
+    provenance: { source: "supabase.livestock_production_records", persisted: true },
+  });
+};
+
+export const deleteProductionRecord: RequestHandler = async (req, res) => {
+  const db = dbFor(req);
+  if (!db) return unavailable(res);
+  if (!UUID_PATTERN.test(String(req.params.id))) return badId(res);
+  const { data, error } = await db
+    .from("livestock_production_records")
+    .delete()
+    .eq("id", req.params.id)
+    .eq("user_id", req.userId)
+    .select("id")
+    .maybeSingle();
+  if (error) return unavailable(res, error);
+  if (!data) return res.status(404).json({ success: false, code: "PRODUCTION_RECORD_NOT_FOUND" });
+  return res.json({ success: true, data: { id: data.id }, provenance: { source: "supabase.livestock_production_records", persisted: true } });
+};
+
 // --- Health events --------------------------------------------------------
 export const listHealthEvents: RequestHandler = async (req, res) => {
   const db = dbFor(req);
@@ -658,6 +762,10 @@ router.delete("/animals/:id", deleteAnimal);
 
 router.get("/animals/:id/weights", listWeights);
 router.post("/animals/:id/weights", createWeight);
+
+router.get("/production-records", listProductionRecords);
+router.post("/production-records", createProductionRecord);
+router.delete("/production-records/:id", deleteProductionRecord);
 
 router.get("/health-events", listHealthEvents);
 router.post("/health-events", createHealthEvent);

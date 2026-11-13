@@ -29,7 +29,8 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 | 8 | Specialist agent contracts + tests | **VERIFIED** — 10 specialists (`soil`, `lab_soil`, `weather`, `crop`, `irrigation`, `plant_health`, `market`, `agri_news`, `pest_control`, `finance`), honest `insufficient_input`, 34 unit + 4 integration tests |
 | 9 | Chatbot uses the orchestrator | **VERIFIED** — chat handler runs the orchestrator and returns `usedSpecialists` + `orchestrationTrace` |
 | 10 | AI service URL config + health monitoring | **VERIFIED** — registry/env reconciled; 429 → `rate_limited` (reachable, inference unverified); production no longer reports localhost |
-| 11 | Real inference verification for all eight services | **PARTIAL (live-verified for 2)** — all eight `/health` answer 200 locally. **Real trained-model inference verified this session**: (a) `soil_analysis` `POST /predict-lab-soil` returns 7/7 predicted targets with R² on full input and honest `insufficient_input` on sparse input; (b) `image_diagnosis` `POST /detect-disease` runs the MobileNetV3 PlantVillage ONNX classifier (`detection_method: mobilenetv3_onnx`, `data_source: trained-ml`). The other six self-declare synthetic-demo/deterministic-rules and fail closed. Hosted Render inference remains **BLOCKED** (no credentials/network). |
+| 10a | No browser→microservice direct calls | **VERIFIED FIXED (Session 5b)** — `client/lib/cloud-config.ts` no longer exposes the direct-probe helpers (`checkServiceHealth`, `checkAllServicesHealth`, `robustCloudFetch`) or the `VITE_*_URL` host fields; `useAIServices` always routes through the backend AI gateway so the provenance gate cannot be bypassed. Guarded by `tests/unit/no-direct-microservice-calls.test.ts`; deploy docs corrected. |
+| 11 | Real inference verification for all eight services | **VERIFIED (hosted, Session 5)** — all eight deployed `/health` return 200 (earlier 429s were Render cold-start rate limiting). Real trained-model/LLM inference confirmed **on the deployed hosts**: (a) `ai-soil-analysis` `POST /predict-lab-soil` returns 7/7 targets from the trained wetchem models with per-target R²/MAE/RMSE (e.g. carbon_organic R²=0.86) and honest `insufficient_input` + coverage on sparse input; (b) `agrogrowth-image-diagnosis` `POST /detect-disease` runs the MobileNetV3 PlantVillage ONNX classifier; (c) `agrodev-4` `POST /chat` returns a real Arabic LLM answer. The other five self-declare synthetic/rule-based and **fail closed on the deployed host** with a named code (`CROP_MODEL_NOT_VALIDATED`, `LIVE_MARKET_FEED_NOT_CONFIGURED`, `YIELD_MODEL_NOT_VALIDATED`, `IRRIGATION_MODEL_NOT_VALIDATED`) or return an honest rule-based result (`pest_control` `/identify-pest`, confidence 0.0). |
 | 11a | Orchestrator uses trained lab models (`lab_soil`) | **VERIFIED** — allow-listed specialist; no network call without analytes; `trained-model-inference` provenance with per-target R²; honest `failed`/`unavailable`; live-verified 7/7 targets and sparse-input `insufficient_input` |
 | 11b | Orchestrator uses the real pest-control service (`pest_control`) | **VERIFIED** — allow-listed specialist now calls `POST /identify-pest` when the user describes symptoms; always `rule-based` / `isRealData:false` / `confidence:low` (the service is a keyword matcher, never a trained classifier); never a product/dose; honest `unavailable` when the service is down; live-verified aphids from an Arabic symptom sentence |
 | 11c | Lightweight operational probes (`/ready`, `/metrics`) on all eight services | **VERIFIED** — `register_service_probes` in `ai_common/base_service.py`, registered in all eight services; `/ready` never loads a model, `/metrics` reports real process counters; `/api/ai/health` probes `/ready` first; docker-compose healthchecks added; 16 Python checks; live 200 on 8001–8008 |
@@ -84,8 +85,10 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 
 ## Steps that need an external resource
 
-- End-to-end farmer CRUD: a Supabase project + `.env`.
-- Live AI inference: network access to the eight Render hosts.
+- End-to-end farmer CRUD against hosted Supabase: needs the hosted project +
+  `.env` (local PG17 + PostgREST equivalence is already verified).
+- ~~Live AI inference: network access to the eight Render hosts.~~ **Done —
+  Session 5: all eight deployed hosts probed for real inference (see #11).**
 - Verifying email-confirmation → `email_verified` sync: a real Supabase auth
   flow (the trigger sets it only at first insert; see audit note).
 

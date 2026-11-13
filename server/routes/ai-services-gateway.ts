@@ -161,6 +161,12 @@ const handleAIServiceError = (
   }
 };
 
+// Timeout for direct microservice calls. An idle Render container can take
+// tens of seconds to cold-start before the first inference request is served,
+// so this is env-configurable (default 30s, unchanged).
+const AI_SERVICE_TIMEOUT_MS =
+  Number(process.env.AI_SERVICE_TIMEOUT_MS) || 30_000;
+
 // Generic AI service call function
 const callAIService = async (
   serviceUrl: string,
@@ -178,7 +184,7 @@ const callAIService = async (
   const config = {
     method,
     url,
-    timeout: 30000, // 30 seconds timeout
+    timeout: AI_SERVICE_TIMEOUT_MS,
     headers: {
       "Content-Type": "application/json",
       ...headers,
@@ -362,7 +368,7 @@ export const diagnoseSoilFromImage = [
           headers: {
             ...formData.getHeaders(),
           },
-          timeout: 30000,
+          timeout: AI_SERVICE_TIMEOUT_MS,
         },
       );
 
@@ -774,7 +780,7 @@ export const detectPlantDisease = [
           headers: {
             ...formData.getHeaders(),
           },
-          timeout: 30000,
+          timeout: AI_SERVICE_TIMEOUT_MS,
         },
       );
 
@@ -815,7 +821,7 @@ export const analyzeLeafHealth = [
           headers: {
             ...formData.getHeaders(),
           },
-          timeout: 30000,
+          timeout: AI_SERVICE_TIMEOUT_MS,
         },
       );
 
@@ -860,7 +866,7 @@ export const comprehensivePlantAnalysis = [
           headers: {
             ...formData.getHeaders(),
           },
-          timeout: 30000,
+          timeout: AI_SERVICE_TIMEOUT_MS,
         },
       );
 
@@ -897,7 +903,7 @@ export const quickPlantHealthCheck = [
           headers: {
             ...formData.getHeaders(),
           },
-          timeout: 30000,
+          timeout: AI_SERVICE_TIMEOUT_MS,
         },
       );
 

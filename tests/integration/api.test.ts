@@ -219,7 +219,11 @@ describe("🔌 AgroGrowth API Integration Tests", () => {
           expect([502, 503]).toContain(response.status);
           expect(response.body.dataAvailable).toBe(false);
         }
-      });
+        // The provider budget is 12s x (1 + 2 retries) = 36s worst case, which
+        // exceeds Jest's 30s default when the suite runs in parallel. Give this
+        // live-network test enough headroom so a slow provider is not reported
+        // as a source failure.
+      }, 60_000);
     });
 
     describe("Privileged maintenance endpoints are not anonymous", () => {

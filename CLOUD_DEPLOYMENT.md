@@ -110,13 +110,12 @@ PYTHONPATH=/app
 
 ```env
 # في Vercel Dashboard
-VITE_USE_CLOUD_SERVICES=true
 VITE_API_URL=https://your-app.vercel.app/api
-VITE_SOIL_ANALYSIS_URL=https://soil-analysis-xxx.railway.app
-VITE_CROP_RECOMMENDATION_URL=https://crop-recommendation-xxx.railway.app
-VITE_IMAGE_DIAGNOSIS_URL=https://image-diagnosis-xxx.railway.app
-VITE_MARKET_PREDICTION_URL=https://market-prediction-xxx.railway.app
-VITE_INTELLIGENT_AGENT_URL=https://intelligent-agent-xxx.railway.app
+
+# AI microservice URLs are SERVER-SIDE only (SOIL_ANALYSIS_URL, ...).
+# The browser never calls them directly: every AI request goes through the
+# backend gateway /api/ai/*, which verifies model provenance and fails closed
+# for synthetic/unverified output. Do NOT add VITE_*_URL service hostnames.
 
 # Database connections
 DATABASE_URL=postgresql://...

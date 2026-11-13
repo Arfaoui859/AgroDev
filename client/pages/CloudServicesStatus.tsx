@@ -27,58 +27,100 @@ import {
   Wifi,
   Shield,
 } from "lucide-react";
-import {
-  cloudConfig,
-  checkAllServicesHealth,
-  getDeploymentInfo,
-  validateEnvironment,
-  type ServiceStatus,
-} from "@/lib/cloud-config";
+import { cloudConfig, getDeploymentInfo } from "@/lib/cloud-config";
 import { useAIServices } from "@/hooks/useAIServices";
 
 interface DeploymentInfo {
   environment: string;
   isDevelopment: boolean;
   isProduction: boolean;
-  useCloudServices: boolean;
   apiBaseUrl: string;
   buildTime: string;
   version: string;
 }
 
+/**
+ * One entry of the backend's `/api/ai/health` snapshot. This is the single
+ * source of truth: the browser must never probe the microservice hosts
+ * directly (the VITE_* URLs are unset in production, and the snapshot is
+ * provenance-aware). See `server/routes/ai-services-gateway.ts`.
+ */
+interface AIServiceEntry {
+  name: string;
+  nameAr?: string;
+  key: string;
+  status: "available" | "unavailable" | "not_configured" | "rate_limited" | string;
+  modelSource?: string | null;
+  modelKind?: "unknown" | "synthetic" | "rule-based" | "llm" | "trained" | string;
+  isRealModel?: boolean;
+  modelTrainedOnSyntheticData?: boolean;
+  responseTime?: number;
+  lastChecked?: string;
+  error?: string | null;
+}
+
+interface AIHealthSnapshot {
+  overview?: {
+    totalServices: number;
+    availableServices: number;
+    reachableServices?: number;
+    unavailableServices: number;
+    notConfiguredServices?: number;
+    rateLimitedServices?: number;
+    syntheticModelServices?: number;
+    ruleBasedServices?: number;
+    lastUpdated: string;
+    checkDuration: number;
+  };
+  services?: AIServiceEntry[];
+  llm?: {
+    configured?: boolean;
+    credentialAvailable?: boolean;
+    provider?: string | null;
+    model?: string | null;
+  };
+  note?: string;
+}
+
 const CloudServicesStatus: React.FC = () => {
-  const [servicesStatus, setServicesStatus] = useState<ServiceStatus[]>([]);
+  const [servicesStatus, setServicesStatus] = useState<AIServiceEntry[]>([]);
   const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(
     null,
   );
-  const [environmentValidation, setEnvironmentValidation] = useState<{
-    isValid: boolean;
-    missing: string[];
-  }>({
-    isValid: true,
-    missing: [],
-  });
   const [isLoading, setIsLoading] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  const [aiHealthStatus, setAiHealthStatus] = useState<any>(null);
+  const [aiHealthStatus, setAiHealthStatus] = useState<AIHealthSnapshot | null>(
+    null,
+  );
+  const [healthError, setHealthError] = useState<string | null>(null);
 
   const { checkAIServicesHealth } = useAIServices();
 
-  // Check all services health
+  // Check all services health. Every probe goes through the backend's
+  // provenance-aware `/api/ai/health` snapshot; the browser never contacts the
+  // microservice hosts directly.
   const checkServicesHealth = async () => {
     setIsLoading(true);
+    setHealthError(null);
     try {
-      // Check cloud services
-      const cloudServicesStatus = await checkAllServicesHealth();
-      setServicesStatus(cloudServicesStatus);
-
-      // Check AI services through main API
-      const aiHealth = await checkAIServicesHealth();
-      setAiHealthStatus(aiHealth);
+      const aiHealth = (await checkAIServicesHealth()) as AIHealthSnapshot;
+      if (aiHealth && Array.isArray(aiHealth.services)) {
+        setServicesStatus(aiHealth.services);
+        setAiHealthStatus(aiHealth);
+      } else {
+        // A legacy/flat response carries no per-service array; surface that
+        // honestly instead of rendering object keys as if they were services.
+        setServicesStatus([]);
+        setAiHealthStatus(null);
+        setHealthError("استجابة فحص الصحة لا تحتوي على قائمة خدمات صالحة.");
+      }
 
       setLastChecked(new Date());
     } catch (error) {
       console.error("Error checking services health:", error);
+      setHealthError(
+        error instanceof Error ? error.message : "تعذّر فحص حالة الخدمات.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -89,9 +131,6 @@ const CloudServicesStatus: React.FC = () => {
     const deployment = getDeploymentInfo();
     setDeploymentInfo(deployment);
 
-    const envValidation = validateEnvironment();
-    setEnvironmentValidation(envValidation);
-
     checkServicesHealth();
   }, []);
 
@@ -101,10 +140,6 @@ const CloudServicesStatus: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusColor = (isHealthy: boolean): string => {
-    return isHealthy ? "bg-green-500" : "bg-red-500";
-  };
-
   const getStatusIcon = (isHealthy: boolean) => {
     return isHealthy ? (
       <CheckCircle className="h-4 w-4 text-green-600" />
@@ -113,15 +148,40 @@ const CloudServicesStatus: React.FC = () => {
     );
   };
 
-  const getStatusBadge = (isHealthy: boolean) => {
-    return (
-      <Badge variant={isHealthy ? "default" : "destructive"}>
-        {isHealthy ? "متاح" : "غير متاح"}
-      </Badge>
-    );
+  // "Available" means the service answered /health AND its provenance is
+  // acceptable. `rate_limited` and `not_configured` are distinct states and
+  // are never presented as healthy.
+  const isServiceAvailable = (s: AIServiceEntry): boolean =>
+    s.status === "available";
+
+  const serviceStatusLabel = (s: AIServiceEntry): string => {
+    switch (s.status) {
+      case "available":
+        return "متاح";
+      case "rate_limited":
+        return "محدود الطلبات";
+      case "not_configured":
+        return "غير مُهيّأ";
+      default:
+        return "غير متاح";
+    }
   };
 
-  const healthyServicesCount = servicesStatus.filter((s) => s.isHealthy).length;
+  const serviceStatusVariant = (
+    s: AIServiceEntry,
+  ): "default" | "secondary" | "destructive" | "outline" => {
+    switch (s.status) {
+      case "available":
+        return "default";
+      case "rate_limited":
+      case "not_configured":
+        return "secondary";
+      default:
+        return "destructive";
+    }
+  };
+
+  const healthyServicesCount = servicesStatus.filter(isServiceAvailable).length;
   const totalServicesCount = servicesStatus.length;
   const healthPercentage =
     totalServicesCount > 0
@@ -145,14 +205,11 @@ const CloudServicesStatus: React.FC = () => {
           </p>
         </div>
 
-        {/* Environment Validation Alert */}
-        {!environmentValidation.isValid && (
+        {/* Health probe error */}
+        {healthError && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              متغيرات البيئة المفقودة:{" "}
-              {environmentValidation.missing.join(", ")}
-            </AlertDescription>
+            <AlertDescription>{healthError}</AlertDescription>
           </Alert>
         )}
 
@@ -207,7 +264,7 @@ const CloudServicesStatus: React.FC = () => {
                 خدمات الذكاء الاصطناعي السحابية
               </CardTitle>
               <CardDescription>
-                حالة الخدمات المصغرة للذكاء الاصطناعي على Railway/Render
+                حالة الخدمات المصغرة للذكاء الاصطناعي من خلال الخادم (Render)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -220,21 +277,30 @@ const CloudServicesStatus: React.FC = () => {
                 <div className="space-y-3">
                   {servicesStatus.map((service) => (
                     <div
-                      key={service.service}
+                      key={service.key}
                       className="flex items-center justify-between p-3 rounded-lg border"
                     >
                       <div className="flex items-center gap-3">
-                        {getStatusIcon(service.isHealthy)}
+                        {getStatusIcon(isServiceAvailable(service))}
                         <div>
-                          <div className="font-medium">{service.service}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {service.url}
+                          <div className="font-medium">
+                            {service.nameAr || service.name}
                           </div>
+                          {service.modelSource && (
+                            <div className="text-xs text-gray-500">
+                              المصدر: {service.modelSource}
+                              {service.modelKind
+                                ? ` (${service.modelKind})`
+                                : ""}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="text-left">
-                        {getStatusBadge(service.isHealthy)}
-                        {service.responseTime && (
+                        <Badge variant={serviceStatusVariant(service)}>
+                          {serviceStatusLabel(service)}
+                        </Badge>
+                        {typeof service.responseTime === "number" && (
                           <div className="text-xs text-gray-500 mt-1">
                             {service.responseTime}ms
                           </div>
@@ -259,47 +325,66 @@ const CloudServicesStatus: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {aiHealthStatus ? (
+              {aiHealthStatus?.overview ? (
                 <div className="space-y-3">
-                  {Object.entries(aiHealthStatus).map(([key, value]) => {
-                    if (
-                      key === "overall_status" ||
-                      key === "error_message" ||
-                      key === "timestamp"
-                    ) {
-                      return null;
-                    }
-                    const isHealthy = value === "healthy";
-                    return (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-3">
-                          {getStatusIcon(isHealthy)}
-                          <div className="font-medium">
-                            {key
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </div>
-                        </div>
-                        {getStatusBadge(isHealthy)}
-                      </div>
-                    );
-                  })}
+                  {[
+                    {
+                      label: "إجمالي الخدمات",
+                      value: aiHealthStatus.overview.totalServices,
+                    },
+                    {
+                      label: "متاحة",
+                      value: aiHealthStatus.overview.availableServices,
+                    },
+                    {
+                      label: "قابلة للوصول",
+                      value: aiHealthStatus.overview.reachableServices ?? 0,
+                    },
+                    {
+                      label: "غير متاحة",
+                      value: aiHealthStatus.overview.unavailableServices,
+                    },
+                    {
+                      label: "غير مُهيّأة",
+                      value: aiHealthStatus.overview.notConfiguredServices ?? 0,
+                    },
+                    {
+                      label: "محدودة الطلبات",
+                      value: aiHealthStatus.overview.rateLimitedServices ?? 0,
+                    },
+                    {
+                      label: "نماذج اصطناعية",
+                      value:
+                        aiHealthStatus.overview.syntheticModelServices ?? 0,
+                    },
+                    {
+                      label: "محركات قواعد",
+                      value: aiHealthStatus.overview.ruleBasedServices ?? 0,
+                    },
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
+                      <div className="font-medium">{label}</div>
+                      <div className="font-bold">{value}</div>
+                    </div>
+                  ))}
 
-                  {aiHealthStatus.overall_status && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm">
-                        <strong>الحالة العامة:</strong>{" "}
-                        {aiHealthStatus.overall_status}
+                  {aiHealthStatus.llm && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+                      <div>
+                        <strong>مزوّد النموذج اللغوي:</strong>{" "}
+                        {aiHealthStatus.llm.configured
+                          ? `${aiHealthStatus.llm.provider ?? "unknown"} / ${aiHealthStatus.llm.model ?? "unknown"}`
+                          : "غير مُهيّأ (يعمل المحرك القائم على القواعد)"}
                       </div>
-                      {aiHealthStatus.error_message && (
-                        <div className="text-sm text-red-600 mt-1">
-                          <strong>رسالة الخطأ:</strong>{" "}
-                          {aiHealthStatus.error_message}
-                        </div>
-                      )}
+                    </div>
+                  )}
+
+                  {aiHealthStatus.note && (
+                    <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm text-blue-900">
+                      {aiHealthStatus.note}
                     </div>
                   )}
                 </div>
@@ -341,15 +426,9 @@ const CloudServicesStatus: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Cloud className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">الخدمات السحابية</span>
+                    <span className="font-medium">بوابة الذكاء الاصطناعي</span>
                   </div>
-                  <Badge
-                    variant={
-                      deploymentInfo.useCloudServices ? "default" : "secondary"
-                    }
-                  >
-                    {deploymentInfo.useCloudServices ? "مُفعلة" : "معطلة"}
-                  </Badge>
+                  <Badge variant="default">عبر الخادم</Badge>
                 </div>
 
                 <div className="space-y-2">
@@ -397,36 +476,12 @@ const CloudServicesStatus: React.FC = () => {
 
               <Separator />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="font-medium text-sm">تحليل التربة:</label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.soilAnalysisUrl}
-                  </p>
-                </div>
-                <div>
-                  <label className="font-medium text-sm">
-                    توصيات المحاصيل:
-                  </label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.cropRecommendationUrl}
-                  </p>
-                </div>
-                <div>
-                  <label className="font-medium text-sm">تشخيص الصور:</label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.imageDiagnosisUrl}
-                  </p>
-                </div>
-                <div>
-                  <label className="font-medium text-sm">
-                    التنبؤ بالأسعار:
-                  </label>
-                  <p className="text-sm text-gray-600 mt-1 truncate">
-                    {cloudConfig.marketPredictionUrl}
-                  </p>
-                </div>
-              </div>
+              <p className="text-sm text-gray-600">
+                تُوجَّه جميع طلبات خدمات الذكاء الاصطناعي عبر خادم
+                AgroGrowth (<code dir="ltr">/api/ai/*</code>)، الذي يتحقق من
+                مصدر النموذج ويرفض الإخراج الاصطناعي غير الموثّق. لا يتصل
+                المتصفح بخدمات الخدمات المصغّرة مباشرةً.
+              </p>
             </div>
           </CardContent>
         </Card>

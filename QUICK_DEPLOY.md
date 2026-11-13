@@ -125,17 +125,13 @@ SUPABASE_URL=[نسخ من Supabase]
 SUPABASE_ANON_KEY=[نسخ من Supabase]
 REDIS_URL=[نسخ من Upstash]
 
-# Cloud Services
-VITE_USE_CLOUD_SERVICES=true
-VITE_FALLBACK_TO_MOCK=false
-
-# AI Services URLs (نسخ من Railway)
-VITE_SOIL_ANALYSIS_URL=https://agrogrowth-soil-analysis-production.up.railway.app
-VITE_CROP_RECOMMENDATION_URL=https://agrogrowth-crop-recommendation-production.up.railway.app
-VITE_IMAGE_DIAGNOSIS_URL=https://agrogrowth-image-diagnosis-production.up.railway.app
-
-# API
+# API (backend base URL used by the SPA)
 VITE_API_URL=https://your-app.vercel.app/api
+
+# AI microservice URLs are SERVER-SIDE only (SOIL_ANALYSIS_URL, ...).
+# The browser never calls them directly: every AI request goes through the
+# backend gateway /api/ai/*, which verifies model provenance and fails closed
+# for synthetic/unverified output. Do NOT add VITE_*_URL service hostnames.
 
 # External APIs (اختياري)
 WEATHER_API_KEY=your_weather_api_key

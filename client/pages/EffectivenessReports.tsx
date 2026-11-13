@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { 
@@ -37,29 +38,29 @@ interface EffectivenessReport {
   productType: 'fertilizer' | 'pesticide';
   applicationDate: string;
   cropType: string;
-  farmSize: number;
+  farmSize?: number;
   beforeCondition: {
     healthScore: number;
-    yieldEstimate: number;
-    pestLevel: number;
-    nutrientLevel: number;
+    yieldEstimate?: number;
+    pestLevel?: number;
+    nutrientLevel?: number;
   };
   afterCondition: {
     healthScore: number;
-    yieldEstimate: number;
-    pestLevel: number;
-    nutrientLevel: number;
+    yieldEstimate?: number;
+    pestLevel?: number;
+    nutrientLevel?: number;
   };
   userRating: number;
   effectivenessScore: number;
   improvements: string[];
   futureRecommendations: string[];
-  weatherConditions: {
+  weatherConditions?: {
     temperature: number;
     humidity: number;
     wind: number;
   };
-  cost: number;
+  cost?: number;
   notes?: string;
 }
 
@@ -214,6 +215,7 @@ export default function EffectivenessReports() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPeriod, setFilterPeriod] = useState<string>('30');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<EffectivenessReport | null>(null);
   const [newReport, setNewReport] = useState({
     productName: '',
@@ -249,29 +251,17 @@ export default function EffectivenessReports() {
   }, [reports, filterCrop, filterType, filterPeriod]);
 
   const addNewReport = async () => {
+    setSubmitError(null);
+    // The fertilizer effectiveness model is not verified (the backend route
+    // fails closed with 503). We only ever send the values the farmer actually
+    // entered, and we never invent a score locally: if the server does not
+    // return a real analysis, the report is not added.
     const reportData = {
       ...newReport,
       applicationId: `app-${Date.now()}`,
       applicationDate: new Date().toISOString().split('T')[0],
-      farmSize: 2.0,
-      beforeCondition: {
-        healthScore: newReport.beforeHealthScore,
-        yieldEstimate: 1000,
-        pestLevel: 20,
-        nutrientLevel: 50
-      },
-      afterCondition: {
-        healthScore: newReport.afterHealthScore,
-        yieldEstimate: 1200,
-        pestLevel: 10,
-        nutrientLevel: 70
-      },
-      weatherConditions: {
-        temperature: 20,
-        humidity: 65,
-        wind: 10
-      },
-      cost: 250
+      beforeCondition: { healthScore: newReport.beforeHealthScore },
+      afterCondition: { healthScore: newReport.afterHealthScore },
     };
 
     try {
@@ -282,31 +272,39 @@ export default function EffectivenessReports() {
         },
         body: JSON.stringify(reportData),
       });
-      
-      if (response.ok) {
-        const result = await response.json();
-        const newReportWithAnalysis: EffectivenessReport = {
-          id: Date.now().toString(),
-          ...reportData,
-          effectivenessScore: result.effectivenessScore || 75,
-          improvements: result.improvements || ['تحسن عام في حالة النبات'],
-          futureRecommendations: result.recommendations || ['متابعة المراقبة'],
-        };
-        
-        setReports(prev => [newReportWithAnalysis, ...prev]);
-        setShowAddDialog(false);
-        setNewReport({
-          productName: '',
-          productType: 'fertilizer',
-          cropType: 'olive',
-          userRating: 5,
-          notes: '',
-          beforeHealthScore: 50,
-          afterHealthScore: 70
-        });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success || typeof result?.effectivenessScore !== 'number') {
+        setSubmitError(
+          result?.message ||
+            'تعذّر حساب فعالية التطبيق: النموذج غير موثّق بعد. لم يُضف أي تقرير ولم يُختلق أي رقم.'
+        );
+        return;
       }
+
+      const newReportWithAnalysis: EffectivenessReport = {
+        id: Date.now().toString(),
+        ...reportData,
+        effectivenessScore: result.effectivenessScore,
+        improvements: Array.isArray(result.improvements) ? result.improvements : [],
+        futureRecommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
+      };
+
+      setReports(prev => [newReportWithAnalysis, ...prev]);
+      setShowAddDialog(false);
+      setNewReport({
+        productName: '',
+        productType: 'fertilizer',
+        cropType: 'olive',
+        userRating: 5,
+        notes: '',
+        beforeHealthScore: 50,
+        afterHealthScore: 70
+      });
     } catch (error) {
       console.error('Error submitting report:', error);
+      setSubmitError('تعذّر الاتصال بالخادم. لم يُضف أي تقرير.');
     }
   };
 
@@ -339,7 +337,7 @@ export default function EffectivenessReports() {
 
   const calculateAverageCost = () => {
     if (filteredReports.length === 0) return 0;
-    const sum = filteredReports.reduce((acc, report) => acc + report.cost, 0);
+    const sum = filteredReports.reduce((acc, report) => acc + (report.cost ?? 0), 0);
     return Math.round(sum / filteredReports.length);
   };
 
@@ -479,6 +477,12 @@ export default function EffectivenessReports() {
                   />
                 </div>
               </div>
+
+              {submitError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
+              )}
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>
@@ -677,10 +681,12 @@ export default function EffectivenessReports() {
                     <div className="space-y-2">
                       <h4 className="font-medium">التكلفة</h4>
                       <div className="text-lg font-semibold text-green-600">
-                        {report.cost.toFixed(2)} د.ت
+                        {report.cost != null ? `${report.cost.toFixed(2)} د.ت` : '—'}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {(report.cost / report.farmSize).toFixed(2)} د.ت/هكتار
+                        {report.cost != null && report.farmSize
+                          ? `${(report.cost / report.farmSize).toFixed(2)} د.ت/هكتار`
+                          : 'لم تُسجّل تكلفة'}
                       </p>
                     </div>
                   </div>

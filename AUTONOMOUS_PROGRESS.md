@@ -1449,5 +1449,133 @@ fetch belongs in the gateway, exactly like the Open-Meteo weather pull.
   `tests/integration/assistant-orchestration.test.ts` (+1, pins the
   no-invented-headline invariant through the real chat endpoint).
 
+---
+
+## Session 4 — AI microservice integration verification + dashboard honesty fix
+
+### All 8 deployed AI services re-verified — VERIFIED
+
+The mission brief's snapshot (2026-11-11 20:51) reported 0/8 available, 4
+reachable-but-rate-limited (HTTP 429), 4 not-configured. Re-probed this session:
+
+| Service | Deployed host | `/health` | declared `model_source` | classification |
+|---|---|---|---|---|
+| soil_analysis | `ai-soil-analysis.onrender.com` | 200 | `deterministic-rules` | rule-based |
+| crop_recommendation | `ai-crop-recommendation-exsj.onrender.com` | 200 | `synthetic-demo-disabled` | synthetic (fails closed) |
+| image_diagnosis | `agrogrowth-image-diagnosis.onrender.com` | 200 | `mobilenetv3-plantvillage-v1` | **trained** |
+| market_prediction | `ai-market-intelligence-r49d.onrender.com` | 200 | `synthetic-demo` | synthetic (fails closed) |
+| intelligent_agent | `agrodev-4.onrender.com` | 200 | `openrouter:…nemotron…:free` | LLM |
+| weather_yield | `ai-market-intelligence-8yyo.onrender.com` | 200 | `synthetic-demo` | synthetic (fails closed) |
+| pest_control | `ai-pest-control.onrender.com` | 200 | `synthetic-demo` | synthetic (fails closed) |
+| irrigation_optimization | `ai-irrigation-optimization.onrender.com` | 200 | `synthetic-demo` | synthetic (fails closed) |
+
+- The prior 429s were Render-side rate limiting of rapid health polling, **not**
+  service failures: the same hosts now answer 200 in <0.3 s. The gateway already
+  reports `rate_limited` distinctly and never counts a 429 as available.
+- `/ready` and `/metrics` return 200 for all 8 **locally** (ports 8001–8008);
+  the deployed 404 on `/ready` is deployment lag (the built images predate the
+  probe), not a code defect. `register_service_probes` is auto-invoked by
+  `BaseAIService.__init__`, so services without an explicit call still expose it.
+- Real inference verified locally: image `/detect-disease` → 200 (ONNX
+  MobileNetV3); intelligent_agent `/chat` → 200; soil `/analyze-soil` → 200
+  (23 s cold-start model load) with honest `insufficient_texture_data`;
+  pest `/identify-pest` → 200 rule-based; crop `/recommend-crops` → 503
+  `CROP_MODEL_NOT_VALIDATED`; market `/forecast-price` → 503
+  `LIVE_MARKET_FEED_NOT_CONFIGURED` (honesty gates hold).
+- Gateway end-to-end (local, all 8 routes): synthetic services fail closed with
+  503 `MODEL_PROVENANCE_UNVERIFIED`; pest `/identify-from-symptoms` → 200
+  `rule-based` / `isRealData:false` / `modelSource: symptom-keyword-rules`;
+  market forecast → 503 `MARKET_MODEL_NOT_VALIDATED`. No production `localhost`
+  URL is reachable from the gateway (`localServiceFallback` returns `""` when
+  `NODE_ENV=production` / `RENDER=true`).
+
+### Cloud Services Status dashboard showed "0 available" — FIXED
+
+Root cause (a genuine client defect, not an ops issue): `CloudServicesStatus.tsx`
+probed the microservice hosts **directly from the browser** via `VITE_*` URLs
+(`checkAllServicesHealth` → `checkServiceHealth`). Those variables are unset in
+production, so every probe failed and the page reported 0/N regardless of real
+availability. A second defect: the "Main API Health" card iterated
+`Object.entries(aiHealthStatus)` and rendered the rich snapshot's top-level keys
+(`overview`, `services`, `llm`, …) as if each were a service.
+
+- `client/pages/CloudServicesStatus.tsx` now consumes the backend's
+  provenance-aware `/api/ai/health` snapshot only; the browser never contacts a
+  microservice host. Per-service rows show real `status`, `modelSource` and
+  `modelKind`; `rate_limited` / `not_configured` are distinct badges and are
+  never shown as available. The overview card renders real counts + LLM provider.
+- `client/hooks/useAIServices.ts` `checkAIServicesHealth` always reads the
+  backend snapshot (the `useCloudServices` direct-probe branch was removed).
+- Regression test `tests/unit/cloud-services-status-health.test.ts` (4 tests)
+  pins both invariants.
+
+**Gates:** `npx tsc --noEmit` 0 · `npx eslint` (edited files) 0 ·
+`npx jest` 963 passed / 3 skipped (106 suites).
+
+### Session 5 — hosted inference verification for all eight services — VERIFIED
+
+Every deployed Render host was probed for **real inference** (not just `/health`):
+
+| Service (deployed) | Endpoint probed | Result |
+|---|---|---|
+| `ai-soil-analysis` | `POST /predict-lab-soil` (full 15-feature input) | 200 — **7/7 trained targets** with per-target R²/MAE/RMSE (carbon_organic R²=0.86, nitrogen_total R²=0.83); sparse input → honest `insufficient_input` + coverage |
+| `agrogrowth-image-diagnosis` | `POST /detect-disease` (224×224 JPEG) | 200 — MobileNetV3 PlantVillage ONNX classifier, top class `Corn_(maize)___healthy` p=0.49 |
+| `agrodev-4` | `POST /chat` (Arabic) | 200 — real Arabic LLM answer (not a canned string) |
+| `ai-pest-control` | `POST /identify-pest` | 200 — `identification_method: symptom_based`, `aphids`, **`confidence_score: 0.0`** (keyword matcher, never a trained classifier) |
+| `ai-crop-recommendation-exsj` | `POST /recommend-crops` | 503 `CROP_MODEL_NOT_VALIDATED` (fails closed) |
+| `ai-market-intelligence-r49d` | `POST /forecast-price` | 503 `LIVE_MARKET_FEED_NOT_CONFIGURED` (fails closed) |
+| `ai-market-intelligence-8yyo` | `POST /predict-crop-yield` | 503 `YIELD_MODEL_NOT_VALIDATED` (fails closed) |
+| `ai-irrigation-optimization` | `POST /optimize-irrigation` | 503 `IRRIGATION_MODEL_NOT_VALIDATED` (fails closed) |
+
+- The five synthetic/rule-based services **honestly refuse on the deployed host**
+  — no synthetic output is ever returned as a production prediction.
+- Cold-start note: the first request to an idle Render container can take
+  20–60 s (a `/health` probe timed out at 60 s before warming). This is Render
+  free-tier spin-up, **not** a service defect; the gateway's 30 s per-call
+  timeout plus its health cache and `rate_limited` reporting cover it.
+- No code change was required for correctness: the platform already fails closed
+  correctly and the client dashboard fix (Session 4) now surfaces these real
+  statuses.
+
+**Follow-up fix — configurable gateway timeout.** The cold-start measurement
+above exposed a config gap: `AI_TIMEOUT_MS` is honoured by the LLM/vision/
+orchestrator providers but the gateway's direct microservice calls hardcoded
+`30000` in six places. They now use a new `AI_SERVICE_TIMEOUT_MS` (default
+`30000`, so behaviour is unchanged) so operators can raise it for cold Render
+containers without a code change. Documented in `.env.example`; pinned by
+`tests/integration/ai-service-timeout.test.ts` (2 tests).
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` 965 passed / 3 skipped (107 suites).
+
+### Session 5b — removed the browser→microservice bypass (defect class)
+
+Tracing the Session-4 defect class to its root: `client/lib/cloud-config.ts`
+still exposed `checkServiceHealth` / `checkAllServicesHealth` / `robustCloudFetch`
+and a set of `VITE_*_URL` hostnames, and `client/hooks/useAIServices.ts`
+(`smartApiCall`, `smartFileUploadCall`) used them to call the microservice hosts
+**directly from the browser** whenever `VITE_USE_CLOUD_SERVICES=true`. That path
+bypasses the backend gateway's provenance gate (a synthetic service would answer
+the browser directly and the client would render it as a real result) and it
+depends on env vars that are unset in production.
+
+- `cloud-config.ts` now exposes only `apiBaseUrl` + `fallbackToMock` and
+  `getDeploymentInfo()`; the direct-probe helpers and host fields are gone.
+- `useAIServices.ts` always routes through the backend (`${API_BASE}${endpoint}`);
+  the cloud-first branches and `getServiceUrl` were removed.
+- `CloudServicesStatus.tsx` dropped the "environment validation" alert, the
+  cloud-services badge and the per-service URL grid (replaced by a note that all
+  AI traffic goes through the provenance-gated gateway).
+- Docs that instructed operators to set the removed client vars were corrected
+  (`FREE_DEPLOYMENT.md`, `CLOUD_DEPLOYMENT.md`, `QUICK_DEPLOY.md`).
+- New guard test `tests/unit/no-direct-microservice-calls.test.ts` (2 checks):
+  no client module reads a microservice `VITE_*_URL`, and `cloud-config` no
+  longer exposes the probe helpers.
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` 967 passed / 3 skipped (108 suites).
+
+---
+
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
 `npx jest` 958 passed / 3 skipped.

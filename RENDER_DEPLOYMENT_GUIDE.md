@@ -2,6 +2,13 @@
 
 This guide helps you deploy all 6 AI microservices to Render.
 
+> **⚠️ URL names below are illustrative.** The hostnames in this guide
+> (`soil-analysis.onrender.com`, etc.) are examples — Render assigns a unique
+> `*.onrender.com` name per service, so your real names will differ. The eight
+> services that are actually deployed today, with their verified hostnames and
+> declared `model_source`, are listed in `.env.example` under "Verified public
+> Render endpoints". Do not copy the example hostnames into a production env.
+
 ---
 
 ## 📋 Prerequisites

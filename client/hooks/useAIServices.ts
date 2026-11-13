@@ -1,10 +1,6 @@
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  cloudConfig,
-  robustCloudFetch,
-  checkServiceHealth,
-} from "@/lib/cloud-config";
+import { cloudConfig } from "@/lib/cloud-config";
 
 // Types for AI Service responses
 interface SoilAnalysisResult {
@@ -118,13 +114,9 @@ const API_BASE = cloudConfig.apiBaseUrl;
 
 // Validate and debug API configuration
 if (import.meta.env.DEV) {
-  console.group("🔧 AI Services Configuration (Cloud-Enabled)");
+  console.group("🔧 AI Services Configuration");
   console.log("Environment:", import.meta.env.MODE);
-  console.log("Use Cloud Services:", cloudConfig.useCloudServices);
   console.log("API Base:", API_BASE);
-  console.log("Soil Analysis URL:", cloudConfig.soilAnalysisUrl);
-  console.log("Crop Recommendation URL:", cloudConfig.cropRecommendationUrl);
-  console.log("Image Diagnosis URL:", cloudConfig.imageDiagnosisUrl);
   console.groupEnd();
 }
 
@@ -222,59 +214,14 @@ export const useAIServices = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  // Get service URL based on type
-  const getServiceUrl = (serviceType: string): string | null => {
-    switch (serviceType) {
-      case "soil":
-        return cloudConfig.soilAnalysisUrl;
-      case "crops":
-        return cloudConfig.cropRecommendationUrl;
-      case "images":
-        return cloudConfig.imageDiagnosisUrl;
-      case "market":
-        return cloudConfig.marketPredictionUrl;
-      case "agent":
-        return cloudConfig.intelligentAgentUrl;
-      default:
-        return null;
-    }
-  };
-
-  // Smart API call with cloud service detection
+  // Smart API call: every AI request goes through the backend gateway, which
+  // tags provenance and fails closed for synthetic/unverified models.
   const smartApiCall = useCallback(
     async (
       endpoint: string,
       serviceType?: string,
       options: RequestInit = {},
     ) => {
-      // Check if we should try cloud services first
-      if (cloudConfig.useCloudServices && serviceType) {
-        const serviceUrl = getServiceUrl(serviceType);
-        if (serviceUrl) {
-          try {
-            const isHealthy = await checkServiceHealth(serviceUrl);
-            if (isHealthy) {
-              const cloudResponse = await robustCloudFetch(
-                `${serviceUrl}${endpoint.replace("/ai/" + serviceType, "")}`,
-                {
-                  headers: {
-                    "Content-Type": "application/json",
-                    ...options.headers,
-                  },
-                  ...options,
-                },
-              );
-              return cloudResponse.json();
-            }
-          } catch (cloudError) {
-            console.warn(
-              `Cloud service ${serviceType} failed, falling back to main API:`,
-              cloudError,
-            );
-          }
-        }
-      }
-
       // Fallback to main API
       const response = await robustFetch(`${API_BASE}${endpoint}`, {
         headers: {
@@ -333,32 +280,7 @@ export const useAIServices = () => {
         });
       }
 
-      // Try cloud service first if available
-      if (cloudConfig.useCloudServices && serviceType) {
-        const serviceUrl = getServiceUrl(serviceType);
-        if (serviceUrl) {
-          try {
-            const isHealthy = await checkServiceHealth(serviceUrl);
-            if (isHealthy) {
-              const cloudResponse = await robustCloudFetch(
-                `${serviceUrl}${endpoint.replace("/ai/" + serviceType, "")}`,
-                {
-                  method: "POST",
-                  body: formData,
-                },
-              );
-              return cloudResponse.json();
-            }
-          } catch (cloudError) {
-            console.warn(
-              `Cloud service ${serviceType} failed, falling back to main API:`,
-              cloudError,
-            );
-          }
-        }
-      }
-
-      // Fallback to main API
+      // Upload through the backend gateway so provenance gating applies.
       const response = await robustFetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         body: formData,
@@ -808,66 +730,14 @@ export const useAIServices = () => {
   }, [toast]);
 
   const checkAIServicesHealth = useCallback(async () => {
-    try {
-      // If using cloud services, check them individually
-      if (cloudConfig.useCloudServices) {
-        const serviceUrls = [
-          { name: "soil_analysis", url: cloudConfig.soilAnalysisUrl },
-          {
-            name: "crop_recommendation",
-            url: cloudConfig.cropRecommendationUrl,
-          },
-          { name: "image_diagnosis", url: cloudConfig.imageDiagnosisUrl },
-          { name: "market_prediction", url: cloudConfig.marketPredictionUrl },
-          { name: "intelligent_agent", url: cloudConfig.intelligentAgentUrl },
-        ];
-
-        const healthChecks = await Promise.allSettled(
-          serviceUrls.map(async (service) => {
-            const isHealthy = await checkServiceHealth(service.url);
-            return { [service.name]: isHealthy ? "healthy" : "unavailable" };
-          }),
-        );
-
-        const healthStatus = healthChecks.reduce((acc, result, index) => {
-          if (result.status === "fulfilled") {
-            return { ...acc, ...result.value };
-          } else {
-            return { ...acc, [serviceUrls[index].name]: "error" };
-          }
-        }, {});
-
-        return {
-          ...healthStatus,
-          overall_status: "cloud_services",
-          timestamp: new Date().toISOString(),
-        };
-      }
-
-      // Otherwise, use the main API health check
-      const result = await smartApiCall("/ai/health");
-      console.log("AI services health check successful:", result);
-      return result;
-    } catch (error) {
-      console.warn(
-        "AI services health check failed (services may not be running):",
-        error,
-      );
-
-      return {
-        soil_analysis: "unavailable",
-        crop_recommendation: "unavailable",
-        image_diagnosis: "unavailable",
-        market_prediction: "unavailable",
-        weather_intelligence: "unavailable",
-        pest_control: "unavailable",
-        irrigation_optimization: "unavailable",
-        overall_status: "services_unavailable",
-        error_message: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }, []);
+    // Always read the backend's provenance-aware snapshot. The browser must
+    // never probe the microservice hosts directly: the VITE_* URLs are unset in
+    // production (every probe would fail) and a direct probe bypasses the
+    // provenance/rate-limit gating that the snapshot applies.
+    const result = await smartApiCall("/ai/health");
+    console.log("AI services health check successful:", result);
+    return result;
+  }, [smartApiCall]);
 
   return {
     loading,

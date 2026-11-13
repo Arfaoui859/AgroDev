@@ -37,7 +37,8 @@ import {
   Lightbulb,
   Eye,
   Calculator,
-  LineChart
+  LineChart,
+  Trash2
 } from 'lucide-react';
 
 interface Animal {
@@ -127,137 +128,152 @@ const LivestockProductionAnalytics: React.FC = () => {
     notes: '',
     temperature: '',
     fat_content: '',
-    protein_content: ''
+    protein_content: '',
+    price: ''
   });
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const unitForType = (type: ProductionRecord['type']): ProductionRecord['unit'] =>
+    type === 'milk' ? 'liters' : type === 'eggs' ? 'pieces' : 'kg';
 
   useEffect(() => {
-    fetchAnimals();
-    generateMockProductionData();
-  }, [selectedAnimal, selectedProductionType, selectedPeriod]);
+    void loadData();
+  }, []);
 
-  const fetchAnimals = async () => {
+  const loadData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await apiFetch('/api/animals');
-      const data = await response.json();
-      
-      if (data.success) {
-        const animalsWithAge = data.data.map((animal: any) => ({
-          ...animal,
-          age: calculateAge(animal.birthDate)
-        }));
-        setAnimals(animalsWithAge);
-      }
-    } catch (error) {
-      console.error('Error fetching animals:', error);
+      await fetchAnimals();
+      await fetchProductionRecords();
     } finally {
       setLoading(false);
     }
   };
 
-  const generateMockProductionData = () => {
-    // Mock production records
-    const mockRecords: ProductionRecord[] = [];
-    const now = new Date();
-    
-    animals.slice(0, 5).forEach((animal, animalIdx) => {
-      for (let dayBack = 0; dayBack < 30; dayBack++) {
-        const recordDate = new Date(now);
-        recordDate.setDate(now.getDate() - dayBack);
-        
-        if (animal.species === 'cattle' && animal.status === 'lactating') {
-          mockRecords.push({
-            id: `${animal.id}-milk-${dayBack}`,
-            animalId: animal.id,
-            date: recordDate.toISOString().split('T')[0],
-            type: 'milk',
-            quantity: 18 + Math.random() * 12 - 6, // 12-30 liters
-            unit: 'liters',
-            quality: ['A', 'A', 'A', 'B', 'Premium'][Math.floor(Math.random() * 5)] as any,
-            price: 0.85,
-            revenue: (18 + Math.random() * 12 - 6) * 0.85,
-            fat_content: 3.2 + Math.random() * 0.8,
-            protein_content: 3.1 + Math.random() * 0.6
-          });
-        }
-        
-        if (animal.species === 'chicken') {
-          mockRecords.push({
-            id: `${animal.id}-eggs-${dayBack}`,
-            animalId: animal.id,
-            date: recordDate.toISOString().split('T')[0],
-            type: 'eggs',
-            quantity: Math.floor(Math.random() * 2), // 0-1 eggs per day
-            unit: 'pieces',
-            quality: ['A', 'A', 'B', 'Premium'][Math.floor(Math.random() * 4)] as any,
-            price: 0.4,
-            revenue: Math.floor(Math.random() * 2) * 0.4
-          });
-        }
-        
-        // Weight gain records (weekly)
-        if (dayBack % 7 === 0) {
-          mockRecords.push({
-            id: `${animal.id}-weight-${dayBack}`,
-            animalId: animal.id,
-            date: recordDate.toISOString().split('T')[0],
-            type: 'weight_gain',
-            quantity: 0.5 + Math.random() * 2, // 0.5-2.5 kg per week
-            unit: 'kg',
-            quality: 'A',
-            notes: 'نمو طبيعي'
-          });
-        }
+  const fetchAnimals = async () => {
+    try {
+      const response = await apiFetch('/api/animals');
+      const data = await response.json();
+      if (data.success) {
+        setAnimals(data.data.map((animal: any) => ({
+          ...animal,
+          age: calculateAge(animal.birthDate)
+        })));
       }
-    });
-    
-    setProductionRecords(mockRecords);
-    
-    // Generate analytics
-    const mockAnalytics: ProductionAnalytics = {
+    } catch (error) {
+      console.error('Error fetching animals:', error);
+    }
+  };
+
+  // Production records come from the farmer's own persisted rows
+  // (/api/livestock-management/production-records). Nothing is generated: an
+  // empty herd with no records shows an empty state, never invented litres,
+  // egg counts or fat/protein values.
+  const fetchProductionRecords = async () => {
+    try {
+      const response = await apiFetch('/api/livestock-management/production-records');
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        setProductionRecords(data.data.map((row: any) => ({
+          id: row.id,
+          animalId: row.animal_id,
+          date: row.recorded_at,
+          type: row.production_type,
+          quantity: Number(row.quantity),
+          unit: row.unit,
+          quality: row.quality,
+          price: row.price_per_unit != null ? Number(row.price_per_unit) : undefined,
+          // Revenue is only ever the farmer's own quantity x entered price.
+          revenue: row.price_per_unit != null ? Number(row.quantity) * Number(row.price_per_unit) : undefined,
+          notes: row.notes || undefined,
+          fat_content: row.fat_content != null ? Number(row.fat_content) : undefined,
+          protein_content: row.protein_content != null ? Number(row.protein_content) : undefined,
+        })));
+      } else {
+        setProductionRecords([]);
+      }
+    } catch (error) {
+      console.error('Error fetching production records:', error);
+      setProductionRecords([]);
+    }
+  };
+
+  // Analytics are derived only from the caller's own herd and persisted
+  // records. Anything that cannot be derived from real data (a productivity
+  // score against an "ideal" level, a profit margin without recorded costs,
+  // a seasonal trend without enough history) is left out rather than estimated.
+  const deriveAnalytics = (records: ProductionRecord[]): ProductionAnalytics | null => {
+    if (animals.length === 0 && records.length === 0) return null;
+    const totalProduction = records.reduce((sum, r) => sum + r.quantity, 0);
+    const revenue = records.reduce((sum, r) => sum + (r.revenue || 0), 0);
+
+    const qualityCounts: Record<string, number> = {};
+    for (const r of records) qualityCounts[r.quality] = (qualityCounts[r.quality] || 0) + 1;
+    const qualityDistribution: Record<string, number> = {};
+    for (const [q, count] of Object.entries(qualityCounts)) {
+      qualityDistribution[q] = records.length ? Math.round((count / records.length) * 100) : 0;
+    }
+
+    const byAnimal = new Map<string, number>();
+    for (const r of records) byAnimal.set(r.animalId, (byAnimal.get(r.animalId) || 0) + r.quantity);
+    const topProducers: ProductionMetrics[] = Array.from(byAnimal.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([animalId, total]) => {
+        const animalRecords = records.filter(r => r.animalId === animalId);
+        const lastDate = animalRecords.map(r => r.date).sort().at(-1) || '';
+        const peak = animalRecords.reduce((m, r) => Math.max(m, r.quantity), 0);
+        return {
+          animalId,
+          totalProduction: total,
+          averageDaily: animalRecords.length ? total / animalRecords.length : 0,
+          peakProduction: peak,
+          currentTrend: 'stable',
+          efficiencyScore: 0,
+          qualityRating: 0,
+          seasonalVariation: 0,
+          lastMeasurement: lastDate,
+          projectedMonthly: 0,
+          costPerUnit: 0,
+          profitability: 0,
+        };
+      });
+
+    const speciesBreakdown: ProductionAnalytics['speciesBreakdown'] = {};
+    for (const animal of animals) {
+      const total = byAnimal.get(animal.id) || 0;
+      if (total === 0) continue;
+      if (!speciesBreakdown[animal.species]) {
+        speciesBreakdown[animal.species] = { totalProduction: 0, averagePerAnimal: 0, efficiency: 0 };
+      }
+      speciesBreakdown[animal.species].totalProduction += total;
+    }
+    for (const key of Object.keys(speciesBreakdown)) {
+      const count = animals.filter(a => a.species === key).length || 1;
+      speciesBreakdown[key].averagePerAnimal = Math.round(speciesBreakdown[key].totalProduction / count);
+    }
+
+    return {
       overview: {
         totalAnimals: animals.length,
-        totalProduction: mockRecords.reduce((sum, record) => sum + record.quantity, 0),
-        averageProductivity: 87,
-        topPerformers: Math.floor(animals.length * 0.3),
-        revenue: mockRecords.reduce((sum, record) => sum + (record.revenue || 0), 0),
-        profitMargin: 35.2
+        totalProduction,
+        averageProductivity: 0,
+        topPerformers: topProducers.length,
+        revenue,
+        profitMargin: 0,
       },
-      trends: {
-        dailyTrend: 2.3,
-        weeklyTrend: 5.7,
-        monthlyTrend: 12.1,
-        seasonalPattern: 'improving'
-      },
-      qualityDistribution: {
-        'Premium': 15,
-        'A': 65,
-        'B': 18,
-        'C': 2
-      },
-      topProducers: animals.slice(0, 3).map((animal, idx) => ({
-        animalId: animal.id,
-        totalProduction: 450 + idx * 50,
-        averageDaily: 18 + idx * 2,
-        peakProduction: 28 + idx * 3,
-        currentTrend: ['increasing', 'stable', 'increasing'][idx] as any,
-        efficiencyScore: 88 + idx * 4,
-        qualityRating: 4.2 + idx * 0.3,
-        seasonalVariation: 15 - idx * 2,
-        lastMeasurement: new Date().toISOString().split('T')[0],
-        projectedMonthly: 540 + idx * 60,
-        costPerUnit: 0.45 - idx * 0.05,
-        profitability: 42 + idx * 8
-      })),
-      speciesBreakdown: {
-        cattle: { totalProduction: 1200, averagePerAnimal: 400, efficiency: 85 },
-        chicken: { totalProduction: 450, averagePerAnimal: 90, efficiency: 78 },
-        sheep: { totalProduction: 120, averagePerAnimal: 60, efficiency: 72 }
-      }
+      trends: { dailyTrend: 0, weeklyTrend: 0, monthlyTrend: 0, seasonalPattern: 'stable' },
+      qualityDistribution,
+      topProducers,
+      speciesBreakdown,
     };
-    
-    setAnalytics(mockAnalytics);
   };
+
+  // Keep the metrics in step with the persisted records + herd, never with
+  // generated numbers.
+  useEffect(() => {
+    setAnalytics(deriveAnalytics(productionRecords));
+  }, [productionRecords, animals]);
 
   const calculateAge = (birthDate: string) => {
     const birth = new Date(birthDate);
@@ -343,25 +359,46 @@ const LivestockProductionAnalytics: React.FC = () => {
   };
 
   const handleAddRecord = async () => {
+    setSaveError(null);
+    const quantity = parseFloat(newRecord.quantity);
+    if (!newRecord.animalId) {
+      setSaveError('اختر الحيوان قبل الحفظ.');
+      return;
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setSaveError('أدخل كمية صحيحة أكبر من صفر.');
+      return;
+    }
+    const price = newRecord.price ? parseFloat(newRecord.price) : undefined;
+    if (price !== undefined && (!Number.isFinite(price) || price < 0)) {
+      setSaveError('أدخل سعراً صحيحاً أو اتركه فارغاً.');
+      return;
+    }
     try {
-      const recordData = {
-        ...newRecord,
-        quantity: parseFloat(newRecord.quantity),
-        temperature: newRecord.temperature ? parseFloat(newRecord.temperature) : undefined,
-        fat_content: newRecord.fat_content ? parseFloat(newRecord.fat_content) : undefined,
-        protein_content: newRecord.protein_content ? parseFloat(newRecord.protein_content) : undefined,
-        revenue: parseFloat(newRecord.quantity) * (newRecord.type === 'milk' ? 0.85 : 0.4)
-      };
-
-      // Add to mock data
-      const newProductionRecord: ProductionRecord = {
-        ...recordData,
-        id: Date.now().toString(),
-        price: newRecord.type === 'milk' ? 0.85 : 0.4,
-        unit: newRecord.type === 'milk' ? 'liters' : newRecord.type === 'eggs' ? 'pieces' : 'kg'
-      } as ProductionRecord;
-
-      setProductionRecords([newProductionRecord, ...productionRecords]);
+      const response = await apiFetch('/api/livestock-management/production-records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          animalId: newRecord.animalId,
+          productionType: newRecord.type,
+          quantity,
+          unit: unitForType(newRecord.type),
+          quality: newRecord.quality,
+          recordedAt: newRecord.date,
+          pricePerUnit: price,
+          fatContent: newRecord.fat_content ? parseFloat(newRecord.fat_content) : undefined,
+          proteinContent: newRecord.protein_content ? parseFloat(newRecord.protein_content) : undefined,
+          temperature: newRecord.temperature ? parseFloat(newRecord.temperature) : undefined,
+          notes: newRecord.notes
+        })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setSaveError(data.message || 'تعذّر حفظ سجل الإنتاج. لم يُحفظ أي شيء.');
+        return;
+      }
+      // Re-read from the database so the screen reflects what was persisted.
+      await fetchProductionRecords();
       setIsAddDialogOpen(false);
       setNewRecord({
         animalId: '',
@@ -372,10 +409,25 @@ const LivestockProductionAnalytics: React.FC = () => {
         notes: '',
         temperature: '',
         fat_content: '',
-        protein_content: ''
+        protein_content: '',
+        price: ''
       });
     } catch (error) {
       console.error('Error adding production record:', error);
+      setSaveError('تعذّر الاتصال بالخادم. لم يُحفظ أي شيء.');
+    }
+  };
+
+  const handleDeleteRecord = async (id: string) => {
+    try {
+      const response = await apiFetch(`/api/livestock-management/production-records/${id}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) return;
+      await fetchProductionRecords();
+    } catch (error) {
+      console.error('Error deleting production record:', error);
     }
   };
 
@@ -402,12 +454,14 @@ const LivestockProductionAnalytics: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
-      <DataProvenanceBanner />
+      <DataProvenanceBanner
+        message="تعرض هذه الشاشة سجلات الإنتاج التي أدخلتها أنت (حليب، بيض، نمو الوزن) والمحفوظة في حسابك. لا تُختلق أي قياسات؛ وإذا لم تُسجّل إنتاجاً بعد تظهر حالة فارغة."
+      />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">تحليلات الإنتاج الحيواني</h1>
-          <p className="text-gray-600">مراقبة شاملة لإنتاج الحليب والبيض ونمو الحيوانات</p>
+          <p className="text-gray-600">سجلات إنتاج الحليب والبيض ونمو الحيوانات من حسابك</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -528,6 +582,17 @@ const LivestockProductionAnalytics: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
+                    <Label>السعر لكل وحدة (اختياري)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={newRecord.price}
+                      onChange={(e) => setNewRecord({ ...newRecord, price: e.target.value })}
+                      placeholder="اتركه فارغاً إن لم تحدّده"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>التاريخ</Label>
                     <Input
                       type="date"
@@ -572,6 +637,13 @@ const LivestockProductionAnalytics: React.FC = () => {
                   />
                 </div>
 
+                {saveError && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>{saveError}</AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="flex gap-4">
                   <Button onClick={handleAddRecord} className="flex-1">
                     تسجيل الإنتاج
@@ -586,9 +658,9 @@ const LivestockProductionAnalytics: React.FC = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Key Metrics — every value is derived from the farmer's own records. */}
       {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">إجمالي الإنتاج</CardTitle>
@@ -596,32 +668,32 @@ const LivestockProductionAnalytics: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {analytics.overview.totalProduction.toFixed(0)}
+                {analytics.overview.totalProduction.toFixed(1)}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                لتر/كيلو/قطعة
+                مجموع الكميات المسجّلة (لتر/كيلو/قطعة)
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">متوسط الإنتاجية</CardTitle>
-              <Target className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-medium">عدد السجلات</CardTitle>
+              <Activity className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {analytics.overview.averageProductivity}%
+                {productionRecords.length}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                من المستوى المثالي
+                سجل إنتاج محفوظ
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">أفضل المنتجين</CardTitle>
+              <CardTitle className="text-sm font-medium">حيوانات منتِجة</CardTitle>
               <Award className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
@@ -629,57 +701,73 @@ const LivestockProductionAnalytics: React.FC = () => {
                 {analytics.overview.topPerformers}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                حيوان متميز
+                لديها سجلات إنتاج
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الإيرادات</CardTitle>
+              <CardTitle className="text-sm font-medium">الإيرادات المسجّلة</CardTitle>
               <DollarSign className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600">
-                {formatCurrency(analytics.overview.revenue)}
+                {analytics.overview.revenue > 0 ? formatCurrency(analytics.overview.revenue) : '—'}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                إجمالي الشهر
+                الكمية × السعر الذي أدخلته
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">هامش الربح</CardTitle>
-              <TrendingUp className="h-4 w-4 text-teal-600" />
+              <CardTitle className="text-sm font-medium">متوسط الإنتاج</CardTitle>
+              <Target className="h-4 w-4 text-teal-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-teal-600">
-                {analytics.overview.profitMargin.toFixed(1)}%
+                {productionRecords.length
+                  ? (analytics.overview.totalProduction / productionRecords.length).toFixed(1)
+                  : '—'}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                معدل الربحية
+                لكل سجل
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الاتجاه الشهري</CardTitle>
-              <LineChart className="h-4 w-4 text-orange-600" />
+              <CardTitle className="text-sm font-medium">آخر تسجيل</CardTitle>
+              <Clock className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">
-                +{analytics.trends.monthlyTrend.toFixed(1)}%
+                {productionRecords.length
+                  ? new Date(
+                      productionRecords.map(r => r.date).sort().at(-1) as string
+                    ).toLocaleDateString('ar-TN')
+                  : '—'}
               </div>
               <p className="text-xs text-gray-600 mt-1">
-                نمو الإنتاج
+                تاريخ آخر سجل إنتاج
               </p>
             </CardContent>
           </Card>
         </div>
       )}
+
+      {!analytics && !loading && (
+        <Card>
+          <CardContent className="p-8 text-center text-gray-500">
+            <Activity className="mx-auto h-10 w-10 mb-3 text-gray-300" />
+            <p>لا توجد حيوانات أو سجلات إنتاج بعد. أضف حيوانات ثم سجّل إنتاجك لتظهر التحليلات.</p>
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Main Content */}
       <Tabs defaultValue="overview" className="space-y-6">
@@ -714,7 +802,7 @@ const LivestockProductionAnalytics: React.FC = () => {
                         <div className="text-right">
                           <div className="font-bold">{data.totalProduction}</div>
                           <div className="text-sm text-gray-600">
-                            {data.averagePerAnimal}/حيوان | {data.efficiency}% كفاءة
+                            بمعدل {data.averagePerAnimal}/حيوان
                           </div>
                         </div>
                       </div>
@@ -764,33 +852,50 @@ const LivestockProductionAnalytics: React.FC = () => {
             </CardHeader>
             <CardContent>
               {analytics && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      +{analytics.trends.dailyTrend}%
-                    </div>
-                    <p className="text-sm text-gray-600">الاتجاه اليومي</p>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      +{analytics.trends.weeklyTrend}%
-                    </div>
-                    <p className="text-sm text-gray-600">الاتجاه الأسبوعي</p>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      +{analytics.trends.monthlyTrend}%
-                    </div>
-                    <p className="text-sm text-gray-600">الاتجاه الشهري</p>
-                  </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {analytics.trends.seasonalPattern === 'improving' ? 'تحسن' :
-                       analytics.trends.seasonalPattern === 'peak' ? 'ذروة' :
-                       analytics.trends.seasonalPattern === 'declining' ? 'انخفاض' : 'مستقر'}
-                    </div>
-                    <p className="text-sm text-gray-600">النمط الموسمي</p>
-                  </div>
+                <div className="space-y-4">
+                  {(() => {
+                    // Honest period-over-period comparison. Only shown when the
+                    // farmer has records in both windows; otherwise we say so
+                    // rather than estimate a trend.
+                    const days = (n: number) => {
+                      const cutoff = new Date();
+                      cutoff.setDate(cutoff.getDate() - n);
+                      return cutoff.toISOString().slice(0, 10);
+                    };
+                    const recent = productionRecords.filter(r => r.date >= days(7));
+                    const prior = productionRecords.filter(r => r.date >= days(14) && r.date < days(7));
+                    const sum = (rs: ProductionRecord[]) => rs.reduce((s, r) => s + r.quantity, 0);
+                    if (recent.length === 0 && prior.length === 0) {
+                      return (
+                        <p className="text-sm text-gray-500">
+                          لا توجد سجلات إنتاج كافية بعد لحساب اتجاه زمني. سجّل إنتاجك لعدة أيام ليظهر الاتجاه.
+                        </p>
+                      );
+                    }
+                    const recentTotal = sum(recent);
+                    const priorTotal = sum(prior);
+                    const change = priorTotal > 0 ? ((recentTotal - priorTotal) / priorTotal) * 100 : null;
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="text-center p-4 bg-blue-50 rounded-lg">
+                          <div className="text-2xl font-bold text-blue-600">{recentTotal.toFixed(1)}</div>
+                          <p className="text-sm text-gray-600">إنتاج آخر 7 أيام</p>
+                        </div>
+                        <div className="text-center p-4 bg-purple-50 rounded-lg">
+                          <div className="text-2xl font-bold text-purple-600">{priorTotal.toFixed(1)}</div>
+                          <p className="text-sm text-gray-600">إنتاج الأسبوع السابق</p>
+                        </div>
+                        <div className="text-center p-4 bg-green-50 rounded-lg">
+                          <div className={`text-2xl font-bold ${change != null && change < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {change != null ? `${change >= 0 ? '+' : ''}${change.toFixed(1)}%` : '—'}
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {change != null ? 'التغيّر' : 'لا بيانات كافية للمقارنة'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </CardContent>
@@ -804,6 +909,10 @@ const LivestockProductionAnalytics: React.FC = () => {
               <Award className="h-5 w-5 text-yellow-600" />
               أفضل الحيوانات المنتجة
             </h2>
+
+            {analytics && analytics.topProducers.length === 0 && (
+              <p className="text-sm text-gray-500">لا توجد سجلات إنتاج بعد لترتيب الحيوانات.</p>
+            )}
             
             {analytics && analytics.topProducers.map((producer, index) => {
               const animal = animals.find(a => a.id === producer.animalId);
@@ -830,20 +939,19 @@ const LivestockProductionAnalytics: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center gap-4">
-                        {getTrendIcon(producer.currentTrend)}
                         <div className="text-right">
                           <div className="text-2xl font-bold text-green-600">
-                            {producer.efficiencyScore}%
+                            {producer.totalProduction.toFixed(1)}
                           </div>
-                          <p className="text-xs text-gray-600">كفاءة الإنتاج</p>
+                          <p className="text-xs text-gray-600">إجمالي الإنتاج المسجّل</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div className="text-center p-3 bg-blue-50 rounded-lg">
                         <div className="text-lg font-bold text-blue-600">
-                          {producer.totalProduction.toFixed(0)}
+                          {producer.totalProduction.toFixed(1)}
                         </div>
                         <p className="text-xs text-gray-600">إجمالي الإنتاج</p>
                       </div>
@@ -851,32 +959,18 @@ const LivestockProductionAnalytics: React.FC = () => {
                         <div className="text-lg font-bold text-green-600">
                           {producer.averageDaily.toFixed(1)}
                         </div>
-                        <p className="text-xs text-gray-600">متوسط يومي</p>
+                        <p className="text-xs text-gray-600">متوسط لكل سجل</p>
                       </div>
                       <div className="text-center p-3 bg-purple-50 rounded-lg">
                         <div className="text-lg font-bold text-purple-600">
-                          {producer.qualityRating.toFixed(1)}/5
+                          {producer.peakProduction.toFixed(1)}
                         </div>
-                        <p className="text-xs text-gray-600">تقييم الجودة</p>
-                      </div>
-                      <div className="text-center p-3 bg-orange-50 rounded-lg">
-                        <div className="text-lg font-bold text-orange-600">
-                          {producer.profitability.toFixed(0)}%
-                        </div>
-                        <p className="text-xs text-gray-600">الربحية</p>
+                        <p className="text-xs text-gray-600">أعلى كمية مسجّلة</p>
                       </div>
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="text-sm text-gray-600">
-                        آخر قياس: {new Date(producer.lastMeasurement).toLocaleDateString('ar-TN')}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">التوقع الشهري: </span>
-                        <span className="text-green-600 font-bold">
-                          {producer.projectedMonthly.toFixed(0)}
-                        </span>
-                      </div>
+                    <div className="mt-4 text-sm text-gray-600">
+                      آخر تسجيل: {producer.lastMeasurement ? new Date(producer.lastMeasurement).toLocaleDateString('ar-TN') : '—'}
                     </div>
                   </CardContent>
                 </Card>
@@ -893,9 +987,15 @@ const LivestockProductionAnalytics: React.FC = () => {
               سجلات الإنتاج الحديثة
             </h2>
             
+                        {filteredRecords.length === 0 && (
+              <p className="text-sm text-gray-500">
+                لا توجد سجلات إنتاج محفوظة بعد. استخدم زر «تسجيل إنتاج» لإضافة أول سجل.
+              </p>
+            )}
+
             {filteredRecords.slice(0, 20).map((record) => {
               const animal = animals.find(a => a.id === record.animalId);
-              
+
               return (
                 <Card key={record.id} className="border">
                   <CardContent className="p-4">
@@ -919,21 +1019,32 @@ const LivestockProductionAnalytics: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      
-                      <div className="text-right">
-                        <div className="font-bold text-lg">
-                          {record.quantity.toFixed(1)} {record.unit}
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="font-bold text-lg">
+                            {record.quantity.toFixed(1)} {record.unit}
+                          </div>
+                          {record.revenue != null && (
+                            <p className="text-sm text-green-600">
+                              {formatCurrency(record.revenue)}
+                            </p>
+                          )}
+                          {record.fat_content != null && (
+                            <p className="text-xs text-gray-600">
+                              دهون: {record.fat_content.toFixed(1)}%
+                              {record.protein_content != null ? ` | بروتين: ${record.protein_content.toFixed(1)}%` : ''}
+                            </p>
+                          )}
                         </div>
-                        {record.revenue && (
-                          <p className="text-sm text-green-600">
-                            {formatCurrency(record.revenue)}
-                          </p>
-                        )}
-                        {record.fat_content && (
-                          <p className="text-xs text-gray-600">
-                            دهون: {record.fat_content.toFixed(1)}% | بروتين: {record.protein_content?.toFixed(1)}%
-                          </p>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="حذف السجل"
+                          onClick={() => handleDeleteRecord(record.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

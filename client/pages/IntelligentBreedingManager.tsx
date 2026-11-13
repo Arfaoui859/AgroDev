@@ -98,6 +98,7 @@ const IntelligentBreedingManager: React.FC = () => {
   const [selectedMale, setSelectedMale] = useState<string>('');
   const [selectedFemale, setSelectedFemale] = useState<string>('');
   const [compatibilityResult, setCompatibilityResult] = useState<any>(null);
+  const [compatibilityNotice, setCompatibilityNotice] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAnimals();
@@ -138,36 +139,21 @@ const IntelligentBreedingManager: React.FC = () => {
 
   const checkCompatibility = async () => {
     if (!selectedMale || !selectedFemale) return;
-    
-    try {
-      const male = animals.find(a => a.id === selectedMale);
-      const female = animals.find(a => a.id === selectedFemale);
-      
-      if (!male || !female) return;
-      
-      // Mock compatibility calculation for demo
-      const mockResult = {
-        compatibilityScore: Math.floor(Math.random() * 40) + 60, // 60-100
-        geneticAdvantages: [
-          'تنوع جيني ممتاز يقلل من مخاطر الأمراض الوراثية',
-          'وراثة ممتازة لصفة إنتاج الحليب',
-          'أعمار مثالية للتناسل'
-        ],
-        potentialRisks: [
-          'مراقبة مطلوبة لحالة الأم الصحية',
-          'تأكد من التغذية المناسبة قبل التلقيح'
-        ],
-        recommendations: [
-          'التلقيح الموصى به في الربيع القادم',
-          'تعزيز التغذية قبل شهر من التلقيح',
-          'مراقبة دورية للحالة الصحية'
-        ]
-      };
-      
-      setCompatibilityResult(mockResult);
-    } catch (error) {
-      console.error('Error checking compatibility:', error);
-    }
+
+    const male = animals.find(a => a.id === selectedMale);
+    const female = animals.find(a => a.id === selectedFemale);
+
+    if (!male || !female) return;
+
+    // Genetic compatibility is NOT computed: it requires a documented pedigree
+    // and validated genetic markers. The previous version returned a random
+    // score (Math.random) and presented it as a real analysis. We never
+    // fabricate a score; we state plainly that the required data is missing.
+    setCompatibilityResult(null);
+    setCompatibilityNotice(
+      'لا يمكن حساب التوافق الوراثي دون سلالة موثّقة وشجرة نسب وفحوص جينية. ' +
+      'لم يتم اختلاق أي نتيجة أو نسبة.'
+    );
   };
 
   const getSpeciesIcon = (species: string) => {
@@ -251,12 +237,14 @@ const IntelligentBreedingManager: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
-      <DataProvenanceBanner />
+      <DataProvenanceBanner
+        message="القائمة والأوزان المعروضة تأتي من سجلاتك المحفوظة في حسابك. أمّا التوافق الوراثي فغير محسوب: يتطلّب شجرة نسب موثّقة وفحوص جينية، ولم يتم اختلاق أي نتيجة."
+      />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">إدارة التناسل الذكية</h1>
-          <p className="text-gray-600">تحسين وراثي بالذكاء الاصطناعي وتوصيات تزاوج متقدمة</p>
+          <h1 className="text-3xl font-bold text-gray-900">إدارة التناسل</h1>
+          <p className="text-gray-600">سجلات التناسل والوزن من حسابك؛ التوافق الوراثي يتطلّب بيانات نسب موثّقة.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
@@ -328,6 +316,13 @@ const IntelligentBreedingManager: React.FC = () => {
                   <Dna className="h-4 w-4" />
                   تحليل التوافق الوراثي
                 </Button>
+
+                {compatibilityNotice && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{compatibilityNotice}</AlertDescription>
+                  </Alert>
+                )}
 
                 {compatibilityResult && (
                   <Card className="border-2">
