@@ -131,3 +131,21 @@ session); `tests/unit/news-entry-point.test.ts` 4 passed (new).
 
 - Live Supabase end-to-end CRUD (no `.env` in this environment) — unchanged.
 - Hosted AI inference verification (network to the Render hosts) — unchanged.
+
+## Session 9 status (2026-11-11)
+
+- **P1 — news source-status honesty:** DONE (measured availability).
+- **P2 — smart-irrigation fail-closed UX:** DONE (honest status banner).
+- **P1 — orchestrator + 14 specialists:** RE-VERIFIED (47 tests).
+- **P0 — auth/registration/admin authorization:** RE-VERIFIED (read + tests).
+
+### Remaining (blocked / external)
+- Deploy the 5 unconfigured AI microservices (market/weather-yield/pest/
+  irrigation + intelligent-agent variants) and set the corresponding `*_URL`
+  env vars on Render. Code is ready; only deployment + env config remain.
+- Verify hosted inference for the 4 reachable-but-429 Render services; the
+  health probe already reports them as reachable with unknown provenance and
+  refuses to advertise them as working models until a real call succeeds.
+- Connect verified sources for farmer dashboards that still fail closed
+  (agronomist/market-analysis/predictive-analytics/etc.) — intentionally 503
+  until real tenant-scoped persistence exists.
