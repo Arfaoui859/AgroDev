@@ -111,3 +111,23 @@ Priority order from the mission brief. Status reflects the 2026-11-11 pass.
 
 **Gates (all green):** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npx jest`
 860 passed / 3 skipped · Python per-service 245 passed.
+
+---
+
+## Session 6 — multi-agent registry + entry-point completion
+
+| Item | Result |
+|---|---|
+| Specialist registry coverage | **VERIFIED** — was 10 ids; the mission's required set needed 13+. Added `yield_intel`, `livestock`, `marketplace`, `advisor` → **14 allow-listed** specialists. |
+| New specialists honour provenance | **VERIFIED** — `yield_intel` only from a recorded `estimated_yield` (else `insufficient_input`); `livestock` reports the caller's own rows and refuses to suggest a treatment/dose; `marketplace` is `unavailable` until the supply-chain store is connected; `advisor` is rule-based orientation. |
+| Real livestock data into orchestrator context | **IMPLEMENTED** — `collectLivestockRecords(db, userId)` in `ai-services-gateway.ts` (RLS-scoped, `user_id`-filtered) emits `LIVESTOCK …` lines into `platformRecords` for both the linked-farm and no-farm branches. Not verified against a live Supabase project (no `.env` here) → **IMPLEMENTED BUT NOT VERIFIED**. |
+| Agricultural News reachable from the workspace | **VERIFIED** — `FarmOverviewPanel` quick-access grid links `/news` (+ 7 other real routes); guard test pins the path and that every href is a declared route. |
+| Chatbot label coverage | **VERIFIED** — `SPECIALIST_LABELS` covers all 14 ids (existing test fails otherwise). |
+
+**Tests:** `tests/unit/agricultural-orchestrator.test.ts` 43 passed (+12 this
+session); `tests/unit/news-entry-point.test.ts` 4 passed (new).
+
+### Still blocked (external resources)
+
+- Live Supabase end-to-end CRUD (no `.env` in this environment) — unchanged.
+- Hosted AI inference verification (network to the Render hosts) — unchanged.
