@@ -1931,3 +1931,30 @@ correctly marks such a host reachable-with-unknown-provenance, but
 after → `{engine:"unavailable",available:false,isRealData:false,reachable:true,provenanceUnverified:true}`.
 
 **Gates:** `npx tsc --noEmit` 0 · `npx jest` → **1045 passed**, 3 skipped, 1048 total.
+
+### Session 13 (cont. 4) — verification sweep (VERIFIED, local)
+
+All checks run against the production build (`PORT=5099 node
+build/server/node-build.mjs`), real network I/O, no mocks:
+
+| Check | Result |
+|---|---|
+| `GET /api/ping` | 200 |
+| `POST /api/farms` (anon, valid JSON) | **401** Unauthorized |
+| `GET /api/farms` (anon) | **401** Unauthorized |
+| `GET /api/farm-management/overview` (anon) | **401** |
+| `GET /api/market/all` | **503** `MARKET_DATA_NOT_AVAILABLE` (honest, no fabricated prices) |
+| `GET /api/ai/health` | 8 total, 0 available, 0 reachable, 0 rate-limited, 8 not configured (no fake health) |
+| `GET /api/ai/capabilities` | vision reported `vision-model` only when a provider/URL is genuinely configured; rule engines never labelled models |
+| `GET /api/news?q=زيتون&language=ar` | 6 real hits, real Tunisian sources, attribution + original links |
+| `GET /api/news?language=fr` | 68 articles, language-tagged `fr` |
+| `GET /api/news?page=2&pageSize=5` | pagination works (29 pages) |
+
+Farm CRUD (`/api/farms`, `/api/assistant/*`, `/api/farm-management/*`) is
+auth-gated and ownership-scoped; RLS/identity and persistence-error suites pass
+(`farm-rls-identity`, `farm-management-route`, `assistant-farm-actions`,
+`farm-finance-persistence-errors` — 18 tests).
+
+**Gates (final):** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` **1045 passed / 3 skipped / 1048 total** · Python `pytest tests` in
+`agrogrowth-ai/.venv` **266 passed**.
