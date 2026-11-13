@@ -149,3 +149,22 @@ session); `tests/unit/news-entry-point.test.ts` 4 passed (new).
 - Connect verified sources for farmer dashboards that still fail closed
   (agronomist/market-analysis/predictive-analytics/etc.) — intentionally 503
   until real tenant-scoped persistence exists.
+
+## Session 13 — honesty sweep: fabricated client data surfaces (evidence)
+
+| Surface | Before | After | Status |
+|---|---|---|---|
+| `ComprehensiveOverviewCards` (farmer overview tab) | mapped a flat `{land,crops,livestock,financial}` shape the endpoint never returns -> every field fell to an invented default (`25.5`, `1247`, `245`, `156780`, ...) | reads the real `{summary,...}` + weather + `/api/livestock-dashboard` + `/api/financial-summary` + soil report; explicit empty state otherwise | **VERIFIED** |
+| `MarketAnalyticsWidget` | ignored `response.ok`; defaulted to `+2.3%`, `الزيتون +15%`, volume `12500` on the 503 market route | fail-closed; `—` for every missing field | **VERIFIED** |
+| `EnhancedMarketDashboard` | stored the 503 object into `marketPrices` then called `.filter`/`.map` -> render crash (generic error page) | guards `response.ok`, accepts array bodies only | **VERIFIED** |
+| `Index` (home) | flat farm fields that do not exist; weather `|| 24 / || 65 / || 25` against wrong Open-Meteo keys | `summary.*` + real `current.description` / `current.windSpeed`; `—` for missing | **VERIFIED** |
+| `SmartAdvisor` (retired route) | `|| 25 / || 65 / || 5 / || 6.8` + hard-coded 3-item alert list | no invented values; honest empty state | **VERIFIED** |
+
+Admin dashboard re-checked: `/api/admin/overview` returns real `supabase` counts
+and explicitly `null` for revenue/uptime/support/security (never zero); the UI
+renders the honest "not connected" label. AI health probe re-checked: 429 ->
+`rate_limited` + `reachable:true`, never `available`; synthetic-model
+self-declarations surfaced.
+
+**Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npm run build` 0 ·
+`npx jest` -> **1032 passed**, 3 skipped, 1035 total.
