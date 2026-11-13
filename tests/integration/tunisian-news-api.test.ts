@@ -64,6 +64,25 @@ describe("GET /api/news", () => {
     expect(res.body.sources.every((s: any) => s.available === false)).toBe(true);
   });
 
+  test("keeps the full category facet list when a category filter is applied", async () => {
+    // Two articles in different categories from one feed. Filtering by one
+    // category must not collapse the dropdown to that single option — the
+    // other available categories have to remain selectable.
+    global.fetch = jest.fn(async () =>
+      new Response(
+        rss([
+          { title: "Récolte de blé record en Tunisie", link: "https://lapresse.tn/wheat" },
+          { title: "Export d'huile d'olive en hausse", link: "https://lapresse.tn/olive" },
+        ]),
+        { status: 200, headers: { "Content-Type": "application/rss+xml" } },
+      ),
+    ) as unknown as typeof fetch;
+
+    const res = await request(app).get("/api/news?category=c%C3%A9r%C3%A9ales").expect(200);
+    expect(res.body.categories).toContain("céréales");
+    expect(res.body.categories).toContain("olive & huile");
+  });
+
   test("exposes the configured sources with their languages", async () => {
     const res = await request(app).get("/api/news/sources").expect(200);
     expect(res.body.isRealData).toBe(true);

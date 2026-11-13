@@ -105,14 +105,31 @@ const navigationCategories: NavigationCategory[] = [
     name: "Dashboards",
     nameArabic: "لوحة التحكم",
     icon: BarChart3,
-    allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government"],
+    allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"],
     items: [
       {
         name: "Dashboard",
         nameArabic: "لوحة التحكم",
         href: "/farmer-dashboard",
         icon: BarChart3,
-        allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government"],
+        allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"],
+      },
+    ],
+  },
+  {
+    // Agricultural news is relevant to every role, so it lives in its own
+    // top-level category rather than being buried under Market Intelligence.
+    name: "News & Info",
+    nameArabic: "الأخبار والمعلومات",
+    icon: Newspaper,
+    allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"],
+    items: [
+      {
+        name: "Agricultural News",
+        nameArabic: "الأخبار الفلاحية",
+        href: "/news",
+        icon: Newspaper,
+        allowedRoles: ["farmer", "agronomist", "trader", "veterinarian", "inspector", "admin", "government", "investor"],
       },
     ],
   },
@@ -620,6 +637,7 @@ export default function Layout({ children }: LayoutProps) {
           inspector: { href: "/field-inspector-dashboard", name: "Field Inspector Dashboard", nameArabic: "لوحة مراقب الحقول" },
           admin: { href: "/admin-panel", name: "Admin Dashboard", nameArabic: "لوحة المدير" },
           government: { href: "/government-dashboard", name: "Government Dashboard", nameArabic: "لوحة الجهة الحكومية" },
+          investor: { href: "/investor-dashboard", name: "Investor Dashboard", nameArabic: "لوحة المستثمر" },
         };
         const dashboard = dashboardByRole[user?.role || ""] || dashboardByRole.farmer;
         return {

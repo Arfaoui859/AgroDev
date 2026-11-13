@@ -205,6 +205,19 @@ const EnhancedAgronomistDashboard: React.FC<
   onScheduleTraining,
 }) => {
   const { isArabic } = useLanguage();
+
+  const notifyUnavailable = (action: string) => {
+    toast.info(
+      isArabic
+        ? `${action}: غير متاح بعد`
+        : `${action}: not available yet`,
+      {
+        description: isArabic
+          ? "لا يوجد مصدر بيانات موثّق مربوط بهذه اللوحة، لذلك لم يتم حفظ أو تغيير أي شيء."
+          : "No verified data source is connected to this dashboard, so nothing was saved or changed.",
+      },
+    );
+  };
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedView, setSelectedView] = useState("overview");
   const [smartAlerts, setSmartAlerts] = useState<SmartAlert[]>([]);
@@ -531,7 +544,7 @@ const EnhancedAgronomistDashboard: React.FC<
               </div>
 
               {/* Notifications */}
-              <Button variant="ghost" size="sm" className="relative">
+              <Button variant="ghost" size="sm" className="relative" onClick={() => notifyUnavailable(isArabic ? 'الإشعارات' : 'Notifications')}>
                 <Bell className="h-5 w-5" />
                 {smartAlerts.filter((alert) => !alert.dismissible).length >
                   0 && (
@@ -540,7 +553,7 @@ const EnhancedAgronomistDashboard: React.FC<
               </Button>
 
               {/* Settings */}
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => notifyUnavailable(isArabic ? 'الإعدادات' : 'Settings')}>
                 <Settings className="h-5 w-5" />
               </Button>
 
@@ -592,7 +605,7 @@ const EnhancedAgronomistDashboard: React.FC<
                               {isArabic ? alert.messageArabic : alert.message}
                             </p>
                             {alert.action && (
-                              <Button size="sm" className="mt-2 h-6 text-xs">
+                              <Button size="sm" className="mt-2 h-6 text-xs" onClick={() => notifyUnavailable(isArabic ? alert.actionArabic : alert.action)}>
                                 {isArabic ? alert.actionArabic : alert.action}
                               </Button>
                             )}
@@ -815,7 +828,7 @@ const EnhancedAgronomistDashboard: React.FC<
                         {isArabic ? "أداء المحاصيل" : "Crop Performance"}
                       </span>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => notifyUnavailable(isArabic ? 'تصدير' : 'Export')}>
                       <Download className="h-4 w-4 mr-2" />
                       {isArabic ? "تصدير" : "Export"}
                     </Button>
@@ -920,7 +933,7 @@ const EnhancedAgronomistDashboard: React.FC<
                       </div>
                     ))}
 
-                    <Button className="w-full mt-4" variant="outline">
+                    <Button className="w-full mt-4" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'تحليل السوق الكامل' : 'Full market analysis')}>
                       <Globe className="h-4 w-4 mr-2" />
                       {isArabic
                         ? "عرض تحليل السوق الكامل"

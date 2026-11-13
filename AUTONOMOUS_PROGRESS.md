@@ -1710,3 +1710,43 @@ Audited every in-app navigation target against the router.
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` → 989 passed,
 3 skipped, 992 total · `agrogrowth-ai` pytest → 275 passed.
+
+---
+
+### Session 10 — user-facing dashboard repair: crash, dead buttons, investor nav
+
+Mission focus: eliminate the generic "unexpected error" page on role dashboards
+and make every visible action honest. No new features were invented; every change
+makes an existing screen behave correctly.
+
+- **Root cause of the generic error page (P0).** The professional dashboards
+  (agronomist, trader, veterinarian, inspector, investor) fetched their routers,
+  which honestly answer **HTTP 503** with `data: null` while no verified
+  tenant-scoped source is connected. The handlers stored that `null` into list
+  state and then ran `.filter()` / `.map()` **before** the null guard, throwing
+  during render and tripping the top-level `ErrorBoundary` — the reported
+  "unexpected error" page. Fixed by routing every list assignment through
+  `asArray()` and every availability check through `detectUnavailable()`
+  (`client/lib/dashboardData.ts`), then rendering the honest, localized
+  `DataUnavailableNotice` instead of a red "failed to load" card.
+  **VERIFIED** — `tests/unit/dashboard-unavailable-safety.test.ts` (6/6).
+- **Dead action buttons (P0/P1).** 37 `<Button>`s across the role dashboards
+  rendered with no handler (create/edit/export/contact/details). They were wired
+  to a localized "not available yet — nothing was saved" toast via the new
+  `useUnavailableAction()` hook (`client/hooks/useUnavailableAction.ts`), so a
+  click never silently does nothing and never fakes success. Contact actions that
+  have a real handler (`onContactClient`) call it instead.
+  **VERIFIED** — `tests/unit/dashboard-action-buttons.test.ts` (7/7).
+- **Investor role had an empty sidebar (P1).** `investor` is a declared role with
+  its own dashboard route but appeared in **no** `navigationCategories`, so an
+  investor landed on a dashboard with no navigation at all. Added `investor` to
+  the Dashboards category and introduced a top-level **News & Info** category
+  that exposes `/news` to all eight roles. Also added the missing
+  `dataUnavailable` render branch to `InvestorDashboard` (its list state could be
+  `null` after a 503).
+  **VERIFIED** — `tests/unit/nav-role-coverage.test.ts` (3/3).
+- **Added `onRetry` to `DataUnavailableNotice`** so a failed dashboard can be
+  retried in place (localized ar/fr/en).
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` → **1005 passed**, 3 skipped, 1008 total (+16 tests this session).

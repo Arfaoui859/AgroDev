@@ -1,4 +1,5 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
+import { useUnavailableAction } from '@/hooks/useUnavailableAction';
 import { useEffect, useState } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -102,6 +103,7 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 export default function GovernmentDashboard() {
   const { isArabic } = useLanguage();
+  const notifyUnavailable = useUnavailableAction();
   const [overviewData, setOverviewData] = useState<any>(null);
   const [productionData, setProductionData] = useState<any>(null);
   const [policiesData, setPoliciesData] = useState<any>(null);
@@ -222,11 +224,11 @@ export default function GovernmentDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => notifyUnavailable(isArabic ? 'تصدير التقرير' : 'Export report')}>
             <FileText className="h-4 w-4" />
             {isArabic ? 'تصدير التقرير' : 'Export Report'}
           </Button>
-          <Button className="gap-2 bg-green-600 hover:bg-green-700">
+          <Button className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => notifyUnavailable(isArabic ? 'إعدادات السياسة' : 'Policy settings')}>
             <Settings className="h-4 w-4" />
             {isArabic ? 'إعدادات السياسة' : 'Policy Settings'}
           </Button>

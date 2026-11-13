@@ -1,4 +1,5 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
+import { DataUnavailableNotice } from "../components/DataUnavailableNotice";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -321,6 +322,17 @@ const InvestorDashboard = () => {
     );
   }
 
+  if (dataUnavailable) {
+    return (
+      <div className="container mx-auto px-4 py-8 space-y-4" dir="rtl">
+        <DataUnavailableNotice
+          reason="لم يتم ربط قاعدة بيانات موثّقة للمستثمرين. لن نعرض فرصاً أو عوائد تجريبية على أنها حقيقية."
+          onRetry={() => void fetchDashboardData()}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8" dir="rtl">
       <DataProvenanceBanner className="mb-4" message="بيانات الاستثمار والمحفظة غير متاحة حالياً: لم يتم ربط قاعدة بيانات موثّقة للمستثمرين. لن نعرض فرصاً أو عوائد تجريبية على أنها حقيقية." />
@@ -584,7 +596,7 @@ const InvestorDashboard = () => {
                     >
                       استثمر الآن
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => toast({ title: "غير متاح", description: "تفاصيل الفرصة تتطلب مصدر بيانات موثّقاً." })}>
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>

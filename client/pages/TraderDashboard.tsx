@@ -3,6 +3,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { readProvenance, type DataProvenance } from '@/lib/dataProvenance';
 import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from '@/components/SimulatedDataNotice';
+import { DataUnavailableNotice } from '@/components/DataUnavailableNotice';
+import { asArray, detectUnavailable, type UnavailableInfo } from '@/lib/dashboardData';
+import { useUnavailableAction } from '@/hooks/useUnavailableAction';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -172,6 +175,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
   onContactClient
 }) => {
   const { isArabic, toggleLanguage } = useLanguage();
+  const notifyUnavailable = useUnavailableAction();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [inventory, setInventory] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -179,6 +183,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
   const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
   const [financialSummary, setFinancialSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState<UnavailableInfo | null>(null);
   const [provenance, setProvenance] = useState<DataProvenance>({ simulated: false });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -220,15 +225,17 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
         financialResponse.json()
       ]);
 
-      setDashboardData(overview.data);
-      setInventory(inventoryData.data);
-      setOrders(ordersData.data);
-      setMarketOpportunities(opportunitiesData.data);
-      setAlerts(alertsData.data);
-      setFinancialSummary(financialData.data);
+      setDashboardData(overview.data ?? null);
+      setInventory(asArray<Product>(inventoryData.data));
+      setOrders(asArray<Order>(ordersData.data));
+      setMarketOpportunities(asArray<MarketOpportunity>(opportunitiesData.data));
+      setAlerts(asArray<InventoryAlert>(alertsData.data));
+      setFinancialSummary(financialData.data ?? null);
       setProvenance(readProvenance(overviewResponse.headers, overview));
+      setUnavailable(detectUnavailable([overview, inventoryData, ordersData, opportunitiesData, alertsData, financialData]));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setUnavailable({ reason: '', code: 'NETWORK_ERROR' });
     } finally {
       setLoading(false);
     }
@@ -352,14 +359,12 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
 
   if (!dashboardData) {
     return (
-      <div className="container mx-auto p-6">
-        <Alert className="border-red-500 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{isArabic ? 'خطأ' : 'Error'}</AlertTitle>
-          <AlertDescription>
-            {isArabic ? 'فشل في تحميل البيانات' : 'Failed to load dashboard data'}
-          </AlertDescription>
-        </Alert>
+      <div className="container mx-auto p-6 space-y-4">
+        <DataUnavailableNotice reason={unavailable?.reason} />
+        <Button onClick={fetchDashboardData} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {isArabic ? 'إعادة المحاولة' : 'Retry'}
+        </Button>
       </div>
     );
   }
@@ -512,7 +517,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
                   <SelectItem value="crops">{isArabic ? 'محاصيل' : 'Crops'}</SelectItem>
                 </SelectContent>
               </Select>
-              <Button>
+              <Button onClick={() => notifyUnavailable(isArabic ? 'منتج جديد' : 'Add Product')}>
                 <Plus className="h-4 w-4 mr-2" />
                 {isArabic ? 'منتج جديد' : 'Add Product'}
               </Button>
@@ -647,11 +652,11 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
                             </div>
                           )}
                           <div className="flex space-x-2">
-                            <Button className="flex-1">
+                            <Button className="flex-1" onClick={() => notifyUnavailable(isArabic ? 'تعديل المنتج' : 'Edit product')}>
                               <Edit className="h-4 w-4 mr-2" />
                               {isArabic ? 'تعديل' : 'Edit'}
                             </Button>
-                            <Button variant="outline" className="flex-1">
+                            <Button variant="outline" className="flex-1" onClick={() => notifyUnavailable(isArabic ? 'إنشاء طلب' : 'Create order')}>
                               <Plus className="h-4 w-4 mr-2" />
                               {isArabic ? 'إنشاء طلب' : 'Create Order'}
                             </Button>
@@ -659,7 +664,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
                         </div>
                       </DialogContent>
                     </Dialog>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'تعديل المنتج' : 'Edit product')}>
                       <Edit className="h-3 w-3" />
                     </Button>
                   </div>
@@ -811,7 +816,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
         <TabsContent value="opportunities" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">{isArabic ? 'الفرص التجارية' : 'Market Opportunities'}</h3>
-            <Button>
+            <Button onClick={() => notifyUnavailable(isArabic ? 'فرصة جديدة' : 'Add opportunity')}>
               <Plus className="h-4 w-4 mr-2" />
               {isArabic ? 'فرصة جديدة' : 'Add Opportunity'}
             </Button>
@@ -865,14 +870,14 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button size="sm" className="flex-1">
+                    <Button size="sm" className="flex-1" onClick={() => onContactClient?.(opportunity.contactInfo?.name ?? "")}>
                       <MessageCircle className="h-3 w-3 mr-1" />
                       {isArabic ? 'تواصل' : 'Contact'}
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'تفاصيل الفرصة' : 'Opportunity details')}>
                       <Eye className="h-3 w-3" />
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'حفظ الفرصة' : 'Save opportunity')}>
                       <Star className="h-3 w-3" />
                     </Button>
                   </div>
@@ -917,7 +922,7 @@ const TraderDashboard: React.FC<TraderDashboardProps> = ({
                           {isArabic ? 'تأكيد' : 'Acknowledge'}
                         </Button>
                       )}
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'تفاصيل التنبيه' : 'Alert details')}>
                         <Eye className="h-3 w-3" />
                       </Button>
                     </div>

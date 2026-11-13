@@ -1,4 +1,7 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
+import { DataUnavailableNotice } from "../components/DataUnavailableNotice";
+import { asArray, detectUnavailable, type UnavailableInfo } from '@/lib/dashboardData';
+import { useUnavailableAction } from '@/hooks/useUnavailableAction';
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/apiFetch';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -92,6 +95,7 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
   onReportGenerate
 }) => {
   const { isArabic, toggleLanguage } = useLanguage();
+  const notifyUnavailable = useUnavailableAction();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [visits, setVisits] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
@@ -99,6 +103,7 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
   const [reports, setReports] = useState<any[]>([]);
   const [tracking, setTracking] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState<UnavailableInfo | null>(null);
   const [selectedVisit, setSelectedVisit] = useState<any>(null);
   const [selectedNote, setSelectedNote] = useState<any>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
@@ -147,14 +152,16 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
         trackingResponse.json()
       ]);
 
-      setDashboardData(dashboard.data);
-      setVisits(visitsData.data);
-      setNotes(notesData.data);
-      setAssessments(assessmentsData.data);
-      setReports(reportsData.data);
-      setTracking(trackingData.data);
+      setDashboardData(dashboard.data ?? null);
+      setVisits(asArray(visitsData.data));
+      setNotes(asArray(notesData.data));
+      setAssessments(asArray(assessmentsData.data));
+      setReports(asArray(reportsData.data));
+      setTracking(asArray(trackingData.data));
+      setUnavailable(detectUnavailable([dashboard, visitsData, notesData, assessmentsData, reportsData, trackingData]));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setUnavailable({ reason: '', code: 'NETWORK_ERROR' });
     } finally {
       setLoading(false);
     }
@@ -239,14 +246,12 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
 
   if (!dashboardData) {
     return (
-      <div className="container mx-auto p-6">
-        <Alert className="border-red-500 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{isArabic ? 'خطأ' : 'Error'}</AlertTitle>
-          <AlertDescription>
-            {isArabic ? 'فشل في تحميل بيانات المراقب' : 'Failed to load inspector data'}
-          </AlertDescription>
-        </Alert>
+      <div className="container mx-auto p-6 space-y-4">
+        <DataUnavailableNotice reason={unavailable?.reason} />
+        <Button onClick={fetchDashboardData} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {isArabic ? 'إعادة المحاولة' : 'Retry'}
+        </Button>
       </div>
     );
   }
@@ -928,7 +933,7 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
                         <User className="h-3 w-3 mr-1" />
                         <span>{isArabic ? item.assignedToArabic : item.assignedTo}</span>
                       </div>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'متابعة التوصية' : 'Track recommendation')}>
                         <Eye className="h-3 w-3 mr-1" />
                         {isArabic ? 'متابعة' : 'Track'}
                       </Button>
@@ -944,7 +949,7 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
         <TabsContent value="reports" className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">{isArabic ? 'التقارير الميدانية' : 'Field Reports'}</h2>
-            <Button>
+            <Button onClick={() => notifyUnavailable(isArabic ? 'إنشاء تقرير' : 'Create report')}>
               <Plus className="h-4 w-4 mr-2" />
               {isArabic ? 'إنشاء تقرير' : 'Create Report'}
             </Button>
@@ -1010,12 +1015,12 @@ const FieldInspectorDashboard: React.FC<FieldInspectorDashboardProps> = ({
                       </div>
                       <div className="flex space-x-1">
                         {report.exportFormats?.map((format: any) => (
-                          <Button key={format.format} size="sm" variant="outline">
+                          <Button key={format.format} size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? `تصدير ${format.format.toUpperCase()}` : `Export ${format.format.toUpperCase()}`)}>
                             <Download className="h-3 w-3 mr-1" />
                             {format.format.toUpperCase()}
                           </Button>
                         ))}
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'عرض التقرير' : 'View report')}>
                           <Eye className="h-3 w-3 mr-1" />
                           {isArabic ? 'عرض' : 'View'}
                         </Button>

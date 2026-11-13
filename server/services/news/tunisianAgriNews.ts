@@ -404,6 +404,11 @@ export async function getTunisianAgriNews(query: NewsQuery = {}): Promise<NewsRe
     articles = articles.filter((a) => a.language === query.language);
   }
 
+  // Capture the category pool before the category filter narrows the set, so
+  // the filter dropdown keeps listing every category that currently has
+  // articles instead of collapsing to the single selected one.
+  const categoryPool = articles;
+
   if (query.category && query.category !== "all") {
     const target = query.category.toLowerCase();
     articles = articles.filter((a) =>
@@ -430,7 +435,7 @@ export async function getTunisianAgriNews(query: NewsQuery = {}): Promise<NewsRe
   const pageArticles = articles.slice(start, start + pageSize);
 
   const categories = DERIVED_CATEGORIES.filter((c) =>
-    articles.some((a) => a.categories.includes(c)),
+    categoryPool.some((a) => a.categories.includes(c)),
   );
 
   const result: NewsResult = {

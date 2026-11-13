@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { DataProvenanceBanner } from '../components/DataProvenanceBanner';
+import { DataUnavailableNotice } from '../components/DataUnavailableNotice';
+import { asArray, detectUnavailable, type UnavailableInfo } from '@/lib/dashboardData';
+import { useUnavailableAction } from '@/hooks/useUnavailableAction';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -181,12 +184,14 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
   onScheduleTraining
 }) => {
   const { isArabic, toggleLanguage } = useLanguage();
+  const notifyUnavailable = useUnavailableAction();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [farms, setFarms] = useState<FarmOverview[]>([]);
   const [diseaseAnalyses, setDiseaseAnalyses] = useState<DiseaseAnalysis[]>([]);
   const [recommendations, setRecommendations] = useState<RecommendationTracking[]>([]);
   const [trainingPrograms, setTrainingPrograms] = useState<TrainingProgram[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState<UnavailableInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFarm, setSelectedFarm] = useState<FarmOverview | null>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<DiseaseAnalysis | null>(null);
@@ -224,13 +229,15 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
         trainingResponse.json()
       ]);
 
-      setDashboardData(overview.data);
-      setFarms(farmsData.data);
-      setDiseaseAnalyses(analysesData.data);
-      setRecommendations(recommendationsData.data);
-      setTrainingPrograms(trainingData.data);
+      setDashboardData(overview.data ?? null);
+      setFarms(asArray<FarmOverview>(farmsData.data));
+      setDiseaseAnalyses(asArray<DiseaseAnalysis>(analysesData.data));
+      setRecommendations(asArray<RecommendationTracking>(recommendationsData.data));
+      setTrainingPrograms(asArray<TrainingProgram>(trainingData.data));
+      setUnavailable(detectUnavailable([overview, farmsData, analysesData, recommendationsData, trainingData]));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setUnavailable({ reason: '', code: 'NETWORK_ERROR' });
     } finally {
       setLoading(false);
     }
@@ -305,14 +312,12 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
 
   if (!dashboardData) {
     return (
-      <div className="container mx-auto p-6">
-        <Alert className="border-red-500 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{isArabic ? 'خطأ' : 'Error'}</AlertTitle>
-          <AlertDescription>
-            {isArabic ? 'فشل في تحميل البيانات' : 'Failed to load dashboard data'}
-          </AlertDescription>
-        </Alert>
+      <div className="container mx-auto p-6 space-y-4">
+        <DataUnavailableNotice reason={unavailable?.reason} />
+        <Button onClick={fetchDashboardData} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {isArabic ? 'إعادة المحاولة' : 'Retry'}
+        </Button>
       </div>
     );
   }
@@ -583,7 +588,7 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
                               <MessageCircle className="h-4 w-4 mr-2" />
                               {isArabic ? 'تواصل مع الفلاح' : 'Contact Farmer'}
                             </Button>
-                            <Button variant="outline" className="flex-1">
+                            <Button variant="outline" className="flex-1" onClick={() => notifyUnavailable(isArabic ? 'جدولة زيارة' : 'Schedule visit')}>
                               <Calendar className="h-4 w-4 mr-2" />
                               {isArabic ? 'جدولة زيارة' : 'Schedule Visit'}
                             </Button>
@@ -591,7 +596,7 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
                         </div>
                       </DialogContent>
                     </Dialog>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'مراسلة الفلاح' : 'Message farmer')}>
                       <MessageCircle className="h-3 w-3" />
                     </Button>
                   </div>
@@ -757,7 +762,7 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
                       </DialogContent>
                     </Dialog>
                     
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'مراسلة الفلاح' : 'Message farmer')}>
                       <MessageCircle className="h-3 w-3" />
                     </Button>
                   </div>
@@ -771,7 +776,7 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
         <TabsContent value="recommendations" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">{isArabic ? 'متابعة التوصيات' : 'Recommendation Tracking'}</h3>
-            <Button>
+            <Button onClick={() => notifyUnavailable(isArabic ? 'توصية جديدة' : 'New recommendation')}>
               <Plus className="h-4 w-4 mr-2" />
               {isArabic ? 'توصية جديدة' : 'New Recommendation'}
             </Button>
@@ -815,7 +820,7 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
                       }>
                         {rec.status}
                       </Badge>
-                      <Button size="sm" variant="ghost">
+                      <Button size="sm" variant="ghost" onClick={() => notifyUnavailable(isArabic ? 'عرض التوصية' : 'View recommendation')}>
                         <Eye className="h-3 w-3" />
                       </Button>
                     </div>
@@ -874,11 +879,11 @@ const AgronomistDashboard: React.FC<AgronomistDashboardProps> = ({
                   </div>
 
                   <div className="flex space-x-2">
-                    <Button size="sm" className="flex-1">
+                    <Button size="sm" className="flex-1" onClick={() => notifyUnavailable(isArabic ? 'إدارة البرنامج' : 'Manage program')}>
                       <GraduationCap className="h-3 w-3 mr-1" />
                       {isArabic ? 'إدارة البرنامج' : 'Manage Program'}
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'قائمة المشاركين' : 'Participants list')}>
                       <Users className="h-3 w-3" />
                     </Button>
                   </div>

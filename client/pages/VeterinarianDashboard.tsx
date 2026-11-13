@@ -1,4 +1,7 @@
 import { DataProvenanceBanner } from "../components/DataProvenanceBanner";
+import { DataUnavailableNotice } from "../components/DataUnavailableNotice";
+import { asArray, detectUnavailable, type UnavailableInfo } from '@/lib/dashboardData';
+import { useUnavailableAction } from '@/hooks/useUnavailableAction';
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/apiFetch';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -66,6 +69,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
   onEmergencyRespond
 }) => {
   const { isArabic, toggleLanguage } = useLanguage();
+  const notifyUnavailable = useUnavailableAction();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [patients, setPatients] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -74,6 +78,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
   const [treatments, setTreatments] = useState<any[]>([]);
   const [financialData, setFinancialData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState<UnavailableInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
@@ -124,15 +129,17 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
         financialResponse.json()
       ]);
 
-      setDashboardData(dashboard.data);
-      setPatients(patientsData.data);
-      setAppointments(appointmentsData.data);
-      setEmergencies(emergenciesData.data);
-      setInventory(inventoryData.data);
-      setTreatments(treatmentsData.data);
-      setFinancialData(financialDataResponse.data);
+      setDashboardData(dashboard.data ?? null);
+      setPatients(asArray(patientsData.data));
+      setAppointments(asArray(appointmentsData.data));
+      setEmergencies(asArray(emergenciesData.data));
+      setInventory(asArray(inventoryData.data));
+      setTreatments(asArray(treatmentsData.data));
+      setFinancialData(financialDataResponse.data ?? null);
+      setUnavailable(detectUnavailable([dashboard, patientsData, appointmentsData, emergenciesData, inventoryData, treatmentsData, financialDataResponse]));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setUnavailable({ reason: '', code: 'NETWORK_ERROR' });
     } finally {
       setLoading(false);
     }
@@ -224,14 +231,12 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
 
   if (!dashboardData) {
     return (
-      <div className="container mx-auto p-6">
-        <Alert className="border-red-500 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{isArabic ? 'خطأ' : 'Error'}</AlertTitle>
-          <AlertDescription>
-            {isArabic ? 'فشل في تحميل البيانات' : 'Failed to load dashboard data'}
-          </AlertDescription>
-        </Alert>
+      <div className="container mx-auto p-6 space-y-4">
+        <DataUnavailableNotice reason={unavailable?.reason} />
+        <Button onClick={fetchDashboardData} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {isArabic ? 'إعادة المحاولة' : 'Retry'}
+        </Button>
       </div>
     );
   }
@@ -544,7 +549,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <Button>
+            <Button onClick={() => notifyUnavailable(isArabic ? 'إضافة مريض' : 'Add patient')}>
               <UserPlus className="h-4 w-4 mr-2" />
               {isArabic ? 'إضافة مريض' : 'Add Patient'}
             </Button>
@@ -596,11 +601,11 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                       )}
                     </div>
                     <div className="mt-4 flex justify-between">
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'عرض الملف' : 'View record')}>
                         <Eye className="h-3 w-3 mr-1" />
                         {isArabic ? 'عرض' : 'View'}
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'تحرير الملف' : 'Edit record')}>
                         <Edit className="h-3 w-3 mr-1" />
                         {isArabic ? 'تحرير' : 'Edit'}
                       </Button>
@@ -628,7 +633,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <Button>
+            <Button onClick={() => notifyUnavailable(isArabic ? 'حجز موعد' : 'Schedule appointment')}>
               <CalendarPlus className="h-4 w-4 mr-2" />
               {isArabic ? 'حجز موعد' : 'Schedule Appointment'}
             </Button>
@@ -821,11 +826,11 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                     </div>
 
                     <div className="flex justify-between">
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'تفاصيل الحالة' : 'Case details')}>
                         <FileText className="h-3 w-3 mr-1" />
                         {isArabic ? 'تفاصيل' : 'Details'}
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'تحديث الحالة' : 'Update case')}>
                         <Edit className="h-3 w-3 mr-1" />
                         {isArabic ? 'تحديث' : 'Update'}
                       </Button>
@@ -852,7 +857,7 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                 <SelectItem value="expired">{isArabic ? 'منتهي الصلاحية' : 'Expired'}</SelectItem>
               </SelectContent>
             </Select>
-            <Button>
+            <Button onClick={() => notifyUnavailable(isArabic ? 'إضافة عنصر' : 'Add item')}>
               <Plus className="h-4 w-4 mr-2" />
               {isArabic ? 'إضافة عنصر' : 'Add Item'}
             </Button>
@@ -915,11 +920,11 @@ const VeterinarianDashboard: React.FC<VeterinarianDashboardProps> = ({
                       </div>
 
                       <div className="flex justify-between pt-2">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'عرض العنصر' : 'View item')}>
                           <Eye className="h-3 w-3 mr-1" />
                           {isArabic ? 'عرض' : 'View'}
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => notifyUnavailable(isArabic ? 'طلب الصنف' : 'Order item')}>
                           <Package className="h-3 w-3 mr-1" />
                           {isArabic ? 'طلب' : 'Order'}
                         </Button>
