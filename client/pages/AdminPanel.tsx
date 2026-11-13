@@ -104,6 +104,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [newsSources, setNewsSources] = useState<any>(null);
+  const [aiHealth, setAiHealth] = useState<any>(null);
+  const [agentMonitoring, setAgentMonitoring] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,6 +154,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         ['/api/admin/activity-logs', setActivityLogs],
         ['/api/admin/subscriptions', setSubscriptions],
         ['/api/admin/news-sources', setNewsSources],
+        ['/api/admin/agent-monitoring', setAgentMonitoring],
       ] as const;
 
       await Promise.all(optionalEndpoints.map(async ([url, setter]) => {
@@ -167,6 +170,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           setter(null as any);
         }
       }));
+
+      // AI service health has its own (unwrapped) payload shape; it must never
+      // hide the user directory, so it loads independently and is only shown
+      // when the backend actually answered.
+      try {
+        const aiResponse = await apiFetch('/api/ai/health');
+        const aiBody = await aiResponse.json().catch(() => null);
+        setAiHealth(aiResponse.ok && aiBody?.overview ? aiBody : null);
+      } catch {
+        setAiHealth(null);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Admin data is unavailable';
       setLoadError(message);
@@ -587,6 +601,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <TabsTrigger value="security">{isArabic ? 'الأمان' : 'Security'}</TabsTrigger>
           <TabsTrigger value="analytics">{isArabic ? 'التحليلات' : 'Analytics'}</TabsTrigger>
           <TabsTrigger value="news">{isArabic ? 'مصادر الأخبار' : 'News Sources'}</TabsTrigger>
+          <TabsTrigger value="agents">{isArabic ? 'الوكلاء' : 'Agents'}</TabsTrigger>
           <TabsTrigger value="subscriptions">{isArabic ? 'الاشتراكات' : 'Subscriptions'}</TabsTrigger>
           <TabsTrigger value="activity">{isArabic ? 'الأنشطة' : 'Activity'}</TabsTrigger>
         </TabsList>
@@ -1099,6 +1114,100 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               )}
             </CardContent>
           </Card>
+
+          {/* AI service monitoring — real probes through the gateway */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Zap className="h-5 w-5 mr-2" />
+                {isArabic ? 'مراقبة خدمات الذكاء الاصطناعي' : 'AI Service Monitoring'}
+              </CardTitle>
+              <CardDescription>
+                {isArabic
+                  ? 'حالة حقيقية لكل خدمة كما فحصها الخادم. الخدمة القابلة للوصول ليست بالضرورة خدمة استدلال عاملة، والنموذج الاصطناعي يُوسم بذلك.'
+                  : 'Live per-service status as probed by the backend. Reachable is not the same as inference-ready, and synthetic models are labelled.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {aiHealth?.overview ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                      <p className="text-2xl font-bold">{formatNumber(aiHealth.overview.totalServices)}</p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'إجمالي الخدمات' : 'Total'}</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-green-600">{formatNumber(aiHealth.overview.availableServices)}</p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'متاحة' : 'Available'}</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-amber-600">{formatNumber(aiHealth.overview.rateLimitedServices)}</p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'محدودة الطلبات' : 'Rate-limited'}</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-gray-500">{formatNumber(aiHealth.overview.notConfiguredServices)}</p>
+                      <p className="text-xs text-gray-600">{isArabic ? 'غير مضبوطة' : 'Not configured'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
+                    <span>{isArabic ? 'قابلة للوصول' : 'Reachable'}: {formatNumber(aiHealth.overview.reachableServices)}</span>
+                    <span>{isArabic ? 'نماذج اصطناعية' : 'Synthetic models'}: {formatNumber(aiHealth.overview.syntheticModelServices)}</span>
+                    <span>{isArabic ? 'محركات قواعد' : 'Rule-based'}: {formatNumber(aiHealth.overview.ruleBasedServices)}</span>
+                  </div>
+                  {aiHealth.llm && (
+                    <p className="text-xs text-muted-foreground">
+                      {isArabic ? 'مزوّد اللغة' : 'LLM provider'}: {aiHealth.llm.provider ?? '—'}
+                      {aiHealth.llm.configured === false ? (isArabic ? ' (غير مضبوط)' : ' (not configured)') : ''}
+                    </p>
+                  )}
+                  {Array.isArray(aiHealth.services) && aiHealth.services.length > 0 && (
+                    <ScrollArea className="h-72">
+                      <div className="divide-y rounded-lg border">
+                        {aiHealth.services.map((svc: any, i: number) => {
+                          const ok = svc.status === 'available';
+                          const limited = svc.status === 'rate_limited';
+                          return (
+                            <div key={svc.name ?? i} className="flex items-center justify-between gap-3 p-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium">{svc.name}</p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {svc.modelSource ? `${isArabic ? 'مصدر النموذج' : 'model'}: ${svc.modelSource}` : svc.error || ''}
+                                </p>
+                              </div>
+                              <Badge variant={ok ? 'default' : limited ? 'secondary' : 'outline'}>
+                                {ok
+                                  ? (isArabic ? 'متاحة' : 'available')
+                                  : limited
+                                    ? (isArabic ? 'محدودة' : 'rate-limited')
+                                    : svc.status === 'not_configured'
+                                      ? (isArabic ? 'غير مضبوطة' : 'not configured')
+                                      : (isArabic ? 'غير متاحة' : 'unavailable')}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic
+                      ? `آخر تحديث: ${aiHealth.overview.lastUpdated ? new Date(aiHealth.overview.lastUpdated).toLocaleString('ar-TN') : '—'}`
+                      : `Last checked: ${aiHealth.overview.lastUpdated ? new Date(aiHealth.overview.lastUpdated).toLocaleString() : '—'}`}
+                  </p>
+                </div>
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>{isArabic ? 'مراقبة خدمات الذكاء الاصطناعي غير متصلة' : 'AI service monitoring is not connected'}</AlertTitle>
+                  <AlertDescription>
+                    {isArabic
+                      ? 'لم يستجب فحص الخدمات. لا تُعرض حالة مصطنعة أو "كل شيء متاح".'
+                      : 'The service probe did not answer. No status is shown rather than a fabricated "all healthy".'}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Security — honest unavailable state; alerts are never fabricated */}
@@ -1234,6 +1343,91 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Multi-agent registry + execution monitoring */}
+        <TabsContent value="agents" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Zap className="h-5 w-5 mr-2" />
+                {isArabic ? 'الوكلاء المتخصصون' : 'Specialist Agents'}
+              </CardTitle>
+              <CardDescription>
+                {isArabic
+                  ? 'القائمة المسموح بها فعلياً في المُنسّق (مصدرها الكود نفسه، فلا يمكن أن تنحرف عمّا يُنفَّذ). الوكلاء يعملون بقواعد حتمية مع الحفاظ على مصدر كل نتيجة.'
+                  : 'The orchestrator’s actual allow-list (read from the code itself, so it cannot drift from what runs). Agents are deterministic and preserve each result’s provenance.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!agentMonitoring ? (
+                <p className="text-sm text-muted-foreground">
+                  {isArabic ? 'مراقبة الوكلاء غير متاحة حالياً.' : 'Agent monitoring is not available right now.'}
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <Badge variant="outline">
+                      {isArabic ? 'عدد الوكلاء' : 'Specialists'}: {formatNumber(agentMonitoring.specialistCount)}
+                    </Badge>
+                    {agentMonitoring.usage && (
+                      <Badge variant="outline">
+                        {isArabic ? 'استدعاءات 24 ساعة' : 'Calls (24h)'}: {formatNumber(agentMonitoring.usage.last24h)}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="divide-y rounded-lg border">
+                    {(agentMonitoring.specialists || []).map((spec: any) => (
+                      <div key={spec.id} className="flex items-center justify-between gap-3 p-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">
+                            {spec.title?.[isArabic ? 'ar' : 'en'] || spec.id}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {spec.id}
+                            {spec.dependsOn?.length
+                              ? ` · ${isArabic ? 'يعتمد على' : 'depends on'}: ${spec.dependsOn.join(', ')}`
+                              : ''}
+                          </p>
+                        </div>
+                        <Badge variant="outline">{spec.id}</Badge>
+                      </div>
+                    ))}
+                  </div>
+
+                  {agentMonitoring.usage?.byServiceType?.length ? (
+                    <div>
+                      <p className="mb-2 text-sm font-medium">{isArabic ? 'استخدام الخدمات' : 'Service usage'}</p>
+                      <div className="divide-y rounded-lg border">
+                        {agentMonitoring.usage.byServiceType.map((row: any) => (
+                          <div key={row.serviceType} className="flex items-center justify-between gap-3 p-3 text-sm">
+                            <span className="truncate">{row.serviceType}</span>
+                            <span className="text-muted-foreground">
+                              {formatNumber(row.calls)} {isArabic ? 'استدعاء' : 'calls'}
+                              {row.errors ? ` · ${formatNumber(row.errors)} ${isArabic ? 'خطأ' : 'errors'}` : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      {isArabic
+                        ? 'لا يتوفر سجل استدعاءات الخدمات؛ لا تُعرض أرقام تقديرية.'
+                        : 'No AI call-log source is connected; no call volume is estimated or invented.'}
+                    </p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    {isArabic
+                      ? 'قدرة المحادثة: تُقاس داخل العملية الحالية فقط؛ «لا يوجد قياس» لا يعني «غير متاحة».'
+                      : 'Chat capability telemetry is process-local; “no reading” does not mean “unavailable”.'}
+                  </p>
                 </div>
               )}
             </CardContent>

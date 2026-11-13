@@ -3,6 +3,8 @@ import os from 'node:os';
 import fs from 'node:fs';
 import { isSupabaseAdminConfigured, supabaseAdmin } from '../lib/supabase';
 import { getTunisianAgriNews } from '../services/news/tunisianAgriNews';
+import { SPECIALISTS } from '../services/ai/agriculturalOrchestrator';
+import { lastEntry } from '../services/providers/aiTelemetry';
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
@@ -936,5 +938,94 @@ export async function updateAdminUserRole(req: Request, res: Response): Promise<
   } catch (error) {
     console.error('Admin role change failed:', error);
     unavailable(res, 'ADMIN_ROLE_CHANGE_FAILED');
+  }
+}
+
+
+/**
+ * Multi-agent execution monitoring.
+ *
+ * Reports the real, allow-listed specialist registry (from the orchestrator
+ * itself, so it can never drift from what actually runs) plus the last recorded
+ * call for the chat capability. If `ai_service_logs` is present it also reports
+ * the platform-wide call volume; if the table is absent the block is reported as
+ * unavailable rather than invented as zero.
+ */
+export async function getAdminAgentMonitoring(_req: Request, res: Response): Promise<void> {
+  try {
+    const specialists = SPECIALISTS.map((s) => ({
+      id: s.id,
+      title: s.title,
+      dependsOn: [...s.dependsOn],
+    }));
+
+    // Chat capability telemetry is process-local: it reflects the last real
+    // provider call in this process, not a historical aggregate.
+    const chat = lastEntry('agro-chat');
+    const chatStatus = chat
+      ? {
+          source: chat.source,
+          real: chat.real,
+          errorCategory: chat.errorCategory,
+          latencyMs: chat.latencyMs,
+          at: chat.at,
+        }
+      : null;
+
+    // Optional: platform-wide AI call log. Absent in some deployments.
+    let usage: { byServiceType: Array<Record<string, unknown>>; last24h: number | null } | null = null;
+    if (isSupabaseAdminConfigured && supabaseAdmin) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const [recent, count] = await Promise.all([
+        supabaseAdmin
+          .from('ai_service_logs')
+          .select('service_type,endpoint,status_code,processing_time_ms,created_at')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabaseAdmin
+          .from('ai_service_logs')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', since),
+      ]);
+      if (!recent.error && !count.error) {
+        const grouped = new Map<string, { serviceType: string; calls: number; errors: number }>();
+        for (const row of (recent.data || []) as Array<{ service_type?: string; status_code?: number }>) {
+          const key = String(row.service_type || 'unknown');
+          const entry = grouped.get(key) || { serviceType: key, calls: 0, errors: 0 };
+          entry.calls += 1;
+          if (typeof row.status_code === 'number' && row.status_code >= 400) entry.errors += 1;
+          grouped.set(key, entry);
+        }
+        usage = {
+          byServiceType: [...grouped.values()].sort((a, b) => b.calls - a.calls),
+          last24h: count.count ?? 0,
+        };
+      }
+    }
+
+    res.setHeader('X-AgroGrowth-Data-Status', 'verified');
+    res.setHeader('X-AgroGrowth-Data-Provenance', 'orchestrator-registry+ai_service_logs');
+    res.json({
+      success: true,
+      data: {
+        specialists,
+        specialistCount: specialists.length,
+        chatCapability: chatStatus,
+        usage,
+      },
+      provenance: {
+        source: 'agriculturalOrchestrator.SPECIALISTS, aiTelemetry, public.ai_service_logs',
+        verified: true,
+        model_source: null,
+        limitations: [
+          'The specialist registry is the code-level allow-list, not a runtime health check of each agent.',
+          'Chat capability telemetry is process-local (last call in this process only).',
+          ...(usage ? [] : ['ai_service_logs is unavailable, so platform call volume is not reported.']),
+        ],
+      },
+    });
+  } catch (error) {
+    console.error('Admin agent monitoring failed:', error);
+    unavailable(res, 'ADMIN_AGENT_MONITORING_FAILED');
   }
 }

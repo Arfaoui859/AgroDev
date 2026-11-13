@@ -1619,3 +1619,30 @@ live code, not by re-reading the README.
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
 `npx jest` (see below).
+
+### Session 7 — real admin multi-agent + AI monitoring (no fake counters)
+
+The Admin "System" tab previously had no verified metrics. This session added
+real monitoring backed by the running code and database, plus regression tests.
+
+- **New admin endpoint `GET /api/admin/agent-monitoring`** (guarded by
+  `requireAdminAccess`, fails closed in production). It reports:
+  - the *actual* allow-listed specialist registry, imported from
+    `agriculturalOrchestrator.SPECIALISTS` — so the admin view can never drift
+    from what the orchestrator will really run (14 specialists with `dependsOn`);
+  - the process-local `agro-chat` telemetry (last real provider call only);
+  - platform-wide `ai_service_logs` volume **only when the table exists**;
+    otherwise `usage: null` with an explicit limitation. No call volume is
+    invented, and a missing table is never shown as zero.
+- **AdminPanel "Agents" tab** renders that endpoint (registry, dependencies,
+  per-service call/error counts, honest "no call-log source connected" note).
+  A regression test asserts the System tab reads the live `/api/ai/health`
+  probe (`aiHealth?.overview`, `aiHealth.services`) and never fabricates a
+  healthy state.
+- **Tests:** `tests/integration/admin-monitoring.test.ts` +4 cases (registry
+  parity, real usage from `ai_service_logs`, absent-table → null, unconfigured
+  client → still reports registry). `tests/unit/admin-panel-tabs.test.ts` +1
+  guard. `tests/unit/admin-auth.test.ts` unchanged and green.
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` 979+ passed (see final run below).

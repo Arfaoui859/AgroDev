@@ -14,6 +14,8 @@ import request from "supertest";
 let adminConfigured = true;
 let counts: Record<string, number> = {};
 let rows: Record<string, any[]> = {};
+// Tables that should behave as if they do not exist (query returns an error).
+let errorTables = new Set<string>();
 
 function countBuilder(key: string) {
   const builder: any = {
@@ -26,7 +28,11 @@ function countBuilder(key: string) {
     limit: () => builder,
     // head:true count queries and row queries both await the builder.
     then: (resolve: (v: any) => unknown) =>
-      Promise.resolve({ data: rows[key] ?? [], count: counts[key] ?? 0, error: null }).then(resolve),
+      Promise.resolve({
+        data: errorTables.has(key) ? null : (rows[key] ?? []),
+        count: errorTables.has(key) ? null : (counts[key] ?? 0),
+        error: errorTables.has(key) ? { message: `relation "${key}" does not exist` } : null,
+      }).then(resolve),
   };
   return builder;
 }
@@ -48,6 +54,7 @@ import {
   getAdminSystemMetrics,
   getAdminUsageAnalytics,
   getAdminSecurityEvents,
+  getAdminAgentMonitoring,
 } from "../../server/routes/admin-panel";
 
 function app() {
@@ -56,6 +63,7 @@ function app() {
   a.get("/api/admin/system-metrics", getAdminSystemMetrics);
   a.get("/api/admin/usage-analytics", getAdminUsageAnalytics);
   a.get("/api/admin/security-events", getAdminSecurityEvents);
+  a.get("/api/admin/agent-monitoring", getAdminAgentMonitoring);
   return a;
 }
 
@@ -131,5 +139,67 @@ describe("admin security events", () => {
     expect(res.headers["x-agrogrowth-data-status"]).toBe("verified");
     expect(res.body.data[0].event_type).toBe("user.role.changed");
     expect(res.body.data[0].severity).toBe("high");
+  });
+});
+
+describe("admin agent monitoring", () => {
+  beforeEach(() => {
+    adminConfigured = true;
+    rows = { ai_service_logs: [] };
+    counts = { ai_service_logs: 0 };
+    errorTables = new Set();
+  });
+
+  it("reports the real allow-listed specialist registry from the orchestrator", async () => {
+    const res = await request(app()).get("/api/admin/agent-monitoring");
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.headers["x-agrogrowth-data-status"]).toBe("verified");
+    const { specialists, specialistCount } = res.body.data;
+    // Must reflect the orchestrator's own allow-list, never a hand-kept list.
+    expect(specialistCount).toBe(specialists.length);
+    expect(specialistCount).toBeGreaterThanOrEqual(14);
+    const ids = specialists.map((s: any) => s.id);
+    for (const required of ["soil", "weather", "crop", "irrigation", "pest_control", "market"]) {
+      expect(ids).toContain(required);
+    }
+    // Dependencies are reported so the UI can show the DAG honestly.
+    const crop = specialists.find((s: any) => s.id === "crop");
+    expect(Array.isArray(crop.dependsOn)).toBe(true);
+  });
+
+  it("reports real usage from ai_service_logs when the table exists", async () => {
+    rows = {
+      ai_service_logs: [
+        { service_type: "soil_analysis", endpoint: "/predict", status_code: 200 },
+        { service_type: "soil_analysis", endpoint: "/predict", status_code: 500 },
+        { service_type: "crop_recommendation", endpoint: "/predict", status_code: 200 },
+      ],
+    };
+    counts = { ai_service_logs: 42 };
+    const res = await request(app()).get("/api/admin/agent-monitoring");
+    expect(res.status).toBe(200);
+    expect(res.body.data.usage.last24h).toBe(42);
+    const soil = res.body.data.usage.byServiceType.find((r: any) => r.serviceType === "soil_analysis");
+    expect(soil.calls).toBe(2);
+    expect(soil.errors).toBe(1);
+  });
+
+  it("does not invent call volume when ai_service_logs is unavailable", async () => {
+    errorTables = new Set(["ai_service_logs"]);
+    const res = await request(app()).get("/api/admin/agent-monitoring");
+    expect(res.status).toBe(200);
+    // Absent table → usage stays null, never a fabricated zero/positive count.
+    expect(res.body.data.usage).toBeNull();
+    expect(res.body.provenance.limitations.join(" ")).toMatch(/ai_service_logs/i);
+  });
+
+  it("fails closed without throwing when the admin client is absent", async () => {
+    adminConfigured = false;
+    const res = await request(app()).get("/api/admin/agent-monitoring");
+    expect(res.status).toBe(200);
+    // Registry is code-level, so it is still reported; usage is simply absent.
+    expect(res.body.data.specialistCount).toBeGreaterThanOrEqual(14);
+    expect(res.body.data.usage).toBeNull();
   });
 });

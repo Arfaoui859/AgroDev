@@ -25,4 +25,16 @@ describe("AdminPanel tabs", () => {
     const missing = [...triggers].filter((v) => !contents.has(v));
     expect(missing).toEqual([]);
   });
+
+  test("AI service monitoring reads the real gateway probe, not a fake counter", () => {
+    // The admin System tab must reflect the live backend probe. Guard against a
+    // regression to invented counters: the panel has to call /api/ai/health and
+    // render its overview/services, and it must not hardcode an "all healthy"
+    // figure when the probe is absent.
+    expect(source).toContain("apiFetch('/api/ai/health')");
+    expect(source).toContain("aiHealth?.overview");
+    expect(source).toContain("aiHealth.services");
+    // The unavailable branch must not fabricate a healthy state.
+    expect(source).toContain("AI service monitoring is not connected");
+  });
 });

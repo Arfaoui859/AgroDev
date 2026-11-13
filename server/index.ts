@@ -127,6 +127,7 @@ import {
   getAdminActivityLogs,
   getAdminSubscriptions,
   getAdminNewsSourceStatus,
+  getAdminAgentMonitoring,
   updateAdminUserRole,
   setAdminUserActive,
 } from "./routes/admin-panel";
@@ -592,6 +593,7 @@ export function createServer() {
   app.get("/api/admin/activity-logs", requireAdminAccess, getAdminActivityLogs);
   app.get("/api/admin/subscriptions", requireAdminAccess, getAdminSubscriptions);
   app.get("/api/admin/news-sources", requireAdminAccess, getAdminNewsSourceStatus);
+  app.get("/api/admin/agent-monitoring", requireAdminAccess, getAdminAgentMonitoring);
   app.patch("/api/admin/users/:userId/role", requireAdminAccess, updateAdminUserRole);
   app.patch("/api/admin/users/:userId/status", requireAdminAccess, setAdminUserActive);
 
