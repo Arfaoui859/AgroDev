@@ -345,6 +345,8 @@ async function resolveEngine(cap: Capability): Promise<{
   configured: boolean;
   modelSource: string | null;
   modelKind: ProvenanceKind;
+  /** True when the host answered but no model provenance could be confirmed. */
+  provenanceUnverified?: boolean;
 }> {
   if (!cap.microserviceUrl) {
     // No backing service is configured. A capability whose primary engine is
@@ -362,6 +364,38 @@ async function resolveEngine(cap: Capability): Promise<{
       configured: true,
       modelSource: null,
       modelKind: "unknown",
+    };
+  }
+  // The host answered, but the capability's primary engine is an external
+  // model (vision inference, a trained model service, or an LLM). If the
+  // service declared no provenance — a rate-limited (HTTP 429) health probe or
+  // a non-JSON body both leave `modelSource` null — we cannot confirm that any
+  // model is actually running. Never advertise an unverified host as a live
+  // model: downgrade to the declared fallback and mark the provenance
+  // unverified so callers keep the feature blocked.
+  const isExternalModelEngine =
+    cap.engine === "vision-model" ||
+    cap.engine === "microservice" ||
+    cap.engine === "llm";
+  if (isExternalModelEngine && (probe.modelSource === null || probe.kind === "unknown")) {
+    return {
+      engine: cap.fallbackEngine ?? "unavailable",
+      reachable: true,
+      configured: true,
+      modelSource: null,
+      modelKind: "unknown",
+      provenanceUnverified: true,
+    };
+  }
+  // A service that self-reports a deterministic rule engine is not the trained
+  // vision model the capability advertises; report the rule engine instead.
+  if (cap.engine === "vision-model" && probe.kind === "rule-based") {
+    return {
+      engine: "rule-based",
+      reachable: true,
+      configured: true,
+      modelSource: probe.modelSource,
+      modelKind: probe.kind,
     };
   }
   // The service is up. Report what it actually is instead of advertising a
@@ -427,7 +461,8 @@ async function capabilityPayload(
   cap: Capability,
   extra: Record<string, unknown> = {},
 ) {
-  const { engine, reachable, configured, modelSource } = await resolveEngine(cap);
+  const { engine, reachable, configured, modelSource, provenanceUnverified } =
+    await resolveEngine(cap);
   const available = engine !== "unavailable";
   const isReal = engine === "llm" || engine === "vision-model";
   const llm = getPublicLLMInfo();
@@ -451,6 +486,11 @@ async function capabilityPayload(
     // reachability flag is the signal callers need.
     microserviceUrl: null,
     microserviceReachable: reachable,
+    /**
+     * True when the host answered the probe but declared no model provenance
+     * (e.g. a rate-limited /health), so no live model could be confirmed.
+     */
+    provenanceUnverified: provenanceUnverified === true,
     modelSource,
     dataSource: engine,
     isRealData: isReal,
@@ -458,7 +498,9 @@ async function capabilityPayload(
     provenanceAr: cap.provenanceAr,
     requiresConfiguration:
       !available && configured
-        ? "A microservice is configured for this capability but is not reachable."
+        ? provenanceUnverified
+          ? "A microservice is configured for this capability and answered, but declared no model provenance (for example a rate-limited health probe); a live model could not be confirmed."
+          : "A microservice is configured for this capability but is not reachable."
         : cap.requiresConfiguration,
     /** Observability: last error category (never a stack trace) and latency. */
     lastError: telemetry.lastError,

@@ -17,9 +17,10 @@ import { resetServiceProbeCache } from "../../server/services/providers/serviceP
 
 function startFakeService(
   body: Record<string, unknown>,
+  status = 200,
 ): Promise<{ url: string; close: () => Promise<void> }> {
   const server = http.createServer((_req, res) => {
-    res.writeHead(200, { "Content-Type": "application/json" });
+    res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(body));
   });
 
@@ -150,6 +151,54 @@ describe("🔎 AI capability reachability reflects the live service", () => {
     expect(res.body.available).toBe(false);
     expect(res.body.engine).toBe("unavailable");
 
+    await fake.close();
+  });
+
+  test("a rate-limited (HTTP 429) vision host is never advertised as a live model", async () => {
+    // A 429 proves the host answered, but not that any model is running. The
+    // capability must stay unavailable with unverified provenance instead of
+    // being reported as a working vision model.
+    const savedLlm: Record<string, string | undefined> = {};
+    for (const k of ["AI_BASE_URL", "AI_API_KEY", "AI_MODEL", "GEMINI_API_KEY", "OPENAI_API_KEY"]) {
+      savedLlm[k] = process.env[k];
+      delete process.env[k];
+    }
+    const fake = await startFakeService({ detail: "rate limited" }, 429);
+    process.env.IMAGE_DIAGNOSIS_URL = fake.url;
+    resetServiceProbeCache();
+    app = createServer();
+
+    const res = await request(app)
+      .get("/api/ai/capabilities/plant-disease-detection")
+      .expect(200);
+    expect(res.body.microserviceReachable).toBe(true);
+    expect(res.body.provenanceUnverified).toBe(true);
+    expect(res.body.available).toBe(false);
+    expect(res.body.isRealData).toBe(false);
+    expect(res.body.engine).toBe("unavailable");
+
+    for (const [k, v] of Object.entries(savedLlm)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+    await fake.close();
+  });
+
+  test("a pest-control host that declares no provenance is not advertised as a live model", async () => {
+    const fake = await startFakeService({ status: "healthy" });
+    process.env.PEST_CONTROL_URL = fake.url;
+    resetServiceProbeCache();
+    app = createServer();
+
+    const res = await request(app)
+      .get("/api/ai/capabilities/pest-control")
+      .expect(200);
+    expect(res.body.microserviceReachable).toBe(true);
+    expect(res.body.provenanceUnverified).toBe(true);
+    expect(res.body.available).toBe(false);
+    expect(res.body.isRealData).toBe(false);
+
+    delete process.env.PEST_CONTROL_URL;
     await fake.close();
   });
 });

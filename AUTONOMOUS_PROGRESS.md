@@ -1906,3 +1906,28 @@ and covered by regression tests.
 
 **Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npm run build` 0 ·
 `npx jest` → **1042 passed**, 3 skipped, 1045 total.
+
+### Session 13 (cont. 3) — P1: AI capability probe honesty (429 / no provenance)
+
+**Defect found and fixed (VERIFIED via real HTTP test):** a capability whose
+primary engine is an external model (`vision-model`, `microservice`, `llm`) and
+whose host answered but declared **no model provenance** — e.g. a rate-limited
+(HTTP 429) `/health`, or a non-JSON body — was advertised as
+`engine:"vision-model"`, `available:true`, `isRealData:true`. `serviceProbe`
+correctly marks such a host reachable-with-unknown-provenance, but
+`resolveEngine()` fell through to the *nominal* engine.
+
+- `resolveEngine()` now downgrades any external-model capability with
+  `modelSource === null || kind === "unknown"` to its declared fallback
+  (`unavailable`) and sets `provenanceUnverified: true`.
+- New payload field `provenanceUnverified` + a `requiresConfiguration` message
+  that states the host answered but no live model could be confirmed.
+- A vision service that self-reports a deterministic rule engine is now reported
+  as `rule-based`, never as a trained vision model.
+- Regression tests: `tests/integration/capability-reachability.test.ts` (+2
+  cases, real throwaway HTTP servers: 429 vision host, no-provenance pest host).
+
+**Evidence:** before → `{engine:"vision-model",available:true,isRealData:true}`;
+after → `{engine:"unavailable",available:false,isRealData:false,reachable:true,provenanceUnverified:true}`.
+
+**Gates:** `npx tsc --noEmit` 0 · `npx jest` → **1045 passed**, 3 skipped, 1048 total.
