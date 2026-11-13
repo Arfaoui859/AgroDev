@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/apiFetch';
 import React, { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -99,6 +100,7 @@ const IntelligentBreedingManager: React.FC = () => {
   const [selectedFemale, setSelectedFemale] = useState<string>('');
   const [compatibilityResult, setCompatibilityResult] = useState<any>(null);
   const [compatibilityNotice, setCompatibilityNotice] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchAnimals();
@@ -550,11 +552,26 @@ const IntelligentBreedingManager: React.FC = () => {
                     </div>
 
                     <div className="mt-4 flex gap-2">
-                      <Button size="sm" className="gap-1">
+                      <Button
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => toast({
+                          title: 'غير متاح',
+                          description: 'جدولة التلقيح تتطلب سلالات موثّقة وبيانات تناسلية كافية. لم نُنشئ أي موعد افتراضي.',
+                        })}
+                      >
                         <Calendar className="h-4 w-4" />
                         جدولة التلقيح
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => toast({
+                          title: 'غير متاح',
+                          description: 'التفاصيل التفصيلية للتزويج تتطلب بيانات وراثية موثّقة.',
+                        })}
+                      >
                         <Eye className="h-4 w-4" />
                         تفاصيل أكثر
                       </Button>

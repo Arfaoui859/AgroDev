@@ -109,6 +109,7 @@ export default function LivestockDashboard() {
     weight: '',
   });
   const { toast } = useToast();
+  const [detailAnimal, setDetailAnimal] = useState<Animal | null>(null);
 
   useEffect(() => {
     fetchLivestockData();
@@ -452,7 +453,12 @@ export default function LivestockDashboard() {
                       <span className="font-medium">{animal.currentValue.toLocaleString()} د.ت</span>
                     </div>
                     <div className="pt-2">
-                      <Button variant="outline" size="sm" className="w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setDetailAnimal(animal)}
+                      >
                         عرض التفاصيل
                       </Button>
                     </div>
@@ -552,6 +558,31 @@ export default function LivestockDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={detailAnimal !== null} onOpenChange={(o) => !o && setDetailAnimal(null)}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الحيوان {detailAnimal?.earTag}</DialogTitle>
+          </DialogHeader>
+          {detailAnimal && (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">النوع</span><span>{speciesTranslation[detailAnimal.species]}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">السلالة</span><span>{detailAnimal.breed || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">الجنس</span><span>{detailAnimal.gender === 'male' ? 'ذكر' : 'أنثى'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">تاريخ الميلاد</span><span>{detailAnimal.birthDate ? new Date(detailAnimal.birthDate).toLocaleDateString('ar-TN') : '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">الوزن</span><span>{detailAnimal.weight != null ? `${detailAnimal.weight} كغ` : '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">الحالة الصحية</span><span>{healthStatusTranslation[detailAnimal.healthStatus]}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">حالة التناسل</span><span>{breedingStatusTranslation[detailAnimal.breedingStatus]}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">الموقع</span><span>{detailAnimal.location || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">آخر فحص</span><span>{detailAnimal.lastHealthCheck ? new Date(detailAnimal.lastHealthCheck).toLocaleDateString('ar-TN') : '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">القيمة الحالية</span><span>{detailAnimal.currentValue != null ? `${detailAnimal.currentValue.toLocaleString()} د.ت` : '—'}</span></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailAnimal(null)}>إغلاق</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AnimalFormDialog
         open={addOpen}

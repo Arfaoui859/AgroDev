@@ -1790,3 +1790,50 @@ behave correctly.
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
 `npx jest` → **1015 passed**, 3 skipped, 1018 total (+10 tests this session).
+
+## Session 12 — livestock screens reach the real API (P0/P2)
+
+The Advanced Livestock dashboard was a leftover consumer of the removed
+synthetic demo. It gated every fetch on `data.provenance?.verified === true`,
+but the livestock routes answer with `provenance: { source, persisted: true }` —
+the `verified` field was never emitted. The gate therefore always failed, so a
+caller with real persisted records still saw a permanent "data unavailable"
+panel. The page also read a synthetic shape (`summary.avgHealthScore`,
+`speciesDistribution`, `productionHistory`) the backend never produced, and
+carried three buttons with no handler.
+
+- **AdvancedLivestockDashboard rewritten against the real contract (P0).**
+  Reads the `{ success, data }` envelope, coerces lists through `asArray()`,
+  consumes the real aggregates (`totalAnimals`, `bySpecies`, `byHealthStatus`,
+  `totalValue`, `feedItemsLowStock`), and drops the removed synthetic fields.
+  The "إضافة حيوان" control now opens a dialog that POSTs to
+  `/api/livestock-management/animals` (tenant-scoped, RLS-enforced) and reports
+  the duplicate-tag and network failures honestly. Alerts resolve through the
+  real `PATCH /health-events/:id/resolve`, and only for alerts backed by a row
+  (UUID id); status-derived alerts are shown read-only. Production-trend charts
+  are labelled as not connected instead of plotting invented numbers.
+  **VERIFIED** — `tests/unit/dashboard-unavailable-safety.test.ts` (13/13).
+- **Animal Health Monitoring buttons wired (P0/P2).** "إضافة فحص جديد" and the
+  per-vaccination "تطعيم" open a real health-event dialog that POSTs to
+  `/api/livestock-management/health-events`; the alert "حل" control calls the
+  real resolve endpoint. A disabled control with an honest reason replaces any
+  click that would otherwise do nothing.
+  **VERIFIED** — dead-button guard.
+- **Honest no-op elimination across sidebar-reachable pages (P2).**
+  `IntelligentBreedingManager` (جدولة التلقيح / تفاصيل أكثر),
+  `CropRotationPlanner` (تطبيق / حفظ الدورة المخصصة) and `EffectivenessReports`
+  (تصدير التقرير, now a real CSV export of the filtered rows) no longer render
+  handler-less buttons. `LivestockDashboard` "عرض التفاصيل" opens a real detail
+  dialog. Every remaining unwired control is `disabled` with a `title`
+  explaining the missing data source.
+  **VERIFIED** — `tests/unit/dashboard-action-buttons.test.ts` extended with a
+  sidebar-reachable-page guard (13/13).
+- **AI gateway honesty re-checked.** No client module calls a Python
+  microservice or a `localhost`/`onrender.com` URL directly; every AI call goes
+  through the provenance-gated backend gateway, and the gateway suppresses the
+  localhost fallback under a hosted runtime
+  (`NODE_ENV=production` / `RENDER` / `RENDER_SERVICE_ID`).
+  **VERIFIED** — grep + gateway unit guard.
+
+**Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npm run build` 0 ·
+`npx jest` → **1025 passed**, 3 skipped, 1028 total (+10 tests this session).

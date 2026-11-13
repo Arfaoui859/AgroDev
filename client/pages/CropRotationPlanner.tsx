@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -106,6 +107,7 @@ export default function CropRotationPlanner() {
   const [loading, setLoading] = useState(false);
   const [customRotation, setCustomRotation] = useState<RotationPhase[]>([]);
   const [showCustomBuilder, setShowCustomBuilder] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchRotationPlans();
@@ -369,6 +371,10 @@ export default function CropRotationPlanner() {
                       <Button
                         size="sm"
                         className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={() => toast({
+                          title: 'غير متاح',
+                          description: 'تطبيق خطة الدورة يتطلب ربطها بقطعة أرض وموسم في مزرعتك — غير مربوط بعد. لم نُسجّل أي تطبيق وهمي.',
+                        })}
                       >
                         <Calendar className="w-4 h-4 ml-1" />
                         تطبيق
@@ -688,7 +694,13 @@ export default function CropRotationPlanner() {
                     <Button variant="outline" onClick={() => setCustomRotation([])}>
                       إعادة تعيين
                     </Button>
-                    <Button className="bg-green-600 hover:bg-green-700">
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => toast({
+                        title: 'غير متاح',
+                        description: 'حفظ الدورة المخصصة يتطلب مصدر تخزين موثّقاً وربطها بأرض — غير متاح بعد. لم نُختلق حفظاً.',
+                      })}
+                    >
                       <CheckCircle className="w-4 h-4 ml-1" />
                       حفظ الدورة المخصصة
                     </Button>

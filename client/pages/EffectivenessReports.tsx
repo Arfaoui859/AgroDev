@@ -29,6 +29,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { downloadCsv, toCsv } from "@/lib/csv";
 import { SimulatedDataNotice, SIMULATED_RECORDS_TITLE_AR, SIMULATED_RECORDS_DESCRIPTION_AR } from "@/components/SimulatedDataNotice";
 
 interface EffectivenessReport {
@@ -363,7 +364,24 @@ export default function EffectivenessReports() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const csv = toCsv(
+                ['المنتج', 'النوع', 'المحصول', 'تاريخ التطبيق', 'قبل', 'بعد', 'درجة الفعالية'],
+                filteredReports.map((r) => [
+                  r.productName,
+                  r.productType === 'fertilizer' ? 'سماد' : 'مبيد',
+                  r.cropType,
+                  r.applicationDate,
+                  r.beforeCondition.healthScore,
+                  r.afterCondition.healthScore,
+                  r.effectivenessScore,
+                ]),
+              );
+              downloadCsv('effectiveness-reports.csv', csv);
+            }}
+          >
             <Download className="h-4 w-4 ml-2" />
             تصدير التقرير
           </Button>

@@ -1,311 +1,304 @@
 import { apiFetch } from '@/lib/apiFetch';
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Alert, AlertDescription } from '../components/ui/alert';
-import { Progress } from '../components/ui/progress';
-import { 
-  Users, 
-  Heart, 
-  Activity, 
-  TrendingUp, 
-  TrendingDown, 
-  AlertTriangle, 
-  CheckCircle, 
-  Calendar,
-  Thermometer,
-  Scale,
-  Stethoscope,
-  Bell,
-  Plus,
-  Filter,
-  BarChart3,
-  PieChart,
-  Target,
-  Zap,
-  Eye,
-  RefreshCw,
-  Download,
-  Settings
-} from 'lucide-react';
+import { asArray } from '@/lib/dashboardData';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Users, Heart, Activity, AlertTriangle, CheckCircle, Bell, Plus, RefreshCw, PieChart, DollarSign } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart as RePieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts';
 
+/**
+ * The shape returned by `GET /api/animals` (see `animalRecord()` in
+ * `server/routes/livestock.ts`). Every field is derived from a persisted
+ * `livestock_animals` row; nothing is synthesised here.
+ */
 interface Animal {
   id: string;
   earTag: string;
-  name?: string;
-  species: 'cattle' | 'sheep' | 'goat' | 'chicken' | 'turkey' | 'duck';
+  species: string;
   breed: string;
   gender: 'male' | 'female';
-  birthDate: string;
-  weight: number;
-  status: 'healthy' | 'sick' | 'pregnant' | 'lactating' | 'dry' | 'quarantine' | 'sold' | 'deceased';
-  currentLocation: string;
-  healthHistory: HealthRecord[];
-  productionHistory: ProductionRecord[];
+  birthDate: string | null;
+  age: number | null;
+  weight: number | null;
+  healthStatus: string;
+  breedingStatus: string;
+  lifecycleStatus: string;
+  location: string;
+  currentValue: number | null;
+  currency: string;
+  lastHealthCheck: string | null;
+  notes: string;
 }
 
-interface HealthRecord {
-  id: string;
-  date: string;
-  type: 'vaccination' | 'medication' | 'checkup' | 'illness' | 'injury';
-  condition?: string;
-  temperature?: number;
-  weight?: number;
-  treatment?: string;
-  severity: 'mild' | 'moderate' | 'severe' | 'critical';
-  outcome: 'recovered' | 'ongoing' | 'deceased' | 'chronic';
-  aiRiskScore?: number;
-}
-
-interface ProductionRecord {
-  id: string;
-  date: string;
-  type: 'milk' | 'eggs' | 'wool' | 'meat';
-  quantity: number;
-  unit: string;
-  quality: 'A' | 'B' | 'C' | 'rejected';
-  revenue?: number;
-}
-
+/** A row from `GET /api/health-alerts`. */
 interface HealthAlert {
   id: string;
   animalId: string;
-  alertType: 'disease_risk' | 'breeding_time' | 'vaccination_due' | 'weight_loss' | 'production_drop' | 'temperature_abnormal';
+  earTag: string | null;
+  alertType: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
   message: string;
-  aiConfidence: number;
-  recommendations: string[];
-  createdAt: string;
-  isResolved: boolean;
+  dateCreated: string;
+  resolved: boolean;
 }
 
+/** Aggregates from `GET /api/livestock-dashboard`, computed from persisted rows. */
 interface DashboardData {
-  summary: {
-    totalAnimals: number;
-    healthyAnimals: number;
-    sickAnimals: number;
-    pregnantAnimals: number;
-    avgHealthScore: number;
-    totalProduction: number;
-  };
-  speciesDistribution: Record<string, number>;
-  recentAlerts: HealthAlert[];
-  topProducers: Animal[];
+  totalAnimals: number;
+  bySpecies: Record<string, number>;
+  byHealthStatus: Record<string, number>;
+  totalValue: number;
+  currency: string;
+  feedItemsLowStock: number;
 }
+
+const SPECIES = [
+  { value: 'cattle', label: 'أبقار' },
+  { value: 'dairy_cattle', label: 'أبقار حلوب' },
+  { value: 'beef_cattle', label: 'أبقار لحم' },
+  { value: 'sheep', label: 'أغنام' },
+  { value: 'goat', label: 'ماعز' },
+  { value: 'poultry', label: 'دواجن' },
+  { value: 'camel', label: 'إبل' },
+  { value: 'other', label: 'أخرى' },
+];
+
+const HEALTH_STATUSES = [
+  { value: 'excellent', label: 'ممتاز' },
+  { value: 'good', label: 'جيد' },
+  { value: 'fair', label: 'مقبول' },
+  { value: 'poor', label: 'ضعيف' },
+  { value: 'sick', label: 'مريض' },
+];
+
+const PURPOSES = [
+  { value: 'dairy', label: 'حلوب' },
+  { value: 'beef', label: 'لحم' },
+  { value: 'wool', label: 'صوف' },
+  { value: 'meat', label: 'لحم' },
+  { value: 'eggs', label: 'بيض' },
+  { value: 'breeding', label: 'تناسل' },
+  { value: 'mixed', label: 'مختلط' },
+  { value: 'other', label: 'أخرى' },
+];
+
+const SPECIES_ICON: Record<string, string> = {
+  cattle: '🐄',
+  dairy_cattle: '🐄',
+  beef_cattle: '🐄',
+  sheep: '🐑',
+  goat: '🐐',
+  poultry: '🐔',
+  camel: '🐪',
+  other: '🐾',
+};
+
+const HEALTH_BADGE: Record<string, string> = {
+  excellent: 'bg-green-100 text-green-800',
+  good: 'bg-emerald-100 text-emerald-800',
+  fair: 'bg-yellow-100 text-yellow-800',
+  poor: 'bg-orange-100 text-orange-800',
+  sick: 'bg-red-100 text-red-800',
+};
+
+const labelFor = (list: { value: string; label: string }[], value: string) =>
+  list.find((x) => x.value === value)?.label ?? value;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+interface AnimalFormState {
+  earTag: string;
+  species: string;
+  gender: string;
+  breed: string;
+  birthDate: string;
+  weight: string;
+  healthStatus: string;
+  purpose: string;
+}
+
+const emptyForm: AnimalFormState = {
+  earTag: '',
+  species: 'cattle',
+  gender: 'female',
+  breed: '',
+  birthDate: '',
+  weight: '',
+  healthStatus: 'good',
+  purpose: 'other',
+};
 
 const AdvancedLivestockDashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [healthAlerts, setHealthAlerts] = useState<HealthAlert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [serviceUnavailable, setServiceUnavailable] = useState(false);
-  const [selectedSpecies, setSelectedSpecies] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [loadError, setLoadError] = useState(false);
+  const [selectedSpecies, setSelectedSpecies] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    fetchDashboardData();
-    fetchAnimals();
-    fetchHealthAlerts();
-  }, [selectedSpecies, selectedStatus]);
+  const [addOpen, setAddOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<AnimalFormState>(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await apiFetch('/api/livestock-dashboard');
-      if (!response.ok) {
-        setServiceUnavailable(true);
-        setDashboardData(null);
-        return;
-      }
-      const data = await response.json();
-      if (data.success && data.provenance?.verified === true) {
-        setDashboardData(data.data);
+      const data = await response.json().catch(() => null);
+      if (response.ok && data?.success && data.data) {
+        setDashboardData(data.data as DashboardData);
       } else {
-        setServiceUnavailable(true);
         setDashboardData(null);
       }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setServiceUnavailable(true);
+    } catch {
       setDashboardData(null);
     }
-  };
+  }, []);
 
-  const fetchAnimals = async () => {
+  const fetchAnimals = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (selectedSpecies) params.append('species', selectedSpecies);
-      if (selectedStatus) params.append('status', selectedStatus);
-      
-      const response = await apiFetch(`/api/animals?${params}`);
-      if (!response.ok) {
-        setServiceUnavailable(true);
-        setAnimals([]);
-        return;
-      }
-      const data = await response.json();
-      if (data.success && data.provenance?.verified === true) {
-        setAnimals(data.data);
+      if (selectedSpecies && selectedSpecies !== 'all') params.append('species', selectedSpecies);
+      if (selectedStatus && selectedStatus !== 'all') params.append('healthStatus', selectedStatus);
+      const response = await apiFetch(`/api/animals?${params.toString()}`);
+      const data = await response.json().catch(() => null);
+      if (response.ok && data?.success) {
+        setAnimals(asArray<Animal>(data.data));
+        setLoadError(false);
       } else {
-        setServiceUnavailable(true);
         setAnimals([]);
+        setLoadError(true);
       }
-    } catch (error) {
-      console.error('Error fetching animals:', error);
-      setServiceUnavailable(true);
+    } catch {
       setAnimals([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSpecies, selectedStatus]);
 
-  const fetchHealthAlerts = async () => {
+  const fetchHealthAlerts = useCallback(async () => {
     try {
       const response = await apiFetch('/api/health-alerts');
-      if (!response.ok) {
-        setServiceUnavailable(true);
-        setHealthAlerts([]);
-        return;
-      }
-      const data = await response.json();
-      if (data.success && data.provenance?.verified === true) {
-        setHealthAlerts(data.data);
+      const data = await response.json().catch(() => null);
+      if (response.ok && data?.success) {
+        setHealthAlerts(asArray<HealthAlert>(data.data));
       } else {
-        setServiceUnavailable(true);
         setHealthAlerts([]);
       }
-    } catch (error) {
-      console.error('Error fetching health alerts:', error);
-      setServiceUnavailable(true);
+    } catch {
       setHealthAlerts([]);
     }
+  }, []);
+
+  useEffect(() => {
+    void fetchDashboardData();
+    void fetchAnimals();
+    void fetchHealthAlerts();
+  }, [fetchDashboardData, fetchAnimals, fetchHealthAlerts]);
+
+  const reloadAll = () => {
+    void fetchDashboardData();
+    void fetchAnimals();
+    void fetchHealthAlerts();
   };
 
-  const getSpeciesIcon = (species: string) => {
-    const icons = {
-      cattle: '🐄',
-      sheep: '🐑',
-      goat: '🐐',
-      chicken: '🐔',
-      turkey: '🦃',
-      duck: '🦆'
-    };
-    return icons[species as keyof typeof icons] || '🐾';
-  };
-
-  const getSpeciesLabel = (species: string) => {
-    const labels = {
-      cattle: 'أبقار',
-      sheep: 'أغنام',
-      goat: 'ماعز',
-      chicken: 'دجاج',
-      turkey: 'ديك رومي',
-      duck: 'بط'
-    };
-    return labels[species as keyof typeof labels] || species;
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      healthy: 'bg-green-100 text-green-800',
-      sick: 'bg-red-100 text-red-800',
-      pregnant: 'bg-purple-100 text-purple-800',
-      lactating: 'bg-blue-100 text-blue-800',
-      dry: 'bg-gray-100 text-gray-800',
-      quarantine: 'bg-yellow-100 text-yellow-800'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      healthy: 'صحي',
-      sick: 'مريض',
-      pregnant: 'حامل',
-      lactating: 'مرضع',
-      dry: 'جاف',
-      quarantine: 'حجر صحي'
-    };
-    return labels[status as keyof typeof labels] || status;
-  };
-
-  const getSeverityColor = (severity: string) => {
-    const colors = {
-      low: 'text-green-600',
-      medium: 'text-yellow-600',
-      high: 'text-orange-600',
-      critical: 'text-red-600'
-    };
-    return colors[severity as keyof typeof colors] || 'text-gray-600';
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical': return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      case 'high': return <AlertTriangle className="h-4 w-4 text-orange-600" />;
-      case 'medium': return <Eye className="h-4 w-4 text-yellow-600" />;
-      case 'low': return <CheckCircle className="h-4 w-4 text-green-600" />;
-      default: return <Activity className="h-4 w-4 text-gray-600" />;
+  const createAnimal = async () => {
+    if (!form.earTag.trim()) {
+      setFormError('رقم العلامة مطلوب.');
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    try {
+      const response = await apiFetch('/api/livestock-management/animals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          earTag: form.earTag.trim(),
+          species: form.species,
+          gender: form.gender,
+          breed: form.breed.trim(),
+          birthDate: form.birthDate || null,
+          weight: form.weight ? Number(form.weight) : null,
+          healthStatus: form.healthStatus,
+          purpose: form.purpose,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        if (data?.code === 'EAR_TAG_ALREADY_EXISTS') {
+          setFormError('رقم العلامة مستعمل مسبقاً.');
+        } else {
+          setFormError('تعذّر حفظ الحيوان. تحقق من البيانات وحاول مجدداً.');
+        }
+        return;
+      }
+      setAddOpen(false);
+      setForm(emptyForm);
+      reloadAll();
+    } catch {
+      setFormError('تعذّر الاتصال بالخادم. لم يُحفظ أي شيء.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const calculateAge = (birthDate: string) => {
-    const birth = new Date(birthDate);
-    const now = new Date();
-    const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-    
-    if (months < 12) {
-      return `${months} شهر`;
-    } else {
-      const years = Math.floor(months / 12);
-      const remainingMonths = months % 12;
-      return remainingMonths > 0 ? `${years} سنة و ${remainingMonths} شهر` : `${years} سنة`;
+  const resolveAlert = async (alert: HealthAlert) => {
+    // Alerts derived from an animal's health status carry a synthetic id and
+    // have no resolvable row; only real health-event alerts can be resolved.
+    if (!UUID_RE.test(alert.id)) return;
+    setResolvingId(alert.id);
+    try {
+      const response = await apiFetch(`/api/livestock-management/health-events/${alert.id}/resolve`, {
+        method: 'PATCH',
+      });
+      const data = await response.json().catch(() => null);
+      if (response.ok && data?.success) {
+        void fetchHealthAlerts();
+        void fetchDashboardData();
+      }
+    } finally {
+      setResolvingId(null);
     }
   };
 
-  if (serviceUnavailable) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto" dir="rtl">
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            بيانات الثروة الحيوانية غير متاحة حالياً: لم يتم ربط مصدر بيانات موثّق ومخزّن للمزرعة.
-            لم نعرض أعداد حيوانات أو مؤشرات صحة أو إنتاج أو تنبيهات افتراضية.
-            أعد المحاولة بعد ربط قاعدة البيانات والتحقق من صلاحيات المزرعة.
-          </AlertDescription>
-        </Alert>
-        <Button variant="outline" onClick={() => {
-          setServiceUnavailable(false);
-          setLoading(true);
-          void fetchDashboardData();
-          void fetchAnimals();
-          void fetchHealthAlerts();
-        }} className="mt-4 gap-2">
-          <RefreshCw className="h-4 w-4" />
-          إعادة المحاولة
-        </Button>
-      </div>
-    );
-  }
+  const healthyCount = animals.filter(
+    (a) => a.healthStatus === 'excellent' || a.healthStatus === 'good',
+  ).length;
+  const sickCount = animals.filter((a) => a.healthStatus === 'sick' || a.healthStatus === 'poor').length;
 
-  if (loading && !dashboardData) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const speciesDistribution = Object.entries(dashboardData?.bySpecies ?? {}).map(([species, count]) => ({
+    name: labelFor(SPECIES, species),
+    value: count,
+  }));
+  const healthDistribution = Object.entries(dashboardData?.byHealthStatus ?? {}).map(([status, count]) => ({
+    name: labelFor(HEALTH_STATUSES, status),
+    value: count,
+  }));
+  const pieColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899', '#64748b'];
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
@@ -313,154 +306,123 @@ const AdvancedLivestockDashboard: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">لوحة الثروة الحيوانية المتقدمة</h1>
-          <p className="text-gray-600">مراقبة صحية ذكية وتحليلات شاملة للثروة الحيوانية</p>
+          <p className="text-gray-600">
+            مؤشرات وتحليلات مبنية فقط على سجلاتك المخزّنة. لا تُعرض أي أرقام افتراضية.
+          </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3">
           <Select value={selectedSpecies} onValueChange={setSelectedSpecies}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="جميع الأنواع" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الأنواع</SelectItem>
-              <SelectItem value="cattle">أبقار</SelectItem>
-              <SelectItem value="sheep">أغنام</SelectItem>
-              <SelectItem value="goat">ماعز</SelectItem>
-              <SelectItem value="chicken">دجاج</SelectItem>
+              {SPECIES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="جميع الحالات" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الحالات</SelectItem>
-              <SelectItem value="healthy">صحي</SelectItem>
-              <SelectItem value="sick">مريض</SelectItem>
-              <SelectItem value="pregnant">حامل</SelectItem>
-              <SelectItem value="lactating">مرضع</SelectItem>
+              {HEALTH_STATUSES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
-          <Button variant="outline" onClick={fetchDashboardData} className="gap-2">
+          <Button variant="outline" onClick={reloadAll} className="gap-2">
             <RefreshCw className="h-4 w-4" />
             تحديث
           </Button>
 
-          <Button className="gap-2">
+          <Button onClick={() => setAddOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             إضافة حيوان
           </Button>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      {dashboardData && (
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الحيوانات</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {dashboardData.summary.totalAnimals}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">حيوانات صحية</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {dashboardData.summary.healthyAnimals}
-              </div>
-              <p className="text-xs text-gray-600 mt-1">
-                {dashboardData.summary.totalAnimals > 0 ? 
-                  ((dashboardData.summary.healthyAnimals / dashboardData.summary.totalAnimals) * 100).toFixed(1) : 0
-                }% من المجموع
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">حيوانات مريضة</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {dashboardData.summary.sickAnimals}
-              </div>
-              <p className="text-xs text-gray-600 mt-1">
-                تحتاج متابعة فورية
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">حيوانات حامل</CardTitle>
-              <Heart className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {dashboardData.summary.pregnantAnimals}
-              </div>
-              <p className="text-xs text-gray-600 mt-1">
-                تحتاج عناية خاصة
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">متوسط الصحة</CardTitle>
-              <Activity className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {dashboardData.summary.avgHealthScore}%
-              </div>
-              <Progress value={dashboardData.summary.avgHealthScore} className="mt-2" />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الإنتاج الكلي</CardTitle>
-              <TrendingUp className="h-4 w-4 text-teal-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-teal-600">
-                {dashboardData.summary.totalProduction}
-              </div>
-              <p className="text-xs text-gray-600 mt-1">
-                لتر/كيلو هذا الشهر
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+      {loadError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            تعذّر تحميل سجلات الثروة الحيوانية. تأكد من تسجيل الدخول ومن تطبيق
+            database/livestock-persistence.sql في قاعدة البيانات.
+          </AlertDescription>
+        </Alert>
       )}
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">إجمالي الحيوانات</CardTitle>
+            <Users className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{dashboardData?.totalAnimals ?? animals.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">حيوانات سليمة</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{healthyCount}</div>
+            <p className="text-xs text-gray-600 mt-1">
+              {animals.length > 0 ? ((healthyCount / animals.length) * 100).toFixed(1) : 0}% من المعروض
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">تحتاج متابعة</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{sickCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">القيمة الإجمالية</CardTitle>
+            <DollarSign className="h-4 w-4 text-teal-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-teal-600">
+              {(dashboardData?.totalValue ?? 0).toLocaleString()} {dashboardData?.currency ?? 'TND'}
+            </div>
+            {(dashboardData?.feedItemsLowStock ?? 0) > 0 && (
+              <p className="text-xs text-orange-600 mt-1">
+                {dashboardData?.feedItemsLowStock} مادة علف تحت حد إعادة الطلب
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
           <TabsTrigger value="animals">الحيوانات</TabsTrigger>
           <TabsTrigger value="alerts">التنبيهات</TabsTrigger>
-          <TabsTrigger value="production">الإنتاج</TabsTrigger>
           <TabsTrigger value="analytics">التحليلات</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Species Distribution */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -469,75 +431,46 @@ const AdvancedLivestockDashboard: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {dashboardData && (
+                {speciesDistribution.length > 0 ? (
                   <div className="space-y-4">
-                    {Object.entries(dashboardData.speciesDistribution).map(([species, count]) => (
-                      <div key={species} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{getSpeciesIcon(species)}</span>
-                          <span className="font-medium">{getSpeciesLabel(species)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-lg">{count}</span>
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-500 h-2 rounded-full"
-                              style={{ 
-                                width: `${(count / dashboardData.summary.totalAnimals) * 100}%` 
-                              }}
-                            ></div>
-                          </div>
-                        </div>
+                    {speciesDistribution.map((entry) => (
+                      <div key={entry.name} className="flex items-center justify-between">
+                        <span className="font-medium">{entry.name}</span>
+                        <span className="font-bold text-lg">{entry.value}</span>
                       </div>
                     ))}
                   </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">لا توجد حيوانات مسجّلة بعد.</p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Top Producers */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  أفضل المنتجين
+                  <Activity className="h-5 w-5" />
+                  توزيع الحالة الصحية
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {dashboardData && (
-                  <div className="space-y-3">
-                    {dashboardData.topProducers.map((animal, index) => {
-                      const totalProduction = animal.productionHistory.reduce(
-                        (sum, record) => sum + record.quantity, 0
-                      );
-                      
-                      return (
-                        <div key={animal.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-800 font-bold">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-semibold">{animal.earTag}</p>
-                              <p className="text-sm text-gray-600">
-                                {getSpeciesLabel(animal.species)} - {animal.breed}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-600">{totalProduction}</p>
-                            <p className="text-xs text-gray-500">لتر/كيلو</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                {healthDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={healthDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">لا توجد بيانات صحية بعد.</p>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Recent Alerts */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -546,26 +479,21 @@ const AdvancedLivestockDashboard: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {dashboardData && dashboardData.recentAlerts.length > 0 ? (
+              {healthAlerts.length > 0 ? (
                 <div className="space-y-3">
-                  {dashboardData.recentAlerts.map((alert) => (
+                  {healthAlerts.slice(0, 5).map((alert) => (
                     <Alert key={alert.id}>
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
-                          {getSeverityIcon(alert.severity)}
+                          <AlertTriangle className="h-4 w-4 mt-0.5 text-orange-600" />
                           <div>
                             <p className="font-medium">{alert.message}</p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              الثقة في التشخيص: {(alert.aiConfidence * 100).toFixed(0)}%
-                            </p>
-                            <div className="mt-2">
-                              {alert.recommendations.slice(0, 2).map((rec, idx) => (
-                                <p key={`${alert.id}-rec-${idx}`} className="text-xs text-gray-500">• {rec}</p>
-                              ))}
-                            </div>
+                            {alert.earTag && (
+                              <p className="text-sm text-gray-600 mt-1">الحيوان: {alert.earTag}</p>
+                            )}
                           </div>
                         </div>
-                        <Badge className={getSeverityColor(alert.severity)}>
+                        <Badge className={alert.severity === 'critical' || alert.severity === 'high' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
                           {alert.severity === 'critical' ? 'حرج' :
                            alert.severity === 'high' ? 'عالي' :
                            alert.severity === 'medium' ? 'متوسط' : 'منخفض'}
@@ -575,9 +503,7 @@ const AdvancedLivestockDashboard: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
-                  لا توجد تنبيهات حالياً 🎉
-                </p>
+                <p className="text-gray-500 text-center py-4">لا توجد تنبيهات صحية حالياً.</p>
               )}
             </CardContent>
           </Card>
@@ -585,188 +511,128 @@ const AdvancedLivestockDashboard: React.FC = () => {
 
         {/* Animals Tab */}
         <TabsContent value="animals" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {animals.map((animal) => {
-              const latestHealth = animal.healthHistory[0];
-              const age = calculateAge(animal.birthDate);
-              
-              return (
-                <Card key={animal.id} className="border-2 hover:shadow-lg transition-shadow">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-56 bg-gray-100 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : animals.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-10">
+                <Heart className="mx-auto h-12 w-12 mb-4 text-gray-300" />
+                <p className="text-gray-500">
+                  لا توجد حيوانات مطابقة. أضف حيواناً أو غيّر عوامل التصفية.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {animals.map((animal) => (
+                <Card key={animal.id}>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{getSpeciesIcon(animal.species)}</span>
-                        <div>
-                          <CardTitle className="text-lg">{animal.earTag}</CardTitle>
-                          {animal.name && (
-                            <p className="text-sm text-gray-600">{animal.name}</p>
-                          )}
-                        </div>
-                      </div>
-                      <Badge className={getStatusColor(animal.status)}>
-                        {getStatusLabel(animal.status)}
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <span>{SPECIES_ICON[animal.species] ?? '🐾'}</span>
+                        {animal.earTag}
+                      </CardTitle>
+                      <Badge className={HEALTH_BADGE[animal.healthStatus] ?? 'bg-gray-100 text-gray-800'}>
+                        {labelFor(HEALTH_STATUSES, animal.healthStatus)}
                       </Badge>
                     </div>
                   </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">النوع</p>
-                        <p className="font-medium">{getSpeciesLabel(animal.species)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">السلالة</p>
-                        <p className="font-medium">{animal.breed}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">العمر</p>
-                        <p className="font-medium">{age}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">الوزن</p>
-                        <p className="font-medium">{animal.weight} كغ</p>
-                      </div>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">النوع</span>
+                      <span className="font-medium">{labelFor(SPECIES, animal.species)}</span>
                     </div>
-
-                    {latestHealth && (
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600 mb-1">آخر فحص صحي</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">
-                            {new Date(latestHealth.date).toLocaleDateString('ar-TN')}
-                          </span>
-                          {latestHealth.temperature && (
-                            <div className="flex items-center gap-1">
-                              <Thermometer className="h-3 w-3 text-red-500" />
-                              <span className="text-sm">{latestHealth.temperature}°م</span>
-                            </div>
-                          )}
-                        </div>
-                        {latestHealth.aiRiskScore !== undefined && (
-                          <div className="mt-2">
-                            <p className="text-xs text-gray-600 mb-1">درجة المخاطر الصحية</p>
-                            <Progress value={100 - latestHealth.aiRiskScore} className="h-2" />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Eye className="h-4 w-4 ml-1" />
-                        تفاصيل
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Settings className="h-4 w-4 ml-1" />
-                        إدارة
-                      </Button>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">السلالة</span>
+                      <span className="font-medium">{animal.breed || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">الجنس</span>
+                      <span className="font-medium">{animal.gender === 'male' ? 'ذكر' : 'أنثى'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">العمر</span>
+                      <span className="font-medium">{animal.age != null ? `${animal.age} سنة` : '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">الوزن</span>
+                      <span className="font-medium">{animal.weight != null ? `${animal.weight} كغ` : '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">آخر فحص</span>
+                      <span className="font-medium">
+                        {animal.lastHealthCheck
+                          ? new Date(animal.lastHealthCheck).toLocaleDateString('ar-TN')
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">القيمة</span>
+                      <span className="font-medium">
+                        {animal.currentValue != null
+                          ? `${animal.currentValue.toLocaleString()} ${animal.currency}`
+                          : '—'}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Alerts Tab */}
         <TabsContent value="alerts" className="space-y-6">
-          <div className="space-y-4">
-            {healthAlerts.length > 0 ? (
-              healthAlerts.map((alert) => (
-                <Card key={alert.id} className="border-r-4 border-r-orange-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        {getSeverityIcon(alert.severity)}
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{alert.message}</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            الحيوان: {animals.find(a => a.id === alert.animalId)?.earTag || alert.animalId}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            الثقة في التشخيص: {(alert.aiConfidence * 100).toFixed(0)}%
-                          </p>
-                          
-                          <div className="mt-3">
-                            <p className="text-sm font-medium text-gray-700 mb-2">التوصيات:</p>
-                            <ul className="space-y-1">
-                              {alert.recommendations.map((rec, idx) => (
-                                <li key={`${alert.id}-full-rec-${idx}`} className="text-sm text-gray-600">• {rec}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Badge className={getSeverityColor(alert.severity)}>
-                          {alert.severity === 'critical' ? 'حرج' :
-                           alert.severity === 'high' ? 'عالي' :
-                           alert.severity === 'medium' ? 'متوسط' : 'منخفض'}
-                        </Badge>
-                        {!alert.isResolved && (
-                          <Button variant="outline" size="sm">
-                            تم الحل
-                          </Button>
+          {healthAlerts.length > 0 ? (
+            healthAlerts.map((alert) => (
+              <Card key={alert.id} className="border-r-4 border-r-orange-500">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 text-orange-600" />
+                      <div>
+                        <h3 className="font-semibold">{alert.message}</h3>
+                        {alert.earTag && (
+                          <p className="text-sm text-gray-600 mt-1">الحيوان: {alert.earTag}</p>
                         )}
+                        <p className="text-sm text-gray-600">
+                          {new Date(alert.dateCreated).toLocaleDateString('ar-TN')}
+                        </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <CheckCircle className="mx-auto h-12 w-12 mb-4 text-green-500" />
-                  <p className="text-gray-500">لا توجد تنبيهات صحية حالياً</p>
-                  <p className="text-sm text-gray-400">جميع الحيوانات في حالة جيدة!</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Production Tab */}
-        <TabsContent value="production" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {animals.filter(animal => animal.productionHistory.length > 0).map((animal) => (
-              <Card key={animal.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">{getSpeciesIcon(animal.species)}</span>
-                    {animal.earTag} - {animal.name || 'غير محدد'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {animal.productionHistory.slice(0, 5).map((record) => (
-                      <div key={record.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div>
-                          <p className="font-medium">
-                            {record.type === 'milk' ? 'حليب' : 
-                             record.type === 'eggs' ? 'بيض' : 
-                             record.type === 'wool' ? 'صوف' : 'لحم'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(record.date).toLocaleDateString('ar-TN')}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold">{record.quantity} {record.unit}</p>
-                          <Badge className={record.quality === 'A' ? 'bg-green-100 text-green-800' : 
-                                          record.quality === 'B' ? 'bg-yellow-100 text-yellow-800' : 
-                                          'bg-red-100 text-red-800'}>
-                            {record.quality}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-2">
+                      <Badge className={alert.severity === 'critical' || alert.severity === 'high' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
+                        {alert.severity === 'critical' ? 'حرج' :
+                         alert.severity === 'high' ? 'عالي' :
+                         alert.severity === 'medium' ? 'متوسط' : 'منخفض'}
+                      </Badge>
+                      {!alert.resolved && UUID_RE.test(alert.id) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={resolvingId === alert.id}
+                          onClick={() => void resolveAlert(alert)}
+                        >
+                          {resolvingId === alert.id ? 'جارٍ الحل…' : 'تم الحل'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            ))
+          ) : (
+            <Card>
+              <CardContent className="text-center py-8">
+                <CheckCircle className="mx-auto h-12 w-12 mb-4 text-green-500" />
+                <p className="text-gray-500">لا توجد تنبيهات صحية حالياً</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Analytics Tab */}
@@ -774,28 +640,171 @@ const AdvancedLivestockDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>تحليل الأداء الصحي</CardTitle>
+                <CardTitle>توزيع الأنواع</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-gray-500 py-8">
-                  قريباً - تحليلات متقدمة للأداء الصحي
-                </p>
+                {speciesDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RePieChart>
+                      <Pie
+                        data={speciesDistribution}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={90}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {speciesDistribution.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-center text-gray-500 py-8">لا توجد بيانات بعد.</p>
+                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>اتجاهات الإنتاج</CardTitle>
+                <CardTitle>توزيع الحالة الصحية</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-gray-500 py-8">
-                  قريباً - رسوم بيانية لاتجاهات الإنتاج
-                </p>
+                {healthDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={healthDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#10b981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-center text-gray-500 py-8">لا توجد بيانات بعد.</p>
+                )}
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>اتجاهات الإنتاج</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center text-gray-500 py-8">
+                تتبّع الإنتاج غير مربوط بمصدر بيانات موثّق بعد. لن نعرض أرقام إنتاج افتراضية.
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add animal dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة حيوان جديد</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="earTag">رقم العلامة *</Label>
+              <Input
+                id="earTag"
+                value={form.earTag}
+                onChange={(e) => setForm((p) => ({ ...p, earTag: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>النوع</Label>
+                <Select value={form.species} onValueChange={(v) => setForm((p) => ({ ...p, species: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SPECIES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>الجنس</Label>
+                <Select value={form.gender} onValueChange={(v) => setForm((p) => ({ ...p, gender: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="female">أنثى</SelectItem>
+                    <SelectItem value="male">ذكر</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="breed">السلالة</Label>
+                <Input
+                  id="breed"
+                  value={form.breed}
+                  onChange={(e) => setForm((p) => ({ ...p, breed: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="birthDate">تاريخ الميلاد</Label>
+                <Input
+                  id="birthDate"
+                  type="date"
+                  value={form.birthDate}
+                  onChange={(e) => setForm((p) => ({ ...p, birthDate: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="weight">الوزن (كغ)</Label>
+                <Input
+                  id="weight"
+                  type="number"
+                  min="0"
+                  value={form.weight}
+                  onChange={(e) => setForm((p) => ({ ...p, weight: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>الحالة الصحية</Label>
+                <Select value={form.healthStatus} onValueChange={(v) => setForm((p) => ({ ...p, healthStatus: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {HEALTH_STATUSES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>الغرض</Label>
+              <Select value={form.purpose} onValueChange={(v) => setForm((p) => ({ ...p, purpose: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PURPOSES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {formError && <p className="text-sm text-red-600">{formError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={saving}>
+              إلغاء
+            </Button>
+            <Button onClick={() => void createAnimal()} disabled={saving}>
+              {saving ? 'جارٍ الحفظ…' : 'حفظ'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -7,6 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Heart, 
   Calendar as CalendarIcon, 
@@ -98,6 +103,21 @@ export default function AnimalHealthMonitoring() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedAnimal, setSelectedAnimal] = useState<string>('all');
 
+  const { toast } = useToast();
+  const [eventOpen, setEventOpen] = useState(false);
+  const [eventSaving, setEventSaving] = useState(false);
+  const [eventError, setEventError] = useState<string | null>(null);
+  const [eventForm, setEventForm] = useState({
+    animalId: '',
+    eventType: 'checkup',
+    severity: 'low',
+    eventDate: new Date().toISOString().slice(0, 10),
+    diagnosis: '',
+    treatment: '',
+    veterinarian: '',
+  });
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchHealthData();
   }, []);
@@ -125,6 +145,69 @@ export default function AnimalHealthMonitoring() {
       setLoadError(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openEventDialog = (animalId?: string, eventType = 'checkup') => {
+    setEventForm({
+      animalId: animalId ?? (animals[0]?.id ?? ''),
+      eventType,
+      severity: 'low',
+      eventDate: new Date().toISOString().slice(0, 10),
+      diagnosis: '',
+      treatment: '',
+      veterinarian: '',
+    });
+    setEventError(null);
+    setEventOpen(true);
+  };
+
+  const submitHealthEvent = async () => {
+    if (!eventForm.animalId) {
+      setEventError('اختر الحيوان أولاً.');
+      return;
+    }
+    setEventSaving(true);
+    setEventError(null);
+    try {
+      const response = await apiFetch('/api/livestock-management/health-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventForm),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        setEventError('تعذّر حفظ الفحص. تحقّق من البيانات وحاول مجدداً.');
+        return;
+      }
+      setEventOpen(false);
+      toast({ title: 'تم حفظ الفحص الصحي' });
+      await fetchHealthData();
+    } catch {
+      setEventError('تعذّر الاتصال بالخادم. لم يُحفظ أي شيء.');
+    } finally {
+      setEventSaving(false);
+    }
+  };
+
+  const resolveAlert = async (alert: HealthAlert) => {
+    // Only alerts backed by a real health-event row (UUID id) can be resolved;
+    // status-derived alerts have no row to update.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(alert.id)) return;
+    setResolvingId(alert.id);
+    try {
+      const response = await apiFetch(`/api/livestock-management/health-events/${alert.id}/resolve`, {
+        method: 'PATCH',
+      });
+      const data = await response.json().catch(() => null);
+      if (response.ok && data?.success) {
+        toast({ title: 'تم وضع علامة حل على التنبيه' });
+        await fetchHealthData();
+      } else {
+        toast({ title: 'تعذّر تحديث التنبيه', variant: 'destructive' });
+      }
+    } finally {
+      setResolvingId(null);
     }
   };
 
@@ -250,7 +333,11 @@ export default function AnimalHealthMonitoring() {
           <h1 className="text-3xl font-bold text-primary mb-2">مراقبة صحة الحيوانات</h1>
           <p className="text-muted-foreground">نظام متكامل للمراقبة الصحية والتطعيمات والسجلات الطبية</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={() => openEventDialog()}
+          disabled={animals.length === 0}
+        >
           <Plus className="w-4 h-4 ml-2" />
           إضافة فحص جديد
         </Button>
@@ -331,7 +418,14 @@ export default function AnimalHealthMonitoring() {
                        alert.severity === 'high' ? 'عالي' :
                        alert.severity === 'medium' ? 'متوسط' : 'منخفض'}
                     </Badge>
-                    <Button variant="outline" size="sm">حل</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={resolvingId === alert.id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(alert.id)}
+                      onClick={() => void resolveAlert(alert)}
+                    >
+                      {resolvingId === alert.id ? 'جارٍ الحل…' : 'حل'}
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -480,7 +574,11 @@ export default function AnimalHealthMonitoring() {
                         <Badge variant={daysUntilDue <= 2 ? 'destructive' : daysUntilDue <= 7 ? 'secondary' : 'outline'}>
                           {daysUntilDue} يوم
                         </Badge>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEventDialog(item.animal.id, 'vaccination')}
+                        >
                           <Syringe className="w-4 h-4 ml-1" />
                           تطعيم
                         </Button>
@@ -533,6 +631,109 @@ export default function AnimalHealthMonitoring() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={eventOpen} onOpenChange={setEventOpen}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تسجيل فحص صحي</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>الحيوان</Label>
+              <Select
+                value={eventForm.animalId}
+                onValueChange={(v) => setEventForm((p) => ({ ...p, animalId: v }))}
+              >
+                <SelectTrigger><SelectValue placeholder="اختر الحيوان" /></SelectTrigger>
+                <SelectContent>
+                  {animals.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.earTag}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>نوع الفحص</Label>
+                <Select
+                  value={eventForm.eventType}
+                  onValueChange={(v) => setEventForm((p) => ({ ...p, eventType: v }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="checkup">فحص دوري</SelectItem>
+                    <SelectItem value="vaccination">تطعيم</SelectItem>
+                    <SelectItem value="treatment">علاج</SelectItem>
+                    <SelectItem value="illness">مرض</SelectItem>
+                    <SelectItem value="injury">إصابة</SelectItem>
+                    <SelectItem value="deworming">مكافحة الديدان</SelectItem>
+                    <SelectItem value="other">أخرى</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>الخطورة</Label>
+                <Select
+                  value={eventForm.severity}
+                  onValueChange={(v) => setEventForm((p) => ({ ...p, severity: v }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">منخفضة</SelectItem>
+                    <SelectItem value="medium">متوسطة</SelectItem>
+                    <SelectItem value="high">عالية</SelectItem>
+                    <SelectItem value="critical">حرجة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="eventDate">التاريخ</Label>
+                <Input
+                  id="eventDate"
+                  type="date"
+                  value={eventForm.eventDate}
+                  onChange={(e) => setEventForm((p) => ({ ...p, eventDate: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="vet">الطبيب البيطري</Label>
+                <Input
+                  id="vet"
+                  value={eventForm.veterinarian}
+                  onChange={(e) => setEventForm((p) => ({ ...p, veterinarian: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="diagnosis">التشخيص</Label>
+              <Textarea
+                id="diagnosis"
+                value={eventForm.diagnosis}
+                onChange={(e) => setEventForm((p) => ({ ...p, diagnosis: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="treatment">العلاج</Label>
+              <Textarea
+                id="treatment"
+                value={eventForm.treatment}
+                onChange={(e) => setEventForm((p) => ({ ...p, treatment: e.target.value }))}
+              />
+            </div>
+            {eventError && <p className="text-sm text-red-600">{eventError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEventOpen(false)} disabled={eventSaving}>
+              إلغاء
+            </Button>
+            <Button onClick={() => void submitHealthEvent()} disabled={eventSaving}>
+              {eventSaving ? 'جارٍ الحفظ…' : 'حفظ'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

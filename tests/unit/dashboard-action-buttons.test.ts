@@ -63,3 +63,26 @@ describe("role dashboards have no handler-less action buttons", () => {
     });
   }
 });
+
+/**
+ * The same guarantee applies to the operational pages reachable from the
+ * sidebar. A control that renders but does nothing reads as a broken product;
+ * these pages either wire the click to a real request or disable it with an
+ * honest reason in `title`. Anything else fails this guard.
+ */
+const REACHABLE_PAGES = [
+  "AdvancedLivestockDashboard.tsx",
+  "AnimalHealthMonitoring.tsx",
+  "IntelligentBreedingManager.tsx",
+  "CropRotationPlanner.tsx",
+  "EffectivenessReports.tsx",
+  "LivestockDashboard.tsx",
+];
+
+describe("sidebar-reachable pages have no handler-less action buttons", () => {
+  for (const file of REACHABLE_PAGES) {
+    test(`${file} wires or honestly disables every action button`, () => {
+      expect(deadButtons(read(file))).toEqual([]);
+    });
+  }
+});
