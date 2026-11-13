@@ -569,7 +569,7 @@ const EnhancedLayout: React.FC<EnhancedLayoutProps> = ({ children }) => {
                           {user?.name || (isArabic ? "المستخدم" : "User")}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {user?.email || "user@agrogrowth.com"}
+                          {user?.email || "—"}
                         </p>
                       </div>
                     </DropdownMenuLabel>

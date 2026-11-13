@@ -1877,3 +1877,16 @@ and covered by regression tests.
 
 **Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npm run build` 0 ·
 `npx jest` → **1032 passed**, 3 skipped, 1035 total.
+
+### Session 13 (cont.) — remaining fabricated fallbacks removed
+
+- **`SmartAdvisor`** (page whose data route is retired with 410) still rendered
+  an invented farm context — Riyadh location, 100 ha size, sandy soil, drip
+  irrigation — plus a hard-coded 3-item weather-alert list. All replaced with
+  empty placeholders; nothing is invented for an unavailable source.
+- **`EnhancedLayout`** account menu fell back to a fabricated email
+  `user@agrogrowth.com`; now a neutral `—`.
+- Regression tests added for both.
+
+**Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npx jest` →
+**1040 passed**, 3 skipped, 1043 total.

@@ -240,3 +240,37 @@ describe("Index reads the real farm/weather contract without defaults", () => {
     expect(src).toContain("current.windSpeed");
   });
 });
+
+/**
+ * Regression: `SmartAdvisor` (a page whose data route is retired and returns
+ * 410) still rendered invented farm context — a Riyadh location, a 100 ha farm,
+ * sandy soil, drip irrigation — and a hard-coded 3-item weather-alert list.
+ * It must show an empty placeholder instead of plausible-looking values.
+ */
+describe("SmartAdvisor does not fabricate farm context", () => {
+  const src = read("client/pages/SmartAdvisor.tsx");
+
+  test("has no invented location/size/soil/irrigation defaults", () => {
+    expect(src).not.toContain('الرياض');
+    expect(src).not.toContain("farm_size || 100");
+    expect(src).not.toContain("soil_type || 'sandy'");
+    expect(src).not.toContain("irrigation_system || 'drip'");
+  });
+
+  test("does not render a hard-coded alert list", () => {
+    expect(src).not.toContain('موجة حارة متوقعة الأسبوع القادم');
+  });
+});
+
+/**
+ * Regression: the account menu fell back to a made-up email
+ * ("user@agrogrowth.com") for an unauthenticated/unknown user. It must render
+ * a neutral placeholder rather than a fabricated identity.
+ */
+describe("EnhancedLayout does not fabricate an account email", () => {
+  const src = read("client/components/EnhancedLayout.tsx");
+
+  test("uses a neutral placeholder for a missing email", () => {
+    expect(src).not.toContain("user@agrogrowth.com");
+  });
+});

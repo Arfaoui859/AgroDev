@@ -961,15 +961,24 @@ export default function SmartAdvisor() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label>الموقع</Label>
-                    <Input value={decisionContext?.location || 'الرياض'} />
+                    <Input
+                      placeholder="—"
+                      value={decisionContext?.location ?? ''}
+                      readOnly
+                    />
                   </div>
                   <div>
                     <Label>مساحة المزرعة (هكتار)</Label>
-                    <Input type="number" value={decisionContext?.farm_size || 100} />
+                    <Input
+                      type="number"
+                      placeholder="—"
+                      value={decisionContext?.farm_size ?? ''}
+                      readOnly
+                    />
                   </div>
                   <div>
                     <Label>نوع التربة</Label>
-                    <Select value={decisionContext?.soil_type || 'sandy'}>
+                    <Select value={decisionContext?.soil_type ?? ''}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -983,7 +992,7 @@ export default function SmartAdvisor() {
                   </div>
                   <div>
                     <Label>نظام الري</Label>
-                    <Select value={decisionContext?.irrigation_system || 'drip'}>
+                    <Select value={decisionContext?.irrigation_system ?? ''}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
