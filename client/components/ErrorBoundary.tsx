@@ -17,6 +17,41 @@ class ErrorBoundary extends Component<Props, State> {
     this.state = { hasError: false };
   }
 
+  /**
+   * The boundary sits above the language provider, so it cannot use the
+   * context. It reads the persisted language (same key the provider writes)
+   * and defaults to Arabic, matching the platform's primary language.
+   */
+  private copy() {
+    let lang = "ar";
+    try {
+      lang = localStorage.getItem("agrogrowth.lang") || "ar";
+    } catch {
+      // localStorage unavailable (private mode / SSR): fall back to Arabic.
+    }
+    const isFr = lang === "fr";
+    const isEn = lang === "en";
+    return {
+      dir: isEn || isFr ? "ltr" : "rtl",
+      title: isFr
+        ? "Une erreur inattendue s'est produite"
+        : isEn
+          ? "An unexpected error occurred"
+          : "حدث خطأ غير متوقع",
+      body: isFr
+        ? "Cette page n'a pas pu s'afficher. Vous pouvez réessayer ou revenir à l'accueil. Vos données enregistrées n'ont pas été perdues."
+        : isEn
+          ? "This page could not be displayed. You can retry or go back home. Your saved data was not lost."
+          : "تعذّر عرض هذه الصفحة. يمكنك إعادة المحاولة أو العودة إلى الصفحة الرئيسية. لم يتم فقدان بياناتك المحفوظة.",
+      retry: isFr ? "Réessayer" : isEn ? "Retry" : "إعادة المحاولة",
+      home: isFr
+        ? "Retour à l'accueil"
+        : isEn
+          ? "Back to home"
+          : "العودة إلى الصفحة الرئيسية",
+    };
+  }
+
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
@@ -67,8 +102,9 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const t = this.copy();
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div dir={t.dir} className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
           <div className="max-w-md w-full">
             <div className="bg-white rounded-lg shadow-lg p-6 text-center">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -88,13 +124,10 @@ class ErrorBoundary extends Component<Props, State> {
               </div>
 
               <h1 className="text-xl font-bold text-gray-900 mb-2">
-                حدث خطأ غير متوقع
+                {t.title}
               </h1>
 
-              <p className="text-gray-600 mb-2">
-                تعذّر عرض هذه الصفحة. يمكنك إعادة المحاولة أو العودة إلى الصفحة
-                الرئيسية. لم يتم فقدان بياناتك المحفوظة.
-              </p>
+              <p className="text-gray-600 mb-2">{t.body}</p>
 
               {this.state.error?.message ? (
                 <p className="text-xs text-gray-400 mb-6 break-words">
@@ -109,13 +142,13 @@ class ErrorBoundary extends Component<Props, State> {
                   onClick={() => window.location.reload()}
                   className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
                 >
-                  إعادة المحاولة
+                  {t.retry}
                 </button>
                 <button
                   onClick={this.goHome}
                   className="w-full bg-white text-green-700 border border-green-600 py-2 px-4 rounded-md hover:bg-green-50 transition-colors"
                 >
-                  العودة إلى الصفحة الرئيسية
+                  {t.home}
                 </button>
               </div>
             </div>

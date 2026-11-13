@@ -25,6 +25,7 @@ const MarketDashboard = lazyWithRetry(() => import("../pages/MarketDashboard"));
 const EnhancedMarketDashboard = lazyWithRetry(() => import("../pages/EnhancedMarketDashboard"));
 const MarketIntelligence = lazyWithRetry(() => import("../pages/MarketIntelligence"));
 const TunisianAgriNews = lazyWithRetry(() => import("../pages/TunisianAgriNews"));
+const Legal = lazyWithRetry(() => import("../pages/Legal"));
 const PriceForecasts = lazyWithRetry(() => import("../pages/PriceForecasts"));
 const MarketAlerts = lazyWithRetry(() => import("../pages/MarketAlerts"));
 const FertilizerRecommendations = lazyWithRetry(() => import("../pages/FertilizerRecommendations"));
@@ -186,6 +187,8 @@ export default function AppRouter() {
           />
           <Route path="/market-intelligence" element={<MarketIntelligence />} />
           <Route path="/news" element={<TunisianAgriNews />} />
+          <Route path="/terms" element={<Legal />} />
+          <Route path="/privacy" element={<Legal />} />
           <Route path="/price-forecasts" element={<PriceForecasts />} />
           <Route path="/market-alerts" element={<MarketAlerts />} />
           <Route
