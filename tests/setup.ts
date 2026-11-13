@@ -44,6 +44,14 @@ const PROVIDER_ENV_KEYS = [
 
 if (!LIVE) {
   for (const key of PROVIDER_ENV_KEYS) delete process.env[key];
+
+  // Bound external weather calls in the default (non-live) run. Open-Meteo is
+  // a real network dependency; with the production budget (12s x 3 attempts) a
+  // blocked sandbox would exceed the 30s per-test limit and hang the suite.
+  // Capping it keeps the "real data or an explicit 5xx" assertions meaningful
+  // while letting the request fail fast and honestly.
+  process.env.WEATHER_FORECAST_TIMEOUT_MS = "3000";
+  process.env.WEATHER_FORECAST_RETRIES = "0";
 }
 
 // Global test setup

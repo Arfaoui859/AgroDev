@@ -194,7 +194,13 @@ export async function getWeatherFromOpenMeteo(
 
   const data = await fetchJson<OpenMeteoResponse>(
     `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
-    { provider: "Open-Meteo", timeoutMs: 12_000, retries: 2 },
+    {
+      provider: "Open-Meteo",
+      // Overridable so tests and constrained environments can cap the total
+      // budget; the default keeps the full retry window for production.
+      timeoutMs: Number(process.env.WEATHER_FORECAST_TIMEOUT_MS) || 12_000,
+      retries: Number(process.env.WEATHER_FORECAST_RETRIES ?? 2),
+    },
   );
 
   // A 200 with a missing/empty payload is not usable data. Fail as a

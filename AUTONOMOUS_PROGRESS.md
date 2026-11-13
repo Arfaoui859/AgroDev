@@ -1646,3 +1646,31 @@ real monitoring backed by the running code and database, plus regression tests.
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
 `npx jest` 979+ passed (see final run below).
+
+### Session 8 — dead-link repair, honest legal page, localized error boundary
+
+Audited every in-app navigation target against the router.
+
+- **Found and fixed two dead links (P0-ish UX).** `Login.tsx` and `Signup.tsx`
+  both link to `/terms` and `/privacy`, but neither route was declared, so both
+  fell through to the `*` NotFound page — the user saw a "not found" screen
+  from a login link. Added a real `client/pages/Legal.tsx` (trilingual ar/fr/en,
+  RTL-aware) and registered `/terms` + `/privacy` in `AppRouter.tsx`. The page
+  states only verifiable platform data practices (what is collected, where it
+  is stored, RLS isolation, cascade delete) and marks the counsel-reviewed legal
+  text as **pending** — no invented binding clauses.
+- **Localized the top-level `ErrorBoundary`.** It sits above the language
+  provider and was Arabic-only, so fr/en users got an Arabic error screen. It
+  now reads the persisted language (`agrogrowth.lang`) and renders ar/fr/en with
+  the correct direction. Behaviour is unchanged: no silent redirect, retry and
+  home actions preserved.
+- **New guard test `tests/unit/navigation-targets.test.ts`** asserts every
+  static in-app destination (`to=`, `navigate()`, `href=`) resolves to a declared
+  route, with an explicit regression check for `/terms` and `/privacy`.
+- **Verified (no change needed):** role→dashboard routing (`client/lib/roleDashboard.ts`)
+  sends each role to its own dashboard and returns `/` for unknown roles;
+  `ProtectedRoute` fails closed on unverified role; registration creates the
+  `public.users` profile through the trusted `auth.users` trigger and pins new
+  accounts to `farmer` (client role is ignored).
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0.

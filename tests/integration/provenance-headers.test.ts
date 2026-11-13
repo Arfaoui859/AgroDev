@@ -125,7 +125,11 @@ describe("🗂  Fixture-backed data is disabled", () => {
     if (res.status === 200) {
       expect(res.headers["x-data-provenance"]).not.toBe("simulated");
     }
-  });
+    // Any non-200 must be an honest provider failure, never fabricated weather.
+    if (res.status !== 200) {
+      expect([502, 503]).toContain(res.status);
+    }
+  }, 20_000);
 });
 
 describe("💧 Weather-irrigation serves real data or an explicit 503", () => {
