@@ -53,3 +53,26 @@ describe("professional dashboards fail safely when the data source is absent", (
     });
   }
 });
+
+/**
+ * The livestock screens read `{ success, data }` envelopes from
+ * `/api/livestock-management/*`. `listAnimals` returns an array on success, but
+ * the shape is only guaranteed by convention — a null `data` (e.g. a partially
+ * applied migration) must degrade to an empty list, not crash the `.filter()`
+ * that runs on the very next line.
+ */
+const LIST_ENVELOPE_PAGES = [
+  "client/pages/LivestockDashboard.tsx",
+  "client/pages/AnimalHealthMonitoring.tsx",
+  "client/pages/TreatmentRecommendations.tsx",
+];
+
+describe("list-envelope screens never store a null list", () => {
+  for (const file of LIST_ENVELOPE_PAGES) {
+    test(`${path.basename(file)} coerces envelope data through asArray`, () => {
+      const src = read(file);
+      expect(src).toContain("asArray");
+      expect(src).not.toMatch(/set[A-Z][A-Za-z]*\(\s*[A-Za-z]*[Dd]ata\.data\s*\)/);
+    });
+  }
+});

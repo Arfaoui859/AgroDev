@@ -56,6 +56,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { SimulatedDataNotice } from "@/components/SimulatedDataNotice";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 interface RevenueRecord {
   id: string;
@@ -413,6 +414,40 @@ const RevenueAnalysis: React.FC = () => {
     },
     {} as Record<string, number>,
   );
+
+  const exportRevenues = () => {
+    downloadCsv(
+      `سجلات_المبيعات_${new Date().toISOString().slice(0, 10)}.csv`,
+      toCsv(
+        [
+          "المحصول",
+          "الصنف",
+          "الكمية",
+          "الوحدة",
+          "سعر الوحدة (د.ت)",
+          "الإيراد الإجمالي (د.ت)",
+          "الإيراد الصافي (د.ت)",
+          "الجودة",
+          "تاريخ البيع",
+          "المشتري",
+          "السوق",
+        ],
+        filteredRevenues.map((revenue) => [
+          revenue.cropType,
+          revenue.varietyName,
+          revenue.quantitySold,
+          revenue.unit,
+          revenue.pricePerUnit,
+          revenue.totalRevenue,
+          revenue.netRevenue,
+          revenue.qualityGrade,
+          revenue.saleDate,
+          revenue.buyer,
+          revenue.marketLocation,
+        ]),
+      ),
+    );
+  };
 
   if (loading) {
     return (
@@ -899,7 +934,12 @@ const RevenueAnalysis: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>سجلات المبيعات</span>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportRevenues}
+              disabled={filteredRevenues.length === 0}
+            >
               <Download className="h-4 w-4 ml-2" />
               تصدير
             </Button>

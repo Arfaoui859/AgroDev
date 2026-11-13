@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/apiFetch';
+import { asArray } from '@/lib/dashboardData';
 import { useState, useEffect } from 'react';
 import { DataProvenanceBanner } from "@/components/DataProvenanceBanner";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,7 +121,7 @@ export default function LivestockDashboard() {
       const data = await response.json();
       
       if (data.success) {
-        setAnimals(data.data);
+        setAnimals(asArray<Animal>(data.data));
         setSummary(data.summary);
         setLoadError(false);
       } else {
@@ -176,7 +177,7 @@ export default function LivestockDashboard() {
       const data = await response.json();
       
       if (data.success) {
-        setAlerts(data.data);
+        setAlerts(asArray<HealthAlert>(data.data));
       }
     } catch (error) {
       console.error('Error fetching health alerts:', error);

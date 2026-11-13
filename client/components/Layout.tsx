@@ -310,13 +310,6 @@ const navigationCategories: NavigationCategory[] = [
         icon: Bell,
         allowedRoles: ["farmer", "trader", "admin"],
       },
-      {
-        name: "Agricultural News",
-        nameArabic: "الأخبار الفلاحية",
-        href: "/news",
-        icon: Newspaper,
-        allowedRoles: ["farmer", "trader", "agronomist", "admin"],
-      },
     ],
   },
   {

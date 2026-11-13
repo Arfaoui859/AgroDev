@@ -1750,3 +1750,43 @@ makes an existing screen behave correctly.
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
 `npx jest` → **1005 passed**, 3 skipped, 1008 total (+16 tests this session).
+
+---
+
+### Session 11 — sidebar dedupe, null-safe livestock lists, real revenue export
+
+Mission focus: continue P0/P2 hardening on the screens a newly registered farmer
+actually reaches. Nothing was invented; every change makes an existing screen
+behave correctly.
+
+- **Duplicate `/news` sidebar entry (P1).** `Agricultural News` was declared both
+  under **Market Intelligence** and under the new top-level **News & Info**
+  category, so the sidebar rendered two identical links. Removed the
+  Market-Intelligence copy; `/news` now appears exactly once. A new regression
+  test asserts no href is declared twice in the navigation catalogue.
+  **VERIFIED** — `tests/unit/nav-role-coverage.test.ts` (5/5).
+- **Null-safe list state on the livestock screens (P0).** `LivestockDashboard`,
+  `AnimalHealthMonitoring` and `TreatmentRecommendations` stored the raw
+  `data.data` from the `/api/livestock-management/*` and
+  `/api/disease-treatment/*` envelopes. The routes return an array on success,
+  but a `null` (partially applied migration, RLS denial) would crash the
+  `.filter()` on the next line and trip the global error boundary. Every list
+  assignment now goes through `asArray()`, so an unexpected shape degrades to an
+  empty list with the honest empty state instead of the generic error page.
+  **VERIFIED** — `tests/unit/dashboard-unavailable-safety.test.ts` (9/9).
+- **Dead "export" button on Revenue Analysis (P2).** The sales-records export
+  control had no handler. Added a shared, client-only CSV helper
+  (`client/lib/csv.ts` — RFC-4180 quoting + UTF-8 BOM so Arabic renders in
+  Excel) and wired the button to export exactly the rows the user is looking at
+  (post-filter). Disabled when there is nothing to export. **VERIFIED** — tsc +
+  lint clean; export operates only on already-fetched, RLS-scoped rows.
+- **Farmer CRUD contract tests (P0).** The routes a new farmer depends on
+  (`GET /api/assistant/farms`, `POST /api/assistant/actions/cultivations`) had no
+  test. Added `tests/integration/assistant-farm-actions.test.ts`: anonymous
+  callers are refused before any write, the list reads through the caller's own
+  scoped client, invalid input is rejected before persistence, and a cultivation
+  the caller does not own is refused rather than written.
+  **VERIFIED** — 4/4.
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0 ·
+`npx jest` → **1015 passed**, 3 skipped, 1018 total (+10 tests this session).

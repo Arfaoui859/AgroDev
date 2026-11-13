@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { asArray } from '@/lib/dashboardData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -270,7 +271,7 @@ const TreatmentRecommendations: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        setProducts(data.data);
+        setProducts(asArray<TreatmentProduct>(data.data));
       }
     } catch (error) {
       console.error('Error fetching products:', error);

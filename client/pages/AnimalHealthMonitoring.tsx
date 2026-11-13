@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/apiFetch';
+import { asArray } from '@/lib/dashboardData';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -111,14 +112,14 @@ export default function AnimalHealthMonitoring() {
       const alertsResponse = await apiFetch('/api/livestock-management/health-alerts');
       const alertsData = await alertsResponse.json();
       
-      if (animalsData.success) setAnimals(animalsData.data);
-      if (alertsData.success) setAlerts(alertsData.data);
+      if (animalsData.success) setAnimals(asArray<Animal>(animalsData.data));
+      if (alertsData.success) setAlerts(asArray<HealthAlert>(alertsData.data));
       setIsSimulated(animalsData.isRealData === false);
 
       // Records are built from the herd's own fields (vaccinations, last health
       // check, breeding events). Nothing is invented, so an animal with no
       // recorded illness simply shows no illness record.
-      setHealthRecords(buildHealthRecords(animalsData.data || []));
+      setHealthRecords(buildHealthRecords(asArray<Animal>(animalsData.data)));
     } catch (error) {
       console.error('Error fetching health data:', error);
       setLoadError(true);

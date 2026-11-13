@@ -68,6 +68,23 @@ describe("role coverage in the sidebar navigation", () => {
     expect(block).toContain('"/investor-dashboard"');
   });
 
+  test("no navigation destination is declared twice", () => {
+    // /news was reachable from two categories (Market Intelligence and the new
+    // News & Info), which renders two identical sidebar entries. Each href must
+    // appear exactly once.
+    // Only the static catalogue; the role remap below reuses the farmer href
+    // deliberately and is not a second sidebar entry.
+    const catalogue = layout.slice(
+      layout.indexOf("const navigationCategories"),
+      layout.indexOf("// Filter categories"),
+    );
+    const hrefs = Array.from(catalogue.matchAll(/href:\s*"([^"]+)"/g)).map((m) => m[1]);
+    const counts = new Map<string, number>();
+    for (const href of hrefs) counts.set(href, (counts.get(href) ?? 0) + 1);
+    const duplicated = [...counts.entries()].filter(([, n]) => n > 1);
+    expect(duplicated).toEqual([]);
+  });
+
   test("the /news route is declared", () => {
     expect(read("client/components/AppRouter.tsx")).toContain('path="/news"');
   });
