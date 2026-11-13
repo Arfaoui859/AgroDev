@@ -513,28 +513,28 @@ export default function SmartAdvisor() {
                         <Sun className="h-5 w-5 text-yellow-500" />
                         <div>
                           <p className="text-sm text-gray-500">درجة الحرارة</p>
-                          <p className="font-bold">{weatherData?.temperature || 25}°C</p>
+                          <p className="font-bold">{weatherData ? `${weatherData.temperature}°C` : "—"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Droplets className="h-5 w-5 text-blue-500" />
                         <div>
                           <p className="text-sm text-gray-500">الرطوبة</p>
-                          <p className="font-bold">{weatherData?.humidity || 65}%</p>
+                          <p className="font-bold">{weatherData ? `${weatherData.humidity}%` : "—"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <CloudRain className="h-5 w-5 text-blue-600" />
                         <div>
                           <p className="text-sm text-gray-500">الأمطار</p>
-                          <p className="font-bold">{weatherData?.rainfall || 5}mm</p>
+                          <p className="font-bold">{weatherData ? `${weatherData.rainfall}mm` : "—"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Database className="h-5 w-5 text-brown-500" />
                         <div>
                           <p className="text-sm text-gray-500">درجة حموضة التربة</p>
-                          <p className="font-bold">{soilAnalysis?.ph_level || 6.8}</p>
+                          <p className="font-bold">{soilAnalysis ? soilAnalysis.ph_level : "—"}</p>
                         </div>
                       </div>
                     </div>
@@ -598,25 +598,20 @@ export default function SmartAdvisor() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {weatherData?.weather_alerts?.map((alert, idx) => (
-                      <Alert key={idx}>
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription className="text-sm">
-                          {alert}
-                        </AlertDescription>
-                      </Alert>
-                    )) || [
-                      'موجة حارة متوقعة الأسبوع القادم',
-                      'أمطار خفيفة خلال 3 أيام',
-                      'ارتفاع في أسعار الأسمدة'
-                    ].map((alert, idx) => (
-                      <Alert key={idx}>
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription className="text-sm">
-                          {alert}
-                        </AlertDescription>
-                      </Alert>
-                    ))}
+                    {weatherData?.weather_alerts?.length ? (
+                      weatherData.weather_alerts.map((alert, idx) => (
+                        <Alert key={idx}>
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            {alert}
+                          </AlertDescription>
+                        </Alert>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        لا توجد تنبيهات جوية متاحة حالياً.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>

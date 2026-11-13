@@ -31,21 +31,21 @@ import {
 } from "recharts";
 
 interface MarketSummary {
-  totalCrops: number;
-  avgPriceChange: string;
+  totalCrops: number | null;
+  avgPriceChange: string | null;
   marketTrend: "bullish" | "bearish";
-  activeAlerts: number;
+  activeAlerts: number | null;
   topPerformer: {
     name: string;
     change: string;
-  };
+  } | null;
   topDecliner: {
     name: string;
     change: string;
-  };
+  } | null;
   quickStats: {
-    totalVolume: number;
-    marketCap: number;
+    totalVolume: number | null;
+    marketCap: number | null;
   };
 }
 
@@ -84,27 +84,36 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
         fetch("/api/market-analysis/dashboard"),
         fetch("/api/market-analysis/prices/history/olive?days=7"),
       ]);
+
+      // No licensed market feed is connected yet: the route answers 503 with an
+      // explicit `MARKET_SOURCE_NOT_CONNECTED` code. Never fall back to invented
+      // prices, trends or volumes — show the feed as unavailable instead.
+      if (!response.ok) {
+        setUnavailable(true);
+        return;
+      }
+
       const data = await response.json();
+      if (!data?.marketSummary) {
+        setUnavailable(true);
+        return;
+      }
       setIsRealData(data.isRealData === true);
 
-      // Transform the data for our widget
+      // Build the summary only from values the backend actually sent. Each
+      // field is optional; a missing value renders as "—" rather than a
+      // plausible-looking default.
       const summary: MarketSummary = {
-        totalCrops: data.marketSummary.totalCrops || 10,
-        avgPriceChange: data.marketSummary.avgPriceChange || "+2.3%",
+        totalCrops: data.marketSummary.totalCrops ?? null,
+        avgPriceChange: data.marketSummary.avgPriceChange ?? null,
         marketTrend:
           data.marketSummary.marketTrend === "bullish" ? "bullish" : "bearish",
-        activeAlerts: data.marketSummary.activeAlerts || 3,
-        topPerformer: data.topPerformers?.[0] || {
-          name: "الزيتون",
-          change: "+15%",
-        },
-        topDecliner: data.topDecliners?.[0] || {
-          name: "البطاطا",
-          change: "-3%",
-        },
+        activeAlerts: data.marketSummary.activeAlerts ?? null,
+        topPerformer: data.topPerformers?.[0] ?? null,
+        topDecliner: data.topDecliners?.[0] ?? null,
         quickStats: {
-          totalVolume: 12500,
-          marketCap: 850000,
+          totalVolume: data.marketSummary.totalVolume ?? null,
+          marketCap: data.marketSummary.marketCap ?? null,
         },
       };
 
@@ -134,7 +143,11 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
     }
   };
 
-  const formatNumber = (num: number) => {
+  const dash = (v: string | number | null | undefined) =>
+    v === null || v === undefined || v === "" ? "—" : v;
+
+  const formatNumber = (num: number | null) => {
+    if (num === null || num === undefined) return "—";
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`;
     } else if (num >= 1000) {
@@ -195,23 +208,23 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="text-center p-2 bg-secondary/20 rounded">
               <div className="font-bold text-lg">
-                {marketSummary.avgPriceChange}
+                {dash(marketSummary.avgPriceChange)}
               </div>
               <div className="text-muted-foreground">متوسط التغيير</div>
             </div>
             <div className="text-center p-2 bg-secondary/20 rounded">
               <div className="font-bold text-lg text-orange-600">
-                {marketSummary.activeAlerts}
+                {dash(marketSummary.activeAlerts)}
               </div>
               <div className="text-muted-foreground">تنبيهات</div>
             </div>
           </div>
           <div className="flex justify-between items-center pt-2">
             <span className="text-sm text-muted-foreground">
-              أفضل أداء: {marketSummary.topPerformer.name}
+              أفضل أداء: {marketSummary.topPerformer?.name ?? "—"}
             </span>
             <Badge variant="default" className="text-xs">
-              {marketSummary.topPerformer.change}
+              {dash(marketSummary.topPerformer?.change)}
             </Badge>
           </div>
           {provenanceNote}
@@ -257,7 +270,7 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
               <BarChart3 className="h-5 w-5" />
             </div>
             <div className="text-2xl font-bold text-blue-600">
-              {marketSummary.totalCrops}
+              {dash(marketSummary.totalCrops)}
             </div>
             <div className="text-sm text-blue-700">محاصيل متتبعة</div>
           </div>
@@ -266,7 +279,7 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
               <Activity className="h-5 w-5" />
             </div>
             <div className="text-2xl font-bold text-green-600">
-              {marketSummary.avgPriceChange}
+              {dash(marketSummary.avgPriceChange)}
             </div>
             <div className="text-sm text-green-700">متوسط التغيير</div>
           </div>
@@ -275,7 +288,7 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div className="text-2xl font-bold text-orange-600">
-              {marketSummary.activeAlerts}
+              {dash(marketSummary.activeAlerts)}
             </div>
             <div className="text-sm text-orange-700">تنبيهات نشطة</div>
           </div>
@@ -294,12 +307,12 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
               <div>
                 <div className="text-sm text-green-700">أفضل أداء اليوم</div>
                 <div className="font-bold text-green-800">
-                  {marketSummary.topPerformer.name}
+                  {marketSummary.topPerformer?.name ?? "—"}
                 </div>
               </div>
               <Badge variant="default" className="bg-green-600">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                {marketSummary.topPerformer.change}
+                {dash(marketSummary.topPerformer?.change)}
               </Badge>
             </div>
           </div>
@@ -309,12 +322,12 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
               <div>
                 <div className="text-sm text-red-700">أكبر انخفاض</div>
                 <div className="font-bold text-red-800">
-                  {marketSummary.topDecliner.name}
+                  {marketSummary.topDecliner?.name ?? "—"}
                 </div>
               </div>
               <Badge variant="destructive">
                 <TrendingDown className="h-3 w-3 mr-1" />
-                {marketSummary.topDecliner.change}
+                {dash(marketSummary.topDecliner?.change)}
               </Badge>
             </div>
           </div>
@@ -354,7 +367,7 @@ const MarketAnalyticsWidget: React.FC<MarketAnalyticsWidgetProps> = ({
         )}
 
         {/* Active Alerts Preview */}
-        {marketSummary.activeAlerts > 0 && (
+        {(marketSummary.activeAlerts ?? 0) > 0 && (
           <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-4 w-4 text-orange-600" />

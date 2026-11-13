@@ -114,3 +114,129 @@ describe("AdvancedLivestockDashboard reads the real livestock envelope", () => {
     expect(src).toContain("/api/livestock-management/animals");
   });
 });
+
+/**
+ * Regression: `MarketAnalyticsWidget` fetched `/api/market-analysis/dashboard`,
+ * which has no licensed feed connected and therefore answers 503 with an
+ * explicit `MARKET_SOURCE_NOT_CONNECTED` code and `data: null`. The widget
+ * ignored `response.ok` and defaulted every field to a plausible-looking
+ * constant (`+2.3%`, `الزيتون +15%`, volume `12500`), so the UI displayed
+ * fabricated market figures with only a faint "simulation" note.
+ *
+ * The widget must fail closed on a non-OK response and never substitute
+ * invented prices, trends or volumes.
+ */
+describe("MarketAnalyticsWidget fails closed on an unavailable feed", () => {
+  const src = read("client/components/MarketAnalyticsWidget.tsx");
+
+  test("checks response.ok before trusting the body", () => {
+    expect(src).toContain("!response.ok");
+  });
+
+  test("does not hard-code fabricated market figures", () => {
+    expect(src).not.toContain('"+2.3%"');
+    expect(src).not.toContain('"الزيتون"');
+    expect(src).not.toContain("12500");
+    expect(src).not.toContain("850000");
+    expect(src).not.toMatch(/topPerformer:\s*data\.topPerformers\?\.\[0\]\s*\|\|/);
+  });
+
+  test("renders missing values as an explicit placeholder, not a default", () => {
+    expect(src).toContain("dash(");
+    expect(src).toContain("?? \"—\"");
+  });
+});
+
+/**
+ * Regression: `ComprehensiveOverviewCards` mapped the `/api/farm-management/overview`
+ * response as if it were a `{ land, crops, livestock, financial }` shape with
+ * flat numeric fields. The endpoint actually returns `{ summary, farms, crops,
+ * market, financial, unavailable }`, so *every* field silently fell through to
+ * a hard-coded illustrative default (`totalArea || 25.5`, `totalYield || 1247`,
+ * `totalAnimals || 245`, `totalRevenue || 156780`, …). The farmer's overview
+ * therefore displayed a fully fabricated farm — a direct violation of the
+ * "never present synthetic output as observed data" rule.
+ *
+ * The component must read the real contract, render only what the endpoints
+ * return, and show an explicit empty/unavailable state per domain otherwise.
+ */
+describe("ComprehensiveOverviewCards never fabricates a farm overview", () => {
+  const src = read("client/components/ComprehensiveOverviewCards.tsx");
+
+  test("does not hard-code illustrative farm figures", () => {
+    for (const literal of [
+      "25.5", "22.3", "1247", "156780", "98450", "58330",
+      "245", "1850", "2400", "118",
+    ]) {
+      expect(src).not.toContain(literal);
+    }
+    // `6.8` also appears inside the Tunis coordinate (36.8065); assert it is
+    // never used as a fallback default specifically.
+    expect(src).not.toMatch(/\|\|\s*6\.8\b/);
+  });
+
+  test("does not substitute defaults with || on data reads", () => {
+    expect(src).not.toMatch(/farmData\?\.\w+\s*\|\|/);
+    expect(src).not.toMatch(/livestockData\?\.\w+\s*\|\|/);
+    expect(src).not.toMatch(/financialData\?\.\w+\s*\|\|/);
+  });
+
+  test("reads the real summary/aggregate contract", () => {
+    expect(src).toContain("summary.totalFarms");
+    expect(src).toContain("summary.activeCrops");
+    expect(src).toContain("bySpecies");
+    expect(src).toContain("netProfit");
+  });
+
+  test("checks response.ok before trusting a body", () => {
+    expect(src).toContain("res.ok");
+  });
+});
+
+/**
+ * Regression: `EnhancedMarketDashboard` stored the raw `/api/market-analysis/*`
+ * JSON body straight into list state. That route answers 503 with
+ * `{ success: false, data: null }` (no licensed feed), so `marketPrices` became
+ * an object and the first render calling `marketPrices.filter(...)` threw,
+ * producing the generic "unexpected error" page. It must guard `response.ok`
+ * and only accept array bodies.
+ */
+describe("EnhancedMarketDashboard never stores a non-array list", () => {
+  const src = read("client/pages/EnhancedMarketDashboard.tsx");
+
+  test("validates array bodies before storing list state", () => {
+    expect(src).toContain("Array.isArray(prices) ? prices : []");
+    expect(src).toContain("Array.isArray(alerts) ? alerts : []");
+    expect(src).toContain("Array.isArray(data?.data) ? data.data : []");
+  });
+
+  test("gates the dashboard object on a real marketSummary", () => {
+    expect(src).toContain("dashboard?.marketSummary ? dashboard : null");
+  });
+});
+
+/**
+ * Regression: `Index` mapped the farm overview as flat fields
+ * (`totalFields`, `soilHealthAvg`, `profitMargin`, `waterEfficiency`) that the
+ * endpoint never returns, and defaulted weather to plausible constants
+ * (`|| 24`, `|| 65`, `|| 25`). It must read `summary.*` and render "—" for a
+ * missing observation.
+ */
+describe("Index reads the real farm/weather contract without defaults", () => {
+  const src = read("client/pages/Index.tsx");
+
+  test("reads the real summary shape", () => {
+    expect(src).toContain("farmOverview.summary.totalFarms");
+    expect(src).toContain("farmOverview.summary.totalFields");
+  });
+
+  test("does not default weather to illustrative constants", () => {
+    expect(src).not.toMatch(/weather\.current\?\.\w+\s*\|\|\s*\d/);
+    expect(src).not.toMatch(/day\.maxTemp\s*\|\|\s*\d/);
+  });
+
+  test("uses the real Open-Meteo keys", () => {
+    expect(src).toContain("current.description");
+    expect(src).toContain("current.windSpeed");
+  });
+});

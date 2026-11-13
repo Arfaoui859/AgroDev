@@ -154,13 +154,17 @@ export default function EnhancedMarketDashboard() {
         fetch("/api/market-analysis/alerts"),
       ]);
 
-      const prices = await pricesRes.json();
-      const dashboard = await dashboardRes.json();
-      const alerts = await alertsRes.json();
+      // The market-analysis route answers 503 with a `{ data: null }` error
+      // object when no licensed feed is connected. Only accept real arrays so a
+      // non-array body can never reach the `.filter`/`.map` render paths.
+      const prices = pricesRes.ok ? await pricesRes.json() : null;
+      const dashboard = dashboardRes.ok ? await dashboardRes.json() : null;
+      const alerts = alertsRes.ok ? await alertsRes.json() : null;
 
-      setMarketPrices(prices);
-      setDashboardData(dashboard);
-      setMarketAlerts(alerts);
+      const priceList: MarketPrice[] = Array.isArray(prices) ? prices : [];
+      setMarketPrices(priceList);
+      setDashboardData(dashboard?.marketSummary ? dashboard : null);
+      setMarketAlerts(Array.isArray(alerts) ? alerts : []);
       setLastUpdate(new Date());
       // Real-time only if the feed is not the simulated demonstration dataset.
       setIsRealTime(dashboard?.isRealData === true);
@@ -168,8 +172,8 @@ export default function EnhancedMarketDashboard() {
       setProvenance(readProvenance(pricesRes.headers, dashboard ?? prices));
 
       // Set default selected crop if not set
-      if (!selectedCrop && prices.length > 0) {
-        setSelectedCrop(prices[0].id);
+      if (!selectedCrop && priceList.length > 0) {
+        setSelectedCrop(priceList[0].id);
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
@@ -205,8 +209,9 @@ export default function EnhancedMarketDashboard() {
           }));
       }
 
+      const historyRows = Array.isArray(data?.data) ? data.data : [];
       const combinedData = [
-        ...data.data.map((item: any) => ({
+        ...historyRows.map((item: any) => ({
           date: item.date,
           price: item.price,
           volume: item.volume,

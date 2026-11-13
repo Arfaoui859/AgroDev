@@ -1837,3 +1837,43 @@ carried three buttons with no handler.
 
 **Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npm run build` 0 ·
 `npx jest` → **1025 passed**, 3 skipped, 1028 total (+10 tests this session).
+
+### Session 13 — honesty audit: fabricated overview/weather/market surfaces removed
+
+A scan for the "non-existent contract field + `||` default" bug class (first
+seen in `AdvancedLivestockDashboard`) found three more surfaces that rendered
+fabricated numbers or crashed on an unavailable feed. All are now fail-closed
+and covered by regression tests.
+
+- **`ComprehensiveOverviewCards` (Farmer Dashboard overview tab) — rewritten.**
+  It mapped `/api/farm-management/overview` as a flat
+  `{ land, crops, livestock, financial }` shape the endpoint never returns, so
+  *every* field fell through to a hard-coded illustrative default
+  (`totalArea || 25.5`, `totalYield || 1247`, `totalAnimals || 245`,
+  `totalRevenue || 156780`, a 3-crop "top performers" list, a 3-month revenue
+  trend, …). The farmer's home overview therefore showed an entirely invented
+  farm. It now reads the real `{ summary, farms, crops, market, financial,
+  unavailable }` contract, the real Open-Meteo snapshot, the real
+  `/api/livestock-dashboard` aggregate, `/api/financial-summary`, and the latest
+  `/api/soil-analysis/reports` row; each domain renders only what its endpoint
+  returned and shows an explicit empty/unavailable state otherwise.
+  **VERIFIED** — `dashboard-unavailable-safety.test.ts`.
+- **`MarketAnalyticsWidget` — fail-closed.** `/api/market-analysis/*` answers
+  503 (`MARKET_SOURCE_NOT_CONNECTED`); the widget ignored `response.ok` and
+  defaulted to `+2.3%`, `الزيتون +15%`, volume `12500`. It now treats a non-OK
+  response as unavailable and renders `—` for any missing field.
+- **`EnhancedMarketDashboard` — crash fixed.** It stored the raw 503 object
+  into `marketPrices` (a list) and then called `.filter`/`.map` on it, which
+  threw during render — a direct cause of the generic "unexpected error" page.
+  It now guards `response.ok` and only accepts array bodies.
+- **`Index` (home) — real contract + no defaults.** Read flat farm fields
+  (`soilHealthAvg`, `profitMargin`, `waterEfficiency`) that never exist and
+  defaulted weather to `|| 24 / || 65 / || 25` against the wrong Open-Meteo
+  keys. Now reads `summary.*` and the real `current.description` /
+  `current.windSpeed`, rendering `—` when an observation is absent.
+- **`SmartAdvisor` — no invented weather/alerts.** Removed `|| 25`, `|| 65`,
+  `|| 5`, `|| 6.8` fallbacks and a hard-coded 3-item alert list shown when the
+  (retired) endpoint returned nothing.
+
+**Gates:** `npx tsc --noEmit` 0 · `npx eslint <changed>` 0 · `npm run build` 0 ·
+`npx jest` → **1032 passed**, 3 skipped, 1035 total.

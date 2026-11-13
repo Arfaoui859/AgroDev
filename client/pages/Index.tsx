@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useServiceHealthChecker } from "@/hooks/useServiceHealthChecker";
@@ -30,13 +29,11 @@ import {
   Briefcase,
   BarChart3,
   Bell,
-  TrendingUp,
   Activity,
   Target,
   Shield,
   Home,
   PlusCircle,
-  BarChart2,
   LineChart,
   Calendar,
   Lightbulb,
@@ -54,7 +51,6 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  TrendingDown,
 } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import { supabase } from "@/lib/supabase";
@@ -102,31 +98,44 @@ interface SystemAlert {
 }
 
 interface WeatherData {
-  temperature: number;
-  humidity: number;
-  windSpeed: number;
-  precipitation: number;
-  condition: string;
-  conditionArabic: string;
+  temperature: number | null;
+  humidity: number | null;
+  windSpeed: number | null;
+  /** Weekly rainfall total (mm). Open-Meteo exposes an amount, not a probability. */
+  rainfallMm: number | null;
+  condition: string | null;
   forecast: Array<{
     day: string;
     dayArabic: string;
-    high: number;
-    low: number;
-    condition: string;
-    precipitation: number;
+    high: number | null;
+    low: number | null;
+    condition: string | null;
+    rainfallMm: number | null;
   }>;
 }
 
+/** Parse a numeric value, returning null when absent/invalid (never a default). */
+const numOrNull = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+const fmtOrDash = (value: number | null, suffix = ""): string =>
+  value === null ? "—" : `${value}${suffix}`;
+
 interface FarmOverview {
-  totalFields: number;
-  activeFields: number;
-  totalArea: number;
-  currentCrops: number;
-  soilHealthAvg: number;
-  yieldTrend: "up" | "down" | "stable";
-  profitMargin: number;
-  waterEfficiency: number;
+  summary: {
+    totalFarms: number;
+    totalArea: number;
+    totalFields: number;
+    activeCrops: number;
+    pendingTasks: number;
+    criticalAlerts: number;
+    operationalEquipment: number;
+    todayRevenue: number;
+    currency: string;
+  };
 }
 
 // ============ DASHBOARD CARDS CONFIGURATION ============
@@ -586,8 +595,10 @@ export default function Index() {
         // Fetch farm overview data
         const farmResponse = await robustFetch("/api/farm-management/overview");
         if (farmResponse.ok) {
-          const farmData = await farmResponse.json();
-          setFarmOverview(farmData);
+          const farmBody = await farmResponse.json();
+          if (farmBody?.success && farmBody.data?.summary) {
+            setFarmOverview({ summary: farmBody.data.summary });
+          }
         }
 
         // Fetch weather data
@@ -596,32 +607,26 @@ export default function Index() {
         ); // Tunis coordinates
         if (weatherResponse.ok) {
           const weather = await weatherResponse.json();
+          // Show exactly what Open-Meteo returned. Missing observations stay
+          // null and render as "—"; never substitute a plausible-looking value.
+          const current = weather?.current ?? {};
+          const daily = Array.isArray(weather?.forecast?.daily)
+            ? weather.forecast.daily
+            : [];
           setWeatherData({
-            temperature: weather.current?.temperature || 24,
-            humidity: weather.current?.humidity || 65,
-            windSpeed: weather.current?.wind_speed || 12,
-            precipitation: weather.current?.precipitation || 0,
-            condition: weather.current?.condition || "Partly Cloudy",
-            conditionArabic: weather.current?.condition_ar || "غائم جزئياً",
-            forecast:
-              weather.forecast?.daily && Array.isArray(weather.forecast.daily)
-                ? weather.forecast.daily
-                    .slice(0, 5)
-                    .map((day: any, index: number) => ({
-                      day:
-                        index === 0
-                          ? "Today"
-                          : index === 1
-                            ? "Tomorrow"
-                            : day.date,
-                      dayArabic:
-                        index === 0 ? "اليوم" : index === 1 ? "غداً" : day.date,
-                      high: day.maxTemp || 25,
-                      low: day.minTemp || 18,
-                      condition: day.description || "Sunny",
-                      precipitation: day.rainfall || 0,
-                    }))
-                : [],
+            temperature: numOrNull(current.temperature),
+            humidity: numOrNull(current.humidity),
+            windSpeed: numOrNull(current.windSpeed),
+            rainfallMm: numOrNull(weather?.forecast?.weekly?.totalRainfall),
+            condition: typeof current.description === "string" ? current.description : null,
+            forecast: daily.slice(0, 5).map((day: any, index: number) => ({
+              day: index === 0 ? "Today" : index === 1 ? "Tomorrow" : day.date,
+              dayArabic: index === 0 ? "اليوم" : index === 1 ? "غداً" : day.date,
+              high: numOrNull(day.maxTemp),
+              low: numOrNull(day.minTemp),
+              condition: typeof day.description === "string" ? day.description : null,
+              rainfallMm: numOrNull(day.rainfall),
+            })),
           });
         }
 
@@ -696,21 +701,9 @@ export default function Index() {
     }
   };
 
-  // Get trend icon
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case "down":
-        return <TrendingDown className="h-4 w-4 text-red-500" />;
-      default:
-        return <BarChart2 className="h-4 w-4 text-blue-500" />;
-    }
-  };
-
   // Get weather icon
-  const getWeatherIcon = (condition: string) => {
-    switch (condition.toLowerCase()) {
+  const getWeatherIcon = (condition: string | null) => {
+    switch ((condition ?? "").toLowerCase()) {
       case "sunny":
         return <Sun className="h-6 w-6 text-yellow-500" />;
       case "rainy":
@@ -790,7 +783,7 @@ export default function Index() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-white/20">
               <p className="text-2xl font-bold text-green-600">
-                {farmOverview.totalFields}
+                {farmOverview.summary.totalFields}
               </p>
               <p className="text-sm text-muted-foreground">
                 {isArabic ? "إجمالي الحقول" : "Total Fields"}
@@ -798,7 +791,7 @@ export default function Index() {
             </div>
             <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-white/20">
               <p className="text-2xl font-bold text-blue-600">
-                {farmOverview.totalArea} {isArabic ? "هكتار" : "ha"}
+                {fmtOrDash(farmOverview.summary.totalArea)} {isArabic ? "هكتار" : "ha"}
               </p>
               <p className="text-sm text-muted-foreground">
                 {isArabic ? "المساحة الكلية" : "Total Area"}
@@ -806,18 +799,18 @@ export default function Index() {
             </div>
             <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-white/20">
               <p className="text-2xl font-bold text-emerald-600">
-                {farmOverview.soilHealthAvg}%
+                {farmOverview.summary.activeCrops}
               </p>
               <p className="text-sm text-muted-foreground">
-                {isArabic ? "صحة التربة" : "Soil Health"}
+                {isArabic ? "محاصيل نشطة" : "Active Crops"}
               </p>
             </div>
             <div className="bg-white/80 backdrop-blur rounded-xl p-4 border border-white/20">
               <p className="text-2xl font-bold text-yellow-600">
-                {farmOverview.profitMargin}%
+                {farmOverview.summary.pendingTasks}
               </p>
               <p className="text-sm text-muted-foreground">
-                {isArabic ? "هامش الربح" : "Profit Margin"}
+                {isArabic ? "مهام معلّقة" : "Pending Tasks"}
               </p>
             </div>
           </div>
@@ -923,37 +916,34 @@ export default function Index() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
                       <p className="text-3xl font-bold">
-                        {farmOverview.activeFields}
+                        {farmOverview.summary.totalFarms}
                       </p>
                       <p className="text-sm opacity-90">
-                        {isArabic ? "حقول نشطة" : "Active Fields"}
+                        {isArabic ? "المزارع" : "Farms"}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-3xl font-bold">
-                        {farmOverview.currentCrops}
+                        {farmOverview.summary.activeCrops}
                       </p>
                       <p className="text-sm opacity-90">
-                        {isArabic ? "ماصيل حالية" : "Current Crops"}
+                        {isArabic ? "محاصيل حالية" : "Current Crops"}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-3xl font-bold">
-                        {farmOverview.waterEfficiency}%
+                        {farmOverview.summary.pendingTasks}
                       </p>
                       <p className="text-sm opacity-90">
-                        {isArabic ? "كفاءة المياه" : "Water Efficiency"}
+                        {isArabic ? "مهام معلّقة" : "Pending Tasks"}
                       </p>
                     </div>
                     <div className="text-center">
-                      <div className="flex items-center justify-center space-x-1 rtl:space-x-reverse">
-                        <p className="text-3xl font-bold">
-                          {farmOverview.profitMargin}%
-                        </p>
-                        {getTrendIcon(farmOverview.yieldTrend)}
-                      </div>
+                      <p className="text-3xl font-bold">
+                        {farmOverview.summary.criticalAlerts}
+                      </p>
                       <p className="text-sm opacity-90">
-                        {isArabic ? "اتجاه الربحية" : "Profitability"}
+                        {isArabic ? "تنبيهات حرجة" : "Critical Alerts"}
                       </p>
                     </div>
                   </div>
@@ -961,16 +951,13 @@ export default function Index() {
                   <div className="mt-6 pt-6 border-t border-white/20">
                     <div className="flex justify-between items-center">
                       <span className="text-sm opacity-90">
-                        {isArabic ? "صحة التربة العامة" : "Overall Soil Health"}
+                        {isArabic ? "إيرادات اليوم" : "Today Revenue"}
                       </span>
                       <span className="font-medium">
-                        {farmOverview.soilHealthAvg}%
+                        {fmtOrDash(farmOverview.summary.todayRevenue)}{" "}
+                        {farmOverview.summary.currency}
                       </span>
                     </div>
-                    <Progress
-                      value={farmOverview.soilHealthAvg}
-                      className="mt-2 h-3 bg-white/20"
-                    />
                   </div>
                 </CardContent>
               </Card>
@@ -991,12 +978,10 @@ export default function Index() {
                       {getWeatherIcon(weatherData.condition)}
                       <div>
                         <p className="text-3xl font-bold">
-                          {weatherData.temperature}°C
+                          {fmtOrDash(weatherData.temperature, "°C")}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {isArabic
-                            ? weatherData.conditionArabic
-                            : weatherData.condition}
+                          {weatherData.condition ?? "—"}
                         </p>
                       </div>
                     </div>
@@ -1005,14 +990,15 @@ export default function Index() {
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <Droplets className="h-4 w-4 text-blue-500" />
                         <span>
-                          {weatherData.humidity}%{" "}
+                          {fmtOrDash(weatherData.humidity, "%")}{" "}
                           {isArabic ? "رطوبة" : "Humidity"}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <Wind className="h-4 w-4 text-gray-500" />
                         <span>
-                          {weatherData.windSpeed} {isArabic ? "كم/س" : "km/h"}
+                          {fmtOrDash(weatherData.windSpeed)}{" "}
+                          {isArabic ? "كم/س" : "km/h"}
                         </span>
                       </div>
                     </div>
@@ -1094,7 +1080,7 @@ export default function Index() {
                     <div className="text-center p-4 border rounded-lg">
                       <Thermometer className="h-8 w-8 mx-auto mb-2 text-red-500" />
                       <p className="text-2xl font-bold">
-                        {weatherData.temperature}°C
+                        {fmtOrDash(weatherData.temperature, "°C")}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {isArabic ? "درج الحرارة" : "Temperature"}
@@ -1103,7 +1089,7 @@ export default function Index() {
                     <div className="text-center p-4 border rounded-lg">
                       <Droplets className="h-8 w-8 mx-auto mb-2 text-blue-500" />
                       <p className="text-2xl font-bold">
-                        {weatherData.humidity}%
+                        {fmtOrDash(weatherData.humidity, "%")}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {isArabic ? "الرطوبة" : "Humidity"}
@@ -1112,7 +1098,7 @@ export default function Index() {
                     <div className="text-center p-4 border rounded-lg">
                       <Wind className="h-8 w-8 mx-auto mb-2 text-gray-500" />
                       <p className="text-2xl font-bold">
-                        {weatherData.windSpeed}
+                        {fmtOrDash(weatherData.windSpeed)}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {isArabic ? "الرياح كم/س" : "Wind km/h"}
@@ -1121,10 +1107,10 @@ export default function Index() {
                     <div className="text-center p-4 border rounded-lg">
                       <Umbrella className="h-8 w-8 mx-auto mb-2 text-indigo-500" />
                       <p className="text-2xl font-bold">
-                        {weatherData.precipitation}%
+                        {fmtOrDash(weatherData.rainfallMm, " mm")}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {isArabic ? "احتمال المطر" : "Rain Chance"}
+                        {isArabic ? "أمطار الأسبوع" : "Weekly Rainfall"}
                       </p>
                     </div>
                   </div>
@@ -1153,16 +1139,16 @@ export default function Index() {
                               {isArabic ? day.dayArabic : day.day}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {day.condition}
+                              {day.condition ?? "—"}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-medium">
-                            {day.high}°/{day.low}°
+                            {fmtOrDash(day.high)}°/{fmtOrDash(day.low)}°
                           </p>
                           <p className="text-xs text-blue-500">
-                            {day.precipitation}%
+                            {fmtOrDash(day.rainfallMm, " mm")}
                           </p>
                         </div>
                       </div>
