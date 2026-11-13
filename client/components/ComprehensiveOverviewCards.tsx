@@ -224,7 +224,6 @@ const ComprehensiveOverviewCards: React.FC<ComprehensiveOverviewCardsProps> = ({
   useEffect(() => {
     load();
     // Load once on mount; the retry button calls load() directly.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const anyLoading =
