@@ -73,4 +73,17 @@ describe("GET /api/news", () => {
       expect(["ar", "fr", "en"]).toContain(s.language);
     }
   });
+
+  test("reports measured source availability, not an assumed catalogue", async () => {
+    // With the feed transport forced to fail, every source must be reported
+    // unavailable — the status endpoint may not claim reachability it has not
+    // verified. A catalogue entry without a live fetch is not "available".
+    global.fetch = jest.fn(async () => new Response("", { status: 503 })) as unknown as typeof fetch;
+    const res = await request(app).get("/api/news/sources").expect(200);
+    for (const s of res.body.sources) {
+      expect(typeof s.available).toBe("boolean");
+      expect(s.available).toBe(false);
+      expect(s.itemCount).toBe(0);
+    }
+  });
 });

@@ -449,3 +449,14 @@ export async function getTunisianAgriNews(query: NewsQuery = {}): Promise<NewsRe
   aggregateCache.set(aggregateKey, { value: result, expiresAt: Date.now() + AGGREGATE_TTL_MS });
   return result;
 }
+
+/**
+ * Real per-source availability, measured by fetching each feed (the same path
+ * `getTunisianAgriNews` uses, so the caches are shared). A source is only
+ * reported `available` when a feed actually returned items; a failing source
+ * carries its error and `itemCount: 0`. Nothing is assumed reachable.
+ */
+export async function getNewsSourceStatuses(): Promise<NewsSourceStatus[]> {
+  const settled = await Promise.all(NEWS_SOURCES.map((source) => fetchSource(source)));
+  return settled.map((s) => s.status);
+}

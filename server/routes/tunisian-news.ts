@@ -14,6 +14,7 @@ import { markReal } from "../lib/provenance";
 import { safeErrorMessage } from "../lib/errors";
 import {
   getTunisianAgriNews,
+  getNewsSourceStatuses,
   NEWS_SOURCES,
   type NewsLanguage,
 } from "../services/news/tunisianAgriNews";
@@ -59,16 +60,28 @@ router.get("/news", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/news/sources", (_req: Request, res: Response) => {
+router.get("/news/sources", async (_req: Request, res: Response) => {
+  // Report *measured* availability, not just the static catalogue: a source is
+  // available only if its feed really returned items. This keeps the public
+  // status endpoint consistent with what /api/news actually serves.
+  const statuses = await getNewsSourceStatuses();
+  const byId = new Map(statuses.map((s) => [s.id, s]));
   markReal(res, "rss-feeds");
   res.json({
-    sources: NEWS_SOURCES.map((s) => ({
-      id: s.id,
-      name: s.name,
-      language: s.language,
-      kind: s.kind,
-      homepage: s.homepage,
-    })),
+    sources: NEWS_SOURCES.map((s) => {
+      const status = byId.get(s.id);
+      return {
+        id: s.id,
+        name: s.name,
+        language: s.language,
+        kind: s.kind,
+        homepage: s.homepage,
+        available: status?.available ?? false,
+        itemCount: status?.itemCount ?? 0,
+        error: status?.error,
+        fetchedAt: status?.fetchedAt,
+      };
+    }),
     isRealData: true,
     dataSource: "rss-feeds",
   });
