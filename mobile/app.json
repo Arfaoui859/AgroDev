@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "AgroGrowth",
+    "slug": "agrogrowth-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#16a34a",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "tn.agrogrowth.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "يطلب التطبيق استخدام الكاميرا لالتقاط صور أوراق النباتات وتشخيص الأمراض الفطرية والآفات بالذكاء الاصطناعي.",
+        "NSPhotoLibraryUsageDescription": "يطلب التطبيق الوصول لمعرض الصور لاختيار صور المحاصيل وتشخيصها.",
+        "NSLocationWhenInUseUsageDescription": "يطلب التطبيق تحديد الموقع للحصول على بيانات الطقس الزراعي الدقيقة لحقلك من محطات الرصد التونسية."
+      }
+    },
+    "android": {
+      "package": "tn.agrogrowth.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#16a34a",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "يطلب التطبيق الوصول للصور لاختيار عينات النباتات والتربة.",
+          "cameraPermission": "يطلب التطبيق استخدام الكاميرا لفحص المحاصيل مباشرة."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "يطلب التطبيق تحديد الموقع لتوفير بيانات الطقس الزراعي الدقيقة لمنطقتك."
+        }
+      ]
+    ]
+  }
+}
