@@ -139,6 +139,10 @@ const SmartIrrigationDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedField, setSelectedField] = useState("field-tomato-01");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  // Set when the backend honestly reports the scheduling engine is not
+  // validated (HTTP 503 SMART_IRRIGATION_NOT_VALIDATED). Distinguishes a real
+  // outage from "this field simply has no records yet".
+  const [unavailableReason, setUnavailableReason] = useState<string | null>(null);
 
   // Control states
   const [showManualControl, setShowManualControl] = useState(false);
@@ -192,9 +196,12 @@ const SmartIrrigationDashboard: React.FC = () => {
 
       if (data.success) {
         setSoilData(data.data);
+      } else if (response.status === 503 || data.code) {
+        setUnavailableReason(data.message || "خدمة الري الذكي غير متاحة حالياً.");
       }
     } catch (error) {
       console.error("Error fetching soil data:", error);
+      setUnavailableReason("تعذّر الوصول إلى خدمة الري الذكي.");
     }
   };
 
@@ -487,6 +494,13 @@ const SmartIrrigationDashboard: React.FC = () => {
           نظام الري الذكي
         </h1>
       </div>
+
+      {unavailableReason ? (
+        <Alert className="border-amber-300 bg-amber-50 text-amber-900" role="status">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{unavailableReason}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {/* Field Selection */}
       <Card>

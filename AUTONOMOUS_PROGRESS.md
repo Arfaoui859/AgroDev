@@ -1674,3 +1674,39 @@ Audited every in-app navigation target against the router.
   accounts to `farmer` (client role is ignored).
 
 **Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npm run build` 0.
+
+---
+
+### Session 9 — news source-status honesty, irrigation fail-closed UX, orchestrator re-verify
+
+- **Fixed a provenance inconsistency (P1).** `GET /api/news/sources` returned the
+  static source catalogue with `isRealData: true` while `GET /api/news` returned
+  real articles from those same feeds. Added `getNewsSourceStatuses()` to
+  `server/services/news/tunisianAgriNews.ts`, which measures real per-feed
+  availability (`itemCount`, `available`, `error`); rewired the route (now
+  async). Regression test added to
+  `tests/integration/tunisian-news-api.test.ts` ("reports measured source
+  availability", stubs `fetch` to fail). **VERIFIED** — 5/5 news tests pass;
+  live check reports all 6 sources with real counts.
+- **Honest fail-closed UX on the smart-irrigation page (P2).**
+  `client/pages/SmartIrrigationDashboard.tsx` silently rendered an empty state
+  when the backend correctly answered 503 `SMART_IRRIGATION_NOT_VALIDATED`,
+  making an outage indistinguishable from "no records". It now surfaces the
+  server's reason in a status banner. **VERIFIED** — tsc + lint clean.
+- **Re-verified the multi-agent orchestrator (P1).** `executePlan` in
+  `server/services/ai/agriculturalOrchestrator.ts` performs DAG ordering, bounded
+  concurrency (`ORCHESTRATOR_CONCURRENCY`), per-step timeout
+  (`ORCHESTRATOR_STEP_TIMEOUT_MS`), bounded retries, hard-dependency blocking,
+  and failure isolation; all 14 allow-listed specialists execute real logic
+  (rule engine, persisted records, or trained-model inference via a service) and
+  never impute missing inputs. **VERIFIED** — 47 orchestrator tests pass.
+- **Re-verified P0 auth flow.** Registration creates `public.users` via the
+  trusted `auth.users` trigger pinned to `farmer`; the self-escalation trigger
+  (`prevent_self_role_escalation`) and RLS insert policy (`role = 'farmer'`)
+  block client-supplied roles; `/api/auth/ensure-profile` is JWT-scoped,
+  idempotent, and never elevates. Admin routes are gated by `requireAdminAccess`
+  (verified JWT + DB role) and fail closed. **VERIFIED** (read + tests).
+- **Housekeeping.** Added `.agent_tmp/` (local agent scratch) to `.gitignore`.
+
+**Gates:** `npx tsc --noEmit` 0 · `npm run lint` 0 · `npx jest` → 989 passed,
+3 skipped, 992 total · `agrogrowth-ai` pytest → 275 passed.
