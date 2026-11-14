@@ -38,21 +38,39 @@ export const SUPABASE_ANON_KEY =
   firstNonEmpty(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ??
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjc2NzEsImV4cCI6MjA0OTYwMzY3MX0.aAGN3jLnpCjNOw7-J3Lp4iQBbwMT9X6kMzgRgQtYz7E';
 
+/** Deployed Express gateway (the app's only backend entry point). */
+export const PRODUCTION_API_BASE_URL = 'https://agrodev-3.onrender.com';
+
 /**
  * Default Express API base URL.
  *
+ * A production build must reach the deployed gateway, so it defaults to the
+ * Render URL above. In development (`__DEV__`) the local server is far more
+ * convenient, so the emulator/simulator host is used instead:
  * - Android emulator reaches the host machine through 10.0.2.2.
  * - iOS simulator and web use localhost.
  * - A physical device must be given the host LAN IP via
  *   `EXPO_PUBLIC_API_BASE_URL`.
+ *
+ * `EXPO_PUBLIC_API_BASE_URL` always wins when set, so a device build can point
+ * at a LAN server without editing this file.
  */
-function defaultApiBaseUrl(): string {
-  if (Platform.OS === 'android') return 'http://10.0.2.2:5000';
-  return 'http://localhost:5000';
+export function resolveApiBaseUrl(opts: {
+  dev: boolean;
+  platform: string;
+  override?: string;
+}): string {
+  const override = firstNonEmpty(opts.override);
+  if (override) return override;
+  if (!opts.dev) return PRODUCTION_API_BASE_URL;
+  return opts.platform === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
 }
 
-export const DEFAULT_API_BASE_URL =
-  firstNonEmpty(process.env.EXPO_PUBLIC_API_BASE_URL) ?? defaultApiBaseUrl();
+export const DEFAULT_API_BASE_URL = resolveApiBaseUrl({
+  dev: __DEV__,
+  platform: Platform.OS,
+  override: process.env.EXPO_PUBLIC_API_BASE_URL,
+});
 
 /** Per-request network timeout in milliseconds. */
 export const API_TIMEOUT_MS = asNumber(process.env.EXPO_PUBLIC_API_TIMEOUT_MS, 15000);
