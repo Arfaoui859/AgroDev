@@ -110,4 +110,20 @@ describe('MarketplaceScreen', () => {
     // The backend supplies no changePercent, so no +/- percentage may appear.
     expect(screen.queryByText(/%/)).toBeNull();
   });
+
+  it('surfaces forecast and supply/demand as unavailable instead of inventing them', async () => {
+    mockGetMarketPrices.mockResolvedValueOnce({
+      data: { prices: [], meta: { provenance: 'unavailable', isRealData: false } },
+      error: null,
+      fromCache: false,
+    });
+
+    await renderScreen();
+
+    await waitFor(() => expect(screen.getByText('ذكاء السوق')).toBeTruthy());
+    expect(screen.getByText('توقّع الأسعار')).toBeTruthy();
+    expect(screen.getByText('العرض والطلب')).toBeTruthy();
+    // Both capabilities are honestly unavailable in the capability document.
+    expect(screen.getAllByText('غير مُهيّأ').length).toBe(2);
+  });
 });
