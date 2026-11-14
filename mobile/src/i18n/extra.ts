@@ -445,6 +445,11 @@ export interface ExtraTranslations {
   /** Fallback one-line description when the model returns none. */
   diseaseGenericDescription: string;
   cropFetchFailed: string;
+  soilAdvisoryUnavailable: string;
+  soilReportFetchFailed: string;
+  cropRequiresPersistedSoil: string;
+  cultivationCreateFailed: string;
+  cultivationLoadFailed: string;
   pestNeedSymptom: string;
   pestServiceUnconfigured: string;
   pestNoMatch: string;
@@ -880,6 +885,11 @@ const ar: ExtraTranslations = {
   diseaseUnknownName: 'حالة نباتية',
   diseaseGenericDescription: 'تحليل صورة النبتة.',
   cropFetchFailed: 'تعذّر جلب توصيات المحاصيل',
+  soilAdvisoryUnavailable: 'خدمة الاستشارة الذكية غير مهيأة؛ تم استخدام المحرك الإرشادي بدلاً منها.',
+  soilReportFetchFailed: 'تعذّر استرجاع التقرير.',
+  cropRequiresPersistedSoil: 'يلزم تحليل تربة محفوظ لهذه القطعة قبل التوصيات.',
+  cultivationCreateFailed: 'تعذّر حفظ المشروع الزراعي.',
+  cultivationLoadFailed: 'تعذّر تحميل المشاريع الزراعية.',
   pestNeedSymptom: 'يرجى وصف عرض واحد على الأقل',
   pestServiceUnconfigured: 'خدمة مكافحة الآفات غير مُهيّأة',
   pestNoMatch: 'لم يتم التعرف على الآفة',
@@ -1315,6 +1325,11 @@ const fr: ExtraTranslations = {
   diseaseUnknownName: 'État de la plante',
   diseaseGenericDescription: 'Analyse d’une image de plante.',
   cropFetchFailed: 'Impossible de récupérer les recommandations de cultures',
+  soilAdvisoryUnavailable: 'Le service d’avis n’est pas configuré ; le moteur expert a été utilisé à la place.',
+  soilReportFetchFailed: 'Impossible de récupérer le rapport.',
+  cropRequiresPersistedSoil: 'Une analyse de sol enregistrée est requise pour cette parcelle.',
+  cultivationCreateFailed: 'Impossible d’enregistrer le projet.',
+  cultivationLoadFailed: 'Impossible de charger les projets.',
   pestNeedSymptom: 'Veuillez décrire au moins un symptôme',
   pestServiceUnconfigured: 'Service de lutte contre les ravageurs non configuré',
   pestNoMatch: 'Aucun ravageur identifié',
@@ -1751,6 +1766,11 @@ const en: ExtraTranslations = {
   diseaseUnknownName: 'Plant condition',
   diseaseGenericDescription: 'Plant image analysis.',
   cropFetchFailed: 'Could not fetch crop recommendations',
+  soilAdvisoryUnavailable: 'The advisory service is not configured; the expert rule engine was used instead.',
+  soilReportFetchFailed: 'Could not retrieve the report.',
+  cropRequiresPersistedSoil: 'A saved soil analysis is required for this plot.',
+  cultivationCreateFailed: 'Could not save the cultivation project.',
+  cultivationLoadFailed: 'Could not load cultivation projects.',
   pestNeedSymptom: 'Please describe at least one symptom',
   pestServiceUnconfigured: 'Pest control service not configured',
   pestNoMatch: 'No pest was identified',

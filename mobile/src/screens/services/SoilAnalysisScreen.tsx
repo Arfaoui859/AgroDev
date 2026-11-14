@@ -1,119 +1,185 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
-import { analyzeSoil } from '../../api/client';
+import { Stepper } from '../../components/ui/Stepper';
+import { PlotStep } from '../../components/soil/PlotStep';
+import { MeasurementsStep, MeasurementsValues } from '../../components/soil/MeasurementsStep';
+import { SoilReportView } from '../../components/soil/SoilReportView';
+import { useFarmsFields } from '../../hooks/useFarmsFields';
+import { analyzeSoil, analyzeSoilDetailed } from '../../api/client';
 import { addHistoryEntry } from '../../api/history';
 import { provenanceLabel } from '../../utils/provenance';
 import { localizeSoilGrade } from '../../utils/soilGrade';
 import { soilParamLabel } from '../../utils/soilLabels';
 import { anyContainsArabic } from '../../utils/text';
-import { SoilAnalysisResult } from '../../types';
+import { buildSoilInput, toRuleBasedInput } from '../../utils/soilInput';
+import { getSoil } from '../../i18n/soil';
+import { SoilAnalysisResult, SoilDetailedResult, SoilToCropContext, Farm, Field } from '../../types';
 
 interface SoilAnalysisScreenProps {
   onBack: () => void;
+  /** Hand the plot + measurements to the crop screen without re-entry. */
+  onFindCrops?: (context: SoilToCropContext) => void;
 }
 
+const defaultValues: MeasurementsValues = {
+  values: {},
+  ecUnit: '',
+  waterEcUnit: '',
+  nutrientUnit: '',
+  nutrientMethod: '',
+  ecMethod: '',
+  irrigationMethod: '',
+  targetCrop: '',
+  samplingDate: '',
+};
+
 /**
- * Soil analysis form. Results come from the backend's in-process rule-based
- * agronomic engine, which is labelled honestly. Blank fields are sent as
- * undefined so the engine reports them as missing measurements rather than the
- * app silently substituting invented values.
+ * Soil analysis — a three-step flow: choose the plot, enter measurements, read
+ * the report.
+ *
+ * The report comes from the gateway's professional endpoint
+ * (`POST /api/soil-analysis/analyze`), which is an LLM advisory over the
+ * user-entered (unverified) measurements and is labelled as such. When that
+ * service is unavailable the screen falls back to the deterministic rule-based
+ * engine and says so — it never presents one as the other, and blank fields are
+ * never filled with invented values.
  */
-export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack }) => {
+export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, onFindCrops }) => {
   const { t, x, isRtl, isArabic, language } = useLanguage();
+  const { isAuthenticated } = useAuth();
+  const s9 = useMemo(() => getSoil(language), [language]);
+  const loader = useFarmsFields();
 
-  // Start empty: the engine scores only the measurements the caller actually
-  // supplies. Pre-filling a plausible sample would present invented numbers as
-  // the user's own lab results.
-  const [ph, setPh] = useState('');
-  const [nitrogen, setNitrogen] = useState('');
-  const [phosphorus, setPhosphorus] = useState('');
-  const [potassium, setPotassium] = useState('');
-  const [organicMatter, setOrganicMatter] = useState('');
-  const [moisture, setMoisture] = useState('');
-
+  const [step, setStep] = useState(0);
+  const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
+  const [selectedField, setSelectedField] = useState<Field | null>(null);
+  const [measurements, setMeasurements] = useState<MeasurementsValues>(defaultValues);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SoilAnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<SoilDetailedResult | null>(null);
+  const [ruleResult, setRuleResult] = useState<SoilAnalysisResult | null>(null);
 
-  const parse = (value: string): number | undefined => {
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const num = Number(trimmed.replace(',', '.'));
-    return Number.isFinite(num) ? num : undefined;
-  };
+  const steps = [
+    { key: 'plot', label: s9.step1Short },
+    { key: 'measure', label: s9.step2Short },
+    { key: 'report', label: s9.step3Short },
+  ];
 
-  // The rule-based soil engine answers in Arabic free text (interpretation,
-  // problems, recommendations). Flag that for fr/en callers so the Arabic-only
-  // note is shown only when the result actually contains Arabic.
-  const resultIsArabicOnly =
-    !!result &&
+  const ruleResultIsArabicOnly =
+    !!ruleResult &&
     !isArabic &&
     anyContainsArabic([
-      result.interpretationAr,
-      ...result.problems,
-      ...result.recommendations,
-      ...result.findings.map((f) => f.messageAr),
+      ruleResult.interpretationAr,
+      ...ruleResult.problems,
+      ...ruleResult.recommendations,
+      ...ruleResult.findings.map((f) => f.messageAr),
     ]);
 
-  const handleAnalyze = async () => {
-    const parsed = {
-      ph: parse(ph),
-      nitrogen: parse(nitrogen),
-      phosphorus: parse(phosphorus),
-      potassium: parse(potassium),
-      organicMatter: parse(organicMatter),
-      moisture: parse(moisture),
-    };
+  const regionLabel = useMemo(() => {
+    if (!selectedFarm) return undefined;
+    const loc = selectedFarm.location;
+    if (typeof loc === 'string') return loc;
+    return loc?.region;
+  }, [selectedFarm]);
 
-    // Reject non-numeric text the user typed, rather than silently dropping it.
-    const invalid = [
-      [ph, parsed.ph],
-      [nitrogen, parsed.nitrogen],
-      [phosphorus, parsed.phosphorus],
-      [potassium, parsed.potassium],
-      [organicMatter, parsed.organicMatter],
-      [moisture, parsed.moisture],
-    ].some(([raw, value]) => (raw as string).trim() !== '' && value === undefined);
-    if (invalid) {
-      setError(x.soilInvalidInput);
+  const buildContext = (): SoilToCropContext => ({
+    fieldId: selectedField?.id,
+    farmId: selectedFarm?.id,
+    farmName: selectedFarm?.name,
+    fieldName: selectedField?.name,
+    soil: buildSoilInput(measurements, {
+      fieldId: selectedField?.id,
+      region: regionLabel,
+      farmAreaHectares: selectedField?.size_hectares,
+    }).input,
+    targetCrop: measurements.targetCrop.trim() || undefined,
+  });
+
+  const handleAnalyze = async () => {
+    const { input, hasInvalid, measurementCount } = buildSoilInput(measurements, {
+      fieldId: selectedField?.id,
+      region: regionLabel,
+      farmAreaHectares: selectedField?.size_hectares,
+    });
+
+    if (hasInvalid) {
+      setError(s9.invalidNumbers);
       return;
     }
-
-    // Every field blank would produce a scoreless "weak soil" reading from
-    // nothing; require at least one real measurement.
-    if (Object.values(parsed).every((v) => v === undefined)) {
+    if (measurementCount === 0) {
       setError(x.soilNeedOneMeasurement);
+      return;
+    }
+    if (input.electricalConductivity !== undefined && !input.electricalConductivityUnit) {
+      setError(s9.ecUnitRequired);
+      return;
+    }
+    const texture = [input.sandPercent, input.siltPercent, input.clayPercent];
+    if (texture.some((v) => v !== undefined) && texture.some((v) => v === undefined)) {
+      setError(s9.textureTogether);
       return;
     }
 
     setLoading(true);
     setError(null);
-    setResult(null);
-    const res = await analyzeSoil(parsed);
-    if (res.data) {
-      setResult(res.data);
-      // Persist the real analysis on the device so the history screen shows it.
+    setReport(null);
+    setRuleResult(null);
+
+    // Preferred path: the professional advisory report (persisted when a plot
+    // is selected). Only available to a signed-in caller.
+    if (isAuthenticated) {
+      const detailed = await analyzeSoilDetailed(input);
+      if (detailed.data) {
+        setReport(detailed.data);
+        void addHistoryEntry({
+          type: 'soil',
+          title: selectedField ? `${s9.reportReportOf}: ${selectedField.name}` : t.soilAnalysisName,
+          summary: detailed.data.report.executiveSummary.slice(0, 120),
+          badge: provenanceLabel(detailed.data.meta.provenance, language),
+          badgeVariant: 'primary',
+        });
+        setStep(2);
+        setLoading(false);
+        return;
+      }
+      if (!detailed.unavailable) {
+        // A real failure (validation/schema) — surface it rather than silently
+        // degrading, so the user can correct their input.
+        setError(detailed.error || x.stateError);
+        setLoading(false);
+        return;
+      }
+      // unavailable -> fall through to the rule-based engine.
+    }
+
+    const fallback = await analyzeSoil(toRuleBasedInput(input));
+    if (fallback.data) {
+      setRuleResult(fallback.data);
       void addHistoryEntry({
         type: 'soil',
         title: t.soilAnalysisName,
-        summary: res.data.fertilityLevel,
-        badge: provenanceLabel(res.data.meta.provenance, language),
+        summary: fallback.data.fertilityLevel,
+        badge: provenanceLabel(fallback.data.meta.provenance, language),
         badgeVariant: 'primary',
       });
+      setStep(2);
     } else {
-      setError(res.error || x.stateError);
+      setError(fallback.error || x.stateError);
     }
     setLoading(false);
   };
+
+  const canContinueFromPlot = !!selectedField || !!selectedFarm;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -125,91 +191,132 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack }
         subtitle={t.soilAnalysisDesc}
       />
 
-      <Card variant="elevated" style={styles.formCard}>
-        <Text style={[styles.formHeading, isRtl && styles.rtlText]}>{x.soilFormHeading}</Text>
+      <Stepper steps={steps} activeIndex={step} onSelect={(i) => i < step && setStep(i)} />
 
-        <Input label={x.soilPhLabel} hint={x.soilPhHint} value={ph} onChange={setPh} isRtl={isRtl} keyboard="decimal-pad" />
-        <View style={[styles.inputsRow, isRtl && styles.rtlRow]}>
-          <HalfInput label={x.soilNitrogenLabel} value={nitrogen} onChange={setNitrogen} isRtl={isRtl} />
-          <HalfInput label={x.soilPhosphorusLabel} value={phosphorus} onChange={setPhosphorus} isRtl={isRtl} />
-        </View>
-        <View style={[styles.inputsRow, isRtl && styles.rtlRow]}>
-          <HalfInput label={x.soilPotassiumLabel} value={potassium} onChange={setPotassium} isRtl={isRtl} />
-          <HalfInput label={x.soilOrganicMatterLabel} value={organicMatter} onChange={setOrganicMatter} isRtl={isRtl} keyboard="decimal-pad" />
-        </View>
-        <HalfInput label={x.soilMoistureLabel} value={moisture} onChange={setMoisture} isRtl={isRtl} />
+      {step === 0 ? (
+        <>
+          <PlotStep
+            selectedFarm={selectedFarm}
+            selectedField={selectedField}
+            onSelectFarm={setSelectedFarm}
+            onSelectField={setSelectedField}
+            loader={loader}
+          />
+          <Button title={s9.next} onPress={() => setStep(1)} disabled={!canContinueFromPlot} />
+        </>
+      ) : null}
 
-        <Text style={[styles.blankNote, isRtl && styles.rtlText]}>{x.soilBlankNote}</Text>
+      {step === 1 ? (
+        <>
+          <MeasurementsStep initial={measurements} onChange={setMeasurements} />
+          <Text style={[styles.blankNote, isRtl && styles.rtlText]}>{x.soilBlankNote}</Text>
 
-        <Button
-          title={loading ? t.analyzing : x.soilAnalyzeButton}
-          onPress={handleAnalyze}
-          loading={loading}
-          style={{ marginTop: spacing.md }}
-        />
-      </Card>
+          {error ? (
+            <Card variant="outlined" style={styles.formCard}>
+              <StateView kind="error" title={x.stateError} message={error} onRetry={handleAnalyze} retryLabel={x.retry} />
+            </Card>
+          ) : null}
 
-      {loading ? (
+          <Button
+            title={loading ? t.analyzing : x.soilAnalyzeButton}
+            onPress={handleAnalyze}
+            loading={loading}
+            style={{ marginTop: spacing.sm }}
+          />
+          <Button title={s9.previous} variant="outline" onPress={() => setStep(0)} style={{ marginTop: spacing.sm }} />
+        </>
+      ) : null}
+
+      {step === 2 && loading ? (
         <Card variant="outlined" style={styles.formCard}>
           <StateView kind="loading" title={x.stateLoading} compact />
         </Card>
       ) : null}
 
-      {error && !loading ? (
-        <Card variant="outlined" style={styles.formCard}>
-          <StateView kind="error" title={x.stateError} message={error} onRetry={handleAnalyze} retryLabel={x.retry} />
-        </Card>
+      {step === 2 && report ? (
+        <View style={styles.resultContainer}>
+          <Card variant="elevated" style={styles.gradeCard}>
+            <View style={[styles.resultHeader, isRtl && styles.rtlRow]}>
+              <MaterialCommunityIcons name="file-document-check-outline" size={22} color={colors.primary} />
+              <Text style={[styles.resultHeading, isRtl && styles.rtlText]}>
+                {selectedField ? `${s9.reportReportOf}: ${selectedField.name}` : s9.reportTitle}
+              </Text>
+            </View>
+            <View style={styles.provWrap}>
+              <ProvenanceBadge meta={report.meta} detailed />
+            </View>
+            <Text style={[styles.persistNote, isRtl && styles.rtlText]}>
+              {report.persisted ? s9.reportPersistedNote : s9.reportNotPersistedNote}
+            </Text>
+          </Card>
+
+          <Text style={[styles.arabicNote, isRtl && styles.rtlText]}>{s9.reportLanguageNote}</Text>
+
+          <SoilReportView report={report.report} />
+
+          {onFindCrops ? (
+            <>
+              <Button
+                title={s9.findCropsCta}
+                onPress={() => onFindCrops(buildContext())}
+                icon={<MaterialCommunityIcons name="sprout" size={18} color={colors.primaryForeground} />}
+                style={{ marginBottom: spacing.sm }}
+              />
+              <Text style={[styles.ctaSub, isRtl && styles.rtlText]}>{s9.findCropsCtaSub}</Text>
+            </>
+          ) : null}
+        </View>
       ) : null}
 
-      {result && !loading ? (
+      {step === 2 && ruleResult ? (
         <View style={styles.resultContainer}>
           <View style={[styles.resultHeader, isRtl && styles.rtlRow]}>
             <MaterialCommunityIcons name="check-decagram" size={24} color={colors.primary} />
             <Text style={[styles.resultHeading, isRtl && styles.rtlText]}>{t.resultTitle}</Text>
-            <Badge label={localizeSoilGrade(result.fertilityLevel, x)} variant="success" size="md" />
+            <Badge label={localizeSoilGrade(ruleResult.fertilityLevel, x)} variant="success" size="md" />
           </View>
 
           <Card variant="elevated" style={styles.gradeCard}>
             <View style={[styles.gradeRow, isRtl && styles.rtlRow]}>
               <View style={styles.scoreCircle}>
-                <Text style={styles.scoreNumber}>{result.gradeScore}</Text>
+                <Text style={styles.scoreNumber}>{ruleResult.gradeScore}</Text>
                 <Text style={styles.scoreMax}>/100</Text>
               </View>
               <View style={styles.gradeDetails}>
                 <Text style={[styles.gradeTitle, isRtl && styles.rtlText]}>
-                  {x.soilFertilityScore}: {localizeSoilGrade(result.fertilityLevel, x)}
+                  {x.soilFertilityScore}: {localizeSoilGrade(ruleResult.fertilityLevel, x)}
                 </Text>
-                <Text style={[styles.gradeDesc, isRtl && styles.rtlText]}>{result.interpretationAr}</Text>
+                <Text style={[styles.gradeDesc, isRtl && styles.rtlText]}>{ruleResult.interpretationAr}</Text>
               </View>
             </View>
             <View style={styles.provWrap}>
-              <ProvenanceBadge meta={result.meta} detailed />
+              <ProvenanceBadge meta={ruleResult.meta} detailed />
             </View>
           </Card>
 
-          {resultIsArabicOnly ? (
+          {ruleResultIsArabicOnly ? (
             <Text style={[styles.arabicNote, isRtl && styles.rtlText]}>{x.arabicOnlyNote}</Text>
           ) : null}
 
-          {result.problems.length ? (
+          {ruleResult.problems.length ? (
             <SubSection title={x.soilProblems} isRtl={isRtl}>
-              {result.problems.map((p, i) => (
+              {ruleResult.problems.map((p, i) => (
                 <Bullet key={i} text={p} color={colors.warning} isRtl={isRtl} />
               ))}
             </SubSection>
           ) : null}
 
-          {result.missingMeasurements.length ? (
+          {ruleResult.missingMeasurements.length ? (
             <SubSection title={x.soilMissingMeasurements} isRtl={isRtl}>
-              {result.missingMeasurements.map((p, i) => (
+              {ruleResult.missingMeasurements.map((p, i) => (
                 <Bullet key={i} text={p} color={colors.textMuted} isRtl={isRtl} />
               ))}
             </SubSection>
           ) : null}
 
-          {result.findings.length ? (
+          {ruleResult.findings.length ? (
             <SubSection title={x.soilFindings} isRtl={isRtl}>
-              {result.findings.map((f, idx) => (
+              {ruleResult.findings.map((f, idx) => (
                 <Card key={idx} variant="outlined" style={styles.findingCard}>
                   <View style={[styles.findingHeader, isRtl && styles.rtlRow]}>
                     <Text style={styles.findingParam}>{soilParamLabel(f.parameter, f.labelAr, language)}</Text>
@@ -221,66 +328,36 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack }
             </SubSection>
           ) : null}
 
-          {result.recommendations.length ? (
+          {ruleResult.recommendations.length ? (
             <SubSection title={x.soilRecommendations} isRtl={isRtl}>
-              {result.recommendations.map((r, i) => (
+              {ruleResult.recommendations.map((r, i) => (
                 <Bullet key={i} text={r} color={colors.primary} isRtl={isRtl} />
               ))}
             </SubSection>
           ) : null}
+
+          {onFindCrops ? (
+            <>
+              <Button
+                title={s9.findCropsCta}
+                onPress={() => onFindCrops(buildContext())}
+                icon={<MaterialCommunityIcons name="sprout" size={18} color={colors.primaryForeground} />}
+                style={{ marginTop: spacing.md, marginBottom: spacing.sm }}
+              />
+              <Text style={[styles.ctaSub, isRtl && styles.rtlText]}>{s9.findCropsCtaSub}</Text>
+            </>
+          ) : null}
         </View>
+      ) : null}
+
+      {step === 2 ? (
+        <Button title={s9.previous} variant="outline" onPress={() => setStep(1)} style={{ marginTop: spacing.md }} />
       ) : null}
 
       <Button title={t.back} variant="outline" onPress={onBack} style={{ marginTop: spacing.lg, marginBottom: spacing.xl }} />
     </ScrollView>
   );
 };
-
-const Input: React.FC<{
-  label: string;
-  hint?: string;
-  value: string;
-  onChange: (v: string) => void;
-  isRtl: boolean;
-  keyboard?: 'decimal-pad' | 'number-pad';
-}> = ({ label, hint, value, onChange, isRtl, keyboard = 'number-pad' }) => (
-  <View style={styles.inputGroup}>
-    <View style={[styles.labelRow, isRtl && styles.rtlRow]}>
-      <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{label}</Text>
-      {hint ? <Text style={styles.inputHint}>{hint}</Text> : null}
-    </View>
-    <TextInput
-      style={[styles.input, isRtl && styles.rtlText]}
-      keyboardType={keyboard}
-      value={value}
-      onChangeText={onChange}
-      placeholder="—"
-      placeholderTextColor={colors.textMuted}
-      accessibilityLabel={label}
-    />
-  </View>
-);
-
-const HalfInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  isRtl: boolean;
-  keyboard?: 'decimal-pad' | 'number-pad';
-}> = ({ label, value, onChange, isRtl, keyboard = 'number-pad' }) => (
-  <View style={styles.halfInputGroup}>
-    <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{label}</Text>
-    <TextInput
-      style={[styles.input, isRtl && styles.rtlText]}
-      keyboardType={keyboard}
-      value={value}
-      onChangeText={onChange}
-      placeholder="—"
-      placeholderTextColor={colors.textMuted}
-      accessibilityLabel={label}
-    />
-  </View>
-);
 
 const SubSection: React.FC<{ title: string; isRtl: boolean; children: React.ReactNode }> = ({ title, isRtl, children }) => (
   <View style={styles.subSection}>
@@ -303,24 +380,7 @@ const styles = StyleSheet.create({
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.md, lineHeight: 20 },
   formCard: { padding: spacing.md, marginBottom: spacing.lg },
-  formHeading: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.md },
-  inputGroup: { marginBottom: spacing.sm },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  inputLabel: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, lineHeight: 20 },
-  inputHint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 20 },
-  blankNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.sm, lineHeight: 21 },
-  input: {
-    height: 48,
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
-    color: colors.text,
-  },
-  inputsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  halfInputGroup: { flex: 1 },
+  blankNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm, lineHeight: 21 },
   resultContainer: { gap: spacing.md },
   resultHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   resultHeading: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
@@ -340,6 +400,8 @@ const styles = StyleSheet.create({
   gradeTitle: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
   gradeDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: 21 },
   provWrap: { marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  persistNote: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: 20 },
+  ctaSub: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 20, marginBottom: spacing.sm },
   subSection: { marginTop: spacing.sm },
   subSectionTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
   findingCard: { padding: spacing.md, marginBottom: spacing.xs },

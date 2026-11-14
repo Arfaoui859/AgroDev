@@ -14,6 +14,7 @@ import {
   AssistantReply,
   CropRecommendation,
   CropRecommendationResult,
+  Cultivation,
   DataProvenance,
   DiseaseDiagnosisResult,
   Farm,
@@ -21,6 +22,8 @@ import {
   IrrigationResult,
   MarketPriceItem,
   MarketResult,
+  MarketplaceListing,
+  MarketplaceResult,
   NewsArticle,
   NewsResult,
   NewsSourceStatus,
@@ -28,6 +31,10 @@ import {
   ProvenanceMeta,
   SoilAnalysisInput,
   SoilAnalysisResult,
+  SoilDetailedInput,
+  SoilDetailedResult,
+  SoilReport,
+  SoilReportSummary,
   WeatherData,
 } from '../types';
 
@@ -222,7 +229,7 @@ export async function apiRequest<T = unknown>(
 function asProvenance(value: unknown): DataProvenance {
   const v = typeof value === 'string' ? value.toLowerCase() : '';
   if (v === 'rule-based' || v === 'heuristic' || v === 'rule_based') return 'rule-based';
-  if (v === 'llm' || v === 'llm-generated') return 'llm';
+  if (v === 'llm' || v === 'llm-generated' || v === 'ai-advisory' || v === 'advisory') return 'llm';
   // Image endpoints emit "vision-service"/"trained-model-inference" for a
   // multimodal model; keep them in the vision category.
   if (v === 'vision-model' || v === 'vision-service' || v === 'trained-model-inference') {
@@ -553,6 +560,259 @@ export async function getCropRecommendations(input: {
   return {
     data: { crops, meta: metaFrom(d, 'rule-based', 'rule-based-engine') },
     error: null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Professional detailed soil analysis — LLM advisory over user measurements
+// ---------------------------------------------------------------------------
+
+/**
+ * Call the gateway's professional soil endpoint (`POST /api/soil-analysis/analyze`).
+ *
+ * This endpoint answers with an LLM-generated advisory report (`dataSource:
+ * "ai-advisory"`, `isRealData: false`) built strictly from the measurements the
+ * caller supplies; it never fabricates missing values and withholds fertilizer
+ * doses unless every required input exists. When the caller includes a
+ * `fieldId` the server also persists the report against that plot (so it
+ * survives logout) and returns `analysisId`.
+ *
+ * A 503 means the advisory provider is not configured — the caller falls back
+ * to the deterministic rule-based engine and must label it as such.
+ */
+export async function analyzeSoilDetailed(
+  input: SoilDetailedInput,
+): Promise<{
+  data: SoilDetailedResult | null;
+  error: string | null;
+  unavailable: boolean;
+}> {
+  const res = await apiRequest<any>('/api/soil-analysis/analyze', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+
+  if (res.status === 503 || res.status === 502) {
+    return { data: null, error: msg('soilAdvisoryUnavailable'), unavailable: true };
+  }
+  const report = res.data?.data;
+  if (!res.data?.success || !report || typeof report.executiveSummary !== 'string') {
+    return {
+      data: null,
+      error: res.error || msg('soilAnalysisFailed'),
+      unavailable: false,
+    };
+  }
+
+  const persistence = res.data?.persistence ?? {};
+  return {
+    data: {
+      report: report as SoilReport,
+      // The advisory is generative AI over user-entered (unverified)
+      // measurements — never a trained model, never a lab result.
+      meta: metaFrom(res.data, 'llm', 'ai-advisory'),
+      analysisId: typeof res.data?.analysisId === 'string' ? res.data.analysisId : undefined,
+      persisted: persistence.persisted === true,
+      persistenceReason:
+        typeof persistence.reason === 'string' ? persistence.reason : undefined,
+    },
+    error: null,
+    unavailable: false,
+  };
+}
+
+/** List the caller's persisted soil reports (own farms only, via RLS). */
+export async function getSoilReports(limit = 20): Promise<{
+  data: SoilReportSummary[];
+  error: string | null;
+  unavailable: boolean;
+}> {
+  const res = await apiRequest<any>(`/api/soil-analysis/reports?limit=${limit}`, {
+    cacheKey: `soilReports:${limit}`,
+  });
+  if (res.status === 503) {
+    return { data: [], error: res.error, unavailable: true };
+  }
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return {
+    data: rows.map((r) => ({
+      analysisId: r.analysisId,
+      fieldId: r.fieldId ?? null,
+      farmId: r.farmId ?? null,
+      analysisType: r.analysisType ?? 'manual',
+      analyzedAt: r.analyzedAt ?? null,
+      executiveSummary: r.executiveSummary ?? null,
+    })),
+    error: res.error,
+    unavailable: false,
+  };
+}
+
+/** Retrieve one persisted soil report by id (own farms only, via RLS). */
+export async function getSoilReport(analysisId: string): Promise<{
+  data: { report: SoilReport; input: SoilDetailedInput | null } | null;
+  error: string | null;
+}> {
+  const res = await apiRequest<any>(`/api/soil-analysis/report/${encodeURIComponent(analysisId)}`);
+  const report = res.data?.data?.report;
+  if (!report) return { data: null, error: res.error || msg('soilReportFetchFailed') };
+  return {
+    data: { report: report as SoilReport, input: (res.data?.data?.input ?? null) as SoilDetailedInput | null },
+    error: null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Crop recommendations from a persisted plot — requires a saved soil analysis
+// ---------------------------------------------------------------------------
+
+export interface FieldCropRecommendation {
+  cropId: string;
+  cropName: string;
+  cropNameAr: string;
+  suitabilityScore: number;
+  reasons: string[];
+  waterNeed: string;
+  plantingSeason: string;
+  daysToMaturity: number | null;
+  recommendations: string;
+}
+
+/**
+ * `POST /api/ai-recommendations` — crop suitability for a specific plot.
+ *
+ * The server deliberately ignores client-supplied soil values and scores only
+ * the plot's PERSISTED soil analysis (`supabase.soil_analyses`). When the plot
+ * has no saved analysis it answers 409 `PERSISTED_SOIL_DATA_REQUIRED`, which the
+ * caller must surface honestly rather than inventing a result. The engine is
+ * rule-based (`isRealData: false`).
+ */
+export async function getFieldCropRecommendations(fieldId: string): Promise<{
+  data: { recommendations: FieldCropRecommendation[]; meta: ProvenanceMeta } | null;
+  error: string | null;
+  /** True when the plot has no persisted soil analysis yet (409). */
+  requiresSoilData: boolean;
+}> {
+  const res = await apiRequest<any>('/api/ai-recommendations', {
+    method: 'POST',
+    body: JSON.stringify({ fieldId }),
+  });
+
+  if (res.status === 409) {
+    return { data: null, error: msg('cropRequiresPersistedSoil'), requiresSoilData: true };
+  }
+  const recs: any[] = Array.isArray(res.data?.data?.recommendations)
+    ? res.data.data.recommendations
+    : [];
+  if (!res.data || recs.length === 0) {
+    return { data: null, error: res.error || msg('cropFetchFailed'), requiresSoilData: false };
+  }
+  return {
+    data: {
+      recommendations: recs.map((r) => ({
+        cropId: r.cropId,
+        cropName: r.cropName,
+        cropNameAr: r.cropNameAr,
+        suitabilityScore: Math.round(r.suitabilityScore ?? 0),
+        reasons: Array.isArray(r.reasons) ? r.reasons : [],
+        waterNeed: r.waterNeed ?? '',
+        plantingSeason: r.plantingSeason ?? '',
+        daysToMaturity: typeof r.daysToMaturity === 'number' ? r.daysToMaturity : null,
+        recommendations: r.recommendations ?? '',
+      })),
+      meta: metaFrom(res.data, 'rule-based', 'rule-based-engine'),
+    },
+    error: null,
+    requiresSoilData: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Cultivation projects — persisted, requires verified session
+// ---------------------------------------------------------------------------
+
+/** List the caller's cultivation projects (`supabase.crop_cultivations`). */
+export async function getCultivations(farmId?: string): Promise<{
+  data: Cultivation[];
+  error: string | null;
+  meta: ProvenanceMeta;
+}> {
+  const endpoint = farmId
+    ? `/api/assistant/cultivations?farm_id=${encodeURIComponent(farmId)}`
+    : '/api/assistant/cultivations';
+  const res = await apiRequest<any>(endpoint, { cacheKey: `cultivations:${farmId || 'all'}` });
+  const list: Cultivation[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return { data: list, error: res.error, meta: metaFrom(res.data, 'database') };
+}
+
+/**
+ * Create a cultivation project. The server validates farm/section ownership,
+ * the planting date, and that the area does not exceed the plot's registered
+ * area; it never trusts a client-supplied farm id beyond an ownership check.
+ */
+export async function createCultivation(payload: {
+  farm_id: string;
+  section_id?: string | null;
+  crop_name: string;
+  crop_variety?: string;
+  planting_date: string;
+  area_hectares: number;
+  expected_harvest_date?: string;
+  notes?: string;
+}): Promise<{ data: Cultivation | null; error: string | null }> {
+  const res = await apiRequest<any>('/api/assistant/actions/cultivations', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.data?.success || !res.data?.data) {
+    return { data: null, error: res.error || msg('cultivationCreateFailed') };
+  }
+  return { data: res.data.data as Cultivation, error: null };
+}
+
+// ---------------------------------------------------------------------------
+// Marketplace listings — persisted seller records (unverified, labelled)
+// ---------------------------------------------------------------------------
+
+/**
+ * `GET /api/marketplace/listings` — real seller listings when the store is
+ * connected; the gateway fails closed with 503 `MARKETPLACE_STORE_NOT_CONNECTED`
+ * until then, which the UI renders as an honest "no matching product" state.
+ */
+export async function getMarketplaceListings(params: { q?: string } = {}): Promise<{
+  data: MarketplaceResult;
+  error: string | null;
+  unavailable: boolean;
+}> {
+  const query = params.q ? `?q=${encodeURIComponent(params.q)}` : '';
+  const res = await apiRequest<any>(`/api/marketplace/listings${query}`, {
+    cacheKey: `marketplace:${params.q || 'all'}`,
+  });
+
+  if (res.status === 503) {
+    return {
+      data: { listings: [], meta: { provenance: 'unavailable', isRealData: false } },
+      error: res.error,
+      unavailable: true,
+    };
+  }
+  const raw: any[] = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
+  const listings: MarketplaceListing[] = raw.map((l, index) => ({
+    id: String(l.id ?? `listing-${index}`),
+    title: l.title ?? l.name ?? '—',
+    category: l.category ?? undefined,
+    price: typeof l.price === 'number' ? l.price : null,
+    currency: l.currency ?? 'TND',
+    unit: l.unit ?? undefined,
+    sellerName: l.sellerName ?? l.seller_name ?? null,
+    location: l.location ?? null,
+    quantity: typeof l.quantity === 'number' ? l.quantity : null,
+    imageUrl: l.imageUrl ?? l.image_url ?? null,
+  }));
+  return {
+    data: { listings, meta: metaFrom(res.data, 'database', 'marketplace-listings') },
+    error: null,
+    unavailable: false,
   };
 }
 

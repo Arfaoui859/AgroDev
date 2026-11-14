@@ -155,6 +155,263 @@ export interface SoilAnalysisInput {
   soilTexture?: string;
 }
 
+/**
+ * Extended soil input accepted by the professional detailed endpoint
+ * (`POST /api/soil-analysis/analyze`). Every field is optional; the server's
+ * report explicitly lists what is missing instead of inventing it. Units follow
+ * the server contract (`normalizeSoilRequest` in soil-analysis-detailed.ts).
+ */
+export interface SoilDetailedInput {
+  fieldId?: string;
+  location?: string;
+  samplingDate?: string;
+  sampleDepth?: number;
+  ph?: number;
+  moisture?: number;
+  organicMatter?: number;
+  nitrogen?: number;
+  phosphorus?: number;
+  potassium?: number;
+  calcium?: number;
+  magnesium?: number;
+  sulfur?: number;
+  iron?: number;
+  zinc?: number;
+  manganese?: number;
+  copper?: number;
+  boron?: number;
+  electricalConductivity?: number;
+  /** Required by the server whenever EC is supplied (e.g. "dS/m", "µS/cm"). */
+  electricalConductivityUnit?: string;
+  electricalConductivityMethod?: string;
+  soilTexture?: string;
+  sandPercent?: number;
+  siltPercent?: number;
+  clayPercent?: number;
+  nutrientUnit?: string;
+  nutrientMethod?: string;
+  calciumCarbonateTotal?: number;
+  calciumCarbonateActive?: number;
+  cec?: number;
+  sodium?: number;
+  sodiumAdsorptionRatio?: number;
+  exchangeableSodiumPercentage?: number;
+  waterElectricalConductivity?: number;
+  waterElectricalConductivityUnit?: string;
+  waterPh?: number;
+  slopePercent?: number;
+  drainage?: string;
+  previousCrop?: string;
+  targetCrop?: string;
+  targetYield?: number;
+  farmAreaHectares?: number;
+  irrigationMethod?: string;
+  region?: string;
+  currentCrop?: string;
+  season?: string;
+  notes?: string;
+}
+
+// The professional report is a large, server-validated JSON object
+// (schemaVersion 2.0). We type only the fields the UI renders; the rest is kept
+// verbatim under `report` so nothing is dropped or reshaped.
+export interface SoilIndicatorRow {
+  parameter: string;
+  value: string | number;
+  unit: string;
+  classification: string;
+  cropEffect: string;
+  evidence: string;
+}
+
+export interface SoilReportFinding {
+  parameter: string;
+  observedValue: string | number;
+  unit: string;
+  interpretation: string;
+  importance: string;
+  severity: 'informational' | 'low' | 'moderate' | 'high' | 'not_assessed';
+  evidence: string;
+}
+
+export interface SoilRankedConstraint {
+  rank: number;
+  constraint: string;
+  severity: 'low' | 'moderate' | 'high' | 'not_assessed';
+  evidence: string;
+  cropImpact: string;
+  whatToConfirm: string;
+}
+
+export interface SoilReportAction {
+  priority: 'now' | 'before_planting' | 'during_season' | 'follow_up';
+  action: string;
+  reason?: string;
+  evidence?: string;
+  howTo?: string;
+  when: string;
+  verification?: string;
+  /** Always null in this workflow: doses are withheld without lab data. */
+  quantity: null | number;
+}
+
+export interface SoilCropCandidate {
+  crop: string;
+  status: 'possible' | 'possible_with_checks' | 'not_assessed';
+  why_it_may_fit: string;
+  risk: string;
+  sowingWindow: string;
+  conditions_to_check: string[];
+  limitations: string;
+}
+
+export interface SoilReport {
+  schemaVersion: string;
+  reportLanguage: string;
+  executiveSummary: string;
+  confidence: { level: 'low' | 'moderate' | 'high' | 'not_assessed'; reasons: string[] };
+  dataQuality: {
+    providedMeasurements: { name: string; value: string | number; unit: string; source: string }[];
+    missingMeasurements: string[];
+    limitations: string[];
+    consistencyChecks: string[];
+  };
+  indicatorTable: SoilIndicatorRow[];
+  soilCharacterization: {
+    texture: { classification: string; basis: string; confidence: string };
+    chemical: string[];
+    physical: string[];
+  };
+  findings: SoilReportFinding[];
+  rankedConstraints: SoilRankedConstraint[];
+  strengths: string[];
+  constraints: string[];
+  cropSuitability: {
+    status: 'qualitative' | 'not_assessed';
+    candidates: SoilCropCandidate[];
+    avoid: { crop: string; reason: string; evidence: string }[];
+    caveats: string[];
+  };
+  targetCropPlan?: {
+    targetCrop: string;
+    feasibility: 'feasible' | 'feasible_with_correction' | 'not_recommended' | 'not_assessed';
+    reasons: string[];
+    gaps: { parameter: string; current: string; required: string; gap: string; evidence: string }[];
+    actions: SoilReportAction[];
+    firstAction: string;
+    retestWhen: string;
+  };
+  fertilizationPlan: {
+    status: 'guidance_only' | 'not_assessed';
+    stages: {
+      stage: string;
+      strategy: string;
+      productExamples: string[];
+      rate: null | number;
+      timing: string;
+      basis: string;
+      verification: string;
+    }[];
+    organicOptions: string[];
+    withheldDosesReason: string;
+  };
+  waterAndIrrigation: {
+    status: 'guidance_only' | 'not_assessed';
+    method: string;
+    frequency: string;
+    amount: string;
+    waterQuality: string;
+    salinityAndLeaching: string;
+    drainage: string;
+    limitations: string[];
+  };
+  twelveWeekCalendar: { week: number; actions: string[]; check: string }[];
+  riskAlerts: {
+    risk: string;
+    severity: 'low' | 'moderate' | 'high' | 'not_assessed';
+    trigger: string;
+    symptomsToMonitor: string[];
+    safeResponse: string;
+  }[];
+  recommendations: SoilReportAction[];
+  followUpPlan: { step: number; when: string; whatToDo: string; whatToMeasure: string; why: string }[];
+  additionalInformationNeeded: string[];
+  professionalReview: { required: boolean; reason: string; bringToAgronomist: string[] };
+  disclaimers: string[];
+}
+
+export interface SoilDetailedResult {
+  report: SoilReport;
+  meta: ProvenanceMeta;
+  /** Present only when the server actually persisted the report. */
+  analysisId?: string;
+  persisted: boolean;
+  /** Why persistence was skipped, when it was (e.g. FIELD_NOT_SELECTED). */
+  persistenceReason?: string;
+}
+
+export interface SoilReportSummary {
+  analysisId: string;
+  fieldId: string | null;
+  farmId: string | null;
+  analysisType: string;
+  analyzedAt: string | null;
+  executiveSummary: string | null;
+}
+
+/**
+ * Context handed from the soil screen to the crop screen so the user does not
+ * re-enter what they already provided. `soil` is the user-entered (unverified)
+ * measurement set; `fieldId` is present when a plot was selected, which lets
+ * the crop screen read the plot's PERSISTED analysis instead.
+ */
+export interface SoilToCropContext {
+  fieldId?: string;
+  farmId?: string;
+  /** Human-readable names for the project confirmation screen. */
+  farmName?: string;
+  fieldName?: string;
+  soil: SoilDetailedInput;
+  /** Target crop the user named in the soil form, if any. */
+  targetCrop?: string;
+}
+
+// --------------------------- Cultivation project ---------------------------
+
+export interface Cultivation {
+  id: string;
+  farm_id: string;
+  section_id: string | null;
+  crop_name: string;
+  crop_variety: string | null;
+  planting_date: string | null;
+  expected_harvest_date: string | null;
+  area_hectares: number;
+  current_growth_stage: string | null;
+  status: string;
+  created_at?: string;
+}
+
+// ------------------------------- Marketplace -------------------------------
+
+export interface MarketplaceListing {
+  id: string;
+  title: string;
+  category?: string;
+  price?: number | null;
+  currency?: string;
+  unit?: string;
+  sellerName?: string | null;
+  location?: string | null;
+  quantity?: number | null;
+  imageUrl?: string | null;
+}
+
+export interface MarketplaceResult {
+  listings: MarketplaceListing[];
+  meta: ProvenanceMeta;
+}
+
 export interface SoilFinding {
   parameter: string;
   labelAr: string;

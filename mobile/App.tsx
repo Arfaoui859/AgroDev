@@ -24,7 +24,8 @@ import { NotificationsScreen } from './src/screens/NotificationsScreen';
 // Service screens
 import { SoilAnalysisScreen } from './src/screens/services/SoilAnalysisScreen';
 import { DiseaseDetectionScreen } from './src/screens/services/DiseaseDetectionScreen';
-import { CropRecommendationScreen } from './src/screens/services/CropRecommendationScreen';
+import { CropRecommendationScreen, CropSelection } from './src/screens/services/CropRecommendationScreen';
+import { CultivationProjectScreen } from './src/screens/services/CultivationProjectScreen';
 import { WeatherDetailScreen } from './src/screens/services/WeatherDetailScreen';
 import { FarmManagementScreen } from './src/screens/services/FarmManagementScreen';
 import { LivestockScreen } from './src/screens/services/LivestockScreen';
@@ -32,15 +33,24 @@ import { MultiAgentAIScreen } from './src/screens/services/MultiAgentAIScreen';
 import { AgriNewsScreen } from './src/screens/services/AgriNewsScreen';
 import { RecentAnalysesScreen } from './src/screens/services/RecentAnalysesScreen';
 import { GeneralServiceModal } from './src/screens/services/GeneralServiceModal';
+import { SoilToCropContext } from './src/types';
+import { getSoil } from './src/i18n/soil';
 
 const MainAppContent: React.FC = () => {
-  const { t, x, isRtl } = useLanguage();
+  const { t, x, isRtl, language } = useLanguage();
+  const soil = getSoil(language);
   const { isInitialising, hasOnboarded } = useAuth();
   const { isOnline } = useConnectivity();
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [activeService, setActiveService] = useState<string | null>(null);
   const [personaDismissed, setPersonaDismissed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  // Soil → crop → project handoff context. Kept in App so the crop screen can
+  // reuse the plot/measurements without re-entry, and the project screen knows
+  // which farm/plot/crop the user chose.
+  const [cropContext, setCropContext] = useState<SoilToCropContext | null>(null);
+  const [cropSelection, setCropSelection] = useState<CropSelection | null>(null);
+  const [selectionNames, setSelectionNames] = useState<{ farmName?: string; fieldName?: string }>({});
 
   // First-run onboarding, derived rather than mirrored into state.
   const showPersona = !isInitialising && !hasOnboarded && !personaDismissed;
@@ -56,7 +66,14 @@ const MainAppContent: React.FC = () => {
         return true;
       }
       if (activeService) {
-        setActiveService(null);
+        // Step back through the soil → crop → project flow rather than jumping
+        // straight home from a nested screen.
+        if (activeService === 'cultivation_project') {
+          setActiveService('crops');
+        } else {
+          if (activeService === 'crops') setCropContext(null);
+          setActiveService(null);
+        }
         return true;
       }
       if (activeTab !== 'home') {
@@ -88,6 +105,8 @@ const MainAppContent: React.FC = () => {
           return { title: t.diseaseDiagnosisName };
         case 'crops':
           return { title: t.cropRecommendName };
+        case 'cultivation_project':
+          return { title: soil.projectConfirmTitle };
         case 'weather':
           return { title: t.weatherIntelligenceName };
         case 'farms':
@@ -134,13 +153,52 @@ const MainAppContent: React.FC = () => {
   const renderService = () => {
     switch (activeService) {
       case 'soil':
-        return <SoilAnalysisScreen onBack={() => setActiveService(null)} />;
+        return (
+          <SoilAnalysisScreen
+            onBack={() => setActiveService(null)}
+            onFindCrops={(context) => {
+              setCropContext(context);
+              setActiveService('crops');
+            }}
+          />
+        );
       case 'disease':
         return <DiseaseDetectionScreen onBack={() => setActiveService(null)} />;
       case 'live_scan':
         return <DiseaseDetectionScreen onBack={() => setActiveService(null)} startWithCamera />;
       case 'crops':
-        return <CropRecommendationScreen onBack={() => setActiveService(null)} />;
+        return (
+          <CropRecommendationScreen
+            onBack={() => {
+              // Leaving the crop screen without choosing clears the soil handoff
+              // so a later entry starts clean.
+              setCropContext(null);
+              setActiveService(null);
+            }}
+            initialContext={cropContext}
+            onSelectCrop={(selection) => {
+              setCropSelection(selection);
+              setSelectionNames({
+                farmName: cropContext?.farmName,
+                fieldName: cropContext?.fieldName,
+              });
+              setActiveService('cultivation_project');
+            }}
+          />
+        );
+      case 'cultivation_project':
+        return cropSelection ? (
+          <CultivationProjectScreen
+            onBack={() => {
+              setActiveService('crops');
+            }}
+            selection={cropSelection}
+            farmName={selectionNames.farmName}
+            fieldName={selectionNames.fieldName}
+          />
+        ) : (
+          <CropRecommendationScreen onBack={() => setActiveService(null)} />
+        );
       case 'weather':
         return <WeatherDetailScreen onBack={() => setActiveService(null)} />;
       case 'farms':

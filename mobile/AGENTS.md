@@ -123,14 +123,42 @@ produced. The single source of truth is `src/utils/provenance.ts`
   renders. Run `npx jest` (offline, green) and `LIVE_API_TESTS=1 npx jest
   tests/live` (real gateway + Supabase).
 
+### Soil → crop → cultivation-project flow (verified)
+
+A single connected workflow that reuses existing gateway endpoints — no new
+endpoint was added to the backend:
+
+1. `SoilAnalysisScreen` — three steps (plot → measurements → report). Preferred
+   path is `POST /api/soil-analysis/analyze` (auth-required; LLM advisory over
+   the user-entered, unverified measurements, persisted per plot). On 503 it
+   falls back to the deterministic rule-based engine and says so. Blank fields
+   are never filled with invented values (`src/utils/soilInput.ts`).
+2. `CropRecommendationScreen` — two honest paths. Plot path
+   `POST /api/ai-recommendations` (auth-required) scores the plot's **saved**
+   analysis; a 409 `PERSISTED_SOIL_DATA_REQUIRED` renders an explicit "saved
+   analysis required" state instead of inventing a result. Manual path
+   `POST /api/ai/crop-recommendation` runs the rule-based reference-table engine.
+   `retry()` re-runs whichever path produced the current view.
+3. `CultivationProjectScreen` — confirms crop/farm/plot/date, persists via
+   `POST /api/assistant/actions/cultivations` (server validates ownership, area
+   and date), then derives the checklist from the plot's persisted soil report
+   (`GET /api/soil-analysis/reports` + `/report/:analysisId`), or an honest
+   generic sequence when no plot/report is linked. Task ticks are stored
+   on-device only (`src/api/projectTasks.ts`). A "matching products" section
+   reads `GET /api/marketplace/listings` and shows an explicit unavailable state
+   (503) until the store is connected.
+
+Covered by `tests/unit/crop-recommendation-screen.test.tsx` and
+`tests/unit/cultivation-project-screen.test.tsx`.
+
 ### Verified checks (2026-11)
 
 - `npx tsc --noEmit` — clean.
 - `npx expo lint` — clean.
-- `npx jest` — 38 suites / 183 tests passing (7 skipped live suites).
+- `npx jest` — 41 suites / 201 tests passing (7 skipped live suites).
 - `npx expo-doctor` — 20/20 checks passed.
-- `npx expo export --platform android` — bundles (818 modules) to Hermes
+- `npx expo export --platform android` — bundles (832 modules) to Hermes
   bytecode successfully.
-- `LIVE_API_TESTS=1 npx jest tests/live` — production-smoke (5) and live-auth
-  (2) pass against `https://agrodev-3.onrender.com` and the live Supabase
+- `LIVE_API_TESTS=1 npx jest tests/live` — production-smoke and live-auth
+  (7 tests) pass against `https://agrodev-3.onrender.com` and the live Supabase
   project.
