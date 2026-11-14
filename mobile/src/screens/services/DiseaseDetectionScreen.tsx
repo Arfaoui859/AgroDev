@@ -273,6 +273,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           value={symptomsInput}
           onChangeText={setSymptomsInput}
           multiline
+          accessibilityLabel={x.scannerSymptomsLabel}
         />
       </View>
 

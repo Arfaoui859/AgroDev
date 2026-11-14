@@ -256,6 +256,7 @@ const Input: React.FC<{
       onChangeText={onChange}
       placeholder="—"
       placeholderTextColor={colors.textMuted}
+      accessibilityLabel={label}
     />
   </View>
 );
@@ -276,6 +277,7 @@ const HalfInput: React.FC<{
       onChangeText={onChange}
       placeholder="—"
       placeholderTextColor={colors.textMuted}
+      accessibilityLabel={label}
     />
   </View>
 );

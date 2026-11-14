@@ -115,6 +115,7 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
           onChangeText={setQuery}
           onSubmitEditing={submitSearch}
           returnKeyType="search"
+          accessibilityLabel={x.newsSearchPlaceholder}
         />
         <TouchableOpacity
           onPress={submitSearch}
@@ -165,7 +166,14 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
           </View>
 
           {articles.map((article) => (
-            <Card key={article.id} variant="elevated" style={styles.articleCard} onPress={() => openArticle(article)}>
+            <Card
+              key={article.id}
+              variant="elevated"
+              style={styles.articleCard}
+              onPress={() => openArticle(article)}
+              accessibilityLabel={article.title}
+              accessibilityHint={x.articleOpenSource}
+            >
               <View style={[styles.articleHeader, isRtl && styles.rtlRow]}>
                 <Badge label={article.sourceName || x.newsUnknownSource} variant="secondary" size="sm" />
                 {article.categories[0] ? (

@@ -94,7 +94,14 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
           <Text style={[styles.tapHint, isRtl && styles.rtlText]}>{x.recentAnalysesTapHint}</Text>
           <View style={styles.recordsList}>
             {records.map((item) => (
-              <Card key={item.id} variant="elevated" onPress={() => handleOpen(item)} style={styles.recordCard}>
+              <Card
+                key={item.id}
+                variant="elevated"
+                onPress={() => handleOpen(item)}
+                style={styles.recordCard}
+                accessibilityLabel={`${item.title} — ${item.badge}`}
+                accessibilityHint={x.recentAnalysesTapHint}
+              >
                 <View style={[styles.cardTop, isRtl && styles.rtlRow]}>
                   <View style={styles.titleArea}>
                     <Text style={[styles.recordTitle, isRtl && styles.rtlText]}>{item.title}</Text>

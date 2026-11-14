@@ -260,6 +260,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               placeholderTextColor={colors.textMuted}
               value={farmName}
               onChangeText={setFarmName}
+              accessibilityLabel={x.farmName}
             />
           </View>
 
@@ -295,6 +296,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               keyboardType="decimal-pad"
               value={farmSize}
               onChangeText={setFarmSize}
+              accessibilityLabel={x.farmSize}
             />
           </View>
 
@@ -306,6 +308,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               placeholderTextColor={colors.textMuted}
               value={farmSoil}
               onChangeText={setFarmSoil}
+              accessibilityLabel={x.farmSoilType}
             />
           </View>
 
@@ -332,6 +335,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               placeholderTextColor={colors.textMuted}
               value={fieldName}
               onChangeText={setFieldName}
+              accessibilityLabel={x.farmFieldName}
             />
           </View>
 
@@ -344,6 +348,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               keyboardType="decimal-pad"
               value={fieldArea}
               onChangeText={setFieldArea}
+              accessibilityLabel={x.farmFieldArea}
             />
           </View>
 
@@ -355,6 +360,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               placeholderTextColor={colors.textMuted}
               value={fieldSoil}
               onChangeText={setFieldSoil}
+              accessibilityLabel={x.farmSoilType}
             />
           </View>
 
@@ -366,6 +372,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               placeholderTextColor={colors.textMuted}
               value={fieldCrop}
               onChangeText={setFieldCrop}
+              accessibilityLabel={x.farmCurrentCrop}
             />
           </View>
 

@@ -256,6 +256,7 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           value={symptoms}
           onChangeText={setSymptoms}
           multiline
+          accessibilityLabel={x.pestSymptomInput}
         />
         <Text style={[styles.hint, isRtl && styles.rtlText]}>{x.pestSeparatorHint}</Text>
         <Text style={[styles.label, { marginTop: spacing.md }, isRtl && styles.rtlText]}>{x.pestCropOptional}</Text>
@@ -266,6 +267,7 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           value={crop}
           onChangeText={setCrop}
           autoCapitalize="none"
+          accessibilityLabel={x.pestCropOptional}
         />
         <Button title={loading ? t.analyzing : x.pestIdentify} onPress={identify} loading={loading} style={{ marginTop: spacing.md }} />
       </Card>

@@ -214,6 +214,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
           placeholderTextColor={colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          accessibilityLabel={t.searchServices}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity

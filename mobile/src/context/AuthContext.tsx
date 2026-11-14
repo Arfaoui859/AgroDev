@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../api/supabase';
 import { apiRequest } from '../api/client';
+import { clearCache, setCacheNamespace, namespaceUserId } from '../api/cache';
 import { User, UserRole } from '../types';
 
 const ONBOARDED_KEY = 'agrogrowth.onboarded';
@@ -116,6 +117,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: { session: restored },
         } = await supabase.auth.getSession();
         if (!active) return;
+        // Namespace the offline cache before any authenticated request runs so
+        // one account can never read another's cached private records.
+        setCacheNamespace(restored?.user?.id ?? null);
         setSession(restored);
         if (restored?.user) {
           const profile = await fetchProfile();
@@ -133,6 +137,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       setSession(nextSession);
       if (nextSession?.user) {
+        // A different account may be signing in on this device: re-point the
+        // cache namespace and drop anything cached under the previous one.
+        if (namespaceUserId() !== nextSession.user.id) {
+          await clearCache();
+          setCacheNamespace(nextSession.user.id);
+        }
         setUser(withPreference(mapUser(nextSession.user)));
         // Best-effort profile hydration; never blocks the auth state.
         try {
@@ -230,6 +240,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.warn('sign-out warning:', error);
     }
+    // Drop cached private records and re-point the cache at the anonymous
+    // namespace so a later account on this device cannot replay them.
+    await clearCache();
+    setCacheNamespace(null);
     setUser(null);
     setSession(null);
   };

@@ -10,6 +10,32 @@ import { CACHE_TTL_MS } from '../config';
 
 const PREFIX = 'agrogrowth.cache.';
 
+/**
+ * Per-user cache namespace.
+ *
+ * Cached payloads include private records (notifications, farms, livestock)
+ * that the gateway returns for the signed-in caller. Without scoping, a second
+ * account used on the same device could replay the first account's private
+ * records from the offline cache. Every key is therefore namespaced by the
+ * signed-in user id (or `anon` when signed out) and the whole cache is dropped
+ * on sign-out.
+ */
+let namespace = 'anon';
+
+/** Point the cache at a user's namespace. Call on sign-in/sign-out. */
+export function setCacheNamespace(userId: string | null): void {
+  namespace = userId ? `u_${userId}` : 'anon';
+}
+
+/** The raw user id the cache is currently namespaced to ('' when anonymous). */
+export function namespaceUserId(): string {
+  return namespace.startsWith('u_') ? namespace.slice(2) : '';
+}
+
+function storageKey(key: string): string {
+  return `${PREFIX}${namespace}.${key}`;
+}
+
 interface CacheEnvelope<T> {
   value: T;
   savedAt: number;
@@ -18,7 +44,7 @@ interface CacheEnvelope<T> {
 export async function writeCache<T>(key: string, value: T): Promise<void> {
   try {
     const envelope: CacheEnvelope<T> = { value, savedAt: Date.now() };
-    await AsyncStorage.setItem(PREFIX + key, JSON.stringify(envelope));
+    await AsyncStorage.setItem(storageKey(key), JSON.stringify(envelope));
   } catch (error) {
     console.warn('cache write failed:', error);
   }
@@ -29,7 +55,7 @@ export async function readCache<T>(
   ttlMs: number = CACHE_TTL_MS,
 ): Promise<{ value: T; savedAt: number } | null> {
   try {
-    const raw = await AsyncStorage.getItem(PREFIX + key);
+    const raw = await AsyncStorage.getItem(storageKey(key));
     if (!raw) return null;
     const envelope = JSON.parse(raw) as CacheEnvelope<T>;
     if (!envelope || typeof envelope.savedAt !== 'number') return null;

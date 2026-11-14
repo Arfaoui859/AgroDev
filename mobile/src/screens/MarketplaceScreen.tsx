@@ -83,6 +83,7 @@ export const MarketplaceScreen: React.FC = () => {
           placeholderTextColor={colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          accessibilityLabel={t.searchCrop}
         />
         {searchQuery.length > 0 ? (
           <TouchableOpacity

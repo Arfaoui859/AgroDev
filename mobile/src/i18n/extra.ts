@@ -326,6 +326,8 @@ export interface ExtraTranslations {
   recentAnalysesClearConfirm: string;
   recentAnalysesViewImage: string;
   recentAnalysesTapHint: string;
+  weatherOpenDetail: string;
+  articleOpenSource: string;
   recentAnalysesRunAgain: string;
 
   // Secondary services (irrigation / pest / disabled services)
@@ -764,6 +766,8 @@ const ar: ExtraTranslations = {
   recentAnalysesClearConfirm: 'سيتم حذف جميع التحاليل المحفوظة على هذا الجهاز. لا يمكن التراجع عن هذا الإجراء.',
   recentAnalysesViewImage: 'عرض الصورة المرفقة',
   recentAnalysesTapHint: 'اضغط على أي عنصر لعرض التفاصيل.',
+  weatherOpenDetail: 'اضغط لعرض تفاصيل الطقس.',
+  articleOpenSource: 'اضغط لفتح المقال في المتصفح.',
   recentAnalysesRunAgain: 'إعادة إجراء التحليل',
 
   // Secondary services (irrigation / pest / disabled services)
@@ -1196,6 +1200,8 @@ const fr: ExtraTranslations = {
   recentAnalysesClearConfirm: 'Toutes les analyses enregistrées sur cet appareil seront supprimées. Cette action est irréversible.',
   recentAnalysesViewImage: 'Voir l’image jointe',
   recentAnalysesTapHint: 'Touchez un élément pour voir les détails.',
+  weatherOpenDetail: 'Touchez pour voir le détail de la météo.',
+  articleOpenSource: 'Touchez pour ouvrir l’article dans le navigateur.',
   recentAnalysesRunAgain: 'Relancer l’analyse',
 
   // Secondary services (irrigation / pest / disabled services)
@@ -1629,6 +1635,8 @@ const en: ExtraTranslations = {
   recentAnalysesClearConfirm: 'All analyses saved on this device will be deleted. This cannot be undone.',
   recentAnalysesViewImage: 'View attached image',
   recentAnalysesTapHint: 'Tap an entry to view details.',
+  weatherOpenDetail: 'Tap to view weather details.',
+  articleOpenSource: 'Tap to open the article in the browser.',
   recentAnalysesRunAgain: 'Run analysis again',
 
   // Secondary services (irrigation / pest / disabled services)

@@ -227,6 +227,7 @@ const Field: React.FC<{
       placeholderTextColor={colors.textMuted}
       keyboardType="decimal-pad"
       inputMode="decimal"
+      accessibilityLabel={label}
     />
   </View>
 );

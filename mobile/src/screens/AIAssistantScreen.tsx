@@ -212,6 +212,7 @@ export const AIAssistantScreen: React.FC = () => {
           onChangeText={setInputText}
           multiline
           maxLength={500}
+          accessibilityLabel={t.typeYourMessage}
         />
         <TouchableOpacity
           activeOpacity={0.8}

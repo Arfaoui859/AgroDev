@@ -241,7 +241,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           <StateView kind="loading" title={x.stateLoading} compact />
         </Card>
       ) : weather ? (
-        <Card variant="elevated" onPress={() => onNavigateToService('weather')} style={styles.weatherCard}>
+        <Card
+          variant="elevated"
+          onPress={() => onNavigateToService('weather')}
+          style={styles.weatherCard}
+          accessibilityLabel={`${t.weatherTitle}: ${weather.temperature}°C ${weather.governorate}`}
+          accessibilityHint={x.weatherOpenDetail}
+        >
           <View style={[styles.weatherHeader, isRtl && styles.rtlRow]}>
             <View style={[styles.weatherMain, isRtl && styles.rtlRow]}>
               <MaterialCommunityIcons

@@ -166,6 +166,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                     placeholderTextColor={colors.textMuted}
                     value={fullName}
                     onChangeText={setFullName}
+                    autoComplete="name"
+                    accessibilityLabel={x.authFullName}
                   />
                 </Field>
                 <Field label={x.authPhone} isRtl={isRtl}>
@@ -176,6 +178,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                     keyboardType="phone-pad"
                     value={phone}
                     onChangeText={setPhone}
+                    autoComplete="tel"
+                    accessibilityLabel={x.authPhone}
                   />
                 </Field>
                 <Field label={x.authAccountType} isRtl={isRtl}>
@@ -218,6 +222,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                 autoCorrect={false}
                 value={email}
                 onChangeText={setEmail}
+                autoComplete="email"
+                textContentType="emailAddress"
+                accessibilityLabel={x.authEmail}
               />
             </Field>
 
@@ -230,6 +237,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                   secureTextEntry
                   value={password}
                   onChangeText={setPassword}
+                  autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
+                  accessibilityLabel={x.authPassword}
                 />
               </Field>
             ) : null}
