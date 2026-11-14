@@ -45,6 +45,7 @@
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:live": "LIVE_API_TESTS=1 jest tests/live",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint"
   },
