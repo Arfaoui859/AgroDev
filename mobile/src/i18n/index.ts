@@ -1,5 +1,3 @@
-import { I18nManager } from 'react-native';
-
 export type Language = 'ar' | 'fr' | 'en';
 
 export interface Translations {
@@ -108,6 +106,10 @@ export interface Translations {
   roleVeterinarian: string;
   roleInspector: string;
   roleAdmin: string;
+  roleGardener: string;
+  roleCompany: string;
+  roleGovernment: string;
+  roleInvestor: string;
   languageSelect: string;
   connectionStatus: string;
   serverOnline: string;
@@ -141,6 +143,8 @@ export interface Translations {
   // Multi-Agent AI & History
   multiAgentAiName: string;
   multiAgentAiDesc: string;
+  agriNewsName: string;
+  agriNewsDesc: string;
 }
 
 const ar: Translations = {
@@ -241,6 +245,10 @@ const ar: Translations = {
   roleVeterinarian: 'طبيب بيطري',
   roleInspector: 'مراقب جودة وحقول',
   roleAdmin: 'مدير المنصة',
+  roleGardener: 'زراعة منزلية وحدائق',
+  roleCompany: 'شركة / تعاونية فلاحية',
+  roleGovernment: 'إدارة عمومية / حكومية',
+  roleInvestor: 'مستثمر / مؤسسة مالية',
   languageSelect: 'لغة التطبيق',
   connectionStatus: 'حالة الاتصال بالنظام',
   serverOnline: 'متصل بالنظام والسحابة',
@@ -249,8 +257,8 @@ const ar: Translations = {
   syncData: 'مزامنة البيانات الآن',
   loginBtn: 'تسجيل الدخول',
   logoutBtn: 'تسجيل الخروج',
-  demoModeSwitch: 'تبديل الحساب التجريبي',
-  demoModeNotice: 'يمكنك التبديل بين الأدوار المختلفة لتجربة كافة خصائص المنصة',
+  demoModeSwitch: 'تفضيل الدور في الواجهة',
+  demoModeNotice: 'تفضيل محلي يضبط ترتيب الاختصارات والواجهة فقط؛ الدور الفعلي للحساب يُحدَّد من الخادم ولا يتغيّر من هنا.',
 
   save: 'حفظ',
   cancel: 'إلغاء',
@@ -270,7 +278,9 @@ const ar: Translations = {
   provenanceRuleBased: 'نظام إرشادي زراعي دقيق',
   provenanceSimulated: 'بيانات استرشادية توضيحية',
   multiAgentAiName: 'نظام الوكلاء الأذكياء المتعددين',
-  multiAgentAiDesc: '8 وكلاء ذكاء اصطناعي متخصصين يعملون بتنسيق مشترك لتحليل شامل ومتكامل لمزرعتك.',
+  multiAgentAiDesc: 'وكلاء ذكاء اصطناعي متخصصون يعملون بتنسيق مشترك لتحليل شامل ومتكامل لمزرعتك.',
+  agriNewsName: 'الأخبار الزراعية',
+  agriNewsDesc: 'عناوين فلاحية توننية حقيقية من خلاصات RSS للناشرين، مع رابط كل مقال أصلي ومصدره.',
 };
 
 const fr: Translations = {
@@ -371,6 +381,10 @@ const fr: Translations = {
   roleVeterinarian: 'Vétérinaire',
   roleInspector: 'Inspecteur agricole',
   roleAdmin: 'Administrateur',
+  roleGardener: 'Jardinier amateur',
+  roleCompany: 'Entreprise / Coopérative',
+  roleGovernment: 'Administration publique',
+  roleInvestor: 'Investisseur / Institution',
   languageSelect: 'Langue de l’application',
   connectionStatus: 'Statut de connexion',
   serverOnline: 'Connecté au serveur',
@@ -379,8 +393,8 @@ const fr: Translations = {
   syncData: 'Synchroniser maintenant',
   loginBtn: 'Se connecter',
   logoutBtn: 'Se déconnecter',
-  demoModeSwitch: 'Changer d’utilisateur démo',
-  demoModeNotice: 'Changez de rôle pour tester les différentes vues de la plateforme',
+  demoModeSwitch: 'Préférence de rôle',
+  demoModeNotice: 'Préférence locale qui ajuste l’interface et l’ordre des raccourcis ; le rôle réel du compte est défini côté serveur et n’est pas modifié ici.',
 
   save: 'Enregistrer',
   cancel: 'Annuler',
@@ -400,7 +414,9 @@ const fr: Translations = {
   provenanceRuleBased: 'Système expert agronomique',
   provenanceSimulated: 'Données indicatives de démonstration',
   multiAgentAiName: 'Système Multi-Agents IA',
-  multiAgentAiDesc: '8 agents IA spécialisés travaillant en coordination pour une analyse agricole complète.',
+  multiAgentAiDesc: 'Agents IA spécialisés travaillant en coordination pour une analyse agricole complète.',
+  agriNewsName: 'Actualités agricoles',
+  agriNewsDesc: 'Titres agricoles tunisiens réels issus de flux RSS d’éditeurs, avec le lien et la source de chaque article.',
 };
 
 const en: Translations = {
@@ -501,6 +517,10 @@ const en: Translations = {
   roleVeterinarian: 'Veterinarian',
   roleInspector: 'Field Inspector',
   roleAdmin: 'Platform Administrator',
+  roleGardener: 'Home Grower / Gardener',
+  roleCompany: 'Agri-Business / Co-op',
+  roleGovernment: 'Government / Administration',
+  roleInvestor: 'Investor / Institution',
   languageSelect: 'Application Language',
   connectionStatus: 'System Connection',
   serverOnline: 'Connected to AgroGrowth Cloud',
@@ -509,8 +529,8 @@ const en: Translations = {
   syncData: 'Sync Data Now',
   loginBtn: 'Sign In',
   logoutBtn: 'Sign Out',
-  demoModeSwitch: 'Switch Demo User',
-  demoModeNotice: 'Switch user roles to preview all specialized platform tools',
+  demoModeSwitch: 'Role preference',
+  demoModeNotice: 'A local preference that adjusts the interface and shortcut order only; your account’s real role is set server-side and is not changed here.',
 
   save: 'Save',
   cancel: 'Cancel',
@@ -530,13 +550,29 @@ const en: Translations = {
   provenanceRuleBased: 'Agronomic Expert Rules',
   provenanceSimulated: 'Illustrative Demonstration Data',
   multiAgentAiName: 'Multi-Agent AI System',
-  multiAgentAiDesc: '8 specialized AI agents working in coordination for comprehensive agricultural analysis.',
+  multiAgentAiDesc: 'Specialized AI agents working in coordination for comprehensive agricultural analysis.',
+  agriNewsName: 'Agricultural news',
+  agriNewsDesc: 'Real Tunisian farming headlines from publisher RSS feeds, with each article’s source and original link.',
 };
 
 const translations: Record<Language, Translations> = { ar, fr, en };
 
 export function getTranslations(lang: Language): Translations {
   return translations[lang] || translations.ar;
+}
+
+/**
+ * Active language for non-React modules (e.g. the API client), which cannot use
+ * a hook. Kept in sync by LanguageProvider.
+ */
+let activeLanguage: Language = 'ar';
+
+export function setActiveLanguage(lang: Language): void {
+  activeLanguage = lang;
+}
+
+export function getActiveLanguage(): Language {
+  return activeLanguage;
 }
 
 export function isRTL(lang: Language): boolean {

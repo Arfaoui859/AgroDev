@@ -47,14 +47,26 @@ export const colors = {
 };
 
 export const typography = {
+  // Arabic-first sizing: Arabic script has taller ascenders/descenders and
+  // diacritics, so the floor is kept a step above the usual Latin minimum and
+  // paired with a generous line height (see `lineHeights`) for legibility.
   fontSizes: {
-    xs: 12,
+    xs: 13,
     sm: 14,
     base: 16,
     lg: 18,
     xl: 20,
     '2xl': 24,
     '3xl': 30,
+  },
+  // Line height ≈ 1.5× the paired font size, which reads well for Arabic and
+  // Latin alike. Use these instead of ad-hoc line-height literals.
+  lineHeights: {
+    xs: 20,
+    sm: 21,
+    base: 24,
+    lg: 27,
+    xl: 30,
   },
   fontWeights: {
     normal: '400' as const,

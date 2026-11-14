@@ -1,736 +1,960 @@
+import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import { readCache, writeCache } from './cache';
+import { API_TIMEOUT_MS, DEFAULT_API_BASE_URL } from '../config';
+import { getActiveLanguage } from '../i18n';
+import { getExtra, ExtraTranslations } from '../i18n/extra';
+import { formatDateTime } from '../utils/date';
+import { normalizePriority } from '../utils/notifications';
 import {
-  WeatherData,
-  DiseaseDiagnosisResult,
-  SoilAnalysisInput,
-  SoilAnalysisResult,
+  ApiResult,
+  AppNotification,
+  AICapabilitiesResponse,
+  AICapability,
+  AssistantReply,
+  CropRecommendation,
   CropRecommendationResult,
-  MarketPriceItem,
-  FarmAlert,
-  FarmTask,
+  DataProvenance,
+  DiseaseDiagnosisResult,
   Farm,
   Field,
-  User,
+  IrrigationResult,
+  MarketPriceItem,
+  MarketResult,
+  NewsArticle,
+  NewsResult,
+  NewsSourceStatus,
+  PestIdentification,
+  ProvenanceMeta,
+  SoilAnalysisInput,
+  SoilAnalysisResult,
+  WeatherData,
 } from '../types';
 
-// Default Express API Base URL
-// In development, Android emulator uses 10.0.2.2:5000, iOS uses localhost:5000, physical device uses LAN IP.
-let API_BASE_URL = 'http://localhost:5000';
+// ---------------------------------------------------------------------------
+// Base URL configuration
+// ---------------------------------------------------------------------------
+
+/**
+ * Localised fallback message. The API client is not a React component, so it
+ * reads the module-level active language instead of a hook.
+ */
+function msg(key: keyof ExtraTranslations): string {
+  return getExtra(getActiveLanguage())[key];
+}
+
+// Arabic script range. The Express gateway answers some errors with Arabic-only
+// copy (e.g. market/weather validation messages). Those are correct for an
+// Arabic caller but must not be shown verbatim to fr/en users, so we swap an
+// Arabic-only server message for a localised generic one. English/French server
+// messages are kept as-is (they are already readable and more specific).
+const ARABIC_RE = /[\u0600-\u06FF]/;
+
+function localizeServerError(message: string, status: number | null): string {
+  const lang = getActiveLanguage();
+  if (lang === 'ar') return message;
+  if (!ARABIC_RE.test(message)) return message;
+  const x = getExtra(lang);
+  return status !== null && status >= 500 ? x.apiUnavailable : x.stateError;
+}
+
+let API_BASE_URL = DEFAULT_API_BASE_URL;
 
 export function setApiBaseUrl(url: string) {
-  API_BASE_URL = url.replace(/\/+$/, '');
+  API_BASE_URL = url.trim().replace(/\/+$/, '');
 }
 
 export function getApiBaseUrl() {
   return API_BASE_URL;
 }
 
-/**
- * Robust fetch wrapper that attaches the active Supabase JWT Bearer token
- * or the demo user header for local development.
- */
-export async function apiRequest<T = any>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<{ data: T | null; error: string | null; isOnline: boolean; provenance?: string }> {
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  const headers = new Headers(options.headers);
+// ---------------------------------------------------------------------------
+// Low-level request helper
+// ---------------------------------------------------------------------------
 
-  // Attach Supabase Auth Bearer token if session exists
+export interface RequestOptions extends RequestInit {
+  /** Cache key. When set, successful GET responses are cached and replayed offline. */
+  cacheKey?: string;
+  /** Skip the Authorization header (used by the public health probe). */
+  anonymous?: boolean;
+}
+
+/** Attach the freshest access token we can obtain without blocking the request. */
+async function authHeaders(extra?: HeadersInit): Promise<Headers> {
+  const headers = new Headers(extra);
   try {
     const {
       data: { session },
     } = await supabase.auth.getSession();
     if (session?.access_token) {
       headers.set('Authorization', `Bearer ${session.access_token}`);
-    } else {
-      headers.set('x-demo-user', 'farmer-demo');
     }
-  } catch (e) {
-    headers.set('x-demo-user', 'farmer-demo');
+  } catch (error) {
+    console.warn('session lookup failed:', error);
   }
+  return headers;
+}
 
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
+/**
+ * Force a token refresh after the gateway rejected the current one with 401.
+ * Supabase normally refreshes in the background, but a long-idle app can still
+ * present a token the server has already expired; refreshing once and retrying
+ * keeps the user signed in instead of surfacing a spurious auth error.
+ */
+async function refreshSessionToken(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    return !error && Boolean(data.session?.access_token);
+  } catch (error) {
+    console.warn('session refresh failed:', error);
+    return false;
   }
+}
+
+/**
+ * Perform an authenticated request against the Express gateway.
+ *
+ * - Attaches the current Supabase access token when a session exists.
+ * - On a 401, refreshes the session once and retries the request.
+ * - Aborts after `API_TIMEOUT_MS`.
+ * - On network failure, replays the last cached response for GET requests
+ *   (labelled `fromCache`) so offline screens keep working.
+ * - Never throws: always resolves to an `ApiResult` envelope.
+ */
+export async function apiRequest<T = unknown>(
+  endpoint: string,
+  options: RequestOptions = {},
+): Promise<ApiResult<T>> {
+  const { cacheKey, anonymous, ...init } = options;
+  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+
+  const buildHeaders = async () => {
+    const headers = anonymous ? new Headers(init.headers) : await authHeaders(init.headers);
+    const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData;
+    if (!headers.has('Content-Type') && init.body && !isFormData) {
+      headers.set('Content-Type', 'application/json');
+    }
+    return headers;
+  };
+
+  /** One network attempt with a fresh abort controller. */
+  const send = async (): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    try {
+      return await fetch(url, { ...init, headers: await buildHeaders(), signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
+    let res = await send();
+    // A single retry after a token refresh covers an expired access token
+    // without masking a genuine authorization failure (which 403 covers).
+    if (res.status === 401 && !anonymous) {
+      const refreshed = await refreshSessionToken();
+      if (refreshed) res = await send();
+    }
 
-    const res = await fetch(url, {
-      ...options,
-      headers,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    const provenance = res.headers.get('x-data-provenance') || undefined;
+    const text = await res.text();
+    let parsed: any = null;
+    if (text) {
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = null;
+      }
+    }
 
     if (!res.ok) {
-      const errText = await res.text();
-      let errMsg = `HTTP ${res.status}`;
-      try {
-        const errJson = JSON.parse(errText);
-        errMsg = errJson.message || errJson.error || errMsg;
-      } catch {
-        if (errText) errMsg = errText;
-      }
-      return { data: null, error: errMsg, isOnline: true, provenance };
-    }
-
-    const data = await res.json();
-    return { data, error: null, isOnline: true, provenance };
-  } catch (err: any) {
-    const isTimeout = err?.name === 'AbortError';
-    const message = isTimeout
-      ? 'انتهت مهلة الاتصال بالخادم'
-      : 'تعذر الاتصال بخادم AgroGrowth (يعمل بالوضع المحلي)';
-    return { data: null, error: message, isOnline: false };
-  }
-}
-
-// ==================== SERVICE APIS ====================
-
-/**
- * 1. Weather API (Live Open-Meteo or Tunisian governorate lookup)
- */
-export async function getWeather(lat = 36.8065, lon = 10.1815, governorate = 'tunis'): Promise<WeatherData> {
-  const res = await apiRequest<any>(`/api/weather/coordinates?lat=${lat}&lon=${lon}`);
-
-  if (res.isOnline && res.data && res.data.temperature !== undefined) {
-    const d = res.data;
-    return {
-      temperature: Math.round(d.temperature ?? 22),
-      humidity: Math.round(d.humidity ?? 55),
-      precipitation_probability: Math.round(d.precipitation_probability ?? 10),
-      wind_speed: Math.round(d.wind_speed ?? 14),
-      condition: d.condition || 'Clear',
-      condition_ar: d.condition_ar || 'طقس ملائم ومعتدل',
-      governorate: governorate || 'تونس',
-      advice_ar: d.agriculture_advice_ar || 'الظروف الجوية ممتازة لعمليات التسميد والرش اليوم.',
-      advice_fr: 'Conditions météorologiques optimales pour les travaux agricoles aujourd’hui.',
-      advice_en: 'Optimal weather conditions for field fertilizing and irrigation today.',
-      forecast: Array.isArray(d.forecast)
-        ? d.forecast.map((f: any) => ({
-            date: f.date,
-            day_ar: f.day_ar || 'اليوم',
-            day_fr: f.day_fr || 'Aujourd’hui',
-            day_en: f.day_en || 'Today',
-            temp_max: Math.round(f.temp_max ?? 24),
-            temp_min: Math.round(f.temp_min ?? 15),
-            condition: f.condition || 'Sunny',
-            condition_ar: f.condition_ar || 'مشمس',
-            rain_chance: Math.round(f.rain_chance ?? 5),
-          }))
-        : defaultForecast(),
-    };
-  }
-
-  // Tunisian agricultural climate fallback
-  return {
-    temperature: 24,
-    humidity: 58,
-    precipitation_probability: 12,
-    wind_speed: 15,
-    condition: 'Sunny',
-    condition_ar: 'مشمس ومعتدل',
-    governorate: 'تونس / القيروان',
-    advice_ar: 'طقس معتدل ورياح هادئة. وقت مثالي للري المنتظم صباحاً ومراقبة أوراق الزيتون.',
-    advice_fr: 'Temps doux. Période favorable pour l’irrigation matinale et l’inspection des oliviers.',
-    advice_en: 'Mild weather. Ideal for morning irrigation and olive tree inspection.',
-    forecast: defaultForecast(),
-  };
-}
-
-function defaultForecast() {
-  return [
-    { date: '2026-11-14', day_ar: 'السبت', day_fr: 'Samedi', day_en: 'Saturday', temp_max: 25, temp_min: 16, condition: 'Sunny', condition_ar: 'مشمس', rain_chance: 5 },
-    { date: '2026-11-15', day_ar: 'الأحد', day_fr: 'Dimanche', day_en: 'Sunday', temp_max: 23, temp_min: 14, condition: 'Partly Cloudy', condition_ar: 'غائم جزئياً', rain_chance: 20 },
-    { date: '2026-11-16', day_ar: 'الإثنين', day_fr: 'Lundi', day_en: 'Monday', temp_max: 21, temp_min: 13, condition: 'Rain', condition_ar: 'زخات خفيفة', rain_chance: 45 },
-    { date: '2026-11-17', day_ar: 'الثلاثاء', day_fr: 'Mardi', day_en: 'Tuesday', temp_max: 22, temp_min: 14, condition: 'Sunny', condition_ar: 'صافي', rain_chance: 10 },
-    { date: '2026-11-18', day_ar: 'الأربعاء', day_fr: 'Mercredi', day_en: 'Wednesday', temp_max: 24, temp_min: 15, condition: 'Sunny', condition_ar: 'مشمس', rain_chance: 0 },
-  ];
-}
-
-/**
- * 2. Plant Disease Diagnosis API
- */
-export async function diagnosePlantDisease(params: {
-  imageUri?: string;
-  cropType: string;
-  plantPart: string;
-  symptoms?: string;
-}): Promise<DiseaseDiagnosisResult> {
-  // If we have an image, build FormData for the upload endpoint
-  if (params.imageUri) {
-    const formData = new FormData();
-    const filename = params.imageUri.split('/').pop() || 'plant_leaf.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1].toLowerCase() === 'png' ? 'png' : 'jpeg'}` : 'image/jpeg';
-
-    formData.append('images', {
-      uri: params.imageUri,
-      name: filename,
-      type,
-    } as any);
-
-    formData.append('cropType', params.cropType || 'olive');
-    formData.append('plantPart', params.plantPart || 'leaves');
-    if (params.symptoms) formData.append('symptoms', params.symptoms);
-
-    const res = await apiRequest<any>('/api/disease/analyze', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        // Let fetch set boundary for multipart
-      },
-    });
-
-    if (res.isOnline && res.data && res.data.diagnosis) {
-      const diag = res.data.diagnosis;
+      const raw =
+        (parsed && (parsed.message || parsed.error)) ||
+        (res.status === 503 ? msg('apiUnavailable') : `HTTP ${res.status}`);
+      const message = typeof raw === 'string' ? localizeServerError(raw, res.status) : `HTTP ${res.status}`;
       return {
-        id: res.data.id || String(Date.now()),
-        diseaseName: diag.disease || 'Detected Condition',
-        diseaseNameAr: diag.disease || 'مرض فطري في الأوراق',
-        confidence: diag.confidence || 88,
-        severity: diag.severity || 'medium',
-        urgency: diag.urgency || 'medium',
-        descriptionAr: diag.description || 'تم فحص صورة النبتة وتحديد الأعراض المرضية.',
-        symptoms: Array.isArray(diag.symptoms) ? diag.symptoms : ['بقع دائرية ملونة', 'اصفرار الأطراف'],
-        treatment: Array.isArray(diag.treatment) ? diag.treatment : ['رش مبيد فطري معتمد', 'تقليم الأغصان المصابة'],
-        prevention: Array.isArray(diag.prevention) ? diag.prevention : ['تجنب الرطوبة الزائدة', 'تهوية الأشجار'],
-        dataSource: 'vision-llm',
-        imageUri: params.imageUri,
-        processedAt: new Date().toLocaleTimeString('ar-TN'),
+        data: null,
+        error: message,
+        isOnline: true,
+        fromCache: false,
+        status: res.status,
+        // Preserved so callers can distinguish an honest "no data" envelope
+        // (e.g. code MARKET_DATA_NOT_AVAILABLE) from a genuine failure.
+        errorBody: parsed ?? null,
       };
     }
-  }
 
-  // Expert knowledge fallback based on Tunisian crops
-  const crop = (params.cropType || 'olive').toLowerCase();
-  if (crop.includes('olive') || crop.includes('زيتون')) {
+    if (cacheKey && parsed !== null) {
+      await writeCache(cacheKey, parsed);
+    }
+
+    return { data: parsed as T, error: null, isOnline: true, fromCache: false, status: res.status };
+  } catch (error: any) {
+    const isTimeout = error?.name === 'AbortError';
+
+    if (cacheKey) {
+      const cached = await readCache<T>(cacheKey);
+      if (cached) {
+        return {
+          data: cached.value,
+          error: null,
+          isOnline: false,
+          fromCache: true,
+          status: null,
+        };
+      }
+    }
+
     return {
-      id: String(Date.now()),
-      diseaseName: 'Olive Peacock Spot (Spilocaea oleagina)',
-      diseaseNameAr: 'مرض عين الطاووس في الزيتون',
-      confidence: 91,
-      severity: 'medium',
-      urgency: 'medium',
-      descriptionAr: 'مرض فطري واسع الانتشار في مزارع الزيتون التونسية يظهر كبقع دائرية رمادية محاطة بهالة صفراء على الأوراق.',
-      symptoms: ['بقع دائرية داكنة على السطح العلوي للورقة', 'تساقط الأوراق المصابة مبكراً', 'ضعف النمو والإنتاجية'],
-      treatment: [
-        'المعالجة الفورية بمبيد فطري نحاسي (أوكسي كلوريد النحاس 50%)',
-        'جمع الأوراق المتساقطة وحرقها لمنع انتشار الأبواغ الفطرية',
-        'التقليم الجيد لقلب الشجرة للسماح بدخول أشعة الشمس والهواء',
-      ],
-      prevention: [
-        'رش وقائي بمركبات النحاس مع بداية فصل الخريف وقبل هطول الأمطار',
-        'اعتماد مسافات غراسة ملائمة (7 إلى 10 أمتار بين الأشجار)',
-        'تجنب الري العلوي المباشر للأغصان',
-      ],
-      dataSource: 'rule-based',
-      imageUri: params.imageUri,
-      processedAt: new Date().toLocaleTimeString('ar-TN'),
+      data: null,
+      error: isTimeout ? msg('apiTimeout') : msg('apiOffline'),
+      isOnline: false,
+      fromCache: false,
+      status: null,
     };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Provenance helpers
+// ---------------------------------------------------------------------------
+
+function asProvenance(value: unknown): DataProvenance {
+  const v = typeof value === 'string' ? value.toLowerCase() : '';
+  if (v === 'rule-based' || v === 'heuristic' || v === 'rule_based') return 'rule-based';
+  if (v === 'llm' || v === 'llm-generated') return 'llm';
+  // Image endpoints emit "vision-service"/"trained-model-inference" for a
+  // multimodal model; keep them in the vision category.
+  if (v === 'vision-model' || v === 'vision-service' || v === 'trained-model-inference') {
+    return 'vision-model';
+  }
+  // "microservice" is the proxy's label for a genuinely trained model served by
+  // one of the Python microservices (provenanceFields(kind === "trained")).
+  if (v === 'trained-model' || v === 'trained-ml' || v === 'microservice') {
+    return 'trained-model';
+  }
+  if (
+    v === 'database' ||
+    v === 'supabase' ||
+    v === 'persisted-records' ||
+    v.startsWith('platform-database')
+  ) {
+    return 'database';
+  }
+  // External live feeds: Open-Meteo observations and Tunisian agri-news RSS.
+  if (v === 'open-meteo' || v === 'live-observation' || v === 'rss-feeds') return 'live-observation';
+  return 'unavailable';
+}
+
+function metaFrom(
+  payload: any,
+  fallback: DataProvenance,
+  source?: string,
+): ProvenanceMeta {
+  const raw = payload?.dataSource ?? payload?.data_source ?? payload?.source;
+  const provenance = raw ? asProvenance(raw) : fallback;
+
+  // An explicit boolean from the backend always wins: several platform records
+  // are stored but explicitly NOT verified (e.g. market prices ship
+  // `isRealData: false`), so we must never upgrade them to "real" just because
+  // they come from the database.
+  const explicit =
+    typeof payload?.isRealData === 'boolean'
+      ? payload.isRealData
+      : typeof payload?.is_real_data === 'boolean'
+        ? payload.is_real_data
+        : undefined;
+  const isRealData =
+    explicit ??
+    (provenance === 'live-observation' ||
+      provenance === 'database' ||
+      provenance === 'trained-model' ||
+      provenance === 'vision-model');
 
   return {
-    id: String(Date.now()),
-    diseaseName: 'Early Blight (Alternaria solani)',
-    diseaseNameAr: 'اللفحة المبكرة (الألترناريا)',
-    confidence: 86,
-    severity: 'high',
-    urgency: 'high',
-    descriptionAr: 'فطر يصيب الأوراق السفلية مسبباً بقعاً بنية متحدة المركز تؤدي لاحتراق وتيبس الأوراق في الطماطم والبطاطا.',
-    symptoms: ['بقع بنية جافة على شكل حلقات متداخلة', 'اصفرار المساحة المحيطة بالبقع', 'جفاف الأوراق السفلية وتساقطها'],
-    treatment: [
-      'الرش بمبيد فطري جهازي مثل أزوكسيستروبين أو ديفينوكونازول',
-      'إزالة الأوراق المصابة فوراً والتخلص منها خارج الحقل',
-      'التوقف عن الري بالرش والاعتماد على الري الموضعي (قطرة قطرة)',
-    ],
-    prevention: [
-      'اعتماد دورة زراعية ثلاثية على الأقل وتجنب زراعة الباذنجانيات المتتالية',
-      'تغطية التربة بالملش العضوي أو البلاستيكي لتقليل تطاير الأبواغ',
-      'التسميد المتوازن وتجنب الإفراط في الآزوت (النيتروجين)',
-    ],
-    dataSource: 'rule-based',
-    imageUri: params.imageUri,
-    processedAt: new Date().toLocaleTimeString('ar-TN'),
+    provenance,
+    isRealData,
+    source: source ?? (typeof payload?.modelSource === 'string' ? payload.modelSource : undefined),
+    disclaimer: typeof payload?.disclaimer === 'string' ? payload.disclaimer : undefined,
   };
 }
 
+// ---------------------------------------------------------------------------
+// Weather (Open-Meteo via gateway) — real observation
+// ---------------------------------------------------------------------------
+
+// Matches the provider's Arabic coordinate placeholder, e.g. "موقع (36.81, 10.18)".
+const COORD_PLACEHOLDER_RE = /^موقع\s*\(/;
+
+/** Return the provider's location name, or '' when it is the generic placeholder. */
+function serverLocationName(name: unknown): string {
+  if (typeof name !== 'string') return '';
+  if (COORD_PLACEHOLDER_RE.test(name.trim())) return '';
+  return name;
+}
+
+export async function getWeather(
+  lat = 36.8065,
+  lon = 10.1815,
+  governorateLabel = 'Tunis',
+): Promise<{ data: WeatherData | null; error: string | null; fromCache: boolean }> {
+  const res = await apiRequest<any>(
+    `/api/weather/coordinates?lat=${lat}&lon=${lon}`,
+    { cacheKey: `weather:${lat.toFixed(2)},${lon.toFixed(2)}` },
+  );
+
+  if (res.data && typeof res.data.current?.temperature === 'number') {
+    const d = res.data;
+    const daily: any[] = Array.isArray(d.forecast?.daily) ? d.forecast.daily : [];
+    const mapped: WeatherData = {
+      temperature: Math.round(d.current.temperature),
+      humidity: Math.round(d.current.humidity ?? 0),
+      // Today's rainfall straight from the provider. No "% chance" is derived:
+      // Open-Meteo does not report a probability, so inventing one would be
+      // fabricated data.
+      rainfall_mm: typeof daily[0]?.rainfall === 'number' ? daily[0].rainfall : 0,
+      wind_speed: Math.round(d.current.windSpeed ?? 0),
+      condition_ar: d.current.description || 'صافٍ',
+      // The provider only emits an Arabic description; the icon key is what
+      // other locales translate locally (see utils/weather.ts).
+      icon: d.current.icon,
+      // The provider falls back to an Arabic coordinate placeholder
+      // ("موقع (lat, lon)") when no location name is supplied. The mobile always
+      // knows the governorate it asked for, so prefer its localised label over
+      // that placeholder rather than leaking Arabic into fr/en UIs.
+      governorate: serverLocationName(d.location?.name) || governorateLabel,
+      advice_ar: d.agriculturalIndices?.cropStress
+        ? `مؤشر إجهاد المحصول: ${d.agriculturalIndices.cropStress}. راقب الري والتسميد.`
+        : 'الظروف الجوية متاحة من محطات الرصد (Open-Meteo).',
+      advice_fr: 'Données météo en direct fournies par Open-Meteo.',
+      advice_en: 'Live weather data provided by Open-Meteo.',
+      forecast: daily.map((f: any) => ({
+        date: f.date,
+        temp_max: Math.round(f.maxTemp ?? 0),
+        temp_min: Math.round(f.minTemp ?? 0),
+        humidity: typeof f.humidity === 'number' ? Math.round(f.humidity) : undefined,
+        rainfall: typeof f.rainfall === 'number' ? f.rainfall : undefined,
+        condition_ar: f.description || 'صافٍ',
+        icon: f.icon,
+        wind_speed: typeof f.windSpeed === 'number' ? Math.round(f.windSpeed) : undefined,
+      })),
+      meta: { provenance: 'live-observation', isRealData: true, source: d.source?.provider || 'open-meteo' },
+    };
+    return { data: mapped, error: null, fromCache: res.fromCache };
+  }
+
+  return { data: null, error: res.error || msg('weatherFetchFailed'), fromCache: false };
+}
+
+// ---------------------------------------------------------------------------
+// Plant disease / leaf image diagnosis — honest, never fabricated
+// ---------------------------------------------------------------------------
+
+interface ImageUploadOptions {
+  imageUri: string;
+  mimeType?: string;
+  fileName?: string;
+  cropType?: string;
+  plantPart?: string;
+  symptoms?: string;
+}
+
+async function buildImageForm(options: ImageUploadOptions): Promise<FormData> {
+  const form = new FormData();
+  const name = options.fileName || `plant_${Date.now()}.jpg`;
+  const type = options.mimeType || 'image/jpeg';
+  form.append('file', {
+    uri: Platform.OS === 'ios' ? options.imageUri.replace('file://', '') : options.imageUri,
+    name,
+    type,
+  } as any);
+  if (options.cropType) form.append('plant_type', options.cropType);
+  if (options.plantPart) form.append('plant_part', options.plantPart);
+  if (options.symptoms) form.append('symptoms', options.symptoms);
+  return form;
+}
+
 /**
- * 3. Soil Analysis API
+ * Analyse a plant/leaf photo through the gateway.
+ *
+ * The gateway fails closed (503) unless a real vision model is configured and
+ * returns verifiable model provenance. We surface that state honestly instead of
+ * substituting an invented diagnosis.
  */
-export async function analyzeSoil(input: SoilAnalysisInput): Promise<SoilAnalysisResult> {
-  const res = await apiRequest<any>('/api/ai/soil-analysis', {
+export async function diagnosePlantDisease(
+  options: ImageUploadOptions,
+): Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }> {
+  const form = await buildImageForm(options);
+  const res = await apiRequest<any>('/api/ai/images/detect-disease', {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: form,
   });
 
-  if (res.isOnline && res.data && res.data.currentStatus) {
-    const s = res.data.currentStatus;
+  // 503 = no vision back-end configured; 502 = the back-end was reached but
+  // failed. Both are honest "no diagnosis produced" states — surface our own
+  // localised copy rather than the server's English message.
+  if (res.status === 503 || res.status === 502) {
+    return { data: null, error: msg('diseaseServiceUnconfigured'), unavailable: true };
+  }
+  if (!res.data) {
+    return { data: null, error: msg('diseaseAnalysisFailed'), unavailable: false };
+  }
+
+  const d = res.data;
+  const primary =
+    d.disease_detection?.primary_disease ??
+    d.diagnosis ??
+    d.result?.primary_disease ??
+    {};
+
+  const meta = metaFrom(d, 'vision-model');
+  const confidenceRaw = primary.probability ?? primary.confidence ?? d.confidence;
+  const confidence =
+    typeof confidenceRaw === 'number'
+      ? confidenceRaw <= 1
+        ? Math.round(confidenceRaw * 100)
+        : Math.round(confidenceRaw)
+      : null;
+
+  return {
+    data: {
+      id: String(d.id ?? Date.now()),
+      diseaseName: primary.disease || primary.disease_name || msg('diseaseUnknownName'),
+      diseaseNameAr: primary.disease_name_ar || primary.disease || msg('diseaseUnknownName'),
+      confidence,
+      severity: (d.severity_assessment?.severity_level || primary.severity_level || 'unknown') as any,
+      descriptionAr: primary.description || msg('diseaseGenericDescription'),
+      symptoms: Array.isArray(primary.symptoms) ? primary.symptoms : [],
+      treatment: Array.isArray(d.treatment_plan?.immediate_treatment)
+        ? d.treatment_plan.immediate_treatment
+        : [],
+      prevention: Array.isArray(d.treatment_plan?.prevention_measures)
+        ? d.treatment_plan.prevention_measures
+        : [],
+      meta,
+      imageUri: options.imageUri,
+      processedAt: formatDateTime(new Date().toISOString(), getActiveLanguage()),
+    },
+    error: null,
+    unavailable: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Soil analysis — rule-based in-process engine
+// ---------------------------------------------------------------------------
+
+export async function analyzeSoil(
+  input: SoilAnalysisInput,
+): Promise<{ data: SoilAnalysisResult | null; error: string | null }> {
+  const body = {
+    ph: input.ph,
+    nitrogen: input.nitrogen,
+    phosphorus: input.phosphorus,
+    potassium: input.potassium,
+    moisture: input.moisture,
+    salinity: input.salinity,
+    organic_matter: input.organicMatter,
+    temperature: input.temperature,
+    soil_type: input.soilTexture,
+  };
+  const res = await apiRequest<any>('/api/ai/soil-analysis', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+  if (!res.data) {
+    return { data: null, error: res.error || msg('soilAnalysisFailed') };
+  }
+
+  const d = res.data;
+  const findings = Array.isArray(d.findings) ? d.findings : [];
+  return {
+    data: {
+      grade: d.fertility_level || msg('soilGradeUnknown'),
+      gradeScore: typeof d.health_score === 'number' ? d.health_score : 0,
+      fertilityLevel: d.fertility_level || msg('soilGradeUnknown'),
+      interpretationAr: d.disclaimer || msg('soilGenericDisclaimer'),
+      recommendations: Array.isArray(d.overall_recommendations) ? d.overall_recommendations : [],
+      problems: Array.isArray(d.problems) ? d.problems : [],
+      missingMeasurements: Array.isArray(d.missing_measurements) ? d.missing_measurements : [],
+      findings: findings.map((f: any) => ({
+        parameter: f.parameter,
+        labelAr: f.labelAr,
+        value: f.value ?? null,
+        status: f.status,
+        messageAr: f.messageAr,
+      })),
+      meta: metaFrom(d, 'rule-based', 'rule-based-engine'),
+    },
+    error: null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Crop recommendation — rule-based in-process engine
+// ---------------------------------------------------------------------------
+
+export async function getCropRecommendations(input: {
+  ph?: number;
+  temperature?: number;
+  rainfall?: number;
+  salinity?: number;
+  areaHectares?: number;
+} = {}): Promise<{ data: CropRecommendationResult | null; error: string | null }> {
+  const res = await apiRequest<any>('/api/ai/crop-recommendation', {
+    method: 'POST',
+    body: JSON.stringify({
+      ph: input.ph,
+      temperature: input.temperature,
+      rainfall: input.rainfall,
+      salinity: input.salinity,
+      area_hectares: input.areaHectares,
+    }),
+  });
+
+  if (!res.data) {
+    return { data: null, error: res.error || msg('cropFetchFailed') };
+  }
+
+  const d = res.data;
+  const recs: any[] = Array.isArray(d.recommendations) ? d.recommendations : [];
+  const crops: CropRecommendation[] = recs.map((r) => ({
+    id: r.crop,
+    name: r.crop,
+    nameAr: r.name_ar || r.crop,
+    category: r.category || '',
+    suitabilityScore: Math.round((r.suitability_score ?? 0) * 100),
+    season: r.season || '',
+    waterRequirement: r.water_need || '',
+    estimatedProfitTndPerHa: Math.round(r.profit_analysis?.net_profit ?? 0),
+    growthCycleDays: 0,
+    keyTipsAr: Array.isArray(r.reasoning) ? r.reasoning.join(' • ') : '',
+  }));
+
+  return {
+    data: { crops, meta: metaFrom(d, 'rule-based', 'rule-based-engine') },
+    error: null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Market prices — persisted platform records (unverified, labelled as such)
+// ---------------------------------------------------------------------------
+
+export async function getMarketPrices(): Promise<{
+  data: MarketResult | null;
+  error: string | null;
+  fromCache: boolean;
+}> {
+  const res = await apiRequest<any>('/api/market/all', { cacheKey: 'market:all' });
+
+  // The gateway answers 503 with an Arabic-only message when no prices are
+  // recorded yet (code MARKET_DATA_NOT_AVAILABLE). That is an honest "no
+  // records" state, not a fetch failure, so it must not surface the raw Arabic
+  // text to fr/en users — the screen renders its own localised empty state.
+  const isNoData =
+    res.status === 503 &&
+    ((res.errorBody as any)?.code === 'MARKET_DATA_NOT_AVAILABLE' ||
+      (res.errorBody as any)?.dataAvailable === false);
+
+  const overview: any[] = Array.isArray(res.data?.data?.marketOverview)
+    ? res.data.data.marketOverview
+    : [];
+
+  if (!overview.length) {
     return {
-      grade: s.overallGrade?.grade || 'جيد',
-      gradeScore: s.overallGrade?.score ? parseInt(s.overallGrade.score) : 82,
-      interpretationAr: s.overallGrade?.interpretation_ar || 'تربة زراعية خصبة وصالحة لأغلب المحاصيل التونسية.',
-      interpretationFr: 'Sol de bonne fertilité adapté aux cultures méditerranéennes.',
-      interpretationEn: 'Good fertile soil suitable for major crops.',
-      phStatus: {
-        value: input.ph,
-        status: input.ph >= 6.5 && input.ph <= 8.0 ? 'optimal' : input.ph < 6.5 ? 'acidic' : 'alkaline',
-        labelAr: input.ph >= 6.5 && input.ph <= 8.0 ? 'معتدل ومثالي' : input.ph < 6.5 ? 'حامضي' : 'قلوي مائل للكلس',
+      data: {
+        prices: [],
+        meta: { provenance: 'unavailable', isRealData: false },
       },
-      nutrientScores: {
-        nitrogen: Math.min(100, (input.nitrogen || 45) * 1.5),
-        phosphorus: Math.min(100, (input.phosphorus || 25) * 2),
-        potassium: Math.min(100, (input.potassium || 180) * 0.4),
-        organicMatter: Math.min(100, (input.organicMatter || 2.2) * 25),
-      },
-      suitableCrops: [
-        { name: 'Olive Trees', nameAr: 'شجر الزيتون', compatibility: '95%', yieldPotential: 'high', profitability: 'عالية جداً' },
-        { name: 'Durum Wheat', nameAr: 'القمح الصلب', compatibility: '90%', yieldPotential: 'high', profitability: 'ممتازة' },
-        { name: 'Tomatoes', nameAr: 'طماطم حقلية', compatibility: '85%', yieldPotential: 'medium', profitability: 'جيدة' },
-        { name: 'Barley', nameAr: 'الشعير', compatibility: '92%', yieldPotential: 'high', profitability: 'متوسطة' },
-      ],
-      fertilizerPlan: [
-        { nutrient: 'Nitrogen', nutrientAr: 'الآزوت (N)', recommendationAr: 'إضافة سماد اليوريا 46% على دفعتين مع بداية النمو الخضري.', quantity: '150 كغ / هكتار' },
-        { nutrient: 'Phosphorus', nutrientAr: 'الفسفور (P)', recommendationAr: 'إضافة سوبر فوسفات ثلاثي مع تحضير الأرض وحرثها.', quantity: '100 كغ / هكتار' },
-        { nutrient: 'Organic Matter', nutrientAr: 'المادة العضوية', recommendationAr: 'إضافة غبار عضوي متخمر جيداً لتحسين بنية التربة واحتفاظها بالماء.', quantity: '20 طن / هكتار' },
-      ],
-      dataSource: 'rule-based',
+      error: isNoData ? null : res.error,
+      fromCache: res.fromCache,
     };
   }
 
-  // Expert agronomy fallback
-  const phVal = Number(input.ph) || 7.4;
-  const isOptimal = phVal >= 6.5 && phVal <= 8.2;
+  const prices: MarketPriceItem[] = overview.map((m, index) => ({
+    // Deterministic id: a random fallback would change on every render and
+    // break list identity / caching. cropId is present for real records.
+    id: String(m.cropId ?? m.crop?.id ?? `market-${index}`),
+    cropName: m.crop?.name || m.cropId || '—',
+    cropNameAr: m.crop?.name_ar || m.crop?.name || '—',
+    pricePerKg: Number(m.currentPrice ?? 0),
+    previousPricePerKg: Number.isFinite(m.averagePrice) ? Number(m.averagePrice) : null,
+    changePercent: null,
+    trend: 'unknown',
+    marketLocation: m.prices?.[0]?.market_location || '—',
+    marketLocationAr: m.prices?.[0]?.market_location || '—',
+    qualityGrade: m.prices?.[0]?.quality_grade || '—',
+    lastUpdated: m.prices?.[0]?.price_date || '',
+  }));
+
   return {
-    grade: isOptimal ? 'ممتاز' : 'جيد',
-    gradeScore: isOptimal ? 88 : 74,
-    interpretationAr: isOptimal
-      ? 'تربة متوازنة وممتازة، صالحة لزراعة الزيتون، الحبوب، ومختلف الخضروات في المناخ التونسي.'
-      : 'تربة تميل للقلوية الخفيفة، تحتاج إلى زيادة التسميد العضوي لتحسين امتصاص الفسفور والعناصر الصغرى.',
-    interpretationFr: 'Sol calcaire typique tunisien avec bon potentiel agronomique.',
-    interpretationEn: 'Typical balanced soil with strong yield potential in Mediterranean climate.',
-    phStatus: {
-      value: phVal,
-      status: isOptimal ? 'optimal' : phVal < 6.5 ? 'acidic' : 'alkaline',
-      labelAr: isOptimal ? 'معتدل متوازن' : phVal < 6.5 ? 'حامضي' : 'قلوي كلسي',
+    data: {
+      prices,
+      meta: metaFrom(res.data?.data, 'database', 'platform-database'),
     },
-    nutrientScores: {
-      nitrogen: 78,
-      phosphorus: 65,
-      potassium: 85,
-      organicMatter: 70,
-    },
-    suitableCrops: [
-      { name: 'Olive Trees', nameAr: 'الزيتون (شملالي / شتوي)', compatibility: '98%', yieldPotential: 'high', profitability: 'عالية جداً' },
-      { name: 'Durum Wheat', nameAr: 'القمح الصلب (كريم / رزاك)', compatibility: '92%', yieldPotential: 'high', profitability: 'ممتازة' },
-      { name: 'Citrus', nameAr: 'القوارص والحمضيات', compatibility: '84%', yieldPotential: 'medium', profitability: 'عالية' },
-      { name: 'Almonds', nameAr: 'اللوز الفلاحي', compatibility: '90%', yieldPotential: 'high', profitability: 'عالية' },
-    ],
-    fertilizerPlan: [
-      { nutrient: 'الآزوت (N)', nutrientAr: 'الآزوت', recommendationAr: 'نترات الأمونيوم 33.5% مع بداية النمو الربيعي لتعزيز قوة الأوراق والأفرع.', quantity: '120 كغ / هكتار' },
-      { nutrient: 'الفسفور (P)', nutrientAr: 'الفسفور', recommendationAr: 'فوسفات ثنائي الأمونيوم (DAP 18-46-0) عند تحضير قاع البذار.', quantity: '80 كغ / هكتار' },
-      { nutrient: 'البوتاسيوم (K)', nutrientAr: 'البوتاسيوم', recommendationAr: 'كبريتات البوتاسيوم 50% لزيادة حجم الثمار ومقاومة الجفاف.', quantity: '100 كغ / هكتار' },
-    ],
-    dataSource: 'rule-based',
+    error: null,
+    fromCache: res.fromCache,
   };
 }
 
-/**
- * 4. Crop Recommendation API
- */
-export async function getCropRecommendations(): Promise<CropRecommendationResult> {
-  const res = await apiRequest<any>('/api/ai/crop-recommendation');
+// ---------------------------------------------------------------------------
+// Pest control — rule-based symptom matcher (honest, never guesses)
+// ---------------------------------------------------------------------------
 
-  if (res.isOnline && res.data && res.data.crops) {
-    return { crops: res.data.crops };
+export async function identifyPest(
+  symptoms: string[],
+  cropType?: string,
+): Promise<{ data: PestIdentification | null; error: string | null; unavailable: boolean }> {
+  if (!symptoms.length) {
+    return { data: null, error: msg('pestNeedSymptom'), unavailable: false };
+  }
+  const res = await apiRequest<any>('/api/pest-control/identify-from-symptoms', {
+    method: 'POST',
+    body: JSON.stringify({ symptoms, crop_type: cropType }),
+  });
+
+  if (res.status === 503 || res.status === 502) {
+    return { data: null, error: msg('pestServiceUnconfigured'), unavailable: true };
+  }
+  if (!res.data?.success) {
+    return { data: null, error: msg('pestNoMatch'), unavailable: false };
   }
 
+  const d = res.data;
+  const ident = d.data?.pest_identification ?? {};
   return {
-    crops: [
-      {
-        id: 'olive',
-        name: 'Olive Trees',
-        nameAr: 'الزيتون (صنف شملالي / شتوي)',
-        category: 'أشجار مثمرة',
-        suitabilityScore: 96,
-        season: 'طوال العام (الغراسة خريفاً)',
-        waterRequirement: 'منخفض',
-        estimatedProfitTndPerHa: 4200,
-        growthCycleDays: 365,
-        keyTipsAr: 'مقاوم ممتاز للجفاف وملوحة التربة المعتدلة. مربح جداً في السوق المحلية والتصدير.',
-      },
-      {
-        id: 'durum-wheat',
-        name: 'Durum Wheat',
-        nameAr: 'القمح الصلب',
-        category: 'حبوب',
-        suitabilityScore: 91,
-        season: 'الخريف / الشتاء',
-        waterRequirement: 'متوسط',
-        estimatedProfitTndPerHa: 2800,
-        growthCycleDays: 180,
-        keyTipsAr: 'طلب استراتيجي دائم وأسعار مضمونة من ديوان الحبوب في تونس.',
-      },
-      {
-        id: 'almonds',
-        name: 'Almonds',
-        nameAr: 'اللوز التونسي',
-        category: 'أشجار مثمرة',
-        suitabilityScore: 88,
-        season: 'الخريف',
-        waterRequirement: 'منخفض',
-        estimatedProfitTndPerHa: 5500,
-        growthCycleDays: 365,
-        keyTipsAr: 'أرباح عالية جداً واحتياج مائي قليل. مناسب لأراضي الوسط والجنوب والساحل.',
-      },
-      {
-        id: 'tomato',
-        name: 'Field Tomatoes',
-        nameAr: 'الطماطم الحقلية',
-        category: 'خضروات',
-        suitabilityScore: 84,
-        season: 'الربيع / الصيف',
-        waterRequirement: 'مرتفع',
-        estimatedProfitTndPerHa: 6200,
-        growthCycleDays: 110,
-        keyTipsAr: 'إنتاجية مرتفعة بشرط توفر مياه الري بالتنقيط والمراقبة الدورية للآفات.',
-      },
-    ],
+    data: {
+      identifiedPest: ident.identified_pest ?? null,
+      pestNameAr: ident.pest_name_ar ?? null,
+      category: ident.category ?? null,
+      method: ident.identification_method ?? 'symptom_based',
+      symptomsUsed: Array.isArray(d.data?.symptoms_used) ? d.data.symptoms_used : symptoms,
+      meta: metaFrom(d, 'rule-based', 'symptom-keyword-rules'),
+    },
+    error: null,
+    unavailable: false,
   };
 }
 
-/**
- * 5. Market Prices API
- */
-export async function getMarketPrices(): Promise<MarketPriceItem[]> {
-  const res = await apiRequest<any>('/api/market/all');
+// ---------------------------------------------------------------------------
+// Smart irrigation — microservice; fails closed when not configured
+// ---------------------------------------------------------------------------
 
-  if (res.isOnline && res.data && Array.isArray(res.data.prices)) {
-    return res.data.prices.map((p: any) => ({
-      id: p.id || p.cropId,
-      cropName: p.name || p.crop,
-      cropNameAr: p.name_ar || p.cropArabic || p.name,
-      pricePerKg: p.currentPrice || p.price_per_kg || 2.5,
-      previousPricePerKg: p.previousPrice || 2.4,
-      changePercent: p.priceChange || 2.1,
-      trend: p.trend === 'ارتفاع' ? 'rising' : p.trend === 'انخفاض' ? 'falling' : 'stable',
-      marketLocation: p.market_location || 'Tunis',
-      marketLocationAr: p.marketLocationAr || 'سوق الجملة ببئر القصعة',
-      qualityGrade: p.quality_grade || 'ممتاز (Cat I)',
-      lastUpdated: p.lastUpdated || 'اليوم',
-    }));
+export async function getIrrigationPlan(input: {
+  cropType: string;
+  growthStage?: string;
+  temperature?: number;
+  humidity?: number;
+  days?: number;
+}): Promise<{ data: IrrigationResult | null; error: string | null; unavailable: boolean }> {
+  // Climate inputs are forwarded only when the caller actually has them (the
+  // caller supplies real Open-Meteo values). Injecting made-up defaults here
+  // would present invented temperature/humidity as if they were observed; the
+  // service applies its own documented defaults when they are omitted.
+  const body: Record<string, unknown> = {
+    crop_type: input.cropType,
+    growth_stage: input.growthStage ?? 'vegetative',
+    days_to_calculate: input.days ?? 7,
+  };
+  if (typeof input.temperature === 'number') body.temperature = input.temperature;
+  if (typeof input.humidity === 'number') body.humidity = input.humidity;
+
+  const res = await apiRequest<any>('/api/irrigation-optimization/water-requirements', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 503 || res.status === 502) {
+    return { data: null, error: msg('irrigationServiceUnconfigured'), unavailable: true };
   }
-
-  // Verified Tunisian wholesale market pricing in TND
-  return [
-    {
-      id: '1',
-      cropName: 'Extra Virgin Olive Oil',
-      cropNameAr: 'زيت زيتون بكر ممتاز (لتر)',
-      pricePerKg: 18.5,
-      previousPricePerKg: 17.8,
-      changePercent: 3.9,
-      trend: 'rising',
-      marketLocation: 'Sfax / Sahel',
-      marketLocationAr: 'سوق الجملة صفاقس / الساحل',
-      qualityGrade: 'صنف ممتاز',
-      lastUpdated: 'اليوم، 09:30',
+  if (!res.data?.success) {
+    return { data: null, error: msg('irrigationComputeFailed'), unavailable: false };
+  }
+  return {
+    data: {
+      data: (res.data.data ?? null) as Record<string, unknown> | null,
+      meta: metaFrom(res.data, 'trained-model'),
     },
-    {
-      id: '2',
-      cropName: 'Durum Wheat',
-      cropNameAr: 'القمح الصلب (كغ)',
-      pricePerKg: 1.3,
-      previousPricePerKg: 1.3,
-      changePercent: 0.0,
-      trend: 'stable',
-      marketLocation: 'Beja / Bizerte',
-      marketLocationAr: 'ديوان الحبوب - باجة',
-      qualityGrade: 'درجة أولى',
-      lastUpdated: 'اليوم، 08:00',
-    },
-    {
-      id: '3',
-      cropName: 'Field Tomatoes',
-      cropNameAr: 'الطماطم الطازجة (كغ)',
-      pricePerKg: 1.6,
-      previousPricePerKg: 1.8,
-      changePercent: -11.1,
-      trend: 'falling',
-      marketLocation: 'Bir El Kassa (Tunis)',
-      marketLocationAr: 'سوق بئر القصعة - تونس',
-      qualityGrade: 'صنف أول',
-      lastUpdated: 'اليوم، 06:15',
-    },
-    {
-      id: '4',
-      cropName: 'Deglet Nour Dates',
-      cropNameAr: 'دقلة النور الفاخرة (كغ)',
-      pricePerKg: 8.5,
-      previousPricePerKg: 8.2,
-      changePercent: 3.6,
-      trend: 'rising',
-      marketLocation: 'Kebili / Tozeur',
-      marketLocationAr: 'سوق قبلي وتوزر للتمور',
-      qualityGrade: 'تصدير ممتازة',
-      lastUpdated: 'اليوم، 10:00',
-    },
-    {
-      id: '5',
-      cropName: 'Almonds',
-      cropNameAr: 'اللوز المقشر (كغ)',
-      pricePerKg: 26.0,
-      previousPricePerKg: 25.5,
-      changePercent: 1.9,
-      trend: 'rising',
-      marketLocation: 'Sfax',
-      marketLocationAr: 'سوق صفاقس',
-      qualityGrade: 'محلي ممتاز',
-      lastUpdated: 'اليوم، 09:00',
-    },
-    {
-      id: '6',
-      cropName: 'Potatoes (Spunta)',
-      cropNameAr: 'البطاطا (صنف سبونتا) (كغ)',
-      pricePerKg: 1.4,
-      previousPricePerKg: 1.4,
-      changePercent: 0.0,
-      trend: 'stable',
-      marketLocation: 'Nabeul / Tunis',
-      marketLocationAr: 'سوق نابل المركزي',
-      qualityGrade: 'متوسط إلى ممتاز',
-      lastUpdated: 'اليوم، 07:45',
-    },
-  ];
+    error: null,
+    unavailable: false,
+  };
 }
 
-/**
- * 6. AI Agronomist Chat API
- */
+// ---------------------------------------------------------------------------
+// AI assistant chat — LLM when configured, else rule-based engine
+// ---------------------------------------------------------------------------
+
 export async function chatWithAIAssistant(
   message: string,
-  language = 'ar'
-): Promise<{ reply: string; dataSource: string }> {
+  language = 'ar',
+): Promise<{ data: AssistantReply | null; error: string | null }> {
   const res = await apiRequest<any>('/api/ai/assistant/chat', {
     method: 'POST',
     body: JSON.stringify({ message, language }),
   });
 
-  if (res.isOnline && res.data && res.data.reply) {
-    return {
-      reply: res.data.reply,
-      dataSource: res.data.dataSource || 'llm',
-    };
+  if (!res.data || typeof res.data.answer !== 'string') {
+    return { data: null, error: res.error || msg('assistantNoAnswer') };
   }
 
-  // Smart local agronomy engine matching query keywords in Arabic and French
-  const query = message.toLowerCase();
-
-  if (query.includes('زيتون') || query.includes('ري') || query.includes('olivier') || query.includes('irrigation')) {
-    return {
-      reply:
-        'بالنسبة لأشجار الزيتون في تونس:\n\n1. فترات الري الحرجة هي: أثناء تفتح الأزهار (مارس-أفريل) وخلال مرحلة امتلاء النواة ونمو الثمار (جويلية-أوت).\n2. يُنصح بالري في ساعات الصباح الباكر أو بعد غروب الشمس لتقليل التبخر.\n3. الكمية النموذجية للري التكميلي بالقطرة قطرة تتراوح بين 1500 و2500 م³ للهكتار سنوياً حسب صنف الزيتون (شملالي أو شتوي) ومنطقتك.',
-      dataSource: 'rule-based',
-    };
-  }
-
-  if (query.includes('طماطم') || query.includes('مرض') || query.includes('أوراق') || query.includes('tomate') || query.includes('maladie')) {
-    return {
-      reply:
-        'إذا كانت هناك بقع صفراء أو بنية على أوراق الطماطم:\n\n1. السبب الأكثر شيوعاً في تونس هو اللفحة المبكرة (الألترناريا) أو البياض الدقيقي نتيجة الرطوبة العالية.\n2. الإجراء الفوري: قم بقص الأوراق السفلية المصابة لمنع انتقال العدوى.\n3. قم بالرش بمبيد فطري نحاسي أو مبيد جهازي معتمد، وتجنب تبليل الأوراق أثناء السقي.\n4. يمكنك أيضاً استخدام ميزة "فحص النباتات بالصورة" في تطبيق AgroGrowth لتشخيص دقيق بالذكاء الاصطناعي.',
-      dataSource: 'rule-based',
-    };
-  }
-
-  if (query.includes('سماد') || query.includes('تسميد') || query.includes('engrais') || query.includes('fertilisation')) {
-    return {
-      reply:
-        'نصائح عامة للتسميد المتوازن في الأراضي التونسية:\n\n- أضف المادة العضوية (الغبار المتخمر) في فصل الخريف لتفكيك التربة الطينية وتحسين تهويتها.\n- الآزوت (اليوريا أو النترات) يُعطى على دفعات في فترات النمو النشط وتكوين الأغصان.\n- الفسفور والبوتاسيوم ضروريان جداً لجودة الثمار ومقاومة الجفاف، ويفضل إضافتهما قرب الجذور.\n- استخدم خدمة "تحليل التربة" في التطبيق للحصول على برنامج دقيق بالكميات المناسبة لحقلك.',
-      dataSource: 'rule-based',
-    };
-  }
-
+  const meta = metaFrom(res.data, res.data.dataSource === 'llm' ? 'llm' : 'rule-based');
   return {
-    reply:
-      'شكراً لسؤالك! بخصوص استفسارك، ننصح دائماً بمراعاة خصائص التربة ونوعية مياه الري في منطقتك. يمكنك استخدام أدوات AgroGrowth في تبويب "الخدمات" مثل فحص التربة، تشخيص الأمراض بالصورة، أو جدول الري الذكي للحصول على بيانات علمية دقيقة لمزرعتك.',
-    dataSource: 'rule-based',
+    data: {
+      reply: res.data.answer,
+      meta,
+      farmContextStatus: res.data.farmContextStatus,
+    },
+    error: null,
   };
 }
 
-/**
- * 7. Farm Management APIs
- */
-export async function getFarms(): Promise<Farm[]> {
-  const res = await apiRequest<any>('/api/farms');
+// ---------------------------------------------------------------------------
+// Farm & field management — persisted, requires verified session
+// ---------------------------------------------------------------------------
 
-  if (res.isOnline && res.data && Array.isArray(res.data.data)) {
-    return res.data.data;
-  }
-
-  return [
-    {
-      id: 'farm-1',
-      name: 'مزرعة الخير والبركة',
-      name_ar: 'مزرعة الخير والبركة',
-      location: 'باجة / مجاز الباب',
-      size_hectares: 12.5,
-      soil_type: 'طينية خصبة',
-    },
-    {
-      id: 'farm-2',
-      name: 'هنشر الزيتون الساحلي',
-      name_ar: 'هنشر الزيتون الساحلي',
-      location: 'سوسة / القلعة الكبرى',
-      size_hectares: 8.0,
-      soil_type: 'طميية رملية',
-    },
-  ];
+export async function getFarms(): Promise<{ data: Farm[]; error: string | null; fromCache: boolean }> {
+  const res = await apiRequest<any>('/api/farms', { cacheKey: 'farms' });
+  const list: Farm[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return { data: list, error: res.error, fromCache: res.fromCache };
 }
 
-export async function getFields(farmId?: string): Promise<Field[]> {
-  const endpoint = farmId ? `/api/fields?farmId=${farmId}` : '/api/fields';
-  const res = await apiRequest<any>(endpoint);
+export async function getFields(farmId?: string): Promise<{ data: Field[]; error: string | null; fromCache: boolean }> {
+  const endpoint = farmId ? `/api/fields?farmId=${encodeURIComponent(farmId)}` : '/api/fields';
+  const res = await apiRequest<any>(endpoint, { cacheKey: `fields:${farmId || 'all'}` });
+  const list: Field[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return { data: list, error: res.error, fromCache: res.fromCache };
+}
 
-  if (res.isOnline && res.data && Array.isArray(res.data.data)) {
-    return res.data.data;
-  }
-
-  return [
-    {
-      id: 'field-1',
-      farm_id: 'farm-1',
-      name: 'حقل الزيتون الشملالي',
-      name_ar: 'حقل الزيتون الشملالي',
-      size_hectares: 6.0,
-      soil_type: 'طينية معتدلة',
-      current_crop: 'زيتون شملالي',
-      planting_date: '2021-11-01',
-      expected_harvest_date: '2026-11-30',
-    },
-    {
-      id: 'field-2',
-      farm_id: 'farm-1',
-      name: 'قطعة القمح الصلب (كريم)',
-      name_ar: 'قطعة القمح الصلب (كريم)',
-      size_hectares: 6.5,
-      soil_type: 'طينية سوداء عميقة',
-      current_crop: 'قمح صلب',
-      planting_date: '2026-11-10',
-      expected_harvest_date: '2027-06-15',
-    },
-    {
-      id: 'field-3',
-      farm_id: 'farm-2',
-      name: 'مشتل اللوز والخضروات',
-      name_ar: 'مشتل اللوز والخضروات',
-      size_hectares: 8.0,
-      soil_type: 'طميية جيدة الصرف',
-      current_crop: 'لوز وطماطم',
-      planting_date: '2024-03-15',
-      expected_harvest_date: '2026-08-20',
-    },
-  ];
+export async function createField(payload: {
+  farm_id: string;
+  name: string;
+  size_hectares: number;
+  soil_type?: string;
+  current_crop?: string;
+}): Promise<{ data: Field | null; error: string | null }> {
+  const res = await apiRequest<any>('/api/fields', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.data?.data) return { data: null, error: res.error || msg('fieldCreateFailed') };
+  return { data: res.data.data as Field, error: null };
 }
 
 /**
- * 8. Urgent Alerts API
+ * Create a farm.
+ *
+ * `POST /api/farms` validates `name`, `region` and `size_hectares` (see
+ * server/routes/field-management.ts) and persists `location` server-side as
+ * `{ region, country }`. Sending the region under any other key would fail
+ * validation, so the field is named `region` here on purpose.
  */
-export async function getFarmAlerts(): Promise<FarmAlert[]> {
-  const res = await apiRequest<any>('/api/farmer-dashboard/alerts/active');
+export async function createFarm(payload: {
+  name: string;
+  region: string;
+  size_hectares: number;
+  soil_type?: string;
+}): Promise<{ data: Farm | null; error: string | null }> {
+  const res = await apiRequest<any>('/api/farms', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.data?.data) return { data: null, error: res.error || msg('farmCreateFailed') };
+  return { data: res.data.data as Farm, error: null };
+}
 
-  if (res.isOnline && res.data && Array.isArray(res.data.data)) {
-    return res.data.data.map((a: any) => ({
-      id: a.id,
-      type: a.type,
-      title: a.title,
-      titleAr: a.titleArabic || a.title,
-      message: a.message,
-      messageAr: a.messageArabic || a.message,
-      priority: a.priority || 'medium',
-      timestamp: a.timestamp || 'اليوم',
-      actionable: a.actionable ?? true,
-      actionTextAr: a.actionTextArabic || 'مراجعة الإجراء',
-    }));
+// ---------------------------------------------------------------------------
+// Notifications — persisted, requires verified session
+// ---------------------------------------------------------------------------
+
+export async function getNotifications(): Promise<{
+  data: AppNotification[];
+  error: string | null;
+  unavailable: boolean;
+}> {
+  const res = await apiRequest<any>('/api/notifications?limit=50', { cacheKey: 'notifications' });
+  if (res.status === 503) {
+    return { data: [], error: res.error || msg('notificationsUnavailable'), unavailable: true };
   }
-
-  return [
-    {
-      id: 'alert-1',
-      type: 'weather',
-      title: 'Strong Sirocco Wind Warning',
-      titleAr: 'تنبيه: رياح جنوبية حارة وجافة (شهيلي)',
-      message: 'Dry winds expected in the next 48 hours. Protect young seedlings and schedule evening irrigation.',
-      messageAr: 'توقعات برياح قوية جافة غداً بعد الظهر. يُنصح بري الخضروات والشجيرات حديثة الغراسة مساءً لتقليل الإجهاد المائي.',
-      priority: 'high',
-      timestamp: 'منذ ساعتين',
-      actionable: true,
-      actionTextAr: 'تفعيل برنامج الري الوقائي',
-    },
-    {
-      id: 'alert-2',
-      type: 'disease',
-      title: 'Fungal Humidity Alert',
-      titleAr: 'مؤشر رطوبة مرتفع: خطر نشاط الفطريات',
-      message: 'High morning humidity increases Peacock Spot risk on olive leaves.',
-      messageAr: 'ارتفاع نسبة الرطوبة الصباحية في منطقتك يرفع احتمالية نشاط فطر عين الطاووس في أوراق الزيتون.',
-      priority: 'medium',
-      timestamp: 'اليوم، 07:00',
-      actionable: true,
-      actionTextAr: 'بدء الفحص البصري للحقل',
-    },
-  ];
+  const list = Array.isArray(res.data?.data)
+    ? res.data.data.map((n: any) => ({
+        id: String(n.id),
+        type: n.type ?? 'info',
+        title: n.title ?? '',
+        message: n.message ?? '',
+        priority: normalizePriority(n.priority),
+        category: n.category,
+        readAt: n.read_at ?? null,
+        createdAt: n.created_at ?? '',
+        isStarred: n.is_starred ?? false,
+      }))
+    : [];
+  return { data: list, error: res.error, unavailable: false };
 }
 
 /**
- * 9. Daily Tasks API
+ * Mark one of the caller's own notifications as read.
+ *
+ * `PATCH /api/notifications/:id/read` is ownership-scoped server-side (the
+ * update is filtered by `user_id`), so a failure is reported rather than
+ * optimistically assumed.
  */
-export async function getTodayTasks(): Promise<FarmTask[]> {
-  const res = await apiRequest<any>('/api/farmer-dashboard/tasks/today');
+export async function markNotificationRead(id: string): Promise<{ ok: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/notifications/${encodeURIComponent(id)}/read`, {
+    method: 'PATCH',
+  });
+  if (res.data?.success) return { ok: true, error: null };
+  return { ok: false, error: res.error || msg('notificationUpdateFailed') };
+}
 
-  if (res.isOnline && res.data && Array.isArray(res.data.data)) {
-    return res.data.data.map((t: any) => ({
-      id: t.id,
-      title: t.title,
-      titleAr: t.titleArabic || t.title,
-      dueDate: t.dueDate || 'اليوم',
-      priority: t.priority || 'medium',
-      completed: t.status === 'completed',
-      cropNameAr: t.cropId ? 'الزيتون' : undefined,
-    }));
+// ---------------------------------------------------------------------------
+// Livestock — persisted, requires verified session (tenant-scoped)
+// ---------------------------------------------------------------------------
+
+export interface LivestockAnimal {
+  id: string;
+  earTag: string;
+  species: string;
+  breed: string;
+  gender: string;
+  age: number | null;
+  weight: number | null;
+  healthStatus: string;
+  breedingStatus: string;
+  currentValue: number | null;
+  currency: string;
+}
+
+export async function getAnimals(): Promise<{
+  data: LivestockAnimal[];
+  error: string | null;
+  unavailable: boolean;
+  fromCache: boolean;
+}> {
+  const res = await apiRequest<any>('/api/animals', { cacheKey: 'livestock:animals' });
+  if (res.status === 503) {
+    return { data: [], error: res.error || msg('apiLivestockUnavailable'), unavailable: true, fromCache: false };
+  }
+  const list: LivestockAnimal[] = Array.isArray(res.data?.data)
+    ? res.data.data.map((a: any) => ({
+        id: String(a.id),
+        earTag: a.earTag ?? '',
+        species: a.species ?? '',
+        breed: a.breed ?? '',
+        gender: a.gender ?? '',
+        age: typeof a.age === 'number' ? a.age : null,
+        weight: typeof a.weight === 'number' ? a.weight : null,
+        healthStatus: a.healthStatus ?? 'unknown',
+        breedingStatus: a.breedingStatus ?? 'unknown',
+        currentValue: typeof a.currentValue === 'number' ? a.currentValue : null,
+        currency: a.currency ?? 'TND',
+      }))
+    : [];
+  return { data: list, error: res.error, unavailable: false, fromCache: res.fromCache };
+}
+
+// ---------------------------------------------------------------------------
+// Agricultural news — real publisher RSS feeds via the gateway
+// ---------------------------------------------------------------------------
+
+/**
+ * Tunisian agricultural news aggregated from real publisher feeds
+ * (`GET /api/news`). The endpoint is public and stamps
+ * `dataSource: "rss-feeds"` / `isRealData: true`. Headlines are never invented:
+ * a source that is down is reported in `sources[]` and simply contributes no
+ * articles.
+ */
+export async function getAgriNews(params: {
+  language?: 'ar' | 'fr' | 'en';
+  category?: string;
+  query?: string;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<{ data: NewsResult | null; error: string | null; fromCache: boolean }> {
+  const search = new URLSearchParams();
+  if (params.language) search.set('language', params.language);
+  if (params.category) search.set('category', params.category);
+  if (params.query) search.set('q', params.query);
+  search.set('page', String(params.page ?? 1));
+  search.set('pageSize', String(params.pageSize ?? 12));
+  const endpoint = `/api/news?${search.toString()}`;
+
+  const res = await apiRequest<any>(endpoint, { cacheKey: `news:${search.toString()}` });
+  if (!res.data || !Array.isArray(res.data.articles)) {
+    return { data: null, error: res.error || msg('newsFetchFailed'), fromCache: res.fromCache };
   }
 
-  return [
-    {
-      id: 'task-1',
-      title: 'Morning Drip Irrigation',
-      titleAr: 'تشغيل دورة الري بالقطرة قطرة لحقل الزيتون',
-      dueDate: '06:30 ص',
-      priority: 'high',
-      completed: true,
-      cropNameAr: 'حقل الشملالي',
+  const d = res.data;
+  const articles: NewsArticle[] = d.articles.map((a: any) => ({
+    id: String(a.id ?? a.link),
+    title: a.title ?? '',
+    link: a.link ?? '',
+    publishedAt: a.publishedAt ?? null,
+    summary: a.summary ?? '',
+    sourceId: a.sourceId ?? '',
+    sourceName: a.sourceName ?? '',
+    sourceUrl: a.sourceUrl ?? '',
+    language: (a.language ?? 'ar') as 'ar' | 'fr' | 'en',
+    categories: Array.isArray(a.categories) ? a.categories : [],
+    author: a.author ?? null,
+  }));
+
+  const sources: NewsSourceStatus[] = Array.isArray(d.sources) ? d.sources : [];
+
+  return {
+    data: {
+      articles,
+      total: typeof d.total === 'number' ? d.total : articles.length,
+      page: typeof d.page === 'number' ? d.page : 1,
+      pageSize: typeof d.pageSize === 'number' ? d.pageSize : articles.length,
+      totalPages: typeof d.totalPages === 'number' ? d.totalPages : 1,
+      sources,
+      categories: Array.isArray(d.categories) ? d.categories : [],
+      generatedAt: d.generatedAt ?? '',
+      meta: metaFrom(d, 'live-observation', 'rss-feeds'),
     },
-    {
-      id: 'task-2',
-      title: 'Foliar Fertilizer Application',
-      titleAr: 'فحص رطوبة التربة وتجهيز سماد البوتاسيوم',
-      dueDate: '16:00 م',
-      priority: 'medium',
-      completed: false,
-      cropNameAr: 'قطعة القمح',
-    },
-    {
-      id: 'task-3',
-      title: 'Inspect Boundary Trees',
-      titleAr: 'مراقبة مصدات الرياح المحيطة بالمزرعة',
-      dueDate: 'قبل الغروب',
-      priority: 'low',
-      completed: false,
-      cropNameAr: 'مصدات الأشجار',
-    },
-  ];
+    error: null,
+    fromCache: res.fromCache,
+  };
 }
+
+// ---------------------------------------------------------------------------
+// AI capability discovery — the honest source of truth for feature gating
+// ---------------------------------------------------------------------------
+
+export async function getAICapabilities(): Promise<{
+  data: AICapabilitiesResponse | null;
+  error: string | null;
+  fromCache: boolean;
+}> {
+  const res = await apiRequest<AICapabilitiesResponse>('/api/ai/capabilities', {
+    cacheKey: 'ai:capabilities',
+  });
+  return { data: res.data, error: res.error, fromCache: res.fromCache };
+}
+
+/** Convenience: turn a capabilities payload into a lookup by id. */
+export function capabilityMap(payload: AICapabilitiesResponse | null): Record<string, AICapability> {
+  const map: Record<string, AICapability> = {};
+  for (const cap of payload?.capabilities ?? []) map[cap.id] = cap;
+  return map;
+}
+
+// ---------------------------------------------------------------------------
+// Diagnostics
+// ---------------------------------------------------------------------------
+
+export async function pingServer(): Promise<{ ok: boolean; message: string }> {
+  const res = await apiRequest<{ message: string }>('/api/ping', { anonymous: true });
+  if (res.data) return { ok: true, message: res.data.message || 'pong' };
+  return { ok: false, message: res.error || 'unreachable' };
+}
+
+export async function checkSession(): Promise<boolean> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return Boolean(session);
+}
+

@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ButtonProps {
   title: string;
@@ -35,6 +36,7 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   fullWidth = true,
 }) => {
+  const { isRtl } = useLanguage();
   const getButtonStyles = (): ViewStyle => {
     switch (variant) {
       case 'secondary':
@@ -85,6 +87,9 @@ export const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.8}
       onPress={onPress}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={[
         styles.base,
         size === 'lg' ? styles.sizeLg : size === 'sm' ? styles.sizeSm : styles.sizeMd,
@@ -97,7 +102,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator color={getTextColor()} size="small" />
       ) : (
-        <View style={styles.content}>
+        <View style={[styles.content, isRtl && styles.rtlRow]}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}
           <Text
             style={[
@@ -116,19 +121,23 @@ export const Button: React.FC<ButtonProps> = ({
 };
 
 const styles = StyleSheet.create({
+  rtlRow: { flexDirection: 'row-reverse' },
   base: {
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
   },
+  // Every button meets the 48dp minimum touch target. `sm` keeps a lighter
+  // visual weight through padding/typography, not by shrinking the tappable
+  // area below the accessibility minimum.
   sizeSm: {
-    minHeight: 36,
+    minHeight: 48,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
   },
   sizeMd: {
-    minHeight: 44,
+    minHeight: 48,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
@@ -154,12 +163,15 @@ const styles = StyleSheet.create({
   },
   textSm: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
   },
   textMd: {
     fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
   },
   textLg: {
     fontSize: typography.fontSizes.base,
+    lineHeight: 24,
   },
   disabled: {
     opacity: 0.5,

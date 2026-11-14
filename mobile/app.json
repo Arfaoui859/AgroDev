@@ -6,10 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#16a34a",
-      "resizeMode": "contain"
-    },
+    "scheme": "agrogrowth",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "tn.agrogrowth.mobile",
@@ -41,10 +38,18 @@
     "plugins": [
       "expo-secure-store",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "يطلب التطبيق استخدام الكاميرا لفحص المحاصيل والتقاط صور الأوراق مباشرة.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "يطلب التطبيق الوصول للصور لاختيار عينات النباتات والتربة.",
-          "cameraPermission": "يطلب التطبيق استخدام الكاميرا لفحص المحاصيل مباشرة."
+          "cameraPermission": "يطلب التطبيق استخدام الكاميرا لفحص المحاصيل مباشرة.",
+          "microphonePermission": false
         }
       ],
       [
@@ -52,7 +57,17 @@
         {
           "locationWhenInUsePermission": "يطلب التطبيق تحديد الموقع لتوفير بيانات الطقس الزراعي الدقيقة لمنطقتك."
         }
-      ]
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#16a34a",
+          "resizeMode": "contain",
+          "image": "./assets/splash-icon.png"
+        }
+      ],
+      "expo-asset"
     ]
   }
 }

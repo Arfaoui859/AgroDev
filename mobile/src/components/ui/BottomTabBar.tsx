@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../../context/LanguageContext';
 
 export type TabKey = 'home' | 'services' | 'assistant' | 'marketplace' | 'profile';
@@ -13,13 +14,16 @@ interface BottomTabBarProps {
 
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) => {
   const { t, isRtl } = useLanguage();
+  // The app shell reserves the top/left/right insets; the tab bar owns the
+  // bottom one so it clears the Android gesture bar and the iOS home indicator.
+  const insets = useSafeAreaInsets();
 
-  const tabs: Array<{
+  const tabs: {
     key: TabKey;
     label: string;
     icon: keyof typeof MaterialCommunityIcons.glyphMap;
     badge?: boolean;
-  }> = [
+  }[] = [
     { key: 'home', label: t.navHome, icon: 'home-variant' },
     { key: 'services', label: t.navServices, icon: 'grid-large' },
     { key: 'assistant', label: t.navAssistant, icon: 'robot', badge: true },
@@ -28,7 +32,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChan
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
       <View style={[styles.inner, isRtl && styles.rtlRow]}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
@@ -41,6 +45,9 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChan
                 activeOpacity={0.85}
                 onPress={() => onTabChange(tab.key)}
                 style={styles.assistantTabItem}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={tab.label}
               >
                 <View style={[styles.assistantButton, isActive && styles.assistantButtonActive]}>
                   <MaterialCommunityIcons name="robot-outline" size={26} color={colors.textInverse} />
@@ -64,6 +71,9 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChan
               activeOpacity={0.7}
               onPress={() => onTabChange(tab.key)}
               style={styles.tabItem}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={tab.label}
             >
               <View style={[styles.iconWrapper, isActive && styles.activeIconWrapper]}>
                 <MaterialCommunityIcons
@@ -95,7 +105,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingBottom: spacing.sm,
     paddingTop: spacing.xs,
   },
   inner: {
@@ -122,6 +131,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     marginTop: 2,
     fontWeight: typography.fontWeights.normal,
   },
@@ -130,6 +140,7 @@ const styles = StyleSheet.create({
   },
   assistantTabItem: {
     flex: 1,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -16, // Prominent floating center action
@@ -153,6 +164,7 @@ const styles = StyleSheet.create({
   },
   assistantLabel: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     marginTop: 3,
     fontWeight: typography.fontWeights.bold,
   },

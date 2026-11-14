@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography, shadows } from '../theme/colors';
+import { colors, radius, spacing, typography } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -16,24 +16,37 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { UserRole } from '../types';
 import { apiRequest, getApiBaseUrl } from '../api/client';
+import { supabaseHost, isSupabaseConfigured } from '../api/supabase';
+import { clearCache } from '../api/cache';
 import { AuthModal } from '../components/auth/AuthModal';
 import { PersonaSelectorModal } from '../components/onboarding/PersonaSelectorModal';
 
 export const ProfileScreen: React.FC = () => {
-  const { t, isRtl, language, setLanguage } = useLanguage();
-  const { user, switchRole, signOut } = useAuth();
+  const { t, x, isRtl, isArabic, language, setLanguage } = useLanguage();
+  const { user, isAuthenticated, updateRole, signOut } = useAuth();
 
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPersonaModal, setShowPersonaModal] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
 
-  const roles: Array<{ role: UserRole; label: string; icon: string }> = [
+/** Localised label for a role slug (falls back to the raw slug). */
+  const roleLabel = (role: UserRole | undefined): string => {
+    const found = roles.find((r) => r.role === role);
+    return found ? found.label : t.roleFarmer;
+  };
+
+  const roles: { role: UserRole; label: string; icon: string }[] = [
+    { role: 'gardener', label: t.roleGardener, icon: 'flower' },
     { role: 'farmer', label: t.roleFarmer, icon: 'tractor' },
     { role: 'agronomist', label: t.roleAgronomist, icon: 'school' },
     { role: 'veterinarian', label: t.roleVeterinarian, icon: 'stethoscope' },
     { role: 'trader', label: t.roleTrader, icon: 'cart' },
+    { role: 'company', label: t.roleCompany, icon: 'domain' },
     { role: 'inspector', label: t.roleInspector, icon: 'clipboard-check' },
+    { role: 'investor', label: t.roleInvestor, icon: 'chart-line' },
+    { role: 'government', label: t.roleGovernment, icon: 'bank' },
     { role: 'admin', label: t.roleAdmin, icon: 'shield-crown' },
   ];
 
@@ -41,14 +54,37 @@ export const ProfileScreen: React.FC = () => {
     setTestingConnection(true);
     setConnectionResult(null);
 
-    const res = await apiRequest('/api/ping');
+    const res = await apiRequest('/api/ping', { anonymous: true });
     setTestingConnection(false);
 
     if (res.isOnline) {
-      setConnectionResult('✅ تم الاتصال بنجاح بخادم AgroGrowth Express (200 OK)');
+      setConnectionResult(x.profileServerReachable);
     } else {
-      setConnectionResult('⚠️ يعمل التطبيق حالياً بالوضع المحلي الذكي المكتفي ذاتياً.');
+      setConnectionResult(res.error || x.stateOffline);
     }
+  };
+
+  const handleClearCache = async () => {
+    setClearingCache(true);
+    try {
+      await clearCache();
+      setConnectionResult(x.profileCacheCleared);
+    } finally {
+      setClearingCache(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    Alert.alert(t.logoutBtn, x.profileSignOutConfirm, [
+      { text: x.cancel, style: 'cancel' },
+      {
+        text: t.logoutBtn,
+        style: 'destructive',
+        onPress: () => {
+          void signOut();
+        },
+      },
+    ]);
   };
 
   return (
@@ -65,14 +101,22 @@ export const ProfileScreen: React.FC = () => {
           </View>
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, isRtl && styles.rtlText]}>
-              {user?.full_name_ar || user?.full_name || 'محمد علي بن سالم'}
+              {(isArabic ? user?.full_name_ar : user?.full_name) ||
+                user?.full_name ||
+                (isAuthenticated ? x.profileUserFallback : x.profileGuest)}
             </Text>
             <Text style={[styles.profileEmail, isRtl && styles.rtlText]}>
-              {user?.email || 'farmer@agrogrowth.tn'}
+              {user?.email || (isAuthenticated ? '' : x.profileSignInPrompt)}
             </Text>
             <View style={[styles.badgeContainer, isRtl && styles.rtlRow]}>
-              <Badge label={user?.role?.toUpperCase() || 'FARMER'} variant="primary" size="sm" />
-              <Badge label={user?.governorate || 'تونس'} variant="secondary" size="sm" />
+              {isAuthenticated ? (
+                <>
+                  <Badge label={roleLabel(user?.role)} variant="primary" size="sm" />
+                  {user?.governorate ? <Badge label={user.governorate} variant="secondary" size="sm" /> : null}
+                </>
+              ) : (
+                <Badge label={x.profileNotSignedIn} variant="warning" size="sm" />
+              )}
             </View>
           </View>
         </View>
@@ -80,14 +124,14 @@ export const ProfileScreen: React.FC = () => {
         {/* Quick Account & Persona Actions */}
         <View style={[styles.quickAuthRow, isRtl && styles.rtlRow]}>
           <Button
-            title="تسجيل دخول / حساب"
+            title={isAuthenticated ? x.profileSignedInAs : x.authSignIn}
             variant="outline"
             size="sm"
             onPress={() => setShowAuthModal(true)}
             style={{ flex: 1 }}
           />
           <Button
-            title="تخصيص التجربة (Persona)"
+            title={x.profilePersonaButton}
             variant="secondary"
             size="sm"
             onPress={() => setShowPersonaModal(true)}
@@ -104,10 +148,13 @@ export const ProfileScreen: React.FC = () => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setLanguage('ar')}
-              style={[styles.langChoice, language === 'ar' && styles.langChoiceActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'ar' }}
+              accessibilityLabel={x.languageArabicLabel}
+              style={[styles.langChoice, isRtl && styles.rtlRow, language === 'ar' && styles.langChoiceActive]}
             >
               <Text style={[styles.langChoiceText, language === 'ar' && styles.langChoiceTextActive]}>
-                العربية (تونس)
+                {x.languageArabicLabel}
               </Text>
               {language === 'ar' && (
                 <MaterialCommunityIcons name="check" size={18} color={colors.primary} />
@@ -117,7 +164,10 @@ export const ProfileScreen: React.FC = () => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setLanguage('fr')}
-              style={[styles.langChoice, language === 'fr' && styles.langChoiceActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'fr' }}
+              accessibilityLabel={'Français'}
+              style={[styles.langChoice, isRtl && styles.rtlRow, language === 'fr' && styles.langChoiceActive]}
             >
               <Text style={[styles.langChoiceText, language === 'fr' && styles.langChoiceTextActive]}>
                 Français
@@ -130,7 +180,10 @@ export const ProfileScreen: React.FC = () => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setLanguage('en')}
-              style={[styles.langChoice, language === 'en' && styles.langChoiceActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'en' }}
+              accessibilityLabel={'English'}
+              style={[styles.langChoice, isRtl && styles.rtlRow, language === 'en' && styles.langChoiceActive]}
             >
               <Text style={[styles.langChoiceText, language === 'en' && styles.langChoiceTextActive]}>
                 English
@@ -147,18 +200,21 @@ export const ProfileScreen: React.FC = () => {
       <View style={styles.section}>
         <View style={[styles.sectionHeaderRow, isRtl && styles.rtlRow]}>
           <Text style={styles.sectionHeading}>{t.demoModeSwitch}</Text>
-          <Badge label="تعديل الدور" variant="accent" size="sm" />
+          <Badge label={x.profileLocalPreference} variant="accent" size="sm" />
         </View>
         <Text style={[styles.sectionNote, isRtl && styles.rtlText]}>{t.demoModeNotice}</Text>
 
-        <View style={styles.roleGrid}>
+        <View style={[styles.roleGrid, isRtl && styles.rtlRow]}>
           {roles.map((r) => {
             const isSelected = user?.role === r.role;
             return (
               <TouchableOpacity
                 key={r.role}
                 activeOpacity={0.8}
-                onPress={() => switchRole(r.role)}
+                onPress={() => updateRole(r.role)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={r.label}
                 style={[styles.roleTile, isSelected && styles.roleTileSelected]}
               >
                 <MaterialCommunityIcons
@@ -187,7 +243,12 @@ export const ProfileScreen: React.FC = () => {
         <Text style={[styles.sectionHeading, isRtl && styles.rtlText]}>{t.connectionStatus}</Text>
         <Card variant="outlined" style={styles.statusCard}>
           <View style={[styles.statusRow, isRtl && styles.rtlRow]}>
-            <View style={styles.statusIndicatorOnline} />
+            <View
+              style={[
+                styles.statusIndicatorOnline,
+                { backgroundColor: connectionResult ? colors.success : colors.textMuted },
+              ]}
+            />
             <View style={styles.statusTextContainer}>
               <Text style={[styles.statusMainText, isRtl && styles.rtlText]}>
                 Express API Gateway
@@ -199,13 +260,18 @@ export const ProfileScreen: React.FC = () => {
           </View>
 
           <View style={[styles.statusRow, isRtl && styles.rtlRow, { marginTop: spacing.sm }]}>
-            <View style={styles.statusIndicatorOnline} />
+            <View
+              style={[
+                styles.statusIndicatorOnline,
+                { backgroundColor: isSupabaseConfigured ? colors.success : colors.warning },
+              ]}
+            />
             <View style={styles.statusTextContainer}>
               <Text style={[styles.statusMainText, isRtl && styles.rtlText]}>
                 Supabase PostgreSQL & Auth
               </Text>
               <Text style={[styles.statusSubText, isRtl && styles.rtlText]}>
-                jymrhhlwdbclctobhbsi.supabase.co
+                {isSupabaseConfigured ? supabaseHost : x.profileSupabaseUnconfigured}
               </Text>
             </View>
           </View>
@@ -217,7 +283,7 @@ export const ProfileScreen: React.FC = () => {
           )}
 
           <Button
-            title="اختبار الاتصال بالخادم الآن"
+            title={x.profileTestConnection}
             variant="outline"
             size="md"
             loading={testingConnection}
@@ -234,27 +300,26 @@ export const ProfileScreen: React.FC = () => {
             <MaterialCommunityIcons name="database-check" size={24} color={colors.primary} />
             <View style={styles.offlineTextContainer}>
               <Text style={[styles.offlineTitle, isRtl && styles.rtlText]}>{t.offlineMode}</Text>
-              <Text style={[styles.offlineSub, isRtl && styles.rtlText]}>
-                يتم حفظ بيانات الطقس، الحقول، والتشخيص محلياً لتصفحها في الحقل دون إنترنت.
-              </Text>
+              <Text style={[styles.offlineSub, isRtl && styles.rtlText]}>{x.profileOfflineDesc}</Text>
             </View>
           </View>
           <Button
-            title={t.syncData}
+            title={clearingCache ? x.stateLoading : x.profileClearCache}
             variant="secondary"
             size="md"
-            onPress={() => Alert.alert('المزامنة', 'تمت مزامنة كافة السجلات والتحديثات بنجاح!')}
+            loading={clearingCache}
+            onPress={handleClearCache}
             style={{ marginTop: spacing.sm }}
           />
         </Card>
       </View>
 
-      {/* 6. Sign Out Button */}
+      {/* 6. Sign In / Sign Out Button */}
       <Button
-        title={t.logoutBtn}
+        title={isAuthenticated ? t.logoutBtn : x.authSignIn}
         variant="danger"
         size="lg"
-        onPress={() => signOut()}
+        onPress={isAuthenticated ? handleSignOut : () => setShowAuthModal(true)}
         style={{ marginTop: spacing.md, marginBottom: spacing['2xl'] }}
       />
 
@@ -287,9 +352,7 @@ const styles = StyleSheet.create({
   rtlRow: {
     flexDirection: 'row-reverse',
   },
-  rtlText: {
-    textAlign: 'right',
-  },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   profileCard: {
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -311,12 +374,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: typography.fontSizes.lg,
+    fontSize: typography.fontSizes.lg, lineHeight: 27,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   profileEmail: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -330,7 +394,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   sectionHeading: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: spacing.xs,
@@ -342,6 +406,7 @@ const styles = StyleSheet.create({
   },
   sectionNote: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
@@ -352,6 +417,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   langChoice: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -364,6 +430,7 @@ const styles = StyleSheet.create({
   },
   langChoiceText: {
     fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
     color: colors.text,
     fontWeight: typography.fontWeights.medium,
   },
@@ -378,6 +445,7 @@ const styles = StyleSheet.create({
   },
   roleTile: {
     width: '48%',
+    minHeight: 48,
     backgroundColor: colors.card,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -393,6 +461,7 @@ const styles = StyleSheet.create({
   },
   roleTileText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },
@@ -419,11 +488,13 @@ const styles = StyleSheet.create({
   },
   statusMainText: {
     fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   statusSubText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textMuted,
   },
   connectionResultBox: {
@@ -434,6 +505,7 @@ const styles = StyleSheet.create({
   },
   connectionResultText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.text,
     textAlign: 'center',
   },
@@ -449,7 +521,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   offlineTitle: {
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -457,6 +529,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
     marginTop: 2,
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });

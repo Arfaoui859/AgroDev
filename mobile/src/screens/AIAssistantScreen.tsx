@@ -15,20 +15,28 @@ import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { chatWithAIAssistant } from '../api/client';
 import { ChatMessage } from '../types';
+import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
+import { formatTime } from '../utils/date';
+
+let messageSeq = 0;
+function nextMessageId(): string {
+  messageSeq += 1;
+  return `${Date.now()}-${messageSeq}`;
+}
 
 export const AIAssistantScreen: React.FC = () => {
-  const { t, isRtl, language } = useLanguage();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      sender: 'assistant',
-      text: t.assistantGreeting,
-      timestamp: new Date().toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const { t, x, isRtl, language } = useLanguage();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef<any>(null);
+
+  // The welcome bubble is derived at render time (not stored) so switching
+  // language updates it immediately instead of leaving it in the old language.
+  const displayMessages: ChatMessage[] = [
+    { id: 'welcome', sender: 'assistant', text: t.assistantGreeting, timestamp: formatTime(new Date(), language) },
+    ...messages,
+  ];
 
   const suggestedPrompts = [
     t.promptIrrigation,
@@ -42,10 +50,10 @@ export const AIAssistantScreen: React.FC = () => {
     if (!textToSend || loading) return;
 
     const userMsg: ChatMessage = {
-      id: String(Date.now()),
+      id: nextMessageId(),
       sender: 'user',
       text: textToSend,
-      timestamp: new Date().toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: formatTime(new Date(), language),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -59,18 +67,19 @@ export const AIAssistantScreen: React.FC = () => {
     try {
       const response = await chatWithAIAssistant(textToSend, language);
       const assistantMsg: ChatMessage = {
-        id: String(Date.now() + 1),
+        id: nextMessageId(),
         sender: 'assistant',
-        text: response.reply,
-        timestamp: new Date().toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' }),
+        text: response.data?.reply || x.assistantUnavailable,
+        timestamp: formatTime(new Date(), language),
+        meta: response.data?.meta,
       };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (e) {
+    } catch {
       const errorMsg: ChatMessage = {
-        id: String(Date.now() + 1),
+        id: nextMessageId(),
         sender: 'assistant',
-        text: 'عذراً، حدث خطأ أثناء معالجة السؤال. يرجى التأكد من الاتصال والمحاولة ثانية.',
-        timestamp: new Date().toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' }),
+        text: x.assistantErrorReply,
+        timestamp: formatTime(new Date(), language),
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
@@ -110,6 +119,8 @@ export const AIAssistantScreen: React.FC = () => {
               key={index}
               activeOpacity={0.8}
               onPress={() => handleSend(prompt)}
+              accessibilityRole="button"
+              accessibilityLabel={prompt}
               style={[styles.promptChip, isRtl && styles.rtlRow]}
             >
               <MaterialCommunityIcons name="lightbulb-outline" size={14} color={colors.primary} />
@@ -128,7 +139,7 @@ export const AIAssistantScreen: React.FC = () => {
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
       >
-        {messages.map((msg) => {
+        {displayMessages.map((msg) => {
           const isUser = msg.sender === 'user';
           return (
             <View
@@ -168,6 +179,11 @@ export const AIAssistantScreen: React.FC = () => {
                 >
                   {msg.timestamp}
                 </Text>
+                {!isUser && msg.meta ? (
+                  <View style={styles.provRow}>
+                    <ProvenanceBadge meta={msg.meta} />
+                  </View>
+                ) : null}
               </View>
             </View>
           );
@@ -178,9 +194,9 @@ export const AIAssistantScreen: React.FC = () => {
             <View style={styles.botIcon}>
               <MaterialCommunityIcons name="sprout" size={16} color={colors.primary} />
             </View>
-            <View style={[styles.messageBubble, styles.assistantBubble, styles.loadingBubble]}>
+            <View style={[styles.messageBubble, styles.assistantBubble, styles.loadingBubble, isRtl && styles.rtlRow]}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.loadingText}>جاري إعداد الإجابة الزراعية...</Text>
+              <Text style={styles.loadingText}>{x.assistantPreparing}</Text>
             </View>
           </View>
         )}
@@ -201,6 +217,9 @@ export const AIAssistantScreen: React.FC = () => {
           activeOpacity={0.8}
           onPress={() => handleSend()}
           disabled={loading || inputText.trim() === ''}
+          accessibilityRole="button"
+          accessibilityLabel={t.send}
+          accessibilityState={{ disabled: loading || inputText.trim() === '' }}
           style={[
             styles.sendButton,
             (loading || inputText.trim() === '') && styles.sendButtonDisabled,
@@ -218,6 +237,7 @@ export const AIAssistantScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  provRow: { marginTop: 6 },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -225,9 +245,7 @@ const styles = StyleSheet.create({
   rtlRow: {
     flexDirection: 'row-reverse',
   },
-  rtlText: {
-    textAlign: 'right',
-  },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -250,12 +268,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   headerSub: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -272,17 +291,19 @@ const styles = StyleSheet.create({
   promptChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
+    minHeight: 48,
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: colors.border,
     maxWidth: 240,
   },
   promptChipText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
   },
   messagesContainer: {
@@ -347,7 +368,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   messageTime: {
-    fontSize: 10,
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     marginTop: 4,
   },
   userTime: {
@@ -364,6 +386,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
   },
   inputContainer: {
@@ -378,18 +401,18 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 48,
     maxHeight: 100,
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: 10,
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     color: colors.text,
   },
   sendButton: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',

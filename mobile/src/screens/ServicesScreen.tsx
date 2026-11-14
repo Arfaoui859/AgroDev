@@ -11,13 +11,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { Badge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
+import { StateView } from '../components/ui/StateView';
 
 interface ServicesScreenProps {
   onSelectService: (serviceId: string) => void;
 }
 
 export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService }) => {
-  const { t, isRtl } = useLanguage();
+  const { t, x, isRtl } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
@@ -40,7 +42,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.soil,
       bgColor: colors.soilLight,
       category: 'soil',
-      badge: 'تسميد علمي',
+      badge: x.svcBadgeSoil,
       badgeVariant: 'accent' as const,
     },
     {
@@ -51,7 +53,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.crop,
       bgColor: colors.cropLight,
       category: 'soil',
-      badge: 'ربحية أعلى',
+      badge: x.svcBadgeCrops,
       badgeVariant: 'success' as const,
     },
     // 2. Health & Plant Protection
@@ -63,7 +65,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.danger,
       bgColor: colors.dangerLight,
       category: 'health',
-      badge: 'فحص بالصورة',
+      badge: x.svcBadgeDisease,
       badgeVariant: 'danger' as const,
     },
     {
@@ -74,7 +76,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.danger,
       bgColor: colors.dangerLight,
       category: 'health',
-      badge: 'مكافحة متكاملة',
+      badge: x.svcBadgePest,
       badgeVariant: 'warning' as const,
     },
     // 3. Water & Climate
@@ -86,7 +88,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.water,
       bgColor: colors.waterLight,
       category: 'water',
-      badge: 'توفير المياه',
+      badge: x.svcBadgeIrrigation,
       badgeVariant: 'secondary' as const,
     },
     {
@@ -97,7 +99,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.secondary,
       bgColor: colors.secondaryLight,
       category: 'water',
-      badge: 'محطات تونسية',
+      badge: x.svcBadgeWeather,
       badgeVariant: 'info' as const,
     },
     // 4. Operations & Finance
@@ -109,7 +111,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.primary,
       bgColor: colors.primaryLight,
       category: 'finance',
-      badge: 'خرائط الحقول',
+      badge: x.svcBadgeFarms,
       badgeVariant: 'primary' as const,
     },
     {
@@ -120,7 +122,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.accent,
       bgColor: colors.accentLight,
       category: 'finance',
-      badge: 'أغنام وأبقار',
+      badge: x.svcBadgeLivestock,
       badgeVariant: 'accent' as const,
     },
     // 5. Community & Advisory
@@ -132,7 +134,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.primary,
       bgColor: colors.primaryLight,
       category: 'community',
-      badge: 'مجتمع الفلاحين',
+      badge: x.svcBadgeCommunity,
       badgeVariant: 'primary' as const,
     },
     {
@@ -143,7 +145,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.secondaryDark,
       bgColor: colors.secondaryLight,
       category: 'community',
-      badge: 'مهندسون وبياطرة',
+      badge: x.svcBadgeExpert,
       badgeVariant: 'secondary' as const,
     },
     // 6. Advanced AI Architecture & History
@@ -155,18 +157,29 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       color: colors.primary,
       bgColor: colors.primaryLight,
       category: 'community',
-      badge: '8 وكلاء متخصصين',
+      badge: x.svcBadgeMultiAgent,
       badgeVariant: 'accent' as const,
     },
     {
+      id: 'agri_news',
+      title: t.agriNewsName,
+      desc: t.agriNewsDesc,
+      icon: 'newspaper-variant-outline',
+      color: colors.secondary,
+      bgColor: colors.secondaryLight,
+      category: 'community',
+      badge: x.svcBadgeNews,
+      badgeVariant: 'info' as const,
+    },
+    {
       id: 'recent_analyses',
-      title: 'سجل التحاليل السابقة',
-      desc: 'مراجعة كافة نتائج تشخيص الأمراض وتحاليل التربة المحفوظة مع توصياتها وتاريخ إجرائها.',
+      title: x.recentAnalysesTitle,
+      desc: x.recentAnalysesDesc,
       icon: 'history',
       color: colors.secondary,
       bgColor: colors.secondaryLight,
       category: 'health',
-      badge: 'سجل مؤرخ',
+      badge: x.svcBadgeHistory,
       badgeVariant: 'info' as const,
     },
   ];
@@ -203,8 +216,13 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
           onChangeText={setSearchQuery}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <MaterialCommunityIcons name="close-circle" size={18} color={colors.textMuted} />
+          <TouchableOpacity
+            onPress={() => setSearchQuery('')}
+            accessibilityRole="button"
+            accessibilityLabel={x.clearSearch}
+            style={styles.iconButton}
+          >
+            <MaterialCommunityIcons name="close-circle" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -222,7 +240,10 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
               key={cat.id}
               activeOpacity={0.8}
               onPress={() => setActiveCategory(cat.id)}
-              style={[styles.catPill, isActive && styles.catPillActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={cat.label}
+              style={[styles.catPill, isRtl && styles.rtlRow, isActive && styles.catPillActive]}
             >
               <MaterialCommunityIcons
                 name={cat.icon as any}
@@ -239,13 +260,20 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
 
       {/* Service Cards Grid */}
       <View style={styles.serviceList}>
-        {filteredServices.map((svc) => (
-          <TouchableOpacity
-            key={svc.id}
-            activeOpacity={0.85}
-            onPress={() => onSelectService(svc.id)}
-            style={styles.serviceCard}
-          >
+        {filteredServices.length === 0 ? (
+          <Card variant="outlined">
+            <StateView kind="empty" title={x.stateEmpty} message={x.servicesNoMatch} compact />
+          </Card>
+        ) : (
+          filteredServices.map((svc) => (
+            <TouchableOpacity
+              key={svc.id}
+              activeOpacity={0.85}
+              onPress={() => onSelectService(svc.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`${svc.title}. ${svc.desc}`}
+              style={styles.serviceCard}
+            >
             <View style={[styles.cardTopRow, isRtl && styles.rtlRow]}>
               <View style={[styles.serviceIconContainer, { backgroundColor: svc.bgColor }]}>
                 <MaterialCommunityIcons name={svc.icon as any} size={28} color={svc.color} />
@@ -257,15 +285,16 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
             <Text style={[styles.serviceDesc, isRtl && styles.rtlText]}>{svc.desc}</Text>
 
             <View style={[styles.cardFooter, isRtl && styles.rtlRow]}>
-              <Text style={styles.launchText}>ابدأ الاستخدام</Text>
+              <Text style={styles.launchText}>{x.servicesLaunch}</Text>
               <MaterialCommunityIcons
                 name={isRtl ? 'arrow-left' : 'arrow-right'}
                 size={18}
                 color={colors.primary}
               />
             </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -283,19 +312,18 @@ const styles = StyleSheet.create({
   rtlRow: {
     flexDirection: 'row-reverse',
   },
-  rtlText: {
-    textAlign: 'right',
-  },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerBox: {
     marginBottom: spacing.md,
   },
   mainTitle: {
-    fontSize: typography.fontSizes.xl,
+    fontSize: typography.fontSizes.xl, lineHeight: 30,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   mainSub: {
     fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
     color: colors.textSecondary,
     marginTop: 3,
   },
@@ -313,9 +341,15 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     color: colors.text,
     height: '100%',
+  },
+  iconButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryScroll: {
     gap: spacing.xs,
@@ -324,9 +358,10 @@ const styles = StyleSheet.create({
   catPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    minHeight: 48,
+    paddingHorizontal: 14,
     borderRadius: radius.full,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -338,6 +373,7 @@ const styles = StyleSheet.create({
   },
   catPillText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },
@@ -349,6 +385,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   serviceCard: {
+    minHeight: 48,
     backgroundColor: colors.card,
     borderRadius: radius.lg,
     padding: spacing.lg,
@@ -370,7 +407,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   serviceTitle: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: 4,
@@ -378,7 +415,7 @@ const styles = StyleSheet.create({
   serviceDesc: {
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: spacing.md,
   },
   cardFooter: {
@@ -392,6 +429,7 @@ const styles = StyleSheet.create({
   },
   launchText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.primary,
     fontWeight: typography.fontWeights.bold,
   },

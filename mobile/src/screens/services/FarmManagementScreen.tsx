@@ -4,99 +4,145 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   TextInput,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { getFarms, getFields, apiRequest } from '../../api/client';
+import { getFarms, getFields, createField, createFarm } from '../../api/client';
 import { Farm, Field } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { StateView } from '../../components/ui/StateView';
+import { GOVERNORATES } from '../../utils/governorates';
 
 interface FarmManagementScreenProps {
   onBack: () => void;
 }
 
 export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBack }) => {
-  const { t, isRtl } = useLanguage();
+  const { t, x, isRtl, language } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const [farms, setFarms] = useState<Farm[]>([]);
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showFarmModal, setShowFarmModal] = useState(false);
 
   // New Field Form States
   const [fieldName, setFieldName] = useState('');
   const [fieldArea, setFieldArea] = useState('');
-  const [fieldSoil, setFieldSoil] = useState('طينية خصبة');
-  const [fieldCrop, setFieldCrop] = useState('زيتون شملالي');
+  const [fieldSoil, setFieldSoil] = useState(x.farmDefaultSoil);
+  const [fieldCrop, setFieldCrop] = useState(x.farmDefaultCrop);
   const [saving, setSaving] = useState(false);
 
-  const loadFarmData = async () => {
+  // New Farm Form States
+  const [farmName, setFarmName] = useState('');
+  const [farmRegion, setFarmRegion] = useState('');
+  const [farmSize, setFarmSize] = useState('');
+  const [farmSoil, setFarmSoil] = useState(x.farmDefaultSoil);
+  const [savingFarm, setSavingFarm] = useState(false);
+
+  const loadFarmData = React.useCallback(async () => {
     setLoading(true);
-    try {
-      const [farmsData, fieldsData] = await Promise.all([getFarms(), getFields()]);
-      setFarms(farmsData);
-      setFields(fieldsData);
-    } catch (e) {
-      console.warn('Error loading farms:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setError(null);
+    const [farmsRes, fieldsRes] = await Promise.all([getFarms(), getFields()]);
+    setFarms(farmsRes.data);
+    setFields(fieldsRes.data);
+    setError(farmsRes.error || fieldsRes.error);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    loadFarmData();
-  }, []);
+    (async () => {
+      await loadFarmData();
+    })();
+  }, [loadFarmData]);
 
   const handleAddField = async () => {
     if (!fieldName.trim() || !fieldArea.trim()) {
-      Alert.alert('تنبيه', 'يرجى إدخال اسم الحقل والمساحة بالهكتار.');
+      Alert.alert(x.notice, x.farmRequiredFields);
+      return;
+    }
+    // Never coerce unparsable input to 0 ha: a zero-area field is a real value
+    // that would misrepresent the plot the user believes they registered.
+    const fieldAreaValue = parseFloat(fieldArea.replace(',', '.'));
+    if (!Number.isFinite(fieldAreaValue) || fieldAreaValue <= 0) {
+      Alert.alert(x.notice, x.farmInvalidArea);
       return;
     }
 
     setSaving(true);
     try {
-      const farmId = farms[0]?.id || 'farm-1';
-      const newFieldData = {
+      const farmId = farms[0]?.id;
+      if (!farmId) {
+        Alert.alert(x.notice, x.farmNoFarmYet);
+        return;
+      }
+      const res = await createField({
         farm_id: farmId,
         name: fieldName,
-        size_hectares: parseFloat(fieldArea) || 5.0,
+        size_hectares: fieldAreaValue,
         soil_type: fieldSoil,
         current_crop: fieldCrop,
-      };
-
-      await apiRequest('/api/fields', {
-        method: 'POST',
-        body: JSON.stringify(newFieldData),
       });
+      if (!res.data) {
+        Alert.alert(x.stateError, res.error || x.farmError);
+        return;
+      }
 
-      // Add to local state
-      const addedField: Field = {
-        id: `field-${Date.now()}`,
-        farm_id: farmId,
-        name: fieldName,
-        name_ar: fieldName,
-        size_hectares: parseFloat(fieldArea) || 5.0,
-        soil_type: fieldSoil,
-        current_crop: fieldCrop,
-        planting_date: new Date().toISOString().split('T')[0],
-      };
-
-      setFields((prev) => [addedField, ...prev]);
+      setFields((prev) => [res.data as Field, ...prev]);
       setShowAddModal(false);
       setFieldName('');
       setFieldArea('');
-      Alert.alert('نجاح', 'تمت إضافة الحقل الجديد بنجاح إلى سجلك الزراعي!');
+      Alert.alert(x.successTitle, x.farmSaved);
     } catch (e) {
       console.warn('Error creating field:', e);
-      Alert.alert('خطأ', 'تعذر حفظ الحقل.');
+      Alert.alert(x.stateError, x.farmError);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCreateFarm = async () => {
+    if (!farmName.trim() || !farmRegion.trim() || !farmSize.trim()) {
+      Alert.alert(x.notice, x.farmRequiredFields);
+      return;
+    }
+    const farmSizeValue = parseFloat(farmSize.replace(',', '.'));
+    if (!Number.isFinite(farmSizeValue) || farmSizeValue <= 0) {
+      Alert.alert(x.notice, x.farmInvalidArea);
+      return;
+    }
+    setSavingFarm(true);
+    try {
+      const res = await createFarm({
+        name: farmName.trim(),
+        region: farmRegion.trim(),
+        size_hectares: farmSizeValue,
+        soil_type: farmSoil,
+      });
+      if (!res.data) {
+        Alert.alert(x.stateError, res.error || x.farmError);
+        return;
+      }
+      setFarms((prev) => [res.data as Farm, ...prev]);
+      setShowFarmModal(false);
+      setFarmName('');
+      setFarmRegion('');
+      setFarmSize('');
+      Alert.alert(x.successTitle, x.farmSaved);
+    } catch (e) {
+      console.warn('Error creating farm:', e);
+      Alert.alert(x.stateError, x.farmError);
+    } finally {
+      setSavingFarm(false);
     }
   };
 
@@ -114,67 +160,175 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
           <View style={styles.titleTextContainer}>
             <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{t.farmManagementName}</Text>
-            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>
-              متابعة قطع الأراضي، مساحاتها، المحاصيل المغروسة، وتواريخ الحصاد
-            </Text>
+            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{t.farmManagementDesc}</Text>
           </View>
         </View>
       </View>
 
+      {!isAuthenticated ? (
+        <Card variant="outlined" style={{ marginBottom: spacing.lg }}>
+          <StateView
+            kind="unavailable"
+            title={x.loginRequired}
+            message={x.farmLoginToManage}
+          />
+        </Card>
+      ) : null}
+
       {/* Farm Overview Card */}
-      {farms.length > 0 && (
+      {isAuthenticated && farms.length > 0 && (
         <Card variant="elevated" style={styles.farmSummaryCard}>
           <View style={[styles.farmHeader, isRtl && styles.rtlRow]}>
             <View style={styles.farmHeaderInfo}>
-              <Text style={[styles.farmName, isRtl && styles.rtlText]}>{farms[0].name_ar || farms[0].name}</Text>
+              <Text style={[styles.farmName, isRtl && styles.rtlText]}>
+                {language === 'ar' ? farms[0].name_ar || farms[0].name : farms[0].name}
+              </Text>
               <Text style={[styles.farmLocation, isRtl && styles.rtlText]}>
                 <MaterialCommunityIcons name="map-marker" size={14} color={colors.primary} />{' '}
-                {typeof farms[0].location === 'string' ? farms[0].location : 'تونس'}
+                {formatFarmLocation(farms[0].location)}
               </Text>
             </View>
-            <Badge label={`${farms[0].size_hectares} هكتار`} variant="primary" size="md" />
+            <Badge label={`${farms[0].size_hectares} ${x.farmSizeUnit}`} variant="primary" size="md" />
           </View>
 
           <View style={[styles.farmStatsRow, isRtl && styles.rtlRow]}>
             <View style={styles.statBox}>
               <Text style={styles.statVal}>{fields.length}</Text>
-              <Text style={styles.statLabel}>عدد الحقول</Text>
+              <Text style={styles.statLabel}>{x.farmFieldCount}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
               <Text style={styles.statVal}>
                 {fields.reduce((acc, f) => acc + (f.size_hectares || 0), 0).toFixed(1)}
               </Text>
-              <Text style={styles.statLabel}>إجمالي المساحة المستغلة</Text>
+              <Text style={styles.statLabel}>{x.farmTotalArea}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statVal}>100%</Text>
-              <Text style={styles.statLabel}>جاهزية التربة</Text>
+              <Text style={styles.statVal}>
+                {new Set(fields.map((f) => (f.current_crop || '').trim()).filter(Boolean)).size}
+              </Text>
+              <Text style={styles.statLabel}>{x.farmCropCount}</Text>
             </View>
           </View>
         </Card>
       )}
 
-      {/* Add Field Button */}
-      <Button
-        title={showAddModal ? 'إلغاء الإضافة' : '+ تسجيل حقل / قطعة أرض جديدة'}
-        variant={showAddModal ? 'outline' : 'primary'}
-        size="md"
-        onPress={() => setShowAddModal(!showAddModal)}
-        style={{ marginBottom: spacing.md }}
-      />
+      {/* First-run: no farm yet — guide the user to register one. Adding a
+          field is impossible without a farm, so this must come first. */}
+      {isAuthenticated && !loading && farms.length === 0 && (
+        <Card variant="outlined" style={{ marginBottom: spacing.md }}>
+          <StateView kind="empty" title={x.farmNoFarmYet} message={x.farmCreateHint} />
+        </Card>
+      )}
+
+      {/* Add Farm / Add Field Button */}
+      {isAuthenticated && (
+        <Button
+          title={
+            farms.length === 0
+              ? showFarmModal
+                ? x.cancel
+                : `+ ${x.farmAddFarm}`
+              : showAddModal
+                ? x.cancel
+                : `+ ${x.farmAddField}`
+          }
+          variant={(farms.length === 0 ? showFarmModal : showAddModal) ? 'outline' : 'primary'}
+          size="md"
+          onPress={() => {
+            if (farms.length === 0) {
+              setShowFarmModal((v) => !v);
+            } else {
+              setShowAddModal((v) => !v);
+            }
+          }}
+          style={{ marginBottom: spacing.md }}
+        />
+      )}
+
+      {/* Add Farm Form */}
+      {showFarmModal && farms.length === 0 && (
+        <Card variant="outlined" style={styles.addFormCard}>
+          <Text style={[styles.formTitle, isRtl && styles.rtlText]}>{x.farmAddFarm}</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmName}</Text>
+            <TextInput
+              style={[styles.input, isRtl && styles.rtlText]}
+              placeholder={x.farmName}
+              placeholderTextColor={colors.textMuted}
+              value={farmName}
+              onChangeText={setFarmName}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmRegion}</Text>
+            <View style={[styles.chipWrap, isRtl && styles.rtlRow]}>
+              {GOVERNORATES.map((g) => {
+                const label = language === 'fr' ? g.labelFr : language === 'en' ? g.labelEn : g.label;
+                const selected = farmRegion === label;
+                return (
+                  <TouchableOpacity
+                    key={g.id}
+                    activeOpacity={0.85}
+                    onPress={() => setFarmRegion(label)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={label}
+                    style={[styles.regionChip, selected && styles.regionChipSelected]}
+                  >
+                    <Text style={[styles.regionChipText, selected && styles.regionChipTextSelected]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmSize}</Text>
+            <TextInput
+              style={[styles.input, isRtl && styles.rtlText]}
+              placeholder="4.5"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+              value={farmSize}
+              onChangeText={setFarmSize}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmSoilType}</Text>
+            <TextInput
+              style={[styles.input, isRtl && styles.rtlText]}
+              placeholder={farmSoil}
+              placeholderTextColor={colors.textMuted}
+              value={farmSoil}
+              onChangeText={setFarmSoil}
+            />
+          </View>
+
+          <Button
+            title={savingFarm ? x.stateLoading : x.farmSaveFarm}
+            onPress={handleCreateFarm}
+            loading={savingFarm}
+            size="md"
+            style={{ marginTop: spacing.sm }}
+          />
+        </Card>
+      )}
 
       {/* Add Field Form Modal/Card */}
       {showAddModal && (
         <Card variant="outlined" style={styles.addFormCard}>
-          <Text style={[styles.formTitle, isRtl && styles.rtlText]}>بيانات الحقل الجديد</Text>
+          <Text style={[styles.formTitle, isRtl && styles.rtlText]}>{x.farmAddField}</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>اسم الحقل أو القطعة</Text>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmFieldName}</Text>
             <TextInput
               style={[styles.input, isRtl && styles.rtlText]}
-              placeholder="مثال: قطعة الزيتون الشمالية"
+              placeholder={x.farmFieldName}
               placeholderTextColor={colors.textMuted}
               value={fieldName}
               onChangeText={setFieldName}
@@ -182,10 +336,10 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>المساحة (بالهكتار)</Text>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmFieldArea}</Text>
             <TextInput
               style={[styles.input, isRtl && styles.rtlText]}
-              placeholder="مثال: 4.5"
+              placeholder="4.5"
               placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
               value={fieldArea}
@@ -194,10 +348,21 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>المحصول المزروع</Text>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmSoilType}</Text>
             <TextInput
               style={[styles.input, isRtl && styles.rtlText]}
-              placeholder="مثال: زيتون شملالي، قمح، طماطم..."
+              placeholder={fieldSoil}
+              placeholderTextColor={colors.textMuted}
+              value={fieldSoil}
+              onChangeText={setFieldSoil}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmCurrentCrop}</Text>
+            <TextInput
+              style={[styles.input, isRtl && styles.rtlText]}
+              placeholder={fieldCrop}
               placeholderTextColor={colors.textMuted}
               value={fieldCrop}
               onChangeText={setFieldCrop}
@@ -205,7 +370,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <Button
-            title={saving ? 'جاري الحفظ...' : 'حفظ الحقل في قاعدة البيانات'}
+            title={saving ? x.stateLoading : x.farmSaveFarm}
             onPress={handleAddField}
             loading={saving}
             size="md"
@@ -216,32 +381,40 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
 
       {/* Fields List */}
       <View style={styles.fieldsSection}>
-        <Text style={[styles.sectionTitle, isRtl && styles.rtlText]}>حقول وقطع المزرعة</Text>
+        <Text style={[styles.sectionTitle, isRtl && styles.rtlText]}>{x.farmFieldsSection}</Text>
 
         {loading ? (
           <ActivityIndicator size="small" color={colors.primary} />
+        ) : !isAuthenticated ? (
+          <StateView kind="unavailable" title={x.loginRequired} message={x.farmLoginToManage} compact />
+        ) : error ? (
+          <StateView kind="error" title={x.stateError} message={error} onRetry={loadFarmData} retryLabel={x.retry} compact />
+        ) : fields.length === 0 ? (
+          <StateView kind="empty" title={x.farmEmpty} compact />
         ) : (
           fields.map((field) => (
             <Card key={field.id} variant="elevated" style={styles.fieldCard}>
               <View style={[styles.fieldHeader, isRtl && styles.rtlRow]}>
                 <View style={styles.fieldInfo}>
-                  <Text style={[styles.fieldName, isRtl && styles.rtlText]}>{field.name_ar || field.name}</Text>
+                  <Text style={[styles.fieldName, isRtl && styles.rtlText]}>
+                    {language === 'ar' ? field.name_ar || field.name : field.name}
+                  </Text>
                   <Text style={[styles.fieldCrop, isRtl && styles.rtlText]}>
-                    المحصول الحالي: <Text style={styles.cropHighlight}>{field.current_crop || 'غير محدد'}</Text>
+                    {x.farmCurrentCrop}: <Text style={styles.cropHighlight}>{field.current_crop || '—'}</Text>
                   </Text>
                 </View>
-                <Badge label={`${field.size_hectares} هكتار`} variant="secondary" size="md" />
+                <Badge label={`${field.size_hectares} ${x.farmSizeUnit}`} variant="secondary" size="md" />
               </View>
 
               <View style={[styles.fieldFooter, isRtl && styles.rtlRow]}>
                 <View style={[styles.footerMeta, isRtl && styles.rtlRow]}>
                   <MaterialCommunityIcons name="layers-triple" size={16} color={colors.soil} />
-                  <Text style={styles.footerText}>نوع التربة: {field.soil_type}</Text>
+                  <Text style={styles.footerText}>{x.farmSoilType}: {field.soil_type}</Text>
                 </View>
                 {field.planting_date && (
                   <View style={[styles.footerMeta, isRtl && styles.rtlRow]}>
                     <MaterialCommunityIcons name="calendar-check" size={16} color={colors.primary} />
-                    <Text style={styles.footerText}>تاريخ الغراسة: {field.planting_date}</Text>
+                    <Text style={styles.footerText}>{field.planting_date}</Text>
                   </View>
                 )}
               </View>
@@ -261,6 +434,14 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   );
 };
 
+/** Render a farm's `location` which may be a string or a {region, country} object. */
+function formatFarmLocation(location: Farm['location']): string {
+  if (!location) return '—';
+  if (typeof location === 'string') return location;
+  const region = location.region || (location as { name?: string }).name;
+  return region ? String(region) : '—';
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -273,9 +454,7 @@ const styles = StyleSheet.create({
   rtlRow: {
     flexDirection: 'row-reverse',
   },
-  rtlText: {
-    textAlign: 'right',
-  },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerBox: {
     marginBottom: spacing.md,
   },
@@ -296,7 +475,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainTitle: {
-    fontSize: typography.fontSizes.lg,
+    fontSize: typography.fontSizes.lg, lineHeight: 27,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -304,7 +483,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
     marginTop: 2,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   farmSummaryCard: {
     padding: spacing.md,
@@ -319,12 +498,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   farmName: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   farmLocation: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -340,12 +520,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statVal: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.primaryDark,
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -360,7 +541,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   formTitle: {
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: spacing.sm,
@@ -370,25 +551,43 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
     marginBottom: 4,
   },
   input: {
-    height: 44,
+    height: 48,
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     color: colors.text,
   },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  regionChip: {
+    justifyContent: 'center',
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  regionChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  regionChipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
+  regionChipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   fieldsSection: {
     gap: spacing.sm,
   },
   sectionTitle: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: spacing.xs,
@@ -406,12 +605,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fieldName: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   fieldCrop: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -434,7 +634,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   footerText: {
-    fontSize: 10,
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
   },
 });

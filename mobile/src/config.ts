@@ -1,0 +1,69 @@
+import { Platform } from 'react-native';
+
+/**
+ * Runtime configuration.
+ *
+ * All values are overridable at build time through `EXPO_PUBLIC_*` environment
+ * variables (see `.env.example`). Defaults mirror the values the web client
+ * ships with so the app works out of the box against the same backend.
+ *
+ * Only the Supabase anon key is embedded here. It is a *public* key that is
+ * already shipped in the web bundle and is protected by Row Level Security, not
+ * a secret. Never put a service-role key or an AI provider key in this file.
+ *
+ * Each `process.env.EXPO_PUBLIC_*` reference is written statically on purpose:
+ * Metro only inlines static member accesses at build time, so a dynamic lookup
+ * like `process.env[name]` would never be replaced and would fall back to the
+ * defaults in a production bundle.
+ */
+
+function firstNonEmpty(...values: (string | undefined)[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim().length > 0) return value.trim();
+  }
+  return undefined;
+}
+
+function asNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/** Public Supabase project (same project as the web application). */
+export const SUPABASE_URL =
+  firstNonEmpty(process.env.EXPO_PUBLIC_SUPABASE_URL) ?? 'https://jymrhhlwdbclctobhbsi.supabase.co';
+
+/** Public Supabase anon key (RLS-protected; safe to ship in a client). */
+export const SUPABASE_ANON_KEY =
+  firstNonEmpty(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ??
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjc2NzEsImV4cCI6MjA0OTYwMzY3MX0.aAGN3jLnpCjNOw7-J3Lp4iQBbwMT9X6kMzgRgQtYz7E';
+
+/**
+ * Default Express API base URL.
+ *
+ * - Android emulator reaches the host machine through 10.0.2.2.
+ * - iOS simulator and web use localhost.
+ * - A physical device must be given the host LAN IP via
+ *   `EXPO_PUBLIC_API_BASE_URL`.
+ */
+function defaultApiBaseUrl(): string {
+  if (Platform.OS === 'android') return 'http://10.0.2.2:5000';
+  return 'http://localhost:5000';
+}
+
+export const DEFAULT_API_BASE_URL =
+  firstNonEmpty(process.env.EXPO_PUBLIC_API_BASE_URL) ?? defaultApiBaseUrl();
+
+/** Per-request network timeout in milliseconds. */
+export const API_TIMEOUT_MS = asNumber(process.env.EXPO_PUBLIC_API_TIMEOUT_MS, 15000);
+
+/** Offline cache lifetime for list/detail reads, in milliseconds (default 6h). */
+export const CACHE_TTL_MS = asNumber(process.env.EXPO_PUBLIC_CACHE_TTL_MS, 6 * 60 * 60 * 1000);
+
+/** Longest edge (px) an image is downscaled to before upload. */
+export const IMAGE_MAX_EDGE = asNumber(process.env.EXPO_PUBLIC_IMAGE_MAX_EDGE, 1280);
+
+/** JPEG quality used when re-encoding an image for upload. */
+export const IMAGE_COMPRESS_QUALITY = asNumber(process.env.EXPO_PUBLIC_IMAGE_QUALITY, 0.75);
+
+export const IS_PRODUCTION = process.env.NODE_ENV === 'production';

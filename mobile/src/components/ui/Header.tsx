@@ -11,6 +11,7 @@ interface HeaderProps {
   showBack?: boolean;
   onBack?: () => void;
   rightAction?: React.ReactNode;
+  onOpenNotifications?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,8 +20,9 @@ export const Header: React.FC<HeaderProps> = ({
   showBack = false,
   onBack,
   rightAction,
+  onOpenNotifications,
 }) => {
-  const { language, setLanguage, t, isRtl } = useLanguage();
+  const { language, setLanguage, t, x, isRtl } = useLanguage();
   const { user } = useAuth();
 
   const toggleLanguage = () => {
@@ -32,14 +34,22 @@ export const Header: React.FC<HeaderProps> = ({
   const getRoleLabel = () => {
     if (!user) return '';
     switch (user.role) {
+      case 'gardener':
+        return t.roleGardener;
       case 'agronomist':
         return t.roleAgronomist;
       case 'veterinarian':
         return t.roleVeterinarian;
       case 'trader':
         return t.roleTrader;
+      case 'company':
+        return t.roleCompany;
       case 'inspector':
         return t.roleInspector;
+      case 'investor':
+        return t.roleInvestor;
+      case 'government':
+        return t.roleGovernment;
       case 'admin':
         return t.roleAdmin;
       case 'farmer':
@@ -56,6 +66,8 @@ export const Header: React.FC<HeaderProps> = ({
             activeOpacity={0.7}
             onPress={onBack}
             style={styles.backButton}
+            accessibilityLabel={t.back}
+            accessibilityRole="button"
           >
             <MaterialCommunityIcons
               name={isRtl ? 'chevron-right' : 'chevron-left'}
@@ -91,11 +103,26 @@ export const Header: React.FC<HeaderProps> = ({
         <View style={[styles.actionsContainer, isRtl && styles.rtlRow]}>
           {rightAction}
 
+          {onOpenNotifications ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={onOpenNotifications}
+              style={styles.iconButton}
+              accessibilityLabel={x.notificationsTitle}
+              accessibilityRole="button"
+            >
+              <MaterialCommunityIcons name="bell-outline" size={20} color={colors.text} />
+            </TouchableOpacity>
+          ) : null}
+
           {/* Language Toggle Pill */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={toggleLanguage}
-            style={styles.langPill}
+            style={[styles.langPill, isRtl && styles.rtlRow]}
+            accessibilityRole="button"
+            accessibilityLabel={t.languageSelect}
+            accessibilityHint={language === 'ar' ? 'Français' : language === 'fr' ? 'English' : 'العربية'}
           >
             <MaterialCommunityIcons name="translate" size={16} color={colors.primary} />
             <Text style={styles.langText}>
@@ -140,12 +167,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: typography.fontSizes.lg,
+    fontSize: typography.fontSizes.lg, lineHeight: 27,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   roleSub: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.primary,
     fontWeight: typography.fontWeights.semibold,
   },
@@ -154,19 +182,23 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.sm,
   },
   screenTitle: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     textAlign: 'center',
   },
   screenSubtitle: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textMuted,
     textAlign: 'center',
   },
+  // Interactive header controls use the 48dp minimum touch target; the visual
+  // weight is kept light with the surrounding padding rather than a smaller hit
+  // area.
   backButton: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.full,
@@ -180,14 +212,25 @@ const styles = StyleSheet.create({
   langPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
+    minHeight: 48,
+    minWidth: 48,
     backgroundColor: colors.primaryLight,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
     borderRadius: radius.full,
+  },
+  iconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceSubtle,
   },
   langText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     fontWeight: typography.fontWeights.bold,
     color: colors.primaryDark,
   },

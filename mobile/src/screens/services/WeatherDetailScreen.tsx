@@ -8,49 +8,95 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import * as Location from 'expo-location';
+import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { getWeather } from '../../api/client';
 import { WeatherData } from '../../types';
+import { StateView } from '../../components/ui/StateView';
+import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { useConnectivity } from '../../hooks/useConnectivity';
+import { GOVERNORATES, governorateLabel } from '../../utils/governorates';
+import { weatherConditionLabel, weatherIconName, weatherIconTone } from '../../utils/weather';
 
 interface WeatherDetailScreenProps {
   onBack: () => void;
 }
 
 export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack }) => {
-  const { t, isRtl } = useLanguage();
+  const { t, x, isRtl, language } = useLanguage();
+  const { isOnline } = useConnectivity();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
   const [selectedGovernorate, setSelectedGovernorate] = useState('tunis');
+  const [coords, setCoords] = useState<{ lat: number; lon: number; label: string } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationNotice, setLocationNotice] = useState<string | null>(null);
 
-  const governorates = [
-    { id: 'tunis', label: 'تونس الكبرى', lat: 36.8065, lon: 10.1815 },
-    { id: 'kairouan', label: 'القيروان', lat: 35.6781, lon: 10.0963 },
-    { id: 'beja', label: 'باجة والشمال', lat: 36.7256, lon: 9.1817 },
-    { id: 'sousse', label: 'سوسة والساحل', lat: 35.8256, lon: 10.6369 },
-    { id: 'sfax', label: 'صفاقس', lat: 34.7406, lon: 10.7603 },
-    { id: 'kebili', label: 'قبلي وتوزر', lat: 33.7047, lon: 8.9694 },
-  ];
-
-  const loadWeather = async (govId: string) => {
-    setLoading(true);
-    const gov = governorates.find((g) => g.id === govId) || governorates[0];
-    try {
-      const data = await getWeather(gov.lat, gov.lon, gov.label);
-      setWeather(data);
-    } catch (e) {
-      console.warn('Weather load error:', e);
-    } finally {
+  const loadWeather = React.useCallback(
+    async (govId: string) => {
+      setLoading(true);
+      setError(null);
+      const gov = GOVERNORATES.find((g) => g.id === govId) || GOVERNORATES[0];
+      const res = await getWeather(gov.lat, gov.lon, governorateLabel(gov, language));
+      setWeather(res.data);
+      setError(res.error);
+      setFromCache(res.fromCache);
       setLoading(false);
+    },
+    [language],
+  );
+
+  // Real device coordinates replace the governorate reference point when the
+  // user grants location access. The gateway resolves the actual Open-Meteo
+  // observation for the exact lat/lon; nothing here is estimated.
+  const loadMyLocation = React.useCallback(async () => {
+    setLocating(true);
+    setLocationNotice(null);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationNotice(x.weatherLocationDenied);
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+      setCoords({ lat, lon, label: x.weatherMyLocationLabel });
+      setLoading(true);
+      setError(null);
+      const res = await getWeather(lat, lon, x.weatherMyLocationLabel);
+      setWeather(res.data);
+      setError(res.error);
+      setFromCache(res.fromCache);
+      setLoading(false);
+    } catch {
+      setLocationNotice(x.weatherLocationFailed);
+    } finally {
+      setLocating(false);
     }
-  };
+  }, [x]);
 
   useEffect(() => {
-    loadWeather(selectedGovernorate);
-  }, [selectedGovernorate]);
+    (async () => {
+      await loadWeather(selectedGovernorate);
+    })();
+  }, [selectedGovernorate, loadWeather]);
+
+  // Choosing an explicit governorate abandons the device-location override so
+  // the pill selection and the displayed data stay consistent.
+  const handleSelectGovernorate = (govId: string) => {
+    setCoords(null);
+    setLocationNotice(null);
+    setSelectedGovernorate(govId);
+  };
 
   return (
     <ScrollView
@@ -68,9 +114,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
             <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>
               {t.weatherIntelligenceName}
             </Text>
-            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>
-              بيانات حية مباشرة من محطات الرصد الجوي التونسية (Open-Meteo)
-            </Text>
+            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{x.weatherSubtitle}</Text>
           </View>
         </View>
       </View>
@@ -81,29 +125,68 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={[styles.govScroll, isRtl && styles.rtlRow]}
       >
-        {governorates.map((gov) => {
+        {GOVERNORATES.map((gov) => {
           const isSelected = selectedGovernorate === gov.id;
           return (
             <TouchableOpacity
               key={gov.id}
               activeOpacity={0.8}
-              onPress={() => setSelectedGovernorate(gov.id)}
+              onPress={() => handleSelectGovernorate(gov.id)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={governorateLabel(gov, language)}
               style={[styles.govPill, isSelected && styles.govPillSelected]}
             >
               <Text style={[styles.govPillText, isSelected && styles.govPillTextSelected]}>
-                {gov.label}
+                {governorateLabel(gov, language)}
               </Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={loadMyLocation}
+        disabled={locating}
+        accessibilityRole="button"
+        accessibilityLabel={x.weatherUseMyLocation}
+        accessibilityState={{ disabled: locating, busy: locating }}
+        testID="weather-use-location"
+        style={[styles.locationBtn, isRtl && styles.rtlRow, locating && styles.locationBtnDisabled]}
+      >
+        <MaterialCommunityIcons
+          name={coords ? 'crosshairs-gps' : 'crosshairs'}
+          size={18}
+          color={colors.secondary}
+        />
+        <Text style={styles.locationBtnText}>
+          {locating ? x.weatherLocating : x.weatherUseMyLocation}
+        </Text>
+      </TouchableOpacity>
+
+      {locationNotice ? (
+        <Text style={[styles.locationNotice, isRtl && styles.rtlText]}>{locationNotice}</Text>
+      ) : null}
+
       {loading && (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color={colors.secondary} />
-          <Text style={styles.loadingText}>جاري جلب أحدث بيانات الرصد الجوي...</Text>
+          <Text style={styles.loadingText}>{x.weatherLoading}</Text>
         </View>
       )}
+
+      {!loading && !weather ? (
+        <Card variant="outlined">
+          <StateView
+            kind={isOnline ? 'error' : 'offline'}
+            title={isOnline ? x.stateError : x.stateOffline}
+            message={error || undefined}
+            onRetry={() => loadWeather(selectedGovernorate)}
+            retryLabel={x.retry}
+          />
+        </Card>
+      ) : null}
 
       {/* Main Today Weather Card */}
       {weather && (
@@ -112,65 +195,86 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
             <View style={[styles.currentHeader, isRtl && styles.rtlRow]}>
               <View>
                 <Text style={[styles.currentGov, isRtl && styles.rtlText]}>{weather.governorate}</Text>
-                <Text style={[styles.currentCondition, isRtl && styles.rtlText]}>{weather.condition_ar}</Text>
+                <Text style={[styles.currentCondition, isRtl && styles.rtlText]}>
+                {weatherConditionLabel(weather.icon, language, weather.condition_ar)}
+              </Text>
               </View>
-              <Badge label="بيانات حية" variant="info" size="sm" />
+              <Badge label={x.weatherLiveBadge} variant="info" size="sm" />
             </View>
 
             <View style={[styles.tempRow, isRtl && styles.rtlRow]}>
               <Text style={styles.tempLarge}>{weather.temperature}°</Text>
-              <MaterialCommunityIcons name="weather-sunny" size={56} color={colors.accent} />
+              <MaterialCommunityIcons
+                name={weatherIcon(weather.icon)}
+                size={56}
+                color={weatherIconColor(weather.icon)}
+              />
             </View>
 
             <View style={[styles.metricsGrid, isRtl && styles.rtlRow]}>
               <View style={styles.metricBox}>
                 <MaterialCommunityIcons name="water-percent" size={20} color={colors.secondary} />
                 <Text style={styles.metricVal}>{weather.humidity}%</Text>
-                <Text style={styles.metricSub}>الرطوبة</Text>
+                <Text style={styles.metricSub}>{x.weatherHumidity}</Text>
               </View>
               <View style={styles.metricBox}>
                 <MaterialCommunityIcons name="weather-rainy" size={20} color={colors.info} />
-                <Text style={styles.metricVal}>{weather.precipitation_probability}%</Text>
-                <Text style={styles.metricSub}>فرصة المطر</Text>
+                <Text style={styles.metricVal}>{weather.rainfall_mm} {x.unitMm}</Text>
+                <Text style={styles.metricSub}>{x.weatherRainToday}</Text>
               </View>
               <View style={styles.metricBox}>
                 <MaterialCommunityIcons name="weather-windy" size={20} color={colors.textSecondary} />
-                <Text style={styles.metricVal}>{weather.wind_speed} كم/س</Text>
-                <Text style={styles.metricSub}>سرعة الرياح</Text>
+                <Text style={styles.metricVal}>{weather.wind_speed} {x.unitKmh}</Text>
+                <Text style={styles.metricSub}>{x.weatherWindSpeed}</Text>
               </View>
             </View>
 
             {/* Farm Advice */}
-            <View style={styles.adviceBanner}>
+            <View style={[styles.adviceBanner, isRtl && styles.rtlRow]}>
               <MaterialCommunityIcons name="lightbulb-on" size={18} color={colors.accent} />
-              <Text style={[styles.adviceText, isRtl && styles.rtlText]}>{weather.advice_ar}</Text>
+              <Text style={[styles.adviceText, isRtl && styles.rtlText]}>
+                {language === 'ar' ? weather.advice_ar : language === 'fr' ? weather.advice_fr : weather.advice_en}
+              </Text>
             </View>
           </Card>
 
+          <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+            <ProvenanceBadge meta={weather.meta} detailed />
+            {fromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
+          </View>
+
           {/* 5-Day Forecast */}
           <View style={styles.forecastSection}>
-            <Text style={[styles.forecastHeading, isRtl && styles.rtlText]}>
-              توقعات الأيام القادمة
-            </Text>
-            {weather.forecast.map((day, idx) => (
-              <Card key={idx} variant="outlined" style={styles.forecastCard}>
-                <View style={[styles.forecastRow, isRtl && styles.rtlRow]}>
-                  <Text style={[styles.dayText, isRtl && styles.rtlText]}>{day.day_ar}</Text>
-                  <View style={[styles.forecastConditionRow, isRtl && styles.rtlRow]}>
-                    <MaterialCommunityIcons
-                      name={day.rain_chance > 30 ? 'weather-rainy' : 'weather-partly-cloudy'}
-                      size={20}
-                      color={day.rain_chance > 30 ? colors.info : colors.accent}
-                    />
-                    <Text style={styles.conditionSub}>{day.condition_ar}</Text>
-                  </View>
-                  <View style={styles.tempMinMax}>
-                    <Text style={styles.tempMax}>{day.temp_max}°</Text>
-                    <Text style={styles.tempMin}> / {day.temp_min}°</Text>
-                  </View>
-                </View>
+            <Text style={[styles.forecastHeading, isRtl && styles.rtlText]}>{x.weatherForecast}</Text>
+            {weather.forecast.length === 0 ? (
+              <Card variant="outlined">
+                <StateView kind="empty" title={x.stateEmpty} message={x.weatherForecastEmpty} compact />
               </Card>
-            ))}
+            ) : (
+              weather.forecast.map((day, idx) => (
+                <Card key={idx} variant="outlined" style={styles.forecastCard}>
+                  <View style={[styles.forecastRow, isRtl && styles.rtlRow]}>
+                    <Text style={[styles.dayText, isRtl && styles.rtlText]}>{formatDay(day.date, language)}</Text>
+                    <View style={[styles.forecastConditionRow, isRtl && styles.rtlRow]}>
+                      <MaterialCommunityIcons
+                        name={weatherIcon(day.icon)}
+                        size={20}
+                        color={weatherIconColor(day.icon)}
+                      />
+                      <Text style={styles.conditionSub}>
+                        {typeof day.rainfall === 'number' && day.rainfall > 0
+                          ? `${day.rainfall} ${x.unitMm}`
+                          : weatherConditionLabel(day.icon, language, day.condition_ar)}
+                      </Text>
+                    </View>
+                    <View style={[styles.tempMinMax, isRtl && styles.rtlRow]}>
+                      <Text style={styles.tempMax}>{day.temp_max}°</Text>
+                      <Text style={styles.tempMin}> / {day.temp_min}°</Text>
+                    </View>
+                  </View>
+                </Card>
+              ))
+            )}
           </View>
         </>
       )}
@@ -186,7 +290,42 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
   );
 };
 
+const DAY_NAMES: Record<string, string[]> = {
+  ar: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+  fr: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+};
+
+function formatDay(dateStr: string, language: string): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return dateStr;
+  const days = DAY_NAMES[language] || DAY_NAMES.ar;
+  return days[date.getDay()] || dateStr;
+}
+
+/** Map the provider's machine icon key to a MaterialCommunityIcons glyph. */
+function weatherIcon(icon: string | undefined): keyof typeof MaterialCommunityIcons.glyphMap {
+  return weatherIconName(icon) as keyof typeof MaterialCommunityIcons.glyphMap;
+}
+
+/** Colour the glyph to match the condition rather than always showing sun. */
+function weatherIconColor(icon: string | undefined): string {
+  switch (weatherIconTone(icon)) {
+    case 'accent':
+      return colors.accent;
+    case 'info':
+      return colors.info;
+    case 'secondary':
+      return colors.secondary;
+    default:
+      return colors.textSecondary;
+  }
+}
+
 const styles = StyleSheet.create({
+  provRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.sm, flexWrap: 'wrap' },
+  cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: 20 },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -198,8 +337,33 @@ const styles = StyleSheet.create({
   rtlRow: {
     flexDirection: 'row-reverse',
   },
-  rtlText: {
-    textAlign: 'right',
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  locationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    backgroundColor: colors.card,
+    marginBottom: spacing.sm,
+  },
+  locationBtnDisabled: { opacity: 0.6 },
+  locationBtnText: {
+    fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
+    fontWeight: typography.fontWeights.semibold,
+    color: colors.secondary,
+  },
+  locationNotice: {
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
+    color: colors.warning,
+    marginBottom: spacing.sm,
   },
   headerBox: {
     marginBottom: spacing.md,
@@ -221,7 +385,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainTitle: {
-    fontSize: typography.fontSizes.lg,
+    fontSize: typography.fontSizes.lg, lineHeight: 27,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -229,15 +393,16 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
     marginTop: 2,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   govScroll: {
     gap: spacing.xs,
     paddingBottom: spacing.md,
   },
   govPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
     borderRadius: radius.full,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -249,6 +414,7 @@ const styles = StyleSheet.create({
   },
   govPillText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },
@@ -263,6 +429,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
     color: colors.textSecondary,
   },
   currentCard: {
@@ -275,12 +442,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   currentGov: {
-    fontSize: typography.fontSizes.base,
+    fontSize: typography.fontSizes.base, lineHeight: 24,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   currentCondition: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -291,7 +459,7 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   tempLarge: {
-    fontSize: 54,
+    fontSize: 54, lineHeight: 81,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -307,12 +475,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metricVal: {
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   metricSub: {
-    fontSize: 10,
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textMuted,
   },
   adviceBanner: {
@@ -328,13 +497,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.fontSizes.xs,
     color: colors.accentDark,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   forecastSection: {
     gap: spacing.xs,
   },
   forecastHeading: {
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: spacing.xs,
@@ -349,6 +518,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     width: 80,
@@ -361,6 +531,7 @@ const styles = StyleSheet.create({
   },
   conditionSub: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
   },
   tempMinMax: {
@@ -368,12 +539,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tempMax: {
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   tempMin: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textMuted,
   },
 });

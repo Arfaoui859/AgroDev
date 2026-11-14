@@ -1,42 +1,83 @@
-import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { BackHandler, Platform, StyleSheet, View, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { colors } from './src/theme/colors';
+import { colors, spacing, typography } from './src/theme/colors';
 import { LanguageProvider, useLanguage } from './src/context/LanguageContext';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { Header } from './src/components/ui/Header';
 import { BottomTabBar, TabKey } from './src/components/ui/BottomTabBar';
+import { StateView } from './src/components/ui/StateView';
+import { PersonaSelectorModal } from './src/components/onboarding/PersonaSelectorModal';
+import { useConnectivity } from './src/hooks/useConnectivity';
 
-// Main Screens
+// Main screens
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ServicesScreen } from './src/screens/ServicesScreen';
 import { AIAssistantScreen } from './src/screens/AIAssistantScreen';
 import { MarketplaceScreen } from './src/screens/MarketplaceScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { NotificationsScreen } from './src/screens/NotificationsScreen';
 
-// Interactive Service Screens
+// Service screens
 import { SoilAnalysisScreen } from './src/screens/services/SoilAnalysisScreen';
 import { DiseaseDetectionScreen } from './src/screens/services/DiseaseDetectionScreen';
 import { CropRecommendationScreen } from './src/screens/services/CropRecommendationScreen';
 import { WeatherDetailScreen } from './src/screens/services/WeatherDetailScreen';
 import { FarmManagementScreen } from './src/screens/services/FarmManagementScreen';
+import { LivestockScreen } from './src/screens/services/LivestockScreen';
 import { MultiAgentAIScreen } from './src/screens/services/MultiAgentAIScreen';
+import { AgriNewsScreen } from './src/screens/services/AgriNewsScreen';
 import { RecentAnalysesScreen } from './src/screens/services/RecentAnalysesScreen';
 import { GeneralServiceModal } from './src/screens/services/GeneralServiceModal';
 
 const MainAppContent: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, x, isRtl } = useLanguage();
+  const { isInitialising, hasOnboarded } = useAuth();
+  const { isOnline } = useConnectivity();
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [activeService, setActiveService] = useState<string | null>(null);
+  const [personaDismissed, setPersonaDismissed] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // First-run onboarding, derived rather than mirrored into state.
+  const showPersona = !isInitialising && !hasOnboarded && !personaDismissed;
+
+  // Android hardware/gesture back: close the active overlay or return to the
+  // Home tab before letting the OS exit the app. Without this, back would
+  // always leave the app from a nested screen.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onHardwareBack = () => {
+      if (showNotifications) {
+        setShowNotifications(false);
+        return true;
+      }
+      if (activeService) {
+        setActiveService(null);
+        return true;
+      }
+      if (activeTab !== 'home') {
+        setActiveTab('home');
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+    return () => sub.remove();
+  }, [showNotifications, activeService, activeTab]);
 
   const handleTabChange = (tab: TabKey) => {
     setActiveService(null);
+    setShowNotifications(false);
     setActiveTab(tab);
   };
 
   const getActiveHeaderTitle = (): { title?: string; subtitle?: string } => {
+    if (showNotifications) return { title: x.notificationsTitle };
+
     if (activeService) {
       switch (activeService) {
         case 'soil':
@@ -44,7 +85,7 @@ const MainAppContent: React.FC = () => {
         case 'disease':
           return { title: t.diseaseDiagnosisName };
         case 'live_scan':
-          return { title: 'فحص حي بالكاميرا' };
+          return { title: t.diseaseDiagnosisName };
         case 'crops':
           return { title: t.cropRecommendName };
         case 'weather':
@@ -63,8 +104,10 @@ const MainAppContent: React.FC = () => {
           return { title: t.communityForumName };
         case 'multi_agent':
           return { title: t.multiAgentAiName };
+        case 'agri_news':
+          return { title: t.agriNewsName };
         case 'recent_analyses':
-          return { title: 'سجل التحاليل السابقة' };
+          return { title: x.recentAnalysesTitle };
         default:
           return { title: t.servicesTitle };
       }
@@ -86,47 +129,99 @@ const MainAppContent: React.FC = () => {
   };
 
   const { title, subtitle } = getActiveHeaderTitle();
+  const showBack = !!activeService || showNotifications;
+
+  const renderService = () => {
+    switch (activeService) {
+      case 'soil':
+        return <SoilAnalysisScreen onBack={() => setActiveService(null)} />;
+      case 'disease':
+        return <DiseaseDetectionScreen onBack={() => setActiveService(null)} />;
+      case 'live_scan':
+        return <DiseaseDetectionScreen onBack={() => setActiveService(null)} startWithCamera />;
+      case 'crops':
+        return <CropRecommendationScreen onBack={() => setActiveService(null)} />;
+      case 'weather':
+        return <WeatherDetailScreen onBack={() => setActiveService(null)} />;
+      case 'farms':
+        return <FarmManagementScreen onBack={() => setActiveService(null)} />;
+      case 'livestock':
+        return <LivestockScreen onBack={() => setActiveService(null)} />;
+      case 'multi_agent':
+        return <MultiAgentAIScreen onBack={() => setActiveService(null)} />;
+      case 'agri_news':
+        return <AgriNewsScreen onBack={() => setActiveService(null)} />;
+      case 'recent_analyses':
+        return (
+          <RecentAnalysesScreen
+            onBack={() => setActiveService(null)}
+            onSelectAnalysis={(analysis) => {
+              // Re-open the service that produced the record so the user can run
+              // it again; the saved summary itself is shown in the list.
+              if (analysis.type === 'disease') setActiveService('disease');
+              else if (analysis.type === 'soil') setActiveService('soil');
+              else if (analysis.type === 'crop') setActiveService('crops');
+            }}
+          />
+        );
+      default:
+        return <GeneralServiceModal serviceId={activeService as string} onBack={() => setActiveService(null)} />;
+    }
+  };
+
+  if (isInitialising) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <StatusBar style="dark" />
+        <View style={styles.loadingScreen}>
+          <MaterialCommunityIcons name="sprout" size={56} color={colors.primary} />
+          <Text style={styles.loadingBrand}>AgroGrowth</Text>
+          <StateView kind="loading" compact />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar style="dark" />
 
-      {/* Top Universal Header with language toggle and branding */}
+      {!isOnline ? (
+        <View style={[styles.offlineBar, isRtl && styles.rtlRow]}>
+          <MaterialCommunityIcons name="wifi-off" size={14} color={colors.textInverse} />
+          <Text style={styles.offlineBarText}>{x.offlineBanner}</Text>
+        </View>
+      ) : null}
+
       <Header
         title={title}
         subtitle={subtitle}
-        showBack={!!activeService}
-        onBack={() => setActiveService(null)}
+        showBack={showBack}
+        onBack={() => {
+          setShowNotifications(false);
+          setActiveService(null);
+        }}
+        onOpenNotifications={() => {
+          setActiveService(null);
+          setShowNotifications(true);
+        }}
       />
 
-      {/* Screen Body */}
       <View style={styles.screenBody}>
-        {activeService ? (
-          activeService === 'soil' ? (
-            <SoilAnalysisScreen onBack={() => setActiveService(null)} />
-          ) : activeService === 'disease' ? (
-            <DiseaseDetectionScreen onBack={() => setActiveService(null)} />
-          ) : activeService === 'live_scan' ? (
-            <DiseaseDetectionScreen onBack={() => setActiveService(null)} startWithCamera={true} />
-          ) : activeService === 'crops' ? (
-            <CropRecommendationScreen onBack={() => setActiveService(null)} />
-          ) : activeService === 'weather' ? (
-            <WeatherDetailScreen onBack={() => setActiveService(null)} />
-          ) : activeService === 'farms' ? (
-            <FarmManagementScreen onBack={() => setActiveService(null)} />
-          ) : activeService === 'multi_agent' ? (
-            <MultiAgentAIScreen onBack={() => setActiveService(null)} />
-          ) : activeService === 'recent_analyses' ? (
-            <RecentAnalysesScreen onBack={() => setActiveService(null)} />
-          ) : (
-            <GeneralServiceModal serviceId={activeService} onBack={() => setActiveService(null)} />
-          )
+        {showNotifications ? (
+          <NotificationsScreen onBack={() => setShowNotifications(false)} />
+        ) : activeService ? (
+          renderService()
         ) : (
           <>
             {activeTab === 'home' && (
               <HomeScreen
                 onNavigateToService={(serviceId) => setActiveService(serviceId)}
-                onNavigateToTab={(tab) => setActiveTab(tab)}
+                onNavigateToTab={(tab) => setActiveTab(tab as TabKey)}
+                onOpenNotifications={() => {
+                  setActiveService(null);
+                  setShowNotifications(true);
+                }}
               />
             )}
             {activeTab === 'services' && (
@@ -139,8 +234,9 @@ const MainAppContent: React.FC = () => {
         )}
       </View>
 
-      {/* Bottom Main Navigation Bar */}
       <BottomTabBar activeTab={activeTab} onTabChange={handleTabChange} />
+
+      <PersonaSelectorModal visible={showPersona} onClose={() => setPersonaDismissed(true)} />
     </SafeAreaView>
   );
 };
@@ -148,22 +244,29 @@ const MainAppContent: React.FC = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <LanguageProvider>
+      <LanguageProvider>
+        <AuthProvider>
           <MainAppContent />
-        </LanguageProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.card,
+  safeArea: { flex: 1, backgroundColor: colors.card },
+  screenBody: { flex: 1, backgroundColor: colors.background },
+  offlineBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.warning,
+    paddingVertical: 5,
+    paddingHorizontal: spacing.md,
   },
-  screenBody: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  offlineBarText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold },
+  rtlRow: { flexDirection: 'row-reverse' },
+  loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  loadingBrand: { fontSize: typography.fontSizes['2xl'], fontWeight: typography.fontWeights.bold, color: colors.primary },
 });

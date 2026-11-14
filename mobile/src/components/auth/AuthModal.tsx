@@ -6,124 +6,169 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
+import { UserRole } from '../../types';
+import { ExtraTranslations } from '../../i18n/extra';
 
 interface AuthModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
-  const { t, isRtl } = useLanguage();
-  const { signIn } = useAuth();
+type Tab = 'signin' | 'signup' | 'reset';
 
-  const [tab, setTab] = useState<'signin' | 'signup' | 'reset'>('signin');
+const ROLE_OPTIONS: { role: UserRole; labelKey: keyof ExtraTranslations; icon: string }[] = [
+  { role: 'farmer', labelKey: 'roleFarmer', icon: 'tractor' },
+  { role: 'gardener', labelKey: 'roleGardener', icon: 'flower' },
+  { role: 'agronomist', labelKey: 'roleAgronomist', icon: 'school' },
+  { role: 'veterinarian', labelKey: 'roleVeterinarian', icon: 'stethoscope' },
+  { role: 'company', labelKey: 'roleCompany', icon: 'domain' },
+  { role: 'trader', labelKey: 'roleTrader', icon: 'chart-line' },
+  { role: 'investor', labelKey: 'roleInvestor', icon: 'bank' },
+  { role: 'inspector', labelKey: 'roleInspector', icon: 'clipboard-check-outline' },
+  { role: 'government', labelKey: 'roleGovernment', icon: 'office-building' },
+];
+
+export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
+  const { x, isRtl } = useLanguage();
+  const { signIn, signUp, resetPassword, isLoading } = useAuth();
+
+  const [tab, setTab] = useState<Tab>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<UserRole>('farmer');
+  const [error, setError] = useState<string | null>(null);
+
+  const reset = () => {
+    setError(null);
+    setPassword('');
+  };
 
   const handleSubmit = async () => {
-    if (!email.trim() || (tab !== 'reset' && !password.trim())) {
-      Alert.alert('تنبيه', 'يرجى إدخال البريد الإلكتروني وكلمة المرور.');
+    setError(null);
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      setError(x.authErrEmailRequired);
+      return;
+    }
+    if (tab !== 'reset' && password.length < 6) {
+      setError(x.authErrPasswordShort);
+      return;
+    }
+    if (tab === 'signup' && !fullName.trim()) {
+      setError(x.authErrFullNameRequired);
       return;
     }
 
-    setLoading(true);
     if (tab === 'signin') {
-      const res = await signIn(email.trim(), password);
-      setLoading(false);
+      const res = await signIn(trimmedEmail, password);
       if (res.success) {
-        Alert.alert('مرحباً بك', 'تم تسجيل الدخول بنجاح!');
         onClose();
+        reset();
       } else {
-        Alert.alert('خطأ في تسجيل الدخول', res.error || 'يرجى التحقق من بيانات الدخول.');
+        setError(res.error || x.authErrSignInFailed);
       }
     } else if (tab === 'signup') {
-      setLoading(false);
-      Alert.alert(
-        'تم إرسال رابط التفعيل',
-        'تم إنشاء الحساب بنجاح. يرجى مراجعة بريدك الإلكتروني لتأكيد التسجيل أو الدخول بحساب تجريبي مباشرة.'
-      );
-      onClose();
+      const res = await signUp({ email: trimmedEmail, password, fullName, phone, role });
+      if (res.success) {
+        if (res.needsConfirmation) {
+          Alert.alert(x.authConfirmTitle, x.authConfirmEmail);
+          setTab('signin');
+        } else {
+          onClose();
+          reset();
+        }
+      } else {
+        setError(res.error || x.authErrSignUpFailed);
+      }
     } else {
-      setLoading(false);
-      Alert.alert('استعادة كلمة المرور', 'تم إرسال تعليمات إعادة تعيين كلمة المرور إلى بريدك.');
-      onClose();
+      const res = await resetPassword(trimmedEmail);
+      if (res.success) {
+        Alert.alert(x.authResetSentTitle, x.authResetSentBody);
+        setTab('signin');
+      } else {
+        setError(res.error || x.authErrResetFailed);
+      }
     }
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          {/* Header */}
-          <View style={[styles.modalHeader, isRtl && styles.rtlRow]}>
-            <View style={styles.brandRow}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}
+      >
+        <View style={styles.sheet}>
+          <View style={[styles.header, isRtl && styles.rtlRow]}>
+            <View style={[styles.brandRow, isRtl && styles.rtlRow]}>
               <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
               <Text style={styles.brandTitle}>AgroGrowth</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel={x.close}
+            >
+              <MaterialCommunityIcons name="close" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Tab Switcher: Sign In / Sign Up / Reset */}
+          <Text style={[styles.title, isRtl && styles.rtlText]}>
+            {tab === 'signin' ? x.authWelcomeBack : tab === 'signup' ? x.authCreateAccount : x.authReset}
+          </Text>
+          {tab !== 'reset' ? (
+            <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{x.authSubtitle}</Text>
+          ) : null}
+
           <View style={[styles.tabBar, isRtl && styles.rtlRow]}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setTab('signin')}
-              style={[styles.tabBtn, tab === 'signin' && styles.tabBtnActive]}
-            >
-              <Text style={[styles.tabBtnText, tab === 'signin' && styles.tabBtnTextActive]}>
-                تسجيل الدخول
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setTab('signup')}
-              style={[styles.tabBtn, tab === 'signup' && styles.tabBtnActive]}
-            >
-              <Text style={[styles.tabBtnText, tab === 'signup' && styles.tabBtnTextActive]}>
-                حساب جديد
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setTab('reset')}
-              style={[styles.tabBtn, tab === 'reset' && styles.tabBtnActive]}
-            >
-              <Text style={[styles.tabBtnText, tab === 'reset' && styles.tabBtnTextActive]}>
-                نسيت كلمة المرور
-              </Text>
-            </TouchableOpacity>
+            {(['signin', 'signup', 'reset'] as Tab[]).map((item) => (
+              <TouchableOpacity
+                key={item}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setTab(item);
+                  setError(null);
+                }}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: tab === item }}
+                accessibilityLabel={
+                  item === 'signin' ? x.authSignIn : item === 'signup' ? x.authSignUp : x.authReset
+                }
+                style={[styles.tabBtn, tab === item && styles.tabBtnActive]}
+              >
+                <Text style={[styles.tabText, tab === item && styles.tabTextActive]}>
+                  {item === 'signin' ? x.authSignIn : item === 'signup' ? x.authSignUp : x.authReset}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {/* Form Fields */}
-          <View style={styles.form}>
-            {tab === 'signup' && (
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {tab === 'signup' ? (
               <>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>الاسم الكامل</Text>
+                <Field label={x.authFullName} isRtl={isRtl}>
                   <TextInput
                     style={[styles.input, isRtl && styles.rtlText]}
-                    placeholder="محمد علي"
+                    placeholder={x.authFullNamePlaceholder}
                     placeholderTextColor={colors.textMuted}
                     value={fullName}
                     onChangeText={setFullName}
                   />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>رقم الهاتف</Text>
+                </Field>
+                <Field label={x.authPhone} isRtl={isRtl}>
                   <TextInput
                     style={[styles.input, isRtl && styles.rtlText]}
                     placeholder="+216 98 000 000"
@@ -132,26 +177,52 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                     value={phone}
                     onChangeText={setPhone}
                   />
-                </View>
+                </Field>
+                <Field label={x.authAccountType} isRtl={isRtl}>
+                  <View style={[styles.roleGrid, isRtl && styles.rtlRow]}>
+                    {ROLE_OPTIONS.map((option) => {
+                      const selected = role === option.role;
+                      return (
+                        <TouchableOpacity
+                          key={option.role}
+                          activeOpacity={0.85}
+                          onPress={() => setRole(option.role)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          accessibilityLabel={x[option.labelKey]}
+                          style={[styles.roleChip, isRtl && styles.rtlRow, selected && styles.roleChipSelected]}
+                        >
+                          <MaterialCommunityIcons
+                            name={option.icon as any}
+                            size={16}
+                            color={selected ? colors.textInverse : colors.primary}
+                          />
+                          <Text style={[styles.roleChipText, selected && styles.roleChipTextSelected]}>
+                            {x[option.labelKey]}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </Field>
               </>
-            )}
+            ) : null}
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>البريد الإلكتروني</Text>
+            <Field label={x.authEmail} isRtl={isRtl}>
               <TextInput
                 style={[styles.input, isRtl && styles.rtlText]}
                 placeholder="name@example.com"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
                 value={email}
                 onChangeText={setEmail}
               />
-            </View>
+            </Field>
 
-            {tab !== 'reset' && (
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>كلمة المرور</Text>
+            {tab !== 'reset' ? (
+              <Field label={x.authPassword} isRtl={isRtl}>
                 <TextInput
                   style={[styles.input, isRtl && styles.rtlText]}
                   placeholder="••••••••"
@@ -160,108 +231,131 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                   value={password}
                   onChangeText={setPassword}
                 />
+              </Field>
+            ) : null}
+
+            {error ? (
+              <View style={[styles.errorBox, isRtl && styles.rtlRow]}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={colors.danger} />
+                <Text style={styles.errorText}>{error}</Text>
               </View>
-            )}
+            ) : null}
 
             <Button
-              title={
-                loading
-                  ? 'جاري التحقق...'
-                  : tab === 'signin'
-                    ? 'دخول إلى حسابي'
-                    : tab === 'signup'
-                      ? 'إنشاء حساب فلاحي'
-                      : 'إرسال رابط الاستعادة'
-              }
+              title={tab === 'signin' ? x.authSignInBtn : tab === 'signup' ? x.authSignUpBtn : x.authResetBtn}
               variant="primary"
               size="lg"
-              loading={loading}
+              loading={isLoading}
               onPress={handleSubmit}
               style={{ marginTop: spacing.md }}
             />
-          </View>
+
+            <TouchableOpacity
+              style={styles.switchRow}
+              accessibilityRole="button"
+              accessibilityLabel={tab === 'signin' ? x.authSignUp : x.authSignIn}
+              onPress={() => {
+                setTab(tab === 'signin' ? 'signup' : 'signin');
+                setError(null);
+              }}
+            >
+              <Text style={styles.switchText}>
+                {tab === 'signin' ? x.authNeedAccount : x.authHaveAccount}{' '}
+                <Text style={styles.switchLink}>
+                  {tab === 'signin' ? x.authSignUp : x.authSignIn}
+                </Text>
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
+const Field: React.FC<{ label: string; isRtl: boolean; children: React.ReactNode }> = ({
+  label,
+  isRtl,
+  children,
+}) => (
+  <View style={styles.field}>
+    <Text style={[styles.label, isRtl && styles.rtlText]}>{label}</Text>
+    {children}
+  </View>
+);
+
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
+  sheet: {
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     padding: spacing.xl,
     paddingBottom: spacing['3xl'],
+    maxHeight: '92%',
   },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: {
-    textAlign: 'right',
-  },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   brandTitle: {
-    fontSize: typography.fontSizes.lg,
+    fontSize: typography.fontSizes.lg, lineHeight: 27,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   closeBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceSubtle,
+  },
+  title: {
+    fontSize: typography.fontSizes.xl, lineHeight: 30,
+    fontWeight: typography.fontWeights.bold,
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: typography.fontSizes.sm,
+    lineHeight: 21,
+    color: colors.textSecondary,
+    marginTop: 2,
+    marginBottom: spacing.md,
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.md,
     padding: 3,
-    marginBottom: spacing.md,
+    marginVertical: spacing.md,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    minHeight: 48,
+    justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.sm,
   },
-  tabBtnActive: {
-    backgroundColor: colors.card,
-  },
-  tabBtnText: {
+  tabBtnActive: { backgroundColor: colors.card },
+  tabText: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },
-  tabBtnTextActive: {
-    color: colors.primary,
-    fontWeight: typography.fontWeights.bold,
-  },
-  form: {
-    gap: spacing.sm,
-  },
-  inputGroup: {
-    marginBottom: 4,
-  },
-  inputLabel: {
+  tabTextActive: { color: colors.primary, fontWeight: typography.fontWeights.bold },
+  field: { marginBottom: spacing.sm },
+  label: {
     fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
     marginBottom: 4,
@@ -273,7 +367,47 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     color: colors.text,
   },
+  roleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  roleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  roleChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  roleChipText: {
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
+    color: colors.textSecondary,
+    fontWeight: typography.fontWeights.medium,
+  },
+  roleChipTextSelected: { color: colors.textInverse },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.dangerLight,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  errorText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.danger, lineHeight: 20 },
+  switchRow: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: spacing.md },
+  switchText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
+  switchLink: { color: colors.primary, fontWeight: typography.fontWeights.bold },
+  rtlRow: { flexDirection: 'row-reverse' },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

@@ -1,164 +1,174 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { StateView } from '../../components/ui/StateView';
+import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { analyzeSoil } from '../../api/client';
+import { addHistoryEntry } from '../../api/history';
+import { provenanceLabel } from '../../utils/provenance';
+import { localizeSoilGrade } from '../../utils/soilGrade';
+import { soilParamLabel } from '../../utils/soilLabels';
+import { anyContainsArabic } from '../../utils/text';
 import { SoilAnalysisResult } from '../../types';
 
 interface SoilAnalysisScreenProps {
   onBack: () => void;
 }
 
+/**
+ * Soil analysis form. Results come from the backend's in-process rule-based
+ * agronomic engine, which is labelled honestly. Blank fields are sent as
+ * undefined so the engine reports them as missing measurements rather than the
+ * app silently substituting invented values.
+ */
 export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack }) => {
-  const { t, isRtl } = useLanguage();
+  const { t, x, isRtl, isArabic, language } = useLanguage();
 
-  const [ph, setPh] = useState('7.2');
-  const [nitrogen, setNitrogen] = useState('45');
-  const [phosphorus, setPhosphorus] = useState('28');
-  const [potassium, setPotassium] = useState('190');
-  const [organicMatter, setOrganicMatter] = useState('2.4');
-  const [moisture, setMoisture] = useState('32');
+  // Start empty: the engine scores only the measurements the caller actually
+  // supplies. Pre-filling a plausible sample would present invented numbers as
+  // the user's own lab results.
+  const [ph, setPh] = useState('');
+  const [nitrogen, setNitrogen] = useState('');
+  const [phosphorus, setPhosphorus] = useState('');
+  const [potassium, setPotassium] = useState('');
+  const [organicMatter, setOrganicMatter] = useState('');
+  const [moisture, setMoisture] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SoilAnalysisResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const parse = (value: string): number | undefined => {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const num = Number(trimmed.replace(',', '.'));
+    return Number.isFinite(num) ? num : undefined;
+  };
+
+  // The rule-based soil engine answers in Arabic free text (interpretation,
+  // problems, recommendations). Flag that for fr/en callers so the Arabic-only
+  // note is shown only when the result actually contains Arabic.
+  const resultIsArabicOnly =
+    !!result &&
+    !isArabic &&
+    anyContainsArabic([
+      result.interpretationAr,
+      ...result.problems,
+      ...result.recommendations,
+      ...result.findings.map((f) => f.messageAr),
+    ]);
 
   const handleAnalyze = async () => {
-    setLoading(true);
-    try {
-      const res = await analyzeSoil({
-        ph: parseFloat(ph) || 7.0,
-        nitrogen: parseFloat(nitrogen) || 40,
-        phosphorus: parseFloat(phosphorus) || 25,
-        potassium: parseFloat(potassium) || 180,
-        organicMatter: parseFloat(organicMatter) || 2.0,
-        moisture: parseFloat(moisture) || 30,
-      });
-      setResult(res);
-    } catch (e) {
-      console.warn('Soil analysis error:', e);
-    } finally {
-      setLoading(false);
+    const parsed = {
+      ph: parse(ph),
+      nitrogen: parse(nitrogen),
+      phosphorus: parse(phosphorus),
+      potassium: parse(potassium),
+      organicMatter: parse(organicMatter),
+      moisture: parse(moisture),
+    };
+
+    // Reject non-numeric text the user typed, rather than silently dropping it.
+    const invalid = [
+      [ph, parsed.ph],
+      [nitrogen, parsed.nitrogen],
+      [phosphorus, parsed.phosphorus],
+      [potassium, parsed.potassium],
+      [organicMatter, parsed.organicMatter],
+      [moisture, parsed.moisture],
+    ].some(([raw, value]) => (raw as string).trim() !== '' && value === undefined);
+    if (invalid) {
+      setError(x.soilInvalidInput);
+      return;
     }
+
+    // Every field blank would produce a scoreless "weak soil" reading from
+    // nothing; require at least one real measurement.
+    if (Object.values(parsed).every((v) => v === undefined)) {
+      setError(x.soilNeedOneMeasurement);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    const res = await analyzeSoil(parsed);
+    if (res.data) {
+      setResult(res.data);
+      // Persist the real analysis on the device so the history screen shows it.
+      void addHistoryEntry({
+        type: 'soil',
+        title: t.soilAnalysisName,
+        summary: res.data.fertilityLevel,
+        badge: provenanceLabel(res.data.meta.provenance, language),
+        badgeVariant: 'primary',
+      });
+    } else {
+      setError(res.error || x.stateError);
+    }
+    setLoading(false);
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Service Header Info */}
-      <View style={styles.headerBox}>
-        <View style={[styles.titleRow, isRtl && styles.rtlRow]}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="flask-outline" size={26} color={colors.soil} />
-          </View>
-          <View style={styles.titleTextContainer}>
-            <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{t.soilAnalysisName}</Text>
-            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{t.soilAnalysisDesc}</Text>
-          </View>
-        </View>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ServiceHeader
+        icon="flask-outline"
+        iconColor={colors.soil}
+        iconBg={colors.soilLight}
+        title={t.soilAnalysisName}
+        subtitle={t.soilAnalysisDesc}
+      />
 
-      {/* Guided Input Form */}
       <Card variant="elevated" style={styles.formCard}>
-        <Text style={[styles.formHeading, isRtl && styles.rtlText]}>
-          أدخل بيانات عينة التربة (القيم الافتراضية مدرجة)
-        </Text>
+        <Text style={[styles.formHeading, isRtl && styles.rtlText]}>{x.soilFormHeading}</Text>
 
-        {/* 1. pH Input */}
-        <View style={styles.inputGroup}>
-          <View style={[styles.labelRow, isRtl && styles.rtlRow]}>
-            <Text style={styles.inputLabel}>درجة حموضة التربة (pH)</Text>
-            <Text style={styles.inputHint}>المثالي: 6.5 - 7.8</Text>
-          </View>
-          <TextInput
-            style={[styles.input, isRtl && styles.rtlText]}
-            keyboardType="decimal-pad"
-            value={ph}
-            onChangeText={setPh}
-            placeholder="مثال: 7.2"
-          />
-        </View>
-
-        {/* 2. NPK Macronutrients Row */}
+        <Input label={x.soilPhLabel} hint={x.soilPhHint} value={ph} onChange={setPh} isRtl={isRtl} keyboard="decimal-pad" />
         <View style={[styles.inputsRow, isRtl && styles.rtlRow]}>
-          <View style={styles.halfInputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>الآزوت N (ملغ/كغ)</Text>
-            <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
-              keyboardType="number-pad"
-              value={nitrogen}
-              onChangeText={setNitrogen}
-              placeholder="45"
-            />
-          </View>
-          <View style={styles.halfInputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>الفسفور P (ملغ/كغ)</Text>
-            <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
-              keyboardType="number-pad"
-              value={phosphorus}
-              onChangeText={setPhosphorus}
-              placeholder="28"
-            />
-          </View>
+          <HalfInput label={x.soilNitrogenLabel} value={nitrogen} onChange={setNitrogen} isRtl={isRtl} />
+          <HalfInput label={x.soilPhosphorusLabel} value={phosphorus} onChange={setPhosphorus} isRtl={isRtl} />
         </View>
-
-        {/* 3. Potassium & Organic Matter */}
         <View style={[styles.inputsRow, isRtl && styles.rtlRow]}>
-          <View style={styles.halfInputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>البوتاسيوم K (ملغ/كغ)</Text>
-            <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
-              keyboardType="number-pad"
-              value={potassium}
-              onChangeText={setPotassium}
-              placeholder="190"
-            />
-          </View>
-          <View style={styles.halfInputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>المادة العضوية (%)</Text>
-            <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
-              keyboardType="decimal-pad"
-              value={organicMatter}
-              onChangeText={setOrganicMatter}
-              placeholder="2.4"
-            />
-          </View>
+          <HalfInput label={x.soilPotassiumLabel} value={potassium} onChange={setPotassium} isRtl={isRtl} />
+          <HalfInput label={x.soilOrganicMatterLabel} value={organicMatter} onChange={setOrganicMatter} isRtl={isRtl} keyboard="decimal-pad" />
         </View>
+        <HalfInput label={x.soilMoistureLabel} value={moisture} onChange={setMoisture} isRtl={isRtl} />
+
+        <Text style={[styles.blankNote, isRtl && styles.rtlText]}>{x.soilBlankNote}</Text>
 
         <Button
-          title={loading ? t.analyzing : 'تحليل خصوبة التربة الآن'}
+          title={loading ? t.analyzing : x.soilAnalyzeButton}
           onPress={handleAnalyze}
           loading={loading}
           style={{ marginTop: spacing.md }}
         />
       </Card>
 
-      {/* Results View */}
-      {result && (
+      {loading ? (
+        <Card variant="outlined" style={styles.formCard}>
+          <StateView kind="loading" title={x.stateLoading} compact />
+        </Card>
+      ) : null}
+
+      {error && !loading ? (
+        <Card variant="outlined" style={styles.formCard}>
+          <StateView kind="error" title={x.stateError} message={error} onRetry={handleAnalyze} retryLabel={x.retry} />
+        </Card>
+      ) : null}
+
+      {result && !loading ? (
         <View style={styles.resultContainer}>
           <View style={[styles.resultHeader, isRtl && styles.rtlRow]}>
             <MaterialCommunityIcons name="check-decagram" size={24} color={colors.primary} />
-            <Text style={styles.resultHeading}>{t.resultTitle}</Text>
-            <Badge label={result.grade} variant="success" size="md" />
+            <Text style={[styles.resultHeading, isRtl && styles.rtlText]}>{t.resultTitle}</Text>
+            <Badge label={localizeSoilGrade(result.fertilityLevel, x)} variant="success" size="md" />
           </View>
 
-          {/* Grade Card */}
           <Card variant="elevated" style={styles.gradeCard}>
             <View style={[styles.gradeRow, isRtl && styles.rtlRow]}>
               <View style={styles.scoreCircle}>
@@ -167,180 +177,153 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack }
               </View>
               <View style={styles.gradeDetails}>
                 <Text style={[styles.gradeTitle, isRtl && styles.rtlText]}>
-                  تقييم الخصوبة: {result.grade}
+                  {x.soilFertilityScore}: {localizeSoilGrade(result.fertilityLevel, x)}
                 </Text>
-                <Text style={[styles.gradeDesc, isRtl && styles.rtlText]}>
-                  {result.interpretationAr}
-                </Text>
+                <Text style={[styles.gradeDesc, isRtl && styles.rtlText]}>{result.interpretationAr}</Text>
               </View>
+            </View>
+            <View style={styles.provWrap}>
+              <ProvenanceBadge meta={result.meta} detailed />
             </View>
           </Card>
 
-          {/* Suitable Crops */}
-          <View style={styles.subSection}>
-            <Text style={[styles.subSectionTitle, isRtl && styles.rtlText]}>
-              المحاصيل الأكثر ملاءمة لهذه التربة
-            </Text>
-            <View style={styles.cropsGrid}>
-              {result.suitableCrops.map((crop, idx) => (
-                <View key={idx} style={[styles.cropCard, isRtl && styles.rtlRow]}>
-                  <MaterialCommunityIcons name="sprout" size={20} color={colors.primary} />
-                  <View style={styles.cropTextWrap}>
-                    <Text style={[styles.cropName, isRtl && styles.rtlText]}>{crop.nameAr}</Text>
-                    <Text style={[styles.cropProfit, isRtl && styles.rtlText]}>
-                      المطابقة: {crop.compatibility} • ربحية {crop.profitability}
-                    </Text>
-                  </View>
-                </View>
+          {resultIsArabicOnly ? (
+            <Text style={[styles.arabicNote, isRtl && styles.rtlText]}>{x.arabicOnlyNote}</Text>
+          ) : null}
+
+          {result.problems.length ? (
+            <SubSection title={x.soilProblems} isRtl={isRtl}>
+              {result.problems.map((p, i) => (
+                <Bullet key={i} text={p} color={colors.warning} isRtl={isRtl} />
               ))}
-            </View>
-          </View>
+            </SubSection>
+          ) : null}
 
-          {/* Tailored Fertilizer Plan */}
-          <View style={styles.subSection}>
-            <Text style={[styles.subSectionTitle, isRtl && styles.rtlText]}>
-              برنامج التسميد الموصى به
-            </Text>
-            {result.fertilizerPlan.map((plan, idx) => (
-              <Card key={idx} variant="outlined" style={styles.planCard}>
-                <View style={[styles.planHeader, isRtl && styles.rtlRow]}>
-                  <Text style={styles.planNutrient}>{plan.nutrientAr}</Text>
-                  <Badge label={plan.quantity} variant="accent" size="sm" />
-                </View>
-                <Text style={[styles.planText, isRtl && styles.rtlText]}>
-                  {plan.recommendationAr}
-                </Text>
-              </Card>
-            ))}
-          </View>
+          {result.missingMeasurements.length ? (
+            <SubSection title={x.soilMissingMeasurements} isRtl={isRtl}>
+              {result.missingMeasurements.map((p, i) => (
+                <Bullet key={i} text={p} color={colors.textMuted} isRtl={isRtl} />
+              ))}
+            </SubSection>
+          ) : null}
+
+          {result.findings.length ? (
+            <SubSection title={x.soilFindings} isRtl={isRtl}>
+              {result.findings.map((f, idx) => (
+                <Card key={idx} variant="outlined" style={styles.findingCard}>
+                  <View style={[styles.findingHeader, isRtl && styles.rtlRow]}>
+                    <Text style={styles.findingParam}>{soilParamLabel(f.parameter, f.labelAr, language)}</Text>
+                    {f.value !== null ? <Badge label={String(f.value)} variant="secondary" size="sm" /> : null}
+                  </View>
+                  <Text style={[styles.findingText, isRtl && styles.rtlText]}>{f.messageAr}</Text>
+                </Card>
+              ))}
+            </SubSection>
+          ) : null}
+
+          {result.recommendations.length ? (
+            <SubSection title={x.soilRecommendations} isRtl={isRtl}>
+              {result.recommendations.map((r, i) => (
+                <Bullet key={i} text={r} color={colors.primary} isRtl={isRtl} />
+              ))}
+            </SubSection>
+          ) : null}
         </View>
-      )}
+      ) : null}
 
-      {/* Bottom Back Button */}
-      <Button
-        title={t.back}
-        variant="outline"
-        onPress={onBack}
-        style={{ marginTop: spacing.lg, marginBottom: spacing.xl }}
-      />
+      <Button title={t.back} variant="outline" onPress={onBack} style={{ marginTop: spacing.lg, marginBottom: spacing.xl }} />
     </ScrollView>
   );
 };
 
+const Input: React.FC<{
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (v: string) => void;
+  isRtl: boolean;
+  keyboard?: 'decimal-pad' | 'number-pad';
+}> = ({ label, hint, value, onChange, isRtl, keyboard = 'number-pad' }) => (
+  <View style={styles.inputGroup}>
+    <View style={[styles.labelRow, isRtl && styles.rtlRow]}>
+      <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{label}</Text>
+      {hint ? <Text style={styles.inputHint}>{hint}</Text> : null}
+    </View>
+    <TextInput
+      style={[styles.input, isRtl && styles.rtlText]}
+      keyboardType={keyboard}
+      value={value}
+      onChangeText={onChange}
+      placeholder="—"
+      placeholderTextColor={colors.textMuted}
+    />
+  </View>
+);
+
+const HalfInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  isRtl: boolean;
+  keyboard?: 'decimal-pad' | 'number-pad';
+}> = ({ label, value, onChange, isRtl, keyboard = 'number-pad' }) => (
+  <View style={styles.halfInputGroup}>
+    <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{label}</Text>
+    <TextInput
+      style={[styles.input, isRtl && styles.rtlText]}
+      keyboardType={keyboard}
+      value={value}
+      onChangeText={onChange}
+      placeholder="—"
+      placeholderTextColor={colors.textMuted}
+    />
+  </View>
+);
+
+const SubSection: React.FC<{ title: string; isRtl: boolean; children: React.ReactNode }> = ({ title, isRtl, children }) => (
+  <View style={styles.subSection}>
+    <Text style={[styles.subSectionTitle, isRtl && styles.rtlText]}>{title}</Text>
+    {children}
+  </View>
+);
+
+const Bullet: React.FC<{ text: string; color: string; isRtl: boolean }> = ({ text, color, isRtl }) => (
+  <View style={[styles.bulletRow, isRtl && styles.rtlRow]}>
+    <View style={[styles.bullet, { backgroundColor: color }]} />
+    <Text style={[styles.bulletText, isRtl && styles.rtlText]}>{text}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing['3xl'],
-  },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: {
-    textAlign: 'right',
-  },
-  headerBox: {
-    marginBottom: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.soilLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleTextContainer: {
-    flex: 1,
-  },
-  mainTitle: {
-    fontSize: typography.fontSizes.lg,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  mainSub: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  formCard: {
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  formHeading: {
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  inputGroup: {
-    marginBottom: spacing.sm,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  inputLabel: {
-    fontSize: typography.fontSizes.xs,
-    fontWeight: typography.fontWeights.semibold,
-    color: colors.text,
-  },
-  inputHint: {
-    fontSize: 10,
-    color: colors.textMuted,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
+  rtlRow: { flexDirection: 'row-reverse' },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.md, lineHeight: 20 },
+  formCard: { padding: spacing.md, marginBottom: spacing.lg },
+  formHeading: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.md },
+  inputGroup: { marginBottom: spacing.sm },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  inputLabel: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, lineHeight: 20 },
+  inputHint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 20 },
+  blankNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.sm, lineHeight: 21 },
   input: {
-    height: 46,
+    height: 48,
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     color: colors.text,
   },
-  inputsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  halfInputGroup: {
-    flex: 1,
-  },
-  resultContainer: {
-    gap: spacing.md,
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  resultHeading: {
-    flex: 1,
-    fontSize: typography.fontSizes.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  gradeCard: {
-    padding: spacing.md,
-    backgroundColor: colors.card,
-  },
-  gradeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
+  inputsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  halfInputGroup: { flex: 1 },
+  resultContainer: { gap: spacing.md },
+  resultHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  resultHeading: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
+  gradeCard: { padding: spacing.md, backgroundColor: colors.card },
+  gradeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   scoreCircle: {
     width: 60,
     height: 60,
@@ -349,82 +332,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scoreNumber: {
-    fontSize: typography.fontSizes.xl,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.primaryDark,
-  },
-  scoreMax: {
-    fontSize: 10,
-    color: colors.primaryDark,
-  },
-  gradeDetails: {
-    flex: 1,
-  },
-  gradeTitle: {
-    fontSize: typography.fontSizes.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  gradeDesc: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  subSection: {
-    marginTop: spacing.sm,
-  },
-  subSectionTitle: {
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  cropsGrid: {
-    gap: spacing.xs,
-  },
-  cropCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cropTextWrap: {
-    flex: 1,
-  },
-  cropName: {
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  cropProfit: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  planCard: {
-    padding: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  planNutrient: {
-    fontSize: typography.fontSizes.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.accentDark,
-  },
-  planText: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
+  scoreNumber: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
+  scoreMax: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, lineHeight: 20 },
+  gradeDetails: { flex: 1 },
+  gradeTitle: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
+  gradeDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: 21 },
+  provWrap: { marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  subSection: { marginTop: spacing.sm },
+  subSectionTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
+  findingCard: { padding: spacing.md, marginBottom: spacing.xs },
+  findingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  findingParam: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
+  findingText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 21 },
+  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
+  bullet: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
+  bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: 20 },
 });

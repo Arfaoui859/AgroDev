@@ -1,19 +1,15 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Modal, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { StateView } from '../../components/ui/StateView';
+import { clearHistory, getHistory } from '../../api/history';
 import { SavedAnalysis } from '../../types';
+import { formatDateTime } from '../../utils/date';
 
 interface RecentAnalysesScreenProps {
   onBack: () => void;
@@ -24,46 +20,43 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
   onBack,
   onSelectAnalysis,
 }) => {
-  const { t, isRtl } = useLanguage();
+  const { t, x, isRtl, language } = useLanguage();
+  const [records, setRecords] = useState<SavedAnalysis[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState<SavedAnalysis | null>(null);
 
-  const savedRecords: SavedAnalysis[] = [
-    {
-      id: 'rec-1',
-      type: 'disease',
-      title: 'فحص أوراق الزيتون - عين الطاووس',
-      date: 'اليوم، 10:15 ص',
-      summary: 'تم اكتشاف إصابة فطرية متوسطة على صنف الشملالي. المعالجة الفورية الموصى بها: رش بمركبات النحاس 50%.',
-      badge: 'فحص بالصورة',
-      badgeVariant: 'warning',
-    },
-    {
-      id: 'rec-2',
-      type: 'soil',
-      title: 'تحليل خصوبة حقل باجة (قطعة 4)',
-      date: 'أمس، 16:30 م',
-      summary: 'النتيجة: ممتاز (88/100). نسبة المادة العضوية 2.4% ودرجة الحموضة pH 7.2. ملائم لزراعة القمح الصلب.',
-      badge: 'تحليل تربة',
-      badgeVariant: 'success',
-    },
-    {
-      id: 'rec-3',
-      type: 'disease',
-      title: 'فحص شتلات الطماطم - اللفحة المبكرة',
-      date: 'منذ 3 أيام',
-      summary: 'بقع بنية جافة متحدة المركز. تم تطبيق العزل وتقليم الأوراق المصابة.',
-      badge: 'فحص بالصورة',
-      badgeVariant: 'danger',
-    },
-    {
-      id: 'rec-4',
-      type: 'crop',
-      title: 'دراسة جدوى المحاصيل - هنشر الساحل',
-      date: 'الأسبوع الماضي',
-      summary: 'أعلى المحاصيل ربحية المقترحة: اللوز التونسي والزيتون الشملالي بعائد متوقع 4800 د.ت/هكتار.',
-      badge: 'توصية محاصيل',
-      badgeVariant: 'primary',
-    },
-  ];
+  const load = useCallback(async () => {
+    setLoading(true);
+    setRecords(await getHistory());
+    setLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    (async () => {
+      await load();
+    })();
+  }, [load]);
+
+  const handleClear = () => {
+    Alert.alert(x.recentAnalysesClear, x.recentAnalysesClearConfirm, [
+      { text: x.cancel, style: 'cancel' },
+      {
+        text: x.recentAnalysesClear,
+        style: 'destructive',
+        onPress: async () => {
+          await clearHistory();
+          setRecords([]);
+        },
+      },
+    ]);
+  };
+
+  const handleOpen = (item: SavedAnalysis) => {
+    // A saved record stores only a summary, so the honest detail view shows the
+    // stored summary plus any attached image. Re-running the producing service
+    // is offered as an explicit action inside the sheet.
+    setDetail(item);
+  };
 
   return (
     <ScrollView
@@ -77,48 +70,55 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
             <MaterialCommunityIcons name="history" size={26} color={colors.primary} />
           </View>
           <View style={styles.titleTextContainer}>
-            <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>
-              سجل الفحوصات والتحاليل السابقة
-            </Text>
-            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>
-              مراجعة نتائج التشخيص الزراعي وخطط العلاج المحفوظة لحقولك
-            </Text>
+            <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{x.recentAnalysesTitle}</Text>
+            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{x.recentAnalysesSubtitle}</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.recordsList}>
-        {savedRecords.map((item) => (
-          <Card
-            key={item.id}
-            variant="elevated"
-            onPress={() => onSelectAnalysis?.(item)}
-            style={styles.recordCard}
-          >
-            <View style={[styles.cardTop, isRtl && styles.rtlRow]}>
-              <View style={styles.titleArea}>
-                <Text style={[styles.recordTitle, isRtl && styles.rtlText]}>{item.title}</Text>
-                <Text style={[styles.recordDate, isRtl && styles.rtlText]}>
-                  <MaterialCommunityIcons name="clock-outline" size={12} color={colors.textMuted} />{' '}
-                  {item.date}
-                </Text>
-              </View>
-              <Badge label={item.badge} variant={item.badgeVariant} size="sm" />
-            </View>
+      {loading ? (
+        <Card variant="outlined">
+          <StateView kind="loading" title={x.stateLoading} compact />
+        </Card>
+      ) : records.length === 0 ? (
+        <Card variant="outlined">
+          <StateView
+            kind="empty"
+            title={x.recentAnalysesEmptyTitle}
+            message={x.recentAnalysesEmptyMsg}
+            compact
+          />
+        </Card>
+      ) : (
+        <>
+          <Text style={[styles.tapHint, isRtl && styles.rtlText]}>{x.recentAnalysesTapHint}</Text>
+          <View style={styles.recordsList}>
+            {records.map((item) => (
+              <Card key={item.id} variant="elevated" onPress={() => handleOpen(item)} style={styles.recordCard}>
+                <View style={[styles.cardTop, isRtl && styles.rtlRow]}>
+                  <View style={styles.titleArea}>
+                    <Text style={[styles.recordTitle, isRtl && styles.rtlText]}>{item.title}</Text>
+                    <Text style={[styles.recordDate, isRtl && styles.rtlText]}>
+                      <MaterialCommunityIcons name="clock-outline" size={12} color={colors.textMuted} />{' '}
+                      {formatDateTime(item.date, language)}
+                    </Text>
+                  </View>
+                  <Badge label={item.badge} variant={item.badgeVariant} size="sm" />
+                </View>
 
-            <Text style={[styles.recordSummary, isRtl && styles.rtlText]}>{item.summary}</Text>
+                <Text style={[styles.recordSummary, isRtl && styles.rtlText]}>{item.summary}</Text>
+              </Card>
+            ))}
+          </View>
 
-            <View style={[styles.cardFooter, isRtl && styles.rtlRow]}>
-              <Text style={styles.detailsLink}>عرض تفاصيل الفحص وتوصيات العلاج</Text>
-              <MaterialCommunityIcons
-                name={isRtl ? 'chevron-left' : 'chevron-right'}
-                size={18}
-                color={colors.primary}
-              />
-            </View>
-          </Card>
-        ))}
-      </View>
+          <Button
+            title={x.recentAnalysesClear}
+            variant="outline"
+            onPress={handleClear}
+            style={{ marginTop: spacing.md }}
+          />
+        </>
+      )}
 
       <Button
         title={t.back}
@@ -126,6 +126,54 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
         onPress={onBack}
         style={{ marginTop: spacing.lg, marginBottom: spacing.xl }}
       />
+
+      <Modal
+        visible={!!detail}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetail(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={[styles.modalHeader, isRtl && styles.rtlRow]}>
+              <Text style={[styles.modalTitle, isRtl && styles.rtlText]}>{detail?.title}</Text>
+              <TouchableOpacity
+                onPress={() => setDetail(null)}
+                accessibilityRole="button"
+                accessibilityLabel={x.close}
+                style={styles.modalClose}
+              >
+                <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.modalDate, isRtl && styles.rtlText]}>
+              {detail ? formatDateTime(detail.date, language) : ''}
+            </Text>
+            {detail?.imageUri ? (
+              <>
+                <Text style={[styles.modalImageLabel, isRtl && styles.rtlText]}>
+                  {x.recentAnalysesViewImage}
+                </Text>
+                <Image source={{ uri: detail.imageUri }} style={styles.modalImage} resizeMode="cover" />
+              </>
+            ) : null}
+            <Text style={[styles.modalSummary, isRtl && styles.rtlText]}>{detail?.summary}</Text>
+            {onSelectAnalysis && detail ? (
+              <Button
+                title={x.recentAnalysesRunAgain}
+                variant="primary"
+                onPress={() => {
+                  const current = detail;
+                  setDetail(null);
+                  onSelectAnalysis(current);
+                }}
+                style={{ marginTop: spacing.md }}
+              />
+            ) : null}
+            <Button title={x.close} variant="outline" onPress={() => setDetail(null)} style={{ marginTop: spacing.sm }} />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -142,9 +190,7 @@ const styles = StyleSheet.create({
   rtlRow: {
     flexDirection: 'row-reverse',
   },
-  rtlText: {
-    textAlign: 'right',
-  },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerBox: {
     marginBottom: spacing.md,
   },
@@ -165,7 +211,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainTitle: {
-    fontSize: typography.fontSizes.lg,
+    fontSize: typography.fontSizes.lg, lineHeight: 27,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -173,10 +219,73 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
     marginTop: 2,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   recordsList: {
     gap: spacing.sm,
+  },
+  tapHint: {
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: spacing.lg,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontWeight: typography.fontWeights.bold,
+    color: colors.text,
+  },
+  modalClose: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceSubtle,
+  },
+  modalDate: {
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  modalImageLabel: {
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
+    fontWeight: typography.fontWeights.semibold,
+    color: colors.text,
+    marginTop: spacing.md,
+    marginBottom: 4,
+  },
+  modalImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: radius.md,
+  },
+  modalSummary: {
+    fontSize: typography.fontSizes.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginTop: spacing.md,
   },
   recordCard: {
     padding: spacing.md,
@@ -191,34 +300,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recordTitle: {
-    fontSize: typography.fontSizes.sm,
+    fontSize: typography.fontSizes.sm, lineHeight: 21,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   recordDate: {
-    fontSize: 11,
+    fontSize: typography.fontSizes.xs,
+    lineHeight: 20,
     color: colors.textMuted,
     marginTop: 2,
   },
   recordSummary: {
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
     marginVertical: spacing.xs,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceSubtle,
-    paddingTop: spacing.xs,
-    marginTop: 4,
-    gap: 4,
-  },
-  detailsLink: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.primary,
-    fontWeight: typography.fontWeights.semibold,
   },
 });
