@@ -226,6 +226,23 @@ name; a wrong field (`image`) makes multer answer
   (7 tests) pass against `https://agrodev-3.onrender.com` and the live Supabase
   project.
 
+### Runtime render check (no device required)
+
+The web export renders the whole app in a browser, which is the fastest way to
+verify a UI change end to end:
+
+```bash
+npx expo export --platform web --output-dir /tmp/mob-web
+cd /tmp/mob-web && python3 -m http.server 12001   # then open the work-2 host
+```
+
+The unauthenticated render shows Home (intelligence strip, Academy tiles, news,
+learning videos) plus the first-run persona modal. Tapping an Academy video tile
+(e.g. "التقليم") navigates to `LearningVideosScreen` pre-filtered to that
+category — this is how the category pass-through bug was confirmed fixed. Live
+data (weather/news) needs a session; the offline gateway also serves cached
+reads. Remove `/tmp/mob-web` and stop the server when done.
+
 ### Live AI service audit (2026-11, gateway `agrodev-3.onrender.com`)
 
 Every mobile service function was probed against the deployed gateway. The
