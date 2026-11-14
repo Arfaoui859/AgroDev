@@ -116,6 +116,23 @@ Express الفعلية في `server/`، ثم مقابل البوابة الإن�
 > كود العميل نفسه (لا محاكاة)، ليتحقّق من عنوان القاعدة، وترويسة المصادقة، وتخطيط
 > مصدر البيانات. يبقى `npm test` دون شبكة ويُتخطّى هذا الاختبار تلقائياً.
 
+### بناء الإنتاج (EAS)
+
+ملف `eas.json` يضبط ملفات البناء للإنتاج ويشير صراحةً إلى البوابة الإنتاجية:
+
+- `development`: عميل تطوير داخلي (APK) — يتصل بالبوابة المنشورة.
+- `preview`: APK داخلي للاختبار السريع.
+- `production`: AAB (Google Play) مع `autoIncrement` للنسخة.
+
+```bash
+npx eas build --profile preview     # APK للتجربة على جهاز حقيقي
+npx eas build --profile production  # حزمة AAB للإصدار
+npx eas submit --profile production # الرفع إلى المتجر
+```
+
+جميع الملفات تُبنى بـ `EXPO_PUBLIC_API_BASE_URL=https://agrodev-3.onrender.com`
+مضبوطاً في `eas.json`، فلا يعتمد الإصدار على أي قيمة محلية.
+
 ### الوصول والوصولية (Mobile-First)
 
 - كل عنصر تفاعلي أساسي يبلغ هدف لمسٍ ≥ 48dp (الأزرار `sm`/`md`/`lg`، الشرائح،
