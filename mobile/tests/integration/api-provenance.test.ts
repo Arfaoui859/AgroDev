@@ -143,6 +143,52 @@ describe('AI/weather client provenance mapping (honest data labelling)', () => {
     expect(res.data).toBeNull();
   });
 
+  it('never shows a machine slug as the diagnosis title', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({
+        dataSource: 'llm',
+        isRealData: false,
+        modelSource: 'vision:test',
+        disease_detection: {
+          primary_disease: {
+            // The gateway maps `disease` to the model's id; the human label
+            // lives only in `disease_name_ar`.
+            disease: 'unclear_image',
+            disease_name_ar: 'صورة غير واضحة',
+            probability: 0.1,
+            severity_level: 'medium',
+            symptoms: ['تفاصيل غير كافية'],
+          },
+        },
+        severity_assessment: { severity_level: 'medium' },
+        treatment_plan: { immediate_treatment: [], prevention_measures: [] },
+      }),
+    );
+    const { data } = await diagnosePlantDisease({ imageUri: 'file:///tmp/leaf.jpg' });
+    expect(data?.diseaseName).toBe('صورة غير واضحة');
+    expect(data?.diseaseName).not.toBe('unclear_image');
+    expect(data?.diseaseNameAr).toBe('صورة غير واضحة');
+  });
+
+  it('keeps a human-readable provider disease name when present', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({
+        dataSource: 'llm',
+        isRealData: false,
+        disease_detection: {
+          primary_disease: {
+            disease: 'olive_leaf_spot',
+            disease_name: 'Olive leaf spot',
+            disease_name_ar: 'تبقع أوراق الزيتون',
+            probability: 0.87,
+          },
+        },
+      }),
+    );
+    const { data } = await diagnosePlantDisease({ imageUri: 'file:///tmp/leaf.jpg' });
+    expect(data?.diseaseName).toBe('Olive leaf spot');
+  });
+
   it('labels pest identification as rule-based with zero fabricated confidence', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       jsonResponse({

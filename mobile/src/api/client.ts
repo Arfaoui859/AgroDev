@@ -305,6 +305,42 @@ function metaFrom(
 }
 
 // ---------------------------------------------------------------------------
+// Disease-name normalisation
+// ---------------------------------------------------------------------------
+
+// A machine identifier such as `unclear_image` or `olive-leaf-spot`: lowercase
+// ASCII words joined by underscores/hyphens and containing no spaces. Real
+// display names always contain a space or an upper-case letter, so this only
+// matches ids the vision model returns when it has no human label.
+const MACHINE_SLUG_RE = /^[a-z0-9]+([_-][a-z0-9]+)+$/;
+
+function isMachineSlug(value: unknown): boolean {
+  return typeof value === 'string' && MACHINE_SLUG_RE.test(value.trim());
+}
+
+/**
+ * Pick the most human-readable disease label the payload offers.
+ *
+ * The gateway maps `primary_disease.disease` to the model's `diseaseId`, which
+ * can be a machine slug (`unclear_image`). A slug must never be shown as the
+ * diagnosis title, so we fall back to the Arabic display name (which the UI
+ * already flags as Arabic-only for fr/en callers) and finally to a generic
+ * localised label.
+ */
+function humanDiseaseName(
+  primary: any,
+  arName: string,
+  fallback: string,
+): string {
+  for (const candidate of [primary?.disease_name, primary?.disease]) {
+    if (typeof candidate === 'string' && candidate.trim() && !isMachineSlug(candidate)) {
+      return candidate.trim();
+    }
+  }
+  return arName || fallback;
+}
+
+// ---------------------------------------------------------------------------
 // Weather (Open-Meteo via gateway) — real observation
 // ---------------------------------------------------------------------------
 
@@ -441,11 +477,18 @@ export async function diagnosePlantDisease(
         : Math.round(confidenceRaw)
       : null;
 
+  const arName =
+    typeof primary.disease_name_ar === 'string' && !isMachineSlug(primary.disease_name_ar)
+      ? primary.disease_name_ar.trim()
+      : '';
+  const diseaseName = humanDiseaseName(primary, arName, msg('diseaseUnknownName'));
+  const diseaseNameAr = arName || diseaseName || msg('diseaseUnknownName');
+
   return {
     data: {
       id: String(d.id ?? Date.now()),
-      diseaseName: primary.disease || primary.disease_name || msg('diseaseUnknownName'),
-      diseaseNameAr: primary.disease_name_ar || primary.disease || msg('diseaseUnknownName'),
+      diseaseName,
+      diseaseNameAr,
       confidence,
       severity: (d.severity_assessment?.severity_level || primary.severity_level || 'unknown') as any,
       descriptionAr: primary.description || msg('diseaseGenericDescription'),
