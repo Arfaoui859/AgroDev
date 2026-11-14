@@ -72,8 +72,14 @@ export const DEFAULT_API_BASE_URL = resolveApiBaseUrl({
   override: process.env.EXPO_PUBLIC_API_BASE_URL,
 });
 
-/** Per-request network timeout in milliseconds. */
-export const API_TIMEOUT_MS = asNumber(process.env.EXPO_PUBLIC_API_TIMEOUT_MS, 15000);
+/**
+ * Per-request network timeout in milliseconds.
+ *
+ * Defaults to 30s because the backend runs on Render, whose free instances spin
+ * down when idle and can take tens of seconds to answer the first request after
+ * waking. A 15s timeout would fail every cold start. Callers can still override.
+ */
+export const API_TIMEOUT_MS = asNumber(process.env.EXPO_PUBLIC_API_TIMEOUT_MS, 30000);
 
 /** Offline cache lifetime for list/detail reads, in milliseconds (default 6h). */
 export const CACHE_TTL_MS = asNumber(process.env.EXPO_PUBLIC_CACHE_TTL_MS, 6 * 60 * 60 * 1000);

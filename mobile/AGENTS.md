@@ -39,3 +39,59 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## AgroGrowth mobile — verified production integration (2026-11)
+
+Facts confirmed by probing the live deployment, not copied from the README.
+
+### Backend entry point
+- The app's ONLY backend is the Express gateway at
+  `https://agrodev-3.onrender.com`. Never call the Python AI microservices
+  directly from mobile; the gateway holds the credentials.
+- `src/config.ts` resolves the base URL as: `EXPO_PUBLIC_API_BASE_URL` override
+  > production gateway (release build, `!__DEV__`) > local dev server
+  (`10.0.2.2:5000` Android / `localhost:5000` otherwise, debug build).
+  The pure `resolveApiBaseUrl()` is unit-tested in `tests/unit/config.test.ts`.
+- Default request timeout is 30s because Render free instances cold-start
+  slowly; 15s failed every cold start.
+
+### Supabase
+- Production project `https://jymrhhlwdbclctobhbsi.supabase.co`, anon key only
+  (RLS-protected). `tests/unit/config.test.ts` asserts the embedded key is
+  `role: anon` and that no `service_role`/`DATABASE_URL`/`postgres://` string is
+  in the bundle.
+
+### Live capability status (gateway `/api/ai/capabilities`)
+- LLM provider: configured (`gemini`, `gemini-flash-lite-latest`); the assistant
+  `/api/ai/assistant/chat` returns `dataSource: "llm"`, `isRealData: true`.
+- `plant-disease-detection` / `leaf-scan`: `vision-model` (Gemini vision). Live
+  upload to `/api/ai/images/detect-disease` returns `dataSource: "llm"`,
+  `modelSource: "vision:gemini-flash-lite-latest"`. A vision LLM is generative,
+  so the badge must read generative AI, never "trained model".
+- `soil-analysis`, `crop-recommendation`, `climate-crop-matcher`,
+  `smart-match`, `farming-tasks-planner`, `alert-notifier`: `rule-based`
+  (`isRealData: false`).
+- `pest-control` gateway endpoint is `rule-based` when the microservice is up
+  (honest keyword match), 502 when down.
+- `irrigation-optimizer`, `market-forecast`, `supply-demand`, `yield-predictor`,
+  `weather-yield-planner`, `lab-soil-models`: `unavailable` — the underlying
+  microservices report `synthetic-demo`/degraded, so the gateway fails closed
+  (503 "Synthetic or heuristic microservice output is disabled").
+- Weather `/api/weather/coordinates` is real Open-Meteo (`isRealData: true`) but
+  can 502 with `provider: Open-Meteo` on a 429 daily-limit; the UI shows an
+  honest error, not invented values.
+
+### Microservice health (direct /health, for the status table only)
+- soil-analysis: healthy, `model_source: deterministic-rules` (NOT trained).
+- image-diagnosis: healthy, `mobilenetv3-plantvillage-v1` (trained CNN), but the
+  gateway prefers the vision LLM for `/api/ai/images/detect-disease`.
+- intelligent-agent: healthy, OpenRouter LLM.
+- market-intelligence / irrigation-optimization / pest-control /
+  crop-recommendation: reachable but `degraded`, `model_source: synthetic-demo`
+  with disabled features — this is why their gateway capabilities are
+  `unavailable`.
+- weather/yield-intelligence: **Render env var
+  `WEATHER_YIELD_INTELLIGENCE_URL` is set to the literal string `value`**, so
+  `normalizeServiceUrl` builds `http://value` and DNS fails. This is a
+  backend/Render configuration defect, not a mobile one; it must be fixed in
+  Render, not in the app.
