@@ -151,11 +151,21 @@ endpoint was added to the backend:
 Covered by `tests/unit/crop-recommendation-screen.test.tsx` and
 `tests/unit/cultivation-project-screen.test.tsx`.
 
+### AI assistant conversational memory (verified)
+
+`AIAssistantScreen` sends the prior turns (`history`) and threads back the
+gateway's `conversationId` (`POST /api/ai/assistant/chat` accepts both and
+returns the id for a verified session). Without this the model answered each
+message with no context and the server wrote one conversation per turn.
+Anonymous callers keep a null thread id; the history is bounded to the last 12
+turns, matching the gateway's own cap. Covered by
+`tests/unit/ai-assistant-screen.test.tsx`.
+
 ### Verified checks (2026-11)
 
 - `npx tsc --noEmit` — clean.
 - `npx expo lint` — clean.
-- `npx jest` — 41 suites / 201 tests passing (7 skipped live suites).
+- `npx jest` — 42 suites / 203 tests passing (7 skipped live suites).
 - `npx expo-doctor` — 20/20 checks passed.
 - `npx expo export --platform android` — bundles (832 modules) to Hermes
   bytecode successfully.
