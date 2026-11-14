@@ -237,7 +237,10 @@ function asProvenance(value: unknown): DataProvenance {
     v === 'database' ||
     v === 'supabase' ||
     v === 'persisted-records' ||
-    v.startsWith('platform-database')
+    v.startsWith('platform-database') ||
+    // The platform stamps persisted reads as e.g. "supabase.notifications" or
+    // "supabase.livestock_animals"; those are stored records, not live feeds.
+    v.startsWith('supabase.')
   ) {
     return 'database';
   }
@@ -251,19 +254,31 @@ function metaFrom(
   fallback: DataProvenance,
   source?: string,
 ): ProvenanceMeta {
-  const raw = payload?.dataSource ?? payload?.data_source ?? payload?.source;
+  // Persisted platform reads carry the source either as a flat string
+  // (`dataSource` / `source`) or as a nested `provenance` object
+  // (`{ source: "supabase.farms", persisted: true }`). Honour both.
+  const provObj =
+    payload?.provenance && typeof payload.provenance === 'object' ? payload.provenance : undefined;
+  const raw =
+    payload?.dataSource ??
+    payload?.data_source ??
+    payload?.source ??
+    (typeof provObj?.source === 'string' ? provObj.source : undefined);
   const provenance = raw ? asProvenance(raw) : fallback;
 
   // An explicit boolean from the backend always wins: several platform records
   // are stored but explicitly NOT verified (e.g. market prices ship
   // `isRealData: false`), so we must never upgrade them to "real" just because
-  // they come from the database.
+  // they come from the database. A nested `persisted: true` is an equivalent
+  // affirmative signal for stored reads.
   const explicit =
     typeof payload?.isRealData === 'boolean'
       ? payload.isRealData
       : typeof payload?.is_real_data === 'boolean'
         ? payload.is_real_data
-        : undefined;
+        : typeof provObj?.persisted === 'boolean'
+          ? provObj.persisted
+          : undefined;
   const isRealData =
     explicit ??
     (provenance === 'live-observation' ||
@@ -274,7 +289,10 @@ function metaFrom(
   return {
     provenance,
     isRealData,
-    source: source ?? (typeof payload?.modelSource === 'string' ? payload.modelSource : undefined),
+    source:
+      source ??
+      (typeof provObj?.source === 'string' ? provObj.source : undefined) ??
+      (typeof payload?.modelSource === 'string' ? payload.modelSource : undefined),
     disclaimer: typeof payload?.disclaimer === 'string' ? payload.disclaimer : undefined,
   };
 }
@@ -714,17 +732,29 @@ export async function chatWithAIAssistant(
 // Farm & field management — persisted, requires verified session
 // ---------------------------------------------------------------------------
 
-export async function getFarms(): Promise<{ data: Farm[]; error: string | null; fromCache: boolean }> {
+export async function getFarms(): Promise<{
+  data: Farm[];
+  error: string | null;
+  fromCache: boolean;
+  meta: ProvenanceMeta;
+}> {
   const res = await apiRequest<any>('/api/farms', { cacheKey: 'farms' });
   const list: Farm[] = Array.isArray(res.data?.data) ? res.data.data : [];
-  return { data: list, error: res.error, fromCache: res.fromCache };
+  // Farms are persisted platform records read back from Supabase, not live
+  // observations — label them as stored records.
+  return { data: list, error: res.error, fromCache: res.fromCache, meta: metaFrom(res.data, 'database') };
 }
 
-export async function getFields(farmId?: string): Promise<{ data: Field[]; error: string | null; fromCache: boolean }> {
+export async function getFields(farmId?: string): Promise<{
+  data: Field[];
+  error: string | null;
+  fromCache: boolean;
+  meta: ProvenanceMeta;
+}> {
   const endpoint = farmId ? `/api/fields?farmId=${encodeURIComponent(farmId)}` : '/api/fields';
   const res = await apiRequest<any>(endpoint, { cacheKey: `fields:${farmId || 'all'}` });
   const list: Field[] = Array.isArray(res.data?.data) ? res.data.data : [];
-  return { data: list, error: res.error, fromCache: res.fromCache };
+  return { data: list, error: res.error, fromCache: res.fromCache, meta: metaFrom(res.data, 'database') };
 }
 
 export async function createField(payload: {
@@ -772,10 +802,16 @@ export async function getNotifications(): Promise<{
   data: AppNotification[];
   error: string | null;
   unavailable: boolean;
+  meta: ProvenanceMeta;
 }> {
   const res = await apiRequest<any>('/api/notifications?limit=50', { cacheKey: 'notifications' });
   if (res.status === 503) {
-    return { data: [], error: res.error || msg('notificationsUnavailable'), unavailable: true };
+    return {
+      data: [],
+      error: res.error || msg('notificationsUnavailable'),
+      unavailable: true,
+      meta: { provenance: 'unavailable', isRealData: false },
+    };
   }
   const list = Array.isArray(res.data?.data)
     ? res.data.data.map((n: any) => ({
@@ -790,7 +826,9 @@ export async function getNotifications(): Promise<{
         isStarred: n.is_starred ?? false,
       }))
     : [];
-  return { data: list, error: res.error, unavailable: false };
+  // Notifications are the caller's own persisted rows (the gateway stamps
+  // `supabase.notifications` / `isRealData: true`), not generated content.
+  return { data: list, error: res.error, unavailable: false, meta: metaFrom(res.data, 'database') };
 }
 
 /**
@@ -831,10 +869,17 @@ export async function getAnimals(): Promise<{
   error: string | null;
   unavailable: boolean;
   fromCache: boolean;
+  meta: ProvenanceMeta;
 }> {
   const res = await apiRequest<any>('/api/animals', { cacheKey: 'livestock:animals' });
   if (res.status === 503) {
-    return { data: [], error: res.error || msg('apiLivestockUnavailable'), unavailable: true, fromCache: false };
+    return {
+      data: [],
+      error: res.error || msg('apiLivestockUnavailable'),
+      unavailable: true,
+      fromCache: false,
+      meta: { provenance: 'unavailable', isRealData: false },
+    };
   }
   const list: LivestockAnimal[] = Array.isArray(res.data?.data)
     ? res.data.data.map((a: any) => ({
@@ -851,7 +896,15 @@ export async function getAnimals(): Promise<{
         currency: a.currency ?? 'TND',
       }))
     : [];
-  return { data: list, error: res.error, unavailable: false, fromCache: res.fromCache };
+  // The caller's own persisted herd (`supabase.livestock_animals`), not a
+  // prediction — labelled as stored records.
+  return {
+    data: list,
+    error: res.error,
+    unavailable: false,
+    fromCache: res.fromCache,
+    meta: metaFrom(res.data, 'database'),
+  };
 }
 
 // ---------------------------------------------------------------------------

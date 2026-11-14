@@ -16,9 +16,10 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { getFarms, getFields, createField, createFarm } from '../../api/client';
-import { Farm, Field } from '../../types';
+import { Farm, Field, ProvenanceMeta } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { StateView } from '../../components/ui/StateView';
+import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { GOVERNORATES } from '../../utils/governorates';
 
 interface FarmManagementScreenProps {
@@ -32,6 +33,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFarmModal, setShowFarmModal] = useState(false);
 
@@ -56,6 +58,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
     setFarms(farmsRes.data);
     setFields(fieldsRes.data);
     setError(farmsRes.error || fieldsRes.error);
+    setMeta(farmsRes.meta ?? { provenance: 'database', isRealData: false });
     setLoading(false);
   }, []);
 
@@ -189,6 +192,10 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
               </Text>
             </View>
             <Badge label={`${farms[0].size_hectares} ${x.farmSizeUnit}`} variant="primary" size="md" />
+          </View>
+
+          <View style={[styles.provBar, isRtl && styles.rtlRow]}>
+            <ProvenanceBadge meta={meta} />
           </View>
 
           <View style={[styles.farmStatsRow, isRtl && styles.rtlRow]}>
@@ -500,6 +507,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  provBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
   },
   farmHeaderInfo: {
     flex: 1,

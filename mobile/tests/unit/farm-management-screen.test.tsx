@@ -93,6 +93,29 @@ describe('FarmManagementScreen', () => {
     await waitFor(() => expect(screen.getByText('مزرعة النخيل')).toBeTruthy(), { timeout: 5000 });
   });
 
+  it('labels the persisted farm as a stored record, never as live data', async () => {
+    mockGetFarms.mockResolvedValue({
+      data: [
+        {
+          id: 'f1',
+          name: 'مزرعة النخيل',
+          name_ar: 'مزرعة النخيل',
+          location: { region: 'قبلي وتوزر' },
+          size_hectares: 12,
+        },
+      ],
+      error: null,
+      fromCache: false,
+      meta: { provenance: 'database', isRealData: true, source: 'supabase.farms' },
+    });
+    mockGetFields.mockResolvedValue({ data: [], error: null, fromCache: false });
+
+    await renderScreen();
+
+    await waitFor(() => expect(screen.getByText('مزرعة النخيل')).toBeTruthy(), { timeout: 5000 });
+    expect(screen.getByText('سجل مخزّن بالمنصة')).toBeTruthy();
+  });
+
   it('does not call the API when required farm fields are missing', async () => {
     const user = userEvent.setup();
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});

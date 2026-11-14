@@ -7,6 +7,9 @@ import {
   getMarketPrices,
   getWeather,
   getAnimals,
+  getFarms,
+  getFields,
+  getNotifications,
   identifyPest,
   getAgriNews,
   setApiBaseUrl,
@@ -270,7 +273,7 @@ describe('AI/weather client provenance mapping (honest data labelling)', () => {
     expect(data?.meta.isRealData).toBe(false);
   });
 
-  it('maps the caller\'s persisted livestock records', async () => {
+  it('labels persisted livestock records as stored data (not a model)', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       jsonResponse({
         success: true,
@@ -289,22 +292,93 @@ describe('AI/weather client provenance mapping (honest data labelling)', () => {
             currency: 'TND',
           },
         ],
+        isRealData: true,
+        provenance: { source: 'supabase.livestock_animals', persisted: true },
       }),
     );
-    const { data, unavailable } = await getAnimals();
+    const { data, unavailable, meta } = await getAnimals();
     expect(unavailable).toBe(false);
     expect(data[0].earTag).toBe('TN-001');
-    expect(data[0].healthStatus).toBe('good');
-    expect(data[0].currentValue).toBe(700);
+    // A stored herd is a persisted platform record, never model inference.
+    expect(meta.provenance).toBe('database');
+    expect(meta.isRealData).toBe(true);
+    expect(meta.source).toBe('supabase.livestock_animals');
   });
 
   it('reports livestock as unavailable (not empty) when the table is missing (503)', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       jsonResponse({ success: false, code: 'LIVESTOCK_MIGRATION_REQUIRED' }, 503),
     );
-    const { data, unavailable } = await getAnimals();
+    const { data, unavailable, meta } = await getAnimals();
     expect(unavailable).toBe(true);
     expect(data).toEqual([]);
+    expect(meta.provenance).toBe('unavailable');
+    expect(meta.isRealData).toBe(false);
+  });
+
+  it('labels persisted farms as stored platform records', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({
+        status: 'success',
+        data: [{ id: 'f1', name: 'مزرعة', name_ar: 'مزرعة', size_hectares: 4, location: 'Tunis' }],
+        provenance: { source: 'supabase.farms', persisted: true },
+      }),
+    );
+    const { data, meta } = await getFarms();
+    expect(data[0].id).toBe('f1');
+    expect(meta.provenance).toBe('database');
+    expect(meta.isRealData).toBe(true);
+  });
+
+  it('labels persisted fields as stored platform records', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({
+        status: 'success',
+        data: [{ id: 'fl1', name: 'حقل', size_hectares: 2, current_crop: 'wheat' }],
+      }),
+    );
+    const { data, meta } = await getFields();
+    expect(data[0].id).toBe('fl1');
+    // No explicit source → still a stored read, never upgraded to "live".
+    expect(meta.provenance).toBe('database');
+    expect(meta.isRealData).toBe(true);
+  });
+
+  it('labels the caller\'s persisted notifications as stored records', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: [
+          {
+            id: 'n1',
+            type: 'info',
+            title: 'تنبيه',
+            message: 'نص',
+            priority: 'high',
+            read_at: null,
+            created_at: '2026-11-13T10:00:00.000Z',
+            is_starred: false,
+          },
+        ],
+        source: 'supabase.notifications',
+        isRealData: true,
+      }),
+    );
+    const { data, meta, unavailable } = await getNotifications();
+    expect(unavailable).toBe(false);
+    expect(data[0].id).toBe('n1');
+    expect(meta.provenance).toBe('database');
+    expect(meta.isRealData).toBe(true);
+  });
+
+  it('marks notifications unavailable (not empty) when the store is down', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ message: 'down' }, 503),
+    );
+    const { data, unavailable, meta } = await getNotifications();
+    expect(unavailable).toBe(true);
+    expect(data).toEqual([]);
+    expect(meta.provenance).toBe('unavailable');
   });
 
   it('labels agri news as a real live feed with publisher attribution', async () => {

@@ -8,8 +8,9 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { StateView } from '../components/ui/StateView';
+import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
 import { getNotifications, markNotificationRead } from '../api/client';
-import { AppNotification } from '../types';
+import { AppNotification, ProvenanceMeta } from '../types';
 import { useConnectivity } from '../hooks/useConnectivity';
 import { formatDateTime } from '../utils/date';
 import { notificationPriorityLabel } from '../utils/notifications';
@@ -32,6 +33,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
   const [refreshing, setRefreshing] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
 
   const load = useCallback(async () => {
     if (!isAuthenticated) {
@@ -43,6 +45,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
     setItems(res.data);
     setUnavailable(res.unavailable);
     setError(res.error);
+    setMeta(res.meta ?? { provenance: 'database', isRealData: false });
     setLoading(false);
   }, [isAuthenticated]);
 
@@ -113,6 +116,9 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
         </Card>
       ) : (
         <View style={styles.list}>
+          <View style={[styles.provBar, isRtl && styles.rtlRow]}>
+            <ProvenanceBadge meta={meta} />
+          </View>
           {items.map((item) => (
             <TouchableOpacity
               key={item.id}
@@ -159,6 +165,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   title: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold, color: colors.text },
   list: { gap: spacing.sm },
+  provBar: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
   notificationTouchable: { minHeight: 48 },
   card: { padding: spacing.md },
   unreadCard: { borderColor: colors.primary, borderWidth: 1.5 },

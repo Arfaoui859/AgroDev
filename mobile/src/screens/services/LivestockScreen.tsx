@@ -8,7 +8,9 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
+import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { getAnimals, LivestockAnimal } from '../../api/client';
+import { ProvenanceMeta } from '../../types';
 import { formatNumber } from '../../utils/date';
 import { livestockBreeding, livestockHealth, livestockSpecies } from '../../utils/livestockLabels';
 
@@ -39,6 +41,7 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
+  const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
 
   const load = useCallback(async () => {
     if (!isAuthenticated) {
@@ -52,6 +55,7 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
     setAnimals(res.data);
     setError(res.error);
     setUnavailable(res.unavailable);
+    setMeta(res.meta ?? { provenance: 'database', isRealData: false });
     setLoading(false);
   }, [isAuthenticated]);
 
@@ -109,7 +113,10 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
       ) : (
         <>
           <Card variant="elevated" style={styles.summaryCard}>
-            <Text style={[styles.summaryTitle, isRtl && styles.rtlText]}>{x.livestockSummary}</Text>
+            <View style={[styles.summaryHeader, isRtl && styles.rtlRow]}>
+              <Text style={[styles.summaryTitle, isRtl && styles.rtlText]}>{x.livestockSummary}</Text>
+              <ProvenanceBadge meta={meta} />
+            </View>
             <View style={[styles.summaryRow, isRtl && styles.rtlRow]}>
               <SummaryStat label={x.livestockTotal} value={String(animals.length)} color={colors.text} />
               <View style={styles.divider} />
@@ -193,7 +200,8 @@ const styles = StyleSheet.create({
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   summaryCard: { padding: spacing.md, marginBottom: spacing.md },
-  summaryTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
+  summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  summaryTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   summaryStat: { alignItems: 'center', flex: 1 },
   summaryValue: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold },

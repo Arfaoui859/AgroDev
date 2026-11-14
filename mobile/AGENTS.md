@@ -95,3 +95,42 @@ Facts confirmed by probing the live deployment, not copied from the README.
   `normalizeServiceUrl` builds `http://value` and DNS fails. This is a
   backend/Render configuration defect, not a mobile one; it must be fixed in
   Render, not in the app.
+
+### Data-provenance labelling (Req 4 — verified)
+
+Every screen that renders a server result must show *how* that result was
+produced. The single source of truth is `src/utils/provenance.ts`
+(`provenanceLabel`) plus `src/components/ui/ProvenanceBadge.tsx`.
+
+- The API layer (`src/api/client.ts`) maps every envelope to a
+  `ProvenanceMeta` via `metaFrom()` / `asProvenance()`. Backend sources such as
+  `supabase.*`, `persisted-records` and `platform-database*` map to the honest
+  `database` kind — a stored row is **never** upgraded to `live-observation`.
+- Persisted-data reads (`getFarms`, `getFields`, `getNotifications`,
+  `getAnimals`) return `{ data, error, fromCache, meta }`; their screens
+  (`FarmManagementScreen`, `LivestockScreen`, `NotificationsScreen`) render the
+  badge and default to `{ provenance: 'database', isRealData: false }` — never to
+  `isRealData: true` — until the backend's own provenance arrives.
+- AI/result screens render the badge from the response meta:
+  `SoilAnalysisScreen`, `CropRecommendationScreen`, `DiseaseDetectionScreen` +
+  `PlantScanner`, `WeatherDetailScreen`, `AgriNewsScreen`, `MultiAgentAIScreen`,
+  `AIAssistantScreen` (per message), `HomeScreen` (weather), `MarketplaceScreen`,
+  `GeneralServiceModal` (irrigation/pest).
+- A rule-based or synthetic result must never be labelled like a trained model.
+  The label wording is centralised so ar/fr/en agree.
+- Regression coverage: `tests/integration/api-provenance.test.ts` asserts the
+  stored-record and unavailable mappings; the screen tests assert the badge text
+  renders. Run `npx jest` (offline, green) and `LIVE_API_TESTS=1 npx jest
+  tests/live` (real gateway + Supabase).
+
+### Verified checks (2026-11)
+
+- `npx tsc --noEmit` — clean.
+- `npx expo lint` — clean.
+- `npx jest` — 38 suites / 183 tests passing (7 skipped live suites).
+- `npx expo-doctor` — 20/20 checks passed.
+- `npx expo export --platform android` — bundles (818 modules) to Hermes
+  bytecode successfully.
+- `LIVE_API_TESTS=1 npx jest tests/live` — production-smoke (5) and live-auth
+  (2) pass against `https://agrodev-3.onrender.com` and the live Supabase
+  project.

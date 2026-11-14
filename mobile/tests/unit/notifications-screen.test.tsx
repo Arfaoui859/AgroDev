@@ -65,11 +65,14 @@ describe('NotificationsScreen', () => {
       ],
       error: null,
       unavailable: false,
+      meta: { provenance: 'database', isRealData: true, source: 'supabase.notifications' },
     });
 
     await renderScreen();
 
     await waitFor(() => expect(screen.getByText('تنبيه ري')).toBeTruthy());
+    // Persisted rows must be labelled as stored records, never as live data.
+    expect(screen.getByText('سجل مخزّن بالمنصة')).toBeTruthy();
   });
 
   it('shows an honest unavailable state when the store is not connected (503)', async () => {

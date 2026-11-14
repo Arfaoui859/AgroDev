@@ -59,12 +59,15 @@ describe('LivestockScreen', () => {
       error: null,
       unavailable: false,
       fromCache: false,
+      meta: { provenance: 'database', isRealData: true, source: 'supabase.livestock_animals' },
     });
 
     await renderScreen();
 
     await waitFor(() => expect(screen.getByText('TN-001')).toBeTruthy(), { timeout: 5000 });
     expect(screen.getByText('جيدة')).toBeTruthy();
+    // A persisted herd is shown as stored records, not as a prediction.
+    expect(screen.getByText('سجل مخزّن بالمنصة')).toBeTruthy();
   });
 
   it('shows an honest unavailable state (not an invented herd) when the table is missing', async () => {

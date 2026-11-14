@@ -265,8 +265,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: spacing.md,
   },
-  offlineBarText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold },
+  offlineBarText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, lineHeight: 20, fontWeight: typography.fontWeights.semibold },
   rtlRow: { flexDirection: 'row-reverse' },
   loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  loadingBrand: { fontSize: typography.fontSizes['2xl'], fontWeight: typography.fontWeights.bold, color: colors.primary },
+  loadingBrand: { fontSize: typography.fontSizes['2xl'], lineHeight: 36, fontWeight: typography.fontWeights.bold, color: colors.primary },
 });
