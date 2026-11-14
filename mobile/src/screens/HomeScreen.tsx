@@ -25,12 +25,15 @@ import { IntelligenceStrip } from '../components/home/IntelligenceStrip';
 import { LearningVideos } from '../components/home/LearningVideos';
 import { HomeNewsPreview } from '../components/home/HomeNewsPreview';
 import { SeasonAgenda } from '../components/home/SeasonAgenda';
+import { AcademySection } from '../components/home/AcademySection';
 
 interface HomeScreenProps {
   onNavigateToService: (serviceId: string) => void;
   onNavigateToTab: (tabKey: string) => void;
   /** Opens the notifications screen (the alerts panel's "view all" target). */
   onOpenNotifications: () => void;
+  /** Opens the learning catalogue, optionally pre-filtered by video category. */
+  onOpenLearning?: (category?: string) => void;
 }
 
 /**
@@ -40,7 +43,7 @@ interface HomeScreenProps {
  * session); when there is no session or nothing is urgent the panel says so
  * honestly instead of inventing alerts.
  */
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onNavigateToTab, onOpenNotifications }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onNavigateToTab, onOpenNotifications, onOpenLearning }) => {
   const { t, x, isRtl, isArabic, language } = useLanguage();
   const { user, isAuthenticated } = useAuth();
   const { isOnline } = useConnectivity();
@@ -398,6 +401,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           />
         </View>
       </TouchableOpacity>
+
+      {/* AgroGrowth Academy — topical index into real content & services */}
+      <AcademySection
+        onOpenVideos={() => (onOpenLearning ? onOpenLearning() : onNavigateToService('learning'))}
+        onOpenService={openCapabilityService}
+      />
 
       {/* Curated agricultural learning videos (real YouTube content) */}
       <LearningVideos onOpenAll={() => onNavigateToService('learning')} />

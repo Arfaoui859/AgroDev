@@ -4,9 +4,16 @@ import { LanguageProvider } from '../../src/context/LanguageContext';
 import { MarketplaceScreen } from '../../src/screens/MarketplaceScreen';
 
 const mockGetMarketPrices = jest.fn();
+const mockGetAICapabilities = jest.fn();
 
 jest.mock('../../src/api/client', () => ({
   getMarketPrices: (...args: any[]) => mockGetMarketPrices(...args),
+  getAICapabilities: (...args: any[]) => mockGetAICapabilities(...args),
+  capabilityMap: (payload: any) => {
+    const map: Record<string, any> = {};
+    for (const cap of payload?.capabilities ?? []) map[cap.id] = cap;
+    return map;
+  },
 }));
 
 const renderScreen = () =>
@@ -19,6 +26,15 @@ const renderScreen = () =>
 describe('MarketplaceScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetAICapabilities.mockResolvedValue({
+      data: {
+        capabilities: [
+          { id: 'market-forecast', name: 'Market Forecast', nameAr: 'توقّع السوق', engine: 'unavailable', provenance: 'n/a', provenanceAr: 'غير متاح' },
+          { id: 'supply-demand', name: 'Supply Demand', nameAr: 'العرض والطلب', engine: 'unavailable', provenance: 'n/a', provenanceAr: 'غير متاح' },
+        ],
+      },
+      error: null,
+    });
   });
 
   it('shows an honest empty state when the platform has no recorded prices', async () => {

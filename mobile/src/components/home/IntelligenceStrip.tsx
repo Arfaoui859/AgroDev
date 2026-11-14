@@ -127,7 +127,10 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
               <TouchableOpacity
                 key={cap.id}
                 activeOpacity={0.85}
-                onPress={() => (serviceId ? onOpenService(serviceId) : onOpenCapabilities())}
+                // An unavailable capability must not pretend its service works:
+                // route to the honest capability matrix instead of a screen that
+                // would only surface a 503.
+                onPress={() => (available && serviceId ? onOpenService(serviceId) : onOpenCapabilities())}
                 accessibilityRole="button"
                 accessibilityLabel={`${name}. ${available ? t.homeIntelAvailable : t.homeIntelUnavailable}`}
                 style={[styles.chip, isRtl && styles.rtlRow, available ? styles.chipOn : styles.chipOff]}

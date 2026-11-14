@@ -58,8 +58,10 @@ describe('ProfileScreen', () => {
     expect(screen.queryByText('بستاني')).toBeNull();
   });
 
-  it('keeps role selection available through the onboarding persona flow', async () => {
+  it('does not expose any role selector or persona button on Profile', async () => {
     await renderScreen();
-    expect(await screen.findByText('تخصيص التجربة (Persona)')).toBeTruthy();
+    // The onboarding flow owns role selection; Profile must not duplicate it.
+    expect(screen.queryByText('تخصيص التجربة (Persona)')).toBeNull();
+    expect(screen.queryByText('اختر دورك')).toBeNull();
   });
 });

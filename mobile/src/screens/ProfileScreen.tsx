@@ -19,7 +19,6 @@ import { apiRequest, getApiBaseUrl } from '../api/client';
 import { supabaseHost, isSupabaseConfigured } from '../api/supabase';
 import { clearCache } from '../api/cache';
 import { AuthModal } from '../components/auth/AuthModal';
-import { PersonaSelectorModal } from '../components/onboarding/PersonaSelectorModal';
 
 export const ProfileScreen: React.FC = () => {
   const { t, x, isRtl, isArabic, language, setLanguage } = useLanguage();
@@ -28,7 +27,6 @@ export const ProfileScreen: React.FC = () => {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPersonaModal, setShowPersonaModal] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
 
   /** Localised label for a role slug (falls back to the raw slug). */
@@ -123,20 +121,14 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Quick Account & Persona Actions */}
+        {/* Account action. The user role is chosen once during onboarding; the
+            Profile screen only surfaces it read-only and never re-prompts. */}
         <View style={[styles.quickAuthRow, isRtl && styles.rtlRow]}>
           <Button
             title={isAuthenticated ? x.profileSignedInAs : x.authSignIn}
             variant="outline"
             size="sm"
             onPress={() => setShowAuthModal(true)}
-            style={{ flex: 1 }}
-          />
-          <Button
-            title={x.profilePersonaButton}
-            variant="secondary"
-            size="sm"
-            onPress={() => setShowPersonaModal(true)}
             style={{ flex: 1 }}
           />
         </View>
@@ -285,9 +277,6 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Auth Modal */}
       <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
-
-      {/* Adaptive Persona Selector Modal */}
-      <PersonaSelectorModal visible={showPersonaModal} onClose={() => setShowPersonaModal(false)} />
     </ScrollView>
   );
 };

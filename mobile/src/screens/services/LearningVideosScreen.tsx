@@ -25,6 +25,8 @@ import { formatVideoDuration, videoCategoryLabel, videoLanguageLabel } from '../
 
 interface LearningVideosScreenProps {
   onBack: () => void;
+  /** Optional category to open pre-selected (used by the Academy tiles). */
+  initialCategory?: VideoCategory | 'all';
 }
 
 /**
@@ -34,9 +36,9 @@ interface LearningVideosScreenProps {
  * catalogue is a static editorial selection — it is not a live or personalised
  * feed and says so.
  */
-export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBack }) => {
+export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBack, initialCategory = 'all' }) => {
   const { t, x, isRtl, language } = useLanguage();
-  const [category, setCategory] = useState<VideoCategory | 'all'>('all');
+  const [category, setCategory] = useState<VideoCategory | 'all'>(initialCategory);
 
   const visible = useMemo(() => {
     const filtered = category === 'all' ? LEARNING_VIDEOS : LEARNING_VIDEOS.filter((v) => v.category === category);

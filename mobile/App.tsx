@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { Header } from './src/components/ui/Header';
 import { BottomTabBar, TabKey } from './src/components/ui/BottomTabBar';
 import { StateView } from './src/components/ui/StateView';
+import { ErrorBoundary } from './src/components/ui/ErrorBoundary';
 import { PersonaSelectorModal } from './src/components/onboarding/PersonaSelectorModal';
 import { useConnectivity } from './src/hooks/useConnectivity';
 
@@ -45,6 +46,7 @@ const MainAppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [activeService, setActiveService] = useState<string | null>(null);
   const [personaDismissed, setPersonaDismissed] = useState(false);
+  const [learningCategory, setLearningCategory] = useState<string | undefined>(undefined);
   const [showNotifications, setShowNotifications] = useState(false);
   // Soil → crop → project handoff context. Kept in App so the crop screen can
   // reuse the plot/measurements without re-entry, and the project screen knows
@@ -213,7 +215,15 @@ const MainAppContent: React.FC = () => {
       case 'agri_news':
         return <AgriNewsScreen onBack={() => setActiveService(null)} />;
       case 'learning':
-        return <LearningVideosScreen onBack={() => setActiveService(null)} />;
+        return (
+          <LearningVideosScreen
+            onBack={() => {
+              setLearningCategory(undefined);
+              setActiveService(null);
+            }}
+            initialCategory={(learningCategory as any) ?? 'all'}
+          />
+        );
       case 'recent_analyses':
         return (
           <RecentAnalysesScreen
@@ -271,6 +281,10 @@ const MainAppContent: React.FC = () => {
       />
 
       <View style={styles.screenBody}>
+        <ErrorBoundary
+          language={language}
+          resetKey={`${activeTab}:${activeService ?? ''}:${showNotifications}`}
+        >
         {showNotifications ? (
           <NotificationsScreen onBack={() => setShowNotifications(false)} />
         ) : activeService ? (
@@ -285,6 +299,10 @@ const MainAppContent: React.FC = () => {
                   setActiveService(null);
                   setShowNotifications(true);
                 }}
+                onOpenLearning={(category) => {
+                  setLearningCategory(category);
+                  setActiveService('learning');
+                }}
               />
             )}
             {activeTab === 'services' && (
@@ -295,6 +313,7 @@ const MainAppContent: React.FC = () => {
             {activeTab === 'profile' && <ProfileScreen />}
           </>
         )}
+        </ErrorBoundary>
       </View>
 
       <BottomTabBar activeTab={activeTab} onTabChange={handleTabChange} />
@@ -304,12 +323,21 @@ const MainAppContent: React.FC = () => {
   );
 };
 
+const RootBoundary: React.FC = () => {
+  const { language } = useLanguage();
+  return (
+    <ErrorBoundary language={language}>
+      <MainAppContent />
+    </ErrorBoundary>
+  );
+};
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <LanguageProvider>
         <AuthProvider>
-          <MainAppContent />
+          <RootBoundary />
         </AuthProvider>
       </LanguageProvider>
     </SafeAreaProvider>

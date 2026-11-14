@@ -16,7 +16,8 @@ import { Badge } from '../components/ui/Badge';
 import { StateView } from '../components/ui/StateView';
 import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
 import { getMarketPrices } from '../api/client';
-import { MarketPriceItem, ProvenanceMeta } from '../types';
+import { AICapability, MarketPriceItem, ProvenanceMeta } from '../types';
+import { useAICapabilities } from '../hooks/useAICapabilities';
 
 /**
  * Market prices read from the platform's stored `market_prices` records.
@@ -26,6 +27,7 @@ import { MarketPriceItem, ProvenanceMeta } from '../types';
  */
 export const MarketplaceScreen: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
+  const { byId: capabilities } = useAICapabilities();
   const [prices, setPrices] = useState<MarketPriceItem[]>([]);
   // Default to an honest "stored, not verified" label; the load replaces it with
   // the backend's own provenance. Never default to `isRealData: true`.
@@ -199,6 +201,21 @@ export const MarketplaceScreen: React.FC = () => {
         </>
       )}
 
+      {/* Market intelligence — honest availability of forecast & supply/demand */}
+      <Card variant="outlined" style={styles.intelCard}>
+        <View style={[styles.tipRow, isRtl && styles.rtlRow]}>
+          <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={colors.primary} />
+          <View style={styles.tipTextContent}>
+            <Text style={[styles.tipTitle, isRtl && styles.rtlText]}>{x.marketIntelTitle}</Text>
+            <Text style={[styles.tipBody, isRtl && styles.rtlText]}>{x.marketIntelNote}</Text>
+          </View>
+        </View>
+        <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+          <MarketIntelRow label={x.marketIntelForecast} capability={capabilities['market-forecast']} x={x} isRtl={isRtl} />
+          <MarketIntelRow label={x.marketIntelSupplyDemand} capability={capabilities['supply-demand']} x={x} isRtl={isRtl} />
+        </View>
+      </Card>
+
       <Card variant="outlined" style={styles.tipCard}>
         <View style={[styles.tipRow, isRtl && styles.rtlRow]}>
           <MaterialCommunityIcons name="information" size={22} color={colors.secondary} />
@@ -212,12 +229,41 @@ export const MarketplaceScreen: React.FC = () => {
   );
 };
 
+const MarketIntelRow: React.FC<{
+  label: string;
+  capability?: AICapability;
+  x: ReturnType<typeof useLanguage>['x'];
+  isRtl: boolean;
+}> = ({ label, capability, x, isRtl }) => {
+  const available = Boolean(capability) && capability!.engine !== 'unavailable' && capability!.available !== false;
+  return (
+    <View style={[styles.intelRow, isRtl && styles.rtlRow]}>
+      <View style={[styles.intelLeft, isRtl && styles.rtlRow]}>
+        <MaterialCommunityIcons
+          name={available ? 'check-circle' : 'minus-circle-outline'}
+          size={16}
+          color={available ? colors.success : colors.textMuted}
+        />
+        <Text style={[styles.intelLabel, isRtl && styles.rtlText]}>{label}</Text>
+      </View>
+      <Text style={[styles.intelState, { color: available ? colors.success : colors.textMuted }]}>
+        {available ? x.aiAvailable : x.aiNotConfigured}
+      </Text>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerBox: { marginBottom: spacing.md },
+  intelCard: { marginTop: spacing.md },
+  intelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  intelLabel: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.text, fontWeight: typography.fontWeights.semibold },
+  intelState: { fontSize: typography.fontSizes.xs, lineHeight: 20, fontWeight: typography.fontWeights.semibold },
   mainTitle: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold, color: colors.text },
   mainSub: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.textSecondary, marginTop: 3 },
   searchBar: {

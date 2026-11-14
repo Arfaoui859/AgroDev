@@ -89,6 +89,8 @@ export interface ExtraTranslations {
   stateError: string;
   stateOffline: string;
   stateUnavailable: string;
+  crashTitle: string;
+  crashMessage: string;
   retry: string;
   cachedNotice: string;
   offlineBanner: string;
@@ -246,6 +248,32 @@ export interface ExtraTranslations {
   videoDurationMinutes: string;
   videoLanguageArabic: string;
   videoLanguageEnglish: string;
+
+  // AgroGrowth Academy
+  academyTitle: string;
+  academySubtitle: string;
+  academyOpenVideos: string;
+  academyOpenService: string;
+  academyPlanting: string;
+  academyPlantingDesc: string;
+  academySoil: string;
+  academySoilDesc: string;
+  academyIrrigation: string;
+  academyIrrigationDesc: string;
+  academyFertilisation: string;
+  academyFertilisationDesc: string;
+  academyDiseases: string;
+  academyDiseasesDesc: string;
+  academyPest: string;
+  academyPestDesc: string;
+  academyPruning: string;
+  academyPruningDesc: string;
+  academyHarvest: string;
+  academyHarvestDesc: string;
+  academyLivestock: string;
+  academyLivestockDesc: string;
+  academyTechnology: string;
+  academyTechnologyDesc: string;
 
   // Home — seasonal agenda (generic, indicative)
   seasonWinter: string;
@@ -427,7 +455,6 @@ export interface ExtraTranslations {
   profileUserFallback: string;
   profileGuest: string;
   profileNotSignedIn: string;
-  profilePersonaButton: string;
   profileTestConnection: string;
   profileOfflineDesc: string;
 
@@ -436,6 +463,11 @@ export interface ExtraTranslations {
   marketNoMatch: string;
   marketAboutTitle: string;
   marketAboutBody: string;
+  marketIntelTitle: string;
+  marketIntelNote: string;
+  marketIntelForecast: string;
+  marketIntelSupplyDemand: string;
+  marketIntelUnavailableHint: string;
 
   // AI assistant screen
   assistantErrorReply: string;
@@ -573,6 +605,8 @@ const ar: ExtraTranslations = {
   stateError: 'تعذّر تحميل البيانات',
   stateOffline: 'لا يوجد اتصال بالإنترنت',
   stateUnavailable: 'هذه الخدمة غير متاحة حالياً',
+  crashTitle: 'حدث خطأ غير متوقّع',
+  crashMessage: 'تعذّر عرض هذا القسم. يمكنك إعادة المحاولة أو متابعة استخدام بقية التطبيق.',
   retry: 'إعادة المحاولة',
   cachedNotice: 'يتم عرض آخر بيانات محفوظة (وضع عدم الاتصال)',
   offlineBanner: 'أنت غير متصل بالإنترنت — تُعرض البيانات المحفوظة',
@@ -720,6 +754,31 @@ const ar: ExtraTranslations = {
   videoDurationMinutes: 'دقيقة',
   videoLanguageArabic: 'بالعربية',
   videoLanguageEnglish: 'بالإنجليزية',
+
+  academyTitle: 'أكاديمية AgroGrowth',
+  academySubtitle: 'مواضيع زراعية مرتبطة بمحتوى حقيقي وخدمات فعلية.',
+  academyOpenVideos: 'دروس مصوّرة',
+  academyOpenService: 'افتح الخدمة',
+  academyPlanting: 'الزراعة والبذر',
+  academyPlantingDesc: 'اختيار المحاصيل المناسبة وموعد الزراعة.',
+  academySoil: 'التربة والتسميد',
+  academySoilDesc: 'تحليل التربة وتوصيات التسميد.',
+  academyIrrigation: 'الري',
+  academyIrrigationDesc: 'تقنيات الري وترشيد المياه.',
+  academyFertilisation: 'التسميد العضوي',
+  academyFertilisationDesc: 'الكمبوست وتغذية النبات.',
+  academyDiseases: 'أمراض النباتات',
+  academyDiseasesDesc: 'التشخيص بالصورة وعلامات المرض.',
+  academyPest: 'مكافحة الآفات',
+  academyPestDesc: 'التعرّف على الآفات من الأعراض.',
+  academyPruning: 'التقليم',
+  academyPruningDesc: 'تقليم الأشجار والمحاصيل.',
+  academyHarvest: 'الحصاد',
+  academyHarvestDesc: 'تقنيات الحصاد وما بعد الحصاد.',
+  academyLivestock: 'تربية المواشي',
+  academyLivestockDesc: 'رعاية الأغنام والأبقار.',
+  academyTechnology: 'التقنية الزراعية',
+  academyTechnologyDesc: 'الذكاء الاصطناعي في الفلاحة.',
 
   seasonWinter: 'الشتاء',
   seasonSpring: 'الربيع',
@@ -892,7 +951,6 @@ const ar: ExtraTranslations = {
   profileUserFallback: 'مستخدم AgroGrowth',
   profileGuest: 'زائر',
   profileNotSignedIn: 'غير مسجّل الدخول',
-  profilePersonaButton: 'تخصيص التجربة (Persona)',
   profileTestConnection: 'اختبار الاتصال بالخادم الآن',
   profileOfflineDesc: 'يتم حفظ بيانات الطقس، الحقول، والتشخيص محلياً لتصفحها في الحقل دون إنترنت.',
 
@@ -901,6 +959,11 @@ const ar: ExtraTranslations = {
   marketNoMatch: 'لا يوجد محصول مطابق لبحثك.',
   marketAboutTitle: 'حول هذه الأسعار',
   marketAboutBody: 'هذه القيم مسجّلة في قاعدة بيانات المنصة وتمثل أسعاراً مرصودة. لا تُعرض أي اتجاهات (صعود/هبوط) إلا إذا وفّرها الخادم فعلياً. تحقق من أسواق الجملة المحلية قبل البيع.',
+  marketIntelTitle: 'ذكاء السوق',
+  marketIntelNote: 'حالة خدمات التحليل السوقي كما يعلنها الخادم الآن — لا نعرض توقعات مختلقة.',
+  marketIntelForecast: 'توقّع الأسعار',
+  marketIntelSupplyDemand: 'العرض والطلب',
+  marketIntelUnavailableHint: 'غير متاح حتى يتم ربط مصدر سوق موثّق ومؤرّخ ونموذج متحقّق منه. تحقق من أسواق الجملة المحلية قبل القرار.',
 
   // AI assistant screen
   assistantErrorReply: 'عذراً، حدث خطأ أثناء معالجة السؤال. يرجى التأكد من الاتصال والمحاولة ثانية.',
@@ -1035,6 +1098,8 @@ const fr: ExtraTranslations = {
   stateError: 'Échec du chargement',
   stateOffline: 'Pas de connexion Internet',
   stateUnavailable: 'Ce service est actuellement indisponible',
+  crashTitle: 'Une erreur inattendue est survenue',
+  crashMessage: 'Impossible d’afficher cette section. Réessayez ou continuez à utiliser le reste de l’application.',
   retry: 'Réessayer',
   cachedNotice: 'Affichage des dernières données enregistrées (hors ligne)',
   offlineBanner: 'Vous êtes hors ligne — données enregistrées affichées',
@@ -1182,6 +1247,31 @@ const fr: ExtraTranslations = {
   videoDurationMinutes: 'min',
   videoLanguageArabic: 'en arabe',
   videoLanguageEnglish: 'en anglais',
+
+  academyTitle: 'Académie AgroGrowth',
+  academySubtitle: 'Des thèmes agricoles liés à du contenu réel et à de vrais services.',
+  academyOpenVideos: 'Tutoriels vidéo',
+  academyOpenService: 'Ouvrir le service',
+  academyPlanting: 'Plantation & semis',
+  academyPlantingDesc: 'Choisir les cultures adaptées et la période de semis.',
+  academySoil: 'Sol & fertilisation',
+  academySoilDesc: 'Analyse du sol et recommandations de fertilisation.',
+  academyIrrigation: 'Irrigation',
+  academyIrrigationDesc: 'Techniques d’irrigation et économie d’eau.',
+  academyFertilisation: 'Fertilisation organique',
+  academyFertilisationDesc: 'Compostage et nutrition des plantes.',
+  academyDiseases: 'Maladies des plantes',
+  academyDiseasesDesc: 'Diagnostic par image et signes de maladie.',
+  academyPest: 'Lutte antiparasitaire',
+  academyPestDesc: 'Identifier les ravageurs à partir des symptômes.',
+  academyPruning: 'Taille',
+  academyPruningDesc: 'Taille des arbres et des cultures.',
+  academyHarvest: 'Récolte',
+  academyHarvestDesc: 'Techniques de récolte et post-récolte.',
+  academyLivestock: 'Élevage',
+  academyLivestockDesc: 'Soins des ovins et des bovins.',
+  academyTechnology: 'Technologie agricole',
+  academyTechnologyDesc: 'L’intelligence artificielle au service de l’agriculture.',
 
   seasonWinter: 'Hiver',
   seasonSpring: 'Printemps',
@@ -1354,7 +1444,6 @@ const fr: ExtraTranslations = {
   profileUserFallback: 'Utilisateur AgroGrowth',
   profileGuest: 'Invité',
   profileNotSignedIn: 'Non connecté',
-  profilePersonaButton: 'Personnaliser l’expérience (Persona)',
   profileTestConnection: 'Tester la connexion au serveur',
   profileOfflineDesc: 'Les données météo, parcelles et diagnostics sont enregistrées localement pour être consultées au champ sans Internet.',
 
@@ -1363,6 +1452,11 @@ const fr: ExtraTranslations = {
   marketNoMatch: 'Aucune culture ne correspond à votre recherche.',
   marketAboutTitle: 'À propos de ces prix',
   marketAboutBody: 'Ces valeurs sont enregistrées dans la base de données de la plateforme et représentent des prix observés. Aucune tendance (hausse/baisse) n’est affichée sauf si le serveur la fournit réellement. Vérifiez les marchés de gros locaux avant de vendre.',
+  marketIntelTitle: 'Intelligence de marché',
+  marketIntelNote: 'État réel des analyses de marché tel que déclaré par le serveur — aucune prévision inventée.',
+  marketIntelForecast: 'Prévision des prix',
+  marketIntelSupplyDemand: 'Offre et demande',
+  marketIntelUnavailableHint: 'Indisponible tant qu’une source de marché vérifiée et horodatée et un modèle validé ne sont pas connectés. Vérifiez les marchés de gros locaux avant de décider.',
 
   // AI assistant screen
   assistantErrorReply: 'Désolé, une erreur s’est produite lors du traitement de la question. Vérifiez la connexion et réessayez.',
@@ -1498,6 +1592,8 @@ const en: ExtraTranslations = {
   stateError: 'Failed to load data',
   stateOffline: 'No Internet connection',
   stateUnavailable: 'This service is currently unavailable',
+  crashTitle: 'Something went wrong',
+  crashMessage: 'This section could not be displayed. You can retry or keep using the rest of the app.',
   retry: 'Retry',
   cachedNotice: 'Showing last saved data (offline mode)',
   offlineBanner: 'You are offline — showing saved data',
@@ -1645,6 +1741,31 @@ const en: ExtraTranslations = {
   videoDurationMinutes: 'min',
   videoLanguageArabic: 'in Arabic',
   videoLanguageEnglish: 'in English',
+
+  academyTitle: 'AgroGrowth Academy',
+  academySubtitle: 'Farming topics linked to real content and real services.',
+  academyOpenVideos: 'Video tutorials',
+  academyOpenService: 'Open service',
+  academyPlanting: 'Planting & sowing',
+  academyPlantingDesc: 'Choose the right crops and sowing window.',
+  academySoil: 'Soil & fertilisation',
+  academySoilDesc: 'Soil analysis and fertilisation guidance.',
+  academyIrrigation: 'Irrigation',
+  academyIrrigationDesc: 'Irrigation techniques and water saving.',
+  academyFertilisation: 'Organic fertilisation',
+  academyFertilisationDesc: 'Composting and plant nutrition.',
+  academyDiseases: 'Plant diseases',
+  academyDiseasesDesc: 'Image diagnosis and disease signs.',
+  academyPest: 'Pest control',
+  academyPestDesc: 'Identify pests from symptoms.',
+  academyPruning: 'Pruning',
+  academyPruningDesc: 'Pruning trees and crops.',
+  academyHarvest: 'Harvest',
+  academyHarvestDesc: 'Harvest and post-harvest techniques.',
+  academyLivestock: 'Livestock',
+  academyLivestockDesc: 'Sheep and cattle care.',
+  academyTechnology: 'Agricultural technology',
+  academyTechnologyDesc: 'Artificial intelligence in farming.',
 
   seasonWinter: 'Winter',
   seasonSpring: 'Spring',
@@ -1817,7 +1938,6 @@ const en: ExtraTranslations = {
   profileUserFallback: 'AgroGrowth user',
   profileGuest: 'Guest',
   profileNotSignedIn: 'Not signed in',
-  profilePersonaButton: 'Personalise experience (Persona)',
   profileTestConnection: 'Test server connection now',
   profileOfflineDesc: 'Weather, field and diagnosis data are stored locally so you can browse them in the field without internet.',
 
@@ -1826,6 +1946,11 @@ const en: ExtraTranslations = {
   marketNoMatch: 'No crop matches your search.',
   marketAboutTitle: 'About these prices',
   marketAboutBody: 'These values are recorded in the platform database and represent observed prices. No trend (up/down) is shown unless the server actually provides one. Check local wholesale markets before selling.',
+  marketIntelTitle: 'Market intelligence',
+  marketIntelNote: 'The real state of market analysis services as declared by the server — no forecast is invented.',
+  marketIntelForecast: 'Price forecast',
+  marketIntelSupplyDemand: 'Supply & demand',
+  marketIntelUnavailableHint: 'Unavailable until a verified, timestamped market source and a validated model are connected. Check local wholesale markets before deciding.',
 
   // AI assistant screen
   assistantErrorReply: 'Sorry, an error occurred while processing the question. Please check your connection and try again.',

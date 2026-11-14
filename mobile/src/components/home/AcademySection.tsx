@@ -1,0 +1,126 @@
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { useLanguage } from '../../context/LanguageContext';
+import { ACADEMY_TOPICS, AcademyTopic } from '../../data/academy';
+
+interface AcademySectionProps {
+  /** Open a topic that maps to a video category (the learning catalogue). */
+  onOpenVideos: () => void;
+  /** Open a topic that maps to an existing service screen. */
+  onOpenService: (serviceId: string) => void;
+}
+
+const TINT: Record<AcademyTopic['tint'], { color: string; bg: string }> = {
+  primary: { color: colors.primaryDark, bg: colors.primaryLight },
+  secondary: { color: colors.secondary, bg: colors.secondaryLight },
+  accent: { color: colors.accentDark, bg: colors.accentLight },
+  water: { color: colors.water, bg: colors.waterLight },
+  soil: { color: colors.soil, bg: colors.soilLight },
+  crop: { color: colors.crop, bg: colors.cropLight },
+  danger: { color: colors.danger, bg: colors.dangerLight },
+};
+
+/**
+ * AgroGrowth Academy — a topical index. Each tile leads to something that
+ * genuinely exists: a curated video category or an existing service screen.
+ * There are no decorative categories and no fabricated content.
+ */
+export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, onOpenService }) => {
+  const { x, isRtl } = useLanguage();
+
+  const open = (topic: AcademyTopic) => {
+    if (topic.videoCategory) return onOpenVideos();
+    if (topic.serviceId) return onOpenService(topic.serviceId);
+  };
+
+  return (
+    <View style={styles.section}>
+      <View style={[styles.header, isRtl && styles.rtlRow]}>
+        <View style={styles.headerText}>
+          <Text style={[styles.title, isRtl && styles.rtlText]}>{x.academyTitle}</Text>
+          <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{x.academySubtitle}</Text>
+        </View>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.row, isRtl && styles.rtlRow]}
+      >
+        {ACADEMY_TOPICS.map((topic) => {
+          const tint = TINT[topic.tint];
+          const title = x[topic.titleKey];
+          const desc = x[topic.descKey];
+          const action = topic.videoCategory ? x.academyOpenVideos : x.academyOpenService;
+          return (
+            <TouchableOpacity
+              key={topic.id}
+              activeOpacity={0.85}
+              onPress={() => open(topic)}
+              accessibilityRole="button"
+              accessibilityLabel={`${title}. ${desc}. ${action}`}
+              style={styles.card}
+            >
+              <View style={[styles.iconWrap, { backgroundColor: tint.bg }]}>
+                <MaterialCommunityIcons name={topic.icon as any} size={26} color={tint.color} />
+              </View>
+              <Text style={[styles.cardTitle, isRtl && styles.rtlText]} numberOfLines={1}>
+                {title}
+              </Text>
+              <Text style={[styles.cardDesc, isRtl && styles.rtlText]} numberOfLines={2}>
+                {desc}
+              </Text>
+              <View style={[styles.actionRow, isRtl && styles.rtlRow]}>
+                <MaterialCommunityIcons
+                  name={topic.videoCategory ? 'play-circle-outline' : 'arrow-top-right'}
+                  size={14}
+                  color={colors.primary}
+                />
+                <Text style={styles.actionText}>{action}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  section: { marginBottom: spacing.lg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  headerText: { flex: 1 },
+  title: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
+  subtitle: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
+  row: { gap: spacing.md, paddingVertical: 2 },
+  rtlRow: { flexDirection: 'row-reverse' },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  card: {
+    width: 168,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: 6,
+    ...shadows.sm,
+  },
+  iconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
+  cardDesc: { fontSize: typography.fontSizes.xs, lineHeight: 19, color: colors.textSecondary, minHeight: 38 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  actionText: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.primary, fontWeight: typography.fontWeights.semibold },
+});

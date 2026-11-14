@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import { LanguageProvider } from '../../src/context/LanguageContext';
 import { IntelligenceStrip } from '../../src/components/home/IntelligenceStrip';
 import { LearningVideos } from '../../src/components/home/LearningVideos';
+import { AcademySection } from '../../src/components/home/AcademySection';
+import { ACADEMY_TOPICS } from '../../src/data/academy';
 import { AICapability } from '../../src/types';
 
 const capability = (over: Partial<AICapability>): AICapability => ({
@@ -60,12 +62,32 @@ describe('IntelligenceStrip', () => {
     const onOpenService = jest.fn();
     await renderStrip({
       capabilities: [
-        capability({ id: 'market-forecast', name: 'Market Forecast AI', nameAr: 'توقّع السوق' }),
+        capability({ id: 'soil-analysis', name: 'Soil Analysis', nameAr: 'تحليل التربة' }),
       ],
       onOpenService,
     });
+    fireEvent.press(screen.getByText('تحليل التربة'));
+    expect(onOpenService).toHaveBeenCalledWith('soil');
+  });
+
+  it('does not route an unavailable capability to a service screen', async () => {
+    const onOpenService = jest.fn();
+    const onOpenCapabilities = jest.fn();
+    await renderStrip({
+      capabilities: [
+        capability({
+          id: 'market-forecast',
+          name: 'Market Forecast AI',
+          nameAr: 'توقّع السوق',
+          engine: 'unavailable',
+        }),
+      ],
+      onOpenService,
+      onOpenCapabilities,
+    });
     fireEvent.press(screen.getByText('توقّع السوق'));
-    expect(onOpenService).toHaveBeenCalledWith('marketplace');
+    expect(onOpenService).not.toHaveBeenCalled();
+    expect(onOpenCapabilities).toHaveBeenCalled();
   });
 
   it('shows an honest unavailable state when the capability document is unreachable', async () => {
@@ -86,5 +108,39 @@ describe('LearningVideos', () => {
     expect(screen.getAllByText('مشاهدة على يوتيوب').length).toBeGreaterThan(0);
     // The provenance note makes the YouTube source explicit.
     expect(screen.getByText('المصدر: يوتيوب')).toBeTruthy();
+  });
+});
+
+describe('AcademySection', () => {
+  it('routes a video topic to the learning catalogue', async () => {
+    const onOpenVideos = jest.fn();
+    const onOpenService = jest.fn();
+    await render(
+      <LanguageProvider>
+        <AcademySection onOpenVideos={onOpenVideos} onOpenService={onOpenService} />
+      </LanguageProvider>,
+    );
+    fireEvent.press(screen.getByText('التقليم'));
+    expect(onOpenVideos).toHaveBeenCalled();
+    expect(onOpenService).not.toHaveBeenCalled();
+  });
+
+  it('routes a service topic to the real service screen', async () => {
+    const onOpenVideos = jest.fn();
+    const onOpenService = jest.fn();
+    await render(
+      <LanguageProvider>
+        <AcademySection onOpenVideos={onOpenVideos} onOpenService={onOpenService} />
+      </LanguageProvider>,
+    );
+    fireEvent.press(screen.getByText('التربة والتسميد'));
+    expect(onOpenService).toHaveBeenCalledWith('soil');
+    expect(onOpenVideos).not.toHaveBeenCalled();
+  });
+
+  it('every topic leads somewhere real (service or video category)', () => {
+    for (const topic of ACADEMY_TOPICS) {
+      expect(Boolean(topic.serviceId || topic.videoCategory)).toBe(true);
+    }
   });
 });

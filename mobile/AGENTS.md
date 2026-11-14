@@ -192,12 +192,15 @@ and `tests/unit/home-discovery.test.tsx`.
 
 ### Profile / account screen (verified)
 
-`ProfileScreen` no longer hosts an inline role switcher. The account role is a
-server-side fact, so it is rendered as a read-only identity badge; the demo-era
-`roleGrid` / `demoModeSwitch` / `demoModeNotice` UI and its styles were removed.
-Role *preference* (interface + shortcut ordering only) is still adjustable
-through the Persona onboarding flow (`PersonaSelectorModal`). Covered by
-`tests/unit/profile-screen.test.tsx`.
+`ProfileScreen` hosts no role switcher at all. The account role is a
+server-side fact chosen once during the Persona onboarding flow, so the screen
+renders it as a read-only identity badge and never re-prompts. The demo-era
+`roleGrid` / `demoModeSwitch` / `demoModeNotice` UI, its styles, and the
+`profilePersonaButton` shortcut into `PersonaSelectorModal` were removed.
+Role *preference* (interface + shortcut ordering only) stays adjustable through
+the one-time `PersonaSelectorModal` onboarding step in `App.tsx`, which the
+Profile screen no longer opens. Covered by `tests/unit/profile-screen.test.tsx`
+(asserts no role/persona selector is exposed).
 
 ### Live image diagnosis re-verified (2026-11)
 
