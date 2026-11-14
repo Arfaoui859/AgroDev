@@ -55,6 +55,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
     setPassword('');
   };
 
+  // Distinguish an unreachable/misconfigured auth backend from a genuine
+  // credential error: the former is not actionable for the user, so it is
+  // replaced with a localised connection message.
+  const describeAuthError = (message: string | undefined, fallback: string) => {
+    if (!message) return fallback;
+    if (/invalid api key|failed to fetch|network request failed|fetch failed|timeout|timed out/i.test(message)) {
+      return x.authErrUnreachable;
+    }
+    return message;
+  };
+
   const handleSubmit = async () => {
     setError(null);
     const trimmedEmail = email.trim();
@@ -78,7 +89,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
         onClose();
         reset();
       } else {
-        setError(res.error || x.authErrSignInFailed);
+        setError(describeAuthError(res.error, x.authErrSignInFailed));
       }
     } else if (tab === 'signup') {
       const res = await signUp({ email: trimmedEmail, password, fullName, phone, role });
@@ -91,7 +102,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
           reset();
         }
       } else {
-        setError(res.error || x.authErrSignUpFailed);
+        setError(describeAuthError(res.error, x.authErrSignUpFailed));
       }
     } else {
       const res = await resetPassword(trimmedEmail);
@@ -99,7 +110,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
         Alert.alert(x.authResetSentTitle, x.authResetSentBody);
         setTab('signin');
       } else {
-        setError(res.error || x.authErrResetFailed);
+        setError(describeAuthError(res.error, x.authErrResetFailed));
       }
     }
   };

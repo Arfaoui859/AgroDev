@@ -30,6 +30,7 @@ export interface ExtraTranslations {
   authErrSignInFailed: string;
   authErrSignUpFailed: string;
   authErrResetFailed: string;
+  authErrUnreachable: string;
   authConfirmTitle: string;
   authResetSentTitle: string;
   authResetSentBody: string;
@@ -487,6 +488,7 @@ const ar: ExtraTranslations = {
   authErrSignInFailed: 'تعذّر تسجيل الدخول',
   authErrSignUpFailed: 'تعذّر إنشاء الحساب',
   authErrResetFailed: 'تعذّر إرسال رابط الاستعادة',
+  authErrUnreachable: 'تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.',
   authConfirmTitle: 'تأكيد البريد الإلكتروني',
   authResetSentTitle: 'استعادة كلمة المرور',
   authResetSentBody: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني.',
@@ -921,6 +923,7 @@ const fr: ExtraTranslations = {
   authErrSignInFailed: 'Connexion impossible',
   authErrSignUpFailed: 'Création du compte impossible',
   authErrResetFailed: 'Envoi du lien de réinitialisation impossible',
+  authErrUnreachable: 'Service de compte injoignable. Vérifiez votre connexion internet et réessayez.',
   authConfirmTitle: 'Confirmation de l’e-mail',
   authResetSentTitle: 'Réinitialisation du mot de passe',
   authResetSentBody: 'Un lien de réinitialisation a été envoyé à votre adresse e-mail.',
@@ -1356,6 +1359,7 @@ const en: ExtraTranslations = {
   authErrSignInFailed: 'Could not sign in',
   authErrSignUpFailed: 'Could not create the account',
   authErrResetFailed: 'Could not send the reset link',
+  authErrUnreachable: 'The account service is unreachable. Check your internet connection and try again.',
   authConfirmTitle: 'Confirm your email',
   authResetSentTitle: 'Password reset',
   authResetSentBody: 'A reset link has been sent to your email address.',

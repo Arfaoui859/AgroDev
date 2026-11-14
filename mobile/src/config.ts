@@ -34,9 +34,12 @@ export const SUPABASE_URL =
   firstNonEmpty(process.env.EXPO_PUBLIC_SUPABASE_URL) ?? 'https://jymrhhlwdbclctobhbsi.supabase.co';
 
 /** Public Supabase anon key (RLS-protected; safe to ship in a client). */
+// Kept in sync with the key the deployed web bundle ships. It is a public
+// credential protected by Row Level Security, not a secret; override it with
+// EXPO_PUBLIC_SUPABASE_ANON_KEY if the project rotates its keys.
 export const SUPABASE_ANON_KEY =
   firstNonEmpty(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ??
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjc2NzEsImV4cCI6MjA0OTYwMzY3MX0.aAGN3jLnpCjNOw7-J3Lp4iQBbwMT9X6kMzgRgQtYz7E';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MTM2NDYsImV4cCI6MjA3MDE4OTY0Nn0.l2VjAq1vZgkiAeL2EtAJp3iUWBHWbXPmQdNuNq197po';
 
 /** Deployed Express gateway (the app's only backend entry point). */
 export const PRODUCTION_API_BASE_URL = 'https://agrodev-3.onrender.com';

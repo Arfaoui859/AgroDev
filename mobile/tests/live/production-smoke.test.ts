@@ -17,6 +17,7 @@ import { apiRequest, getApiBaseUrl, setApiBaseUrl, analyzeSoil } from '../../src
 // returns no status). Importing it lets the app's own client code make genuine
 // network calls against the deployed gateway.
 import crossFetch from 'cross-fetch';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../src/config';
 
 jest.mock('../../src/api/supabase', () => ({
   supabase: { auth: { getSession: jest.fn(async () => ({ data: { session: null } })) } },
@@ -60,5 +61,15 @@ maybe('live production gateway (LIVE_API_TESTS=1)', () => {
 
   it('keeps the configured base URL pointing at the production gateway', () => {
     expect(getApiBaseUrl()).toBe('https://agrodev-3.onrender.com');
+  });
+
+  // Auth is the one integration that talks to Supabase directly (not the
+  // gateway), so the shipped anon key must be valid against the live project.
+  // An "Invalid API key" here means sign-in/sign-up would fail for every user.
+  it('reaches the live Supabase auth service with the shipped anon key', async () => {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, {
+      headers: { apikey: SUPABASE_ANON_KEY },
+    });
+    expect(res.status).toBe(200);
   });
 });

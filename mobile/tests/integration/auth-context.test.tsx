@@ -2,6 +2,7 @@ import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { AuthProvider, useAuth } from '../../src/context/AuthContext';
+import { supabase } from '../../src/api/supabase';
 
 // --- Mocks ---------------------------------------------------------------
 const mockGetSession = jest.fn();
@@ -28,7 +29,8 @@ jest.mock('../../src/api/client', () => ({
 }));
 
 function Probe() {
-  const { isAuthenticated, isInitialising, user, hasOnboarded, updateRole } = useAuth();
+  const { isAuthenticated, isInitialising, user, hasOnboarded, updateRole, signIn, signUp, resetPassword } =
+    useAuth();
   return (
     <>
       <Text testID="auth">{String(isAuthenticated)}</Text>
@@ -41,6 +43,20 @@ function Probe() {
       </Text>
       <Text testID="pick-farmer" onPress={() => updateRole('farmer')}>
         farmer
+      </Text>
+      <Text testID="do-signin" onPress={() => signIn('  user@example.com  ', 'secret123')}>
+        signin
+      </Text>
+      <Text
+        testID="do-signup"
+        onPress={() =>
+          signUp({ email: 'new@example.com', password: 'secret123', fullName: 'New User', role: 'farmer' })
+        }
+      >
+        signup
+      </Text>
+      <Text testID="do-reset" onPress={() => resetPassword('reset@example.com')}>
+        reset
       </Text>
     </>
   );
@@ -130,5 +146,92 @@ describe('AuthContext', () => {
       screen.getByTestId('pick-farmer').props.onPress();
     });
     await waitFor(() => expect(screen.getByTestId('role')).toHaveTextContent('farmer'), { timeout: 5000 });
+  });
+
+  it('signs in, hydrates the profile, and exposes an authenticated state', async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+    (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValueOnce({
+      data: {
+        user: { id: 'u9', email: 'farmer@example.com', user_metadata: { full_name: 'Ali' } },
+        session: { access_token: 'tok', user: { id: 'u9', email: 'farmer@example.com', user_metadata: {} } },
+      },
+      error: null,
+    });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId('init')).toHaveTextContent('false'), { timeout: 5000 });
+
+    let result: any;
+    await act(async () => {
+      result = await (screen.getByTestId('do-signin').props as any).onPress();
+    });
+    expect(result).toEqual({ success: true });
+    await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('true'), { timeout: 5000 });
+    expect(screen.getByTestId('user')).toHaveTextContent('farmer@example.com');
+  });
+
+  it('reports a failed sign-in without authenticating, and flags an unconfirmed email', async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+    (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValueOnce({
+      data: { user: null, session: null },
+      error: { message: 'Email not confirmed' },
+    });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId('init')).toHaveTextContent('false'), { timeout: 5000 });
+
+    let result: any;
+    await act(async () => {
+      result = await (screen.getByTestId('do-signin').props as any).onPress();
+    });
+    expect(result.success).toBe(false);
+    expect(result.needsConfirmation).toBe(true);
+    expect(screen.getByTestId('auth')).toHaveTextContent('false');
+  });
+
+  it('surfaces the email-confirmation requirement on sign-up', async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+    (supabase.auth.signUp as jest.Mock).mockResolvedValueOnce({
+      data: { user: { id: 'u10', email: 'new@example.com' }, session: null },
+      error: null,
+    });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId('init')).toHaveTextContent('false'), { timeout: 5000 });
+
+    let result: any;
+    await act(async () => {
+      result = await (screen.getByTestId('do-signup').props as any).onPress();
+    });
+    expect(result).toEqual({ success: true, needsConfirmation: true });
+    // No session was created, so the app stays signed out until confirmation.
+    expect(screen.getByTestId('auth')).toHaveTextContent('false');
+  });
+
+  it('sends a password reset through the Supabase client', async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+    (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValueOnce({ error: null });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId('init')).toHaveTextContent('false'), { timeout: 5000 });
+
+    let result: any;
+    await act(async () => {
+      result = await (screen.getByTestId('do-reset').props as any).onPress();
+    });
+    expect(result).toEqual({ success: true });
+    expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith('reset@example.com');
   });
 });
