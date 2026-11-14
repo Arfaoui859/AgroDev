@@ -118,8 +118,6 @@ export interface Translations {
   syncData: string;
   loginBtn: string;
   logoutBtn: string;
-  demoModeSwitch: string;
-  demoModeNotice: string;
 
   // Actions & Feedback
   save: string;
@@ -139,6 +137,22 @@ export interface Translations {
   provenanceReal: string;
   provenanceRuleBased: string;
   provenanceSimulated: string;
+
+  // Home — Agricultural intelligence & discovery
+  homeIntelTitle: string;
+  homeIntelSubtitle: string;
+  homeIntelAvailable: string;
+  homeIntelUnavailable: string;
+  homeLearningTitle: string;
+  homeLearningSubtitle: string;
+  homeWatchVideo: string;
+  homeLearningSource: string;
+  homeNewsTitle: string;
+  homeNewsSubtitle: string;
+  homeNewsOpenAll: string;
+  homeSeasonTitle: string;
+  homeSeasonSubtitle: string;
+  homeSeasonGeneral: string;
 
   // Multi-Agent AI & History
   multiAgentAiName: string;
@@ -257,8 +271,6 @@ const ar: Translations = {
   syncData: 'مزامنة البيانات الآن',
   loginBtn: 'تسجيل الدخول',
   logoutBtn: 'تسجيل الخروج',
-  demoModeSwitch: 'تفضيل الدور في الواجهة',
-  demoModeNotice: 'تفضيل محلي يضبط ترتيب الاختصارات والواجهة فقط؛ الدور الفعلي للحساب يُحدَّد من الخادم ولا يتغيّر من هنا.',
 
   save: 'حفظ',
   cancel: 'إلغاء',
@@ -281,6 +293,21 @@ const ar: Translations = {
   multiAgentAiDesc: 'وكلاء ذكاء اصطناعي متخصصون يعملون بتنسيق مشترك لتحليل شامل ومتكامل لمزرعتك.',
   agriNewsName: 'الأخبار الزراعية',
   agriNewsDesc: 'عناوين فلاحية توننية حقيقية من خلاصات RSS للناشرين، مع رابط كل مقال أصلي ومصدره.',
+
+  homeIntelTitle: 'الذكاء الزراعي المتاح',
+  homeIntelSubtitle: 'حالة الخدمات الذكية الفعلية كما يعلنها الخادم الآن.',
+  homeIntelAvailable: 'متاح',
+  homeIntelUnavailable: 'غير متاح',
+  homeLearningTitle: 'تعلّم من الميدان',
+  homeLearningSubtitle: 'دروس زراعية مصوّرة مختارة من قنوات موثوقة (تُشغَّل على يوتيوب).',
+  homeWatchVideo: 'مشاهدة على يوتيوب',
+  homeLearningSource: 'المصدر: يوتيوب',
+  homeNewsTitle: 'آخر الأخبار الفلاحية',
+  homeNewsSubtitle: 'عناوين حقيقية من خلاصات RSS للناشرين، مع رابط كل مقال.',
+  homeNewsOpenAll: 'كل الأخبار',
+  homeSeasonTitle: 'أجندة الموسم',
+  homeSeasonSubtitle: 'تذكير عام بالعمل الزراعي حسب الفصل — إرشادي وليس خاصاً بمزرعتك.',
+  homeSeasonGeneral: 'إرشاد عام',
 };
 
 const fr: Translations = {
@@ -393,8 +420,6 @@ const fr: Translations = {
   syncData: 'Synchroniser maintenant',
   loginBtn: 'Se connecter',
   logoutBtn: 'Se déconnecter',
-  demoModeSwitch: 'Préférence de rôle',
-  demoModeNotice: 'Préférence locale qui ajuste l’interface et l’ordre des raccourcis ; le rôle réel du compte est défini côté serveur et n’est pas modifié ici.',
 
   save: 'Enregistrer',
   cancel: 'Annuler',
@@ -417,6 +442,21 @@ const fr: Translations = {
   multiAgentAiDesc: 'Agents IA spécialisés travaillant en coordination pour une analyse agricole complète.',
   agriNewsName: 'Actualités agricoles',
   agriNewsDesc: 'Titres agricoles tunisiens réels issus de flux RSS d’éditeurs, avec le lien et la source de chaque article.',
+
+  homeIntelTitle: 'Intelligence agricole disponible',
+  homeIntelSubtitle: 'État réel des services intelligents, tel que déclaré par le serveur.',
+  homeIntelAvailable: 'Disponible',
+  homeIntelUnavailable: 'Indisponible',
+  homeLearningTitle: 'Apprendre du terrain',
+  homeLearningSubtitle: 'Tutoriels agricoles vidéo sélectionnés sur des chaînes fiables (lecture sur YouTube).',
+  homeWatchVideo: 'Regarder sur YouTube',
+  homeLearningSource: 'Source : YouTube',
+  homeNewsTitle: 'Dernières actualités agricoles',
+  homeNewsSubtitle: 'Titres réels issus de flux RSS d’éditeurs, avec le lien de chaque article.',
+  homeNewsOpenAll: 'Toutes les actualités',
+  homeSeasonTitle: 'Agenda de saison',
+  homeSeasonSubtitle: 'Rappel général des travaux agricoles selon la saison — indicatif, non spécifique à votre ferme.',
+  homeSeasonGeneral: 'Conseil général',
 };
 
 const en: Translations = {
@@ -529,8 +569,6 @@ const en: Translations = {
   syncData: 'Sync Data Now',
   loginBtn: 'Sign In',
   logoutBtn: 'Sign Out',
-  demoModeSwitch: 'Role preference',
-  demoModeNotice: 'A local preference that adjusts the interface and shortcut order only; your account’s real role is set server-side and is not changed here.',
 
   save: 'Save',
   cancel: 'Cancel',
@@ -553,6 +591,21 @@ const en: Translations = {
   multiAgentAiDesc: 'Specialized AI agents working in coordination for comprehensive agricultural analysis.',
   agriNewsName: 'Agricultural news',
   agriNewsDesc: 'Real Tunisian farming headlines from publisher RSS feeds, with each article’s source and original link.',
+
+  homeIntelTitle: 'Available agricultural intelligence',
+  homeIntelSubtitle: 'The real state of the smart services, as declared by the server.',
+  homeIntelAvailable: 'Available',
+  homeIntelUnavailable: 'Unavailable',
+  homeLearningTitle: 'Learn from the field',
+  homeLearningSubtitle: 'Curated agricultural video tutorials from trusted channels (plays on YouTube).',
+  homeWatchVideo: 'Watch on YouTube',
+  homeLearningSource: 'Source: YouTube',
+  homeNewsTitle: 'Latest farming news',
+  homeNewsSubtitle: 'Real headlines from publisher RSS feeds, with each article’s link.',
+  homeNewsOpenAll: 'All news',
+  homeSeasonTitle: 'Season agenda',
+  homeSeasonSubtitle: 'A general seasonal farming reminder — indicative, not specific to your farm.',
+  homeSeasonGeneral: 'General guidance',
 };
 
 const translations: Record<Language, Translations> = { ar, fr, en };

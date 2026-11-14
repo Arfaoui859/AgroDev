@@ -172,6 +172,17 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       badgeVariant: 'info' as const,
     },
     {
+      id: 'learning',
+      title: t.homeLearningTitle,
+      desc: t.homeLearningSubtitle,
+      icon: 'play-box-multiple-outline',
+      color: colors.danger,
+      bgColor: colors.dangerLight,
+      category: 'community',
+      badge: x.svcBadgeLearning,
+      badgeVariant: 'danger' as const,
+    },
+    {
       id: 'recent_analyses',
       title: x.recentAnalysesTitle,
       desc: x.recentAnalysesDesc,

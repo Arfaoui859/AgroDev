@@ -1,0 +1,210 @@
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Linking,
+} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { useLanguage } from '../../context/LanguageContext';
+import { Button } from '../../components/ui/Button';
+import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import {
+  LEARNING_VIDEOS,
+  LearningVideo,
+  VIDEO_CATEGORIES,
+  VideoCategory,
+  videoThumbnailUrl,
+  videoWatchUrl,
+} from '../../data/agriculturalVideos';
+import { formatVideoDuration, videoCategoryLabel, videoLanguageLabel } from '../../utils/videoLabels';
+
+interface LearningVideosScreenProps {
+  onBack: () => void;
+}
+
+/**
+ * Full catalogue of the curated agricultural learning videos. Everything shown
+ * here is a real, publicly available YouTube video (see
+ * `src/data/agriculturalVideos.ts`); playback always opens on youtube.com. The
+ * catalogue is a static editorial selection — it is not a live or personalised
+ * feed and says so.
+ */
+export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBack }) => {
+  const { t, x, isRtl, language } = useLanguage();
+  const [category, setCategory] = useState<VideoCategory | 'all'>('all');
+
+  const visible = useMemo(() => {
+    const filtered = category === 'all' ? LEARNING_VIDEOS : LEARNING_VIDEOS.filter((v) => v.category === category);
+    // Show the caller's language first, then the rest.
+    const preferred = language === 'ar' ? 'ar' : 'en';
+    return filtered
+      .slice()
+      .sort((a, b) => Number(b.language === preferred) - Number(a.language === preferred));
+  }, [category, language]);
+
+  const openVideo = (video: LearningVideo) => {
+    Linking.openURL(videoWatchUrl(video.id)).catch(() => {});
+  };
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ServiceHeader
+        icon="play-box-multiple-outline"
+        iconColor={colors.danger}
+        iconBg={colors.dangerLight}
+        title={t.homeLearningTitle}
+        subtitle={t.homeLearningSubtitle}
+      />
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.catScroll, isRtl && styles.rtlRow]}
+      >
+        <CategoryPill
+          label={t.viewAll}
+          selected={category === 'all'}
+          onPress={() => setCategory('all')}
+        />
+        {VIDEO_CATEGORIES.map((cat) => (
+          <CategoryPill
+            key={cat}
+            label={videoCategoryLabel(cat, x)}
+            selected={category === cat}
+            onPress={() => setCategory(cat)}
+          />
+        ))}
+      </ScrollView>
+
+      {visible.map((video) => (
+        <TouchableOpacity
+          key={video.id}
+          activeOpacity={0.9}
+          onPress={() => openVideo(video)}
+          accessibilityRole="button"
+          accessibilityLabel={`${video.title}. ${video.channel}. ${t.homeWatchVideo}`}
+          accessibilityHint={t.homeLearningSource}
+          style={styles.card}
+        >
+          <View style={styles.thumbWrap}>
+            <Image
+              source={{ uri: videoThumbnailUrl(video.id) }}
+              style={styles.thumb}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+            />
+            <View style={styles.playOverlay}>
+              <MaterialCommunityIcons name="play-circle" size={44} color={colors.textInverse} />
+            </View>
+            <View style={styles.durationPill}>
+              <Text style={styles.durationText}>{formatVideoDuration(video.durationSeconds, x)}</Text>
+            </View>
+          </View>
+          <View style={styles.cardBody}>
+            <View style={[styles.tagRow, isRtl && styles.rtlRow]}>
+              <View style={styles.catTag}>
+                <Text style={styles.catTagText}>{videoCategoryLabel(video.category, x)}</Text>
+              </View>
+              <Text style={styles.langTag}>{videoLanguageLabel(video.language, x)}</Text>
+            </View>
+            <Text style={[styles.videoTitle, isRtl && styles.rtlText]} numberOfLines={3}>
+              {video.title}
+            </Text>
+            <View style={[styles.watchRow, isRtl && styles.rtlRow]}>
+              <MaterialCommunityIcons name="youtube" size={16} color={colors.danger} />
+              <Text style={styles.channel} numberOfLines={1}>
+                {video.channel}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      ))}
+
+      <View style={[styles.sourceNote, isRtl && styles.rtlRow]}>
+        <MaterialCommunityIcons name="information-outline" size={13} color={colors.textMuted} />
+        <Text style={[styles.sourceText, isRtl && styles.rtlText]}>{t.homeLearningSource}</Text>
+      </View>
+
+      <Button title={t.back} variant="outline" onPress={onBack} style={{ marginTop: spacing.lg }} />
+    </ScrollView>
+  );
+};
+
+const CategoryPill: React.FC<{ label: string; selected: boolean; onPress: () => void }> = ({ label, selected, onPress }) => (
+  <TouchableOpacity
+    activeOpacity={0.8}
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityState={{ selected }}
+    accessibilityLabel={label}
+    style={[styles.catPill, selected && styles.catPillSelected]}
+  >
+    <Text style={[styles.catPillText, selected && styles.catPillTextSelected]}>{label}</Text>
+  </TouchableOpacity>
+);
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
+  rtlRow: { flexDirection: 'row-reverse' },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
+  catPill: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  catPillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  catPillText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
+  catPillTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  thumbWrap: { width: '100%', height: 180, backgroundColor: colors.surfaceSubtle },
+  thumb: { width: '100%', height: '100%' },
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15,23,42,0.26)',
+  },
+  durationPill: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(15,23,42,0.82)',
+    borderRadius: radius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  durationText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, lineHeight: 18, fontWeight: typography.fontWeights.semibold },
+  cardBody: { padding: spacing.md, gap: 4 },
+  tagRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
+  catTag: { backgroundColor: colors.primaryLight, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  catTagText: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
+  langTag: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.textMuted },
+  videoTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
+  watchRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  channel: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary },
+  sourceNote: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm },
+  sourceText: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textMuted },
+});

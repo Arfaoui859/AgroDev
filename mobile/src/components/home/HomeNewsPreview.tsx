@@ -1,0 +1,162 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { useLanguage } from '../../context/LanguageContext';
+import { Card } from '../ui/Card';
+import { StateView } from '../ui/StateView';
+import { ProvenanceBadge } from '../ui/ProvenanceBadge';
+import { getAgriNews } from '../../api/client';
+import { NewsResult } from '../../types';
+import { formatDate } from '../../utils/date';
+import { newsCategoryLabel } from '../../utils/newsLabels';
+
+interface HomeNewsPreviewProps {
+  /** Open the full Agri News screen. */
+  onOpenAll: () => void;
+}
+
+/**
+ * A short preview of the latest real agricultural headlines
+ * (`GET /api/news` — publisher RSS feeds). Only real articles are shown; the
+ * full list, search and category filters live on the dedicated news screen.
+ */
+export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) => {
+  const { t, x, isRtl, language } = useLanguage();
+  const [result, setResult] = useState<NewsResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    const res = await getAgriNews({ language, pageSize: 4 });
+    setResult(res.data);
+    setError(res.error);
+  }, [language]);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      await load();
+      setLoading(false);
+    })();
+  }, [load]);
+
+  const articles = result?.articles?.slice(0, 3) ?? [];
+
+  return (
+    <View style={styles.section}>
+      <View style={[styles.header, isRtl && styles.rtlRow]}>
+        <View style={styles.headerText}>
+          <Text style={[styles.title, isRtl && styles.rtlText]}>{t.homeNewsTitle}</Text>
+          <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{t.homeNewsSubtitle}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={onOpenAll}
+          accessibilityRole="button"
+          accessibilityLabel={t.homeNewsOpenAll}
+          hitSlop={12}
+          style={styles.linkButton}
+        >
+          <Text style={styles.linkText}>{t.homeNewsOpenAll}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {loading ? (
+        <Card variant="outlined" style={styles.card}>
+          <StateView kind="loading" title={x.stateLoading} compact />
+        </Card>
+      ) : error && articles.length === 0 ? (
+        <Card variant="outlined" style={styles.card}>
+          <StateView
+            kind="error"
+            title={x.newsEmpty}
+            message={error}
+            onRetry={load}
+            retryLabel={x.retry}
+            compact
+          />
+        </Card>
+      ) : articles.length === 0 ? (
+        <Card variant="outlined" style={styles.card}>
+          <StateView kind="empty" title={x.newsEmpty} message={x.newsEmptyDesc} compact />
+        </Card>
+      ) : (
+        <View style={{ gap: spacing.sm }}>
+          {articles.map((article) => (
+            <Card
+              key={article.id}
+              variant="elevated"
+              style={styles.articleCard}
+              onPress={() => article.link && Linking.openURL(article.link).catch(() => {})}
+              accessibilityLabel={article.title}
+              accessibilityHint={x.articleOpenSource}
+            >
+              <View style={[styles.articleRow, isRtl && styles.rtlRow]}>
+                <View style={styles.articleTextWrap}>
+                  <Text style={[styles.articleTitle, isRtl && styles.rtlText]} numberOfLines={2}>
+                    {article.title}
+                  </Text>
+                  <View style={[styles.articleMeta, isRtl && styles.rtlRow]}>
+                    <Text style={styles.articleSource} numberOfLines={1}>
+                      {article.sourceName || x.newsUnknownSource}
+                    </Text>
+                    <Text style={styles.articleDot}>•</Text>
+                    <Text style={styles.articleDate}>{formatDate(article.publishedAt, language)}</Text>
+                  </View>
+                </View>
+                <MaterialCommunityIcons
+                  name={isRtl ? 'chevron-left' : 'chevron-right'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </View>
+              {article.categories[0] ? (
+                <View style={[styles.catRow, isRtl && styles.rtlRow]}>
+                  <View style={styles.catTag}>
+                    <Text style={styles.catTagText}>{newsCategoryLabel(article.categories[0], language)}</Text>
+                  </View>
+                </View>
+              ) : null}
+            </Card>
+          ))}
+          {result?.meta ? (
+            <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+              <ProvenanceBadge meta={result.meta} />
+            </View>
+          ) : null}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  section: { marginBottom: spacing.lg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  rtlRow: { flexDirection: 'row-reverse' },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  headerText: { flex: 1 },
+  title: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
+  subtitle: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
+  linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
+  linkText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.primary, fontWeight: typography.fontWeights.semibold },
+  card: { paddingVertical: spacing.xs },
+  articleCard: { padding: spacing.md, ...shadows.sm },
+  articleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  articleTextWrap: { flex: 1 },
+  articleTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
+  articleMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  articleSource: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold, maxWidth: 180 },
+  articleDot: { fontSize: typography.fontSizes.xs, color: colors.textMuted },
+  articleDate: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textMuted },
+  catRow: { flexDirection: 'row', marginTop: spacing.xs },
+  catTag: { backgroundColor: colors.secondaryLight, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
+  catTagText: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.secondaryDark, fontWeight: typography.fontWeights.semibold },
+  provRow: { flexDirection: 'row', marginTop: 2 },
+});

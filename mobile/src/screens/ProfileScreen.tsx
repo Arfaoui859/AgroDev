@@ -23,7 +23,7 @@ import { PersonaSelectorModal } from '../components/onboarding/PersonaSelectorMo
 
 export const ProfileScreen: React.FC = () => {
   const { t, x, isRtl, isArabic, language, setLanguage } = useLanguage();
-  const { user, isAuthenticated, updateRole, signOut } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
 
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<string | null>(null);
@@ -31,23 +31,25 @@ export const ProfileScreen: React.FC = () => {
   const [showPersonaModal, setShowPersonaModal] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
 
-/** Localised label for a role slug (falls back to the raw slug). */
+  /** Localised label for a role slug (falls back to the raw slug). */
   const roleLabel = (role: UserRole | undefined): string => {
     const found = roles.find((r) => r.role === role);
     return found ? found.label : t.roleFarmer;
   };
 
-  const roles: { role: UserRole; label: string; icon: string }[] = [
-    { role: 'gardener', label: t.roleGardener, icon: 'flower' },
-    { role: 'farmer', label: t.roleFarmer, icon: 'tractor' },
-    { role: 'agronomist', label: t.roleAgronomist, icon: 'school' },
-    { role: 'veterinarian', label: t.roleVeterinarian, icon: 'stethoscope' },
-    { role: 'trader', label: t.roleTrader, icon: 'cart' },
-    { role: 'company', label: t.roleCompany, icon: 'domain' },
-    { role: 'inspector', label: t.roleInspector, icon: 'clipboard-check' },
-    { role: 'investor', label: t.roleInvestor, icon: 'chart-line' },
-    { role: 'government', label: t.roleGovernment, icon: 'bank' },
-    { role: 'admin', label: t.roleAdmin, icon: 'shield-crown' },
+  // Read-only identity list: the role is fixed by the server account and is
+  // surfaced as a badge, never switched from the app.
+  const roles: { role: UserRole; label: string }[] = [
+    { role: 'gardener', label: t.roleGardener },
+    { role: 'farmer', label: t.roleFarmer },
+    { role: 'agronomist', label: t.roleAgronomist },
+    { role: 'veterinarian', label: t.roleVeterinarian },
+    { role: 'trader', label: t.roleTrader },
+    { role: 'company', label: t.roleCompany },
+    { role: 'inspector', label: t.roleInspector },
+    { role: 'investor', label: t.roleInvestor },
+    { role: 'government', label: t.roleGovernment },
+    { role: 'admin', label: t.roleAdmin },
   ];
 
   const handleTestConnection = async () => {
@@ -196,49 +198,7 @@ export const ProfileScreen: React.FC = () => {
         </Card>
       </View>
 
-      {/* 3. Role Switcher Card (Explore All 8 Roles) */}
-      <View style={styles.section}>
-        <View style={[styles.sectionHeaderRow, isRtl && styles.rtlRow]}>
-          <Text style={styles.sectionHeading}>{t.demoModeSwitch}</Text>
-          <Badge label={x.profileLocalPreference} variant="accent" size="sm" />
-        </View>
-        <Text style={[styles.sectionNote, isRtl && styles.rtlText]}>{t.demoModeNotice}</Text>
-
-        <View style={[styles.roleGrid, isRtl && styles.rtlRow]}>
-          {roles.map((r) => {
-            const isSelected = user?.role === r.role;
-            return (
-              <TouchableOpacity
-                key={r.role}
-                activeOpacity={0.8}
-                onPress={() => updateRole(r.role)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                accessibilityLabel={r.label}
-                style={[styles.roleTile, isSelected && styles.roleTileSelected]}
-              >
-                <MaterialCommunityIcons
-                  name={r.icon as any}
-                  size={26}
-                  color={isSelected ? colors.primary : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.roleTileText,
-                    isSelected && styles.roleTileTextSelected,
-                    isRtl && styles.rtlText,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {r.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* 4. Server & Backend Connectivity Diagnostics */}
+      {/* 3. Server & Backend Connectivity Diagnostics */}
       <View style={styles.section}>
         <Text style={[styles.sectionHeading, isRtl && styles.rtlText]}>{t.connectionStatus}</Text>
         <Card variant="outlined" style={styles.statusCard}>
@@ -399,17 +359,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionNote: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
   optionsCard: {
     padding: spacing.sm,
   },
@@ -435,37 +384,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.medium,
   },
   langChoiceTextActive: {
-    color: colors.primaryDark,
-    fontWeight: typography.fontWeights.bold,
-  },
-  roleGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  roleTile: {
-    width: '48%',
-    minHeight: 48,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  roleTileSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-  },
-  roleTileText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeights.medium,
-  },
-  roleTileTextSelected: {
     color: colors.primaryDark,
     fontWeight: typography.fontWeights.bold,
   },

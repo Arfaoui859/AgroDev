@@ -18,8 +18,13 @@ import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
 import { getWeather, pingServer, getNotifications } from '../api/client';
 import { AppNotification, WeatherData } from '../types';
 import { useConnectivity } from '../hooks/useConnectivity';
+import { useAICapabilities } from '../hooks/useAICapabilities';
 import { weatherConditionLabel, weatherIconName } from '../utils/weather';
 import { governorateFromName, governorateLabel } from '../utils/governorates';
+import { IntelligenceStrip } from '../components/home/IntelligenceStrip';
+import { LearningVideos } from '../components/home/LearningVideos';
+import { HomeNewsPreview } from '../components/home/HomeNewsPreview';
+import { SeasonAgenda } from '../components/home/SeasonAgenda';
 
 interface HomeScreenProps {
   onNavigateToService: (serviceId: string) => void;
@@ -39,6 +44,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
   const { t, x, isRtl, isArabic, language } = useLanguage();
   const { user, isAuthenticated } = useAuth();
   const { isOnline } = useConnectivity();
+  const { data: capabilities, loading: capsLoading, error: capsError } = useAICapabilities();
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherError, setWeatherError] = useState<string | null>(null);
@@ -197,6 +203,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
     tileRows.push(remaining.slice(i, i + 2));
   }
 
+  // Capability chips map to the service screen that backs them; a few live on
+  // tabs (marketplace/assistant) or the notifications overlay.
+  const openCapabilityService = (serviceId: string) => {
+    if (serviceId === 'marketplace') return onNavigateToTab('marketplace');
+    if (serviceId === 'assistant') return onNavigateToTab('assistant');
+    if (serviceId === 'notifications') return onOpenNotifications();
+    return onNavigateToService(serviceId);
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -234,6 +249,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           <Text style={styles.offlineText}>{x.offlineBanner}</Text>
         </View>
       ) : null}
+
+      {/* Available agricultural intelligence — server-declared capability state */}
+      <IntelligenceStrip
+        capabilities={capabilities?.capabilities ?? []}
+        loading={capsLoading}
+        error={capsError}
+        onOpenCapabilities={() => onNavigateToService('multi_agent')}
+        onOpenService={openCapabilityService}
+      />
 
       {/* Weather — live observation */}
       {loading ? (
@@ -374,6 +398,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           />
         </View>
       </TouchableOpacity>
+
+      {/* Curated agricultural learning videos (real YouTube content) */}
+      <LearningVideos onOpenAll={() => onNavigateToService('learning')} />
+
+      {/* Latest real agricultural headlines */}
+      <HomeNewsPreview onOpenAll={() => onNavigateToService('agri_news')} />
+
+      {/* Seasonal agenda — general, indicative guidance */}
+      <SeasonAgenda />
 
       {/* Urgent alerts — from the caller's own persisted notifications */}
       <View style={styles.sectionContainer}>

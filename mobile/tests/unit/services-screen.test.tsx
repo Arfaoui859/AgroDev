@@ -30,4 +30,11 @@ describe('ServicesScreen', () => {
     fireEvent.press(screen.getByText('تحليل التربة والتسميد'));
     expect(onSelect).toHaveBeenCalledWith('soil');
   });
+
+  it('exposes the curated learning-videos catalogue as a service', async () => {
+    const onSelect = jest.fn();
+    await renderScreen(onSelect);
+    fireEvent.press(screen.getByText('تعلّم من الميدان'));
+    expect(onSelect).toHaveBeenCalledWith('learning');
+  });
 });

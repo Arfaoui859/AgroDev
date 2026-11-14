@@ -233,6 +233,30 @@ export interface ExtraTranslations {
   newsUnknownSource: string;
   newsSomeSourcesDown: string;
 
+  // Home — agricultural learning videos (curated, real)
+  videoCatPruning: string;
+  videoCatIrrigation: string;
+  videoCatSoilPrep: string;
+  videoCatComposting: string;
+  videoCatPlantProtection: string;
+  videoCatVegetableGrowing: string;
+  videoCatLivestock: string;
+  videoCatGreenhouse: string;
+  videoCatHarvest: string;
+  videoDurationMinutes: string;
+  videoLanguageArabic: string;
+  videoLanguageEnglish: string;
+
+  // Home — seasonal agenda (generic, indicative)
+  seasonWinter: string;
+  seasonSpring: string;
+  seasonSummer: string;
+  seasonAutumn: string;
+  seasonWinterTip: string;
+  seasonSpringTip: string;
+  seasonSummerTip: string;
+  seasonAutumnTip: string;
+
   // Profile
   profileSignInPrompt: string;
   profileSignOutConfirm: string;
@@ -270,6 +294,7 @@ export interface ExtraTranslations {
   svcBadgeMultiAgent: string;
   svcBadgeNews: string;
   svcBadgeHistory: string;
+  svcBadgeLearning: string;
   recentAnalysesTitle: string;
   recentAnalysesDesc: string;
   servicesLaunch: string;
@@ -403,7 +428,6 @@ export interface ExtraTranslations {
   profileGuest: string;
   profileNotSignedIn: string;
   profilePersonaButton: string;
-  profileLocalPreference: string;
   profileTestConnection: string;
   profileOfflineDesc: string;
 
@@ -684,6 +708,28 @@ const ar: ExtraTranslations = {
   newsUnknownSource: 'مصدر غير معروف',
   newsSomeSourcesDown: 'مصادر لم تستجب في هذا التحديث:',
 
+  videoCatPruning: 'التقليم',
+  videoCatIrrigation: 'الري',
+  videoCatSoilPrep: 'تحضير التربة',
+  videoCatComposting: 'التسميد والكمبوست',
+  videoCatPlantProtection: 'وقاية النبات',
+  videoCatVegetableGrowing: 'زراعة الخضروات',
+  videoCatLivestock: 'تربية المواشي',
+  videoCatGreenhouse: 'البيوت المحمية',
+  videoCatHarvest: 'الحصاد',
+  videoDurationMinutes: 'دقيقة',
+  videoLanguageArabic: 'بالعربية',
+  videoLanguageEnglish: 'بالإنجليزية',
+
+  seasonWinter: 'الشتاء',
+  seasonSpring: 'الربيع',
+  seasonSummer: 'الصيف',
+  seasonAutumn: 'الخريف',
+  seasonWinterTip: 'التقليم الرئيسي لأشجار الزيتون والثمار، وحراثة التربة، والاستعداد لموسم الأمطار.',
+  seasonSpringTip: 'التسميد، ومكافحة الآفات، وزرع الخضروات الصيفية، ومتابعة الري.',
+  seasonSummerTip: 'الري المنتظم، والحماية من الحرارة، والحصاد المبكر للمحاصيل الصيفية.',
+  seasonAutumnTip: 'بدء موسم الزيتون، وتحضير الأرض، وزرع المحاصيل الشتوية.',
+
   profileSignInPrompt: 'سجّل الدخول للوصول إلى بياناتك',
   profileSignOutConfirm: 'هل تريد تسجيل الخروج من حسابك؟',
   profileSignedInAs: 'مسجّل الدخول باسم',
@@ -719,6 +765,7 @@ const ar: ExtraTranslations = {
   svcBadgeMultiAgent: 'وكلاء متخصصون',
   svcBadgeNews: 'RSS حقيقي',
   svcBadgeHistory: 'سجل مؤرخ',
+  svcBadgeLearning: 'يوتيوب حقيقي',
   recentAnalysesTitle: 'سجل التحاليل السابقة',
   recentAnalysesDesc: 'مراجعة كافة نتائج تشخيص الأمراض وتحاليل التربة المحفوظة مع توصياتها وتاريخ إجرائها.',
   servicesLaunch: 'ابدأ الاستخدام',
@@ -846,7 +893,6 @@ const ar: ExtraTranslations = {
   profileGuest: 'زائر',
   profileNotSignedIn: 'غير مسجّل الدخول',
   profilePersonaButton: 'تخصيص التجربة (Persona)',
-  profileLocalPreference: 'تفضيل محلي',
   profileTestConnection: 'اختبار الاتصال بالخادم الآن',
   profileOfflineDesc: 'يتم حفظ بيانات الطقس، الحقول، والتشخيص محلياً لتصفحها في الحقل دون إنترنت.',
 
@@ -1124,6 +1170,28 @@ const fr: ExtraTranslations = {
   newsUnknownSource: 'Source inconnue',
   newsSomeSourcesDown: 'Sources n’ayant pas répondu lors de cette mise à jour :',
 
+  videoCatPruning: 'Taille',
+  videoCatIrrigation: 'Irrigation',
+  videoCatSoilPrep: 'Préparation du sol',
+  videoCatComposting: 'Compostage & fertilisation',
+  videoCatPlantProtection: 'Protection des plantes',
+  videoCatVegetableGrowing: 'Culture maraîchère',
+  videoCatLivestock: 'Élevage',
+  videoCatGreenhouse: 'Serres',
+  videoCatHarvest: 'Récolte',
+  videoDurationMinutes: 'min',
+  videoLanguageArabic: 'en arabe',
+  videoLanguageEnglish: 'en anglais',
+
+  seasonWinter: 'Hiver',
+  seasonSpring: 'Printemps',
+  seasonSummer: 'Été',
+  seasonAutumn: 'Automne',
+  seasonWinterTip: 'Taille principale des oliviers et arbres fruitiers, labour du sol et préparation à la saison des pluies.',
+  seasonSpringTip: 'Fertilisation, lutte contre les ravageurs, plantation des cultures d’été et suivi de l’irrigation.',
+  seasonSummerTip: 'Irrigation régulière, protection contre la chaleur et récolte précoce des cultures d’été.',
+  seasonAutumnTip: 'Début de la campagne oléicole, préparation du sol et semis des cultures d’hiver.',
+
   profileSignInPrompt: 'Connectez-vous pour accéder à vos données',
   profileSignOutConfirm: 'Voulez-vous vous déconnecter ?',
   profileSignedInAs: 'Connecté en tant que',
@@ -1159,6 +1227,7 @@ const fr: ExtraTranslations = {
   svcBadgeMultiAgent: 'Agents spécialisés',
   svcBadgeNews: 'RSS réel',
   svcBadgeHistory: 'Historique daté',
+  svcBadgeLearning: 'YouTube réel',
   recentAnalysesTitle: 'Historique des analyses',
   recentAnalysesDesc: 'Consultez tous les diagnostics de maladies et analyses de sol enregistrés, avec leurs recommandations et leur date.',
   servicesLaunch: 'Commencer',
@@ -1286,7 +1355,6 @@ const fr: ExtraTranslations = {
   profileGuest: 'Invité',
   profileNotSignedIn: 'Non connecté',
   profilePersonaButton: 'Personnaliser l’expérience (Persona)',
-  profileLocalPreference: 'Préférence locale',
   profileTestConnection: 'Tester la connexion au serveur',
   profileOfflineDesc: 'Les données météo, parcelles et diagnostics sont enregistrées localement pour être consultées au champ sans Internet.',
 
@@ -1565,6 +1633,28 @@ const en: ExtraTranslations = {
   newsUnknownSource: 'Unknown source',
   newsSomeSourcesDown: 'Sources that did not respond in this update:',
 
+  videoCatPruning: 'Pruning',
+  videoCatIrrigation: 'Irrigation',
+  videoCatSoilPrep: 'Soil preparation',
+  videoCatComposting: 'Composting & fertilising',
+  videoCatPlantProtection: 'Plant protection',
+  videoCatVegetableGrowing: 'Vegetable growing',
+  videoCatLivestock: 'Livestock',
+  videoCatGreenhouse: 'Greenhouses',
+  videoCatHarvest: 'Harvest',
+  videoDurationMinutes: 'min',
+  videoLanguageArabic: 'in Arabic',
+  videoLanguageEnglish: 'in English',
+
+  seasonWinter: 'Winter',
+  seasonSpring: 'Spring',
+  seasonSummer: 'Summer',
+  seasonAutumn: 'Autumn',
+  seasonWinterTip: 'Main pruning of olive and fruit trees, soil tillage and preparation for the rainy season.',
+  seasonSpringTip: 'Fertilising, pest control, planting summer crops and irrigation follow-up.',
+  seasonSummerTip: 'Regular irrigation, heat protection and early harvest of summer crops.',
+  seasonAutumnTip: 'Start of the olive campaign, soil preparation and sowing of winter crops.',
+
   profileSignInPrompt: 'Sign in to access your data',
   profileSignOutConfirm: 'Do you want to sign out?',
   profileSignedInAs: 'Signed in as',
@@ -1600,6 +1690,7 @@ const en: ExtraTranslations = {
   svcBadgeMultiAgent: 'Specialist agents',
   svcBadgeNews: 'Real RSS',
   svcBadgeHistory: 'Dated history',
+  svcBadgeLearning: 'Real YouTube',
   recentAnalysesTitle: 'Previous analyses',
   recentAnalysesDesc: 'Review all saved disease diagnoses and soil analyses, with their recommendations and dates.',
   servicesLaunch: 'Get started',
@@ -1727,7 +1818,6 @@ const en: ExtraTranslations = {
   profileGuest: 'Guest',
   profileNotSignedIn: 'Not signed in',
   profilePersonaButton: 'Personalise experience (Persona)',
-  profileLocalPreference: 'Local preference',
   profileTestConnection: 'Test server connection now',
   profileOfflineDesc: 'Weather, field and diagnosis data are stored locally so you can browse them in the field without internet.',
 

@@ -161,14 +161,64 @@ Anonymous callers keep a null thread id; the history is bounded to the last 12
 turns, matching the gateway's own cap. Covered by
 `tests/unit/ai-assistant-screen.test.tsx`.
 
+### Home discovery: intelligence strip, news, learning videos, season agenda (verified)
+
+`HomeScreen` now carries four real, provenance-honest discovery sections above
+the urgent-alert panel. None of them invent data:
+
+- **`IntelligenceStrip`** (`src/components/home/IntelligenceStrip.tsx`) renders
+  the gateway's own `GET /api/ai/capabilities` document. Each chip's on/off dot
+  is `cap.engine !== 'unavailable'`; an unavailable capability is shown as
+  unavailable, never hidden or dressed up. Tapping a chip opens the screen that
+  actually backs the capability (`CAPABILITY_SERVICE`), falling back to the full
+  capability matrix (`MultiAgentAIScreen`). No count is estimated.
+- **`HomeNewsPreview`** reads real publisher RSS via `GET /api/news`.
+- **`LearningVideos`** (`src/components/home/LearningVideos.tsx`) surfaces a
+  curated, static editorial catalogue of real YouTube videos
+  (`src/data/agriculturalVideos.ts`); it plays on YouTube via `Linking` and
+  labels the source. This is deliberately a *curated list*, not a live AI feed —
+  titles/channels are verbatim and the catalogue is not derived from the server.
+- **`SeasonAgenda`** (`src/components/home/SeasonAgenda.tsx` +
+  `src/utils/season.ts`) is a general northern-hemisphere seasonal reminder,
+  explicitly labelled `homeSeasonGeneral` ("General guidance") because it is not
+  specific to the user's farm.
+
+The full catalogue lives in `LearningVideosScreen`
+(`src/screens/services/LearningVideosScreen.tsx`, route id `learning`), reachable
+from Home and from the Services directory. Category filters + watch links are
+covered by `tests/unit/learning-videos-screen.test.tsx`,
+`tests/unit/agricultural-videos.test.ts`, `tests/unit/season-video-labels.test.ts`
+and `tests/unit/home-discovery.test.tsx`.
+
+### Profile / account screen (verified)
+
+`ProfileScreen` no longer hosts an inline role switcher. The account role is a
+server-side fact, so it is rendered as a read-only identity badge; the demo-era
+`roleGrid` / `demoModeSwitch` / `demoModeNotice` UI and its styles were removed.
+Role *preference* (interface + shortcut ordering only) is still adjustable
+through the Persona onboarding flow (`PersonaSelectorModal`). Covered by
+`tests/unit/profile-screen.test.tsx`.
+
+### Live image diagnosis re-verified (2026-11)
+
+A real multipart upload to `POST /api/ai/images/detect-disease` with field
+`file` (plus `plant_type` / `plant_part` / `symptoms`) returns HTTP 200 with
+`dataSource: "llm"`, `modelSource: "vision:gemini-flash-lite-latest"`,
+`provider: "gemini"` — a generative vision model, so the badge reads generative
+AI, never "trained model". The mobile client
+(`diagnosePlantDisease` → `buildImageForm`) already sends the correct field
+name; a wrong field (`image`) makes multer answer
+`400 LIMIT_UNEXPECTED_FILE`.
+
 ### Verified checks (2026-11)
 
 - `npx tsc --noEmit` — clean.
 - `npx expo lint` — clean.
-- `npx jest` — 42 suites / 203 tests passing (7 skipped live suites).
+- `npx jest` — 47 suites / 226 tests passing (7 skipped live tests across 2
+  suites).
 - `npx expo-doctor` — 20/20 checks passed.
-- `npx expo export --platform android` — bundles (832 modules) to Hermes
-  bytecode successfully.
+- `npx expo export --platform android` (and `--platform ios`) — bundles (840
+  modules) to Hermes bytecode successfully.
 - `LIVE_API_TESTS=1 npx jest tests/live` — production-smoke and live-auth
   (7 tests) pass against `https://agrodev-3.onrender.com` and the live Supabase
   project.

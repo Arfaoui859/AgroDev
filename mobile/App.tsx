@@ -31,6 +31,7 @@ import { FarmManagementScreen } from './src/screens/services/FarmManagementScree
 import { LivestockScreen } from './src/screens/services/LivestockScreen';
 import { MultiAgentAIScreen } from './src/screens/services/MultiAgentAIScreen';
 import { AgriNewsScreen } from './src/screens/services/AgriNewsScreen';
+import { LearningVideosScreen } from './src/screens/services/LearningVideosScreen';
 import { RecentAnalysesScreen } from './src/screens/services/RecentAnalysesScreen';
 import { GeneralServiceModal } from './src/screens/services/GeneralServiceModal';
 import { SoilToCropContext } from './src/types';
@@ -125,6 +126,8 @@ const MainAppContent: React.FC = () => {
           return { title: t.multiAgentAiName };
         case 'agri_news':
           return { title: t.agriNewsName };
+        case 'learning':
+          return { title: t.homeLearningTitle };
         case 'recent_analyses':
           return { title: x.recentAnalysesTitle };
         default:
@@ -209,6 +212,8 @@ const MainAppContent: React.FC = () => {
         return <MultiAgentAIScreen onBack={() => setActiveService(null)} />;
       case 'agri_news':
         return <AgriNewsScreen onBack={() => setActiveService(null)} />;
+      case 'learning':
+        return <LearningVideosScreen onBack={() => setActiveService(null)} />;
       case 'recent_analyses':
         return (
           <RecentAnalysesScreen

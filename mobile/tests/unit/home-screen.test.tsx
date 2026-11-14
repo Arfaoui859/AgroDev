@@ -7,11 +7,20 @@ import { HomeScreen } from '../../src/screens/HomeScreen';
 const mockGetWeather = jest.fn();
 const mockPingServer = jest.fn();
 const mockGetNotifications = jest.fn();
+const mockGetAICapabilities = jest.fn();
+const mockGetAgriNews = jest.fn();
 
 jest.mock('../../src/api/client', () => ({
   getWeather: (...args: any[]) => mockGetWeather(...args),
   pingServer: (...args: any[]) => mockPingServer(...args),
   getNotifications: (...args: any[]) => mockGetNotifications(...args),
+  getAICapabilities: (...args: any[]) => mockGetAICapabilities(...args),
+  getAgriNews: (...args: any[]) => mockGetAgriNews(...args),
+  capabilityMap: (payload: any) => {
+    const map: Record<string, any> = {};
+    for (const cap of payload?.capabilities ?? []) map[cap.id] = cap;
+    return map;
+  },
   apiRequest: jest.fn(async () => ({ data: { profile: { role: 'farmer' } }, error: null })),
 }));
 
@@ -75,6 +84,30 @@ describe('HomeScreen urgent-alert panel', () => {
     jest.clearAllMocks();
     mockGetWeather.mockResolvedValue(liveWeather);
     mockPingServer.mockResolvedValue({ ok: true, message: 'pong' });
+    mockGetAICapabilities.mockResolvedValue({
+      data: {
+        capabilities: [
+          {
+            id: 'soil-analysis',
+            name: 'Soil Analysis',
+            nameAr: 'تحليل التربة',
+            engine: 'rule-based',
+            provenance: 'Rule-based engine',
+            provenanceAr: 'محرك قواعد',
+          },
+          {
+            id: 'irrigation-optimizer',
+            name: 'Smart Irrigation Optimizer',
+            nameAr: 'الري الذكي',
+            engine: 'unavailable',
+            provenance: 'Unavailable',
+            provenanceAr: 'غير متاح',
+          },
+        ],
+      },
+      error: null,
+    });
+    mockGetAgriNews.mockResolvedValue({ data: { articles: [], sources: [], categories: [] }, error: null });
   });
 
   it('shows an honest empty state when there are genuinely no urgent alerts', async () => {
