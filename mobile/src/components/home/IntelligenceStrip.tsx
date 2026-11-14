@@ -70,7 +70,8 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
   const { t, x, isRtl } = useLanguage();
 
   // Keep the strip short and relevant: the capabilities that power the primary
-  // services, in a stable order.
+  // services, in a stable order. Yield prediction is included so its honest
+  // unavailable state is visible rather than silently hidden.
   const ORDER = [
     'soil-analysis',
     'crop-recommendation',
@@ -78,6 +79,7 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
     'pest-control',
     'irrigation-optimizer',
     'market-forecast',
+    'yield-predictor',
     'agro-chat',
     'weather-yield-planner',
   ];

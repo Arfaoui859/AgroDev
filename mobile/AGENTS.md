@@ -217,11 +217,38 @@ name; a wrong field (`image`) makes multer answer
 
 - `npx tsc --noEmit` — clean.
 - `npx expo lint` — clean.
-- `npx jest` — 47 suites / 226 tests passing (7 skipped live tests across 2
-  suites).
+- `npx jest` — 48 suites / 235 tests passing (7 skipped live tests across 2
+  suites: `tests/live/production-smoke.test.ts`, `tests/live/live-auth.test.ts`).
 - `npx expo-doctor` — 20/20 checks passed.
-- `npx expo export --platform android` (and `--platform ios`) — bundles (840
-  modules) to Hermes bytecode successfully.
+- `npx expo export --platform android` (and `--platform web`) — bundles
+  successfully (Hermes bytecode for Android).
 - `LIVE_API_TESTS=1 npx jest tests/live` — production-smoke and live-auth
   (7 tests) pass against `https://agrodev-3.onrender.com` and the live Supabase
   project.
+
+### Live AI service audit (2026-11, gateway `agrodev-3.onrender.com`)
+
+Every mobile service function was probed against the deployed gateway. The
+mobile client calls only the Express gateway, never a Python microservice
+directly, and each surface reports the engine the backend actually declares:
+
+| Endpoint | HTTP | Honest engine / state |
+|---|---|---|
+| `GET /api/ai/capabilities` | 200 | capability matrix, per-capability `engine` |
+| `POST /api/ai/soil-analysis` | 200 | `dataSource: rule-based`, `isRealData: false` |
+| `POST /api/ai/crop-recommendation` | 200 | `dataSource: rule-based`, `isRealData: false` |
+| `POST /api/ai/images/detect-disease` | 200 | `dataSource: llm` (generative vision, not a trained model) |
+| `POST /api/ai/assistant/chat` | 200 | `dataSource: llm`, `isRealData: true` (generative advisory) |
+| `GET /api/weather/coordinates` | 200 | Open-Meteo, `isRealData: true` |
+| `GET /api/news` | 200 | `dataSource: rss-feeds`, `isRealData: true` |
+| `GET /api/market/all` | 503 | `MARKET_DATA_NOT_AVAILABLE` — no recorded prices |
+| `POST /api/pest-control/identify-from-symptoms` | 502 | `PEST_SERVICE_UNAVAILABLE` (honest) |
+| `POST /api/irrigation-optimization/water-requirements` | 503 | microservice not reachable (honest) |
+| `POST /api/weather-yield-intelligence/predict-yield` | 503 | `yield-predictor` unavailable (honest) |
+| `POST /api/ai/market/supply-demand` | 503 | `MARKET_MODEL_NOT_VALIDATED` (honest) |
+| `POST /api/ai/market/forecast-prices` | 503 | `MARKET_MODEL_NOT_VALIDATED` (honest) |
+
+The mobile UI renders an explicit unavailable/empty state for each 5xx above;
+none of them is turned into a fabricated success. The Marketplace screen adds a
+read-only "Market intelligence" panel that reflects the capability document for
+price-forecast and supply/demand instead of inventing trends.
