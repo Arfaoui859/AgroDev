@@ -213,6 +213,12 @@ AI, never "trained model". The mobile client
 name; a wrong field (`image`) makes multer answer
 `400 LIMIT_UNEXPECTED_FILE`.
 
+Note: the gateway maps `primary_disease.disease` to the vision model's
+`diseaseId`, which can be a machine slug (`unclear_image`). The client must not
+render that as the diagnosis title; `diagnosePlantDisease` now prefers a
+human-readable `disease_name`, then the Arabic display name, then a generic
+localised label.
+
 ### Verified checks (2026-11)
 
 - `npx tsc --noEmit` — clean.
