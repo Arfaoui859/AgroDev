@@ -404,7 +404,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
 
       {/* AgroGrowth Academy — topical index into real content & services */}
       <AcademySection
-        onOpenVideos={() => (onOpenLearning ? onOpenLearning() : onNavigateToService('learning'))}
+        onOpenVideos={(category) =>
+          onOpenLearning ? onOpenLearning(category) : onNavigateToService('learning')
+        }
         onOpenService={openCapabilityService}
       />
 

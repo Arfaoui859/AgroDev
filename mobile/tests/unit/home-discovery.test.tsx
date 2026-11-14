@@ -121,7 +121,7 @@ describe('AcademySection', () => {
       </LanguageProvider>,
     );
     fireEvent.press(screen.getByText('التقليم'));
-    expect(onOpenVideos).toHaveBeenCalled();
+    expect(onOpenVideos).toHaveBeenCalledWith('pruning');
     expect(onOpenService).not.toHaveBeenCalled();
   });
 

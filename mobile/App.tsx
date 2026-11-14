@@ -92,6 +92,7 @@ const MainAppContent: React.FC = () => {
   const handleTabChange = (tab: TabKey) => {
     setActiveService(null);
     setShowNotifications(false);
+    setLearningCategory(undefined);
     setActiveTab(tab);
   };
 
@@ -293,7 +294,13 @@ const MainAppContent: React.FC = () => {
           <>
             {activeTab === 'home' && (
               <HomeScreen
-                onNavigateToService={(serviceId) => setActiveService(serviceId)}
+                onNavigateToService={(serviceId) => {
+                  // A generic service open always starts the learning catalogue
+                  // at "all" unless an Academy tile explicitly selected a
+                  // category via onOpenLearning.
+                  setLearningCategory(undefined);
+                  setActiveService(serviceId);
+                }}
                 onNavigateToTab={(tab) => setActiveTab(tab as TabKey)}
                 onOpenNotifications={() => {
                   setActiveService(null);

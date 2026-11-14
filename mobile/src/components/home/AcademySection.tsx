@@ -7,7 +7,7 @@ import { ACADEMY_TOPICS, AcademyTopic } from '../../data/academy';
 
 interface AcademySectionProps {
   /** Open a topic that maps to a video category (the learning catalogue). */
-  onOpenVideos: () => void;
+  onOpenVideos: (category?: string) => void;
   /** Open a topic that maps to an existing service screen. */
   onOpenService: (serviceId: string) => void;
 }
@@ -31,7 +31,7 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
   const { x, isRtl } = useLanguage();
 
   const open = (topic: AcademyTopic) => {
-    if (topic.videoCategory) return onOpenVideos();
+    if (topic.videoCategory) return onOpenVideos(topic.videoCategory);
     if (topic.serviceId) return onOpenService(topic.serviceId);
   };
 
