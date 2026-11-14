@@ -233,6 +233,27 @@ describe('AI/weather client provenance mapping (honest data labelling)', () => {
     expect(data?.meta.provenance).toBe('llm');
   });
 
+  it('sends conversation history and threads the returned conversationId', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ answer: 'الجواب', dataSource: 'llm', conversationId: 'conv-42' }),
+    );
+    const { data } = await chatWithAIAssistant('سؤال متابعة', 'ar', {
+      history: [
+        { role: 'user', content: 'سؤال أول' },
+        { role: 'assistant', content: 'جواب أول' },
+      ],
+      conversationId: 'conv-1',
+    });
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body.history).toEqual([
+      { role: 'user', content: 'سؤال أول' },
+      { role: 'assistant', content: 'جواب أول' },
+    ]);
+    expect(body.conversationId).toBe('conv-1');
+    // The server's thread id is surfaced so the next turn continues the thread.
+    expect(data?.conversationId).toBe('conv-42');
+  });
+
   it('keeps stored market records as NOT real data when the backend says so', async () => {
     // The gateway explicitly returns isRealData:false for market_prices because
     // they are unverified platform records. The client must not upgrade them to

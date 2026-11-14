@@ -29,6 +29,10 @@ export const AIAssistantScreen: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  // The persisted thread id returned by the gateway for a verified session.
+  // Threaded back so the server keeps one conversation instead of creating a
+  // new one per turn; it stays null for anonymous (unverified) callers.
+  const conversationIdRef = useRef<string | null>(null);
   const scrollViewRef = useRef<any>(null);
 
   // The welcome bubble is derived at render time (not stored) so switching
@@ -64,8 +68,20 @@ export const AIAssistantScreen: React.FC = () => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
 
+    // Send the prior turns (from the same state update) so the model has
+    // context; the welcome bubble is derived and not part of the server thread.
+    const history = [...messages, userMsg]
+      .map((m) => ({ role: m.sender, content: m.text }))
+      .slice(-12);
+
     try {
-      const response = await chatWithAIAssistant(textToSend, language);
+      const response = await chatWithAIAssistant(textToSend, language, {
+        history,
+        conversationId: conversationIdRef.current,
+      });
+      if (response.data?.conversationId) {
+        conversationIdRef.current = response.data.conversationId;
+      }
       const assistantMsg: ChatMessage = {
         id: nextMessageId(),
         sender: 'assistant',

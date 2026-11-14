@@ -967,10 +967,21 @@ export async function getIrrigationPlan(input: {
 export async function chatWithAIAssistant(
   message: string,
   language = 'ar',
+  options: {
+    /** Prior turns, oldest first, so the model has conversational context. */
+    history?: { role: 'user' | 'assistant'; content: string }[];
+    /** Thread id returned by the previous call; continues the persisted thread. */
+    conversationId?: string | null;
+  } = {},
 ): Promise<{ data: AssistantReply | null; error: string | null }> {
   const res = await apiRequest<any>('/api/ai/assistant/chat', {
     method: 'POST',
-    body: JSON.stringify({ message, language }),
+    body: JSON.stringify({
+      message,
+      language,
+      history: options.history ?? [],
+      conversationId: options.conversationId ?? undefined,
+    }),
   });
 
   if (!res.data || typeof res.data.answer !== 'string') {
@@ -983,6 +994,7 @@ export async function chatWithAIAssistant(
       reply: res.data.answer,
       meta,
       farmContextStatus: res.data.farmContextStatus,
+      conversationId: res.data.conversationId ?? null,
     },
     error: null,
   };

@@ -506,6 +506,8 @@ export interface AssistantReply {
   reply: string;
   meta: ProvenanceMeta;
   farmContextStatus?: string;
+  /** Persisted thread id for this turn, when the caller had a verified session. */
+  conversationId?: string | null;
 }
 
 // --------------------------- Notifications ---------------------------------
