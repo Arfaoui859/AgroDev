@@ -7,15 +7,16 @@ import {
   StyleSheet,
   TextInput,
   Alert,
-  TouchableOpacity,
 } from 'react-native';
 import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Chip } from '../../components/ui/Chip';
 import { getFarms, getFields, createField, createFarm } from '../../api/client';
 import { Farm, Field, ProvenanceMeta } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -278,17 +279,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
                 const label = language === 'fr' ? g.labelFr : language === 'en' ? g.labelEn : g.label;
                 const selected = farmRegion === label;
                 return (
-                  <TouchableOpacity
+                  <Chip
                     key={g.id}
-                    activeOpacity={0.85}
+                    label={label}
+                    selected={selected}
                     onPress={() => setFarmRegion(label)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={label}
-                    style={[styles.regionChip, selected && styles.regionChipSelected]}
-                  >
-                    <Text style={[styles.regionChipText, selected && styles.regionChipTextSelected]}>{label}</Text>
-                  </TouchableOpacity>
+                  />
                 );
               })}
             </View>
@@ -529,33 +525,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  input: {
-    height: 48,
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    color: colors.text,
-  },
+  input: formInput,
   chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  regionChip: {
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  regionChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  regionChipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
-  regionChipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   fieldsSection: {
     gap: spacing.sm,
   },

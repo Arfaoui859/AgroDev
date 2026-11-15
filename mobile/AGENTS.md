@@ -548,3 +548,21 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 59 suites / 265 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home (season +
 academy tiles) and the full Services grid.
+
+### Premium UI polish pass — shared formInput + Chip (verified 2026-11)
+
+- **`formInput`** (`src/theme/formStyles.ts`) is the one bordered text-field
+  style (`height:48`, `surfaceSubtle`, `radius.md`, 1px `border`). The auth modal,
+  the farm form and the generic service form declared it identically; they now
+  spread it via `input: formInput`.
+- **`Chip`** (`src/components/ui/Chip.tsx`) is the one selectable *text* pill
+  (≥48dp, `radius.full`, outlined, primary fill when selected). The irrigation
+  service, the disease-part picker and the farm-region picker each built the
+  identical control; they now render `<Chip>`. The icon-leading crop chips keep
+  their local style, since their type weight differs. Regression tests:
+  `tests/unit/form-input.test.ts`, `tests/unit/chip.test.tsx`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 61 suites / 270 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Services and the
+irrigation modal's chip pickers correctly.

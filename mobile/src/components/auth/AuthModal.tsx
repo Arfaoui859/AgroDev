@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
@@ -351,16 +352,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  input: {
-    height: 48,
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    color: colors.text,
-  },
+  input: formInput,
   roleGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

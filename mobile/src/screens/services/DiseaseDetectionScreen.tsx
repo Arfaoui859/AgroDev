@@ -9,6 +9,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Chip } from '../../components/ui/Chip';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { LimitationsNotice } from '../../components/ui/LimitationsNotice';
@@ -250,22 +251,14 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       <View style={styles.section}>
         <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.diseaseStepPart}</Text>
         <View style={[styles.partsRow, isRtl && rtlStyles.rtlRow]}>
-          {PART_CHOICES.map((p) => {
-            const selected = selectedPart === p.id;
-            return (
-              <TouchableOpacity
-                key={p.id}
-                activeOpacity={0.85}
-                onPress={() => setSelectedPart(p.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={x[p.labelKey]}
-                style={[styles.partChip, selected && styles.partChipSelected]}
-              >
-                <Text style={[styles.partChipText, selected && styles.partChipTextSelected]}>{x[p.labelKey]}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {PART_CHOICES.map((p) => (
+            <Chip
+              key={p.id}
+              label={x[p.labelKey]}
+              selected={selectedPart === p.id}
+              onPress={() => setSelectedPart(p.id)}
+            />
+          ))}
         </View>
       </View>
 
@@ -433,18 +426,6 @@ const styles = StyleSheet.create({
   cropChipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: typography.lineHeights.xs },
   cropChipTextSelected: { color: colors.textInverse },
   partsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  partChip: {
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  partChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  partChipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
-  partChipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   symptomsInput: {
     minHeight: 80,
     backgroundColor: colors.surfaceSubtle,

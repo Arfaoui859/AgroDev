@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Chip } from '../../components/ui/Chip';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
@@ -373,35 +375,10 @@ const IrrigationResultView: React.FC<{ data: Record<string, unknown> | null; isR
   );
 };
 
-const Chip: React.FC<{ label: string; selected: boolean; onPress: () => void }> = ({ label, selected, onPress }) => (
-  <TouchableOpacity
-    activeOpacity={0.85}
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityState={{ selected }}
-    accessibilityLabel={label}
-    style={[styles.chip, selected && styles.chipSelected]}
-  >
-    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
   card: { padding: spacing.md, marginBottom: spacing.md },
   label: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 6, lineHeight: typography.lineHeights.xs },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: {
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
-  chipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   textArea: {
     minHeight: 88,
     backgroundColor: colors.surfaceSubtle,
@@ -414,16 +391,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlignVertical: 'top',
   },
-  input: {
-    height: 48,
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    color: colors.text,
-  },
+  input: formInput,
   hint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.sm, marginTop: 6 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
   metricBox: {
