@@ -108,3 +108,6 @@ export const modalSheet: ViewStyle = {
   padding: spacing.lg,
   maxHeight: '85%',
 };
+
+/** `spaceBetween` with the tight xs gap beneath it (form labels, panel heads). */
+export const spaceBetweenXs: ViewStyle = { ...spaceBetween, marginBottom: spacing.xs };

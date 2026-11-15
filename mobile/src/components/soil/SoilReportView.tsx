@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { spaceBetween } from '../../theme/layout';
+import { spaceBetweenXs } from '../../theme/layout';
 import { mutedCaption, mutedCaptionTop, subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil, SoilTranslations } from '../../i18n/soil';
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   actionItem: { backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm },
-  actionHead: { ...spaceBetween, marginBottom: spacing.xs },
+  actionHead: spaceBetweenXs,
   actionWhen: mutedCaption,
   actionText: {
     fontSize: typography.fontSizes.sm,

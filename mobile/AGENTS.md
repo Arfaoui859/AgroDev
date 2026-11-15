@@ -685,3 +685,11 @@ top-corner bottom sheet). `src/theme/typographyStyles.ts` gained **`typeXs` /
 **`sectionHeading`**. Migrated ~29 files and dropped the unused imports the
 substitutions left behind. Pinned by `tests/unit/typography-styles.test.ts`
 (16 cases) and the layout test (9 cases).
+
+### Premium UI polish pass — spaceBetweenXs (verified 2026-11)
+
+`spaceBetweenXs` (`{ ...spaceBetween, marginBottom: spacing.xs }`) replaces the
+last ≥3-copy inline row (FormField `labelRow`, SoilReportView `actionHead`,
+SoilAnalysisScreen `findingHeader`). Pinned by `tests/unit/layout-styles.test.ts`
+(10 cases). After this batch, no `StyleSheet` object literal is duplicated three
+or more times across `src/`.

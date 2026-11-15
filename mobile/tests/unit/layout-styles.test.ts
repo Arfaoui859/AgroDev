@@ -1,6 +1,7 @@
 import {
   actionsRow, cardBottomRow, cardPad, flex1, gapMd, rowGapMd, rowGapSm, rowGapXs, rowWrapSm,
-  screenStyles, selectedChip, spaceBetween, spaceBetweenTop, stackLg, stackMd, stackSm, stackTopSm, stackedCard,
+  screenStyles, selectedChip, spaceBetween, spaceBetweenTop, spaceBetweenXs, stackLg, stackMd, stackSm,
+  stackTopSm, stackedCard,
 } from '../../src/theme/layout';
 import { colors, spacing } from '../../src/theme/colors';
 
@@ -62,5 +63,9 @@ describe('layout styles', () => {
   it('gapMd and stackTopSm pin the vertical rhythm helpers', () => {
     expect(gapMd).toMatchObject({ gap: spacing.md });
     expect(stackTopSm).toMatchObject({ marginTop: spacing.sm });
+  });
+
+  it('spaceBetweenXs is spaceBetween with the tight xs gap', () => {
+    expect(spaceBetweenXs).toMatchObject({ ...spaceBetween, marginBottom: spacing.xs });
   });
 });
