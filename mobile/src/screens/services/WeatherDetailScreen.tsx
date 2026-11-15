@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { cardPad, screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -424,9 +424,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  forecastCard: {
-    padding: spacing.md,
-  },
+  forecastCard: cardPad,
   forecastRow: {
     flexDirection: 'row',
     alignItems: 'center',

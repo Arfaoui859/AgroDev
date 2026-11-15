@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { screenStyles, stackedCard } from '../../theme/layout';
+import { cardPad, screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { mutedCaption, subtitleMeta, titleBase, titleSm } from '../../theme/typographyStyles';
@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { StatTile } from '../../components/ui/StatTile';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { StateCard } from '../../components/ui/StateCard';
 import { getAnimals, LivestockAnimal } from '../../api/client';
@@ -117,11 +118,11 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
               <ProvenanceBadge meta={meta} />
             </View>
             <View style={[styles.summaryRow, isRtl && rtlStyles.rtlRow]}>
-              <SummaryStat label={x.livestockTotal} value={String(animals.length)} color={colors.text} />
+              <StatTile style={styles.statTile} label={x.livestockTotal} value={String(animals.length)} color={colors.text} />
               <View style={styles.divider} />
-              <SummaryStat label={x.livestockHealthy} value={String(healthy)} color={colors.success} />
+              <StatTile style={styles.statTile} label={x.livestockHealthy} value={String(healthy)} color={colors.success} />
               <View style={styles.divider} />
-              <SummaryStat label={x.livestockSick} value={String(sick)} color={colors.danger} />
+              <StatTile style={styles.statTile} label={x.livestockSick} value={String(sick)} color={colors.danger} />
             </View>
             {totalValue > 0 ? (
               <Text style={[styles.totalValue, isRtl && rtlStyles.rtlText]}>
@@ -179,13 +180,6 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
   );
 };
 
-const SummaryStat: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => (
-  <View style={styles.summaryStat}>
-    <Text style={[styles.summaryValue, { color }]}>{value}</Text>
-    <Text style={styles.summaryLabel}>{label}</Text>
-  </View>
-);
-
 const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <View style={styles.metricItem}>
     <Text style={styles.metricLabel}>{label}</Text>
@@ -198,13 +192,11 @@ const styles = StyleSheet.create({
   summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   summaryTitle: titleSm,
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  summaryStat: { alignItems: 'center', flex: 1 },
-  summaryValue: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold },
-  summaryLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2, textAlign: 'center', lineHeight: typography.lineHeights.xs },
+  statTile: { flex: 1 },
   divider: { width: 1, height: 32, backgroundColor: colors.border },
   totalValue: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', lineHeight: typography.lineHeights.xs },
   animalList: { gap: spacing.md },
-  animalCard: { padding: spacing.md },
+  animalCard: cardPad,
   animalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
   animalTitleArea: { flex: 1 },
   animalTag: titleBase,

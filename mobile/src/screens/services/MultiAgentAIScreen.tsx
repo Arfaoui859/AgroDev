@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { screenStyles, stackedCard } from '../../theme/layout';
+import { cardPad, screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -8,6 +8,7 @@ import { mutedCaption, noteCaption, titleSm } from '../../theme/typographyStyles
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { StatTile } from '../../components/ui/StatTile';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateCard } from '../../components/ui/StateCard';
@@ -73,9 +74,9 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
       {data?.summary ? (
         <Card variant="elevated" style={styles.summaryCard}>
           <View style={[styles.summaryRow, isRtl && rtlStyles.rtlRow]}>
-            <SummaryStat label={x.aiSummaryTotal} value={data.summary.total} color={colors.text} />
-            <SummaryStat label={x.aiSummaryAvailable} value={data.summary.available} color={colors.success} />
-            <SummaryStat label={x.aiSummaryModelPowered} value={data.summary.modelPowered} color={colors.primary} />
+            <StatTile label={x.aiSummaryTotal} value={data.summary.total} color={colors.text} />
+            <StatTile label={x.aiSummaryAvailable} value={data.summary.available} color={colors.success} />
+            <StatTile label={x.aiSummaryModelPowered} value={data.summary.modelPowered} color={colors.primary} />
           </View>
           {data.llm ? (
             <View style={[styles.llmRow, isRtl && rtlStyles.rtlRow]}>
@@ -155,19 +156,9 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
   );
 };
 
-const SummaryStat: React.FC<{ label: string; value: number; color: string }> = ({ label, value, color }) => (
-  <View style={styles.summaryStat}>
-    <Text style={[styles.summaryValue, { color }]}>{value}</Text>
-    <Text style={styles.summaryLabel}>{label}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
   summaryCard: stackedCard,
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  summaryStat: { alignItems: 'center' },
-  summaryValue: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold },
-  summaryLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2, lineHeight: typography.lineHeights.xs },
   llmRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -179,7 +170,7 @@ const styles = StyleSheet.create({
   },
   llmText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
   agentList: { gap: spacing.md },
-  agentCard: { padding: spacing.md },
+  agentCard: cardPad,
   agentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   agentIconBox: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   agentTitleArea: { flex: 1 },

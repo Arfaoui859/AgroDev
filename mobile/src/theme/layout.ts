@@ -19,3 +19,6 @@ export const screenStyles = StyleSheet.create({
  * soil steps, the service forms and the result panels all used this exact pair.
  */
 export const stackedCard: ViewStyle = { padding: spacing.md, marginBottom: spacing.md };
+
+/** The same `spacing.md` pad as `stackedCard` for a card that is not followed by a gap. */
+export const cardPad: ViewStyle = { padding: spacing.md };

@@ -7,7 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { screenStyles } from '../theme/layout';
+import { cardPad, screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtleCaption, titleBase } from '../theme/typographyStyles';
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   intelState: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold },
   provBar: { marginBottom: spacing.sm },
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },
-  priceCard: { padding: spacing.md },
+  priceCard: cardPad,
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   cropInfo: { flex: 1 },
   cropName: titleBase,

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { screenStyles } from '../theme/layout';
+import { cardPad, screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
@@ -361,9 +361,7 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontWeight: typography.fontWeights.bold,
   },
-  statusCard: {
-    padding: spacing.md,
-  },
+  statusCard: cardPad,
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -392,9 +390,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
   },
-  offlineCard: {
-    padding: spacing.md,
-  },
+  offlineCard: cardPad,
   offlineRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

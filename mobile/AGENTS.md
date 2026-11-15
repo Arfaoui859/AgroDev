@@ -611,3 +611,16 @@ and the soil wizard with identical card/title styling.
   Notifications, MultiAgentAI, SoilAnalysis, CategoryPill, IconChip, AuthModal,
   Marketplace) through the shared constants. The typography-styles test now
   pins all eight constants.
+
+### Premium UI polish pass — StatTile + cardPad (verified 2026-11)
+
+- **`StatTile`** (`src/components/ui/StatTile.tsx`) is the value-over-label
+  statistic that the livestock summary row and the multi-agent summary row both
+  defined locally as `SummaryStat`. It takes `label`, `value`, an optional
+  `color` (defaults to `colors.text`), an optional container `style` (livestock
+  passes `{ flex: 1 }` between its dividers) and `centerLabel`. Test:
+  `tests/unit/stat-tile.test.tsx`.
+- **`cardPad`** (`src/theme/layout.ts`) is `{ padding: spacing.md }` for cards
+  that carry their own gap (e.g. the livestock animal card inside a `gap: md`
+  list, the profile status cards, the weather forecast cards). Replaces ~12
+  inline copies.

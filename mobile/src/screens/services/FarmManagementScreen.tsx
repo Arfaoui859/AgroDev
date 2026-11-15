@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { cardPad, screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { subtitleMeta, subtleCaption } from '../../theme/typographyStyles';
@@ -530,9 +530,7 @@ const styles = StyleSheet.create({
   fieldsSection: {
     gap: spacing.sm,
   },
-  fieldCard: {
-    padding: spacing.md,
-  },
+  fieldCard: cardPad,
   fieldHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
-import { screenStyles } from '../theme/layout';
+import { cardPad, screenStyles } from '../theme/layout';
 import { rtlStyles } from '../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme/colors';
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   list: { gap: spacing.sm },
   provBar: { marginBottom: spacing.xs },
   notificationTouchable: { minHeight: 48 },
-  card: { padding: spacing.md },
+  card: cardPad,
   unreadCard: { borderColor: colors.primary, borderWidth: 1.5 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.xs },
   cardTitle: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
