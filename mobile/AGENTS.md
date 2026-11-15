@@ -469,3 +469,35 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 54 suites / 255 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home (with the
 video strip, channel lines intact) and the tab bar correctly.
+
+### Premium UI polish pass — shared StateCard (verified 2026-11)
+
+- **`StateCard`** (`src/components/ui/StateCard.tsx`) is the card-framed
+  loading/empty/error/unavailable panel. 51 call sites across 17 files wrote the
+  identical `<Card variant="outlined"><StateView .../></Card>` shell; StateCard
+  owns that shell and forwards every `StateView` prop (`kind`, `title`,
+  `message`, `onRetry`, `retryLabel`, `compact`), plus `variant` and `cardStyle`
+  for the outer card. The 19 bare `StateView` uses that already sit inside a
+  card, a custom box (`PlotStep`), or a non-card panel (the assistant's inline
+  chat bubble) are deliberately left alone. Regression test:
+  `tests/unit/state-card.test.tsx`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 55 suites / 257 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home and
+Services (empty state) correctly.
+
+### Premium UI polish pass — shared Bullet (verified 2026-11)
+
+- **`Bullet`** (`src/components/ui/Bullet.tsx`) is the one RTL-aware list item.
+  Four copies existed: a glyph `•` in `SoilReportView`, a 6px dot in
+  `SoilAnalysisScreen` and `PlantScanner`, and a `circle-medium` icon in
+  `DiseaseDetectionScreen`. Bullet takes the marker as a `variant`
+  (`dot` | `icon` | `glyph`) and keeps the existing per-variant colour override,
+  so no screen changes appearance. The dead local components and their
+  `bulletRow`/`bullet`/`bulletText`/`bulletItem` styles were deleted.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 55 suites / 257 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders the soil
+analysis flow correctly.
