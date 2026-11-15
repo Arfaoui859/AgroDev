@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { stackLg } from '../../theme/layout';
+import { gapMdTight, stackLg } from '../../theme/layout';
 import { titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -88,7 +88,7 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
 
 const styles = StyleSheet.create({
   section: stackLg,
-  row: { gap: spacing.md, paddingVertical: 2 },
+  row: gapMdTight,
   card: {
     width: 168,
     backgroundColor: colors.card,

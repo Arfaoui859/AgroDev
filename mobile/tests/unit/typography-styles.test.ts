@@ -1,7 +1,8 @@
 import {
   accentCaption, cardHeading, labelMedium, mutedCaption, mutedCaptionTop, noteCaption, sectionHeading,
   subtleCaption, subtitleMeta, subtitleMetaBase, textAccentSemibold, textOnPrimary, titleBase, titleBaseAccent,
-  titleBaseCenter, titleBaseFlex, titleLg, titleSm, titleSmSemibold, titleXl, typeSm, typeXs, xsNote,
+  centerText, fieldLabel, labelSemibold, linkCaption, linkText, mutedCaptionSm, primaryBoldText,
+  subtitleMetaSm, textAccent, xsSemibold, titleBaseCenter, titleBaseFlex, titleLgFlex, titleLg, titleSm, titleSmSemibold, titleXl, typeSm, typeXs, xsNote,
 } from '../../src/theme/typographyStyles';
 import { colors, spacing, typography } from '../../src/theme/colors';
 
@@ -121,5 +122,43 @@ describe('card sub-line tokens', () => {
       marginTop: 2,
       marginBottom: spacing.md,
     });
+  });
+});
+describe('link, label and accent tokens', () => {
+  it('labelSemibold / fieldLabel pin the field labels', () => {
+    expect(labelSemibold).toMatchObject({
+      fontSize: typography.fontSizes.xs,
+      lineHeight: typography.lineHeights.xs,
+      fontWeight: typography.fontWeights.semibold,
+      color: colors.text,
+    });
+    expect(fieldLabel).toMatchObject({ ...labelSemibold, marginBottom: spacing.xs });
+  });
+  it('linkText / linkCaption are the sm and xs brand links', () => {
+    expect(linkText).toMatchObject({ fontSize: typography.fontSizes.sm, color: colors.primary, fontWeight: typography.fontWeights.semibold });
+    expect(linkCaption).toMatchObject({ fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold });
+  });
+  it('primaryBoldText / textAccent / centerText / titleLgFlex', () => {
+    expect(primaryBoldText).toMatchObject({ color: colors.primary, fontWeight: typography.fontWeights.bold });
+    expect(textAccent).toMatchObject({ color: colors.primaryDark });
+    expect(centerText).toMatchObject({ textAlign: 'center' });
+    expect(titleLgFlex).toMatchObject({ ...titleLg, flex: 1 });
+  });
+  it('mutedCaptionSm is mutedCaption with the sm gap above it', () => {
+    expect(mutedCaptionSm).toMatchObject({ ...mutedCaption, marginTop: spacing.sm });
+  });
+});
+describe('xsSemibold', () => {
+  it('is xs semibold text with no colour of its own', () => {
+    expect(xsSemibold).toEqual({
+      fontSize: typography.fontSizes.xs,
+      lineHeight: typography.lineHeights.xs,
+      fontWeight: typography.fontWeights.semibold,
+    });
+  });
+});
+describe('subtitleMetaSm', () => {
+  it('is subtitleMetaBase with the tighter sm gap beneath it', () => {
+    expect(subtitleMetaSm).toMatchObject({ ...subtitleMetaBase, marginBottom: spacing.sm });
   });
 });

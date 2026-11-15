@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { actionsRow, cardPad, flex1, screenStyles, spaceBetweenTop, stackSm, stackedCard } from '../../theme/layout';
+import { actionsRow, cardPad, flex1, screenStyles, spaceBetweenTopSm, stackSm, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.sm, lineHeight: typography.lineHeights.xs },
   cropsList: { gap: spacing.md, marginTop: spacing.sm },
   cropCard: cardPad,
-  cropHeader: { ...spaceBetweenTop, marginBottom: spacing.sm },
+  cropHeader: spaceBetweenTopSm,
   cropTitleBox: flex1,
   cropNameAr: titleBase,
   cropCategory: subtitleMeta,

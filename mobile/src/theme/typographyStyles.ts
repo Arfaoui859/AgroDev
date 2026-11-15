@@ -136,3 +136,55 @@ export const cardHeading: TextStyle = { ...titleSm, marginBottom: spacing.xs };
 
 /** Section heading: `titleSm` with the standard gap beneath it. */
 export const sectionHeading: TextStyle = { ...titleSm, marginBottom: spacing.sm };
+
+/** `titleLg` taking the free space in a row. */
+export const titleLgFlex: TextStyle = { ...titleLg, flex: 1 };
+
+/** `subtitleMetaBase` with the tighter sm gap beneath it. */
+export const subtitleMetaSm: TextStyle = { ...subtitleMetaBase, marginBottom: spacing.sm };
+
+/** xs semibold text in the inherited colour. */
+export const xsSemibold: TextStyle = {
+  fontSize: typography.fontSizes.xs,
+  lineHeight: typography.lineHeights.xs,
+  fontWeight: typography.fontWeights.semibold,
+};
+
+/** Centred text. */
+export const centerText: TextStyle = { textAlign: 'center' };
+
+/** xs semibold label in the body text colour. */
+export const labelSemibold: TextStyle = {
+  fontSize: typography.fontSizes.xs,
+  lineHeight: typography.lineHeights.xs,
+  fontWeight: typography.fontWeights.semibold,
+  color: colors.text,
+};
+
+/** Field label: `labelSemibold` with the tight gap beneath it. */
+export const fieldLabel: TextStyle = { ...labelSemibold, marginBottom: spacing.xs };
+
+/** Semibold sm link in the brand colour. */
+export const linkText: TextStyle = {
+  fontSize: typography.fontSizes.sm,
+  lineHeight: typography.lineHeights.sm,
+  color: colors.primary,
+  fontWeight: typography.fontWeights.semibold,
+};
+
+/** Semibold xs link in the brand colour. */
+export const linkCaption: TextStyle = {
+  fontSize: typography.fontSizes.xs,
+  lineHeight: typography.lineHeights.xs,
+  color: colors.primary,
+  fontWeight: typography.fontWeights.semibold,
+};
+
+/** Bold brand-coloured text (tabs, inline links). */
+export const primaryBoldText: TextStyle = { color: colors.primary, fontWeight: typography.fontWeights.bold };
+
+/** Dark brand accent text. */
+export const textAccent: TextStyle = { color: colors.primaryDark };
+
+/** `mutedCaption` with the standard gap above it. */
+export const mutedCaptionSm: TextStyle = { ...mutedCaption, marginTop: spacing.sm };

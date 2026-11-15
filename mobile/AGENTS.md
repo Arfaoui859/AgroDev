@@ -731,3 +731,24 @@ subtitle with the top gap and the md block gap); `src/theme/layout.ts` gained
 (ServiceHeader, SoilAnalysisScreen, MeasurementsStep, PlotStep, MarketplaceMatch,
 CultivationProjectScreen, ProfileScreen, AuthModal) and the two chip paddings
 (Badge, SoilReportView) through them. Layout test 16 cases, typography test 17.
+
+### Premium UI polish pass — surface/link tokens + full de-duplication (2026-11)
+
+`layout.ts` gained `primaryLightFill`, `primaryFill`, `chipScrollRow`,
+`paddedCardLg`, `stackTopMd`, `spaceBetweenSm`, `spaceBetweenTopSm`,
+`hairlineRow`, `gapMdTight`, `fillBackground`; `typographyStyles.ts` gained
+`titleLgFlex`, `centerText`, `labelSemibold`, `fieldLabel`, `linkText`,
+`linkCaption`, `primaryBoldText`, `textAccent`, `mutedCaptionSm`, `xsSemibold`
+and `subtitleMetaSm`. Migrated 26 files.
+
+The duplication detector (`StyleSheet.create` object literals repeated ≥2×
+across `src/`) now reports **only three** shapes, all deliberately kept local:
+the two `justifyContent: 'flex-start'/'flex-end'` pairs in
+`AIAssistantScreen.tsx` (they are the explicit LTR/RTL mirror variants of one
+row) and `paddingVertical: spacing.xs` in two unrelated cards. Every other
+shared shape is a named token.
+
+Also fixed two pre-existing test-lint warnings (`Array<T>` → `T[]` in
+`arabic-typography.test.ts`, unused `screen` import in `icon-tile.test.tsx`).
+Layout test 21 cases, typography test 23 cases; suite now **320 passed /
+7 skipped / 327 total**.

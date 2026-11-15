@@ -12,7 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { rowGapXs, rowWrapSm, stackSm } from '../../theme/layout';
-import { labelMedium, subtitleMetaBase, subtleCaption, titleLg, titleXl } from '../../theme/typographyStyles';
+import { fieldLabel, labelMedium, primaryBoldText, subtitleMetaBase, subtleCaption, titleLg, titleXl } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -313,15 +313,9 @@ const styles = StyleSheet.create({
   },
   tabBtnActive: { backgroundColor: colors.card },
   tabText: labelMedium,
-  tabTextActive: { color: colors.primary, fontWeight: typography.fontWeights.bold },
+  tabTextActive: primaryBoldText,
   field: stackSm,
-  label: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    fontWeight: typography.fontWeights.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
+  label: fieldLabel,
   input: formInput,
   roleGrid: rowWrapSm,
   errorBox: {
@@ -336,5 +330,5 @@ const styles = StyleSheet.create({
   errorText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.danger, lineHeight: typography.lineHeights.xs },
   switchRow: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: spacing.md },
   switchText: subtleCaption,
-  switchLink: { color: colors.primary, fontWeight: typography.fontWeights.bold },
+  switchLink: primaryBoldText,
 });

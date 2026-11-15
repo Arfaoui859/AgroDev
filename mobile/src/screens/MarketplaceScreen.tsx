@@ -7,10 +7,10 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { badgePill, cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, stackSm } from '../theme/layout';
+import { badgePill, cardBottomRow, cardPad, flex1, screenStyles, spaceBetweenSm, stackSm, stackTopMd } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
-import { mutedCaption, subtleCaption, titleBase } from '../theme/typographyStyles';
+import { labelSemibold, mutedCaption, subtleCaption, titleBase, xsSemibold } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -234,15 +234,15 @@ const MarketIntelRow: React.FC<{
 };
 
 const styles = StyleSheet.create({
-  intelCard: { marginTop: spacing.md },
+  intelCard: stackTopMd,
   intelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  intelLabel: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.text, fontWeight: typography.fontWeights.semibold },
-  intelState: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold },
+  intelLabel: labelSemibold,
+  intelState: xsSemibold,
   provBar: stackSm,
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },
   priceCard: cardPad,
-  cardHeader: { ...spaceBetween, marginBottom: spacing.sm },
+  cardHeader: spaceBetweenSm,
   cropInfo: flex1,
   cropName: titleBase,
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },

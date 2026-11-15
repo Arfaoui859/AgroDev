@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { primaryLightFill } from '../../theme/layout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -124,9 +125,7 @@ const styles = StyleSheet.create({
     padding: 2,
     borderRadius: radius.md,
   },
-  activeIconWrapper: {
-    backgroundColor: colors.primaryLight,
-  },
+  activeIconWrapper: primaryLightFill,
   tabLabel: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,

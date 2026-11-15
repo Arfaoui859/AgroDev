@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { rtlStyles } from '../../theme/rtl';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
-import { metaRowSm, screenStyles } from '../../theme/layout';
+import { chipScrollRow, metaRowSm, screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing } from '../../theme/colors';
 import { mutedCaption } from '../../theme/typographyStyles';
@@ -94,7 +94,7 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
 };
 
 const styles = StyleSheet.create({
-  catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
+  catScroll: chipScrollRow,
   sourceNote: metaRowSm,
   sourceText: mutedCaption,
 });

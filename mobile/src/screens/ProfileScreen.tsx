@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { cardPad, flex1, gapXs, metaRow, rowGapMd, rowGapSm, screenStyles, stackLg } from '../theme/layout';
+import { cardPad, flex1, gapXs, metaRow, paddedCardLg, primaryLightFill, rowGapMd, rowGapSm, screenStyles, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtitleMeta, titleSm, xsNote } from '../theme/typographyStyles';
@@ -298,10 +298,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
-  profileCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
+  profileCard: paddedCardLg,
   avatarRow: rowGapMd,
   avatarLarge: {
     width: 64,
@@ -333,9 +330,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
   },
-  langChoiceActive: {
-    backgroundColor: colors.primaryLight,
-  },
+  langChoiceActive: primaryLightFill,
   langChoiceText: {
     fontSize: typography.fontSizes.sm,
     lineHeight: typography.lineHeights.sm,

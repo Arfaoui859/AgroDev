@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaptionTop, textAccentSemibold } from '../../theme/typographyStyles';
-import { chipActiveFill, selectedChip } from '../../theme/layout';
+import { centerText, mutedCaptionTop, textAccent, textAccentSemibold } from '../../theme/typographyStyles';
+import { chipActiveFill, primaryFill, selectedChip } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
 export interface Step {
@@ -84,10 +84,10 @@ const styles = StyleSheet.create({
   circleDone: chipActiveFill,
   circleText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.bold, color: colors.textMuted },
   circleTextOnPrimary: { color: colors.primaryForeground },
-  circleTextDone: { color: colors.primaryDark },
+  circleTextDone: textAccent,
   label: mutedCaptionTop,
   labelActive: textAccentSemibold,
-  rtlText: { textAlign: 'center' },
+  rtlText: centerText,
   connector: { height: 2, flex: 0.4, backgroundColor: colors.border },
-  connectorActive: { backgroundColor: colors.primary },
+  connectorActive: primaryFill,
 });

@@ -3,8 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { pillPadSm, spaceBetweenXs } from '../../theme/layout';
-import { mutedCaption, mutedCaptionTop, subtitleMeta } from '../../theme/typographyStyles';
+import { hairlineRow, pillPadSm, spaceBetweenXs } from '../../theme/layout';
+import { mutedCaption, mutedCaptionTop, subtitleMeta, xsSemibold } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil, SoilTranslations } from '../../i18n/soil';
 import { SoilReport, SoilReportAction } from '../../types';
@@ -495,8 +495,8 @@ const styles = StyleSheet.create({
   empty: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textMuted },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.xs, marginBottom: spacing.xs },
   chip: { ...pillPadSm, borderRadius: radius.full },
-  chipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold },
-  tableRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  chipText: xsSemibold,
+  tableRow: hairlineRow,
   tableHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tableParam: {
     flex: 1,
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   tableSub: subtitleMeta,
   tableEvidence: mutedCaptionTop,
-  findingRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  findingRow: hairlineRow,
   findingParam: {
     flex: 1,
     fontSize: typography.fontSizes.sm,

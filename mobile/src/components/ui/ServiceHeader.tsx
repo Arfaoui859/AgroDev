@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, typography } from '../../theme/colors';
+import { radius } from '../../theme/colors';
 import { flex1, rowGapMd, stackMd } from '../../theme/layout';
-import { subtitleMeta } from '../../theme/typographyStyles';
+import { subtitleMeta, titleLg } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ServiceHeaderProps {
@@ -50,6 +50,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   titleTextContainer: flex1,
-  mainTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
+  mainTitle: titleLg,
   mainSub: subtitleMeta,
 });

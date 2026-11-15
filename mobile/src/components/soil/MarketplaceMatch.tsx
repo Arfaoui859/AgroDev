@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing } from '../../theme/colors';
-import { subtitleMeta, subtitleMetaBase, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
+import { subtitleMeta, subtitleMetaSm, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
 import { flex1, gapXs, stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   card: stackedCard,
   head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   title: titleBaseFlex,
-  sub: { ...subtitleMetaBase, marginBottom: spacing.sm },
+  sub: subtitleMetaSm,
   list: gapXs,
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   rowText: flex1,

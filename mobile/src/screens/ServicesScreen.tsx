@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { gapMd, screenStyles } from '../theme/layout';
+import { chipScrollRow, gapMd, screenStyles, spaceBetweenSm } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { IconTile } from '../components/ui/IconTile';
@@ -284,10 +284,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
 };
 
 const styles = StyleSheet.create({
-  categoryScroll: {
-    gap: spacing.xs,
-    paddingBottom: spacing.md,
-  },
+  categoryScroll: chipScrollRow,
   serviceList: gapMd,
   serviceCard: {
     minHeight: 48,
@@ -298,12 +295,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadows.sm,
   },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
+  cardTopRow: spaceBetweenSm,
   serviceTitle: {
     fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,

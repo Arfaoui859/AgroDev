@@ -8,10 +8,10 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { cardBottomRow, cardPad, flex1, gapSm, rowGapXs, rowWrapSm, screenStyles, spaceBetween, stackSm, stackTopSm } from '../../theme/layout';
+import { cardBottomRow, cardPad, flex1, gapSm, rowGapXs, rowWrapSm, screenStyles, spaceBetween, spaceBetweenTopSm, stackSm, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaptionTop, sectionHeading, subtitleMeta, subtleCaption, titleBase } from '../../theme/typographyStyles';
+import { fieldLabel, mutedCaptionTop, primaryBoldText, sectionHeading, subtitleMeta, subtleCaption, titleBase } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
@@ -492,30 +492,16 @@ const styles = StyleSheet.create({
   },
   formTitle: sectionHeading,
   inputGroup: stackSm,
-  inputLabel: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    fontWeight: typography.fontWeights.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
+  inputLabel: fieldLabel,
   input: formInput,
   chipWrap: rowWrapSm,
   fieldsSection: gapSm,
   fieldCard: cardPad,
-  fieldHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
+  fieldHeader: spaceBetweenTopSm,
   fieldInfo: flex1,
   fieldName: titleBase,
   fieldCrop: subtitleMeta,
-  cropHighlight: {
-    color: colors.primary,
-    fontWeight: typography.fontWeights.bold,
-  },
+  cropHighlight: primaryBoldText,
   fieldFooter: cardBottomRow,
   footerMeta: rowGapXs,
   footerText: subtleCaption,

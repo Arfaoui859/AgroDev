@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../theme/colors';
-import { subtitleMeta, subtitleMetaBase, titleBase, titleSmSemibold } from '../../theme/typographyStyles';
+import { colors, radius, spacing } from '../../theme/colors';
+import { fieldLabel, linkText, subtitleMeta, subtitleMetaBase, titleBase, titleSmSemibold } from '../../theme/typographyStyles';
 import { chipActiveFill, flex1, stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil } from '../../i18n/soil';
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   card: stackedCard,
   heading: titleBase,
   sub: subtitleMetaBase,
-  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: spacing.xs },
+  label: fieldLabel,
   list: { gap: spacing.sm, marginBottom: spacing.sm },
   option: {
     flexDirection: 'row',
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   optionTitle: titleSmSemibold,
   optionSub: subtitleMeta,
   addLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48 },
-  addLinkText: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.primary, fontWeight: typography.fontWeights.semibold },
+  addLinkText: linkText,
   emptyBox: { gap: spacing.sm, paddingVertical: spacing.sm },
   inlineForm: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

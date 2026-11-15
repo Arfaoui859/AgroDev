@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { chipActiveFill, flex1 } from '../../theme/layout';
-import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
+import { chipActiveFill, flex1, primaryFill, primaryLightFill } from '../../theme/layout';
+import { subtitleMeta, textAccent, titleBase, titleLg } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -176,7 +176,7 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
 };
 
 const styles = StyleSheet.create({
-  modalTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
+  modalTitle: titleLg,
   modalSub: subtitleMeta,
   personaList: { marginVertical: spacing.xs },
   personaCard: {
@@ -192,10 +192,10 @@ const styles = StyleSheet.create({
   personaCardSelected: chipActiveFill,
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 6 },
   iconWrap: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  iconWrapNormal: { backgroundColor: colors.primaryLight },
-  iconWrapSelected: { backgroundColor: colors.primary },
+  iconWrapNormal: primaryLightFill,
+  iconWrapSelected: primaryFill,
   titleArea: flex1,
   personaTitle: titleBase,
-  personaTitleSelected: { color: colors.primaryDark },
+  personaTitleSelected: textAccent,
   personaDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs, marginTop: 2 },
 });

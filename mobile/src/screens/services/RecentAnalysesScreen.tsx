@@ -4,7 +4,7 @@ import { cardPad, flex1, gapSm, modalSheet, roundIconButton, screenStyles } from
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaptionTop, titleSm } from '../../theme/typographyStyles';
+import { mutedCaptionTop, titleLgFlex, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -200,12 +200,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  modalTitle: {
-    flex: 1,
-    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  modalTitle: titleLgFlex,
   modalClose: roundIconButton,
   modalDate: {
     fontSize: typography.fontSizes.xs,

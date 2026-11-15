@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
-import { actionsRow, cardPad, flex1, rowWrapSm, screenStyles, stackMd, stackedCard } from '../../theme/layout';
+import { actionsRow, cardPad, flex1, rowWrapSm, screenStyles, stackMd, stackTopMd, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -428,5 +428,5 @@ const styles = StyleSheet.create({
   badgesRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   diseaseDesc: { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
-  detailBlock: { marginTop: spacing.md },
+  detailBlock: stackTopMd,
 });

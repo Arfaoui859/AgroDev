@@ -2,8 +2,8 @@ import React from 'react';
 import { rtlStyles } from '../../theme/rtl';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, spacing } from '../../theme/colors';
-import { metaRowSm, stackLg } from '../../theme/layout';
+import { colors } from '../../theme/colors';
+import { gapMdTight, metaRowSm, stackLg } from '../../theme/layout';
 import { mutedCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -61,7 +61,7 @@ export const LearningVideos: React.FC<LearningVideosProps> = ({ onOpenAll }) => 
 
 const styles = StyleSheet.create({
   section: stackLg,
-  row: { gap: spacing.md, paddingVertical: 2 },
+  row: gapMdTight,
   sourceNote: metaRowSm,
   sourceText: mutedCaption,
 });

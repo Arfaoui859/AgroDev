@@ -4,7 +4,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { cardPad, flex1, stackLg } from '../../theme/layout';
-import { titleBase } from '../../theme/typographyStyles';
+import { mutedCaptionSm, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
 import { Card } from '../ui/Card';
@@ -64,5 +64,5 @@ const styles = StyleSheet.create({
   textWrap: flex1,
   seasonName: titleBase,
   tip: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, marginTop: 2 },
-  note: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: spacing.sm },
+  note: mutedCaptionSm,
 });

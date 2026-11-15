@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { cardPad, flex1, gapMd, screenStyles, spaceBetweenTop, stackedCard, summaryRow } from '../../theme/layout';
+import { cardPad, flex1, gapMd, screenStyles, spaceBetweenSm, spaceBetweenTopSm, stackedCard, summaryRow } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { mutedCaption, subtitleMeta, titleBase, titleSm } from '../../theme/typographyStyles';
@@ -189,14 +189,14 @@ const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) =>
 
 const styles = StyleSheet.create({
   summaryCard: stackedCard,
-  summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  summaryHeader: spaceBetweenSm,
   summaryTitle: titleSm,
   statTile: flex1,
   divider: { width: 1, height: 32, backgroundColor: colors.border },
   totalValue: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', lineHeight: typography.lineHeights.xs },
   animalList: gapMd,
   animalCard: cardPad,
-  animalHeader: { ...spaceBetweenTop, marginBottom: spacing.sm },
+  animalHeader: spaceBetweenTopSm,
   animalTitleArea: flex1,
   animalTag: titleBase,
   animalMeta: subtitleMeta,

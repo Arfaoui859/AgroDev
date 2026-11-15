@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../../theme/colors';
+import { colors, spacing } from '../../theme/colors';
 import { flex1, rowGapXs } from '../../theme/layout';
-import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
+import { linkText, subtitleMeta, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface SectionHeaderProps {
@@ -91,10 +91,5 @@ const styles = StyleSheet.create({
   title: titleBase,
   subtitle: subtitleMeta,
   linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
-  linkText: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: typography.lineHeights.sm,
-    color: colors.primary,
-    fontWeight: typography.fontWeights.semibold,
-  },
+  linkText: linkText,
 });

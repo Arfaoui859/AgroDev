@@ -1,6 +1,7 @@
 import {
   actionsRow, badgePill, cardBottomRow, cardPad, flex1, gapMd, metaRow, metaRowSm, rowCenter, rowGapMd,
-  pillPadMd, pillPadSm, rowGapSm, rowGapXs, rowWrapSm, sectionHeadRow,
+  chipScrollRow, fillBackground, gapMdTight, hairlineRow, paddedCardLg, pillPadMd, pillPadSm,
+  primaryFill, primaryLightFill, spaceBetweenSm, spaceBetweenTopSm, stackTopMd, rowGapSm, rowGapXs, rowWrapSm, sectionHeadRow,
   screenStyles, selectedChip, spaceBetween, spaceBetweenTop, spaceBetweenXs, stackLg, stackMd, stackSm,
   stackTopSm, stackedCard,
 } from '../../src/theme/layout';
@@ -98,5 +99,27 @@ describe('pill padding tokens', () => {
   it('pillPadSm / pillPadMd pin the chip paddings', () => {
     expect(pillPadSm).toMatchObject({ paddingHorizontal: spacing.sm, paddingVertical: 3 });
     expect(pillPadMd).toMatchObject({ paddingHorizontal: spacing.md, paddingVertical: 5 });
+  });
+});
+describe('surface and row composite tokens', () => {
+  it('primaryLightFill / primaryFill are the pale and solid brand fills', () => {
+    expect(primaryLightFill).toMatchObject({ backgroundColor: colors.primaryLight });
+    expect(primaryFill).toMatchObject({ backgroundColor: colors.primary });
+  });
+  it('chipScrollRow / gapMdTight pin the chip scroller and tight card list', () => {
+    expect(chipScrollRow).toMatchObject({ gap: spacing.xs, paddingBottom: spacing.md });
+    expect(gapMdTight).toMatchObject({ gap: spacing.md, paddingVertical: 2 });
+  });
+  it('paddedCardLg / stackTopMd pin the large card and its block gap', () => {
+    expect(paddedCardLg).toMatchObject({ padding: spacing.lg, marginBottom: spacing.lg });
+    expect(stackTopMd).toMatchObject({ marginTop: spacing.md });
+  });
+  it('spaceBetweenSm / spaceBetweenTopSm extend the space-between rows', () => {
+    expect(spaceBetweenSm).toMatchObject({ justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm });
+    expect(spaceBetweenTopSm).toMatchObject({ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm });
+  });
+  it('hairlineRow / fillBackground pin the ruled row and the full-bleed fill', () => {
+    expect(hairlineRow).toMatchObject({ paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight });
+    expect(fillBackground).toMatchObject({ flex: 1, backgroundColor: colors.background });
   });
 });

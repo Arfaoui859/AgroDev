@@ -13,7 +13,8 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { spaceBetween, stackMd } from '../../theme/layout';
+import { titleLgFlex } from '../../theme/typographyStyles';
+import { fillBackground, spaceBetween, stackMd } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -331,7 +332,7 @@ const Section: React.FC<{ icon: keyof typeof MaterialCommunityIcons.glyphMap; ti
 );
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
+  flex: fillBackground,
   center: {
     flex: 1,
     alignItems: 'center',
@@ -456,12 +457,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
   },
-  resultTitle: {
-    flex: 1,
-    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  resultTitle: titleLgFlex,
   confidenceRow: {
     flexDirection: 'row',
     alignItems: 'center',

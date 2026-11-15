@@ -4,7 +4,7 @@ import { flex1, gapXs, screenStyles, sectionHeadRow, stackedCard } from '../../t
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { mutedCaption, mutedCaptionTop, subtitleMeta, subtitleMetaBase, titleBase, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
+import { mutedCaption, mutedCaptionTop, subtitleMeta, subtitleMetaSm, titleBase, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   successSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginBottom: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   tasksTitle: titleBase,
-  tasksSub: { ...subtitleMetaBase, marginBottom: spacing.sm },
+  tasksSub: subtitleMetaSm,
   taskList: gapXs,
   taskRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48, paddingVertical: spacing.xs },
   taskText: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text },

@@ -4,7 +4,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { rowGapSm, rowGapXs } from '../../theme/layout';
-import { titleBaseCenter, titleLg } from '../../theme/typographyStyles';
+import { linkCaption, titleBaseCenter, titleLg } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { IconButton } from './IconButton';
@@ -154,12 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: titleLg,
-  roleSub: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.primary,
-    fontWeight: typography.fontWeights.semibold,
-  },
+  roleSub: linkCaption,
   titleContainer: {
     flex: 1,
     marginHorizontal: spacing.sm,

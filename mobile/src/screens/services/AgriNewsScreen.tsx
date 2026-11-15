@@ -8,10 +8,10 @@ import {
   RefreshControl,
   Linking,
 } from 'react-native';
-import { screenStyles, stackSm } from '../../theme/layout';
+import { chipScrollRow, screenStyles, stackSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { mutedCaption } from '../../theme/typographyStyles';
+import { linkCaption, mutedCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -202,7 +202,7 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
 };
 
 const styles = StyleSheet.create({
-  catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
+  catScroll: chipScrollRow,
   provBar: stackSm,
   articleCard: { padding: spacing.md, marginBottom: spacing.sm },
   articleHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   articleDate: mutedCaption,
   readMore: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  readMoreText: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
+  readMoreText: linkCaption,
   sourcesNote: { padding: spacing.md, backgroundColor: colors.surfaceSubtle, marginTop: spacing.xs },
   sourcesNoteText: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.sm },
 });

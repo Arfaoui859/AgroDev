@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { cardPad, gapXs, rowCenter, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
+import { cardPad, chipScrollRow, gapXs, paddedCardLg, rowCenter, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -338,10 +338,7 @@ const styles = StyleSheet.create({
     color: colors.warning,
     marginBottom: spacing.sm,
   },
-  govScroll: {
-    gap: spacing.xs,
-    paddingBottom: spacing.md,
-  },
+  govScroll: chipScrollRow,
   govPill: {
     minHeight: 48,
     justifyContent: 'center',
@@ -357,10 +354,7 @@ const styles = StyleSheet.create({
   },
   govPillText: labelMedium,
   govPillTextSelected: textOnPrimary,
-  currentCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
+  currentCard: paddedCardLg,
   currentHeader: spaceBetween,
   currentGov: titleBase,
   currentCondition: subtitleMeta,

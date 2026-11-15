@@ -47,7 +47,7 @@ describe('Arabic typography', () => {
 
   it('exposes line heights that are ~1.5x the paired font size', () => {
     // xs->20, sm->21, base->24, lg->27, xl->30 (see theme/colors.ts)
-    const pairs: Array<[keyof typeof typography.lineHeights, keyof typeof typography.fontSizes]> = [
+    const pairs: [keyof typeof typography.lineHeights, keyof typeof typography.fontSizes][] = [
       ['xs', 'xs'],
       ['sm', 'sm'],
       ['base', 'base'],

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { colors, typography } from '../../theme/colors';
-import { mutedCaptionTop } from '../../theme/typographyStyles';
+import { centerText, mutedCaptionTop } from '../../theme/typographyStyles';
 
 interface StatTileProps {
   label: string;
@@ -33,5 +33,5 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
   },
   label: mutedCaptionTop,
-  labelCentered: { textAlign: 'center' },
+  labelCentered: centerText,
 });

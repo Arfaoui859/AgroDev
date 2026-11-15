@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { subtitleMetaBase, titleBase } from '../../theme/typographyStyles';
+import { fieldLabel, linkText, mutedCaptionSm, subtitleMetaBase, titleBase } from '../../theme/typographyStyles';
 import { stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil } from '../../i18n/soil';
@@ -216,10 +216,10 @@ const styles = StyleSheet.create({
   sub: subtitleMetaBase,
   groupTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, marginTop: spacing.sm, marginBottom: spacing.xs },
   groupHint: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginBottom: spacing.xs },
-  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: spacing.xs },
+  label: fieldLabel,
   fieldRtl: {},
   subBlock: { marginTop: spacing.xs },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, marginTop: spacing.sm },
-  toggleText: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.primary, fontWeight: typography.fontWeights.semibold },
-  note: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: spacing.sm },
+  toggleText: linkText,
+  note: mutedCaptionSm,
 });

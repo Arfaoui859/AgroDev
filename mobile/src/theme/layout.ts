@@ -131,3 +131,37 @@ export const metaRowSm: ViewStyle = { ...rowGapXs, marginTop: spacing.sm };
 
 /** Section head: icon + title with the tight gap beneath it. */
 export const sectionHeadRow: ViewStyle = { ...rowGapSm, marginBottom: spacing.xs };
+
+/** Pale brand fill (active tab/choice backgrounds). */
+export const primaryLightFill: ViewStyle = { backgroundColor: colors.primaryLight };
+
+/** Solid brand fill. */
+export const primaryFill: ViewStyle = { backgroundColor: colors.primary };
+
+/** Horizontal chip scroller: xs gap, md padding beneath. */
+export const chipScrollRow: ViewStyle = { gap: spacing.xs, paddingBottom: spacing.md };
+
+/** Large padded card with the large block gap beneath it. */
+export const paddedCardLg: ViewStyle = { padding: spacing.lg, marginBottom: spacing.lg };
+
+/** Standard gap above a block. */
+export const stackTopMd: ViewStyle = { marginTop: spacing.md };
+
+/** `spaceBetween` with the standard gap beneath it. */
+export const spaceBetweenSm: ViewStyle = { ...spaceBetween, marginBottom: spacing.sm };
+
+/** `spaceBetweenTop` with the standard gap beneath it. */
+export const spaceBetweenTopSm: ViewStyle = { ...spaceBetweenTop, marginBottom: spacing.sm };
+
+/** Table/list row separated by a hairline rule. */
+export const hairlineRow: ViewStyle = {
+  paddingVertical: spacing.sm,
+  borderBottomWidth: 1,
+  borderBottomColor: colors.borderLight,
+};
+
+/** Vertical card list on the md gap with the tight optical padding. */
+export const gapMdTight: ViewStyle = { gap: spacing.md, paddingVertical: 2 };
+
+/** Full-bleed background fill. */
+export const fillBackground: ViewStyle = { flex: 1, backgroundColor: colors.background };
