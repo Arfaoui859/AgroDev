@@ -9,6 +9,7 @@ import { UserRole } from '../../types';
 import { ExtraTranslations } from '../../i18n/extra';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { IconButton } from '../ui/IconButton';
 
 interface PersonaSelectorModalProps {
   visible: boolean;
@@ -128,14 +129,13 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
               <Text style={[styles.modalTitle, isRtl && rtlStyles.rtlText]}>{x.onboardingTitle}</Text>
               <Text style={[styles.modalSub, isRtl && rtlStyles.rtlText]}>{x.onboardingSubtitle}</Text>
             </View>
-            <TouchableOpacity
+            <IconButton
+              icon="close"
+              size={22}
+              color={colors.textSecondary}
               onPress={handleSkip}
-              accessibilityRole="button"
               accessibilityLabel={x.close}
-              style={styles.closeBtn}
-            >
-              <MaterialCommunityIcons name="close" size={22} color={colors.textSecondary} />
-            </TouchableOpacity>
+            />
           </View>
 
           <ScrollView style={styles.personaList} showsVerticalScrollIndicator={false}>
@@ -199,14 +199,6 @@ const styles = StyleSheet.create({
   headerTextWrap: { flex: 1 },
   modalTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
   modalSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
-  closeBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceSubtle,
-  },
   personaList: { marginVertical: spacing.xs },
   personaCard: {
     minHeight: 48,

@@ -17,6 +17,7 @@ import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
 import { UserRole } from '../../types';
 import { ExtraTranslations } from '../../i18n/extra';
 
@@ -128,14 +129,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
               <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
               <Text style={styles.brandTitle}>AgroGrowth</Text>
             </View>
-            <TouchableOpacity
+            <IconButton
+              icon="close"
+              size={22}
+              color={colors.textSecondary}
               onPress={onClose}
-              style={styles.closeBtn}
-              accessibilityRole="button"
               accessibilityLabel={x.close}
-            >
-              <MaterialCommunityIcons name="close" size={22} color={colors.textSecondary} />
-            </TouchableOpacity>
+            />
           </View>
 
           <Text style={[styles.title, isRtl && rtlStyles.rtlText]}>
@@ -330,14 +330,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
-  },
-  closeBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceSubtle,
   },
   title: {
     fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl,

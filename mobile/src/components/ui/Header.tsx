@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
+import { IconButton } from './IconButton';
 
 interface HeaderProps {
   title?: string;
@@ -63,19 +64,13 @@ export const Header: React.FC<HeaderProps> = ({
     <View style={styles.container}>
       <View style={[styles.content, isRtl && rtlStyles.rtlRow]}>
         {showBack ? (
-          <TouchableOpacity
+          <IconButton
+            icon={isRtl ? 'chevron-right' : 'chevron-left'}
+            size={28}
             activeOpacity={0.7}
-            onPress={onBack}
-            style={styles.backButton}
+            onPress={() => onBack?.()}
             accessibilityLabel={t.back}
-            accessibilityRole="button"
-          >
-            <MaterialCommunityIcons
-              name={isRtl ? 'chevron-right' : 'chevron-left'}
-              size={28}
-              color={colors.text}
-            />
-          </TouchableOpacity>
+          />
         ) : (
           <View style={[styles.brandContainer, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.logoBadge}>
@@ -105,15 +100,11 @@ export const Header: React.FC<HeaderProps> = ({
           {rightAction}
 
           {onOpenNotifications ? (
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <IconButton
+              icon="bell-outline"
               onPress={onOpenNotifications}
-              style={styles.iconButton}
               accessibilityLabel={x.notificationsTitle}
-              accessibilityRole="button"
-            >
-              <MaterialCommunityIcons name="bell-outline" size={20} color={colors.text} />
-            </TouchableOpacity>
+            />
           ) : null}
 
           {/* Language Toggle Pill */}
@@ -191,17 +182,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
   },
-  // Interactive header controls use the 48dp minimum touch target; the visual
-  // weight is kept light with the surrounding padding rather than a smaller hit
-  // area.
-  backButton: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceSubtle,
-  },
   actionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,14 +197,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-  },
-  iconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceSubtle,
   },
   langText: {
     fontSize: typography.fontSizes.xs,

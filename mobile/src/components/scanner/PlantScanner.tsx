@@ -321,12 +321,12 @@ const Section: React.FC<{ icon: keyof typeof MaterialCommunityIcons.glyphMap; ti
   title,
   items,
 }) => (
-    <Card variant="flat" style={styles.section}>
-      <SectionHeader title={title} icon={icon} iconSize={18} titleNumberOfLines={0} />
-      {items.map((item, index) => (
-        <Bullet key={index} text={item} />
-      ))}
-    </Card>
+  <Card variant="flat" style={styles.section}>
+    <SectionHeader title={title} icon={icon} iconSize={18} titleNumberOfLines={0} />
+    {items.map((item, index) => (
+      <Bullet key={index} text={item} />
+    ))}
+  </Card>
 );
 
 const styles = StyleSheet.create({

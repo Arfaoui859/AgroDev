@@ -501,3 +501,19 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 55 suites / 257 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders the soil
 analysis flow correctly.
+
+### Premium UI polish pass — shared IconButton (verified 2026-11)
+
+- **`IconButton`** (`src/components/ui/IconButton.tsx`) is the one circular,
+  icon-only control. The identical 48dp `surfaceSubtle` circle was written four
+  times: the header back button and notifications button
+  (`Header.tsx`), and the modal close buttons in `PersonaSelectorModal` and
+  `AuthModal`. IconButton owns the size, shape and accessible-label contract;
+  callers pass only the glyph, handler, label and optional size/colour. The
+  duplicated `backButton` / `iconButton` / `closeBtn` style blocks were deleted.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 57 suites / 259 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` and `--platform android` both bundle; the web
+export renders Home, Services and Profile (FR switch) with the header controls
+intact.
