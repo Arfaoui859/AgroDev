@@ -633,3 +633,15 @@ shares a row with trailing content), **`titleBaseAccent`** (`titleBase` in
 `primaryDark`, the score/confidence banners), **`accentCaption`** (xs
 `primaryDark` sub-label) and **`titleSmSemibold`** (sm semibold list/option
 title). Pinned by `tests/unit/typography-styles.test.ts` (10 cases).
+
+### Premium UI polish pass — shared row layout (verified 2026-11)
+
+`src/theme/layout.ts` gained the row primitives that were re-declared across
+screens: **`spaceBetween`** (row, `space-between`, centred),
+**`spaceBetweenTop`** (row, `space-between`, `flex-start`), **`rowCenter`**,
+**`rowCenterSm`** and **`cardBottomRow`** (the hairline-rule footer above a list
+card's actions). Migrated ~14 call sites (PlantScanner, WeatherDetail, Livestock,
+CropRecommendation, FarmManagement, Marketplace, Home, SoilReportView,
+SoilAnalysis, FormField). Entries that add a margin now spread the shared token,
+e.g. `{ ...spaceBetween, marginBottom: spacing.sm }`. Pinned by
+`tests/unit/layout-styles.test.ts` (5 cases).

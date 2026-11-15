@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { screenStyles, spaceBetween } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   subSection: { marginTop: spacing.sm },
   subSectionTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
   findingCard: { padding: spacing.md, marginBottom: spacing.xs },
-  findingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  findingHeader: { ...spaceBetween, marginBottom: spacing.xs },
   findingParam: titleSm,
   findingText: noteCaption,
 });

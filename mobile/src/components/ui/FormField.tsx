@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, StyleProp, ViewStyle } from 'react-n
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { mutedCaption } from '../../theme/typographyStyles';
+import { spaceBetween } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface FormFieldProps {
@@ -57,7 +58,7 @@ export const FormField: React.FC<FormFieldProps> = ({
 
 const styles = StyleSheet.create({
   group: { marginBottom: spacing.sm },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  labelRow: { ...spaceBetween, marginBottom: spacing.xs },
   label: { flex: 1, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, lineHeight: typography.lineHeights.xs },
   suffix: mutedCaption,
   input: {

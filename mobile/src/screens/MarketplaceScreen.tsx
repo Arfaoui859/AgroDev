@@ -7,7 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { cardPad, screenStyles } from '../theme/layout';
+import { cardBottomRow, cardPad, screenStyles, spaceBetween } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtleCaption, titleBase } from '../theme/typographyStyles';
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   provBar: { marginBottom: spacing.sm },
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },
   priceCard: cardPad,
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  cardHeader: { ...spaceBetween, marginBottom: spacing.sm },
   cropInfo: { flex: 1 },
   cropName: titleBase,
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
@@ -256,15 +256,7 @@ const styles = StyleSheet.create({
   },
   priceValue: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
   currencyLabel: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: typography.lineHeights.xs },
-  cardBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceSubtle,
-    paddingTop: spacing.xs,
-    marginTop: spacing.xs,
-  },
+  cardBottomRow: cardBottomRow,
   trendBadge: {
     flexDirection: 'row',
     alignItems: 'center',

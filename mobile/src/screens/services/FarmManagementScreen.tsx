@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { cardPad, screenStyles } from '../../theme/layout';
+import { cardBottomRow, cardPad, screenStyles, spaceBetween } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { subtitleMeta, subtleCaption } from '../../theme/typographyStyles';
@@ -458,11 +458,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  farmHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  farmHeader: spaceBetween,
   provBar: { marginTop: spacing.sm },
   farmHeaderInfo: {
     flex: 1,
@@ -550,15 +546,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: typography.fontWeights.bold,
   },
-  fieldFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceSubtle,
-    paddingTop: spacing.xs,
-    marginTop: spacing.xs,
-  },
+  fieldFooter: cardBottomRow,
   footerMeta: {
     flexDirection: 'row',
     alignItems: 'center',

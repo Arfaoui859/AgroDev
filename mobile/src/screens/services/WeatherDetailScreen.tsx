@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { cardPad, screenStyles } from '../../theme/layout';
+import { cardPad, screenStyles, spaceBetween } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -364,11 +364,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
-  currentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  currentHeader: spaceBetween,
   currentGov: {
     fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
@@ -425,11 +421,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   forecastCard: cardPad,
-  forecastRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  forecastRow: spaceBetween,
   dayText: {
     fontSize: typography.fontSizes.sm,
     lineHeight: typography.lineHeights.sm,

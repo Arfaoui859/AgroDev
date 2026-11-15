@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { cardPad, screenStyles, stackedCard } from '../../theme/layout';
+import { cardPad, screenStyles, spaceBetweenTop, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { mutedCaption, subtitleMeta, titleBase, titleSm } from '../../theme/typographyStyles';
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   totalValue: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', lineHeight: typography.lineHeights.xs },
   animalList: { gap: spacing.md },
   animalCard: cardPad,
-  animalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
+  animalHeader: { ...spaceBetweenTop, marginBottom: spacing.sm },
   animalTitleArea: { flex: 1 },
   animalTag: titleBase,
   animalMeta: subtitleMeta,

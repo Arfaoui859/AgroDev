@@ -13,6 +13,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { spaceBetween } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -372,11 +373,7 @@ const styles = StyleSheet.create({
   },
   captureErrorText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, flexShrink: 1, lineHeight: typography.lineHeights.xs },
   errorClose: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginVertical: -14, marginHorizontal: -6 },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  controls: spaceBetween,
   sideBtn: {
     width: 52,
     height: 52,

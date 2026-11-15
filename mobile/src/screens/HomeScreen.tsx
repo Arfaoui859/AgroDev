@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { screenStyles } from '../theme/layout';
+import { screenStyles, spaceBetween } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   tilesRow: { flexDirection: 'row', gap: spacing.sm },
   bigActionShadow: { borderRadius: radius.lg, ...shadows.md },
   bigActionCard: { minHeight: 48, borderRadius: radius.lg, padding: spacing.lg },
-  bigActionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  bigActionHeader: { ...spaceBetween, marginBottom: spacing.sm },
   bigActionIconWrapper: {
     width: 48,
     height: 48,

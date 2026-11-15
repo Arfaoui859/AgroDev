@@ -1,4 +1,4 @@
-import { screenStyles, stackedCard } from '../../src/theme/layout';
+import { cardBottomRow, cardPad, screenStyles, spaceBetween, spaceBetweenTop, stackedCard } from '../../src/theme/layout';
 import { colors, spacing } from '../../src/theme/colors';
 
 /**
@@ -14,5 +14,26 @@ describe('layout styles', () => {
 
   it('stackedCard is the tighter card pad with the standard gap', () => {
     expect(stackedCard).toMatchObject({ padding: spacing.md, marginBottom: spacing.md });
+  });
+
+  it('cardPad is the tight card pad without a gap', () => {
+    expect(cardPad).toMatchObject({ padding: spacing.md });
+  });
+
+  it('spaceBetween and spaceBetweenTop pin the shared row geometry', () => {
+    expect(spaceBetween).toMatchObject({ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' });
+    expect(spaceBetweenTop).toMatchObject({ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' });
+  });
+
+  it('cardBottomRow adds the hairline rule above the card actions', () => {
+    expect(cardBottomRow).toMatchObject({
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: colors.surfaceSubtle,
+      paddingTop: spacing.xs,
+      marginTop: spacing.xs,
+    });
   });
 });

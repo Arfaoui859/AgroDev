@@ -22,3 +22,26 @@ export const stackedCard: ViewStyle = { padding: spacing.md, marginBottom: spaci
 
 /** The same `spacing.md` pad as `stackedCard` for a card that is not followed by a gap. */
 export const cardPad: ViewStyle = { padding: spacing.md };
+
+/** Row of items with equal space between them, vertically centred. */
+export const spaceBetween: ViewStyle = { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' };
+
+/** Row of items pushed to opposite ends, top-aligned (headers with a title block). */
+export const spaceBetweenTop: ViewStyle = { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' };
+
+/** Centred flex row. */
+export const rowCenter: ViewStyle = { flexDirection: 'row', alignItems: 'center' };
+
+/** Centred flex row with the small gap. */
+export const rowCenterSm: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: spacing.sm };
+
+/** Footer row of a list card: a hairline rule above the trailing actions. */
+export const cardBottomRow: ViewStyle = {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  borderTopWidth: 1,
+  borderTopColor: colors.surfaceSubtle,
+  paddingTop: spacing.xs,
+  marginTop: spacing.xs,
+};
