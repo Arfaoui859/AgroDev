@@ -3,7 +3,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system build dependencies
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
@@ -12,21 +16,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip install --no-cache-dir \
+# Install compatible Python dependencies
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    python -m pip install --no-cache-dir \
     numpy==1.24.3 \
-    ta-lib==0.4.25 \
+    TA-Lib==0.8.3 \
     yfinance==0.2.18 \
     plotly==5.17.0
 
-# Copy application files
+# Verify dependencies
+RUN python -c "import numpy, talib, yfinance, plotly; print('Market dependencies OK'); print('NumPy:', numpy.__version__); print('TA-Lib:', talib.__version__)"
+
 COPY ai_common/ ./ai_common/
 COPY market_prediction/ ./market_prediction/
-
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-
-RUN python -c "import talib, yfinance, plotly; print('Market dependencies OK')"
 
 EXPOSE 8004
 
