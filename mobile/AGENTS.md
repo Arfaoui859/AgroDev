@@ -422,3 +422,19 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 52 suites / 250 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home and the
 Profile tab correctly with RTL intact.
+
+### Premium UI polish pass — shared ProvenanceBar (verified 2026-11)
+
+- **`ProvenanceBar`** (`src/components/ui/ProvenanceBar.tsx`) is the one
+  provenance row: a `ProvenanceBadge` (`detailed` opt-in) plus the honest
+  "served from cache" note (`cached` opt-in), laid out RTL-aware. Marketplace,
+  Notifications, Agri News, Farm Management, Crop Recommendation and Weather
+  Detail render it instead of hand-assembling badge + note; their
+  `provBar`/`provRow` styles now carry only the outer spacing and their local
+  `cachedTag` copies were deleted. Regression test:
+  `tests/unit/provenance-bar.test.tsx`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 53 suites / 253 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home and the
+tab bar correctly.
