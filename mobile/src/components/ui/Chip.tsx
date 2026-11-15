@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { textOnPrimary } from '../../theme/typographyStyles';
 import { selectedChip } from '../../theme/layout';
 
 interface ChipProps {
@@ -40,5 +41,5 @@ const styles = StyleSheet.create({
   },
   chipSelected: selectedChip,
   chipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
-  chipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
+  chipTextSelected: textOnPrimary,
 });

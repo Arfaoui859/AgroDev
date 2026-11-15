@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
-import { cardPad, rowGapXs, screenStyles } from '../theme/layout';
+import { cardPad, gapSm, rowGapXs, screenStyles } from '../theme/layout';
 import { rtlStyles } from '../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme/colors';
@@ -150,7 +150,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
 };
 
 const styles = StyleSheet.create({
-  list: { gap: spacing.sm },
+  list: gapSm,
   provBar: { marginBottom: spacing.xs },
   notificationTouchable: { minHeight: 48 },
   card: cardPad,

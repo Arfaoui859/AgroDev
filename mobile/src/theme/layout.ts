@@ -1,5 +1,5 @@
 import { StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing } from './colors';
+import { colors, radius, spacing } from './colors';
 
 /**
  * Shared screen shell.
@@ -77,3 +77,34 @@ export const gapMd: ViewStyle = { gap: spacing.md };
 
 /** Small top gap above an in-card sub-block (provenance rows, sub-sections). */
 export const stackTopSm: ViewStyle = { marginTop: spacing.sm };
+
+/** The 48dp circular icon button shell. */
+export const roundIconButton: ViewStyle = {
+  width: 48,
+  height: 48,
+  borderRadius: radius.full,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: colors.surfaceSubtle,
+};
+
+/** Active/secondary chip fill: pale brand background with the brand border. */
+export const chipActiveFill: ViewStyle = { backgroundColor: colors.primaryLight, borderColor: colors.primary };
+
+/** Evenly spaced summary strip (Livestock / multi-agent stat rows). */
+export const summaryRow: ViewStyle = { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' };
+
+/** Tight vertical gap. */
+export const gapXs: ViewStyle = { gap: spacing.xs };
+
+/** Standard vertical gap. */
+export const gapSm: ViewStyle = { gap: spacing.sm };
+
+/** Bottom sheet panel with the rounded top corners and the capped height. */
+export const modalSheet: ViewStyle = {
+  backgroundColor: colors.card,
+  borderTopLeftRadius: radius.xl,
+  borderTopRightRadius: radius.xl,
+  padding: spacing.lg,
+  maxHeight: '85%',
+};

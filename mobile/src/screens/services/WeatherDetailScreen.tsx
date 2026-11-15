@@ -7,11 +7,11 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { cardPad, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
+import { cardPad, gapXs, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { labelMedium, mutedCaption, subtitleMeta, subtleCaption, titleBase, titleSm } from '../../theme/typographyStyles';
+import { cardHeading, labelMedium, mutedCaption, subtitleMeta, subtleCaption, textOnPrimary, titleBase, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -356,10 +356,7 @@ const styles = StyleSheet.create({
     borderColor: colors.secondary,
   },
   govPillText: labelMedium,
-  govPillTextSelected: {
-    color: colors.textInverse,
-    fontWeight: typography.fontWeights.bold,
-  },
+  govPillTextSelected: textOnPrimary,
   currentCard: {
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -407,15 +404,8 @@ const styles = StyleSheet.create({
     color: colors.accentDark,
     lineHeight: typography.lineHeights.xs,
   },
-  forecastSection: {
-    gap: spacing.xs,
-  },
-  forecastHeading: {
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
+  forecastSection: gapXs,
+  forecastHeading: cardHeading,
   forecastCard: cardPad,
   forecastRow: spaceBetween,
   dayText: {

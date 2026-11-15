@@ -1,7 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius } from '../../theme/colors';
+import { colors } from '../../theme/colors';
+import { roundIconButton } from '../../theme/layout';
 
 interface IconButtonProps {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -42,12 +43,5 @@ export const IconButton: React.FC<IconButtonProps> = ({
 );
 
 const styles = StyleSheet.create({
-  button: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceSubtle,
-  },
+  button: roundIconButton,
 });

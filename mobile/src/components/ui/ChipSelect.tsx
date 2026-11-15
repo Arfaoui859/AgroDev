@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
-import { colors, radius, spacing, typography } from '../../theme/colors';
-import { rowWrapSm } from '../../theme/layout';
-import { subtleCaption } from '../../theme/typographyStyles';
+import { colors, radius, spacing } from '../../theme/colors';
+import { chipActiveFill, rowWrapSm } from '../../theme/layout';
+import { subtleCaption, textAccentSemibold } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ChipSelectProps {
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surfaceSubtle,
   },
-  chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  chipActive: chipActiveFill,
   chipText: subtleCaption,
-  chipTextActive: { color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
+  chipTextActive: textAccentSemibold,
 });

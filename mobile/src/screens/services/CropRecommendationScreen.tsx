@@ -4,7 +4,7 @@ import { actionsRow, cardPad, flex1, screenStyles, spaceBetweenTop, stackSm, sta
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { accentCaption, subtitleMeta, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
+import { accentCaption, sectionHeading, subtitleMeta, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   reuseText: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.info },
   inputCard: stackedCard,
-  inputHeading: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
+  inputHeading: sectionHeading,
   inputRow: actionsRow,
   halfField: flex1,
   hint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.sm, marginBottom: spacing.xs },

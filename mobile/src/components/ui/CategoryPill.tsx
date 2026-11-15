@@ -2,9 +2,9 @@ import React from 'react';
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../theme/colors';
+import { colors, radius, spacing } from '../../theme/colors';
 import { selectedChip } from '../../theme/layout';
-import { labelMedium } from '../../theme/typographyStyles';
+import { labelMedium, textOnPrimary } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface CategoryPillProps {
@@ -58,5 +58,5 @@ const styles = StyleSheet.create({
   },
   pillSelected: selectedChip,
   text: labelMedium,
-  textSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
+  textSelected: textOnPrimary,
 });

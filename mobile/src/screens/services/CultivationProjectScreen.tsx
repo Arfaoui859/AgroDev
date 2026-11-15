@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { flex1, screenStyles, stackedCard } from '../../theme/layout';
+import { flex1, gapXs, screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   tasksTitle: titleBase,
   tasksSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
-  taskList: { gap: spacing.xs },
+  taskList: gapXs,
   taskRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48, paddingVertical: spacing.xs },
   taskText: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text },
   taskTextDone: { textDecorationLine: 'line-through', color: colors.textMuted },

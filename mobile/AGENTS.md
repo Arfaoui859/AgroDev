@@ -673,3 +673,15 @@ and GeneralServiceModal. Pinned by `tests/unit/layout-styles.test.ts` (6 cases).
 above an in-card sub-block). `src/theme/typographyStyles.ts` gained
 **`mutedCaptionTop`** (`mutedCaption` + `marginTop: 2`). Migrated ~24 files.
 Pinned by `tests/unit/layout-styles.test.ts` (9 cases).
+
+### Premium UI polish pass — remaining shared tokens (verified 2026-11)
+
+`src/theme/layout.ts` gained **`roundIconButton`** (the 48dp circular button
+shell), **`chipActiveFill`** (pale-brand chip fill), **`summaryRow`** (the
+`space-around` stat strip), **`gapXs` / `gapSm`** and **`modalSheet`** (rounded
+top-corner bottom sheet). `src/theme/typographyStyles.ts` gained **`typeXs` /
+`typeSm`** (bare scale steps), **`titleXl`**, **`titleBaseCenter`**,
+**`textOnPrimary`**, **`textAccentSemibold`**, **`cardHeading`** and
+**`sectionHeading`**. Migrated ~29 files and dropped the unused imports the
+substitutions left behind. Pinned by `tests/unit/typography-styles.test.ts`
+(16 cases) and the layout test (9 cases).

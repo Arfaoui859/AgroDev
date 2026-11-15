@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { cardPad, flex1, gapMd, screenStyles, stackedCard } from '../../theme/layout';
+import { cardPad, flex1, gapMd, screenStyles, stackedCard, summaryRow } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -158,7 +158,7 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
 
 const styles = StyleSheet.create({
   summaryCard: stackedCard,
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  summaryRow: summaryRow,
   llmRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -5,7 +5,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { accentCaption, mutedCaptionTop, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
+import { accentCaption, mutedCaptionTop, sectionHeading, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -377,7 +377,7 @@ const Block: React.FC<{ title: string; children: React.ReactNode }> = ({ title, 
 
 const styles = StyleSheet.create({
   uploadCard: stackedCard,
-  stepHeading: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
+  stepHeading: sectionHeading,
   previewContainer: { position: 'relative', borderRadius: radius.md, overflow: 'hidden' },
   previewImage: { width: '100%', height: 220, borderRadius: radius.md },
   removeImageBtn: {

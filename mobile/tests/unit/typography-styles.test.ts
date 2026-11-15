@@ -1,5 +1,9 @@
-import { mutedCaption, subtleCaption, subtitleMeta, titleBase, titleSm, titleLg, labelMedium, noteCaption, titleBaseFlex, titleBaseAccent, accentCaption, titleSmSemibold } from '../../src/theme/typographyStyles';
-import { colors, typography } from '../../src/theme/colors';
+import {
+  accentCaption, cardHeading, labelMedium, mutedCaption, mutedCaptionTop, noteCaption, sectionHeading,
+  subtleCaption, subtitleMeta, textAccentSemibold, textOnPrimary, titleBase, titleBaseAccent,
+  titleBaseCenter, titleBaseFlex, titleLg, titleSm, titleSmSemibold, titleXl, typeSm, typeXs,
+} from '../../src/theme/typographyStyles';
+import { colors, spacing, typography } from '../../src/theme/colors';
 
 /**
  * These three caption constants replaced dozens of identical inline definitions
@@ -65,5 +69,38 @@ describe('title variants', () => {
   });
   it('titleSmSemibold is the sm semibold text title', () => {
     expect(titleSmSemibold).toMatchObject({ fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text });
+  });
+});
+describe('added polish tokens', () => {
+  it('typeXs / typeSm are the bare scale steps', () => {
+    expect(typeXs).toMatchObject({ fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs });
+    expect(typeSm).toMatchObject({ fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm });
+  });
+
+  it('titleXl is the bold xl heading', () => {
+    expect(titleXl).toMatchObject({
+      fontSize: typography.fontSizes.xl,
+      lineHeight: typography.lineHeights.xl,
+      fontWeight: typography.fontWeights.bold,
+      color: colors.text,
+    });
+  });
+
+  it('titleBaseCenter is titleBase centred', () => {
+    expect(titleBaseCenter).toMatchObject({ ...titleBase, textAlign: 'center' });
+  });
+
+  it('textOnPrimary / textAccentSemibold pin the two accent text colours', () => {
+    expect(textOnPrimary).toMatchObject({ color: colors.textInverse, fontWeight: typography.fontWeights.bold });
+    expect(textAccentSemibold).toMatchObject({ color: colors.primaryDark, fontWeight: typography.fontWeights.semibold });
+  });
+
+  it('cardHeading / sectionHeading are titleSm with the xs / sm gap', () => {
+    expect(cardHeading).toMatchObject({ ...titleSm, marginBottom: spacing.xs });
+    expect(sectionHeading).toMatchObject({ ...titleSm, marginBottom: spacing.sm });
+  });
+
+  it('mutedCaptionTop is mutedCaption with a 2px top gap', () => {
+    expect(mutedCaptionTop).toMatchObject({ ...mutedCaption, marginTop: 2 });
   });
 });

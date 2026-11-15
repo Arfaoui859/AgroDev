@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
-import { colors, radius, spacing, typography } from '../../theme/colors';
-import { noteCaption } from '../../theme/typographyStyles';
+import { colors, radius, spacing } from '../../theme/colors';
+import { cardHeading, noteCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface LimitationsNoticeProps {
@@ -34,12 +34,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginTop: spacing.md,
   },
-  title: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
+  title: cardHeading,
   text: noteCaption,
 });

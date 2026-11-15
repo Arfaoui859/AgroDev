@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { actionsRow, flex1, rowGapMd, rowGapSm, screenStyles, spaceBetween, stackLg } from '../theme/layout';
+import { actionsRow, flex1, gapSm, rowGapMd, rowGapSm, screenStyles, spaceBetween, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   weatherMoreText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' },
   sectionContainer: stackLg,
-  quickActionsGrid: { gap: spacing.sm },
+  quickActionsGrid: gapSm,
   tilesRow: actionsRow,
   bigActionShadow: { borderRadius: radius.lg, ...shadows.md },
   bigActionCard: { minHeight: 48, borderRadius: radius.lg, padding: spacing.lg },

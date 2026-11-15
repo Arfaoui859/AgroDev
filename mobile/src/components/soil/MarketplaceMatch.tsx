@@ -4,7 +4,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { subtitleMeta, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
-import { flex1, stackedCard } from '../../theme/layout';
+import { flex1, gapXs, stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
 import { StateView } from '../ui/StateView';
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   title: titleBaseFlex,
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
-  list: { gap: spacing.xs },
+  list: gapXs,
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   rowText: flex1,
   itemTitle: titleSmSemibold,

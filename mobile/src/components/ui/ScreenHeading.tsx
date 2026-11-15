@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, spacing, typography } from '../../theme/colors';
+import { titleXl } from '../../theme/typographyStyles';
 import { flex1 } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -41,12 +42,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   textWrap: flex1,
-  title: {
-    fontSize: typography.fontSizes.xl,
-    lineHeight: typography.lineHeights.xl,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  title: titleXl,
   subtitle: {
     fontSize: typography.fontSizes.sm,
     lineHeight: typography.lineHeights.sm,

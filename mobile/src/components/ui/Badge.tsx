@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { typeSm, typeXs } from '../../theme/typographyStyles';
 
 interface BadgeProps {
   label: string;
@@ -66,12 +67,6 @@ const styles = StyleSheet.create({
   text: {
     fontWeight: typography.fontWeights.semibold,
   },
-  textSm: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-  },
-  textMd: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: typography.lineHeights.sm,
-  },
+  textSm: typeXs,
+  textMd: typeSm,
 });

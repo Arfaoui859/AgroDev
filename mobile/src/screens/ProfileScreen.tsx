@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { cardPad, flex1, rowGapMd, rowGapSm, screenStyles, stackLg } from '../theme/layout';
+import { cardPad, flex1, gapXs, rowGapMd, rowGapSm, screenStyles, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
@@ -328,9 +328,7 @@ const styles = StyleSheet.create({
   optionsCard: {
     padding: spacing.sm,
   },
-  languageRow: {
-    gap: spacing.xs,
-  },
+  languageRow: gapXs,
   langChoice: {
     minHeight: 48,
     flexDirection: 'row',

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { flex1 } from '../../theme/layout';
+import { chipActiveFill, flex1 } from '../../theme/layout';
 import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     ...shadows.sm,
   },
-  personaCardSelected: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  personaCardSelected: chipActiveFill,
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 6 },
   iconWrap: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   iconWrapNormal: { backgroundColor: colors.primaryLight },

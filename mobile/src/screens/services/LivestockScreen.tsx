@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { cardPad, flex1, gapMd, screenStyles, spaceBetweenTop, stackedCard } from '../../theme/layout';
+import { cardPad, flex1, gapMd, screenStyles, spaceBetweenTop, stackedCard, summaryRow } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { mutedCaption, subtitleMeta, titleBase, titleSm } from '../../theme/typographyStyles';
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   summaryCard: stackedCard,
   summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   summaryTitle: titleSm,
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  summaryRow: summaryRow,
   statTile: flex1,
   divider: { width: 1, height: 32, backgroundColor: colors.border },
   totalValue: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', lineHeight: typography.lineHeights.xs },

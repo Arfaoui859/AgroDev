@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { typeSm } from '../../theme/typographyStyles';
 import { rtlStyles } from '../../theme/rtl';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
   row_icon: { alignItems: 'flex-start', gap: spacing.xs, marginBottom: spacing.xs },
   row_glyph: { gap: 6, marginBottom: 3 },
   dot: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
-  glyph: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm },
+  glyph: typeSm,
   text: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
   textLoose: { lineHeight: typography.lineHeights.sm },
 });

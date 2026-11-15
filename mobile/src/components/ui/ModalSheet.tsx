@@ -9,8 +9,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
-import { colors, radius, spacing } from '../../theme/colors';
-import { flex1 } from '../../theme/layout';
+import { colors, spacing } from '../../theme/colors';
+import { flex1, modalSheet } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { IconButton } from './IconButton';
 
@@ -86,13 +86,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' },
   overlayGrow: flex1,
-  sheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    padding: spacing.lg,
-    maxHeight: '85%',
-  },
+  sheet: modalSheet,
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

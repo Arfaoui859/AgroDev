@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Modal, Alert } from 'react-native';
-import { cardPad, flex1, screenStyles } from '../../theme/layout';
+import { cardPad, flex1, gapSm, modalSheet, roundIconButton, screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -182,9 +182,7 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  recordsList: {
-    gap: spacing.sm,
-  },
+  recordsList: gapSm,
   tapHint: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
@@ -196,13 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.scrim,
     justifyContent: 'flex-end',
   },
-  modalSheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    padding: spacing.lg,
-    maxHeight: '85%',
-  },
+  modalSheet: modalSheet,
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -215,14 +207,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  modalClose: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceSubtle,
-  },
+  modalClose: roundIconButton,
   modalDate: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,

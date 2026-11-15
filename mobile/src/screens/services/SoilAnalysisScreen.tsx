@@ -4,7 +4,7 @@ import { flex1, gapMd, rowGapMd, rowGapSm, screenStyles, spaceBetween, stackTopS
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { accentCaption, noteCaption, titleBase, titleBaseFlex, titleSm } from '../../theme/typographyStyles';
+import { accentCaption, cardHeading, noteCaption, titleBase, titleBaseFlex, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   persistNote: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: typography.lineHeights.xs },
   ctaSub: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs, marginBottom: spacing.sm },
   subSection: stackTopSm,
-  subSectionTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
+  subSectionTitle: cardHeading,
   findingCard: { padding: spacing.md, marginBottom: spacing.xs },
   findingHeader: { ...spaceBetween, marginBottom: spacing.xs },
   findingParam: titleSm,

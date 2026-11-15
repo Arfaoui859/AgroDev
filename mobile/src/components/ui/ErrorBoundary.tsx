@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleBaseCenter } from '../../theme/typographyStyles';
 import { Button } from './Button';
 import { getTranslations } from '../../i18n';
 import { getExtra } from '../../i18n/extra';
@@ -92,13 +93,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.dangerLight,
   },
-  title: {
-    fontSize: typography.fontSizes.base,
-    lineHeight: typography.lineHeights.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    textAlign: 'center',
-  },
+  title: titleBaseCenter,
   message: {
     fontSize: typography.fontSizes.sm,
     lineHeight: typography.lineHeights.sm,

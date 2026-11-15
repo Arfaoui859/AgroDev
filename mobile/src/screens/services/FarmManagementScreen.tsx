@@ -8,10 +8,10 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { cardBottomRow, cardPad, flex1, rowGapXs, rowWrapSm, screenStyles, spaceBetween, stackSm, stackTopSm } from '../../theme/layout';
+import { cardBottomRow, cardPad, flex1, gapSm, rowGapXs, rowWrapSm, screenStyles, spaceBetween, stackSm, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaptionTop, subtitleMeta, subtleCaption, titleBase } from '../../theme/typographyStyles';
+import { mutedCaptionTop, sectionHeading, subtitleMeta, subtleCaption, titleBase } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
@@ -490,12 +490,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     backgroundColor: colors.card,
   },
-  formTitle: {
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
+  formTitle: sectionHeading,
   inputGroup: stackSm,
   inputLabel: {
     fontSize: typography.fontSizes.xs,
@@ -506,9 +501,7 @@ const styles = StyleSheet.create({
   },
   input: formInput,
   chipWrap: rowWrapSm,
-  fieldsSection: {
-    gap: spacing.sm,
-  },
+  fieldsSection: gapSm,
   fieldCard: cardPad,
   fieldHeader: {
     flexDirection: 'row',

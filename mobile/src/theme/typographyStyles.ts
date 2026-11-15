@@ -1,5 +1,5 @@
 import { TextStyle } from 'react-native';
-import { colors, typography } from './colors';
+import { colors, spacing, typography } from './colors';
 
 /**
  * Shared caption styles.
@@ -84,3 +84,38 @@ export const titleSmSemibold: TextStyle = {
 
 /** Faint metadata caption with the common 2px top gap under a title. */
 export const mutedCaptionTop: TextStyle = { ...mutedCaption, marginTop: 2 };
+
+/** Bare xs type scale (size + line height) for controls that set their own colour. */
+export const typeXs: TextStyle = {
+  fontSize: typography.fontSizes.xs,
+  lineHeight: typography.lineHeights.xs,
+};
+
+/** Bare sm type scale (size + line height) for controls that set their own colour. */
+export const typeSm: TextStyle = {
+  fontSize: typography.fontSizes.sm,
+  lineHeight: typography.lineHeights.sm,
+};
+
+/** Display heading on the xl scale (bold, text colour). */
+export const titleXl: TextStyle = {
+  fontSize: typography.fontSizes.xl,
+  lineHeight: typography.lineHeights.xl,
+  fontWeight: typography.fontWeights.bold,
+  color: colors.text,
+};
+
+/** `titleBase` centred (header bars, error panels). */
+export const titleBaseCenter: TextStyle = { ...titleBase, textAlign: 'center' };
+
+/** Bold inverse text for a brand-filled surface. */
+export const textOnPrimary: TextStyle = { color: colors.textInverse, fontWeight: typography.fontWeights.bold };
+
+/** Semibold text in the primary-dark accent. */
+export const textAccentSemibold: TextStyle = { color: colors.primaryDark, fontWeight: typography.fontWeights.semibold };
+
+/** Card sub-heading: `titleSm` with the small gap beneath it. */
+export const cardHeading: TextStyle = { ...titleSm, marginBottom: spacing.xs };
+
+/** Section heading: `titleSm` with the standard gap beneath it. */
+export const sectionHeading: TextStyle = { ...titleSm, marginBottom: spacing.sm };

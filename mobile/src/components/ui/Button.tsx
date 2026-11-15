@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { typeSm, typeXs } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ButtonProps {
@@ -161,14 +162,8 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     textAlign: 'center',
   },
-  textSm: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-  },
-  textMd: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: typography.lineHeights.sm,
-  },
+  textSm: typeXs,
+  textMd: typeSm,
   textLg: {
     fontSize: typography.fontSizes.base,
     lineHeight: typography.lineHeights.base,

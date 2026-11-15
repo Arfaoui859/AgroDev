@@ -4,7 +4,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { rowGapSm, rowGapXs } from '../../theme/layout';
-import { titleLg } from '../../theme/typographyStyles';
+import { titleBaseCenter, titleLg } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { IconButton } from './IconButton';
@@ -164,12 +164,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: spacing.sm,
   },
-  screenTitle: {
-    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    textAlign: 'center',
-  },
+  screenTitle: titleBaseCenter,
   screenSubtitle: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
