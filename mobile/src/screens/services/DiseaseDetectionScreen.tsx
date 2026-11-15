@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -375,7 +376,7 @@ const Block: React.FC<{ title: string; children: React.ReactNode }> = ({ title, 
 );
 
 const styles = StyleSheet.create({
-  uploadCard: { padding: spacing.md, marginBottom: spacing.md },
+  uploadCard: stackedCard,
   stepHeading: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
   previewContainer: { position: 'relative', borderRadius: radius.md, overflow: 'hidden' },
   previewImage: { width: '100%', height: 220, borderRadius: radius.md },
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
   resultCard: { padding: spacing.md },
   resultTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
   resultDiseaseHeader: { flex: 1 },
-  diseaseTitleAr: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  diseaseTitleAr: titleBase,
   diseaseTitleEn: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2, lineHeight: typography.lineHeights.xs },
   confidenceBadge: { backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md, alignItems: 'center' },
   confidenceNum: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },

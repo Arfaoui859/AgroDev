@@ -4,6 +4,7 @@ import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   articleCard: { padding: spacing.md, ...shadows.sm },
   articleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   articleTextWrap: { flex: 1 },
-  articleTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  articleTitle: titleSm,
   articleMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   articleSource: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold, maxWidth: 180 },
   articleDot: { fontSize: typography.fontSizes.xs, color: colors.textMuted },

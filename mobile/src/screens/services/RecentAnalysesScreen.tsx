@@ -4,6 +4,7 @@ import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -259,11 +260,7 @@ const styles = StyleSheet.create({
   titleArea: {
     flex: 1,
   },
-  recordTitle: {
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  recordTitle: titleSm,
   recordDate: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,

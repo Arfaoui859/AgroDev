@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleLg } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { IconButton } from './IconButton';
@@ -155,11 +156,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  brandTitle: titleLg,
   roleSub: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,

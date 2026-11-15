@@ -12,7 +12,7 @@ import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
-import { mutedCaption, subtitleMeta } from '../theme/typographyStyles';
+import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   actionTileIcon: { width: 38, height: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
-  actionTileTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  actionTileTitle: titleSm,
   actionTileSub: subtitleMeta,
   assistantBanner: {
     minHeight: 48,
@@ -690,11 +690,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   alertTextWrap: { flex: 1 },
-  alertTitle: {
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  alertTitle: titleSm,
   alertMessage: subtitleMeta,
   connectionFooter: {
     flexDirection: 'row',

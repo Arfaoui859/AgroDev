@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
 import { StateView } from '../ui/StateView';
@@ -87,7 +88,7 @@ export const MarketplaceMatch: React.FC<MarketplaceMatchProps> = ({ query }) => 
 };
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.md, marginBottom: spacing.md },
+  card: stackedCard,
   head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   title: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },

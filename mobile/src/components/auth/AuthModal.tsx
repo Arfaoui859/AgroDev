@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleLg } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -292,11 +293,7 @@ const styles = StyleSheet.create({
   },
   header: { marginBottom: spacing.sm },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  brandTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  brandTitle: titleLg,
   title: {
     fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl,
     fontWeight: typography.fontWeights.bold,

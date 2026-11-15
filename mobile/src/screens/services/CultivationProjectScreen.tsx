@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { mutedCaption } from '../../theme/typographyStyles';
+import { mutedCaption, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -310,7 +310,7 @@ const DetailRow: React.FC<{ label: string; value: string; isRtl: boolean }> = ({
 );
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.md, marginBottom: spacing.md },
+  card: stackedCard,
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, gap: spacing.sm },
   detailLabel: mutedCaption,
   detailValue: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text },
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   successTitle: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
   successSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginBottom: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  tasksTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  tasksTitle: titleBase,
   tasksSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
   taskList: { gap: spacing.xs },
   taskRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48, paddingVertical: spacing.xs },

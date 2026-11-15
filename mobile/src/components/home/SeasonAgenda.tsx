@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
 import { Card } from '../ui/Card';
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
   card: { padding: spacing.md },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   textWrap: { flex: 1 },
-  seasonName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  seasonName: titleBase,
   tip: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, marginTop: 2 },
   note: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: spacing.sm },
 });

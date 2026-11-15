@@ -11,6 +11,7 @@ import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -407,11 +408,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-  metricVal: {
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  metricVal: titleSm,
   metricSub: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
@@ -471,11 +468,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  tempMax: {
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  tempMax: titleSm,
   tempMin: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,

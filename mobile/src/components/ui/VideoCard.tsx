@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { subtleCaption } from '../../theme/typographyStyles';
+import { subtleCaption, titleSm } from '../../theme/typographyStyles';
 import { rtlStyles } from '../../theme/rtl';
 import { useLanguage } from '../../context/LanguageContext';
 import { LearningVideo, videoThumbnailUrl } from '../../data/agriculturalVideos';
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   catTag: { backgroundColor: colors.primaryLight, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   catTagText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
   langTag: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
-  videoTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  videoTitle: titleSm,
   videoTitleStrip: { minHeight: 42 },
   watchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   watchText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.danger, fontWeight: typography.fontWeights.semibold },

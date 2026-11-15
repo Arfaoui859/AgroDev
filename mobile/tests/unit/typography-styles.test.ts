@@ -1,4 +1,4 @@
-import { mutedCaption, subtleCaption, subtitleMeta } from '../../src/theme/typographyStyles';
+import { mutedCaption, subtleCaption, subtitleMeta, titleBase, titleSm, titleLg } from '../../src/theme/typographyStyles';
 import { colors, typography } from '../../src/theme/colors';
 
 /**
@@ -23,5 +23,13 @@ describe('caption styles', () => {
   it('subtitleMeta is subtleCaption plus a 2px top gap', () => {
     expect(subtitleMeta.marginTop).toBe(2);
     expect(subtleCaption.marginTop).toBeUndefined();
+  });
+});
+
+describe('title styles', () => {
+  it('bold, text-coloured, one per scale with matching line height', () => {
+    expect(titleBase).toMatchObject({ fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text });
+    expect(titleSm).toMatchObject({ fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text });
+    expect(titleLg).toMatchObject({ fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text });
   });
 });

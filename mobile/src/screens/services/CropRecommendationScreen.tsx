@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { subtitleMeta } from '../../theme/typographyStyles';
+import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   reuseText: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.info },
-  inputCard: { padding: spacing.md, marginBottom: spacing.md },
+  inputCard: stackedCard,
   inputHeading: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
   inputRow: { flexDirection: 'row', gap: spacing.sm },
   halfField: { flex: 1 },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   cropCard: { padding: spacing.md },
   cropHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
   cropTitleBox: { flex: 1 },
-  cropNameAr: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  cropNameAr: titleBase,
   cropCategory: subtitleMeta,
   scoreBadge: {
     backgroundColor: colors.primaryLight,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { subtitleMeta } from '../../theme/typographyStyles';
+import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   iconWrapNormal: { backgroundColor: colors.primaryLight },
   iconWrapSelected: { backgroundColor: colors.primary },
   titleArea: { flex: 1 },
-  personaTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  personaTitle: titleBase,
   personaTitleSelected: { color: colors.primaryDark },
   personaDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs, marginTop: 2 },
 });

@@ -4,6 +4,8 @@ import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleBase } from '../../theme/typographyStyles';
+import { stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil } from '../../i18n/soil';
 import { Card } from '../ui/Card';
@@ -280,8 +282,8 @@ export const PlotStep: React.FC<PlotStepProps> = ({
 };
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.md, marginBottom: spacing.md },
-  heading: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  card: stackedCard,
+  heading: titleBase,
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
   label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: spacing.xs },
   list: { gap: spacing.sm, marginBottom: spacing.sm },

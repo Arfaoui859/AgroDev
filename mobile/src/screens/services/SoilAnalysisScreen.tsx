@@ -4,6 +4,7 @@ import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { titleBase, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
   scoreNumber: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
   scoreMax: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, lineHeight: typography.lineHeights.xs },
   gradeDetails: { flex: 1 },
-  gradeTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  gradeTitle: titleBase,
   gradeDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.sm },
   provWrap: { marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   persistNote: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: typography.lineHeights.xs },
@@ -397,6 +398,6 @@ const styles = StyleSheet.create({
   subSectionTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
   findingCard: { padding: spacing.md, marginBottom: spacing.xs },
   findingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
-  findingParam: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  findingParam: titleSm,
   findingText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
 });

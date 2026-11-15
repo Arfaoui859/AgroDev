@@ -11,6 +11,7 @@ import {
 import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
+import { titleSm } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -382,12 +383,7 @@ const styles = StyleSheet.create({
   statusTextContainer: {
     flex: 1,
   },
-  statusMainText: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  statusMainText: titleSm,
   statusSubText: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
@@ -416,11 +412,7 @@ const styles = StyleSheet.create({
   offlineTextContainer: {
     flex: 1,
   },
-  offlineTitle: {
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  offlineTitle: titleSm,
   offlineSub: {
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,

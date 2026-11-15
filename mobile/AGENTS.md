@@ -583,3 +583,19 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 63 suites / 276 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home, Services,
 the irrigation modal and the disease scanner with their chip pickers intact.
+
+### Premium UI polish pass — stackedCard + title styles (verified 2026-11)
+
+- **`stackedCard`** (`src/theme/layout.ts`) is the standard in-flow card pair
+  `{ padding: spacing.md, marginBottom: spacing.md }` that the three soil steps,
+  the service forms and the result panels all declared verbatim. Screens keep a
+  local key (`card`/`summaryCard`/`inputCard`/`uploadCard`) that now points at it.
+- **`titleBase` / `titleSm` / `titleLg`** (`src/theme/typographyStyles.ts`) are
+  the bold, text-coloured headings on the base / small / large scales, inlined
+  ~20 times. Test: `tests/unit/layout-styles.test.ts` plus the extended
+  `tests/unit/typography-styles.test.ts`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 64 suites / 279 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home, Services
+and the soil wizard with identical card/title styling.

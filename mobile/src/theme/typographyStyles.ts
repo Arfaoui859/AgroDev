@@ -22,3 +22,27 @@ export const subtleCaption: TextStyle = { ...captionBase, color: colors.textSeco
 
 /** Secondary caption with the common 2px top gap under a title. */
 export const subtitleMeta: TextStyle = { ...subtleCaption, marginTop: 2 };
+
+/** Section title on the base scale (bold, text colour). */
+export const titleBase: TextStyle = {
+  fontSize: typography.fontSizes.base,
+  lineHeight: typography.lineHeights.base,
+  fontWeight: typography.fontWeights.bold,
+  color: colors.text,
+};
+
+/** Card/list title on the small scale (bold, text colour). */
+export const titleSm: TextStyle = {
+  fontSize: typography.fontSizes.sm,
+  lineHeight: typography.lineHeights.sm,
+  fontWeight: typography.fontWeights.bold,
+  color: colors.text,
+};
+
+/** Brand/large heading on the large scale (bold, text colour). */
+export const titleLg: TextStyle = {
+  fontSize: typography.fontSizes.lg,
+  lineHeight: typography.lineHeights.lg,
+  fontWeight: typography.fontWeights.bold,
+  color: colors.text,
+};

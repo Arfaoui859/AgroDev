@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaption } from '../../theme/typographyStyles';
+import { mutedCaption, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -163,7 +163,7 @@ const SummaryStat: React.FC<{ label: string; value: number; color: string }> = (
 );
 
 const styles = StyleSheet.create({
-  summaryCard: { padding: spacing.md, marginBottom: spacing.md },
+  summaryCard: stackedCard,
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   summaryStat: { alignItems: 'center' },
   summaryValue: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   agentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   agentIconBox: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   agentTitleArea: { flex: 1 },
-  agentNameAr: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  agentNameAr: titleSm,
   agentNameEn: mutedCaption,
   provenanceBox: {
     backgroundColor: colors.surfaceSubtle,

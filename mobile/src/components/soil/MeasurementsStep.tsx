@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { titleBase } from '../../theme/typographyStyles';
+import { stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil } from '../../i18n/soil';
 import { Card } from '../ui/Card';
@@ -209,8 +211,8 @@ export const MeasurementsStep: React.FC<MeasurementsStepProps> = ({ initial, onC
 };
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.md, marginBottom: spacing.md },
-  heading: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  card: stackedCard,
+  heading: titleBase,
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
   groupTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, marginTop: spacing.sm, marginBottom: spacing.xs },
   groupHint: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginBottom: spacing.xs },

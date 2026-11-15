@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaption, subtitleMeta } from '../../theme/typographyStyles';
+import { mutedCaption, subtitleMeta, titleBase, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -194,9 +194,9 @@ const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) =>
 );
 
 const styles = StyleSheet.create({
-  summaryCard: { padding: spacing.md, marginBottom: spacing.md },
+  summaryCard: stackedCard,
   summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-  summaryTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  summaryTitle: titleSm,
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   summaryStat: { alignItems: 'center', flex: 1 },
   summaryValue: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold },
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   animalCard: { padding: spacing.md },
   animalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
   animalTitleArea: { flex: 1 },
-  animalTag: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  animalTag: titleBase,
   animalMeta: subtitleMeta,
   animalMetrics: {
     flexDirection: 'row',
