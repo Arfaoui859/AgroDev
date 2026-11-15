@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
-  ActivityIndicator,
   Alert,
   TouchableOpacity,
 } from 'react-native';
@@ -396,7 +395,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
         <SectionHeader title={x.farmFieldsSection} icon="sprout" />
 
         {loading ? (
-          <ActivityIndicator size="small" color={colors.primary} />
+          <StateView kind="loading" compact />
         ) : !isAuthenticated ? (
           <StateView kind="unavailable" title={x.loginRequired} message={x.farmLoginToManage} compact />
         ) : error ? (

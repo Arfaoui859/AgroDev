@@ -4,8 +4,6 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
-  TextInput,
   RefreshControl,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,6 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
+import { SearchBar } from '../components/ui/SearchBar';
 import { StateView } from '../components/ui/StateView';
 import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
 import { getMarketPrices } from '../api/client';
@@ -75,27 +74,12 @@ export const MarketplaceScreen: React.FC = () => {
     >
       <ScreenHeading title={t.marketTitle} subtitle={t.marketSubtitle} />
 
-      <View style={[styles.searchBar, isRtl && styles.rtlRow]}>
-        <MaterialCommunityIcons name="magnify" size={22} color={colors.textMuted} />
-        <TextInput
-          style={[styles.searchInput, isRtl && styles.rtlText]}
-          placeholder={t.searchCrop}
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          accessibilityLabel={t.searchCrop}
-        />
-        {searchQuery.length > 0 ? (
-          <TouchableOpacity
-            onPress={() => setSearchQuery('')}
-            accessibilityRole="button"
-            accessibilityLabel={x.clearSearch}
-            style={styles.iconButton}
-          >
-            <MaterialCommunityIcons name="close-circle" size={20} color={colors.textMuted} />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder={t.searchCrop}
+        clearLabel={x.clearSearch}
+      />
 
       {loading ? (
         <Card variant="outlined">
@@ -261,20 +245,6 @@ const styles = StyleSheet.create({
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   intelLabel: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.text, fontWeight: typography.fontWeights.semibold },
   intelState: { fontSize: typography.fontSizes.xs, lineHeight: 20, fontWeight: typography.fontWeights.semibold },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    height: 48,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  searchInput: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.text, height: '100%' },
-  iconButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   provBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, flexWrap: 'wrap' },
   cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: 20 },
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },

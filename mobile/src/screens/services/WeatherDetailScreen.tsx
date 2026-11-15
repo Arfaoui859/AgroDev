@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -164,12 +163,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
         <Text style={[styles.locationNotice, isRtl && styles.rtlText]}>{locationNotice}</Text>
       ) : null}
 
-      {loading && (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color={colors.secondary} />
-          <Text style={styles.loadingText}>{x.weatherLoading}</Text>
-        </View>
-      )}
+      {loading && <StateView kind="loading" message={x.weatherLoading} />}
 
       {!loading && !weather ? (
         <Card variant="outlined">
@@ -386,16 +380,6 @@ const styles = StyleSheet.create({
   govPillTextSelected: {
     color: colors.textInverse,
     fontWeight: typography.fontWeights.bold,
-  },
-  loadingBox: {
-    padding: spacing.xl,
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  loadingText: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
-    color: colors.textSecondary,
   },
   currentCard: {
     padding: spacing.lg,

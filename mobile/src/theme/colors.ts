@@ -60,6 +60,8 @@ export const colors = {
   onBrandSurface: 'rgba(255, 255, 255, 0.2)',
   // Tinted red used for error pills floating over the camera preview.
   dangerScrim: 'rgba(220, 38, 38, 0.85)',
+  // Opaque black behind captured/previewed imagery (camera and gallery preview).
+  imageBackdrop: '#000000',
 };
 
 /**

@@ -342,4 +342,27 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx expo lint` clean,
 `npx expo export --platform web` bundles, and the web export renders Home,
 Services, Farm Management and Profile correctly (all with the unified headers).
 
+### Premium UI polish pass — shared SearchBar and loading states (verified 2026-11)
 
+A third pass removed the last duplicated screen chrome:
+
+- **`SearchBar`** (`src/components/ui/SearchBar.tsx`) is now the one search
+  field, used by `ServicesScreen`, `MarketplaceScreen` and `AgriNewsScreen`.
+  It renders the magnifier, an RTL-aware input, and either a clear button (once
+  there is text) or a trailing submit arrow (`onSubmit`). The three screens'
+  local `searchBar` / `searchInput` / `iconButton` / `searchSubmit` / `flipIcon`
+  styles and their `TextInput` imports were deleted.
+- **Loading states** — `WeatherDetailScreen` and `FarmManagementScreen` now use
+  `<StateView kind="loading" />` for their full-area loaders instead of a bare
+  `ActivityIndicator`; `WeatherDetailScreen`'s `loadingBox`/`loadingText` styles
+  and both screens' `ActivityIndicator` imports were removed. The assistant's
+  inline "preparing" chat bubble keeps its bespoke row-with-avatar layout on
+  purpose (a `StateView` there would drop the bot icon), so it is left as-is.
+- **Theme token** — `colors.imageBackdrop` (`#000000`) replaces the last raw
+  hex in `PlantScanner`'s captured-image backdrop.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 50 suites / 246 passed (7 live tests skipped, 2 suites skipped),
+`npx expo export --platform web` bundles, and the web export renders Home,
+Services, Disease detection and the tab bar correctly. `SearchBar` has its own
+regression test (`tests/unit/search-bar.test.tsx`).

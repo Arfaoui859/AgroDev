@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
@@ -13,6 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
+import { SearchBar } from '../components/ui/SearchBar';
 import { StateView } from '../components/ui/StateView';
 
 interface ServicesScreenProps {
@@ -215,27 +215,12 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       <ScreenHeading title={t.servicesTitle} subtitle={t.servicesSubtitle} />
 
       {/* Search Input Bar */}
-      <View style={[styles.searchBar, isRtl && styles.rtlRow]}>
-        <MaterialCommunityIcons name="magnify" size={22} color={colors.textMuted} />
-        <TextInput
-          style={[styles.searchInput, isRtl && styles.rtlText]}
-          placeholder={t.searchServices}
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          accessibilityLabel={t.searchServices}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setSearchQuery('')}
-            accessibilityRole="button"
-            accessibilityLabel={x.clearSearch}
-            style={styles.iconButton}
-          >
-            <MaterialCommunityIcons name="close-circle" size={20} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder={t.searchServices}
+        clearLabel={x.clearSearch}
+      />
 
       {/* Horizontal Category Filter Pills */}
       <ScrollView
@@ -323,30 +308,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    height: 48,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
-    color: colors.text,
-    height: '100%',
-  },
-  iconButton: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   categoryScroll: {
     gap: spacing.xs,
     paddingBottom: spacing.md,

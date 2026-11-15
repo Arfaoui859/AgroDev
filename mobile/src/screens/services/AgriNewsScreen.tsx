@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   RefreshControl,
   Linking,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { SearchBar } from '../../components/ui/SearchBar';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { getAgriNews } from '../../api/client';
@@ -105,27 +105,14 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
         subtitle={x.newsSubtitle}
       />
 
-      <View style={[styles.searchBar, isRtl && styles.rtlRow]}>
-        <MaterialCommunityIcons name="magnify" size={20} color={colors.textMuted} />
-        <TextInput
-          style={[styles.searchInput, isRtl && styles.rtlText]}
-          placeholder={x.newsSearchPlaceholder}
-          placeholderTextColor={colors.textMuted}
-          value={query}
-          onChangeText={setQuery}
-          onSubmitEditing={submitSearch}
-          returnKeyType="search"
-          accessibilityLabel={x.newsSearchPlaceholder}
-        />
-        <TouchableOpacity
-          onPress={submitSearch}
-          accessibilityRole="button"
-          accessibilityLabel={x.newsSearchPlaceholder}
-          style={styles.searchSubmit}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={colors.primary} style={isRtl ? undefined : styles.flipIcon} />
-        </TouchableOpacity>
-      </View>
+      <SearchBar
+        value={query}
+        onChangeText={setQuery}
+        placeholder={x.newsSearchPlaceholder}
+        clearLabel={x.clearSearch}
+        onSubmit={submitSearch}
+        submitLabel={x.newsSearchPlaceholder}
+      />
 
       {result?.categories?.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.catScroll, isRtl && styles.rtlRow]}>
@@ -231,21 +218,6 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  flipIcon: { transform: [{ scaleX: -1 }] },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 48,
-    gap: spacing.sm,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  searchInput: { flex: 1, paddingVertical: spacing.sm, fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.text },
-  searchSubmit: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
   catPill: {
     minHeight: 48,

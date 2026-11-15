@@ -8,6 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { PlantScanner } from '../../components/scanner/PlantScanner';
@@ -339,7 +340,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           ) : null}
 
           {result.symptoms.length ? (
-            <Block title={x.diseaseSymptoms} isRtl={isRtl}>
+            <Block title={x.diseaseSymptoms}>
               {result.symptoms.map((s, i) => (
                 <Bullet key={i} text={s} color={colors.danger} isRtl={isRtl} />
               ))}
@@ -347,7 +348,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           ) : null}
 
           {result.treatment.length ? (
-            <Block title={x.diseaseTreatment} isRtl={isRtl}>
+            <Block title={x.diseaseTreatment}>
               {result.treatment.map((s, i) => (
                 <Bullet key={i} text={s} color={colors.primary} isRtl={isRtl} />
               ))}
@@ -355,7 +356,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           ) : null}
 
           {result.prevention.length ? (
-            <Block title={x.diseasePrevention} isRtl={isRtl}>
+            <Block title={x.diseasePrevention}>
               {result.prevention.map((s, i) => (
                 <Bullet key={i} text={s} color={colors.secondary} isRtl={isRtl} />
               ))}
@@ -374,9 +375,9 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
   );
 };
 
-const Block: React.FC<{ title: string; isRtl: boolean; children: React.ReactNode }> = ({ title, isRtl, children }) => (
+const Block: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <View style={styles.detailBlock}>
-    <Text style={[styles.blockTitle, isRtl && styles.rtlText]}>{title}</Text>
+    <SectionHeader title={title} titleNumberOfLines={0} />
     {children}
   </View>
 );
@@ -473,7 +474,6 @@ const styles = StyleSheet.create({
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: spacing.sm, lineHeight: 20 },
   diseaseDesc: { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: 20 },
   detailBlock: { marginTop: spacing.md },
-  blockTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
   bulletItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginBottom: 4 },
   bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: 20 },
   limitations: { backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.md },

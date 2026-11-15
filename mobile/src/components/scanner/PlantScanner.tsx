@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: colors.onBrandSubtle,
   },
-  preview: { flex: 1, backgroundColor: '#000' },
+  preview: { flex: 1, backgroundColor: colors.imageBackdrop },
   reviewPanel: {
     padding: spacing.xl,
     backgroundColor: colors.background,
