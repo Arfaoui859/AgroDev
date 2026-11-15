@@ -408,3 +408,17 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 52 suites / 250 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home and the
 tab bar correctly with no spacing regression.
+
+### Premium UI polish pass — shared RTL styles (verified 2026-11)
+
+- **`rtlStyles`** (`src/theme/rtl.ts`) now holds the two direction rules that
+  were copy-pasted into ~44 files: `rtlRow` (`flexDirection: 'row-reverse'`)
+  and `rtlText` (`textAlign: 'right'` + `writingDirection: 'rtl'`). Every call
+  site uses `rtlStyles.rtlRow` / `rtlStyles.rtlText` and the local copies were
+  deleted. `ErrorBoundary` and `Stepper` are the two exceptions — their "rtl"
+  text is *centred*, so they keep a local `rtlText`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 52 suites / 250 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home and the
+Profile tab correctly with RTL intact.
