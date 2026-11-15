@@ -22,7 +22,9 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     numpy==1.24.3 \
     TA-Lib==0.8.3 \
     yfinance==0.2.18 \
-    plotly==5.17.0
+    plotly==5.17.0 \
+    fastapi \
+
 
 # Verify dependencies
 RUN python -c "import numpy, talib, yfinance, plotly; print('Market dependencies OK'); print('NumPy:', numpy.__version__); print('TA-Lib:', talib.__version__)"
