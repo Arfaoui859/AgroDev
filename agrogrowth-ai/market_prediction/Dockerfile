@@ -17,13 +17,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install compatible Python dependencies
-RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    python -m pip install --no-cache-dir \
+
+# Install Python dependencies
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
+RUN python -m pip install --no-cache-dir \
     numpy==1.24.3 \
     TA-Lib==0.8.3 \
     yfinance==0.2.18 \
     plotly==5.17.0 \
     fastapi \
+    "uvicorn[standard]"
+
+# Verify dependencies
+RUN python -c "import numpy, talib, yfinance, plotly, fastapi, uvicorn; print('All Market dependencies OK')"
+
 
 
 # Verify dependencies
