@@ -4,7 +4,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { spaceBetween } from '../../theme/layout';
-import { mutedCaption, subtitleMeta } from '../../theme/typographyStyles';
+import { mutedCaption, mutedCaptionTop, subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil, SoilTranslations } from '../../i18n/soil';
 import { SoilReport, SoilReportAction } from '../../types';
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
   },
   tableSub: subtitleMeta,
-  tableEvidence: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: 2 },
+  tableEvidence: mutedCaptionTop,
   findingRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   findingParam: {
     flex: 1,

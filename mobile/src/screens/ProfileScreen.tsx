@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { cardPad, flex1, screenStyles, stackLg } from '../theme/layout';
+import { cardPad, flex1, rowGapMd, rowGapSm, screenStyles, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
@@ -302,11 +302,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
-  avatarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
+  avatarRow: rowGapMd,
   avatarLarge: {
     width: 64,
     height: 64,
@@ -358,11 +354,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
   },
   statusCard: cardPad,
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
+  statusRow: rowGapSm,
   statusIndicatorOnline: {
     width: 10,
     height: 10,

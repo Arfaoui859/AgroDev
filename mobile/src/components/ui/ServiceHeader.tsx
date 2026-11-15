@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../theme/colors';
-import { flex1, stackMd } from '../../theme/layout';
+import { colors, radius, typography } from '../../theme/colors';
+import { flex1, rowGapMd, stackMd } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ServiceHeaderProps {
@@ -40,7 +40,7 @@ export const ServiceHeader: React.FC<ServiceHeaderProps> = ({
 
 const styles = StyleSheet.create({
   headerBox: stackMd,
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  titleRow: rowGapMd,
   iconCircle: {
     width: 48,
     height: 48,

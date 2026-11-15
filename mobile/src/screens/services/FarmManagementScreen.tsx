@@ -8,10 +8,10 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, stackSm } from '../../theme/layout';
+import { cardBottomRow, cardPad, flex1, rowGapXs, rowWrapSm, screenStyles, spaceBetween, stackSm, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { subtitleMeta, subtleCaption, titleBase } from '../../theme/typographyStyles';
+import { mutedCaptionTop, subtitleMeta, subtleCaption, titleBase } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   farmHeader: spaceBetween,
-  provBar: { marginTop: spacing.sm },
+  provBar: stackTopSm,
   farmHeaderInfo: flex1,
   farmName: titleBase,
   farmLocation: subtitleMeta,
@@ -479,12 +479,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.primaryDark,
   },
-  statLabel: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
+  statLabel: mutedCaptionTop,
   statDivider: {
     width: 1,
     height: 24,
@@ -510,11 +505,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   input: formInput,
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
+  chipWrap: rowWrapSm,
   fieldsSection: {
     gap: spacing.sm,
   },
@@ -533,10 +524,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
   },
   fieldFooter: cardBottomRow,
-  footerMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
+  footerMeta: rowGapXs,
   footerText: subtleCaption,
 });

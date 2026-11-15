@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { rowWrapSm } from '../../theme/layout';
 import { subtleCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -38,7 +39,7 @@ export const ChipSelect: React.FC<ChipSelectProps> = ({ options, selected, onSel
 };
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  wrap: rowWrapSm,
   chip: {
     minHeight: 48,
     justifyContent: 'center',

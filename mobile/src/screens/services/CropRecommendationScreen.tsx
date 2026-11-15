@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { cardPad, flex1, screenStyles, spaceBetweenTop, stackSm, stackedCard } from '../../theme/layout';
+import { actionsRow, cardPad, flex1, screenStyles, spaceBetweenTop, stackSm, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   reuseText: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.info },
   inputCard: stackedCard,
   inputHeading: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
-  inputRow: { flexDirection: 'row', gap: spacing.sm },
+  inputRow: actionsRow,
   halfField: flex1,
   hint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.sm, marginBottom: spacing.xs },
   provBar: stackSm,

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { mutedCaptionTop } from '../../theme/typographyStyles';
 import { selectedChip } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
   circleText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.bold, color: colors.textMuted },
   circleTextOnPrimary: { color: colors.primaryForeground },
   circleTextDone: { color: colors.primaryDark },
-  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: 2 },
+  label: mutedCaptionTop,
   labelActive: { color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
   rtlText: { textAlign: 'center' },
   connector: { height: 2, flex: 0.4, backgroundColor: colors.border },

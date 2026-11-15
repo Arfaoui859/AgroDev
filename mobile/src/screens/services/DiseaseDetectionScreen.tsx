@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
-import { cardPad, flex1, screenStyles, stackMd, stackedCard } from '../../theme/layout';
+import { actionsRow, cardPad, flex1, rowWrapSm, screenStyles, stackMd, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { accentCaption, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
+import { accentCaption, mutedCaptionTop, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonsRow: { flexDirection: 'row', gap: spacing.sm },
+  buttonsRow: actionsRow,
   actionPickBtn: {
     flex: 1,
     minHeight: 84,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   actionPickText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.bold, textAlign: 'center', lineHeight: typography.lineHeights.xs },
   section: stackMd,
   cropsScroll: { gap: spacing.sm, paddingVertical: spacing.xs },
-  partsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  partsRow: rowWrapSm,
   symptomsInput: {
     minHeight: 80,
     backgroundColor: colors.surfaceSubtle,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   resultTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
   resultDiseaseHeader: flex1,
   diseaseTitleAr: titleBase,
-  diseaseTitleEn: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  diseaseTitleEn: mutedCaptionTop,
   confidenceBadge: { backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md, alignItems: 'center' },
   confidenceNum: titleBaseAccent,
   confidenceLabel: accentCaption,

@@ -4,7 +4,7 @@ import { flex1, screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { mutedCaption, subtitleMeta, titleBase, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
+import { mutedCaption, mutedCaptionTop, subtitleMeta, titleBase, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   taskText: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text },
   taskTextDone: { textDecorationLine: 'line-through', color: colors.textMuted },
   progress: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.bold, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
-  cycleNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs, marginTop: 2 },
+  cycleNote: mutedCaptionTop,
   projectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   projectText: flex1,
   projectName: titleSmSemibold,

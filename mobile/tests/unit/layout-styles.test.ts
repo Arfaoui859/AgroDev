@@ -1,4 +1,7 @@
-import { cardBottomRow, cardPad, flex1, screenStyles, selectedChip, spaceBetween, spaceBetweenTop, stackLg, stackMd, stackSm, stackedCard } from '../../src/theme/layout';
+import {
+  actionsRow, cardBottomRow, cardPad, flex1, gapMd, rowGapMd, rowGapSm, rowGapXs, rowWrapSm,
+  screenStyles, selectedChip, spaceBetween, spaceBetweenTop, stackLg, stackMd, stackSm, stackTopSm, stackedCard,
+} from '../../src/theme/layout';
 import { colors, spacing } from '../../src/theme/colors';
 
 /**
@@ -46,5 +49,18 @@ describe('layout styles', () => {
 
   it('selectedChip is the brand fill shared by chips, pills and the stepper', () => {
     expect(selectedChip).toMatchObject({ backgroundColor: colors.primary, borderColor: colors.primary });
+  });
+
+  it('row gap tokens pin the shared icon/label rows', () => {
+    expect(rowGapXs).toMatchObject({ flexDirection: 'row', alignItems: 'center', gap: spacing.xs });
+    expect(rowGapSm).toMatchObject({ flexDirection: 'row', alignItems: 'center', gap: spacing.sm });
+    expect(rowGapMd).toMatchObject({ flexDirection: 'row', alignItems: 'center', gap: spacing.md });
+    expect(rowWrapSm).toMatchObject({ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm });
+    expect(actionsRow).toMatchObject({ flexDirection: 'row', gap: spacing.sm });
+  });
+
+  it('gapMd and stackTopSm pin the vertical rhythm helpers', () => {
+    expect(gapMd).toMatchObject({ gap: spacing.md });
+    expect(stackTopSm).toMatchObject({ marginTop: spacing.sm });
   });
 });

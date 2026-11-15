@@ -56,3 +56,24 @@ export const stackLg: ViewStyle = { marginBottom: spacing.lg };
 
 /** Selected-state fill shared by the chips, pills and stepper: brand background and border. */
 export const selectedChip: ViewStyle = { backgroundColor: colors.primary, borderColor: colors.primary };
+
+/** Centred row with a small gap between icon and label. */
+export const rowGapXs: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: spacing.xs };
+
+/** Centred row with the standard icon/label gap. */
+export const rowGapSm: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: spacing.sm };
+
+/** Centred row with a wider gap between grouped controls. */
+export const rowGapMd: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: spacing.md };
+
+/** Wrapping row of chips/pills. */
+export const rowWrapSm: ViewStyle = { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm };
+
+/** Leading-aligned row of actions (no centring, small gap). */
+export const actionsRow: ViewStyle = { flexDirection: 'row', gap: spacing.sm };
+
+/** Vertical list with the standard gap between cards. */
+export const gapMd: ViewStyle = { gap: spacing.md };
+
+/** Small top gap above an in-card sub-block (provenance rows, sub-sections). */
+export const stackTopSm: ViewStyle = { marginTop: spacing.sm };

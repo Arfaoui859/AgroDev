@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { mutedCaptionTop } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { ProvenanceMeta } from '../../types';
 import { provenanceLabel } from '../../utils/provenance';
@@ -85,10 +86,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 3,
   },
-  disclaimer: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textMuted,
-    marginTop: 2,
-    lineHeight: typography.lineHeights.xs,
-  },
+  disclaimer: mutedCaptionTop,
 });

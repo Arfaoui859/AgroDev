@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { flex1, screenStyles, spaceBetween, stackLg } from '../theme/layout';
+import { actionsRow, flex1, rowGapMd, rowGapSm, screenStyles, spaceBetween, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
   provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' },
   sectionContainer: stackLg,
   quickActionsGrid: { gap: spacing.sm },
-  tilesRow: { flexDirection: 'row', gap: spacing.sm },
+  tilesRow: actionsRow,
   bigActionShadow: { borderRadius: radius.lg, ...shadows.md },
   bigActionCard: { minHeight: 48, borderRadius: radius.lg, padding: spacing.lg },
   bigActionHeader: { ...spaceBetween, marginBottom: spacing.sm },
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary,
   },
-  assistantBannerInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  assistantBannerInner: rowGapMd,
   assistantIconCircle: {
     width: 46,
     height: 46,
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   assistantBannerSub: subtitleMeta,
   alertsContainer: { paddingVertical: spacing.xs },
   alertCard: { padding: spacing.sm },
-  alertRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  alertRow: rowGapSm,
   alertIconWrap: {
     width: 36,
     height: 36,

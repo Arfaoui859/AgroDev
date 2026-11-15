@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { cardPad, screenStyles, spaceBetween } from '../../theme/layout';
+import { cardPad, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -310,7 +310,7 @@ function weatherIconColor(icon: string | undefined): string {
 }
 
 const styles = StyleSheet.create({
-  provRow: { marginTop: spacing.sm },
+  provRow: stackTopSm,
   locationBtn: {
     flexDirection: 'row',
     alignItems: 'center',

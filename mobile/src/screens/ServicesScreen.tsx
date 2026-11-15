@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { screenStyles } from '../theme/layout';
+import { gapMd, screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { IconTile } from '../components/ui/IconTile';
@@ -288,9 +288,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingBottom: spacing.md,
   },
-  serviceList: {
-    gap: spacing.md,
-  },
+  serviceList: gapMd,
   serviceCard: {
     minHeight: 48,
     backgroundColor: colors.card,

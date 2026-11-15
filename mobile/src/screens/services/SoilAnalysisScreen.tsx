@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { flex1, screenStyles, spaceBetween } from '../../theme/layout';
+import { flex1, gapMd, rowGapMd, rowGapSm, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -373,11 +373,11 @@ const styles = StyleSheet.create({
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.md, lineHeight: typography.lineHeights.xs },
   formCard: { padding: spacing.md, marginBottom: spacing.lg },
   blankNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm, lineHeight: typography.lineHeights.sm },
-  resultContainer: { gap: spacing.md },
-  resultHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  resultContainer: gapMd,
+  resultHeader: rowGapSm,
   resultHeading: titleBaseFlex,
   gradeCard: { padding: spacing.md, backgroundColor: colors.card },
-  gradeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  gradeRow: rowGapMd,
   scoreCircle: {
     width: 60,
     height: 60,
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   provWrap: { marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   persistNote: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: typography.lineHeights.xs },
   ctaSub: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs, marginBottom: spacing.sm },
-  subSection: { marginTop: spacing.sm },
+  subSection: stackTopSm,
   subSectionTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
   findingCard: { padding: spacing.md, marginBottom: spacing.xs },
   findingHeader: { ...spaceBetween, marginBottom: spacing.xs },

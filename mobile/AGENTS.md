@@ -663,3 +663,13 @@ and GeneralServiceModal. Pinned by `tests/unit/layout-styles.test.ts` (6 cases).
 - Four more `titleBase` copies (SectionHeader `title`, WeatherDetail
   `currentGov`, FarmManagement `farmName`/`fieldName`) now reference the shared
   `titleBase` token from `src/theme/typographyStyles.ts`.
+
+### Premium UI polish pass — row/gap tokens (verified 2026-11)
+
+`src/theme/layout.ts` gained the remaining repeated row/stack shapes:
+**`rowGapXs` / `rowGapSm` / `rowGapMd`** (centred rows with an xs/sm/md gap),
+**`rowWrapSm`** (wrapping chip rows), **`actionsRow`** (leading action row),
+**`gapMd`** (vertical card list) and **`stackTopSm`** (`marginTop: spacing.sm`
+above an in-card sub-block). `src/theme/typographyStyles.ts` gained
+**`mutedCaptionTop`** (`mutedCaption` + `marginTop: 2`). Migrated ~24 files.
+Pinned by `tests/unit/layout-styles.test.ts` (9 cases).

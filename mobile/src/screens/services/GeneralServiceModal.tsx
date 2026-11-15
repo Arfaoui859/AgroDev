@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { flex1, screenStyles, stackSm, stackedCard } from '../../theme/layout';
+import { flex1, rowWrapSm, screenStyles, stackSm, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -379,7 +379,7 @@ const IrrigationResultView: React.FC<{ data: Record<string, unknown> | null; isR
 const styles = StyleSheet.create({
   card: stackedCard,
   label: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 6, lineHeight: typography.lineHeights.xs },
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chipsRow: rowWrapSm,
   textArea: {
     minHeight: 88,
     backgroundColor: colors.surfaceSubtle,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { colors, typography } from '../../theme/colors';
+import { mutedCaptionTop } from '../../theme/typographyStyles';
 
 interface StatTileProps {
   label: string;
@@ -31,11 +32,6 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeights.xl,
     fontWeight: typography.fontWeights.bold,
   },
-  label: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
+  label: mutedCaptionTop,
   labelCentered: { textAlign: 'center' },
 });

@@ -81,3 +81,6 @@ export const titleSmSemibold: TextStyle = {
   fontWeight: typography.fontWeights.semibold,
   color: colors.text,
 };
+
+/** Faint metadata caption with the common 2px top gap under a title. */
+export const mutedCaptionTop: TextStyle = { ...mutedCaption, marginTop: 2 };

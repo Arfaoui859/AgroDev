@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { stackSm } from '../../theme/layout';
+import { rowGapXs, rowWrapSm, stackSm } from '../../theme/layout';
 import { labelMedium, subtleCaption, titleLg } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
   },
   header: stackSm,
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  brandRow: rowGapXs,
   brandTitle: titleLg,
   title: {
     fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl,
@@ -333,11 +333,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   input: formInput,
-  roleGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
+  roleGrid: rowWrapSm,
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -4,7 +4,7 @@ import { cardPad, flex1, screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { titleSm } from '../../theme/typographyStyles';
+import { mutedCaptionTop, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -257,12 +257,7 @@ const styles = StyleSheet.create({
   },
   titleArea: flex1,
   recordTitle: titleSm,
-  recordDate: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
+  recordDate: mutedCaptionTop,
   recordSummary: {
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
