@@ -10,7 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
-import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { identifyPest, getIrrigationPlan, getWeather } from '../../api/client';
 import { pestCategory, pestName } from '../../utils/pestLabels';
 import { PestIdentification, IrrigationResult } from '../../types';
@@ -187,9 +187,7 @@ const IrrigationService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {result ? (
         <Card variant="elevated" style={styles.card}>
-          <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
-            <ProvenanceBadge meta={result.meta} detailed />
-          </View>
+          <ProvenanceBar meta={result.meta} detailed style={styles.provRow} />
           {climateUsed ? (
             <View style={[styles.climateNote, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="weather-partly-cloudy" size={14} color={colors.secondary} />
@@ -294,9 +292,7 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {result ? (
         <Card variant="elevated" style={styles.card}>
-          <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
-            <ProvenanceBadge meta={result.meta} detailed />
-          </View>
+          <ProvenanceBar meta={result.meta} detailed style={styles.provRow} />
           {result.identifiedPest ? (
             <>
               <Text style={[styles.resultTitle, isRtl && rtlStyles.rtlText]}>

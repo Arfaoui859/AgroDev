@@ -11,7 +11,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
-import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { Stepper } from '../../components/ui/Stepper';
 import { PlotStep } from '../../components/soil/PlotStep';
 import { MeasurementsStep, MeasurementsValues } from '../../components/soil/MeasurementsStep';
@@ -244,9 +244,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
                 {selectedField ? `${s9.reportReportOf}: ${selectedField.name}` : s9.reportTitle}
               </Text>
             </View>
-            <View style={styles.provWrap}>
-              <ProvenanceBadge meta={report.meta} detailed />
-            </View>
+            <ProvenanceBar meta={report.meta} detailed style={styles.provWrap} />
             <Text style={[styles.persistNote, isRtl && rtlStyles.rtlText]}>
               {report.persisted ? s9.reportPersistedNote : s9.reportNotPersistedNote}
             </Text>
@@ -291,9 +289,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
                 <Text style={[styles.gradeDesc, isRtl && rtlStyles.rtlText]}>{ruleResult.interpretationAr}</Text>
               </View>
             </View>
-            <View style={styles.provWrap}>
-              <ProvenanceBadge meta={ruleResult.meta} detailed />
-            </View>
+            <ProvenanceBar meta={ruleResult.meta} detailed style={styles.provWrap} />
           </Card>
 
           {ruleResultIsArabicOnly ? (

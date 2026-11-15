@@ -17,7 +17,7 @@ import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { chatWithAIAssistant } from '../api/client';
 import { ChatMessage } from '../types';
-import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { formatTime } from '../utils/date';
 
@@ -202,9 +202,7 @@ export const AIAssistantScreen: React.FC = () => {
                   {msg.timestamp}
                 </Text>
                 {!isUser && msg.meta ? (
-                  <View style={styles.provRow}>
-                    <ProvenanceBadge meta={msg.meta} />
-                  </View>
+                  <ProvenanceBar meta={msg.meta} style={styles.provRow} />
                 ) : null}
               </View>
             </View>

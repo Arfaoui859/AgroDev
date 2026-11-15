@@ -18,7 +18,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { StateView } from '../components/ui/StateView';
-import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { getWeather, pingServer, getNotifications } from '../api/client';
 import { AppNotification, WeatherData } from '../types';
 import { useConnectivity } from '../hooks/useConnectivity';
@@ -328,8 +328,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           </Text>
 
           <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
-            <ProvenanceBadge meta={weather.meta} />
-            {weatherFromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
+            <ProvenanceBar meta={weather.meta} cached={weatherFromCache} />
             <View style={styles.weatherMoreSpacer} />
             <Text style={styles.weatherMoreText}>{x.weatherOpenDetail}</Text>
             <MaterialCommunityIcons
@@ -626,7 +625,6 @@ const styles = StyleSheet.create({
   weatherMoreSpacer: { flex: 1 },
   weatherMoreText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' },
-  cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
   sectionContainer: { marginBottom: spacing.lg },
   quickActionsGrid: { gap: spacing.sm },
   tilesRow: { flexDirection: 'row', gap: spacing.sm },

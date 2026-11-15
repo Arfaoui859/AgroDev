@@ -6,7 +6,7 @@ import { colors, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
 import { StateView } from '../ui/StateView';
-import { ProvenanceBadge } from '../ui/ProvenanceBadge';
+import { ProvenanceBar } from '../ui/ProvenanceBar';
 import { getMarketplaceListings } from '../../api/client';
 import { getSoil } from '../../i18n/soil';
 import { MarketplaceListing, ProvenanceMeta } from '../../types';
@@ -81,11 +81,7 @@ export const MarketplaceMatch: React.FC<MarketplaceMatchProps> = ({ query }) => 
         </View>
       )}
 
-      {meta ? (
-        <View style={{ marginTop: spacing.sm }}>
-          <ProvenanceBadge meta={meta} />
-        </View>
-      ) : null}
+      {meta ? <ProvenanceBar meta={meta} style={{ marginTop: spacing.sm }} /> : null}
     </Card>
   );
 };

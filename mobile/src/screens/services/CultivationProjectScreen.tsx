@@ -10,7 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
-import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { FormField } from '../../components/ui/FormField';
 import {
   createCultivation,
@@ -293,11 +293,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
             ))}
           </View>
         )}
-        {projectsMeta ? (
-          <View style={{ marginTop: spacing.sm }}>
-            <ProvenanceBadge meta={projectsMeta} />
-          </View>
-        ) : null}
+        {projectsMeta ? <ProvenanceBar meta={projectsMeta} style={{ marginTop: spacing.sm }} /> : null}
       </Card>
 
       <Button title={t.back} variant="outline" onPress={onBack} style={{ marginTop: spacing.md, marginBottom: spacing.xl }} />
