@@ -53,3 +53,6 @@ export const flex1: ViewStyle = { flex: 1 };
 export const stackSm: ViewStyle = { marginBottom: spacing.sm };
 export const stackMd: ViewStyle = { marginBottom: spacing.md };
 export const stackLg: ViewStyle = { marginBottom: spacing.lg };
+
+/** Selected-state fill shared by the chips, pills and stepper: brand background and border. */
+export const selectedChip: ViewStyle = { backgroundColor: colors.primary, borderColor: colors.primary };

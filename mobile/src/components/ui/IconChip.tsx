@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing } from '../../theme/colors';
+import { selectedChip } from '../../theme/layout';
 import { labelMedium } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.card,
   },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipSelected: selectedChip,
   chipText: labelMedium,
   chipTextSelected: { color: colors.textInverse },
 });

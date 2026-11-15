@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { selectedChip } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
 export interface Step {
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circleActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  circleActive: selectedChip,
   circleDone: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
   circleText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.bold, color: colors.textMuted },
   circleTextOnPrimary: { color: colors.primaryForeground },

@@ -1,4 +1,4 @@
-import { cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, spaceBetweenTop, stackLg, stackMd, stackSm, stackedCard } from '../../src/theme/layout';
+import { cardBottomRow, cardPad, flex1, screenStyles, selectedChip, spaceBetween, spaceBetweenTop, stackLg, stackMd, stackSm, stackedCard } from '../../src/theme/layout';
 import { colors, spacing } from '../../src/theme/colors';
 
 /**
@@ -42,5 +42,9 @@ describe('layout styles', () => {
     expect(stackSm).toMatchObject({ marginBottom: spacing.sm });
     expect(stackMd).toMatchObject({ marginBottom: spacing.md });
     expect(stackLg).toMatchObject({ marginBottom: spacing.lg });
+  });
+
+  it('selectedChip is the brand fill shared by chips, pills and the stepper', () => {
+    expect(selectedChip).toMatchObject({ backgroundColor: colors.primary, borderColor: colors.primary });
   });
 });

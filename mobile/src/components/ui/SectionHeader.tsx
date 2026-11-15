@@ -4,7 +4,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { flex1 } from '../../theme/layout';
-import { subtitleMeta } from '../../theme/typographyStyles';
+import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface SectionHeaderProps {
@@ -88,12 +88,7 @@ const styles = StyleSheet.create({
   },
   textWrap: flex1,
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  title: {
-    fontSize: typography.fontSizes.base,
-    lineHeight: typography.lineHeights.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  title: titleBase,
   subtitle: subtitleMeta,
   linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
   linkText: {

@@ -653,3 +653,13 @@ remaining space" child), and **`stackSm` / `stackMd` / `stackLg`** (the
 `marginBottom: spacing.{sm,md,lg}` vertical rhythm shared by ~18 section blocks).
 Migrated ~31 files, including inline `{ flex: 1 }` style props in ProfileScreen
 and GeneralServiceModal. Pinned by `tests/unit/layout-styles.test.ts` (6 cases).
+
+### Premium UI polish pass — selectedChip + base titles (verified 2026-11)
+
+- **`selectedChip`** (`src/theme/layout.ts`) is the brand fill
+  `{ backgroundColor: colors.primary, borderColor: colors.primary }` that the
+  category pill, the chip, the icon chip and the stepper's active circle all
+  declared. Pinned by `tests/unit/layout-styles.test.ts`.
+- Four more `titleBase` copies (SectionHeader `title`, WeatherDetail
+  `currentGov`, FarmManagement `farmName`/`fieldName`) now reference the shared
+  `titleBase` token from `src/theme/typographyStyles.ts`.

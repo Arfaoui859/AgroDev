@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { selectedChip } from '../../theme/layout';
 
 interface ChipProps {
   label: string;
@@ -37,7 +38,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.card,
   },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipSelected: selectedChip,
   chipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
   chipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
 });

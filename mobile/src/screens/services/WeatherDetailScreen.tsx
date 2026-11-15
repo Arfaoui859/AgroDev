@@ -11,7 +11,7 @@ import { cardPad, screenStyles, spaceBetween } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { labelMedium, mutedCaption, subtitleMeta, subtleCaption, titleSm } from '../../theme/typographyStyles';
+import { labelMedium, mutedCaption, subtitleMeta, subtleCaption, titleBase, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -365,11 +365,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   currentHeader: spaceBetween,
-  currentGov: {
-    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  currentGov: titleBase,
   currentCondition: subtitleMeta,
   tempRow: {
     flexDirection: 'row',

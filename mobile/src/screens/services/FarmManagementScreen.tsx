@@ -11,7 +11,7 @@ import {
 import { cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, stackSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { subtitleMeta, subtleCaption } from '../../theme/typographyStyles';
+import { subtitleMeta, subtleCaption, titleBase } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
@@ -461,11 +461,7 @@ const styles = StyleSheet.create({
   farmHeader: spaceBetween,
   provBar: { marginTop: spacing.sm },
   farmHeaderInfo: flex1,
-  farmName: {
-    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  farmName: titleBase,
   farmLocation: subtitleMeta,
   farmStatsRow: {
     flexDirection: 'row',
@@ -530,11 +526,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   fieldInfo: flex1,
-  fieldName: {
-    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
+  fieldName: titleBase,
   fieldCrop: subtitleMeta,
   cropHighlight: {
     color: colors.primary,
