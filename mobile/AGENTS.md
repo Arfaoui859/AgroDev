@@ -773,9 +773,11 @@ live in `src/types/index.ts`; `chatWithAIAssistant` maps and defensively
 normalises the trace (`normalizeOrchestrationTrace` in `src/api/client.ts`);
 `src/components/ui/OrchestrationTraceView.tsx` renders the collapsible plan,
 planner (`llm` vs keywords), concurrency/duration, and each specialist's
-status, source, confidence and findings — RTL-aware, with all 23 labels in
-ar/fr/en (`src/i18n/extra.ts`). It is rendered under assistant bubbles in
-`AIAssistantScreen.tsx` and introduced by a preamble card on
+status, source, confidence and findings — plus a disclosure row naming any
+specialists the LLM proposed but that were dropped as non-allow-listed
+(`rejectedPlanIds`), so nothing the planner wanted is hidden. RTL-aware, with
+all 24 labels in ar/fr/en (`src/i18n/extra.ts`). It is rendered under assistant
+bubbles in `AIAssistantScreen.tsx` and introduced by a preamble card on
 `MultiAgentAIScreen.tsx`. There is **no public specialist-registry endpoint**
 (the registry route is admin-guarded), so the screen keeps using
 `GET /api/ai/capabilities` and the trace comes from real chat turns.
@@ -784,8 +786,11 @@ Verified live (exported web build behind a same-origin proxy — the Render
 gateway sends no CORS headers, which only affects the browser export, not the
 native app): a tomato-disease turn showed `plant_health`/`pest_control`
 `insufficient_input`/`unavailable`; a mixed Arabic turn showed a 4-step
-`soil`/`weather`/`crop`/`agri_news` plan with `1/4` ok and the crop specialist's
-real rule-based findings; AR/FR/EN all render and RTL mirrors correctly.
+`soil`/`weather`/`crop`/`agri_news` plan with `1/4` ok, the crop specialist's
+real rule-based findings, and the rejected-plan row correctly hidden when the
+planner proposed only allow-listed ids; AR/FR/EN all render and RTL mirrors
+correctly.
 
-Suite: `npx tsc --noEmit` clean, `npx eslint src` clean, `npx jest` **334
-passed / 7 skipped / 341 total** (68 suites passed, 2 skipped).
+Suite: `npx tsc --noEmit` clean, `npx eslint src` clean, `npx jest` **335
+passed / 7 skipped / 342 total** (68 suites passed, 2 skipped). Live gateway
+tests: `LIVE_API_TESTS=1 npx jest tests/live` → 2 suites / 7 tests passed.

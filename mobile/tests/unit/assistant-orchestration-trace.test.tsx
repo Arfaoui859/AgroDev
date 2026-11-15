@@ -106,4 +106,24 @@ describe('AIAssistantScreen — orchestration trace', () => {
     expect(screen.getByText('قواعد حتمية')).toBeTruthy();
     expect(screen.getByText('خلاصات RSS حقيقية')).toBeTruthy();
   });
+
+  it('discloses specialists the model proposed but that were dropped', async () => {
+    mockChat.mockResolvedValueOnce({
+      data: {
+        reply: 'جواب',
+        meta: { provenance: 'rule-based', isRealData: false },
+        orchestration: { ...trace, rejectedPlanIds: ['weather', 'not_real_agent'] },
+      },
+      error: null,
+    });
+
+    const user = require('@testing-library/react-native').userEvent.setup();
+    await renderScreen();
+    await user.type(screen.getByPlaceholderText('اكتب سؤالك هنا بالعامية التونسية أو الفصحى...'), 'سؤال');
+    await user.press(screen.getByLabelText('إرسال'));
+
+    await waitFor(() => expect(screen.getByText('جواب')).toBeTruthy());
+    await user.press(screen.getByText('تنسيق الوكلاء المتعدّدين'));
+    await waitFor(() => expect(screen.getByText(/not_real_agent/)).toBeTruthy());
+  });
 });

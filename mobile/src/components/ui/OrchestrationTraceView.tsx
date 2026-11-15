@@ -150,6 +150,17 @@ export const OrchestrationTraceView: React.FC<OrchestrationTraceViewProps> = ({ 
             ))}
           </View>
 
+          {/* Honest disclosure: specialists the LLM proposed but that are not
+              allow-listed are dropped, never silently executed. */}
+          {trace.rejectedPlanIds.length ? (
+            <View style={[styles.rejectedRow, isRtl && rtlStyles.rtlRow]}>
+              <MaterialCommunityIcons name="shield-alert-outline" size={13} color={colors.warning} />
+              <Text style={[styles.rejectedText, isRtl && rtlStyles.rtlText]}>
+                {x.agentsRejectedPlan} {trace.rejectedPlanIds.join(', ')}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Per-specialist result. */}
           <Text style={[styles.sectionLabel, isRtl && rtlStyles.rtlText]}>{x.agentsRunTitle}</Text>
           <View style={styles.stepsList}>
@@ -240,6 +251,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   planChipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium },
+  rejectedRow: { ...rowGapXs, alignItems: 'flex-start', marginTop: spacing.xs },
+  rejectedText: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.warning },
   stepsList: { gap: spacing.xs },
   stepCard: {
     backgroundColor: colors.surfaceSubtle,

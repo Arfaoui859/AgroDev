@@ -529,6 +529,7 @@ export interface ExtraTranslations {
   agentsTraceTitle: string;
   agentsTraceSubtitle: string;
   agentsPlanTitle: string;
+  agentsRejectedPlan: string;
   agentsPlannedByLlm: string;
   agentsPlannedByKeywords: string;
   agentsConcurrency: string;
@@ -1060,6 +1061,7 @@ const ar: ExtraTranslations = {
   agentsTraceTitle: 'تنسيق الوكلاء المتعدّدين',
   agentsTraceSubtitle: 'كيف وزّع الخادم سؤالك على الوكلاء المتخصّصين ودمج نتائجهم.',
   agentsPlanTitle: 'الخطة التنفيذية',
+  agentsRejectedPlan: 'اقترح النموذج وكلاء خارج القائمة المسموح بها وتم تجاهلهم:',
   agentsPlannedByLlm: 'اختار النموذج اللغوي الخطة',
   agentsPlannedByKeywords: 'اختيرت الخطة بالكلمات المفتاحية',
   agentsConcurrency: 'التزامن',
@@ -1591,6 +1593,7 @@ const fr: ExtraTranslations = {
   agentsTraceTitle: 'Orchestration multi-agents',
   agentsTraceSubtitle: 'Comment le serveur a réparti votre question entre les agents spécialisés et fusionné leurs résultats.',
   agentsPlanTitle: 'Plan d’exécution',
+  agentsRejectedPlan: 'Agents proposés par le modèle mais hors liste autorisée (ignorés) :',
   agentsPlannedByLlm: 'Plan choisi par le modèle de langage',
   agentsPlannedByKeywords: 'Plan choisi par mots-clés',
   agentsConcurrency: 'Concurrence',
@@ -2123,6 +2126,7 @@ const en: ExtraTranslations = {
   agentsTraceTitle: 'Multi-agent orchestration',
   agentsTraceSubtitle: 'How the server split your question across specialised agents and merged their results.',
   agentsPlanTitle: 'Execution plan',
+  agentsRejectedPlan: 'Agents the model proposed but that are not allow-listed (dropped):',
   agentsPlannedByLlm: 'Plan chosen by the language model',
   agentsPlannedByKeywords: 'Plan chosen by keywords',
   agentsConcurrency: 'Concurrency',
