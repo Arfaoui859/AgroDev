@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
@@ -9,7 +9,7 @@ import { UserRole } from '../../types';
 import { ExtraTranslations } from '../../i18n/extra';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { IconButton } from '../ui/IconButton';
+import { ModalSheet } from '../ui/ModalSheet';
 
 interface PersonaSelectorModalProps {
   visible: boolean;
@@ -121,24 +121,18 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleSkip}>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <View style={[styles.headerRow, isRtl && rtlStyles.rtlRow]}>
-            <View style={styles.headerTextWrap}>
-              <Text style={[styles.modalTitle, isRtl && rtlStyles.rtlText]}>{x.onboardingTitle}</Text>
-              <Text style={[styles.modalSub, isRtl && rtlStyles.rtlText]}>{x.onboardingSubtitle}</Text>
-            </View>
-            <IconButton
-              icon="close"
-              size={22}
-              color={colors.textSecondary}
-              onPress={handleSkip}
-              accessibilityLabel={x.close}
-            />
-          </View>
-
-          <ScrollView style={styles.personaList} showsVerticalScrollIndicator={false}>
+    <ModalSheet
+      visible={visible}
+      onClose={handleSkip}
+      closeLabel={x.close}
+      header={
+        <>
+          <Text style={[styles.modalTitle, isRtl && rtlStyles.rtlText]}>{x.onboardingTitle}</Text>
+          <Text style={[styles.modalSub, isRtl && rtlStyles.rtlText]}>{x.onboardingSubtitle}</Text>
+        </>
+      }
+    >
+      <ScrollView style={styles.personaList} showsVerticalScrollIndicator={false}>
             {PERSONAS.map((p) => {
               const isSelected = user?.role === p.role;
               return (
@@ -172,31 +166,14 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+      </ScrollView>
 
-          <Button title={x.onboardingSkip} variant="outline" size="md" onPress={handleSkip} style={{ marginTop: spacing.md }} />
-        </View>
-      </View>
-    </Modal>
+      <Button title={x.onboardingSkip} variant="outline" size="md" onPress={handleSkip} style={{ marginTop: spacing.md }} />
+    </ModalSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    padding: spacing.lg,
-    maxHeight: '85%',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  headerTextWrap: { flex: 1 },
   modalTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
   modalSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
   personaList: { marginVertical: spacing.xs },

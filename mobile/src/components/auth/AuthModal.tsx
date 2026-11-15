@@ -3,21 +3,18 @@ import { rtlStyles } from '../../theme/rtl';
 import {
   View,
   Text,
-  Modal,
   StyleSheet,
   TouchableOpacity,
   TextInput,
   Alert,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
-import { IconButton } from '../ui/IconButton';
+import { ModalSheet } from '../ui/ModalSheet';
 import { UserRole } from '../../types';
 import { ExtraTranslations } from '../../i18n/extra';
 
@@ -118,25 +115,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.overlay}
-      >
-        <View style={styles.sheet}>
-          <View style={[styles.header, isRtl && rtlStyles.rtlRow]}>
-            <View style={[styles.brandRow, isRtl && rtlStyles.rtlRow]}>
-              <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
-              <Text style={styles.brandTitle}>AgroGrowth</Text>
-            </View>
-            <IconButton
-              icon="close"
-              size={22}
-              color={colors.textSecondary}
-              onPress={onClose}
-              accessibilityLabel={x.close}
-            />
-          </View>
+    <ModalSheet
+      visible={visible}
+      onClose={onClose}
+      closeLabel={x.close}
+      keyboardAvoiding
+      sheetStyle={styles.sheet}
+      headerStyle={styles.header}
+      header={
+        <View style={[styles.brandRow, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
+          <Text style={styles.brandTitle}>AgroGrowth</Text>
+        </View>
+      }
+    >
 
           <Text style={[styles.title, isRtl && rtlStyles.rtlText]}>
             {tab === 'signin' ? x.authWelcomeBack : tab === 'signup' ? x.authCreateAccount : x.authReset}
@@ -287,10 +279,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                 </Text>
               </Text>
             </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      </ScrollView>
+    </ModalSheet>
   );
 };
 
@@ -306,25 +296,13 @@ const Field: React.FC<{ label: string; isRtl: boolean; children: React.ReactNode
 );
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.scrim,
-    justifyContent: 'flex-end',
-  },
+  // Auth sheet is taller and more padded than the default ModalSheet chrome.
   sheet: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
     padding: spacing.xl,
     paddingBottom: spacing['3xl'],
     maxHeight: '92%',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
+  header: { marginBottom: spacing.sm },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   brandTitle: {
     fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,

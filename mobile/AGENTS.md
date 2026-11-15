@@ -517,3 +517,19 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx expo export --platform web` and `--platform android` both bundle; the web
 export renders Home, Services and Profile (FR switch) with the header controls
 intact.
+
+### Premium UI polish pass — shared ModalSheet (verified 2026-11)
+
+- **`ModalSheet`** (`src/components/ui/ModalSheet.tsx`) is the one bottom-sheet
+  chrome: scrim overlay, card sheet with rounded top corners, header row with a
+  leading slot and the shared `IconButton` close control. `PersonaSelectorModal`
+  and `AuthModal` declared identical `overlay` / `sheet` / `headerRow` styles and
+  close buttons; they now pass only their header content and per-sheet geometry
+  (`sheetStyle`, `headerStyle`), plus `keyboardAvoiding` for the auth form. The
+  duplicated style blocks were deleted. Regression test:
+  `tests/unit/modal-sheet.test.tsx`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 58 suites / 263 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home, Services
+and Profile, and the auth modal opens and closes through the shared close button.
