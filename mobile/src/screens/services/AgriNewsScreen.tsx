@@ -18,7 +18,7 @@ import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { CategoryPill } from '../../components/ui/CategoryPill';
 import { StateView } from '../../components/ui/StateView';
-import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { getAgriNews } from '../../api/client';
 import { NewsArticle, NewsResult } from '../../types';
 import { formatDate } from '../../utils/date';
@@ -149,9 +149,7 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
         </Card>
       ) : (
         <>
-          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
-            {result?.meta ? <ProvenanceBadge meta={result.meta} detailed /> : null}
-          </View>
+          {result?.meta ? <ProvenanceBar meta={result.meta} detailed style={styles.provBar} /> : null}
 
           {articles.map((article) => (
             <Card

@@ -17,7 +17,7 @@ import { Badge } from '../../components/ui/Badge';
 import { getWeather } from '../../api/client';
 import { WeatherData } from '../../types';
 import { StateView } from '../../components/ui/StateView';
-import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { useConnectivity } from '../../hooks/useConnectivity';
 import { GOVERNORATES, governorateLabel } from '../../utils/governorates';
@@ -228,10 +228,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
             </View>
           </Card>
 
-          <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
-            <ProvenanceBadge meta={weather.meta} detailed />
-            {fromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
-          </View>
+          <ProvenanceBar meta={weather.meta} detailed cached={fromCache} style={styles.provRow} />
 
           {/* 5-Day Forecast */}
           <View style={styles.forecastSection}>
@@ -314,8 +311,7 @@ function weatherIconColor(icon: string | undefined): string {
 }
 
 const styles = StyleSheet.create({
-  provRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.sm, flexWrap: 'wrap' },
-  cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
+  provRow: { marginTop: spacing.sm },
   container: {
     flex: 1,
     backgroundColor: colors.background,

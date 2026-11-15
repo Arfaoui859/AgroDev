@@ -9,7 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
-import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { FormField } from '../../components/ui/FormField';
 import { getCropRecommendations, getFieldCropRecommendations, FieldCropRecommendation } from '../../api/client';
 import { addHistoryEntry } from '../../api/history';
@@ -282,9 +282,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
 
       {!loading && crops.length > 0 ? (
         <>
-          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
-            {meta ? <ProvenanceBadge meta={meta} detailed /> : null}
-          </View>
+          {meta ? <ProvenanceBar meta={meta} detailed style={styles.provBar} /> : null}
           {source === 'plot' ? (
             <Text style={[styles.sectionNote, isRtl && rtlStyles.rtlText]}>{s9.cropFromPlotTitle}</Text>
           ) : null}

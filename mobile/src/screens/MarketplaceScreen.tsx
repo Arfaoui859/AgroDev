@@ -15,7 +15,7 @@ import { Badge } from '../components/ui/Badge';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { StateView } from '../components/ui/StateView';
-import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { getMarketPrices } from '../api/client';
 import { AICapability, MarketPriceItem, ProvenanceMeta } from '../types';
 import { useAICapabilities } from '../hooks/useAICapabilities';
@@ -102,10 +102,7 @@ export const MarketplaceScreen: React.FC = () => {
         </Card>
       ) : (
         <>
-          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
-            <ProvenanceBadge meta={meta} detailed />
-            {fromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
-          </View>
+          <ProvenanceBar meta={meta} detailed cached={fromCache} style={styles.provBar} />
 
           <View style={styles.priceList}>
             {filteredPrices.length === 0 ? (
@@ -244,8 +241,7 @@ const styles = StyleSheet.create({
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   intelLabel: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.text, fontWeight: typography.fontWeights.semibold },
   intelState: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold },
-  provBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, flexWrap: 'wrap' },
-  cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
+  provBar: { marginBottom: spacing.sm },
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },
   priceCard: { padding: spacing.md },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },

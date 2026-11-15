@@ -10,7 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { StateView } from '../components/ui/StateView';
-import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { getNotifications, markNotificationRead } from '../api/client';
 import { AppNotification, ProvenanceMeta } from '../types';
 import { useConnectivity } from '../hooks/useConnectivity';
@@ -118,9 +118,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
         </Card>
       ) : (
         <View style={styles.list}>
-          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
-            <ProvenanceBadge meta={meta} />
-          </View>
+          <ProvenanceBar meta={meta} style={styles.provBar} />
           {items.map((item) => (
             <TouchableOpacity
               key={item.id}
@@ -163,7 +161,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   list: { gap: spacing.sm },
-  provBar: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  provBar: { marginBottom: spacing.xs },
   notificationTouchable: { minHeight: 48 },
   card: { padding: spacing.md },
   unreadCard: { borderColor: colors.primary, borderWidth: 1.5 },

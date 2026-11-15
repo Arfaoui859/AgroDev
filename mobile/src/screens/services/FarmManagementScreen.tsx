@@ -19,7 +19,7 @@ import { getFarms, getFields, createField, createFarm } from '../../api/client';
 import { Farm, Field, ProvenanceMeta } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { StateView } from '../../components/ui/StateView';
-import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { GOVERNORATES } from '../../utils/governorates';
@@ -192,9 +192,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
             <Badge label={`${farms[0].size_hectares} ${x.farmSizeUnit}`} variant="primary" size="md" />
           </View>
 
-          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
-            <ProvenanceBadge meta={meta} />
-          </View>
+          <ProvenanceBar meta={meta} style={styles.provBar} />
 
           <View style={[styles.farmStatsRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.statBox}>
@@ -472,11 +470,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  provBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
+  provBar: { marginTop: spacing.sm },
   farmHeaderInfo: {
     flex: 1,
   },
