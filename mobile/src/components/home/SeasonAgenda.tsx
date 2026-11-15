@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { cardPad } from '../../theme/layout';
+import { cardPad, flex1, stackLg } from '../../theme/layout';
 import { titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -58,10 +58,10 @@ export const SeasonAgenda: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  section: { marginBottom: spacing.lg },
+  section: stackLg,
   card: cardPad,
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  textWrap: { flex: 1 },
+  textWrap: flex1,
   seasonName: titleBase,
   tip: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, marginTop: 2 },
   note: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: spacing.sm },

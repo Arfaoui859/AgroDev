@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { stackMd } from '../../theme/layout';
 import { mutedCaption, subtleCaption, titleSm } from '../../theme/typographyStyles';
 import { rtlStyles } from '../../theme/rtl';
 import { useLanguage } from '../../context/LanguageContext';
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   cardStrip: { width: 232 },
-  cardFull: { marginBottom: spacing.md },
+  cardFull: stackMd,
   thumbWrap: { width: '100%', backgroundColor: colors.surfaceSubtle },
   thumbStrip: { height: 130 },
   thumbFull: { height: 180 },

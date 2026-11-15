@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { cardPad, screenStyles, spaceBetweenTop, stackedCard } from '../../theme/layout';
+import { cardPad, flex1, screenStyles, spaceBetweenTop, stackSm, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -379,15 +379,15 @@ const styles = StyleSheet.create({
   inputCard: stackedCard,
   inputHeading: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
   inputRow: { flexDirection: 'row', gap: spacing.sm },
-  halfField: { flex: 1 },
+  halfField: flex1,
   hint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.sm, marginBottom: spacing.xs },
-  provBar: { marginBottom: spacing.sm },
+  provBar: stackSm,
   sectionNote: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: spacing.xs },
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.sm, lineHeight: typography.lineHeights.xs },
   cropsList: { gap: spacing.md, marginTop: spacing.sm },
   cropCard: cardPad,
   cropHeader: { ...spaceBetweenTop, marginBottom: spacing.sm },
-  cropTitleBox: { flex: 1 },
+  cropTitleBox: flex1,
   cropNameAr: titleBase,
   cropCategory: subtitleMeta,
   scoreBadge: {

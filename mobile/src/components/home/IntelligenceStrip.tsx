@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { stackLg } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
 import { AICapability } from '../../types';
@@ -152,7 +153,7 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
 };
 
 const styles = StyleSheet.create({
-  section: { marginBottom: spacing.lg },
+  section: stackLg,
   row: { gap: spacing.sm, paddingVertical: 2 },
   chip: {
     flexDirection: 'row',

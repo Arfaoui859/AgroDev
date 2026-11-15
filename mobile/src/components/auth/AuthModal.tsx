@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { stackSm } from '../../theme/layout';
 import { labelMedium, subtleCaption, titleLg } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
@@ -291,7 +292,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['3xl'],
     maxHeight: '92%',
   },
-  header: { marginBottom: spacing.sm },
+  header: stackSm,
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   brandTitle: titleLg,
   title: {
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
   tabBtnActive: { backgroundColor: colors.card },
   tabText: labelMedium,
   tabTextActive: { color: colors.primary, fontWeight: typography.fontWeights.bold },
-  field: { marginBottom: spacing.sm },
+  field: stackSm,
   label: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,

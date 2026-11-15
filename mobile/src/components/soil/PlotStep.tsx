@@ -5,7 +5,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { subtitleMeta, titleBase, titleSmSemibold } from '../../theme/typographyStyles';
-import { stackedCard } from '../../theme/layout';
+import { flex1, stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil } from '../../i18n/soil';
 import { Card } from '../ui/Card';
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   optionActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
-  optionText: { flex: 1 },
+  optionText: flex1,
   optionTitle: titleSmSemibold,
   optionSub: subtitleMeta,
   addLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48 },

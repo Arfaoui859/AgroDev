@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { screenStyles } from '../theme/layout';
+import { flex1, screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { subtleCaption } from '../theme/typographyStyles';
@@ -300,9 +300,7 @@ const styles = StyleSheet.create({
     maxWidth: 240,
   },
   promptChipText: subtleCaption,
-  messagesContainer: {
-    flex: 1,
-  },
+  messagesContainer: flex1,
   messagesContent: {
     padding: spacing.md,
     paddingBottom: spacing.xl,

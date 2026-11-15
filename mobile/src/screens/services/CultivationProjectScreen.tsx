@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { screenStyles, stackedCard } from '../../theme/layout';
+import { flex1, screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   progress: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.bold, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   cycleNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs, marginTop: 2 },
   projectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
-  projectText: { flex: 1 },
+  projectText: flex1,
   projectName: titleSmSemibold,
   projectMeta: subtitleMeta,
 });

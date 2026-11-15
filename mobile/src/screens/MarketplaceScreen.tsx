@@ -7,7 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { cardBottomRow, cardPad, screenStyles, spaceBetween } from '../theme/layout';
+import { cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, stackSm } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtleCaption, titleBase } from '../theme/typographyStyles';
@@ -239,11 +239,11 @@ const styles = StyleSheet.create({
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   intelLabel: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.text, fontWeight: typography.fontWeights.semibold },
   intelState: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold },
-  provBar: { marginBottom: spacing.sm },
+  provBar: stackSm,
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },
   priceCard: cardPad,
   cardHeader: { ...spaceBetween, marginBottom: spacing.sm },
-  cropInfo: { flex: 1 },
+  cropInfo: flex1,
   cropName: titleBase,
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
   marketLocation: subtleCaption,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   noTrend: mutedCaption,
   tipCard: { backgroundColor: colors.secondaryLight, borderColor: colors.secondary, padding: spacing.md },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  tipTextContent: { flex: 1 },
+  tipTextContent: flex1,
   tipTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.secondaryDark },
   tipBody: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 3, lineHeight: typography.lineHeights.sm },
 });

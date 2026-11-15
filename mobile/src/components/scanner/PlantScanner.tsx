@@ -13,7 +13,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { spaceBetween } from '../../theme/layout';
+import { spaceBetween, stackMd } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   errorThumb: { width: 120, height: 120, borderRadius: radius.lg, marginBottom: spacing.lg },
   resultContent: { padding: spacing.lg },
   resultImage: { width: '100%', height: 220, borderRadius: radius.lg, marginBottom: spacing.md },
-  resultCard: { marginBottom: spacing.md },
+  resultCard: stackMd,
   resultHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -478,5 +478,5 @@ const styles = StyleSheet.create({
   },
   severity: { marginTop: spacing.xs, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary },
   arabicNote: { marginTop: spacing.sm, fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
-  section: { marginBottom: spacing.md },
+  section: stackMd,
 });

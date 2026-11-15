@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { cardPad, screenStyles, stackedCard } from '../../theme/layout';
+import { cardPad, flex1, screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   agentCard: cardPad,
   agentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   agentIconBox: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  agentTitleArea: { flex: 1 },
+  agentTitleArea: flex1,
   agentNameAr: titleSm,
   agentNameEn: mutedCaption,
   provenanceBox: {

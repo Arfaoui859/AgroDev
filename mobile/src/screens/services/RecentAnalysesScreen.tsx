@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Modal, Alert } from 'react-native';
-import { cardPad, screenStyles } from '../../theme/layout';
+import { cardPad, flex1, screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -255,9 +255,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: spacing.xs,
   },
-  titleArea: {
-    flex: 1,
-  },
+  titleArea: flex1,
   recordTitle: titleSm,
   recordDate: {
     fontSize: typography.fontSizes.xs,

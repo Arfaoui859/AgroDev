@@ -8,7 +8,7 @@ import {
   RefreshControl,
   Linking,
 } from 'react-native';
-import { screenStyles } from '../../theme/layout';
+import { screenStyles, stackSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { mutedCaption } from '../../theme/typographyStyles';
@@ -203,7 +203,7 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
 
 const styles = StyleSheet.create({
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
-  provBar: { marginBottom: spacing.sm },
+  provBar: stackSm,
   articleCard: { padding: spacing.md, marginBottom: spacing.sm },
   articleHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },
   articleTitle: { fontSize: typography.fontSizes.base, fontWeight: typography.fontWeights.bold, color: colors.text, lineHeight: 22 },

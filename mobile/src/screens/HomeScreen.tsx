@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { screenStyles, spaceBetween } from '../theme/layout';
+import { flex1, screenStyles, spaceBetween, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
-  heroTextWrap: { flex: 1 },
+  heroTextWrap: flex1,
   heroDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandSubtle, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
   heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.textInverse, marginTop: 2 },
   heroSub: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandMuted, marginTop: 2 },
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
   },
   heroTemp: { fontSize: typography.fontSizes['2xl'], lineHeight: 34, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
   heroCondition: { flexShrink: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandStrong, fontWeight: typography.fontWeights.medium },
-  heroWeatherSpacer: { flex: 1 },
+  heroWeatherSpacer: flex1,
   heroChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -624,10 +624,10 @@ const styles = StyleSheet.create({
   weatherMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
   weatherAdviceTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.accentDark },
   weatherAdviceBody: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text, marginTop: spacing.sm },
-  weatherMoreSpacer: { flex: 1 },
+  weatherMoreSpacer: flex1,
   weatherMoreText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' },
-  sectionContainer: { marginBottom: spacing.lg },
+  sectionContainer: stackLg,
   quickActionsGrid: { gap: spacing.sm },
   tilesRow: { flexDirection: 'row', gap: spacing.sm },
   bigActionShadow: { borderRadius: radius.lg, ...shadows.md },
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadows.sm,
   },
-  assistantTextContainer: { flex: 1 },
+  assistantTextContainer: flex1,
   assistantBannerTitle: titleBaseAccent,
   assistantBannerSub: subtitleMeta,
   alertsContainer: { paddingVertical: spacing.xs },
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  alertTextWrap: { flex: 1 },
+  alertTextWrap: flex1,
   alertTitle: titleSm,
   alertMessage: subtitleMeta,
   connectionFooter: {

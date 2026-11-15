@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, spacing, typography } from '../../theme/colors';
+import { flex1 } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ScreenHeadingProps {
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.md,
   },
-  textWrap: { flex: 1 },
+  textWrap: flex1,
   title: {
     fontSize: typography.fontSizes.xl,
     lineHeight: typography.lineHeights.xl,

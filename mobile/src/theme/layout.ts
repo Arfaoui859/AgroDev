@@ -45,3 +45,11 @@ export const cardBottomRow: ViewStyle = {
   paddingTop: spacing.xs,
   marginTop: spacing.xs,
 };
+
+/** A child that should absorb the remaining space in its row/column. */
+export const flex1: ViewStyle = { flex: 1 };
+
+/** Standard vertical rhythm between stacked blocks. */
+export const stackSm: ViewStyle = { marginBottom: spacing.sm };
+export const stackMd: ViewStyle = { marginBottom: spacing.md };
+export const stackLg: ViewStyle = { marginBottom: spacing.lg };

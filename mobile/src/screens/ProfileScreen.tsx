@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { cardPad, screenStyles } from '../theme/layout';
+import { cardPad, flex1, screenStyles, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
@@ -136,7 +136,7 @@ export const ProfileScreen: React.FC = () => {
               variant="outline"
               size="sm"
               onPress={() => setShowAuthModal(true)}
-              style={{ flex: 1 }}
+              style={flex1}
             />
           </View>
         )}
@@ -315,9 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileInfo: {
-    flex: 1,
-  },
+  profileInfo: flex1,
   profileName: {
     fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
@@ -330,9 +328,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.xs,
   },
-  section: {
-    marginBottom: spacing.lg,
-  },
+  section: stackLg,
   optionsCard: {
     padding: spacing.sm,
   },
@@ -373,9 +369,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.success,
   },
-  statusTextContainer: {
-    flex: 1,
-  },
+  statusTextContainer: flex1,
   statusMainText: titleSm,
   statusSubText: mutedCaption,
   connectionResultBox: {
@@ -396,9 +390,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
   },
-  offlineTextContainer: {
-    flex: 1,
-  },
+  offlineTextContainer: flex1,
   offlineTitle: titleSm,
   offlineSub: {
     fontSize: typography.fontSizes.xs,

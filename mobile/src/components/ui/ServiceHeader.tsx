@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { flex1, stackMd } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ServiceHeaderProps {
@@ -38,7 +39,7 @@ export const ServiceHeader: React.FC<ServiceHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
-  headerBox: { marginBottom: spacing.md },
+  headerBox: stackMd,
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   iconCircle: {
     width: 48,
@@ -47,7 +48,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titleTextContainer: { flex: 1 },
+  titleTextContainer: flex1,
   mainTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
   mainSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.sm },
 });

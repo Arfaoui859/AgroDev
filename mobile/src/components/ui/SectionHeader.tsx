@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { flex1 } from '../../theme/layout';
 import { subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-  textWrap: { flex: 1 },
+  textWrap: flex1,
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   title: {
     fontSize: typography.fontSizes.base,

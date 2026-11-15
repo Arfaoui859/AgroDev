@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
-import { cardPad, screenStyles, stackedCard } from '../../theme/layout';
+import { cardPad, flex1, screenStyles, stackMd, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   galleryBtn: { backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: colors.border },
   actionPickText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.bold, textAlign: 'center', lineHeight: typography.lineHeights.xs },
-  section: { marginBottom: spacing.md },
+  section: stackMd,
   cropsScroll: { gap: spacing.sm, paddingVertical: spacing.xs },
   partsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   symptomsInput: {
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   },
   resultCard: cardPad,
   resultTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
-  resultDiseaseHeader: { flex: 1 },
+  resultDiseaseHeader: flex1,
   diseaseTitleAr: titleBase,
   diseaseTitleEn: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2, lineHeight: typography.lineHeights.xs },
   confidenceBadge: { backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md, alignItems: 'center' },

@@ -645,3 +645,11 @@ CropRecommendation, FarmManagement, Marketplace, Home, SoilReportView,
 SoilAnalysis, FormField). Entries that add a margin now spread the shared token,
 e.g. `{ ...spaceBetween, marginBottom: spacing.sm }`. Pinned by
 `tests/unit/layout-styles.test.ts` (5 cases).
+
+### Premium UI polish pass — rhythm tokens (verified 2026-11)
+
+`src/theme/layout.ts` gained **`flex1`** (`{ flex: 1 }`, the 25-copy "absorb the
+remaining space" child), and **`stackSm` / `stackMd` / `stackLg`** (the
+`marginBottom: spacing.{sm,md,lg}` vertical rhythm shared by ~18 section blocks).
+Migrated ~31 files, including inline `{ flex: 1 }` style props in ProfileScreen
+and GeneralServiceModal. Pinned by `tests/unit/layout-styles.test.ts` (6 cases).

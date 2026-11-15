@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { cardBottomRow, cardPad, screenStyles, spaceBetween } from '../../theme/layout';
+import { cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, stackSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { subtitleMeta, subtleCaption } from '../../theme/typographyStyles';
@@ -460,9 +460,7 @@ const styles = StyleSheet.create({
   },
   farmHeader: spaceBetween,
   provBar: { marginTop: spacing.sm },
-  farmHeaderInfo: {
-    flex: 1,
-  },
+  farmHeaderInfo: flex1,
   farmName: {
     fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
@@ -507,9 +505,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.sm,
   },
-  inputGroup: {
-    marginBottom: spacing.sm,
-  },
+  inputGroup: stackSm,
   inputLabel: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
@@ -533,9 +529,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: spacing.sm,
   },
-  fieldInfo: {
-    flex: 1,
-  },
+  fieldInfo: flex1,
   fieldName: {
     fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,

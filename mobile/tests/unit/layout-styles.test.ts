@@ -1,4 +1,4 @@
-import { cardBottomRow, cardPad, screenStyles, spaceBetween, spaceBetweenTop, stackedCard } from '../../src/theme/layout';
+import { cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, spaceBetweenTop, stackLg, stackMd, stackSm, stackedCard } from '../../src/theme/layout';
 import { colors, spacing } from '../../src/theme/colors';
 
 /**
@@ -35,5 +35,12 @@ describe('layout styles', () => {
       paddingTop: spacing.xs,
       marginTop: spacing.xs,
     });
+  });
+
+  it('flex1 and the stack margins pin the shared rhythm tokens', () => {
+    expect(flex1).toMatchObject({ flex: 1 });
+    expect(stackSm).toMatchObject({ marginBottom: spacing.sm });
+    expect(stackMd).toMatchObject({ marginBottom: spacing.md });
+    expect(stackLg).toMatchObject({ marginBottom: spacing.lg });
   });
 });

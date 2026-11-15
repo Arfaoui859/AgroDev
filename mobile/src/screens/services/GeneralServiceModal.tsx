@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { screenStyles, stackedCard } from '../../theme/layout';
+import { flex1, screenStyles, stackSm, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -367,7 +367,7 @@ const IrrigationResultView: React.FC<{ data: Record<string, unknown> | null; isR
           {recommendations.map((rec, i) => (
             <View key={i} style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="circle-medium" size={16} color={colors.water} />
-              <Text style={[styles.hint, { flex: 1 }, isRtl && rtlStyles.rtlText]}>{rec}</Text>
+              <Text style={[styles.hint, flex1, isRtl && rtlStyles.rtlText]}>{rec}</Text>
             </View>
           ))}
         </View>
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   metricBoxLabel: mutedCaption,
   metricBoxValue: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.water },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, marginTop: 2 },
-  provRow: { marginBottom: spacing.sm },
+  provRow: stackSm,
   climateNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
