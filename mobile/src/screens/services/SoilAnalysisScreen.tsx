@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
+import { Bullet } from '../../components/ui/Bullet';
 import { Stepper } from '../../components/ui/Stepper';
 import { StateCard } from '../../components/ui/StateCard';
 import { PlotStep } from '../../components/soil/PlotStep';
@@ -295,7 +296,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
           {ruleResult.problems.length ? (
             <SubSection title={x.soilProblems} isRtl={isRtl}>
               {ruleResult.problems.map((p, i) => (
-                <Bullet key={i} text={p} color={colors.warning} isRtl={isRtl} />
+                <Bullet key={i} text={p} color={colors.warning} />
               ))}
             </SubSection>
           ) : null}
@@ -303,7 +304,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
           {ruleResult.missingMeasurements.length ? (
             <SubSection title={x.soilMissingMeasurements} isRtl={isRtl}>
               {ruleResult.missingMeasurements.map((p, i) => (
-                <Bullet key={i} text={p} color={colors.textMuted} isRtl={isRtl} />
+                <Bullet key={i} text={p} color={colors.textMuted} />
               ))}
             </SubSection>
           ) : null}
@@ -325,7 +326,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
           {ruleResult.recommendations.length ? (
             <SubSection title={x.soilRecommendations} isRtl={isRtl}>
               {ruleResult.recommendations.map((r, i) => (
-                <Bullet key={i} text={r} color={colors.primary} isRtl={isRtl} />
+                <Bullet key={i} text={r} color={colors.primary} />
               ))}
             </SubSection>
           ) : null}
@@ -360,13 +361,6 @@ const SubSection: React.FC<{ title: string; isRtl: boolean; children: React.Reac
   </View>
 );
 
-const Bullet: React.FC<{ text: string; color: string; isRtl: boolean }> = ({ text, color, isRtl }) => (
-  <View style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
-    <View style={[styles.bullet, { backgroundColor: color }]} />
-    <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{text}</Text>
-  </View>
-);
-
 const styles = StyleSheet.create({
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.md, lineHeight: typography.lineHeights.xs },
   formCard: { padding: spacing.md, marginBottom: spacing.lg },
@@ -398,7 +392,4 @@ const styles = StyleSheet.create({
   findingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   findingParam: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
   findingText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
-  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: 6 },
-  bullet: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
-  bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
 });

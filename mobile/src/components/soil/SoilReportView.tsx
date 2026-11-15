@@ -7,6 +7,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { getSoil, SoilTranslations } from '../../i18n/soil';
 import { SoilReport, SoilReportAction } from '../../types';
 import { SectionHeader } from '../ui/SectionHeader';
+import { Bullet } from '../ui/Bullet';
 
 /** A titled section that only renders when it has content. */
 const Section: React.FC<{
@@ -19,16 +20,6 @@ const Section: React.FC<{
     {children}
   </View>
 );
-
-const Bullet: React.FC<{ text: string }> = ({ text }) => {
-  const { isRtl } = useLanguage();
-  return (
-    <View style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
-      <Text style={styles.dot}>•</Text>
-      <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{text}</Text>
-    </View>
-  );
-};
 
 const Chip: React.FC<{ text: string; tone: 'neutral' | 'ok' | 'warn' | 'danger' | 'info' }> = ({ text, tone }) => {
   const tones: Record<string, { bg: string; fg: string }> = {
@@ -151,7 +142,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           />
         </View>
         {report.confidence.reasons.map((r, i) => (
-          <Bullet key={`conf-${i}`} text={r} />
+          <Bullet variant="glyph" key={`conf-${i}`} text={r} />
         ))}
       </Section>
 
@@ -160,7 +151,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           <>
             <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportProvided}</Text>
             {report.dataQuality.providedMeasurements.map((m, i) => (
-              <Bullet key={`prov-${i}`} text={`${m.name}: ${m.value} ${m.unit} (${m.source})`} />
+              <Bullet variant="glyph" key={`prov-${i}`} text={`${m.name}: ${m.value} ${m.unit} (${m.source})`} />
             ))}
           </>
         ) : null}
@@ -178,7 +169,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           <>
             <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportLimitations}</Text>
             {report.dataQuality.limitations.map((m, i) => (
-              <Bullet key={`lim-${i}`} text={m} />
+              <Bullet variant="glyph" key={`lim-${i}`} text={m} />
             ))}
           </>
         ) : null}
@@ -186,7 +177,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           <>
             <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportConsistency}</Text>
             {report.dataQuality.consistencyChecks.map((m, i) => (
-              <Bullet key={`con-${i}`} text={m} />
+              <Bullet variant="glyph" key={`con-${i}`} text={m} />
             ))}
           </>
         ) : null}
@@ -215,10 +206,10 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           {report.soilCharacterization.texture.classification} — {report.soilCharacterization.texture.basis}
         </Text>
         {report.soilCharacterization.chemical.map((c, i) => (
-          <Bullet key={`chem-${i}`} text={c} />
+          <Bullet variant="glyph" key={`chem-${i}`} text={c} />
         ))}
         {report.soilCharacterization.physical.map((c, i) => (
-          <Bullet key={`phys-${i}`} text={c} />
+          <Bullet variant="glyph" key={`phys-${i}`} text={c} />
         ))}
       </Section>
 
@@ -260,10 +251,10 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       {report.strengths.length || report.constraints.length ? (
         <Section title={`${s9.reportStrengths} / ${s9.reportConstraints}`} icon="scale-balance">
           {report.strengths.map((s, i) => (
-            <Bullet key={`str-${i}`} text={s} />
+            <Bullet variant="glyph" key={`str-${i}`} text={s} />
           ))}
           {report.constraints.map((s, i) => (
-            <Bullet key={`cst-${i}`} text={s} />
+            <Bullet variant="glyph" key={`cst-${i}`} text={s} />
           ))}
         </Section>
       ) : null}
@@ -280,7 +271,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
               {cand.risk ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{cand.risk}</Text> : null}
               {cand.sowingWindow ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{cand.sowingWindow}</Text> : null}
               {cand.conditions_to_check.map((cond, j) => (
-                <Bullet key={`cond-${i}-${j}`} text={cond} />
+                <Bullet variant="glyph" key={`cond-${i}-${j}`} text={cond} />
               ))}
               {cand.limitations ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{cand.limitations}</Text> : null}
             </View>
@@ -292,7 +283,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           <>
             <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportCropAvoid}</Text>
             {report.cropSuitability.avoid.map((a, i) => (
-              <Bullet key={`avoid-${i}`} text={`${a.crop}: ${a.reason}`} />
+              <Bullet variant="glyph" key={`avoid-${i}`} text={`${a.crop}: ${a.reason}`} />
             ))}
           </>
         ) : null}
@@ -319,13 +310,13 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
             />
           </View>
           {report.targetCropPlan.reasons.map((r, i) => (
-            <Bullet key={`tr-${i}`} text={r} />
+            <Bullet variant="glyph" key={`tr-${i}`} text={r} />
           ))}
           {report.targetCropPlan.gaps.length ? (
             <>
               <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportGaps}</Text>
               {report.targetCropPlan.gaps.map((g, i) => (
-                <Bullet key={`gap-${i}`} text={`${g.parameter}: ${g.current} → ${g.required} (${g.gap})`} />
+                <Bullet variant="glyph" key={`gap-${i}`} text={`${g.parameter}: ${g.current} → ${g.required} (${g.gap})`} />
               ))}
             </>
           ) : null}
@@ -370,7 +361,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           <>
             <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportOrganicOptions}</Text>
             {report.fertilizationPlan.organicOptions.map((o, i) => (
-              <Bullet key={`org-${i}`} text={o} />
+              <Bullet variant="glyph" key={`org-${i}`} text={o} />
             ))}
           </>
         ) : null}
@@ -387,7 +378,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         ]
           .filter(Boolean)
           .map((line, i) => (
-            <Bullet key={`water-${i}`} text={line} />
+            <Bullet variant="glyph" key={`water-${i}`} text={line} />
           ))}
         {report.waterAndIrrigation.limitations.map((l, i) => (
           <Text key={`wlim-${i}`} style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>
@@ -404,7 +395,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
                 {w.week}
               </Text>
               {w.actions.map((a, j) => (
-                <Bullet key={`wa-${w.week}-${j}`} text={a} />
+                <Bullet variant="glyph" key={`wa-${w.week}-${j}`} text={a} />
               ))}
               {w.check ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{w.check}</Text> : null}
             </View>
@@ -422,7 +413,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
               </View>
               {risk.trigger ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{risk.trigger}</Text> : null}
               {risk.symptomsToMonitor.map((s, j) => (
-                <Bullet key={`sym-${i}-${j}`} text={s} />
+                <Bullet variant="glyph" key={`sym-${i}-${j}`} text={s} />
               ))}
               {risk.safeResponse ? <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{risk.safeResponse}</Text> : null}
             </View>
@@ -456,7 +447,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       {report.additionalInformationNeeded.length ? (
         <Section title={s9.reportExtraInfo} icon="information-outline">
           {report.additionalInformationNeeded.map((a, i) => (
-            <Bullet key={`info-${i}`} text={a} />
+            <Bullet variant="glyph" key={`info-${i}`} text={a} />
           ))}
         </Section>
       ) : null}
@@ -464,7 +455,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       <Section title={s9.reportReview} icon="account-tie-outline">
         <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{report.professionalReview.reason}</Text>
         {report.professionalReview.bringToAgronomist.map((b, i) => (
-          <Bullet key={`br-${i}`} text={b} />
+          <Bullet variant="glyph" key={`br-${i}`} text={b} />
         ))}
       </Section>
 
@@ -500,9 +491,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   empty: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textMuted },
-  bulletRow: { flexDirection: 'row', gap: 6, marginBottom: 3 },
-  dot: { color: colors.primaryDark, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm },
-  bulletText: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.xs, marginBottom: spacing.xs },
   chip: { borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   chipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold },

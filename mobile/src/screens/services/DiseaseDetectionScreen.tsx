@@ -13,6 +13,7 @@ import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { LimitationsNotice } from '../../components/ui/LimitationsNotice';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { Bullet } from '../../components/ui/Bullet';
 import { StateCard } from '../../components/ui/StateCard';
 import { PlantScanner } from '../../components/scanner/PlantScanner';
 import { diagnosePlantDisease } from '../../api/client';
@@ -337,7 +338,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           {result.symptoms.length ? (
             <Block title={x.diseaseSymptoms}>
               {result.symptoms.map((s, i) => (
-                <Bullet key={i} text={s} color={colors.danger} isRtl={isRtl} />
+                <Bullet key={i} variant="icon" text={s} color={colors.danger} />
               ))}
             </Block>
           ) : null}
@@ -345,7 +346,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           {result.treatment.length ? (
             <Block title={x.diseaseTreatment}>
               {result.treatment.map((s, i) => (
-                <Bullet key={i} text={s} color={colors.primary} isRtl={isRtl} />
+                <Bullet key={i} variant="icon" text={s} color={colors.primary} />
               ))}
             </Block>
           ) : null}
@@ -353,7 +354,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           {result.prevention.length ? (
             <Block title={x.diseasePrevention}>
               {result.prevention.map((s, i) => (
-                <Bullet key={i} text={s} color={colors.secondary} isRtl={isRtl} />
+                <Bullet key={i} variant="icon" text={s} color={colors.secondary} />
               ))}
             </Block>
           ) : null}
@@ -371,13 +372,6 @@ const Block: React.FC<{ title: string; children: React.ReactNode }> = ({ title, 
   <View style={styles.detailBlock}>
     <SectionHeader title={title} titleNumberOfLines={0} />
     {children}
-  </View>
-);
-
-const Bullet: React.FC<{ text: string; color: string; isRtl: boolean }> = ({ text, color, isRtl }) => (
-  <View style={[styles.bulletItem, isRtl && rtlStyles.rtlRow]}>
-    <MaterialCommunityIcons name="circle-medium" size={16} color={color} />
-    <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{text}</Text>
   </View>
 );
 
@@ -462,6 +456,4 @@ const styles = StyleSheet.create({
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   diseaseDesc: { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   detailBlock: { marginTop: spacing.md },
-  bulletItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, marginBottom: spacing.xs },
-  bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
 });

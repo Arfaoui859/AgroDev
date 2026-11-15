@@ -18,6 +18,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ProvenanceBadge } from '../ui/ProvenanceBadge';
 import { SectionHeader } from '../ui/SectionHeader';
+import { Bullet } from '../ui/Bullet';
 import { LimitationsNotice } from '../ui/LimitationsNotice';
 import { prepareImageForUpload } from '../../utils/image';
 import { anyContainsArabic } from '../../utils/text';
@@ -319,20 +320,14 @@ const Section: React.FC<{ icon: keyof typeof MaterialCommunityIcons.glyphMap; ti
   icon,
   title,
   items,
-}) => {
-  const { isRtl } = useLanguage();
-  return (
+}) => (
     <Card variant="flat" style={styles.section}>
       <SectionHeader title={title} icon={icon} iconSize={18} titleNumberOfLines={0} />
       {items.map((item, index) => (
-        <View key={index} style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
-          <View style={styles.bullet} />
-          <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{item}</Text>
-        </View>
+        <Bullet key={index} text={item} />
       ))}
     </Card>
-  );
-};
+);
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
@@ -487,13 +482,4 @@ const styles = StyleSheet.create({
   severity: { marginTop: spacing.xs, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary },
   arabicNote: { marginTop: spacing.sm, fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
   section: { marginBottom: spacing.md },
-  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: 6 },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-    marginTop: 7,
-  },
-  bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
 });
