@@ -27,6 +27,7 @@ RUN python -m pip install --no-cache-dir \
     yfinance==0.2.18 \
     plotly==5.17.0 \
     scikit-learn \
+    httpx \
     fastapi \
     "uvicorn[standard]"
 
