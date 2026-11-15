@@ -871,3 +871,51 @@ Verified: `npx tsc --noEmit` exit 0, `npx eslint . --ext .ts,.tsx` 0 errors,
 `npx jest` **345 passed / 7 skipped / 352 total**, `npx expo install --check`
 "up to date", `npx expo-doctor` 20/20, `npx expo export --platform android`
 succeeds.
+
+### Agricultural Projects module + disease-evidence persistence (verified 2026-11)
+
+**New persistent "My Agricultural Projects" module** — the mobile app now has a
+real day-to-day project tracker rather than a one-shot recommendation flow. It is
+reachable from Services → *My Agricultural Projects* (`id: 'projects'`) and from
+`App.tsx` as the `projects` active service.
+
+- `src/screens/services/ProjectsScreen.tsx` — lists the user's **persisted**
+  cultivations (`GET /api/assistant/cultivations`), and for a selected project
+  renders the daily-tracking and financial panels. Honest empty/error/offline
+  states; no invented projects.
+- `src/components/projects/ProjectTracker.tsx` — daily tasks against
+  `/api/farm-operations/tasks` (GET list, POST create, PUT update). A `403`
+  becomes the honest "not available for this account" state (`roleBlocked`),
+  never a red failure — the task routes are `requireRole(["farmer"])`.
+- `src/components/projects/ProjectFinance.tsx` — expenses (`/api/expenses`),
+  revenues (`/api/revenues`) and the server-computed summary
+  (`/api/financial-summary`). All figures are read from the server; nothing is
+  computed or guessed on device.
+- `src/i18n/projects.ts` — authored ar/fr/en strings (`getProjects(language)`).
+- `src/utils/projectLabels.ts` — closed label maps for the backend enums
+  (`FarmTaskType`, priority, status, expense category); unknown values fall back
+  to a localised generic label, never the raw token.
+- Reachable from **two** places: the Services grid tile, and the role-aware Home
+  quick-tiles (promoted into the visible four for `gardener`/`farmer`/`company`/
+  `inspector`; still one tap away for every other role).
+
+**Disease evidence persistence is now wired (additive).** The gateway's
+`POST /api/assistant/actions/disease-detections` (farm-scoped evidence image +
+diagnosis into `plant_disease_detections` + Storage) was implemented but unused by
+mobile. `SaveDiagnosisToFarm` (`src/components/projects/SaveDiagnosisToFarm.tsx`)
+now offers an explicit *Save to farm record* action on a real diagnosis, via
+`saveDiseaseDetection()` in the API client. It is opt-in: the local history entry
+is already written by the caller, so a failure only means the server-side record
+was not updated. The component states plainly that the visual diagnosis is not
+field-verified, and the no-farm case is explained instead of faked. UI percents
+are converted to the server's `0..1` `disease_confidence`.
+
+Verified: `npx tsc --noEmit` exit 0, `npx eslint .` 0 errors (3 pre-existing
+`no-require-imports` warnings in an untouched test), `npx jest` **373 passed / 8 skipped / 381 total** (30 new offline tests across
+`projects-client`, `projects-screen`, `projects-labels`,
+`save-diagnosis-to-farm`, a new `home-screen` discovery case, and one new
+`services-screen` case; the live smoke
+suites gain a projects-routes check and pass against the deployed gateway with
+`LIVE_API_TESTS=1`), `npx expo export --platform android` succeeds. The
+`arabic-typography` guard requires every `fontSize` to pair with a `lineHeight`
+— new styles reuse `theme/typographyStyles` tokens rather than raw sizes.

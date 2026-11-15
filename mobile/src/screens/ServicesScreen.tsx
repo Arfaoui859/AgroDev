@@ -17,13 +17,15 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { CategoryPill } from '../components/ui/CategoryPill';
 import { StateCard } from '../components/ui/StateCard';
+import { getProjects } from '../i18n/projects';
 
 interface ServicesScreenProps {
   onSelectService: (serviceId: string) => void;
 }
 
 export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService }) => {
-  const { t, x, isRtl } = useLanguage();
+  const { t, x, isRtl, language } = useLanguage();
+  const projects = getProjects(language);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
@@ -117,6 +119,17 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       category: 'finance',
       badge: x.svcBadgeFarms,
       badgeVariant: 'primary' as const,
+    },
+    {
+      id: 'projects',
+      title: projects.tileTitle,
+      desc: projects.tileDesc,
+      icon: 'sprout-outline',
+      color: colors.crop,
+      bgColor: colors.cropLight,
+      category: 'finance',
+      badge: projects.tileBadge,
+      badgeVariant: 'success' as const,
     },
     {
       id: 'livestock',

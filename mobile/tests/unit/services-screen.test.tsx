@@ -37,4 +37,11 @@ describe('ServicesScreen', () => {
     fireEvent.press(screen.getByText('تعلّم من الميدان'));
     expect(onSelect).toHaveBeenCalledWith('learning');
   });
+
+  it('exposes the agricultural-projects tracker as a service', async () => {
+    const onSelect = jest.fn();
+    await renderScreen(onSelect);
+    fireEvent.press(screen.getByText('مشاريعي الزراعية'));
+    expect(onSelect).toHaveBeenCalledWith('projects');
+  });
 });

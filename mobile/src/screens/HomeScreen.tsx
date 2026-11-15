@@ -15,6 +15,7 @@ import { colors, radius, spacing, typography, shadows, gradients } from '../them
 import { linkCaption, mutedCaption, subtitleMeta, titleBaseAccent, titleSm } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { getProjects } from '../i18n/projects';
 import { Card } from '../components/ui/Card';
 import { BrandMark } from '../components/ui/BrandMark';
 import { Badge } from '../components/ui/Badge';
@@ -53,6 +54,7 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onNavigateToTab, onOpenNotifications, onOpenLearning }) => {
   const { t, x, isRtl, isArabic, language } = useLanguage();
   const { user, isAuthenticated } = useAuth();
+  const projects = getProjects(language);
   const { isOnline } = useConnectivity();
   const { data: capabilities, loading: capsLoading, error: capsError } = useAICapabilities();
 
@@ -180,6 +182,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
     { serviceId: 'multi_agent', icon: 'robot-happy-outline', color: colors.primary, bg: colors.primaryLight, title: t.multiAgentAiName, sub: t.multiAgentAiDesc },
     { serviceId: 'weather', icon: 'weather-partly-cloudy', color: colors.secondary, bg: colors.secondaryLight, title: t.weatherIntelligenceName, sub: t.weatherIntelligenceDesc },
     { serviceId: 'farms', icon: 'map-marker-radius', color: colors.primary, bg: colors.primaryLight, title: t.farmManagementName, sub: t.farmManagementDesc },
+    { serviceId: 'projects', icon: 'clipboard-text-clock-outline', color: colors.crop, bg: colors.cropLight, title: projects.tileTitle, sub: projects.tileDesc },
     { serviceId: 'livestock', icon: 'cow', color: colors.accent, bg: colors.accentLight, title: t.livestockName, sub: t.livestockDesc },
     { serviceId: 'agri_news', icon: 'newspaper-variant-outline', color: colors.secondary, bg: colors.secondaryLight, title: t.agriNewsName, sub: t.agriNewsDesc },
     { serviceId: 'live_scan', icon: 'camera-iris', color: colors.danger, bg: colors.dangerLight, title: t.actionScanDisease, sub: t.actionScanDiseaseSub },
@@ -188,13 +191,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
   // each role sees its most relevant tools in the four visible slots. Every
   // service stays reachable from the Services tab; the role only changes order.
   const roleTileOrder: Record<string, string[]> = {
-    gardener: ['live_scan', 'crops', 'pest', 'weather', 'soil', 'irrigation', 'marketplace', 'agri_news', 'farms', 'livestock', 'multi_agent'],
-    farmer: ['live_scan', 'soil', 'crops', 'irrigation', 'pest', 'marketplace', 'weather', 'farms', 'livestock', 'agri_news', 'multi_agent'],
+    gardener: ['live_scan', 'crops', 'projects', 'pest', 'weather', 'soil', 'irrigation', 'marketplace', 'agri_news', 'farms', 'livestock', 'multi_agent'],
+    farmer: ['live_scan', 'soil', 'crops', 'projects', 'irrigation', 'pest', 'marketplace', 'weather', 'farms', 'livestock', 'agri_news', 'multi_agent'],
     agronomist: ['soil', 'crops', 'live_scan', 'pest', 'irrigation', 'weather', 'multi_agent', 'farms', 'livestock', 'agri_news', 'marketplace'],
     veterinarian: ['livestock', 'live_scan', 'farms', 'weather', 'marketplace', 'agri_news', 'soil', 'crops', 'irrigation', 'pest', 'multi_agent'],
     trader: ['marketplace', 'crops', 'agri_news', 'weather', 'soil', 'farms', 'livestock', 'live_scan', 'pest', 'irrigation', 'multi_agent'],
-    company: ['farms', 'soil', 'crops', 'marketplace', 'irrigation', 'weather', 'livestock', 'live_scan', 'pest', 'agri_news', 'multi_agent'],
-    inspector: ['live_scan', 'farms', 'crops', 'soil', 'pest', 'livestock', 'weather', 'marketplace', 'agri_news', 'irrigation', 'multi_agent'],
+    company: ['farms', 'projects', 'soil', 'crops', 'marketplace', 'irrigation', 'weather', 'livestock', 'live_scan', 'pest', 'agri_news', 'multi_agent'],
+    inspector: ['live_scan', 'farms', 'projects', 'crops', 'soil', 'pest', 'livestock', 'weather', 'marketplace', 'agri_news', 'irrigation', 'multi_agent'],
     investor: ['marketplace', 'agri_news', 'farms', 'weather', 'crops', 'soil', 'multi_agent', 'irrigation', 'livestock', 'live_scan', 'pest'],
     government: ['agri_news', 'marketplace', 'weather', 'farms', 'crops', 'soil', 'multi_agent', 'livestock', 'live_scan', 'pest', 'irrigation'],
     admin: ['multi_agent', 'agri_news', 'farms', 'marketplace', 'weather', 'soil', 'crops', 'livestock', 'live_scan', 'pest', 'irrigation'],

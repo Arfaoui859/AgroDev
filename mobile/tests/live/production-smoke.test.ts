@@ -63,6 +63,22 @@ maybe('live production gateway (LIVE_API_TESTS=1)', () => {
     expect(getApiBaseUrl()).toBe('https://agrodev-3.onrender.com');
   });
 
+  // The projects module reads/writes these routes through the app's client. A
+  // 404 here would mean the module talks to an endpoint that no longer exists;
+  // 401/403 mean the route is present and auth/role-guarded, which is expected.
+  it('exposes the agricultural-projects routes (present, auth-guarded)', async () => {
+    for (const endpoint of [
+      '/api/assistant/cultivations',
+      '/api/farm-operations/tasks',
+      '/api/expenses',
+      '/api/financial-summary',
+    ]) {
+      const res = await apiRequest<any>(endpoint, { anonymous: true });
+      expect([200, 401, 403]).toContain(res.status);
+      expect(res.status).not.toBe(404);
+    }
+  });
+
   // Auth is the one integration that talks to Supabase directly (not the
   // gateway), so the shipped anon key must be valid against the live project.
   // An "Invalid API key" here means sign-in/sign-up would fail for every user.

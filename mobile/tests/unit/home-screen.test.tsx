@@ -168,4 +168,16 @@ describe('HomeScreen urgent-alert panel', () => {
 
     await waitFor(() => expect(screen.getByText('تنبيه عاجل')).toBeTruthy());
   });
+
+  it('exposes the agricultural-projects module from the role-aware home tiles', async () => {
+    mockGetNotifications.mockResolvedValueOnce({ data: [], error: null, unavailable: false });
+
+    await renderScreen();
+
+    // The farmer profile promotes `projects` into the visible four tiles, so an
+    // Arabic-first farmer reaches their own plantings in one tap from Home.
+    await waitFor(() =>
+      expect(screen.getByText('مشاريعي الزراعية')).toBeTruthy(),
+    );
+  });
 });

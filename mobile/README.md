@@ -217,9 +217,9 @@ npx eas submit --profile production # الرفع إلى المتجر
 - `EXPO_PUBLIC_SUPABASE_URL` و `EXPO_PUBLIC_SUPABASE_ANON_KEY`: مشروع Supabase
   (المفتاح عام ومحمي بـ RLS). القيم الافتراضية تشير لمشروع تطبيق الويب نفسه
   (`https://jymrhhlwdbclctobhbsi.supabase.co`).
-- `EXPO_PUBLIC_API_TIMEOUT_MS` (افتراضي 15000)، `EXPO_PUBLIC_CACHE_TTL_MS`
-  (افتراضي 21600000)، `EXPO_PUBLIC_IMAGE_MAX_EDGE` (افتراضي 1280)،
-  `EXPO_PUBLIC_IMAGE_QUALITY` (افتراضي 0.75).
+- `EXPO_PUBLIC_API_TIMEOUT_MS` (افتراضي 30000؛ يكفي لبدء تشغيل Render البارد)،
+  `EXPO_PUBLIC_CACHE_TTL_MS` (افتراضي 21600000)، `EXPO_PUBLIC_IMAGE_MAX_EDGE`
+  (افتراضي 1280)، `EXPO_PUBLIC_IMAGE_QUALITY` (افتراضي 0.75).
 
 **لا تضع أبداً** مفتاح `service_role` أو مفتاح مزوّد ذكاء اصطناعي أو `DATABASE_URL`
 داخل هذا التطبيق؛ فالتطبيق يتحدّث إلى الخدمات الذكية حصراً عبر بوابة Express التي

@@ -34,9 +34,11 @@ import { MultiAgentAIScreen } from './src/screens/services/MultiAgentAIScreen';
 import { AgriNewsScreen } from './src/screens/services/AgriNewsScreen';
 import { LearningVideosScreen } from './src/screens/services/LearningVideosScreen';
 import { RecentAnalysesScreen } from './src/screens/services/RecentAnalysesScreen';
+import { ProjectsScreen } from './src/screens/services/ProjectsScreen';
 import { GeneralServiceModal } from './src/screens/services/GeneralServiceModal';
 import { SoilToCropContext } from './src/types';
 import { getSoil } from './src/i18n/soil';
+import { getProjects } from './src/i18n/projects';
 
 const MainAppContent: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
@@ -133,6 +135,8 @@ const MainAppContent: React.FC = () => {
           return { title: t.homeLearningTitle };
         case 'recent_analyses':
           return { title: x.recentAnalysesTitle };
+        case 'projects':
+          return { title: getProjects(language).title };
         default:
           return { title: t.servicesTitle };
       }
@@ -238,6 +242,8 @@ const MainAppContent: React.FC = () => {
             }}
           />
         );
+      case 'projects':
+        return <ProjectsScreen onBack={() => setActiveService(null)} />;
       default:
         return <GeneralServiceModal serviceId={activeService as string} onBack={() => setActiveService(null)} />;
     }

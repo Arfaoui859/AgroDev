@@ -19,6 +19,7 @@ import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { Bullet } from '../../components/ui/Bullet';
 import { StateCard } from '../../components/ui/StateCard';
 import { PlantScanner } from '../../components/scanner/PlantScanner';
+import { SaveDiagnosisToFarm } from '../../components/projects/SaveDiagnosisToFarm';
 import { diagnosePlantDisease } from '../../api/client';
 import { prepareImageForUpload } from '../../utils/image';
 import { addHistoryEntry } from '../../api/history';
@@ -362,6 +363,8 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           <LimitationsNotice title={x.diseaseLimitationsTitle} text={x.diseaseLimitationsText} />
         </Card>
       ) : null}
+
+      {result?.imageUri ? <SaveDiagnosisToFarm result={result} /> : null}
 
       <Button title={t.back} variant="outline" onPress={onBack} style={{ marginTop: spacing.lg, marginBottom: spacing.xl }} />
     </ScrollView>

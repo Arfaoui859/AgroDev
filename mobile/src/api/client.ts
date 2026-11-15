@@ -4,6 +4,7 @@ import { readCache, writeCache } from './cache';
 import { API_TIMEOUT_MS, DEFAULT_API_BASE_URL } from '../config';
 import { getActiveLanguage } from '../i18n';
 import { getExtra, ExtraTranslations } from '../i18n/extra';
+import { getProjects } from '../i18n/projects';
 import { formatDateTime } from '../utils/date';
 import { normalizePriority } from '../utils/notifications';
 import {
@@ -18,6 +19,10 @@ import {
   DataProvenance,
   DiseaseDiagnosisResult,
   Farm,
+  FarmTask,
+  FarmTaskPriority,
+  FarmTaskStatus,
+  FarmTaskType,
   Field,
   IrrigationResult,
   MarketPriceItem,
@@ -29,6 +34,9 @@ import {
   NewsResult,
   NewsSourceStatus,
   PestIdentification,
+  ProjectExpense,
+  ProjectFinancialSummary,
+  ProjectRevenue,
   ProvenanceMeta,
   SoilAnalysisInput,
   SoilAnalysisResult,
@@ -817,6 +825,223 @@ export async function createCultivation(payload: {
     return { data: null, error: res.error || msg('cultivationCreateFailed') };
   }
   return { data: res.data.data as Cultivation, error: null };
+}
+
+// ---------------------------------------------------------------------------
+// Agricultural projects — daily tracking tasks and financial results
+// ---------------------------------------------------------------------------
+
+/**
+ * `POST /api/assistant/actions/disease-detections` — persist a diagnosis and its
+ * evidence image against a farm (`plant_disease_detections` + Supabase Storage).
+ * The server independently re-checks farm ownership and stores the image; it
+ * also states plainly that the visual diagnosis itself is *not* field-verified.
+ * Returns the honest failure code so the caller can explain why nothing saved.
+ */
+export async function saveDiseaseDetection(input: {
+  imageUri: string;
+  mimeType?: string;
+  fileName?: string;
+  farmId: string;
+  cultivationId?: string | null;
+  plantType?: string;
+  primaryDisease: string;
+  severityLevel?: string;
+  confidence?: number | null;
+}): Promise<{ data: { id: string; imageSignedUrl: string | null } | null; error: string | null }> {
+  const form = await buildImageForm({
+    imageUri: input.imageUri,
+    mimeType: input.mimeType,
+    fileName: input.fileName,
+    cropType: input.plantType,
+  });
+  form.append('farm_id', input.farmId);
+  if (input.cultivationId) form.append('cultivation_id', input.cultivationId);
+  if (input.plantType) form.append('plant_type', input.plantType);
+  form.append('primary_disease', input.primaryDisease);
+  if (input.severityLevel) form.append('severity_level', input.severityLevel);
+  // The server expects a 0..1 confidence; our UI works in whole percents.
+  if (typeof input.confidence === 'number' && Number.isFinite(input.confidence)) {
+    form.append('disease_confidence', String(Math.min(1, Math.max(0, input.confidence / 100))));
+  }
+
+  const res = await apiRequest<any>('/api/assistant/actions/disease-detections', {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.data?.success || !res.data?.data) {
+    return { data: null, error: res.error || getProjects(getActiveLanguage()).saveFailed };
+  }
+  const data = res.data.data;
+  return {
+    data: { id: String(data.id), imageSignedUrl: data.image_signed_url ?? null },
+    error: null,
+  };
+}
+
+/** Localised fallback strings for this module (server copy is Arabic-only). */
+function projectMsg(key: 'tasksUnavailable' | 'financeUnavailable' | 'saveFailed'): string {
+  const p = getProjects(getActiveLanguage());
+  if (key === 'tasksUnavailable') return p.tasksUnavailable;
+  if (key === 'financeUnavailable') return p.financeUnavailable;
+  return p.saveFailed;
+}
+
+/**
+ * `GET /api/farm-operations/tasks` — persisted daily-tracking tasks
+ * (`public.farm_tasks`). The route is farmer-role guarded; a non-farmer account
+ * receives 403 and this resolves to an honest `roleBlocked` state rather than
+ * an error, so the UI can explain *why* instead of showing a red failure.
+ */
+export async function getProjectTasks(params: { farmId?: string } = {}): Promise<{
+  data: FarmTask[];
+  error: string | null;
+  roleBlocked: boolean;
+  meta: ProvenanceMeta;
+}> {
+  const query = params.farmId ? `?farm_id=${encodeURIComponent(params.farmId)}` : '';
+  const res = await apiRequest<any>(`/api/farm-operations/tasks${query}`, {
+    cacheKey: `tasks:${params.farmId || 'all'}`,
+  });
+  const roleBlocked = res.status === 403;
+  const list: FarmTask[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return {
+    data: list,
+    error: roleBlocked ? null : res.error || (res.data ? null : projectMsg('tasksUnavailable')),
+    roleBlocked,
+    meta: metaFrom(res.data, 'database'),
+  };
+}
+
+/**
+ * `POST /api/farm-operations/tasks` — create a persisted task. The server
+ * validates farm ownership and the task payload; the client never invents a
+ * completion date.
+ */
+export async function createProjectTask(payload: {
+  farm_id: string;
+  title: string;
+  task_type?: FarmTaskType;
+  priority?: FarmTaskPriority;
+  due_date?: string;
+  description?: string;
+}): Promise<{ data: FarmTask | null; error: string | null; roleBlocked: boolean }> {
+  const res = await apiRequest<any>('/api/farm-operations/tasks', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 403) return { data: null, error: null, roleBlocked: true };
+  if (!res.data?.success || !res.data?.data) {
+    return { data: null, error: res.error || projectMsg('saveFailed'), roleBlocked: false };
+  }
+  return { data: res.data.data as FarmTask, error: null, roleBlocked: false };
+}
+
+/** `PUT /api/farm-operations/tasks/:id` — update a task's status/fields. */
+export async function updateProjectTask(
+  taskId: string,
+  patch: {
+    title?: string;
+    status?: FarmTaskStatus;
+    priority?: FarmTaskPriority;
+    due_date?: string | null;
+    description?: string;
+  },
+): Promise<{ data: FarmTask | null; error: string | null; roleBlocked: boolean }> {
+  // The server requires a full payload on update, so merge the caller's patch
+  // over the current task by re-sending the fields it already had.
+  const res = await apiRequest<any>(`/api/farm-operations/tasks/${encodeURIComponent(taskId)}`, {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
+  if (res.status === 403) return { data: null, error: null, roleBlocked: true };
+  if (!res.data?.success || !res.data?.data) {
+    return { data: null, error: res.error || projectMsg('saveFailed'), roleBlocked: false };
+  }
+  return { data: res.data.data as FarmTask, error: null, roleBlocked: false };
+}
+
+/** `GET /api/expenses` — persisted expenses (`public.farm_expenses`). */
+export async function getProjectExpenses(params: { cropType?: string } = {}): Promise<{
+  data: { expenses: ProjectExpense[]; totalExpenses: number; categoryTotals: Record<string, number> };
+  error: string | null;
+  roleBlocked: boolean;
+  meta: ProvenanceMeta;
+}> {
+  const query = params.cropType ? `?cropType=${encodeURIComponent(params.cropType)}` : '';
+  const res = await apiRequest<any>(`/api/expenses${query}`, { cacheKey: `expenses:${params.cropType || 'all'}` });
+  const roleBlocked = res.status === 403;
+  const body = res.data?.data ?? {};
+  return {
+    data: {
+      expenses: Array.isArray(body.expenses) ? body.expenses : [],
+      totalExpenses: typeof body.totalExpenses === 'number' ? body.totalExpenses : 0,
+      categoryTotals: body.categoryTotals ?? {},
+    },
+    error: roleBlocked ? null : res.error,
+    roleBlocked,
+    meta: metaFrom(res.data, 'database'),
+  };
+}
+
+/** `POST /api/expenses` — record a real expense against the farm/project. */
+export async function createProjectExpense(payload: {
+  amount: number;
+  date: string;
+  category: string;
+  farm_id?: string | null;
+  cropRelated?: string;
+  description?: string;
+  supplier?: string;
+}): Promise<{ data: ProjectExpense | null; error: string | null; roleBlocked: boolean }> {
+  const res = await apiRequest<any>('/api/expenses', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 403) return { data: null, error: null, roleBlocked: true };
+  if (!res.data?.success || !res.data?.data) {
+    return { data: null, error: res.error || projectMsg('saveFailed'), roleBlocked: false };
+  }
+  return { data: res.data.data as ProjectExpense, error: null, roleBlocked: false };
+}
+
+/** `POST /api/revenues` — record a real sale/revenue for the harvest. */
+export async function createProjectRevenue(payload: {
+  amount: number;
+  date: string;
+  farm_id?: string | null;
+  cropRelated?: string;
+  quantity?: number;
+  unitPrice?: number;
+  buyer?: string;
+  description?: string;
+}): Promise<{ data: ProjectRevenue | null; error: string | null; roleBlocked: boolean }> {
+  const res = await apiRequest<any>('/api/revenues', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (res.status === 403) return { data: null, error: null, roleBlocked: true };
+  if (!res.data?.success || !res.data?.data) {
+    return { data: null, error: res.error || projectMsg('saveFailed'), roleBlocked: false };
+  }
+  return { data: res.data.data as ProjectRevenue, error: null, roleBlocked: false };
+}
+
+/** `GET /api/financial-summary` — the aggregated result, computed by the server. */
+export async function getProjectFinancialSummary(): Promise<{
+  data: ProjectFinancialSummary | null;
+  error: string | null;
+  roleBlocked: boolean;
+  meta: ProvenanceMeta;
+}> {
+  const res = await apiRequest<any>('/api/financial-summary', { cacheKey: 'financial-summary' });
+  const roleBlocked = res.status === 403;
+  return {
+    data: (res.data?.data as ProjectFinancialSummary) ?? null,
+    error: roleBlocked ? null : res.error || (res.data ? null : projectMsg('financeUnavailable')),
+    roleBlocked,
+    meta: metaFrom(res.data, 'database'),
+  };
 }
 
 // ---------------------------------------------------------------------------

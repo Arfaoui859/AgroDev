@@ -392,6 +392,79 @@ export interface Cultivation {
   created_at?: string;
 }
 
+// --------------------- Agricultural projects & daily tracking ---------------
+
+/** Lifecycle of a persisted farm task (`farm_tasks.status`). */
+export type FarmTaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+export type FarmTaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type FarmTaskType =
+  | 'planting'
+  | 'irrigation'
+  | 'fertilization'
+  | 'pest_control'
+  | 'harvesting'
+  | 'maintenance'
+  | 'inspection'
+  | 'general';
+
+/**
+ * A persisted farm task (`public.farm_tasks`). Tasks are scoped to a farm and
+ * survive across devices — this is the server-side daily tracker, unlike the
+ * device-only checklist ticks.
+ */
+export interface FarmTask {
+  id: string;
+  farm_id: string;
+  title: string;
+  description: string;
+  task_type: FarmTaskType;
+  priority: FarmTaskPriority;
+  status: FarmTaskStatus;
+  due_date: string | null;
+  completed_at: string | null;
+  created_at?: string;
+}
+
+/** Persisted expense (`public.farm_expenses`), mapped to camelCase by the server. */
+export interface ProjectExpense {
+  id: string;
+  farmId: string | null;
+  category: string;
+  subcategory: string;
+  amount: number;
+  currency: string;
+  date: string;
+  description: string;
+  cropRelated?: string;
+  supplier?: string;
+}
+
+/** Persisted revenue row (`public.farm_revenues`), returned verbatim. */
+export interface ProjectRevenue {
+  id: string;
+  farm_id: string | null;
+  crop_related: string | null;
+  amount: number;
+  currency: string;
+  revenue_date: string;
+  description: string;
+  quantity: number | null;
+  unit: string | null;
+  buyer: string | null;
+}
+
+/** Aggregated financial result for the signed-in user (`GET /api/financial-summary`). */
+export interface ProjectFinancialSummary {
+  totalExpenses: number;
+  grossRevenue: number;
+  salesCosts: number;
+  totalRevenue: number;
+  netProfit: number;
+  categoryBreakdown: Record<string, number>;
+  expenseCount: number;
+  revenueCount: number;
+}
+
 // ------------------------------- Marketplace -------------------------------
 
 export interface MarketplaceListing {
