@@ -7,7 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, stackSm } from '../theme/layout';
+import { badgePill, cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, stackSm } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { mutedCaption, subtleCaption, titleBase } from '../theme/typographyStyles';
@@ -256,14 +256,7 @@ const styles = StyleSheet.create({
   },
   priceValue: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
   currencyLabel: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: typography.lineHeights.xs },
-  trendBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.full,
-  },
+  trendBadge: badgePill,
   trendText: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
   noTrend: mutedCaption,
   tipCard: { backgroundColor: colors.secondaryLight, borderColor: colors.secondary, padding: spacing.md },

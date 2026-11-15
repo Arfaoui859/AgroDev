@@ -1,5 +1,6 @@
 import {
-  actionsRow, cardBottomRow, cardPad, flex1, gapMd, rowGapMd, rowGapSm, rowGapXs, rowWrapSm,
+  actionsRow, badgePill, cardBottomRow, cardPad, flex1, gapMd, metaRow, metaRowSm, rowCenter, rowGapMd,
+  rowGapSm, rowGapXs, rowWrapSm, sectionHeadRow,
   screenStyles, selectedChip, spaceBetween, spaceBetweenTop, spaceBetweenXs, stackLg, stackMd, stackSm,
   stackTopSm, stackedCard,
 } from '../../src/theme/layout';
@@ -67,5 +68,29 @@ describe('layout styles', () => {
 
   it('spaceBetweenXs is spaceBetween with the tight xs gap', () => {
     expect(spaceBetweenXs).toMatchObject({ ...spaceBetween, marginBottom: spacing.xs });
+  });
+});
+describe('composite row tokens', () => {
+  it('rowCenter is the bare centred row', () => {
+    expect(rowCenter).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+  });
+
+  it('badgePill is the capsule pill built on the xs row', () => {
+    expect(badgePill).toMatchObject({
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+    });
+  });
+
+  it('metaRow / metaRowSm are the xs row with an xs / sm top gap', () => {
+    expect(metaRow).toMatchObject({ ...rowGapXs, marginTop: spacing.xs });
+    expect(metaRowSm).toMatchObject({ ...rowGapXs, marginTop: spacing.sm });
+  });
+
+  it('sectionHeadRow is the sm row with the tight gap beneath it', () => {
+    expect(sectionHeadRow).toMatchObject({ ...rowGapSm, marginBottom: spacing.xs });
   });
 });

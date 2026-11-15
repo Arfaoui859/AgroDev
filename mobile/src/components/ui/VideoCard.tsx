@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { stackMd } from '../../theme/layout';
+import { metaRow, stackMd } from '../../theme/layout';
 import { mutedCaption, subtleCaption, titleSm } from '../../theme/typographyStyles';
 import { rtlStyles } from '../../theme/rtl';
 import { useLanguage } from '../../context/LanguageContext';
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   langTag: mutedCaption,
   videoTitle: titleSm,
   videoTitleStrip: { minHeight: 42 },
-  watchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  watchRow: metaRow,
   watchText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.danger, fontWeight: typography.fontWeights.semibold },
   channel: subtleCaption,
   channelRow: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary },

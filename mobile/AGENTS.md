@@ -693,3 +693,12 @@ last ≥3-copy inline row (FormField `labelRow`, SoilReportView `actionHead`,
 SoilAnalysisScreen `findingHeader`). Pinned by `tests/unit/layout-styles.test.ts`
 (10 cases). After this batch, no `StyleSheet` object literal is duplicated three
 or more times across `src/`.
+
+### Premium UI polish pass — composite row tokens (verified 2026-11)
+
+`src/theme/layout.ts` gained **`badgePill`** (the icon+label capsule),
+**`metaRow` / `metaRowSm`** (card metadata rows), **`sectionHeadRow`** and the
+bare **`rowCenter`**; the redundant `rowCenterSm` alias was folded into
+`rowGapSm`. `cardHeading` / `sectionHeading` replaced the last bold-title-with-gap
+duplicates. Migrated ~14 files. Pinned by `tests/unit/layout-styles.test.ts`
+(14 cases) and `tests/unit/typography-styles.test.ts` (16 cases).

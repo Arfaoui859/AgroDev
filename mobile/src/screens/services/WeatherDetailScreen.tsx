@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { cardPad, gapXs, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
+import { cardPad, gapXs, rowCenter, screenStyles, spaceBetween, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -422,10 +422,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   conditionSub: subtleCaption,
-  tempMinMax: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  tempMinMax: rowCenter,
   tempMax: titleSm,
   tempMin: mutedCaption,
 });

@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../theme/colors';
+import { colors, typography } from '../../theme/colors';
+import { badgePill } from '../../theme/layout';
 import { mutedCaptionTop } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { ProvenanceMeta } from '../../types';
@@ -67,14 +68,7 @@ const styles = StyleSheet.create({
   rtlWrapper: {
     alignItems: 'flex-end',
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.full,
-  },
+  badge: badgePill,
   label: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,

@@ -4,7 +4,7 @@ import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { flex1, rowGapSm, stackLg } from '../../theme/layout';
+import { flex1, metaRow, rowGapSm, stackLg } from '../../theme/layout';
 import { mutedCaption, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   articleRow: rowGapSm,
   articleTextWrap: flex1,
   articleTitle: titleSm,
-  articleMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  articleMeta: metaRow,
   articleSource: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold, maxWidth: 180 },
   articleDot: { fontSize: typography.fontSizes.xs, color: colors.textMuted },
   articleDate: mutedCaption,

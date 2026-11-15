@@ -32,9 +32,6 @@ export const spaceBetweenTop: ViewStyle = { flexDirection: 'row', justifyContent
 /** Centred flex row. */
 export const rowCenter: ViewStyle = { flexDirection: 'row', alignItems: 'center' };
 
-/** Centred flex row with the small gap. */
-export const rowCenterSm: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: spacing.sm };
-
 /** Footer row of a list card: a hairline rule above the trailing actions. */
 export const cardBottomRow: ViewStyle = {
   flexDirection: 'row',
@@ -111,3 +108,20 @@ export const modalSheet: ViewStyle = {
 
 /** `spaceBetween` with the tight xs gap beneath it (form labels, panel heads). */
 export const spaceBetweenXs: ViewStyle = { ...spaceBetween, marginBottom: spacing.xs };
+
+/** Rounded status pill: icon + label in a brand-neutral capsule. */
+export const badgePill: ViewStyle = {
+  ...rowGapXs,
+  paddingHorizontal: spacing.sm,
+  paddingVertical: 3,
+  borderRadius: radius.full,
+};
+
+/** Metadata row sitting just under a card title. */
+export const metaRow: ViewStyle = { ...rowGapXs, marginTop: spacing.xs };
+
+/** Metadata row with the standard gap above it (source notes). */
+export const metaRowSm: ViewStyle = { ...rowGapXs, marginTop: spacing.sm };
+
+/** Section head: icon + title with the tight gap beneath it. */
+export const sectionHeadRow: ViewStyle = { ...rowGapSm, marginBottom: spacing.xs };
