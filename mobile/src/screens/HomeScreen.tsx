@@ -12,7 +12,7 @@ import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
-import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
+import { mutedCaption, subtitleMeta, titleBaseAccent, titleSm } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   assistantTextContainer: { flex: 1 },
-  assistantBannerTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
+  assistantBannerTitle: titleBaseAccent,
   assistantBannerSub: subtitleMeta,
   alertsContainer: { paddingVertical: spacing.xs },
   alertCard: { padding: spacing.sm },

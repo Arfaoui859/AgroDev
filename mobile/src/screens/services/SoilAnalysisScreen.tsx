@@ -4,7 +4,7 @@ import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { noteCaption, titleBase, titleSm } from '../../theme/typographyStyles';
+import { accentCaption, noteCaption, titleBase, titleBaseFlex, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   blankNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm, lineHeight: typography.lineHeights.sm },
   resultContainer: { gap: spacing.md },
   resultHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  resultHeading: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  resultHeading: titleBaseFlex,
   gradeCard: { padding: spacing.md, backgroundColor: colors.card },
   gradeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   scoreCircle: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scoreNumber: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
-  scoreMax: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, lineHeight: typography.lineHeights.xs },
+  scoreMax: accentCaption,
   gradeDetails: { flex: 1 },
   gradeTitle: titleBase,
   gradeDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.sm },

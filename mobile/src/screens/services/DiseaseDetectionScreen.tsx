@@ -5,7 +5,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { titleBase } from '../../theme/typographyStyles';
+import { accentCaption, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -423,8 +423,8 @@ const styles = StyleSheet.create({
   diseaseTitleAr: titleBase,
   diseaseTitleEn: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: 2, lineHeight: typography.lineHeights.xs },
   confidenceBadge: { backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md, alignItems: 'center' },
-  confidenceNum: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
-  confidenceLabel: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, lineHeight: typography.lineHeights.xs },
+  confidenceNum: titleBaseAccent,
+  confidenceLabel: accentCaption,
   badgesRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   diseaseDesc: { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },

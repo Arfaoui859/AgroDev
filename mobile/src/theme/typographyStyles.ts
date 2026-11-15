@@ -60,3 +60,24 @@ export const noteCaption: TextStyle = {
   lineHeight: typography.lineHeights.sm,
   color: colors.textSecondary,
 };
+
+/** `titleBase` in a flex row where the title shares width with trailing content. */
+export const titleBaseFlex: TextStyle = { ...titleBase, flex: 1 };
+
+/** Base-scale bold heading in the primary-dark accent (score banners). */
+export const titleBaseAccent: TextStyle = { ...titleBase, color: colors.primaryDark };
+
+/** xs accent caption (score/confidence sub-labels). */
+export const accentCaption: TextStyle = {
+  fontSize: typography.fontSizes.xs,
+  lineHeight: typography.lineHeights.xs,
+  color: colors.primaryDark,
+};
+
+/** Small semibold list/option title. */
+export const titleSmSemibold: TextStyle = {
+  fontSize: typography.fontSizes.sm,
+  lineHeight: typography.lineHeights.sm,
+  fontWeight: typography.fontWeights.semibold,
+  color: colors.text,
+};

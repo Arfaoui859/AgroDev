@@ -1,4 +1,4 @@
-import { mutedCaption, subtleCaption, subtitleMeta, titleBase, titleSm, titleLg, labelMedium, noteCaption } from '../../src/theme/typographyStyles';
+import { mutedCaption, subtleCaption, subtitleMeta, titleBase, titleSm, titleLg, labelMedium, noteCaption, titleBaseFlex, titleBaseAccent, accentCaption, titleSmSemibold } from '../../src/theme/typographyStyles';
 import { colors, typography } from '../../src/theme/colors';
 
 /**
@@ -50,5 +50,20 @@ describe('additional caption styles', () => {
       lineHeight: typography.lineHeights.sm,
       color: colors.textSecondary,
     });
+  });
+});
+
+describe('title variants', () => {
+  it('titleBaseFlex extends titleBase with flex: 1', () => {
+    expect(titleBaseFlex).toMatchObject({ ...titleBase, flex: 1 });
+  });
+  it('titleBaseAccent is titleBase in primaryDark', () => {
+    expect(titleBaseAccent).toMatchObject({ ...titleBase, color: colors.primaryDark });
+  });
+  it('accentCaption is the xs primaryDark caption', () => {
+    expect(accentCaption).toMatchObject({ fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primaryDark });
+  });
+  it('titleSmSemibold is the sm semibold text title', () => {
+    expect(titleSmSemibold).toMatchObject({ fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text });
   });
 });

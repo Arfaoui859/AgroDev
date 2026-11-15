@@ -4,7 +4,7 @@ import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
+import { subtitleMeta, titleBase, titleSmSemibold } from '../../theme/typographyStyles';
 import { stackedCard } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil } from '../../i18n/soil';
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   },
   optionActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   optionText: { flex: 1 },
-  optionTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text },
+  optionTitle: titleSmSemibold,
   optionSub: subtitleMeta,
   addLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48 },
   addLinkText: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.primary, fontWeight: typography.fontWeights.semibold },

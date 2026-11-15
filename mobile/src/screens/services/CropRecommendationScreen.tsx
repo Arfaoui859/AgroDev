@@ -4,7 +4,7 @@ import { cardPad, screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { subtitleMeta, titleBase } from '../../theme/typographyStyles';
+import { accentCaption, subtitleMeta, titleBase, titleBaseAccent } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -397,8 +397,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
   },
-  scoreText: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
-  scoreSub: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, lineHeight: typography.lineHeights.xs },
+  scoreText: titleBaseAccent,
+  scoreSub: accentCaption,
   metricsRow: {
     flexDirection: 'row',
     alignItems: 'center',

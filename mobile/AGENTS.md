@@ -624,3 +624,12 @@ and the soil wizard with identical card/title styling.
   that carry their own gap (e.g. the livestock animal card inside a `gap: md`
   list, the profile status cards, the weather forecast cards). Replaces ~12
   inline copies.
+
+### Premium UI polish pass — title variants (verified 2026-11)
+
+`src/theme/typographyStyles.ts` gained four more tokens for headings that were
+inlined verbatim: **`titleBaseFlex`** (`titleBase` + `flex: 1`, the title that
+shares a row with trailing content), **`titleBaseAccent`** (`titleBase` in
+`primaryDark`, the score/confidence banners), **`accentCaption`** (xs
+`primaryDark` sub-label) and **`titleSmSemibold`** (sm semibold list/option
+title). Pinned by `tests/unit/typography-styles.test.ts` (10 cases).
