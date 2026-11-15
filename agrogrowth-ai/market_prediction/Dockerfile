@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install compatible Python dependencies
 
-# Install Python dependencies
+# Install Python dependencies# Install Python dependencies
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
 RUN python -m pip install --no-cache-dir \
@@ -26,16 +26,12 @@ RUN python -m pip install --no-cache-dir \
     TA-Lib==0.8.3 \
     yfinance==0.2.18 \
     plotly==5.17.0 \
+    scikit-learn \
     fastapi \
     "uvicorn[standard]"
 
 # Verify dependencies
-RUN python -c "import numpy, talib, yfinance, plotly, fastapi, uvicorn; print('All Market dependencies OK')"
-
-
-
-# Verify dependencies
-RUN python -c "import numpy, talib, yfinance, plotly; print('Market dependencies OK'); print('NumPy:', numpy.__version__); print('TA-Lib:', talib.__version__)"
+RUN python -c "import numpy, talib, yfinance, plotly, sklearn, fastapi, uvicorn; print('All Market dependencies OK')"
 
 COPY ai_common/ ./ai_common/
 COPY market_prediction/ ./market_prediction/
