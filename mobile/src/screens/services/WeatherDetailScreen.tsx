@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -101,8 +102,8 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.container}
+      contentContainerStyle={screenStyles.content}
       showsVerticalScrollIndicator={false}
     >
       {/* Header Info */}
@@ -312,14 +313,6 @@ function weatherIconColor(icon: string | undefined): string {
 
 const styles = StyleSheet.create({
   provRow: { marginTop: spacing.sm },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing['3xl'],
-  },
   locationBtn: {
     flexDirection: 'row',
     alignItems: 'center',

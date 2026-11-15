@@ -438,3 +438,34 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 53 suites / 253 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home and the
 tab bar correctly.
+
+### Premium UI polish pass — shared screen shell (verified 2026-11)
+
+- **`screenStyles`** (`src/theme/layout.ts`) holds the full-screen scrolling
+  shell that twelve screens declared identically: `container`
+  (`flex: 1` + `colors.background`) and `content` (`padding.lg` +
+  `paddingBottom 3xl`). Marketplace, Notifications, Home, Services' service
+  screens, Agri News, Learning Videos, Livestock, Soil Analysis, Crop
+  Recommendation, Disease Detection, Cultivation Project, Farm Management,
+  Multi-Agent AI and `GeneralServiceModal` now use `screenStyles.*` and their
+  local copies were deleted. Same values, so nothing moves.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 53 suites / 253 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home, Services
+and the tab bar correctly.
+
+### Premium UI polish pass — shared VideoCard (verified 2026-11)
+
+- **`VideoCard`** (`src/components/ui/VideoCard.tsx`) is the one curated-video
+  card, rendered by the Home "Learn from the field" strip (`variant="strip"`)
+  and the Learning Videos catalogue (`variant="full"`). It keeps the exact
+  per-variant layout — thumbnail, play overlay, duration pill, category and
+  language tags, verbatim publisher title/channel and the YouTube attribution —
+  so the two call sites no longer carry a duplicate card. Regression test:
+  `tests/unit/video-card.test.tsx`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 54 suites / 255 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home (with the
+video strip, channel lines intact) and the tab bar correctly.

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
@@ -209,8 +210,8 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.container}
+      contentContainerStyle={screenStyles.content}
       showsVerticalScrollIndicator={false}
     >
       {/* Title & Subtitle */}
@@ -287,14 +288,6 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing['3xl'],
-  },
   categoryScroll: {
     gap: spacing.xs,
     paddingBottom: spacing.md,

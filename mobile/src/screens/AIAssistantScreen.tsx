@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
@@ -112,7 +113,7 @@ export const AIAssistantScreen: React.FC = () => {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-      style={styles.container}
+      style={screenStyles.container}
     >
       {/* Header Info Banner */}
       <View style={styles.headerBanner}>
@@ -260,10 +261,6 @@ export const AIAssistantScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   provRow: { marginTop: 6 },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   headerBanner: {
     backgroundColor: colors.card,
     paddingHorizontal: spacing.lg,
