@@ -17,6 +17,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ProvenanceBadge } from '../ui/ProvenanceBadge';
 import { SectionHeader } from '../ui/SectionHeader';
+import { LimitationsNotice } from '../ui/LimitationsNotice';
 import { prepareImageForUpload } from '../../utils/image';
 import { anyContainsArabic } from '../../utils/text';
 import { severityLabel } from '../../utils/severity';
@@ -299,10 +300,11 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
         <Section icon="shield-check-outline" title={x.scannerSectionPrevention} items={result.prevention} />
       ) : null}
 
-      <View style={styles.limitations}>
-        <Text style={styles.limitationsTitle}>{x.diseaseLimitationsTitle}</Text>
-        <Text style={styles.limitationsText}>{x.diseaseLimitationsText}</Text>
-      </View>
+      <LimitationsNotice
+        title={x.diseaseLimitationsTitle}
+        text={x.diseaseLimitationsText}
+        style={{ marginBottom: spacing.lg }}
+      />
 
       <Button title={x.close} onPress={onClose} variant="primary" fullWidth />
       <View style={{ height: spacing.sm }} />
@@ -495,18 +497,4 @@ const styles = StyleSheet.create({
     marginTop: 7,
   },
   bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: 20 },
-  limitations: {
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  limitationsTitle: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  limitationsText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 21 },
 });

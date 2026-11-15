@@ -381,3 +381,16 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx expo export --platform web` bundles; the Services tab renders its icon
 category pills and the shared search field correctly. `CategoryPill` has its own
 regression test (`tests/unit/category-pill.test.tsx`).
+
+### Premium UI polish pass — shared LimitationsNotice (verified 2026-11)
+
+- **`LimitationsNotice`** (`src/components/ui/LimitationsNotice.tsx`) is the one
+  "limits of use" callout under image-based results, with an optional `style`
+  for spacing. `PlantScanner` and `DiseaseDetectionScreen` now render it instead
+  of their own `limitations`/`limitationsTitle`/`limitationsText` blocks, and
+  those styles were deleted from both files.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 52 suites / 250 passed (7 live tests skipped, 2 suites skipped).
+`LimitationsNotice` has its own regression test
+(`tests/unit/limitations-notice.test.tsx`).

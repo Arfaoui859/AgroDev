@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SectionHeader } from '../../components/ui/SectionHeader';
+import { LimitationsNotice } from '../../components/ui/LimitationsNotice';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { PlantScanner } from '../../components/scanner/PlantScanner';
@@ -363,10 +364,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
             </Block>
           ) : null}
 
-          <View style={styles.limitations}>
-            <Text style={styles.limitationsTitle}>{x.diseaseLimitationsTitle}</Text>
-            <Text style={styles.limitationsText}>{x.diseaseLimitationsText}</Text>
-          </View>
+          <LimitationsNotice title={x.diseaseLimitationsTitle} text={x.diseaseLimitationsText} />
         </Card>
       ) : null}
 
@@ -476,7 +474,4 @@ const styles = StyleSheet.create({
   detailBlock: { marginTop: spacing.md },
   bulletItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginBottom: 4 },
   bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: 20 },
-  limitations: { backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.md },
-  limitationsTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: 4 },
-  limitationsText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 21 },
 });
