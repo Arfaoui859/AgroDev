@@ -9,9 +9,9 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
-import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { FormField } from '../../components/ui/FormField';
+import { StateCard } from '../../components/ui/StateCard';
 import { getCropRecommendations, getFieldCropRecommendations, FieldCropRecommendation } from '../../api/client';
 import { addHistoryEntry } from '../../api/history';
 import { provenanceLabel } from '../../utils/provenance';
@@ -264,21 +264,15 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
       ) : null}
 
       {loading ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={s9.reusingSoilData} compact />
-        </Card>
+        <StateCard kind="loading" title={s9.reusingSoilData} compact />
       ) : null}
 
       {requiresSoil && !loading ? (
-        <Card variant="outlined">
-          <StateView kind="empty" title={x.stateEmpty} message={s9.cropRequiresSoil} compact />
-        </Card>
+        <StateCard kind="empty" title={x.stateEmpty} message={s9.cropRequiresSoil} compact />
       ) : null}
 
       {error && !loading ? (
-        <Card variant="outlined">
-          <StateView kind="error" title={x.stateError} message={error} onRetry={retry} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="error" title={x.stateError} message={error} onRetry={retry} retryLabel={x.retry} />
       ) : null}
 
       {!loading && crops.length > 0 ? (
@@ -300,9 +294,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
           />
 
           {visibleCrops.length === 0 ? (
-            <Card variant="outlined">
-              <StateView kind="empty" title={x.stateEmpty} message={s9.cropCompareHint} compact />
-            </Card>
+            <StateCard kind="empty" title={x.stateEmpty} message={s9.cropCompareHint} compact />
           ) : null}
 
           <View style={styles.cropsList}>

@@ -9,7 +9,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
-import { StateView } from '../../components/ui/StateView';
+import { StateCard } from '../../components/ui/StateCard';
 import { useAICapabilities } from '../../hooks/useAICapabilities';
 
 interface MultiAgentAIScreenProps {
@@ -94,20 +94,14 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
       ) : null}
 
       {loading && capabilities.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : error && capabilities.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="error" title={x.stateError} message={error} onRetry={reload} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="error" title={x.stateError} message={error} onRetry={reload} retryLabel={x.retry} />
       ) : null}
 
       <View style={styles.agentList}>
         {!loading && !error && capabilities.length === 0 ? (
-          <Card variant="outlined">
-            <StateView kind="empty" title={x.stateEmpty} message={x.aiNoCapabilities} compact />
-          </Card>
+          <StateCard kind="empty" title={x.stateEmpty} message={x.aiNoCapabilities} compact />
         ) : null}
         {capabilities.map((cap) => {
           const meta = engineMeta(cap.engine);

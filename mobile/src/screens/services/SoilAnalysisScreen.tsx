@@ -10,9 +10,9 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
-import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { Stepper } from '../../components/ui/Stepper';
+import { StateCard } from '../../components/ui/StateCard';
 import { PlotStep } from '../../components/soil/PlotStep';
 import { MeasurementsStep, MeasurementsValues } from '../../components/soil/MeasurementsStep';
 import { SoilReportView } from '../../components/soil/SoilReportView';
@@ -214,9 +214,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
           <Text style={[styles.blankNote, isRtl && rtlStyles.rtlText]}>{x.soilBlankNote}</Text>
 
           {error ? (
-            <Card variant="outlined" style={styles.formCard}>
-              <StateView kind="error" title={x.stateError} message={error} onRetry={handleAnalyze} retryLabel={x.retry} />
-            </Card>
+            <StateCard cardStyle={styles.formCard} kind="error" title={x.stateError} message={error} onRetry={handleAnalyze} retryLabel={x.retry} />
           ) : null}
 
           <Button
@@ -230,9 +228,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
       ) : null}
 
       {step === 2 && loading ? (
-        <Card variant="outlined" style={styles.formCard}>
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard cardStyle={styles.formCard} kind="loading" title={x.stateLoading} compact />
       ) : null}
 
       {step === 2 && report ? (

@@ -15,8 +15,8 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
-import { StateView } from '../components/ui/StateView';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
+import { StateCard } from '../components/ui/StateCard';
 import { getMarketPrices } from '../api/client';
 import { AICapability, MarketPriceItem, ProvenanceMeta } from '../types';
 import { useAICapabilities } from '../hooks/useAICapabilities';
@@ -84,32 +84,18 @@ export const MarketplaceScreen: React.FC = () => {
       />
 
       {loading ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : error && prices.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="error" title={x.stateError} message={error} onRetry={loadPrices} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="error" title={x.stateError} message={error} onRetry={loadPrices} retryLabel={x.retry} />
       ) : prices.length === 0 ? (
-        <Card variant="outlined">
-          <StateView
-            kind="empty"
-            title={x.stateEmpty}
-            message={x.marketNoPrices}
-            onRetry={loadPrices}
-            retryLabel={x.retry}
-          />
-        </Card>
+        <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoPrices} onRetry={loadPrices} retryLabel={x.retry} />
       ) : (
         <>
           <ProvenanceBar meta={meta} detailed cached={fromCache} style={styles.provBar} />
 
           <View style={styles.priceList}>
             {filteredPrices.length === 0 ? (
-              <Card variant="outlined">
-                <StateView kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
-              </Card>
+              <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
             ) : (
               filteredPrices.map((item) => (
               <Card key={item.id} variant="elevated" style={styles.priceCard}>

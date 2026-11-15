@@ -18,8 +18,8 @@ import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SearchBar } from '../../components/ui/SearchBar';
 import { CategoryPill } from '../../components/ui/CategoryPill';
-import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
+import { StateCard } from '../../components/ui/StateCard';
 import { getAgriNews } from '../../api/client';
 import { NewsArticle, NewsResult } from '../../types';
 import { formatDate } from '../../utils/date';
@@ -131,23 +131,11 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
       ) : null}
 
       {loading && articles.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : error && articles.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="error" title={x.stateError} message={error} onRetry={() => load({ q: query, cat: category })} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="error" title={x.stateError} message={error} onRetry={() => load({ q: query, cat: category })} retryLabel={x.retry} />
       ) : articles.length === 0 ? (
-        <Card variant="outlined">
-          <StateView
-            kind={error ? 'unavailable' : 'empty'}
-            title={x.newsEmpty}
-            message={error || x.newsEmptyDesc}
-            onRetry={() => load({ q: query, cat: category })}
-            retryLabel={x.retry}
-          />
-        </Card>
+        <StateCard kind={error ? 'unavailable' : 'empty'} title={x.newsEmpty} message={error || x.newsEmptyDesc} onRetry={() => load({ q: query, cat: category })} retryLabel={x.retry} />
       ) : (
         <>
           {result?.meta ? <ProvenanceBar meta={result.meta} detailed style={styles.provBar} /> : null}

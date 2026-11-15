@@ -9,8 +9,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
-import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { StateCard } from '../../components/ui/StateCard';
 import { getAnimals, LivestockAnimal } from '../../api/client';
 import { ProvenanceMeta } from '../../types';
 import { formatNumber } from '../../utils/date';
@@ -93,25 +93,15 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
       />
 
       {!isAuthenticated ? (
-        <Card variant="outlined">
-          <StateView kind="unavailable" title={x.loginRequired} message={x.livestockLoginRequired} />
-        </Card>
+        <StateCard kind="unavailable" title={x.loginRequired} message={x.livestockLoginRequired} />
       ) : loading && animals.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : unavailable ? (
-        <Card variant="outlined">
-          <StateView kind="unavailable" title={x.livestockUnavailable} message={error || x.livestockUnavailableDesc} onRetry={load} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="unavailable" title={x.livestockUnavailable} message={error || x.livestockUnavailableDesc} onRetry={load} retryLabel={x.retry} />
       ) : error && animals.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="error" title={x.stateError} message={error} onRetry={load} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="error" title={x.stateError} message={error} onRetry={load} retryLabel={x.retry} />
       ) : animals.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="empty" title={x.stateEmpty} message={x.livestockEmpty} compact />
-        </Card>
+        <StateCard kind="empty" title={x.stateEmpty} message={x.livestockEmpty} compact />
       ) : (
         <>
           <Card variant="elevated" style={styles.summaryCard}>

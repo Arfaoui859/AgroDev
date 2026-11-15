@@ -12,11 +12,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { Badge } from '../components/ui/Badge';
-import { Card } from '../components/ui/Card';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { CategoryPill } from '../components/ui/CategoryPill';
-import { StateView } from '../components/ui/StateView';
+import { StateCard } from '../components/ui/StateCard';
 
 interface ServicesScreenProps {
   onSelectService: (serviceId: string) => void;
@@ -248,9 +247,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       {/* Service Cards Grid */}
       <View style={styles.serviceList}>
         {filteredServices.length === 0 ? (
-          <Card variant="outlined">
-            <StateView kind="empty" title={x.stateEmpty} message={x.servicesNoMatch} compact />
-          </Card>
+          <StateCard kind="empty" title={x.stateEmpty} message={x.servicesNoMatch} compact />
         ) : (
           filteredServices.map((svc) => (
             <TouchableOpacity

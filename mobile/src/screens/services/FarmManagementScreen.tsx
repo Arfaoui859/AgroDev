@@ -23,6 +23,7 @@ import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { StateCard } from '../../components/ui/StateCard';
 import { GOVERNORATES } from '../../utils/governorates';
 
 interface FarmManagementScreenProps {
@@ -168,13 +169,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       />
 
       {!isAuthenticated ? (
-        <Card variant="outlined" style={{ marginBottom: spacing.lg }}>
-          <StateView
-            kind="unavailable"
-            title={x.loginRequired}
-            message={x.farmLoginToManage}
-          />
-        </Card>
+        <StateCard cardStyle={{ marginBottom: spacing.lg }} kind="unavailable" title={x.loginRequired} message={x.farmLoginToManage} />
       ) : null}
 
       {/* Farm Overview Card */}
@@ -221,9 +216,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       {/* First-run: no farm yet — guide the user to register one. Adding a
           field is impossible without a farm, so this must come first. */}
       {isAuthenticated && !loading && farms.length === 0 && (
-        <Card variant="outlined" style={{ marginBottom: spacing.md }}>
-          <StateView kind="empty" title={x.farmNoFarmYet} message={x.farmCreateHint} />
-        </Card>
+        <StateCard cardStyle={{ marginBottom: spacing.md }} kind="empty" title={x.farmNoFarmYet} message={x.farmCreateHint} />
       )}
 
       {/* Add Farm / Add Field Button */}

@@ -11,6 +11,7 @@ import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
+import { StateCard } from '../../components/ui/StateCard';
 import { identifyPest, getIrrigationPlan, getWeather } from '../../api/client';
 import { pestCategory, pestName } from '../../utils/pestLabels';
 import { PestIdentification, IrrigationResult } from '../../types';
@@ -65,9 +66,7 @@ export const GeneralServiceModal: React.FC<GeneralServiceModalProps> = ({ servic
   return (
     <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content}>
       <ServiceHeader icon={info.icon} iconColor={info.color} iconBg={info.bg} title={info.title} />
-      <Card variant="outlined">
-        <StateView kind="unavailable" title={x.svcUnavailableTitle} message={info.note} />
-      </Card>
+      <StateCard kind="unavailable" title={x.svcUnavailableTitle} message={info.note} />
       <Button title={t.back} variant="outline" onPress={onBack} style={{ marginTop: spacing.lg }} />
     </ScrollView>
   );
@@ -168,21 +167,15 @@ const IrrigationService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </Card>
 
       {loading ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : null}
 
       {unavailable ? (
-        <Card variant="outlined">
-          <StateView kind="unavailable" title={x.irrigationUnavailableTitle} message={x.irrigationUnavailable} />
-        </Card>
+        <StateCard kind="unavailable" title={x.irrigationUnavailableTitle} message={x.irrigationUnavailable} />
       ) : null}
 
       {error && !unavailable ? (
-        <Card variant="outlined">
-          <StateView kind="error" title={x.stateError} message={error} onRetry={compute} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="error" title={x.stateError} message={error} onRetry={compute} retryLabel={x.retry} />
       ) : null}
 
       {result ? (
@@ -273,21 +266,15 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </Card>
 
       {loading ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : null}
 
       {unavailable ? (
-        <Card variant="outlined">
-          <StateView kind="unavailable" title={x.pestUnavailableTitle} message={error || x.stateUnavailable} />
-        </Card>
+        <StateCard kind="unavailable" title={x.pestUnavailableTitle} message={error || x.stateUnavailable} />
       ) : null}
 
       {error && !unavailable ? (
-        <Card variant="outlined">
-          <StateView kind="error" title={x.stateError} message={error} onRetry={identify} retryLabel={x.retry} />
-        </Card>
+        <StateCard kind="error" title={x.stateError} message={error} onRetry={identify} retryLabel={x.retry} />
       ) : null}
 
       {result ? (

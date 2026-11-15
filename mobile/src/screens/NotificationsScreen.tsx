@@ -10,8 +10,8 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
-import { StateView } from '../components/ui/StateView';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
+import { StateCard } from '../components/ui/StateCard';
 import { getNotifications, markNotificationRead } from '../api/client';
 import { AppNotification, ProvenanceMeta } from '../types';
 import { useConnectivity } from '../hooks/useConnectivity';
@@ -92,31 +92,15 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
       />
 
       {!isAuthenticated ? (
-        <Card variant="outlined">
-          <StateView kind="unavailable" title={x.loginRequired} message={x.loginRequiredDesc} />
-        </Card>
+        <StateCard kind="unavailable" title={x.loginRequired} message={x.loginRequiredDesc} />
       ) : loading ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : unavailable ? (
-        <Card variant="outlined">
-          <StateView kind="unavailable" title={x.stateUnavailable} message={error || undefined} />
-        </Card>
+        <StateCard kind="unavailable" title={x.stateUnavailable} message={error || undefined} />
       ) : error && items.length === 0 ? (
-        <Card variant="outlined">
-          <StateView
-            kind={isOnline ? 'error' : 'offline'}
-            title={isOnline ? x.stateError : x.stateOffline}
-            message={error}
-            onRetry={load}
-            retryLabel={x.retry}
-          />
-        </Card>
+        <StateCard kind={isOnline ? 'error' : 'offline'} title={isOnline ? x.stateError : x.stateOffline} message={error} onRetry={load} retryLabel={x.retry} />
       ) : items.length === 0 ? (
-        <Card variant="outlined">
-          <StateView kind="empty" title={x.notificationsEmpty} compact />
-        </Card>
+        <StateCard kind="empty" title={x.notificationsEmpty} compact />
       ) : (
         <View style={styles.list}>
           <ProvenanceBar meta={meta} style={styles.provBar} />

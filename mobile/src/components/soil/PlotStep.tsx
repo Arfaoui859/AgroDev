@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -272,9 +273,7 @@ export const PlotStep: React.FC<PlotStepProps> = ({
       ) : null}
 
       {error || formError ? (
-        <Card variant="outlined">
-          <StateView kind="error" message={formError || error || ''} compact />
-        </Card>
+        <StateCard kind="error" message={formError || error || ''} compact />
       ) : null}
     </View>
   );

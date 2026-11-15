@@ -20,6 +20,7 @@ import { WeatherData } from '../../types';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { StateCard } from '../../components/ui/StateCard';
 import { useConnectivity } from '../../hooks/useConnectivity';
 import { GOVERNORATES, governorateLabel } from '../../utils/governorates';
 import { weatherConditionLabel, weatherIconName, weatherIconTone } from '../../utils/weather';
@@ -168,15 +169,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
       {loading && <StateView kind="loading" message={x.weatherLoading} />}
 
       {!loading && !weather ? (
-        <Card variant="outlined">
-          <StateView
-            kind={isOnline ? 'error' : 'offline'}
-            title={isOnline ? x.stateError : x.stateOffline}
-            message={error || undefined}
-            onRetry={() => loadWeather(selectedGovernorate)}
-            retryLabel={x.retry}
-          />
-        </Card>
+        <StateCard kind={isOnline ? 'error' : 'offline'} title={isOnline ? x.stateError : x.stateOffline} message={error || undefined} onRetry={() => loadWeather(selectedGovernorate)} retryLabel={x.retry} />
       ) : null}
 
       {/* Main Today Weather Card */}
@@ -235,9 +228,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
           <View style={styles.forecastSection}>
             <Text style={[styles.forecastHeading, isRtl && rtlStyles.rtlText]}>{x.weatherForecast}</Text>
             {weather.forecast.length === 0 ? (
-              <Card variant="outlined">
-                <StateView kind="empty" title={x.stateEmpty} message={x.weatherForecastEmpty} compact />
-              </Card>
+              <StateCard kind="empty" title={x.stateEmpty} message={x.weatherForecastEmpty} compact />
             ) : (
               weather.forecast.map((day, idx) => (
                 <Card key={idx} variant="outlined" style={styles.forecastCard}>

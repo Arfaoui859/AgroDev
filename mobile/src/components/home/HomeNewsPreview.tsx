@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Linking } from 'react-native';
+import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
-import { StateView } from '../ui/StateView';
 import { SectionHeader } from '../ui/SectionHeader';
 import { ProvenanceBadge } from '../ui/ProvenanceBadge';
 import { getAgriNews } from '../../api/client';
@@ -56,24 +56,11 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
       />
 
       {loading ? (
-        <Card variant="outlined" style={styles.card}>
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard cardStyle={styles.card} kind="loading" title={x.stateLoading} compact />
       ) : error && articles.length === 0 ? (
-        <Card variant="outlined" style={styles.card}>
-          <StateView
-            kind="error"
-            title={x.newsEmpty}
-            message={error}
-            onRetry={load}
-            retryLabel={x.retry}
-            compact
-          />
-        </Card>
+        <StateCard cardStyle={styles.card} kind="error" title={x.newsEmpty} message={error} onRetry={load} retryLabel={x.retry} compact />
       ) : articles.length === 0 ? (
-        <Card variant="outlined" style={styles.card}>
-          <StateView kind="empty" title={x.newsEmpty} message={x.newsEmptyDesc} compact />
-        </Card>
+        <StateCard cardStyle={styles.card} kind="empty" title={x.newsEmpty} message={x.newsEmptyDesc} compact />
       ) : (
         <View style={{ gap: spacing.sm }}>
           {articles.map((article) => (

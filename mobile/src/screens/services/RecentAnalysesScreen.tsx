@@ -8,8 +8,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { StateView } from '../../components/ui/StateView';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { StateCard } from '../../components/ui/StateCard';
 import { clearHistory, getHistory } from '../../api/history';
 import { SavedAnalysis } from '../../types';
 import { formatDateTime } from '../../utils/date';
@@ -76,18 +76,9 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
       />
 
       {loading ? (
-        <Card variant="outlined">
-          <StateView kind="loading" title={x.stateLoading} compact />
-        </Card>
+        <StateCard kind="loading" title={x.stateLoading} compact />
       ) : records.length === 0 ? (
-        <Card variant="outlined">
-          <StateView
-            kind="empty"
-            title={x.recentAnalysesEmptyTitle}
-            message={x.recentAnalysesEmptyMsg}
-            compact
-          />
-        </Card>
+        <StateCard kind="empty" title={x.recentAnalysesEmptyTitle} message={x.recentAnalysesEmptyMsg} compact />
       ) : (
         <>
           <Text style={[styles.tapHint, isRtl && rtlStyles.rtlText]}>{x.recentAnalysesTapHint}</Text>

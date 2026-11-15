@@ -12,8 +12,8 @@ import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { LimitationsNotice } from '../../components/ui/LimitationsNotice';
-import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { StateCard } from '../../components/ui/StateCard';
 import { PlantScanner } from '../../components/scanner/PlantScanner';
 import { diagnosePlantDisease } from '../../api/client';
 import { prepareImageForUpload } from '../../utils/image';
@@ -291,19 +291,11 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       />
 
       {unavailable ? (
-        <Card variant="outlined" style={styles.resultCard}>
-          <StateView
-            kind="unavailable"
-            title={x.scannerUnavailableTitle}
-            message={error || x.scannerUnavailableDesc}
-          />
-        </Card>
+        <StateCard cardStyle={styles.resultCard} kind="unavailable" title={x.scannerUnavailableTitle} message={error || x.scannerUnavailableDesc} />
       ) : null}
 
       {error && !unavailable ? (
-        <Card variant="outlined" style={styles.resultCard}>
-          <StateView kind="error" title={x.stateError} message={error} onRetry={handleDiagnose} retryLabel={x.retry} />
-        </Card>
+        <StateCard cardStyle={styles.resultCard} kind="error" title={x.stateError} message={error} onRetry={handleDiagnose} retryLabel={x.retry} />
       ) : null}
 
       {result ? (
