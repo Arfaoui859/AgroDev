@@ -10,6 +10,7 @@ import {
 import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
+import { IconTile } from '../components/ui/IconTile';
 import { useLanguage } from '../context/LanguageContext';
 import { Badge } from '../components/ui/Badge';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
@@ -259,9 +260,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
               style={styles.serviceCard}
             >
             <View style={[styles.cardTopRow, isRtl && rtlStyles.rtlRow]}>
-              <View style={[styles.serviceIconContainer, { backgroundColor: svc.bgColor }]}>
-                <MaterialCommunityIcons name={svc.icon as any} size={28} color={svc.color} />
-              </View>
+              <IconTile icon={svc.icon as any} bg={svc.bgColor} color={svc.color} size={28} />
               <Badge label={svc.badge} variant={svc.badgeVariant} size="sm" />
             </View>
 
@@ -306,13 +305,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
-  },
-  serviceIconContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   serviceTitle: {
     fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,

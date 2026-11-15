@@ -533,3 +533,18 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 58 suites / 263 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home, Services
 and Profile, and the auth modal opens and closes through the shared close button.
+
+### Premium UI polish pass — shared IconTile (verified 2026-11)
+
+- **`IconTile`** (`src/components/ui/IconTile.tsx`) is the one 46×46 tinted icon
+  square. `SeasonAgenda` and `AcademySection` (Home) and `ServicesScreen` each
+  wrote the identical `width:46 / height:46 / radius.md / centre` box inline with
+  a `MaterialCommunityIcons` child; IconTile takes the glyph, its colour and the
+  tinted background, plus an optional `size` (Services used 28). The dead
+  `iconWrap` / `serviceIconContainer` styles and the now-unused `radius` import
+  were removed. Regression test: `tests/unit/icon-tile.test.tsx`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 59 suites / 265 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home (season +
+academy tiles) and the full Services grid.

@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
+import { IconTile } from '../ui/IconTile';
 import { ACADEMY_TOPICS, AcademyTopic } from '../../data/academy';
 
 interface AcademySectionProps {
@@ -60,9 +61,7 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
               accessibilityLabel={`${title}. ${desc}. ${action}`}
               style={styles.card}
             >
-              <View style={[styles.iconWrap, { backgroundColor: tint.bg }]}>
-                <MaterialCommunityIcons name={topic.icon as any} size={26} color={tint.color} />
-              </View>
+              <IconTile icon={topic.icon as any} bg={tint.bg} color={tint.color} />
               <Text style={[styles.cardTitle, isRtl && rtlStyles.rtlText]} numberOfLines={1}>
                 {title}
               </Text>
@@ -97,13 +96,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 6,
     ...shadows.sm,
-  },
-  iconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   cardTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
   cardDesc: { fontSize: typography.fontSizes.xs, lineHeight: 19, color: colors.textSecondary, minHeight: 38 },
