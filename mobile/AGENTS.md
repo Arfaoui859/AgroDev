@@ -702,3 +702,22 @@ bare **`rowCenter`**; the redundant `rowCenterSm` alias was folded into
 `rowGapSm`. `cardHeading` / `sectionHeading` replaced the last bold-title-with-gap
 duplicates. Migrated ~14 files. Pinned by `tests/unit/layout-styles.test.ts`
 (14 cases) and `tests/unit/typography-styles.test.ts` (16 cases).
+
+### Premium UI polish pass — final verification (2026-11)
+
+Full verification of the polish pass, all executed:
+
+- `npx tsc --noEmit` — clean.
+- `npx eslint src` — clean (0 errors, 0 warnings).
+- `npx jest` — **306 passed, 7 skipped, 313 total**; 65 of 67 suites passed,
+  2 skipped.
+- `npx expo config --type public` — resolves (camera / image-picker / location
+  / secure-store / font / splash plugins, Arabic permission strings).
+- `npx expo export --platform web` and `--platform android` — both succeed
+  (Android: 864 modules → 3.2 MB Hermes bundle + 19 icon fonts).
+- Browser check of the exported web build at the work-2 host, in FR and AR:
+  Home, Services, AI Assistant, Market, Disease Detection (scanner) and Profile
+  all render; RTL mirrors correctly; backend-unreachable states show the honest
+  `تعذّر تحميل البيانات` / `Échec du chargement` + retry rather than fake data.
+- `npx expo-doctor` hangs in this sandbox (network probe); it is not usable
+  here — use `expo config` + the two `expo export` targets instead.
