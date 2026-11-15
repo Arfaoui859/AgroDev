@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeights.xs,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   input: {
     height: 48,

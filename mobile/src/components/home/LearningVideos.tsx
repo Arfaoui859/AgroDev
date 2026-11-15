@@ -60,6 +60,6 @@ export const LearningVideos: React.FC<LearningVideosProps> = ({ onOpenAll }) => 
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   row: { gap: spacing.md, paddingVertical: 2 },
-  sourceNote: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm },
+  sourceNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
   sourceText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
 });

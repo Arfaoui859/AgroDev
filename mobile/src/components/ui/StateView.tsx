@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   message: {
     fontSize: typography.fontSizes.sm,

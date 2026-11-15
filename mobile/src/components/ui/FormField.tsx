@@ -56,7 +56,7 @@ export const FormField: React.FC<FormFieldProps> = ({
 
 const styles = StyleSheet.create({
   group: { marginBottom: spacing.sm },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   label: { flex: 1, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, lineHeight: typography.lineHeights.xs },
   suffix: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
   input: {

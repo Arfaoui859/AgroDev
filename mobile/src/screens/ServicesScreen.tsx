@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   serviceDesc: {
     fontSize: typography.fontSizes.xs,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 4,
+    gap: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.surfaceSubtle,
     paddingTop: spacing.xs,

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, typography } from '../../theme/colors';
+import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { ProvenanceMeta } from '../../types';
 import { provenanceLabel } from '../../utils/provenance';
@@ -69,8 +69,8 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: radius.full,
   },

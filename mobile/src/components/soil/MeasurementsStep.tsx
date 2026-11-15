@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
   groupTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, marginTop: spacing.sm, marginBottom: spacing.xs },
   groupHint: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginBottom: spacing.xs },
-  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
+  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: spacing.xs },
   fieldRtl: {},
   subBlock: { marginTop: spacing.xs },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, marginTop: spacing.sm },

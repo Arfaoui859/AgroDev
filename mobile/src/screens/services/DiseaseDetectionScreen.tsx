@@ -470,6 +470,6 @@ const styles = StyleSheet.create({
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   diseaseDesc: { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   detailBlock: { marginTop: spacing.md },
-  bulletItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginBottom: 4 },
+  bulletItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, marginBottom: spacing.xs },
   bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
 });

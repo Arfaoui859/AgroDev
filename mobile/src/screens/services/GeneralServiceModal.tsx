@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
   metricBoxLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
   metricBoxValue: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.water },
-  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: 2 },
+  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, marginTop: 2 },
   provRow: { marginBottom: spacing.sm },
   climateNote: {
     flexDirection: 'row',
@@ -454,5 +454,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.secondaryLight,
   },
-  resultTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: 4 },
+  resultTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.xs },
 });

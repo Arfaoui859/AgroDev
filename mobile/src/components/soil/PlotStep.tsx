@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   card: { padding: spacing.md, marginBottom: spacing.md },
   heading: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
-  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
+  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: spacing.xs },
   list: { gap: spacing.sm, marginBottom: spacing.sm },
   option: {
     flexDirection: 'row',

@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     alignSelf: 'flex-start',
     minHeight: 48,
     paddingHorizontal: spacing.md,

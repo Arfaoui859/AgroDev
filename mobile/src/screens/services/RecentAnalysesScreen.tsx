@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   modalImageLabel: {
     fontSize: typography.fontSizes.xs,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
     marginTop: spacing.md,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   modalImage: {
     width: '100%',

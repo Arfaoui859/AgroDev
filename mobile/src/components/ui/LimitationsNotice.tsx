@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   text: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
 });

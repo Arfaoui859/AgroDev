@@ -94,6 +94,6 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
 
 const styles = StyleSheet.create({
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
-  sourceNote: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm },
+  sourceNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
   sourceText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
 });

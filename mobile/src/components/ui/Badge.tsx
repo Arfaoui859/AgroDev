@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, radius, typography } from '../../theme/colors';
+import { colors, radius, spacing, typography } from '../../theme/colors';
 
 interface BadgeProps {
   label: string;
@@ -56,11 +56,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeSm: {
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
   badgeMd: {
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
     paddingVertical: 5,
   },
   text: {

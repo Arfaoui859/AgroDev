@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: spacing.xs,
     minHeight: 48,
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.full,
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   messageBubble: {
     maxWidth: '82%',
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   messageTime: {
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   userTime: {
     color: colors.onBrandFaint,

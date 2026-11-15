@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeights.sm,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   analyzingThumb: {
     width: 160,
@@ -484,10 +484,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontStyle: 'italic',
   },
-  severity: { marginTop: 4, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary },
+  severity: { marginTop: spacing.xs, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary },
   arabicNote: { marginTop: spacing.sm, fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
   section: { marginBottom: spacing.md },
-  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
+  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: 6 },
   bullet: {
     width: 6,
     height: 6,

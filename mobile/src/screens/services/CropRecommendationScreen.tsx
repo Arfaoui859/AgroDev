@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentLight,
     padding: spacing.sm,
     borderRadius: radius.md,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   tipsText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.accentDark, lineHeight: typography.lineHeights.sm },
 });

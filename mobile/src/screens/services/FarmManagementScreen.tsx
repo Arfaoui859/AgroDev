@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeights.xs,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   input: {
     height: 48,
@@ -590,12 +590,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.surfaceSubtle,
     paddingTop: spacing.xs,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   footerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   footerText: {
     fontSize: typography.fontSizes.xs,
