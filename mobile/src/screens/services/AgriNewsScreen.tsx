@@ -4,18 +4,18 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   RefreshControl,
   Linking,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../../theme/colors';
+import { colors, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SearchBar } from '../../components/ui/SearchBar';
+import { CategoryPill } from '../../components/ui/CategoryPill';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
 import { getAgriNews } from '../../api/client';
@@ -200,37 +200,12 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
   );
 };
 
-const CategoryPill: React.FC<{ label: string; selected: boolean; onPress: () => void }> = ({ label, selected, onPress }) => (
-  <TouchableOpacity
-    activeOpacity={0.8}
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityState={{ selected }}
-    accessibilityLabel={label}
-    style={[styles.catPill, selected && styles.catPillSelected]}
-  >
-    <Text style={[styles.catPillText, selected && styles.catPillTextSelected]}>{label}</Text>
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
-  catPill: {
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  catPillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  catPillText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
-  catPillTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   provBar: { marginBottom: spacing.sm },
   articleCard: { padding: spacing.md, marginBottom: spacing.sm },
   articleHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },

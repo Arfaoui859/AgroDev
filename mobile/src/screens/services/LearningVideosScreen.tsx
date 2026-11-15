@@ -13,6 +13,7 @@ import { colors, radius, spacing, typography, shadows } from '../../theme/colors
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../../components/ui/Button';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
+import { CategoryPill } from '../../components/ui/CategoryPill';
 import {
   LEARNING_VIDEOS,
   LearningVideo,
@@ -137,37 +138,12 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
   );
 };
 
-const CategoryPill: React.FC<{ label: string; selected: boolean; onPress: () => void }> = ({ label, selected, onPress }) => (
-  <TouchableOpacity
-    activeOpacity={0.8}
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityState={{ selected }}
-    accessibilityLabel={label}
-    style={[styles.catPill, selected && styles.catPillSelected]}
-  >
-    <Text style={[styles.catPillText, selected && styles.catPillTextSelected]}>{label}</Text>
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
-  catPill: {
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  catPillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  catPillText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
-  catPillTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,

@@ -366,3 +366,18 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx expo export --platform web` bundles, and the web export renders Home,
 Services, Disease detection and the tab bar correctly. `SearchBar` has its own
 regression test (`tests/unit/search-bar.test.tsx`).
+
+### Premium UI polish pass — shared CategoryPill (verified 2026-11)
+
+- **`CategoryPill`** (`src/components/ui/CategoryPill.tsx`) is the one filter
+  pill for the horizontal category rows in `ServicesScreen`, `AgriNewsScreen`
+  and `LearningVideosScreen`, with an optional leading icon and RTL row
+  direction. `AgriNewsScreen` and `LearningVideosScreen` dropped their local
+  copies of the component and all three dropped their `catPill*` styles; Agri
+  News also lost its now-unused `TouchableOpacity`/`radius` imports.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 51 suites / 249 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the Services tab renders its icon
+category pills and the shared search field correctly. `CategoryPill` has its own
+regression test (`tests/unit/category-pill.test.tsx`).

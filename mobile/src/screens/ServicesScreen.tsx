@@ -13,6 +13,7 @@ import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
+import { CategoryPill } from '../components/ui/CategoryPill';
 import { StateView } from '../components/ui/StateView';
 
 interface ServicesScreenProps {
@@ -231,24 +232,13 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
         {categories.map((cat) => {
           const isActive = activeCategory === cat.id;
           return (
-            <TouchableOpacity
+            <CategoryPill
               key={cat.id}
-              activeOpacity={0.8}
+              label={cat.label}
+              icon={cat.icon as any}
+              selected={isActive}
               onPress={() => setActiveCategory(cat.id)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-              accessibilityLabel={cat.label}
-              style={[styles.catPill, isRtl && styles.rtlRow, isActive && styles.catPillActive]}
-            >
-              <MaterialCommunityIcons
-                name={cat.icon as any}
-                size={16}
-                color={isActive ? colors.textInverse : colors.textSecondary}
-              />
-              <Text style={[styles.catPillText, isActive && styles.catPillTextActive]}>
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
+            />
           );
         })}
       </ScrollView>
@@ -311,32 +301,6 @@ const styles = StyleSheet.create({
   categoryScroll: {
     gap: spacing.xs,
     paddingBottom: spacing.md,
-  },
-  catPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    minHeight: 48,
-    paddingHorizontal: 14,
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  catPillActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  catPillText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeights.medium,
-  },
-  catPillTextActive: {
-    color: colors.textInverse,
-    fontWeight: typography.fontWeights.bold,
   },
   serviceList: {
     gap: spacing.md,
