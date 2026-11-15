@@ -10,7 +10,7 @@ import {
 import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
-import { mutedCaption, titleBase } from '../theme/typographyStyles';
+import { mutedCaption, subtleCaption, titleBase } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   cropInfo: { flex: 1 },
   cropName: titleBase,
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
-  marketLocation: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
+  marketLocation: subtleCaption,
   priceDisplay: {
     alignItems: 'flex-end',
     backgroundColor: colors.surfaceSubtle,

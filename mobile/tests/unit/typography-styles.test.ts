@@ -1,4 +1,4 @@
-import { mutedCaption, subtleCaption, subtitleMeta, titleBase, titleSm, titleLg } from '../../src/theme/typographyStyles';
+import { mutedCaption, subtleCaption, subtitleMeta, titleBase, titleSm, titleLg, labelMedium, noteCaption } from '../../src/theme/typographyStyles';
 import { colors, typography } from '../../src/theme/colors';
 
 /**
@@ -31,5 +31,24 @@ describe('title styles', () => {
     expect(titleBase).toMatchObject({ fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text });
     expect(titleSm).toMatchObject({ fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text });
     expect(titleLg).toMatchObject({ fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text });
+  });
+});
+
+describe('additional caption styles', () => {
+  it('labelMedium is the medium-weight secondary xs label', () => {
+    expect(labelMedium).toMatchObject({
+      fontSize: typography.fontSizes.xs,
+      lineHeight: typography.lineHeights.xs,
+      color: colors.textSecondary,
+      fontWeight: typography.fontWeights.medium,
+    });
+  });
+
+  it('noteCaption is the secondary xs note on the small line height', () => {
+    expect(noteCaption).toMatchObject({
+      fontSize: typography.fontSizes.xs,
+      lineHeight: typography.lineHeights.sm,
+      color: colors.textSecondary,
+    });
   });
 });

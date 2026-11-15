@@ -2,7 +2,8 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { rtlStyles } from '../../theme/rtl';
-import { colors, radius, spacing, typography } from '../../theme/colors';
+import { colors, radius, spacing } from '../../theme/colors';
+import { labelMedium } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface IconChipProps {
@@ -55,11 +56,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeights.medium,
-  },
+  chipText: labelMedium,
   chipTextSelected: { color: colors.textInverse },
 });

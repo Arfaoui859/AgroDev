@@ -11,6 +11,7 @@ import {
 import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { subtitleMeta, subtleCaption } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
@@ -471,12 +472,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  farmLocation: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
+  farmLocation: subtitleMeta,
   farmStatsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -551,12 +547,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  fieldCrop: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
+  fieldCrop: subtitleMeta,
   cropHighlight: {
     color: colors.primary,
     fontWeight: typography.fontWeights.bold,
@@ -575,9 +566,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  footerText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-  },
+  footerText: subtleCaption,
 });

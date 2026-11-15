@@ -4,7 +4,7 @@ import { StateCard } from '../ui/StateCard';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { titleSm } from '../../theme/typographyStyles';
+import { mutedCaption, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   articleMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   articleSource: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold, maxWidth: 180 },
   articleDot: { fontSize: typography.fontSizes.xs, color: colors.textMuted },
-  articleDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
+  articleDate: mutedCaption,
   catRow: { flexDirection: 'row', marginTop: spacing.xs },
   catTag: { backgroundColor: colors.secondaryLight, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   catTagText: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.secondaryDark, fontWeight: typography.fontWeights.semibold },

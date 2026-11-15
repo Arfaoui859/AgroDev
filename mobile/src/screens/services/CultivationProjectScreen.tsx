@@ -4,7 +4,7 @@ import { screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { mutedCaption, titleBase } from '../../theme/typographyStyles';
+import { mutedCaption, subtitleMeta, titleBase } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -329,5 +329,5 @@ const styles = StyleSheet.create({
   projectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   projectText: { flex: 1 },
   projectName: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text },
-  projectMeta: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2 },
+  projectMeta: subtitleMeta,
 });

@@ -11,7 +11,7 @@ import {
 import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
-import { titleSm } from '../theme/typographyStyles';
+import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -323,12 +323,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  profileEmail: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
+  profileEmail: subtitleMeta,
   badgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -384,11 +379,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusMainText: titleSm,
-  statusSubText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textMuted,
-  },
+  statusSubText: mutedCaption,
   connectionResultBox: {
     backgroundColor: colors.surfaceSubtle,
     padding: spacing.sm,

@@ -46,3 +46,17 @@ export const titleLg: TextStyle = {
   fontWeight: typography.fontWeights.bold,
   color: colors.text,
 };
+
+/** Medium-weight secondary label (pills, tabs). */
+export const labelMedium: TextStyle = {
+  ...captionBase,
+  color: colors.textSecondary,
+  fontWeight: typography.fontWeights.medium,
+};
+
+/** Secondary note on the small line height (messages, inline notes). */
+export const noteCaption: TextStyle = {
+  fontSize: typography.fontSizes.xs,
+  lineHeight: typography.lineHeights.sm,
+  color: colors.textSecondary,
+};

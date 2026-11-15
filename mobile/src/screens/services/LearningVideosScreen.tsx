@@ -3,7 +3,8 @@ import { rtlStyles } from '../../theme/rtl';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
 import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../../theme/colors';
+import { colors, spacing } from '../../theme/colors';
+import { mutedCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../../components/ui/Button';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
@@ -95,5 +96,5 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
 const styles = StyleSheet.create({
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
   sourceNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
-  sourceText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
+  sourceText: mutedCaption,
 });

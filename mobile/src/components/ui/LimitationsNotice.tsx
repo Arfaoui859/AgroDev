@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { noteCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface LimitationsNoticeProps {
@@ -40,5 +41,5 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  text: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
+  text: noteCaption,
 });

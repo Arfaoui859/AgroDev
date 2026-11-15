@@ -599,3 +599,15 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 64 suites / 279 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Home, Services
 and the soil wizard with identical card/title styling.
+
+### Premium UI polish pass — caption styles, second sweep (verified 2026-11)
+
+- Added **`labelMedium`** (xs, medium-weight, secondary) and **`noteCaption`**
+  (xs on the small line height, secondary) to `src/theme/typographyStyles.ts`,
+  and finished routing the remaining `mutedCaption` / `subtleCaption` /
+  `subtitleMeta` copies (SectionHeader, Profile, WeatherDetail, FarmManagement,
+  VideoCard, HomeNewsPreview, LearningVideos(+Screen), SoilReportView, PlotStep,
+  MarketplaceMatch, CultivationProject, AIAssistant, LimitationsNotice,
+  Notifications, MultiAgentAI, SoilAnalysis, CategoryPill, IconChip, AuthModal,
+  Marketplace) through the shared constants. The typography-styles test now
+  pins all eight constants.

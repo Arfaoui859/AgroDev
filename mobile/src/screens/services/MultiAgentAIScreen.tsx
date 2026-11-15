@@ -4,7 +4,7 @@ import { screenStyles, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaption, titleSm } from '../../theme/typographyStyles';
+import { mutedCaption, noteCaption, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -199,5 +199,5 @@ const styles = StyleSheet.create({
   engineText: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, lineHeight: typography.lineHeights.xs },
   requirement: { fontSize: typography.fontSizes.xs, color: colors.warning, marginTop: 2, lineHeight: typography.lineHeights.xs },
   noteCard: { backgroundColor: colors.primaryLight, borderColor: colors.primary, padding: spacing.md, marginTop: spacing.md },
-  noteText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
+  noteText: noteCaption,
 });

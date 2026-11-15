@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { titleLg } from '../../theme/typographyStyles';
+import { labelMedium, subtleCaption, titleLg } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -321,12 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   tabBtnActive: { backgroundColor: colors.card },
-  tabText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeights.medium,
-  },
+  tabText: labelMedium,
   tabTextActive: { color: colors.primary, fontWeight: typography.fontWeights.bold },
   field: { marginBottom: spacing.sm },
   label: {
@@ -353,6 +348,6 @@ const styles = StyleSheet.create({
   },
   errorText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.danger, lineHeight: typography.lineHeights.xs },
   switchRow: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: spacing.md },
-  switchText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
+  switchText: subtleCaption,
   switchLink: { color: colors.primary, fontWeight: typography.fontWeights.bold },
 });

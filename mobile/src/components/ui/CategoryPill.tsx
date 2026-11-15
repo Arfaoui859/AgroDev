@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { labelMedium } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface CategoryPillProps {
@@ -55,11 +56,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   pillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  text: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeights.medium,
-  },
+  text: labelMedium,
   textSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
 });

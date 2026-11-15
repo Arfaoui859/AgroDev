@@ -4,7 +4,7 @@ import { screenStyles } from '../theme/layout';
 import { rtlStyles } from '../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme/colors';
-import { mutedCaption } from '../theme/typographyStyles';
+import { mutedCaption, noteCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   unreadCard: { borderColor: colors.primary, borderWidth: 1.5 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.xs },
   cardTitle: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
-  cardMessage: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
+  cardMessage: noteCaption,
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',

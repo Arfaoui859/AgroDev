@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { mutedCaption, subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil, SoilTranslations } from '../../i18n/soil';
 import { SoilReport, SoilReportAction } from '../../types';
@@ -509,7 +510,7 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontWeight: typography.fontWeights.bold,
   },
-  tableSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2 },
+  tableSub: subtitleMeta,
   tableEvidence: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: 2 },
   findingRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   findingParam: {
@@ -521,13 +522,13 @@ const styles = StyleSheet.create({
   },
   actionItem: { backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm },
   actionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
-  actionWhen: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
+  actionWhen: mutedCaption,
   actionText: {
     fontSize: typography.fontSizes.sm,
     lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
   },
-  actionSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2 },
+  actionSub: subtitleMeta,
   actionVerify: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.info, marginTop: 3 },
 });

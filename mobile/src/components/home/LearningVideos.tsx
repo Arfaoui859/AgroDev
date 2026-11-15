@@ -2,7 +2,8 @@ import React from 'react';
 import { rtlStyles } from '../../theme/rtl';
 import { View, Text, ScrollView, StyleSheet, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../../theme/colors';
+import { colors, spacing } from '../../theme/colors';
+import { mutedCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
 import { VideoCard } from '../ui/VideoCard';
@@ -61,5 +62,5 @@ const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   row: { gap: spacing.md, paddingVertical: 2 },
   sourceNote: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
-  sourceText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
+  sourceText: mutedCaption,
 });

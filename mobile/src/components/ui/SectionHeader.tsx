@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface SectionHeaderProps {
@@ -92,12 +93,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  subtitle: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
+  subtitle: subtitleMeta,
   linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
   linkText: {
     fontSize: typography.fontSizes.sm,

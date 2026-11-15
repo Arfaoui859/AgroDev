@@ -4,7 +4,7 @@ import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { titleBase, titleSm } from '../../theme/typographyStyles';
+import { noteCaption, titleBase, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -399,5 +399,5 @@ const styles = StyleSheet.create({
   findingCard: { padding: spacing.md, marginBottom: spacing.xs },
   findingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   findingParam: titleSm,
-  findingText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
+  findingText: noteCaption,
 });

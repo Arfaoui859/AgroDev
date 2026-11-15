@@ -11,7 +11,7 @@ import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { titleSm } from '../../theme/typographyStyles';
+import { labelMedium, mutedCaption, subtitleMeta, subtleCaption, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -355,12 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
-  govPillText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeights.medium,
-  },
+  govPillText: labelMedium,
   govPillTextSelected: {
     color: colors.textInverse,
     fontWeight: typography.fontWeights.bold,
@@ -379,12 +374,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  currentCondition: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
+  currentCondition: subtitleMeta,
   tempRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -409,11 +399,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metricVal: titleSm,
-  metricSub: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textMuted,
-  },
+  metricSub: mutedCaption,
   adviceBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -459,19 +445,11 @@ const styles = StyleSheet.create({
     gap: 6,
     flex: 1,
   },
-  conditionSub: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-  },
+  conditionSub: subtleCaption,
   tempMinMax: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   tempMax: titleSm,
-  tempMin: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textMuted,
-  },
+  tempMin: mutedCaption,
 });

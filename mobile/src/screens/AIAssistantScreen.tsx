@@ -14,6 +14,7 @@ import {
 import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
+import { subtleCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { chatWithAIAssistant } from '../api/client';
 import { ChatMessage } from '../types';
@@ -298,11 +299,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     maxWidth: 240,
   },
-  promptChipText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-  },
+  promptChipText: subtleCaption,
   messagesContainer: {
     flex: 1,
   },
@@ -381,11 +378,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.sm,
   },
-  loadingText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-  },
+  loadingText: subtleCaption,
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
