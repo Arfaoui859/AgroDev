@@ -11,7 +11,7 @@ import {
 import { cardPad, flex1, gapXs, metaRow, rowGapMd, rowGapSm, screenStyles, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
-import { mutedCaption, subtitleMeta, titleSm } from '../theme/typographyStyles';
+import { mutedCaption, subtitleMeta, titleSm, xsNote } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -377,10 +377,5 @@ const styles = StyleSheet.create({
   },
   offlineTextContainer: flex1,
   offlineTitle: titleSm,
-  offlineSub: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: typography.lineHeights.xs,
-  },
+  offlineSub: xsNote,
 });

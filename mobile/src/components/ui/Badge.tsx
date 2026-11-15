@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../../theme/colors';
+import { colors, radius, typography } from '../../theme/colors';
+import { pillPadMd, pillPadSm } from '../../theme/layout';
 import { typeSm, typeXs } from '../../theme/typographyStyles';
 
 interface BadgeProps {
@@ -56,14 +57,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeSm: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  badgeMd: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 5,
-  },
+  badgeSm: pillPadSm,
+  badgeMd: pillPadMd,
   text: {
     fontWeight: typography.fontWeights.semibold,
   },

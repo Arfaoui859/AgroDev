@@ -12,7 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { rowGapXs, rowWrapSm, stackSm } from '../../theme/layout';
-import { labelMedium, subtleCaption, titleLg, titleXl } from '../../theme/typographyStyles';
+import { labelMedium, subtitleMetaBase, subtleCaption, titleLg, titleXl } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -296,13 +296,7 @@ const styles = StyleSheet.create({
   brandRow: rowGapXs,
   brandTitle: titleLg,
   title: titleXl,
-  subtitle: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: typography.lineHeights.sm,
-    color: colors.textSecondary,
-    marginTop: 2,
-    marginBottom: spacing.md,
-  },
+  subtitle: subtitleMetaBase,
   tabBar: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceSubtle,

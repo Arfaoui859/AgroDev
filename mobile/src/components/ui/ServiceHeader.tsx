@@ -4,6 +4,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, typography } from '../../theme/colors';
 import { flex1, rowGapMd, stackMd } from '../../theme/layout';
+import { subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ServiceHeaderProps {
@@ -50,5 +51,5 @@ const styles = StyleSheet.create({
   },
   titleTextContainer: flex1,
   mainTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
-  mainSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.sm },
+  mainSub: subtitleMeta,
 });

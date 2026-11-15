@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { spaceBetweenXs } from '../../theme/layout';
+import { pillPadSm, spaceBetweenXs } from '../../theme/layout';
 import { mutedCaption, mutedCaptionTop, subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil, SoilTranslations } from '../../i18n/soil';
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   },
   empty: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textMuted },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.xs, marginBottom: spacing.xs },
-  chip: { borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  chip: { ...pillPadSm, borderRadius: radius.full },
   chipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold },
   tableRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   tableHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

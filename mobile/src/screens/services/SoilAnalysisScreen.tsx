@@ -4,7 +4,7 @@ import { flex1, gapMd, rowGapMd, rowGapSm, screenStyles, spaceBetweenXs, stackTo
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { accentCaption, cardHeading, noteCaption, titleBase, titleBaseFlex, titleSm } from '../../theme/typographyStyles';
+import { accentCaption, cardHeading, noteCaption, subtitleMeta, titleBase, titleBaseFlex, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   scoreMax: accentCaption,
   gradeDetails: flex1,
   gradeTitle: titleBase,
-  gradeDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.sm },
+  gradeDesc: subtitleMeta,
   provWrap: { marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   persistNote: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: typography.lineHeights.xs },
   ctaSub: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs, marginBottom: spacing.sm },

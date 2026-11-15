@@ -1,7 +1,7 @@
 import {
   accentCaption, cardHeading, labelMedium, mutedCaption, mutedCaptionTop, noteCaption, sectionHeading,
-  subtleCaption, subtitleMeta, textAccentSemibold, textOnPrimary, titleBase, titleBaseAccent,
-  titleBaseCenter, titleBaseFlex, titleLg, titleSm, titleSmSemibold, titleXl, typeSm, typeXs,
+  subtleCaption, subtitleMeta, subtitleMetaBase, textAccentSemibold, textOnPrimary, titleBase, titleBaseAccent,
+  titleBaseCenter, titleBaseFlex, titleLg, titleSm, titleSmSemibold, titleXl, typeSm, typeXs, xsNote,
 } from '../../src/theme/typographyStyles';
 import { colors, spacing, typography } from '../../src/theme/colors';
 
@@ -102,5 +102,24 @@ describe('added polish tokens', () => {
 
   it('mutedCaptionTop is mutedCaption with a 2px top gap', () => {
     expect(mutedCaptionTop).toMatchObject({ ...mutedCaption, marginTop: 2 });
+  });
+});
+describe('card sub-line tokens', () => {
+  it('xsNote is the secondary xs note with the 2px optical top gap', () => {
+    expect(xsNote).toMatchObject({
+      fontSize: typography.fontSizes.xs,
+      lineHeight: typography.lineHeights.xs,
+      color: colors.textSecondary,
+      marginTop: 2,
+    });
+  });
+  it('subtitleMetaBase is the sm subtitle with a top gap and the md block gap', () => {
+    expect(subtitleMetaBase).toMatchObject({
+      fontSize: typography.fontSizes.sm,
+      lineHeight: typography.lineHeights.sm,
+      color: colors.textSecondary,
+      marginTop: 2,
+      marginBottom: spacing.md,
+    });
   });
 });

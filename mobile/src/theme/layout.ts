@@ -109,6 +109,12 @@ export const modalSheet: ViewStyle = {
 /** `spaceBetween` with the tight xs gap beneath it (form labels, panel heads). */
 export const spaceBetweenXs: ViewStyle = { ...spaceBetween, marginBottom: spacing.xs };
 
+/** Small pill padding (xs text chips). */
+export const pillPadSm: ViewStyle = { paddingHorizontal: spacing.sm, paddingVertical: 3 };
+
+/** Medium pill padding (sm text chips). */
+export const pillPadMd: ViewStyle = { paddingHorizontal: spacing.md, paddingVertical: 5 };
+
 /** Rounded status pill: icon + label in a brand-neutral capsule. */
 export const badgePill: ViewStyle = {
   ...rowGapXs,

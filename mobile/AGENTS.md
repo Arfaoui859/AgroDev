@@ -721,3 +721,13 @@ Full verification of the polish pass, all executed:
   `تعذّر تحميل البيانات` / `Échec du chargement` + retry rather than fake data.
 - `npx expo-doctor` hangs in this sandbox (network probe); it is not usable
   here — use `expo config` + the two `expo export` targets instead.
+
+### Premium UI polish pass — caption and pill tokens (verified 2026-11)
+
+Final duplication sweep. `src/theme/typographyStyles.ts` gained **`xsNote`**
+(secondary xs note with the 2px optical top gap) and **`subtitleMetaBase`** (sm
+subtitle with the top gap and the md block gap); `src/theme/layout.ts` gained
+**`pillPadSm` / `pillPadMd`**. Routed the last hand-rolled card sub-lines
+(ServiceHeader, SoilAnalysisScreen, MeasurementsStep, PlotStep, MarketplaceMatch,
+CultivationProjectScreen, ProfileScreen, AuthModal) and the two chip paddings
+(Badge, SoilReportView) through them. Layout test 16 cases, typography test 17.

@@ -1,6 +1,6 @@
 import {
   actionsRow, badgePill, cardBottomRow, cardPad, flex1, gapMd, metaRow, metaRowSm, rowCenter, rowGapMd,
-  rowGapSm, rowGapXs, rowWrapSm, sectionHeadRow,
+  pillPadMd, pillPadSm, rowGapSm, rowGapXs, rowWrapSm, sectionHeadRow,
   screenStyles, selectedChip, spaceBetween, spaceBetweenTop, spaceBetweenXs, stackLg, stackMd, stackSm,
   stackTopSm, stackedCard,
 } from '../../src/theme/layout';
@@ -92,5 +92,11 @@ describe('composite row tokens', () => {
 
   it('sectionHeadRow is the sm row with the tight gap beneath it', () => {
     expect(sectionHeadRow).toMatchObject({ ...rowGapSm, marginBottom: spacing.xs });
+  });
+});
+describe('pill padding tokens', () => {
+  it('pillPadSm / pillPadMd pin the chip paddings', () => {
+    expect(pillPadSm).toMatchObject({ paddingHorizontal: spacing.sm, paddingVertical: 3 });
+    expect(pillPadMd).toMatchObject({ paddingHorizontal: spacing.md, paddingVertical: 5 });
   });
 });

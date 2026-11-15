@@ -23,6 +23,23 @@ export const subtleCaption: TextStyle = { ...captionBase, color: colors.textSeco
 /** Secondary caption with the common 2px top gap under a title. */
 export const subtitleMeta: TextStyle = { ...subtleCaption, marginTop: 2 };
 
+/** xs note with the 2px optical top gap (card sub-lines). */
+export const xsNote: TextStyle = {
+  fontSize: typography.fontSizes.xs,
+  lineHeight: typography.lineHeights.xs,
+  color: colors.textSecondary,
+  marginTop: 2,
+};
+
+/** sm subtitle with the 2px optical top gap, above the md block gap. */
+export const subtitleMetaBase: TextStyle = {
+  fontSize: typography.fontSizes.sm,
+  lineHeight: typography.lineHeights.sm,
+  color: colors.textSecondary,
+  marginTop: 2,
+  marginBottom: spacing.md,
+};
+
 /** Section title on the base scale (bold, text colour). */
 export const titleBase: TextStyle = {
   fontSize: typography.fontSizes.base,
