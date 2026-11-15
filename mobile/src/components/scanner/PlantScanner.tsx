@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { rtlStyles } from '../../theme/rtl';
 import {
   View,
   Text,
@@ -150,12 +151,12 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
       <View style={styles.flex}>
         <CameraView ref={cameraRef} style={styles.flex} facing="back" />
         <View style={styles.overlay}>
-          <View style={[styles.guidance, isRtl && styles.rtlRow]}>
+          <View style={[styles.guidance, isRtl && rtlStyles.rtlRow]}>
             <MaterialCommunityIcons name="information-outline" size={16} color={colors.textInverse} />
             <Text style={styles.guidanceText}>{x.scannerGuidance}</Text>
           </View>
           {errorMsg ? (
-            <View style={[styles.captureError, isRtl && styles.rtlRow]}>
+            <View style={[styles.captureError, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="alert-circle-outline" size={16} color={colors.textInverse} />
               <Text style={styles.captureErrorText}>{errorMsg}</Text>
               <TouchableOpacity
@@ -168,7 +169,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
               </TouchableOpacity>
             </View>
           ) : null}
-          <View style={[styles.controls, isRtl && styles.rtlRow]}>
+          <View style={[styles.controls, isRtl && rtlStyles.rtlRow]}>
             <TouchableOpacity
               onPress={onClose}
               accessibilityRole="button"
@@ -265,15 +266,15 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
       {imageUri ? <Image source={{ uri: imageUri }} style={styles.resultImage} resizeMode="cover" /> : null}
 
       <Card variant="elevated" style={styles.resultCard}>
-        <View style={[styles.resultHeader, isRtl && styles.rtlRow]}>
-          <Text style={[styles.resultTitle, isRtl && styles.rtlText]}>
+        <View style={[styles.resultHeader, isRtl && rtlStyles.rtlRow]}>
+          <Text style={[styles.resultTitle, isRtl && rtlStyles.rtlText]}>
             {language === 'ar' ? result?.diseaseNameAr : result?.diseaseName}
           </Text>
           <ProvenanceBadge meta={result?.meta ?? { provenance: 'unavailable', isRealData: false }} detailed />
         </View>
 
         {result?.confidence !== null && result?.confidence !== undefined ? (
-          <View style={[styles.confidenceRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.confidenceRow, isRtl && rtlStyles.rtlRow]}>
             <MaterialCommunityIcons name="gauge" size={16} color={colors.primary} />
             <Text style={styles.confidenceText}>
               {`${x.diseaseConfidenceLabel}: ${result.confidence}%`}
@@ -324,9 +325,9 @@ const Section: React.FC<{ icon: keyof typeof MaterialCommunityIcons.glyphMap; ti
     <Card variant="flat" style={styles.section}>
       <SectionHeader title={title} icon={icon} iconSize={18} titleNumberOfLines={0} />
       {items.map((item, index) => (
-        <View key={index} style={[styles.bulletRow, isRtl && styles.rtlRow]}>
+        <View key={index} style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
           <View style={styles.bullet} />
-          <Text style={[styles.bulletText, isRtl && styles.rtlText]}>{item}</Text>
+          <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{item}</Text>
         </View>
       ))}
     </Card>
@@ -469,8 +470,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  rtlRow: { flexDirection: 'row-reverse' },
   confidenceRow: {
     flexDirection: 'row',
     alignItems: 'center',

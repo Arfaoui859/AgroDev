@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -22,7 +23,7 @@ interface StepperProps {
 export const Stepper: React.FC<StepperProps> = ({ steps, activeIndex, onSelect }) => {
   const { isRtl } = useLanguage();
   return (
-    <View style={[styles.row, isRtl && styles.rtlRow]}>
+    <View style={[styles.row, isRtl && rtlStyles.rtlRow]}>
       {steps.map((step, index) => {
         const isDone = index < activeIndex;
         const isActive = index === activeIndex;
@@ -66,7 +67,6 @@ export const Stepper: React.FC<StepperProps> = ({ steps, activeIndex, onSelect }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
-  rtlRow: { flexDirection: 'row-reverse' },
   step: { alignItems: 'center', minHeight: 48, minWidth: 48, justifyContent: 'center', flex: 1 },
   circle: {
     width: 30,

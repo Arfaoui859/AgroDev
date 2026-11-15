@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { rtlStyles } from '../theme/rtl';
 import {
   View,
   Text,
@@ -227,7 +228,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.categoryScroll, isRtl && styles.rtlRow]}
+        contentContainerStyle={[styles.categoryScroll, isRtl && rtlStyles.rtlRow]}
       >
         {categories.map((cat) => {
           const isActive = activeCategory === cat.id;
@@ -259,17 +260,17 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
               accessibilityLabel={`${svc.title}. ${svc.desc}`}
               style={styles.serviceCard}
             >
-            <View style={[styles.cardTopRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.cardTopRow, isRtl && rtlStyles.rtlRow]}>
               <View style={[styles.serviceIconContainer, { backgroundColor: svc.bgColor }]}>
                 <MaterialCommunityIcons name={svc.icon as any} size={28} color={svc.color} />
               </View>
               <Badge label={svc.badge} variant={svc.badgeVariant} size="sm" />
             </View>
 
-            <Text style={[styles.serviceTitle, isRtl && styles.rtlText]}>{svc.title}</Text>
-            <Text style={[styles.serviceDesc, isRtl && styles.rtlText]}>{svc.desc}</Text>
+            <Text style={[styles.serviceTitle, isRtl && rtlStyles.rtlText]}>{svc.title}</Text>
+            <Text style={[styles.serviceDesc, isRtl && rtlStyles.rtlText]}>{svc.desc}</Text>
 
-            <View style={[styles.cardFooter, isRtl && styles.rtlRow]}>
+            <View style={[styles.cardFooter, isRtl && rtlStyles.rtlRow]}>
               <Text style={styles.launchText}>{x.servicesLaunch}</Text>
               <MaterialCommunityIcons
                 name={isRtl ? 'arrow-left' : 'arrow-right'}
@@ -294,10 +295,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing['3xl'],
   },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   categoryScroll: {
     gap: spacing.xs,
     paddingBottom: spacing.md,

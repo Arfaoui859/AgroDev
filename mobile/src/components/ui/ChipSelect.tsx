@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -15,7 +16,7 @@ interface ChipSelectProps {
 export const ChipSelect: React.FC<ChipSelectProps> = ({ options, selected, onSelect, clearable }) => {
   const { isRtl } = useLanguage();
   return (
-    <View style={[styles.wrap, isRtl && styles.rtlRow]}>
+    <View style={[styles.wrap, isRtl && rtlStyles.rtlRow]}>
       {options.map((opt) => {
         const isActive = opt.value === selected;
         return (
@@ -37,7 +38,6 @@ export const ChipSelect: React.FC<ChipSelectProps> = ({ options, selected, onSel
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  rtlRow: { flexDirection: 'row-reverse' },
   chip: {
     minHeight: 48,
     justifyContent: 'center',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -122,10 +123,10 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleSkip}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <View style={[styles.headerRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.headerRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.headerTextWrap}>
-              <Text style={[styles.modalTitle, isRtl && styles.rtlText]}>{x.onboardingTitle}</Text>
-              <Text style={[styles.modalSub, isRtl && styles.rtlText]}>{x.onboardingSubtitle}</Text>
+              <Text style={[styles.modalTitle, isRtl && rtlStyles.rtlText]}>{x.onboardingTitle}</Text>
+              <Text style={[styles.modalSub, isRtl && rtlStyles.rtlText]}>{x.onboardingSubtitle}</Text>
             </View>
             <TouchableOpacity
               onPress={handleSkip}
@@ -150,7 +151,7 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
                   accessibilityLabel={`${x[p.titleKey]}. ${x[p.subKey]}`}
                   style={[styles.personaCard, isSelected && styles.personaCardSelected]}
                 >
-                  <View style={[styles.cardTop, isRtl && styles.rtlRow]}>
+                  <View style={[styles.cardTop, isRtl && rtlStyles.rtlRow]}>
                     <View style={[styles.iconWrap, isSelected ? styles.iconWrapSelected : styles.iconWrapNormal]}>
                       <MaterialCommunityIcons
                         name={p.icon as any}
@@ -160,14 +161,14 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
                     </View>
                     <View style={styles.titleArea}>
                       <Text
-                        style={[styles.personaTitle, isSelected && styles.personaTitleSelected, isRtl && styles.rtlText]}
+                        style={[styles.personaTitle, isSelected && styles.personaTitleSelected, isRtl && rtlStyles.rtlText]}
                       >
                         {x[p.titleKey]}
                       </Text>
                     </View>
                     <Badge label={x[p.badgeKey]} variant={p.badgeVariant} size="sm" />
                   </View>
-                  <Text style={[styles.personaDesc, isRtl && styles.rtlText]}>{x[p.subKey]}</Text>
+                  <Text style={[styles.personaDesc, isRtl && rtlStyles.rtlText]}>{x[p.subKey]}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -189,8 +190,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     maxHeight: '85%',
   },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

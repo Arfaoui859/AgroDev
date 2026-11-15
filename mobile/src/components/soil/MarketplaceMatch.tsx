@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -47,11 +48,11 @@ export const MarketplaceMatch: React.FC<MarketplaceMatchProps> = ({ query }) => 
 
   return (
     <Card variant="elevated" style={styles.card}>
-      <View style={[styles.head, isRtl && styles.rtlRow]}>
+      <View style={[styles.head, isRtl && rtlStyles.rtlRow]}>
         <MaterialCommunityIcons name="storefront-outline" size={18} color={colors.primaryDark} />
-        <Text style={[styles.title, isRtl && styles.rtlText]}>{s9.marketMatchTitle}</Text>
+        <Text style={[styles.title, isRtl && rtlStyles.rtlText]}>{s9.marketMatchTitle}</Text>
       </View>
-      <Text style={[styles.sub, isRtl && styles.rtlText]}>{s9.marketMatchSubtitle}</Text>
+      <Text style={[styles.sub, isRtl && rtlStyles.rtlText]}>{s9.marketMatchSubtitle}</Text>
 
       {loading ? (
         <StateView kind="loading" compact />
@@ -62,10 +63,10 @@ export const MarketplaceMatch: React.FC<MarketplaceMatchProps> = ({ query }) => 
       ) : (
         <View style={styles.list}>
           {listings.map((item) => (
-            <View key={item.id} style={[styles.row, isRtl && styles.rtlRow]}>
+            <View key={item.id} style={[styles.row, isRtl && rtlStyles.rtlRow]}>
               <View style={styles.rowText}>
-                <Text style={[styles.itemTitle, isRtl && styles.rtlText]}>{item.title}</Text>
-                <Text style={[styles.itemMeta, isRtl && styles.rtlText]}>
+                <Text style={[styles.itemTitle, isRtl && rtlStyles.rtlText]}>{item.title}</Text>
+                <Text style={[styles.itemMeta, isRtl && rtlStyles.rtlText]}>
                   {[
                     item.price != null ? `${s9.marketPriceLabel}: ${item.price} ${item.currency ?? ''}` : null,
                     item.sellerName ? `${s9.marketSellerLabel}: ${item.sellerName}` : null,
@@ -94,8 +95,6 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   title: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   list: { gap: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   rowText: { flex: 1 },

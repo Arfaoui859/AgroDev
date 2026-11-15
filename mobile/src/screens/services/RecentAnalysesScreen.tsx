@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Modal, Alert } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -88,7 +89,7 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
         </Card>
       ) : (
         <>
-          <Text style={[styles.tapHint, isRtl && styles.rtlText]}>{x.recentAnalysesTapHint}</Text>
+          <Text style={[styles.tapHint, isRtl && rtlStyles.rtlText]}>{x.recentAnalysesTapHint}</Text>
           <View style={styles.recordsList}>
             {records.map((item) => (
               <Card
@@ -99,10 +100,10 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
                 accessibilityLabel={`${item.title} — ${item.badge}`}
                 accessibilityHint={x.recentAnalysesTapHint}
               >
-                <View style={[styles.cardTop, isRtl && styles.rtlRow]}>
+                <View style={[styles.cardTop, isRtl && rtlStyles.rtlRow]}>
                   <View style={styles.titleArea}>
-                    <Text style={[styles.recordTitle, isRtl && styles.rtlText]}>{item.title}</Text>
-                    <Text style={[styles.recordDate, isRtl && styles.rtlText]}>
+                    <Text style={[styles.recordTitle, isRtl && rtlStyles.rtlText]}>{item.title}</Text>
+                    <Text style={[styles.recordDate, isRtl && rtlStyles.rtlText]}>
                       <MaterialCommunityIcons name="clock-outline" size={12} color={colors.textMuted} />{' '}
                       {formatDateTime(item.date, language)}
                     </Text>
@@ -110,7 +111,7 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
                   <Badge label={item.badge} variant={item.badgeVariant} size="sm" />
                 </View>
 
-                <Text style={[styles.recordSummary, isRtl && styles.rtlText]}>{item.summary}</Text>
+                <Text style={[styles.recordSummary, isRtl && rtlStyles.rtlText]}>{item.summary}</Text>
               </Card>
             ))}
           </View>
@@ -139,8 +140,8 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            <View style={[styles.modalHeader, isRtl && styles.rtlRow]}>
-              <Text style={[styles.modalTitle, isRtl && styles.rtlText]}>{detail?.title}</Text>
+            <View style={[styles.modalHeader, isRtl && rtlStyles.rtlRow]}>
+              <Text style={[styles.modalTitle, isRtl && rtlStyles.rtlText]}>{detail?.title}</Text>
               <TouchableOpacity
                 onPress={() => setDetail(null)}
                 accessibilityRole="button"
@@ -150,18 +151,18 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
                 <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
-            <Text style={[styles.modalDate, isRtl && styles.rtlText]}>
+            <Text style={[styles.modalDate, isRtl && rtlStyles.rtlText]}>
               {detail ? formatDateTime(detail.date, language) : ''}
             </Text>
             {detail?.imageUri ? (
               <>
-                <Text style={[styles.modalImageLabel, isRtl && styles.rtlText]}>
+                <Text style={[styles.modalImageLabel, isRtl && rtlStyles.rtlText]}>
                   {x.recentAnalysesViewImage}
                 </Text>
                 <Image source={{ uri: detail.imageUri }} style={styles.modalImage} resizeMode="cover" />
               </>
             ) : null}
-            <Text style={[styles.modalSummary, isRtl && styles.rtlText]}>{detail?.summary}</Text>
+            <Text style={[styles.modalSummary, isRtl && rtlStyles.rtlText]}>{detail?.summary}</Text>
             {onSelectAnalysis && detail ? (
               <Button
                 title={x.recentAnalysesRunAgain}
@@ -191,10 +192,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing['3xl'],
   },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   recordsList: {
     gap: spacing.sm,
   },

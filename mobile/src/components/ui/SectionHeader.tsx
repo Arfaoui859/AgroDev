@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -43,16 +44,16 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   const showAction = !!actionLabel && !!onAction;
 
   return (
-    <View style={[styles.header, isRtl && styles.rtlRow]}>
+    <View style={[styles.header, isRtl && rtlStyles.rtlRow]}>
       <View style={styles.textWrap}>
-        <View style={[styles.titleRow, isRtl && styles.rtlRow]}>
+        <View style={[styles.titleRow, isRtl && rtlStyles.rtlRow]}>
           {icon ? <MaterialCommunityIcons name={icon} size={iconSize} color={colors.primary} /> : null}
-          <Text style={[styles.title, isRtl && styles.rtlText]} numberOfLines={titleNumberOfLines}>
+          <Text style={[styles.title, isRtl && rtlStyles.rtlText]} numberOfLines={titleNumberOfLines}>
             {title}
           </Text>
         </View>
         {subtitle ? (
-          <Text style={[styles.subtitle, isRtl && styles.rtlText]} numberOfLines={2}>
+          <Text style={[styles.subtitle, isRtl && rtlStyles.rtlText]} numberOfLines={2}>
             {subtitle}
           </Text>
         ) : null}
@@ -104,6 +105,4 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: typography.fontWeights.semibold,
   },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

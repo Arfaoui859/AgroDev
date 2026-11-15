@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -60,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={[styles.content, isRtl && styles.rtlRow]}>
+      <View style={[styles.content, isRtl && rtlStyles.rtlRow]}>
         {showBack ? (
           <TouchableOpacity
             activeOpacity={0.7}
@@ -76,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
             />
           </TouchableOpacity>
         ) : (
-          <View style={[styles.brandContainer, isRtl && styles.rtlRow]}>
+          <View style={[styles.brandContainer, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.logoBadge}>
               <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
             </View>
@@ -100,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
           </View>
         )}
 
-        <View style={[styles.actionsContainer, isRtl && styles.rtlRow]}>
+        <View style={[styles.actionsContainer, isRtl && rtlStyles.rtlRow]}>
           {rightAction}
 
           {onOpenNotifications ? (
@@ -119,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={toggleLanguage}
-            style={[styles.langPill, isRtl && styles.rtlRow]}
+            style={[styles.langPill, isRtl && rtlStyles.rtlRow]}
             accessibilityRole="button"
             accessibilityLabel={t.languageSelect}
             accessibilityHint={language === 'ar' ? 'Français' : language === 'fr' ? 'English' : 'العربية'}
@@ -149,9 +150,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 48,
-  },
-  rtlRow: {
-    flexDirection: 'row-reverse',
   },
   brandContainer: {
     flexDirection: 'row',

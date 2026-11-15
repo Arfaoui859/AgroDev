@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { rtlStyles } from '../../theme/rtl';
 import {
   View,
   Text,
@@ -178,12 +179,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       {/* Farm Overview Card */}
       {isAuthenticated && farms.length > 0 && (
         <Card variant="elevated" style={styles.farmSummaryCard}>
-          <View style={[styles.farmHeader, isRtl && styles.rtlRow]}>
+          <View style={[styles.farmHeader, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.farmHeaderInfo}>
-              <Text style={[styles.farmName, isRtl && styles.rtlText]}>
+              <Text style={[styles.farmName, isRtl && rtlStyles.rtlText]}>
                 {language === 'ar' ? farms[0].name_ar || farms[0].name : farms[0].name}
               </Text>
-              <Text style={[styles.farmLocation, isRtl && styles.rtlText]}>
+              <Text style={[styles.farmLocation, isRtl && rtlStyles.rtlText]}>
                 <MaterialCommunityIcons name="map-marker" size={14} color={colors.primary} />{' '}
                 {formatFarmLocation(farms[0].location)}
               </Text>
@@ -191,11 +192,11 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
             <Badge label={`${farms[0].size_hectares} ${x.farmSizeUnit}`} variant="primary" size="md" />
           </View>
 
-          <View style={[styles.provBar, isRtl && styles.rtlRow]}>
+          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
             <ProvenanceBadge meta={meta} />
           </View>
 
-          <View style={[styles.farmStatsRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.farmStatsRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.statBox}>
               <Text style={styles.statVal}>{fields.length}</Text>
               <Text style={styles.statLabel}>{x.farmFieldCount}</Text>
@@ -254,12 +255,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       {/* Add Farm Form */}
       {showFarmModal && farms.length === 0 && (
         <Card variant="outlined" style={styles.addFormCard}>
-          <Text style={[styles.formTitle, isRtl && styles.rtlText]}>{x.farmAddFarm}</Text>
+          <Text style={[styles.formTitle, isRtl && rtlStyles.rtlText]}>{x.farmAddFarm}</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmName}</Text>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmName}</Text>
             <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
+              style={[styles.input, isRtl && rtlStyles.rtlText]}
               placeholder={x.farmName}
               placeholderTextColor={colors.textMuted}
               value={farmName}
@@ -269,8 +270,8 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmRegion}</Text>
-            <View style={[styles.chipWrap, isRtl && styles.rtlRow]}>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmRegion}</Text>
+            <View style={[styles.chipWrap, isRtl && rtlStyles.rtlRow]}>
               {GOVERNORATES.map((g) => {
                 const label = language === 'fr' ? g.labelFr : language === 'en' ? g.labelEn : g.label;
                 const selected = farmRegion === label;
@@ -292,9 +293,9 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmSize}</Text>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmSize}</Text>
             <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
+              style={[styles.input, isRtl && rtlStyles.rtlText]}
               placeholder="4.5"
               placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
@@ -305,9 +306,9 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmSoilType}</Text>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmSoilType}</Text>
             <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
+              style={[styles.input, isRtl && rtlStyles.rtlText]}
               placeholder={farmSoil}
               placeholderTextColor={colors.textMuted}
               value={farmSoil}
@@ -329,12 +330,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       {/* Add Field Form Modal/Card */}
       {showAddModal && (
         <Card variant="outlined" style={styles.addFormCard}>
-          <Text style={[styles.formTitle, isRtl && styles.rtlText]}>{x.farmAddField}</Text>
+          <Text style={[styles.formTitle, isRtl && rtlStyles.rtlText]}>{x.farmAddField}</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmFieldName}</Text>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmFieldName}</Text>
             <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
+              style={[styles.input, isRtl && rtlStyles.rtlText]}
               placeholder={x.farmFieldName}
               placeholderTextColor={colors.textMuted}
               value={fieldName}
@@ -344,9 +345,9 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmFieldArea}</Text>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmFieldArea}</Text>
             <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
+              style={[styles.input, isRtl && rtlStyles.rtlText]}
               placeholder="4.5"
               placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
@@ -357,9 +358,9 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmSoilType}</Text>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmSoilType}</Text>
             <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
+              style={[styles.input, isRtl && rtlStyles.rtlText]}
               placeholder={fieldSoil}
               placeholderTextColor={colors.textMuted}
               value={fieldSoil}
@@ -369,9 +370,9 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, isRtl && styles.rtlText]}>{x.farmCurrentCrop}</Text>
+            <Text style={[styles.inputLabel, isRtl && rtlStyles.rtlText]}>{x.farmCurrentCrop}</Text>
             <TextInput
-              style={[styles.input, isRtl && styles.rtlText]}
+              style={[styles.input, isRtl && rtlStyles.rtlText]}
               placeholder={fieldCrop}
               placeholderTextColor={colors.textMuted}
               value={fieldCrop}
@@ -405,25 +406,25 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
         ) : (
           fields.map((field) => (
             <Card key={field.id} variant="elevated" style={styles.fieldCard}>
-              <View style={[styles.fieldHeader, isRtl && styles.rtlRow]}>
+              <View style={[styles.fieldHeader, isRtl && rtlStyles.rtlRow]}>
                 <View style={styles.fieldInfo}>
-                  <Text style={[styles.fieldName, isRtl && styles.rtlText]}>
+                  <Text style={[styles.fieldName, isRtl && rtlStyles.rtlText]}>
                     {language === 'ar' ? field.name_ar || field.name : field.name}
                   </Text>
-                  <Text style={[styles.fieldCrop, isRtl && styles.rtlText]}>
+                  <Text style={[styles.fieldCrop, isRtl && rtlStyles.rtlText]}>
                     {x.farmCurrentCrop}: <Text style={styles.cropHighlight}>{field.current_crop || '—'}</Text>
                   </Text>
                 </View>
                 <Badge label={`${field.size_hectares} ${x.farmSizeUnit}`} variant="secondary" size="md" />
               </View>
 
-              <View style={[styles.fieldFooter, isRtl && styles.rtlRow]}>
-                <View style={[styles.footerMeta, isRtl && styles.rtlRow]}>
+              <View style={[styles.fieldFooter, isRtl && rtlStyles.rtlRow]}>
+                <View style={[styles.footerMeta, isRtl && rtlStyles.rtlRow]}>
                   <MaterialCommunityIcons name="layers-triple" size={16} color={colors.soil} />
                   <Text style={styles.footerText}>{x.farmSoilType}: {field.soil_type}</Text>
                 </View>
                 {field.planting_date && (
-                  <View style={[styles.footerMeta, isRtl && styles.rtlRow]}>
+                  <View style={[styles.footerMeta, isRtl && rtlStyles.rtlRow]}>
                     <MaterialCommunityIcons name="calendar-check" size={16} color={colors.primary} />
                     <Text style={styles.footerText}>{field.planting_date}</Text>
                   </View>
@@ -462,10 +463,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing['3xl'],
   },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   farmSummaryCard: {
     padding: spacing.md,
     marginBottom: spacing.md,

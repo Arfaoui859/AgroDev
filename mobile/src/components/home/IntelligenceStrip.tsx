@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -104,15 +105,15 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
           ))}
         </ScrollView>
       ) : error || shown.length === 0 ? (
-        <View style={[styles.errorBox, isRtl && styles.rtlRow]}>
+        <View style={[styles.errorBox, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="cloud-off-outline" size={16} color={colors.textMuted} />
-          <Text style={[styles.errorText, isRtl && styles.rtlText]}>{x.stateUnavailable}</Text>
+          <Text style={[styles.errorText, isRtl && rtlStyles.rtlText]}>{x.stateUnavailable}</Text>
         </View>
       ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.row, isRtl && styles.rtlRow]}
+          contentContainerStyle={[styles.row, isRtl && rtlStyles.rtlRow]}
         >
           {shown.map((cap) => {
             const available = cap.engine !== 'unavailable';
@@ -128,7 +129,7 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
                 onPress={() => (available && serviceId ? onOpenService(serviceId) : onOpenCapabilities())}
                 accessibilityRole="button"
                 accessibilityLabel={`${name}. ${available ? t.homeIntelAvailable : t.homeIntelUnavailable}`}
-                style={[styles.chip, isRtl && styles.rtlRow, available ? styles.chipOn : styles.chipOff]}
+                style={[styles.chip, isRtl && rtlStyles.rtlRow, available ? styles.chipOn : styles.chipOff]}
               >
                 <MaterialCommunityIcons
                   name={CAPABILITY_ICON[cap.id] ?? 'brain'}
@@ -153,8 +154,6 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   row: { gap: spacing.sm, paddingVertical: 2 },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

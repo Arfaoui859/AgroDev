@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { rtlStyles } from '../../theme/rtl';
 import {
   View,
   Text,
@@ -117,7 +118,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.govScroll, isRtl && styles.rtlRow]}
+        contentContainerStyle={[styles.govScroll, isRtl && rtlStyles.rtlRow]}
       >
         {GOVERNORATES.map((gov) => {
           const isSelected = selectedGovernorate === gov.id;
@@ -147,7 +148,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
         accessibilityLabel={x.weatherUseMyLocation}
         accessibilityState={{ disabled: locating, busy: locating }}
         testID="weather-use-location"
-        style={[styles.locationBtn, isRtl && styles.rtlRow, locating && styles.locationBtnDisabled]}
+        style={[styles.locationBtn, isRtl && rtlStyles.rtlRow, locating && styles.locationBtnDisabled]}
       >
         <MaterialCommunityIcons
           name={coords ? 'crosshairs-gps' : 'crosshairs'}
@@ -160,7 +161,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
       </TouchableOpacity>
 
       {locationNotice ? (
-        <Text style={[styles.locationNotice, isRtl && styles.rtlText]}>{locationNotice}</Text>
+        <Text style={[styles.locationNotice, isRtl && rtlStyles.rtlText]}>{locationNotice}</Text>
       ) : null}
 
       {loading && <StateView kind="loading" message={x.weatherLoading} />}
@@ -181,17 +182,17 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
       {weather && (
         <>
           <Card variant="elevated" style={styles.currentCard}>
-            <View style={[styles.currentHeader, isRtl && styles.rtlRow]}>
+            <View style={[styles.currentHeader, isRtl && rtlStyles.rtlRow]}>
               <View>
-                <Text style={[styles.currentGov, isRtl && styles.rtlText]}>{weather.governorate}</Text>
-                <Text style={[styles.currentCondition, isRtl && styles.rtlText]}>
+                <Text style={[styles.currentGov, isRtl && rtlStyles.rtlText]}>{weather.governorate}</Text>
+                <Text style={[styles.currentCondition, isRtl && rtlStyles.rtlText]}>
                 {weatherConditionLabel(weather.icon, language, weather.condition_ar)}
               </Text>
               </View>
               <Badge label={x.weatherLiveBadge} variant="info" size="sm" />
             </View>
 
-            <View style={[styles.tempRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.tempRow, isRtl && rtlStyles.rtlRow]}>
               <Text style={styles.tempLarge}>{weather.temperature}°</Text>
               <MaterialCommunityIcons
                 name={weatherIcon(weather.icon)}
@@ -200,7 +201,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
               />
             </View>
 
-            <View style={[styles.metricsGrid, isRtl && styles.rtlRow]}>
+            <View style={[styles.metricsGrid, isRtl && rtlStyles.rtlRow]}>
               <View style={styles.metricBox}>
                 <MaterialCommunityIcons name="water-percent" size={20} color={colors.secondary} />
                 <Text style={styles.metricVal}>{weather.humidity}%</Text>
@@ -219,22 +220,22 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
             </View>
 
             {/* Farm Advice */}
-            <View style={[styles.adviceBanner, isRtl && styles.rtlRow]}>
+            <View style={[styles.adviceBanner, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="lightbulb-on" size={18} color={colors.accent} />
-              <Text style={[styles.adviceText, isRtl && styles.rtlText]}>
+              <Text style={[styles.adviceText, isRtl && rtlStyles.rtlText]}>
                 {language === 'ar' ? weather.advice_ar : language === 'fr' ? weather.advice_fr : weather.advice_en}
               </Text>
             </View>
           </Card>
 
-          <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
             <ProvenanceBadge meta={weather.meta} detailed />
             {fromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
           </View>
 
           {/* 5-Day Forecast */}
           <View style={styles.forecastSection}>
-            <Text style={[styles.forecastHeading, isRtl && styles.rtlText]}>{x.weatherForecast}</Text>
+            <Text style={[styles.forecastHeading, isRtl && rtlStyles.rtlText]}>{x.weatherForecast}</Text>
             {weather.forecast.length === 0 ? (
               <Card variant="outlined">
                 <StateView kind="empty" title={x.stateEmpty} message={x.weatherForecastEmpty} compact />
@@ -242,9 +243,9 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
             ) : (
               weather.forecast.map((day, idx) => (
                 <Card key={idx} variant="outlined" style={styles.forecastCard}>
-                  <View style={[styles.forecastRow, isRtl && styles.rtlRow]}>
-                    <Text style={[styles.dayText, isRtl && styles.rtlText]}>{formatDay(day.date, language)}</Text>
-                    <View style={[styles.forecastConditionRow, isRtl && styles.rtlRow]}>
+                  <View style={[styles.forecastRow, isRtl && rtlStyles.rtlRow]}>
+                    <Text style={[styles.dayText, isRtl && rtlStyles.rtlText]}>{formatDay(day.date, language)}</Text>
+                    <View style={[styles.forecastConditionRow, isRtl && rtlStyles.rtlRow]}>
                       <MaterialCommunityIcons
                         name={weatherIcon(day.icon)}
                         size={20}
@@ -256,7 +257,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
                           : weatherConditionLabel(day.icon, language, day.condition_ar)}
                       </Text>
                     </View>
-                    <View style={[styles.tempMinMax, isRtl && styles.rtlRow]}>
+                    <View style={[styles.tempMinMax, isRtl && rtlStyles.rtlRow]}>
                       <Text style={styles.tempMax}>{day.temp_max}°</Text>
                       <Text style={styles.tempMin}> / {day.temp_min}°</Text>
                     </View>
@@ -323,10 +324,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing['3xl'],
   },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   locationBtn: {
     flexDirection: 'row',
     alignItems: 'center',

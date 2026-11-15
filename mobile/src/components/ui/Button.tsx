@@ -1,4 +1,5 @@
 import React from 'react';
+import { rtlStyles } from '../../theme/rtl';
 import {
   TouchableOpacity,
   Text,
@@ -102,7 +103,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator color={getTextColor()} size="small" />
       ) : (
-        <View style={[styles.content, isRtl && styles.rtlRow]}>
+        <View style={[styles.content, isRtl && rtlStyles.rtlRow]}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}
           <Text
             style={[
@@ -121,7 +122,6 @@ export const Button: React.FC<ButtonProps> = ({
 };
 
 const styles = StyleSheet.create({
-  rtlRow: { flexDirection: 'row-reverse' },
   base: {
     borderRadius: radius.md,
     alignItems: 'center',

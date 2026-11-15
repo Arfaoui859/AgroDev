@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -19,8 +20,8 @@ export const LimitationsNotice: React.FC<LimitationsNoticeProps> = ({ title, tex
   const { isRtl } = useLanguage();
   return (
     <View style={[styles.box, style]}>
-      <Text style={[styles.title, isRtl && styles.rtlText]}>{title}</Text>
-      <Text style={[styles.text, isRtl && styles.rtlText]}>{text}</Text>
+      <Text style={[styles.title, isRtl && rtlStyles.rtlText]}>{title}</Text>
+      <Text style={[styles.text, isRtl && rtlStyles.rtlText]}>{text}</Text>
     </View>
   );
 };
@@ -40,5 +41,4 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   text: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

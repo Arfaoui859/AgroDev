@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { colors, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -21,11 +22,11 @@ interface ScreenHeadingProps {
 export const ScreenHeading: React.FC<ScreenHeadingProps> = ({ title, subtitle, leading, style }) => {
   const { isRtl } = useLanguage();
   return (
-    <View style={[styles.headerBox, isRtl && styles.rtlRow, style]}>
+    <View style={[styles.headerBox, isRtl && rtlStyles.rtlRow, style]}>
       {leading}
       <View style={styles.textWrap}>
-        <Text style={[styles.title, isRtl && styles.rtlText]}>{title}</Text>
-        {subtitle ? <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{subtitle}</Text> : null}
+        <Text style={[styles.title, isRtl && rtlStyles.rtlText]}>{title}</Text>
+        {subtitle ? <Text style={[styles.subtitle, isRtl && rtlStyles.rtlText]}>{subtitle}</Text> : null}
       </View>
     </View>
   );
@@ -51,6 +52,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 3,
   },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

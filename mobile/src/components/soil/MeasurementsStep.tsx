@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -128,36 +129,36 @@ export const MeasurementsStep: React.FC<MeasurementsStepProps> = ({ initial, onC
   return (
     <View>
       <Card variant="elevated" style={styles.card}>
-        <Text style={[styles.heading, isRtl && styles.rtlText]}>{s9.measurementsHeading}</Text>
-        <Text style={[styles.sub, isRtl && styles.rtlText]}>{s9.measurementsSubtitle}</Text>
+        <Text style={[styles.heading, isRtl && rtlStyles.rtlText]}>{s9.measurementsHeading}</Text>
+        <Text style={[styles.sub, isRtl && rtlStyles.rtlText]}>{s9.measurementsSubtitle}</Text>
 
-        <Text style={[styles.groupTitle, isRtl && styles.rtlText]}>{s9.groupCore}</Text>
+        <Text style={[styles.groupTitle, isRtl && rtlStyles.rtlText]}>{s9.groupCore}</Text>
         {CORE_MEASUREMENTS.map((def) => (
           <MeasurementField key={def.key} def={def} values={state.values} onChange={setValue} />
         ))}
 
         {state.values.electricalConductivity?.trim() ? (
           <View style={styles.subBlock}>
-            <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.ecUnitLabel}</Text>
+            <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.ecUnitLabel}</Text>
             <ChipSelect options={ecUnitOptions} selected={state.ecUnit} onSelect={(v) => update({ ecUnit: v })} />
             <View style={{ height: spacing.sm }} />
             <FormField label={s9.unitMethodLabel} value={state.ecMethod} onChangeText={(v) => update({ ecMethod: v })} placeholder="1:5, ECe…" keyboard="default" />
           </View>
         ) : null}
 
-        <Text style={[styles.groupTitle, isRtl && styles.rtlText]}>{s9.groupNutrients}</Text>
+        <Text style={[styles.groupTitle, isRtl && rtlStyles.rtlText]}>{s9.groupNutrients}</Text>
         {NUTRIENT_MEASUREMENTS.map((def) => (
           <MeasurementField key={def.key} def={def} values={state.values} onChange={setValue} />
         ))}
         <View style={styles.subBlock}>
-          <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.unitMethodLabel}</Text>
+          <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.unitMethodLabel}</Text>
           <ChipSelect options={nutrientUnitOptions} selected={state.nutrientUnit} onSelect={(v) => update({ nutrientUnit: v })} clearable />
           <View style={{ height: spacing.sm }} />
           <FormField label={s9.unitMethodLabel} value={state.nutrientMethod} onChangeText={(v) => update({ nutrientMethod: v })} hint={s9.nutrientUnitHint} keyboard="default" />
         </View>
 
-        <Text style={[styles.groupTitle, isRtl && styles.rtlText]}>{s9.groupTexture}</Text>
-        <Text style={[styles.groupHint, isRtl && styles.rtlText]}>{s9.textureHint}</Text>
+        <Text style={[styles.groupTitle, isRtl && rtlStyles.rtlText]}>{s9.groupTexture}</Text>
+        <Text style={[styles.groupHint, isRtl && rtlStyles.rtlText]}>{s9.textureHint}</Text>
         {TEXTURE_MEASUREMENTS.map((def) => (
           <MeasurementField key={def.key} def={def} values={state.values} onChange={setValue} />
         ))}
@@ -169,24 +170,24 @@ export const MeasurementsStep: React.FC<MeasurementsStepProps> = ({ initial, onC
 
         {showAdvanced ? (
           <View>
-            <Text style={[styles.groupTitle, isRtl && styles.rtlText]}>{s9.groupAdvanced}</Text>
+            <Text style={[styles.groupTitle, isRtl && rtlStyles.rtlText]}>{s9.groupAdvanced}</Text>
             {ADVANCED_MEASUREMENTS.map((def) => (
               <MeasurementField key={def.key} def={def} values={state.values} onChange={setValue} />
             ))}
 
-            <Text style={[styles.groupTitle, isRtl && styles.rtlText]}>{s9.groupWater}</Text>
+            <Text style={[styles.groupTitle, isRtl && rtlStyles.rtlText]}>{s9.groupWater}</Text>
             {WATER_MEASUREMENTS.map((def) => (
               <MeasurementField key={def.key} def={def} values={state.values} onChange={setValue} />
             ))}
             {state.values.waterElectricalConductivity?.trim() ? (
               <View style={styles.subBlock}>
-                <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.waterEcUnitLabel}</Text>
+                <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.waterEcUnitLabel}</Text>
                 <ChipSelect options={ecUnitOptions} selected={state.waterEcUnit} onSelect={(v) => update({ waterEcUnit: v })} />
               </View>
             ) : null}
 
-            <Text style={[styles.groupTitle, isRtl && styles.rtlText]}>{s9.groupContext}</Text>
-            <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.irrigationMethodLabel}</Text>
+            <Text style={[styles.groupTitle, isRtl && rtlStyles.rtlText]}>{s9.groupContext}</Text>
+            <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.irrigationMethodLabel}</Text>
             <ChipSelect options={irrigationOptions} selected={state.irrigationMethod} onSelect={(v) => update({ irrigationMethod: v })} clearable />
             <View style={{ height: spacing.sm }} />
             <FormField label={s9.samplingDateLabel} value={state.samplingDate} onChangeText={(v) => update({ samplingDate: v })} placeholder="YYYY-MM-DD" keyboard="default" />
@@ -201,7 +202,7 @@ export const MeasurementsStep: React.FC<MeasurementsStepProps> = ({ initial, onC
           </View>
         ) : null}
 
-        <Text style={[styles.note, isRtl && styles.rtlText]}>{s9.optionalFieldNote}</Text>
+        <Text style={[styles.note, isRtl && rtlStyles.rtlText]}>{s9.optionalFieldNote}</Text>
       </Card>
     </View>
   );
@@ -214,7 +215,6 @@ const styles = StyleSheet.create({
   groupTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, marginTop: spacing.sm, marginBottom: spacing.xs },
   groupHint: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginBottom: spacing.xs },
   label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   fieldRtl: {},
   subBlock: { marginTop: spacing.xs },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, marginTop: spacing.sm },

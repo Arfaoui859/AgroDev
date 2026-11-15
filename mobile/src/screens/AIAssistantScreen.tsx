@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { rtlStyles } from '../theme/rtl';
 import {
   View,
   Text,
@@ -132,7 +133,7 @@ export const AIAssistantScreen: React.FC = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.chipsScroll, isRtl && styles.rtlRow]}
+          contentContainerStyle={[styles.chipsScroll, isRtl && rtlStyles.rtlRow]}
         >
           {suggestedPrompts.map((prompt, index) => (
             <TouchableOpacity
@@ -141,7 +142,7 @@ export const AIAssistantScreen: React.FC = () => {
               onPress={() => handleSend(prompt)}
               accessibilityRole="button"
               accessibilityLabel={prompt}
-              style={[styles.promptChip, isRtl && styles.rtlRow]}
+              style={[styles.promptChip, isRtl && rtlStyles.rtlRow]}
             >
               <MaterialCommunityIcons name="lightbulb-outline" size={14} color={colors.primary} />
               <Text style={styles.promptChipText} numberOfLines={1}>
@@ -185,7 +186,7 @@ export const AIAssistantScreen: React.FC = () => {
                   style={[
                     styles.messageText,
                     isUser ? styles.userText : styles.assistantText,
-                    isRtl && styles.rtlText,
+                    isRtl && rtlStyles.rtlText,
                   ]}
                 >
                   {msg.text}
@@ -194,7 +195,7 @@ export const AIAssistantScreen: React.FC = () => {
                   style={[
                     styles.messageTime,
                     isUser ? styles.userTime : styles.assistantTime,
-                    isRtl && styles.rtlText,
+                    isRtl && rtlStyles.rtlText,
                   ]}
                 >
                   {msg.timestamp}
@@ -214,7 +215,7 @@ export const AIAssistantScreen: React.FC = () => {
             <View style={styles.botIcon}>
               <MaterialCommunityIcons name="sprout" size={16} color={colors.primary} />
             </View>
-            <View style={[styles.messageBubble, styles.assistantBubble, styles.loadingBubble, isRtl && styles.rtlRow]}>
+            <View style={[styles.messageBubble, styles.assistantBubble, styles.loadingBubble, isRtl && rtlStyles.rtlRow]}>
               <ActivityIndicator size="small" color={colors.primary} />
               <Text style={styles.loadingText}>{x.assistantPreparing}</Text>
             </View>
@@ -223,9 +224,9 @@ export const AIAssistantScreen: React.FC = () => {
       </ScrollView>
 
       {/* Input Bar */}
-      <View style={[styles.inputContainer, isRtl && styles.rtlRow]}>
+      <View style={[styles.inputContainer, isRtl && rtlStyles.rtlRow]}>
         <TextInput
-          style={[styles.input, isRtl && styles.rtlText]}
+          style={[styles.input, isRtl && rtlStyles.rtlText]}
           placeholder={t.typeYourMessage}
           placeholderTextColor={colors.textMuted}
           value={inputText}
@@ -263,10 +264,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerBanner: {
     backgroundColor: colors.card,
     paddingHorizontal: spacing.lg,

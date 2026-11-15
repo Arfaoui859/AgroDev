@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { rtlStyles } from '../theme/rtl';
 import {
   View,
   Text,
@@ -96,20 +97,20 @@ export const ProfileScreen: React.FC = () => {
     >
       {/* 1. User Profile Header Card */}
       <Card variant="elevated" style={styles.profileCard}>
-        <View style={[styles.avatarRow, isRtl && styles.rtlRow]}>
+        <View style={[styles.avatarRow, isRtl && rtlStyles.rtlRow]}>
           <View style={styles.avatarLarge}>
             <MaterialCommunityIcons name="account" size={40} color={colors.primary} />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[styles.profileName, isRtl && styles.rtlText]}>
+            <Text style={[styles.profileName, isRtl && rtlStyles.rtlText]}>
               {(isArabic ? user?.full_name_ar : user?.full_name) ||
                 user?.full_name ||
                 (isAuthenticated ? x.profileUserFallback : x.profileGuest)}
             </Text>
-            <Text style={[styles.profileEmail, isRtl && styles.rtlText]}>
+            <Text style={[styles.profileEmail, isRtl && rtlStyles.rtlText]}>
               {user?.email || (isAuthenticated ? '' : x.profileSignInPrompt)}
             </Text>
-            <View style={[styles.badgeContainer, isRtl && styles.rtlRow]}>
+            <View style={[styles.badgeContainer, isRtl && rtlStyles.rtlRow]}>
               {isAuthenticated ? (
                 <>
                   <Badge label={roleLabel(user?.role)} variant="primary" size="sm" />
@@ -127,7 +128,7 @@ export const ProfileScreen: React.FC = () => {
             so the header never shows a redundant "manage account" button that
             would only re-open the sign-in form. */}
         {!isAuthenticated && (
-          <View style={[styles.quickAuthRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.quickAuthRow, isRtl && rtlStyles.rtlRow]}>
             <Button
               title={x.authSignIn}
               variant="outline"
@@ -150,7 +151,7 @@ export const ProfileScreen: React.FC = () => {
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'ar' }}
               accessibilityLabel={x.languageArabicLabel}
-              style={[styles.langChoice, isRtl && styles.rtlRow, language === 'ar' && styles.langChoiceActive]}
+              style={[styles.langChoice, isRtl && rtlStyles.rtlRow, language === 'ar' && styles.langChoiceActive]}
             >
               <Text style={[styles.langChoiceText, language === 'ar' && styles.langChoiceTextActive]}>
                 {x.languageArabicLabel}
@@ -166,7 +167,7 @@ export const ProfileScreen: React.FC = () => {
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'fr' }}
               accessibilityLabel={'Français'}
-              style={[styles.langChoice, isRtl && styles.rtlRow, language === 'fr' && styles.langChoiceActive]}
+              style={[styles.langChoice, isRtl && rtlStyles.rtlRow, language === 'fr' && styles.langChoiceActive]}
             >
               <Text style={[styles.langChoiceText, language === 'fr' && styles.langChoiceTextActive]}>
                 Français
@@ -182,7 +183,7 @@ export const ProfileScreen: React.FC = () => {
               accessibilityRole="button"
               accessibilityState={{ selected: language === 'en' }}
               accessibilityLabel={'English'}
-              style={[styles.langChoice, isRtl && styles.rtlRow, language === 'en' && styles.langChoiceActive]}
+              style={[styles.langChoice, isRtl && rtlStyles.rtlRow, language === 'en' && styles.langChoiceActive]}
             >
               <Text style={[styles.langChoiceText, language === 'en' && styles.langChoiceTextActive]}>
                 English
@@ -199,7 +200,7 @@ export const ProfileScreen: React.FC = () => {
       <View style={styles.section}>
         <SectionHeader title={t.connectionStatus} />
         <Card variant="outlined" style={styles.statusCard}>
-          <View style={[styles.statusRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.statusRow, isRtl && rtlStyles.rtlRow]}>
             <View
               style={[
                 styles.statusIndicatorOnline,
@@ -207,16 +208,16 @@ export const ProfileScreen: React.FC = () => {
               ]}
             />
             <View style={styles.statusTextContainer}>
-              <Text style={[styles.statusMainText, isRtl && styles.rtlText]}>
+              <Text style={[styles.statusMainText, isRtl && rtlStyles.rtlText]}>
                 Express API Gateway
               </Text>
-              <Text style={[styles.statusSubText, isRtl && styles.rtlText]}>
+              <Text style={[styles.statusSubText, isRtl && rtlStyles.rtlText]}>
                 {getApiBaseUrl()}
               </Text>
             </View>
           </View>
 
-          <View style={[styles.statusRow, isRtl && styles.rtlRow, { marginTop: spacing.sm }]}>
+          <View style={[styles.statusRow, isRtl && rtlStyles.rtlRow, { marginTop: spacing.sm }]}>
             <View
               style={[
                 styles.statusIndicatorOnline,
@@ -224,10 +225,10 @@ export const ProfileScreen: React.FC = () => {
               ]}
             />
             <View style={styles.statusTextContainer}>
-              <Text style={[styles.statusMainText, isRtl && styles.rtlText]}>
+              <Text style={[styles.statusMainText, isRtl && rtlStyles.rtlText]}>
                 Supabase PostgreSQL & Auth
               </Text>
-              <Text style={[styles.statusSubText, isRtl && styles.rtlText]}>
+              <Text style={[styles.statusSubText, isRtl && rtlStyles.rtlText]}>
                 {isSupabaseConfigured ? supabaseHost : x.profileSupabaseUnconfigured}
               </Text>
             </View>
@@ -253,11 +254,11 @@ export const ProfileScreen: React.FC = () => {
       {/* 5. Offline Storage & Cache Status */}
       <View style={styles.section}>
         <Card variant="outlined" style={styles.offlineCard}>
-          <View style={[styles.offlineRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.offlineRow, isRtl && rtlStyles.rtlRow]}>
             <MaterialCommunityIcons name="database-check" size={24} color={colors.primary} />
             <View style={styles.offlineTextContainer}>
-              <Text style={[styles.offlineTitle, isRtl && styles.rtlText]}>{t.offlineMode}</Text>
-              <Text style={[styles.offlineSub, isRtl && styles.rtlText]}>{x.profileOfflineDesc}</Text>
+              <Text style={[styles.offlineTitle, isRtl && rtlStyles.rtlText]}>{t.offlineMode}</Text>
+              <Text style={[styles.offlineSub, isRtl && rtlStyles.rtlText]}>{x.profileOfflineDesc}</Text>
             </View>
           </View>
           <Button
@@ -303,10 +304,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
-  rtlRow: {
-    flexDirection: 'row-reverse',
-  },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   profileCard: {
     padding: spacing.lg,
     marginBottom: spacing.lg,

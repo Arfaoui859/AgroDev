@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -34,12 +35,12 @@ export const FormField: React.FC<FormFieldProps> = ({
   const { isRtl } = useLanguage();
   return (
     <View style={[styles.group, style]}>
-      <View style={[styles.labelRow, isRtl && styles.rtlRow]}>
-        <Text style={[styles.label, isRtl && styles.rtlText]}>{label}</Text>
+      <View style={[styles.labelRow, isRtl && rtlStyles.rtlRow]}>
+        <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{label}</Text>
         {suffix ? <Text style={styles.suffix}>{suffix}</Text> : null}
       </View>
       <TextInput
-        style={[styles.input, isRtl && styles.rtlText]}
+        style={[styles.input, isRtl && rtlStyles.rtlText]}
         keyboardType={keyboard}
         inputMode={keyboard === 'default' ? 'text' : 'decimal'}
         value={value}
@@ -48,7 +49,7 @@ export const FormField: React.FC<FormFieldProps> = ({
         placeholderTextColor={colors.textMuted}
         accessibilityLabel={label}
       />
-      {hint ? <Text style={[styles.hint, isRtl && styles.rtlText]}>{hint}</Text> : null}
+      {hint ? <Text style={[styles.hint, isRtl && rtlStyles.rtlText]}>{hint}</Text> : null}
     </View>
   );
 };
@@ -56,8 +57,6 @@ export const FormField: React.FC<FormFieldProps> = ({
 const styles = StyleSheet.create({
   group: { marginBottom: spacing.sm },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   label: { flex: 1, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, lineHeight: typography.lineHeights.xs },
   suffix: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
   input: {

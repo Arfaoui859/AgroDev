@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -174,7 +175,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       />
 
       <Card variant="elevated" style={styles.uploadCard}>
-        <Text style={[styles.stepHeading, isRtl && styles.rtlText]}>{x.diseaseStepImage}</Text>
+        <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.diseaseStepImage}</Text>
 
         {imageUri ? (
           <View style={styles.previewContainer}>
@@ -195,7 +196,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={[styles.buttonsRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.buttonsRow, isRtl && rtlStyles.rtlRow]}>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => setShowScanner(true)}
@@ -222,8 +223,8 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       </Card>
 
       <View style={styles.section}>
-        <Text style={[styles.stepHeading, isRtl && styles.rtlText]}>{x.diseaseStepCrop}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.cropsScroll, isRtl && styles.rtlRow]}>
+        <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.diseaseStepCrop}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.cropsScroll, isRtl && rtlStyles.rtlRow]}>
           {CROP_CHOICES.map((c) => {
             const selected = selectedCrop === c.id;
             return (
@@ -234,7 +235,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 accessibilityLabel={x[c.labelKey]}
-                style={[styles.cropChip, isRtl && styles.rtlRow, selected && styles.cropChipSelected]}
+                style={[styles.cropChip, isRtl && rtlStyles.rtlRow, selected && styles.cropChipSelected]}
               >
                 <MaterialCommunityIcons name={c.icon as any} size={18} color={selected ? colors.textInverse : colors.primary} />
                 <Text style={[styles.cropChipText, selected && styles.cropChipTextSelected]}>{x[c.labelKey]}</Text>
@@ -245,8 +246,8 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.stepHeading, isRtl && styles.rtlText]}>{x.diseaseStepPart}</Text>
-        <View style={[styles.partsRow, isRtl && styles.rtlRow]}>
+        <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.diseaseStepPart}</Text>
+        <View style={[styles.partsRow, isRtl && rtlStyles.rtlRow]}>
           {PART_CHOICES.map((p) => {
             const selected = selectedPart === p.id;
             return (
@@ -267,9 +268,9 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.stepHeading, isRtl && styles.rtlText]}>{x.scannerSymptomsLabel}</Text>
+        <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.scannerSymptomsLabel}</Text>
         <TextInput
-          style={[styles.symptomsInput, isRtl && styles.rtlText]}
+          style={[styles.symptomsInput, isRtl && rtlStyles.rtlText]}
           placeholder={x.scannerSymptomsPlaceholder}
           placeholderTextColor={colors.textMuted}
           value={symptomsInput}
@@ -306,12 +307,12 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
 
       {result ? (
         <Card variant="elevated" style={styles.resultCard}>
-          <View style={[styles.resultTopRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.resultTopRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.resultDiseaseHeader}>
-              <Text style={[styles.diseaseTitleAr, isRtl && styles.rtlText]}>
+              <Text style={[styles.diseaseTitleAr, isRtl && rtlStyles.rtlText]}>
                 {language === 'ar' ? result.diseaseNameAr : result.diseaseName}
               </Text>
-              <Text style={[styles.diseaseTitleEn, isRtl && styles.rtlText]}>
+              <Text style={[styles.diseaseTitleEn, isRtl && rtlStyles.rtlText]}>
                 {language === 'ar' ? result.diseaseName : result.diseaseNameAr}
               </Text>
             </View>
@@ -323,7 +324,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
             ) : null}
           </View>
 
-          <View style={[styles.badgesRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.badgesRow, isRtl && rtlStyles.rtlRow]}>
             <Badge
               label={`${x.scannerSeverityLabel}: ${severityLabel(result.severity, x)}`}
               variant={severityVariant(result.severity)}
@@ -333,11 +334,11 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           </View>
 
           {result.descriptionAr ? (
-            <Text style={[styles.diseaseDesc, isRtl && styles.rtlText]}>{result.descriptionAr}</Text>
+            <Text style={[styles.diseaseDesc, isRtl && rtlStyles.rtlText]}>{result.descriptionAr}</Text>
           ) : null}
 
           {resultIsArabicOnly ? (
-            <Text style={[styles.arabicNote, isRtl && styles.rtlText]}>{x.arabicOnlyNote}</Text>
+            <Text style={[styles.arabicNote, isRtl && rtlStyles.rtlText]}>{x.arabicOnlyNote}</Text>
           ) : null}
 
           {result.symptoms.length ? (
@@ -381,17 +382,15 @@ const Block: React.FC<{ title: string; children: React.ReactNode }> = ({ title, 
 );
 
 const Bullet: React.FC<{ text: string; color: string; isRtl: boolean }> = ({ text, color, isRtl }) => (
-  <View style={[styles.bulletItem, isRtl && styles.rtlRow]}>
+  <View style={[styles.bulletItem, isRtl && rtlStyles.rtlRow]}>
     <MaterialCommunityIcons name="circle-medium" size={16} color={color} />
-    <Text style={[styles.bulletText, isRtl && styles.rtlText]}>{text}</Text>
+    <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{text}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   uploadCard: { padding: spacing.md, marginBottom: spacing.md },
   stepHeading: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: spacing.sm },
   previewContainer: { position: 'relative', borderRadius: radius.md, overflow: 'hidden' },

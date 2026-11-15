@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -238,16 +239,16 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
       />
 
       {initialContext ? (
-        <View style={[styles.reuseBanner, isRtl && styles.rtlRow]}>
+        <View style={[styles.reuseBanner, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="database-check-outline" size={18} color={colors.info} />
-          <Text style={[styles.reuseText, isRtl && styles.rtlText]}>{s9.reuseDataNote}</Text>
+          <Text style={[styles.reuseText, isRtl && rtlStyles.rtlText]}>{s9.reuseDataNote}</Text>
         </View>
       ) : null}
 
       {!initialContext ? (
         <Card variant="elevated" style={styles.inputCard}>
-          <Text style={[styles.inputHeading, isRtl && styles.rtlText]}>{s9.cropEvaluateOwn}</Text>
-          <View style={[styles.inputRow, isRtl && styles.rtlRow]}>
+          <Text style={[styles.inputHeading, isRtl && rtlStyles.rtlText]}>{s9.cropEvaluateOwn}</Text>
+          <View style={[styles.inputRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.halfField}>
               <FormField label={x.cropSoilPh} value={ph} onChangeText={setPh} placeholder="6.5 - 8.5" />
             </View>
@@ -256,7 +257,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
             </View>
           </View>
           <FormField label={x.cropArea} value={area} onChangeText={setArea} placeholder="1" suffix="ha" />
-          <Text style={[styles.hint, isRtl && styles.rtlText]}>{x.cropInputsHint}</Text>
+          <Text style={[styles.hint, isRtl && rtlStyles.rtlText]}>{x.cropInputsHint}</Text>
           <Button title={loading ? t.analyzing : x.cropCompute} onPress={handleManual} loading={loading} size="md" />
         </Card>
       ) : null}
@@ -281,14 +282,14 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
 
       {!loading && crops.length > 0 ? (
         <>
-          <View style={[styles.provBar, isRtl && styles.rtlRow]}>
+          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
             {meta ? <ProvenanceBadge meta={meta} detailed /> : null}
           </View>
           {source === 'plot' ? (
-            <Text style={[styles.sectionNote, isRtl && styles.rtlText]}>{s9.cropFromPlotTitle}</Text>
+            <Text style={[styles.sectionNote, isRtl && rtlStyles.rtlText]}>{s9.cropFromPlotTitle}</Text>
           ) : null}
           {resultIsArabicOnly ? (
-            <Text style={[styles.arabicNote, isRtl && styles.rtlText]}>{x.arabicOnlyNote}</Text>
+            <Text style={[styles.arabicNote, isRtl && rtlStyles.rtlText]}>{x.arabicOnlyNote}</Text>
           ) : null}
 
           <FormField
@@ -308,12 +309,12 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
           <View style={styles.cropsList}>
             {visibleCrops.map((crop, index) => (
               <Card key={`${crop.id}-${index}`} variant="elevated" style={styles.cropCard}>
-                <View style={[styles.cropHeader, isRtl && styles.rtlRow]}>
+                <View style={[styles.cropHeader, isRtl && rtlStyles.rtlRow]}>
                   <View style={styles.cropTitleBox}>
-                    <Text style={[styles.cropNameAr, isRtl && styles.rtlText]}>
+                    <Text style={[styles.cropNameAr, isRtl && rtlStyles.rtlText]}>
                       {language === 'ar' ? crop.nameAr : cropName(crop.name, language)}
                     </Text>
-                    <Text style={[styles.cropCategory, isRtl && styles.rtlText]}>
+                    <Text style={[styles.cropCategory, isRtl && rtlStyles.rtlText]}>
                       {[cropCategory(crop.category, language), cropSeason(crop.season, language)]
                         .filter(Boolean)
                         .join(' • ')}
@@ -325,7 +326,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
                   </View>
                 </View>
 
-                <View style={[styles.metricsRow, isRtl && styles.rtlRow]}>
+                <View style={[styles.metricsRow, isRtl && rtlStyles.rtlRow]}>
                   {crop.waterNeed ? (
                     <View style={styles.metricItem}>
                       <Text style={styles.metricLabel}>{s9.cropWater}</Text>
@@ -346,9 +347,9 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
                 </View>
 
                 {crop.reasonsAr ? (
-                  <View style={[styles.tipsBox, isRtl && styles.rtlRow]}>
+                  <View style={[styles.tipsBox, isRtl && rtlStyles.rtlRow]}>
                     <MaterialCommunityIcons name="lightbulb-on" size={16} color={colors.accent} />
-                    <Text style={[styles.tipsText, isRtl && styles.rtlText]}>{crop.reasonsAr}</Text>
+                    <Text style={[styles.tipsText, isRtl && rtlStyles.rtlText]}>{crop.reasonsAr}</Text>
                   </View>
                 ) : null}
 
@@ -375,8 +376,6 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   reuseBanner: {
     flexDirection: 'row',
     alignItems: 'center',

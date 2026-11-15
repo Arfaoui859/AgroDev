@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -36,10 +37,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const { isRtl } = useLanguage();
   const showClear = !onSubmit && value.length > 0;
   return (
-    <View style={[styles.bar, isRtl && styles.rtlRow]}>
+    <View style={[styles.bar, isRtl && rtlStyles.rtlRow]}>
       <MaterialCommunityIcons name="magnify" size={22} color={colors.textMuted} />
       <TextInput
-        style={[styles.input, isRtl && styles.rtlText]}
+        style={[styles.input, isRtl && rtlStyles.rtlText]}
         placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
         value={value}
@@ -98,6 +99,4 @@ const styles = StyleSheet.create({
   },
   actionButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.sm },
   flipIcon: { transform: [{ scaleX: -1 }] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

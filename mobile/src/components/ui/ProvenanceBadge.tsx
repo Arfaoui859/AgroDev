@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -46,13 +47,13 @@ export const ProvenanceBadge: React.FC<ProvenanceBadgeProps> = ({ meta, detailed
 
   return (
     <View style={[styles.wrapper, isRtl && styles.rtlWrapper]}>
-      <View style={[styles.badge, isRtl && styles.rtlRow, { backgroundColor: palette.bg }]}>
+      <View style={[styles.badge, isRtl && rtlStyles.rtlRow, { backgroundColor: palette.bg }]}>
         <MaterialCommunityIcons name={icon} size={13} color={palette.fg} />
         <Text style={[styles.label, { color: palette.fg }]}>{label}</Text>
       </View>
-      {detailed && meta.source ? <Text style={[styles.source, isRtl && styles.rtlText]}>{meta.source}</Text> : null}
+      {detailed && meta.source ? <Text style={[styles.source, isRtl && rtlStyles.rtlText]}>{meta.source}</Text> : null}
       {detailed && meta.disclaimer ? (
-        <Text style={[styles.disclaimer, isRtl && styles.rtlText]}>{meta.disclaimer}</Text>
+        <Text style={[styles.disclaimer, isRtl && rtlStyles.rtlText]}>{meta.disclaimer}</Text>
       ) : null}
     </View>
   );
@@ -65,8 +66,6 @@ const styles = StyleSheet.create({
   rtlWrapper: {
     alignItems: 'flex-end',
   },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  rtlRow: { flexDirection: 'row-reverse' },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',

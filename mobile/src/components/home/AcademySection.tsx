@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -43,7 +44,7 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.row, isRtl && styles.rtlRow]}
+        contentContainerStyle={[styles.row, isRtl && rtlStyles.rtlRow]}
       >
         {ACADEMY_TOPICS.map((topic) => {
           const tint = TINT[topic.tint];
@@ -62,13 +63,13 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
               <View style={[styles.iconWrap, { backgroundColor: tint.bg }]}>
                 <MaterialCommunityIcons name={topic.icon as any} size={26} color={tint.color} />
               </View>
-              <Text style={[styles.cardTitle, isRtl && styles.rtlText]} numberOfLines={1}>
+              <Text style={[styles.cardTitle, isRtl && rtlStyles.rtlText]} numberOfLines={1}>
                 {title}
               </Text>
-              <Text style={[styles.cardDesc, isRtl && styles.rtlText]} numberOfLines={2}>
+              <Text style={[styles.cardDesc, isRtl && rtlStyles.rtlText]} numberOfLines={2}>
                 {desc}
               </Text>
-              <View style={[styles.actionRow, isRtl && styles.rtlRow]}>
+              <View style={[styles.actionRow, isRtl && rtlStyles.rtlRow]}>
                 <MaterialCommunityIcons
                   name={topic.videoCategory ? 'play-circle-outline' : 'arrow-top-right'}
                   size={14}
@@ -87,8 +88,6 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   row: { gap: spacing.md, paddingVertical: 2 },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   card: {
     width: 168,
     backgroundColor: colors.card,

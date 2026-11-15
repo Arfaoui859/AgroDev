@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -209,7 +210,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
       {step === 1 ? (
         <>
           <MeasurementsStep initial={measurements} onChange={setMeasurements} />
-          <Text style={[styles.blankNote, isRtl && styles.rtlText]}>{x.soilBlankNote}</Text>
+          <Text style={[styles.blankNote, isRtl && rtlStyles.rtlText]}>{x.soilBlankNote}</Text>
 
           {error ? (
             <Card variant="outlined" style={styles.formCard}>
@@ -236,21 +237,21 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
       {step === 2 && report ? (
         <View style={styles.resultContainer}>
           <Card variant="elevated" style={styles.gradeCard}>
-            <View style={[styles.resultHeader, isRtl && styles.rtlRow]}>
+            <View style={[styles.resultHeader, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="file-document-check-outline" size={22} color={colors.primary} />
-              <Text style={[styles.resultHeading, isRtl && styles.rtlText]}>
+              <Text style={[styles.resultHeading, isRtl && rtlStyles.rtlText]}>
                 {selectedField ? `${s9.reportReportOf}: ${selectedField.name}` : s9.reportTitle}
               </Text>
             </View>
             <View style={styles.provWrap}>
               <ProvenanceBadge meta={report.meta} detailed />
             </View>
-            <Text style={[styles.persistNote, isRtl && styles.rtlText]}>
+            <Text style={[styles.persistNote, isRtl && rtlStyles.rtlText]}>
               {report.persisted ? s9.reportPersistedNote : s9.reportNotPersistedNote}
             </Text>
           </Card>
 
-          <Text style={[styles.arabicNote, isRtl && styles.rtlText]}>{s9.reportLanguageNote}</Text>
+          <Text style={[styles.arabicNote, isRtl && rtlStyles.rtlText]}>{s9.reportLanguageNote}</Text>
 
           <SoilReportView report={report.report} />
 
@@ -262,7 +263,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
                 icon={<MaterialCommunityIcons name="sprout" size={18} color={colors.primaryForeground} />}
                 style={{ marginBottom: spacing.sm }}
               />
-              <Text style={[styles.ctaSub, isRtl && styles.rtlText]}>{s9.findCropsCtaSub}</Text>
+              <Text style={[styles.ctaSub, isRtl && rtlStyles.rtlText]}>{s9.findCropsCtaSub}</Text>
             </>
           ) : null}
         </View>
@@ -270,23 +271,23 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
 
       {step === 2 && ruleResult ? (
         <View style={styles.resultContainer}>
-          <View style={[styles.resultHeader, isRtl && styles.rtlRow]}>
+          <View style={[styles.resultHeader, isRtl && rtlStyles.rtlRow]}>
             <MaterialCommunityIcons name="check-decagram" size={24} color={colors.primary} />
-            <Text style={[styles.resultHeading, isRtl && styles.rtlText]}>{t.resultTitle}</Text>
+            <Text style={[styles.resultHeading, isRtl && rtlStyles.rtlText]}>{t.resultTitle}</Text>
             <Badge label={localizeSoilGrade(ruleResult.fertilityLevel, x)} variant="success" size="md" />
           </View>
 
           <Card variant="elevated" style={styles.gradeCard}>
-            <View style={[styles.gradeRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.gradeRow, isRtl && rtlStyles.rtlRow]}>
               <View style={styles.scoreCircle}>
                 <Text style={styles.scoreNumber}>{ruleResult.gradeScore}</Text>
                 <Text style={styles.scoreMax}>/100</Text>
               </View>
               <View style={styles.gradeDetails}>
-                <Text style={[styles.gradeTitle, isRtl && styles.rtlText]}>
+                <Text style={[styles.gradeTitle, isRtl && rtlStyles.rtlText]}>
                   {x.soilFertilityScore}: {localizeSoilGrade(ruleResult.fertilityLevel, x)}
                 </Text>
-                <Text style={[styles.gradeDesc, isRtl && styles.rtlText]}>{ruleResult.interpretationAr}</Text>
+                <Text style={[styles.gradeDesc, isRtl && rtlStyles.rtlText]}>{ruleResult.interpretationAr}</Text>
               </View>
             </View>
             <View style={styles.provWrap}>
@@ -295,7 +296,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
           </Card>
 
           {ruleResultIsArabicOnly ? (
-            <Text style={[styles.arabicNote, isRtl && styles.rtlText]}>{x.arabicOnlyNote}</Text>
+            <Text style={[styles.arabicNote, isRtl && rtlStyles.rtlText]}>{x.arabicOnlyNote}</Text>
           ) : null}
 
           {ruleResult.problems.length ? (
@@ -318,11 +319,11 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
             <SubSection title={x.soilFindings} isRtl={isRtl}>
               {ruleResult.findings.map((f, idx) => (
                 <Card key={idx} variant="outlined" style={styles.findingCard}>
-                  <View style={[styles.findingHeader, isRtl && styles.rtlRow]}>
+                  <View style={[styles.findingHeader, isRtl && rtlStyles.rtlRow]}>
                     <Text style={styles.findingParam}>{soilParamLabel(f.parameter, f.labelAr, language)}</Text>
                     {f.value !== null ? <Badge label={String(f.value)} variant="secondary" size="sm" /> : null}
                   </View>
-                  <Text style={[styles.findingText, isRtl && styles.rtlText]}>{f.messageAr}</Text>
+                  <Text style={[styles.findingText, isRtl && rtlStyles.rtlText]}>{f.messageAr}</Text>
                 </Card>
               ))}
             </SubSection>
@@ -344,7 +345,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
                 icon={<MaterialCommunityIcons name="sprout" size={18} color={colors.primaryForeground} />}
                 style={{ marginTop: spacing.md, marginBottom: spacing.sm }}
               />
-              <Text style={[styles.ctaSub, isRtl && styles.rtlText]}>{s9.findCropsCtaSub}</Text>
+              <Text style={[styles.ctaSub, isRtl && rtlStyles.rtlText]}>{s9.findCropsCtaSub}</Text>
             </>
           ) : null}
         </View>
@@ -361,23 +362,21 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
 
 const SubSection: React.FC<{ title: string; isRtl: boolean; children: React.ReactNode }> = ({ title, isRtl, children }) => (
   <View style={styles.subSection}>
-    <Text style={[styles.subSectionTitle, isRtl && styles.rtlText]}>{title}</Text>
+    <Text style={[styles.subSectionTitle, isRtl && rtlStyles.rtlText]}>{title}</Text>
     {children}
   </View>
 );
 
 const Bullet: React.FC<{ text: string; color: string; isRtl: boolean }> = ({ text, color, isRtl }) => (
-  <View style={[styles.bulletRow, isRtl && styles.rtlRow]}>
+  <View style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
     <View style={[styles.bullet, { backgroundColor: color }]} />
-    <Text style={[styles.bulletText, isRtl && styles.rtlText]}>{text}</Text>
+    <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{text}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.md, lineHeight: typography.lineHeights.xs },
   formCard: { padding: spacing.md, marginBottom: spacing.lg },
   blankNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm, lineHeight: typography.lineHeights.sm },

@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { rtlStyles } from '../theme/rtl';
 import {
   View,
   Text,
@@ -235,13 +236,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
-          <View style={[styles.heroTopRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.heroTopRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.heroTextWrap}>
               <Text style={styles.heroDate}>{formatDate(new Date().toISOString(), language)}</Text>
-              <Text style={[styles.heroTitle, isRtl && styles.rtlText]}>
+              <Text style={[styles.heroTitle, isRtl && rtlStyles.rtlText]}>
                 {t.greeting}{x.listSeparator}{displayName} 👋
               </Text>
-              <Text style={[styles.heroSub, isRtl && styles.rtlText]}>
+              <Text style={[styles.heroSub, isRtl && rtlStyles.rtlText]}>
                 {t.welcomeSub}
                 {user?.governorate ? ` • ${user.governorate}` : ''}
               </Text>
@@ -258,7 +259,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           </View>
 
           {loading ? null : weather ? (
-            <View style={[styles.heroWeatherRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.heroWeatherRow, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons
                 name={weatherIconName(weather.icon) as keyof typeof MaterialCommunityIcons.glyphMap}
                 size={30}
@@ -269,11 +270,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
                 {weatherConditionLabel(weather.icon, language, weather.condition_ar)}
               </Text>
               <View style={styles.heroWeatherSpacer} />
-              <View style={[styles.heroChip, isRtl && styles.rtlRow]}>
+              <View style={[styles.heroChip, isRtl && rtlStyles.rtlRow]}>
                 <MaterialCommunityIcons name="water-percent" size={14} color={colors.textInverse} />
                 <Text style={styles.heroChipText}>{weather.humidity}%</Text>
               </View>
-              <View style={[styles.heroChip, isRtl && styles.rtlRow]}>
+              <View style={[styles.heroChip, isRtl && rtlStyles.rtlRow]}>
                 <MaterialCommunityIcons name="weather-windy" size={14} color={colors.textInverse} />
                 <Text style={styles.heroChipText}>{weather.wind_speed}</Text>
               </View>
@@ -283,7 +284,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
       </View>
 
       {!isOnline ? (
-        <View style={[styles.offlineBanner, isRtl && styles.rtlRow]}>
+        <View style={[styles.offlineBanner, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="wifi-off" size={16} color={colors.warning} />
           <Text style={styles.offlineText}>{x.offlineBanner}</Text>
         </View>
@@ -313,19 +314,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           accessibilityLabel={`${t.weatherTitle}: ${weather.temperature}°C ${weather.governorate}`}
           accessibilityHint={x.weatherOpenDetail}
         >
-          <View style={[styles.weatherHeader, isRtl && styles.rtlRow]}>
-            <View style={[styles.weatherMain, isRtl && styles.rtlRow]}>
+          <View style={[styles.weatherHeader, isRtl && rtlStyles.rtlRow]}>
+            <View style={[styles.weatherMain, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="lightbulb-on" size={20} color={colors.accent} />
               <Text style={styles.weatherAdviceTitle}>{x.homeWeatherAdviceTitle}</Text>
             </View>
             <Badge label={weather.governorate} variant="secondary" size="sm" />
           </View>
 
-          <Text style={[styles.weatherAdviceBody, isRtl && styles.rtlText]} numberOfLines={4}>
+          <Text style={[styles.weatherAdviceBody, isRtl && rtlStyles.rtlText]} numberOfLines={4}>
             {language === 'ar' ? weather.advice_ar : language === 'fr' ? weather.advice_fr : weather.advice_en}
           </Text>
 
-          <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
             <ProvenanceBadge meta={weather.meta} />
             {weatherFromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
             <View style={styles.weatherMoreSpacer} />
@@ -371,19 +372,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
               end={{ x: 1, y: 1 }}
               style={styles.bigActionCard}
             >
-              <View style={[styles.bigActionHeader, isRtl && styles.rtlRow]}>
+              <View style={[styles.bigActionHeader, isRtl && rtlStyles.rtlRow]}>
                 <View style={styles.bigActionIconWrapper}>
                   <MaterialCommunityIcons name={heroAction.icon} size={30} color={colors.textInverse} />
                 </View>
                 <Badge label={heroAction.badge} variant="accent" size="sm" />
               </View>
-              <Text style={[styles.bigActionTitle, isRtl && styles.rtlText]}>{heroAction.title}</Text>
-              <Text style={[styles.bigActionSub, isRtl && styles.rtlText]}>{heroAction.sub}</Text>
+              <Text style={[styles.bigActionTitle, isRtl && rtlStyles.rtlText]}>{heroAction.title}</Text>
+              <Text style={[styles.bigActionSub, isRtl && rtlStyles.rtlText]}>{heroAction.sub}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           {tileRows.map((row, rowIndex) => (
-            <View key={rowIndex} style={[styles.tilesRow, isRtl && styles.rtlRow]}>
+            <View key={rowIndex} style={[styles.tilesRow, isRtl && rtlStyles.rtlRow]}>
               {row.map((tile) => (
                 <ActionTile
                   key={tile.serviceId}
@@ -409,13 +410,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         accessibilityLabel={`${t.askAssistant}. ${t.assistantPrompt}`}
         style={styles.assistantBanner}
       >
-        <View style={[styles.assistantBannerInner, isRtl && styles.rtlRow]}>
+        <View style={[styles.assistantBannerInner, isRtl && rtlStyles.rtlRow]}>
           <View style={styles.assistantIconCircle}>
             <MaterialCommunityIcons name="robot" size={28} color={colors.primary} />
           </View>
           <View style={styles.assistantTextContainer}>
-            <Text style={[styles.assistantBannerTitle, isRtl && styles.rtlText]}>{t.askAssistant}</Text>
-            <Text style={[styles.assistantBannerSub, isRtl && styles.rtlText]}>{t.assistantPrompt}</Text>
+            <Text style={[styles.assistantBannerTitle, isRtl && rtlStyles.rtlText]}>{t.askAssistant}</Text>
+            <Text style={[styles.assistantBannerSub, isRtl && rtlStyles.rtlText]}>{t.assistantPrompt}</Text>
           </View>
           <MaterialCommunityIcons
             name={isRtl ? 'chevron-left' : 'chevron-right'}
@@ -484,7 +485,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           <View style={{ gap: spacing.sm }}>
             {alerts.slice(0, 3).map((alert) => (
               <Card key={alert.id} variant="elevated" style={styles.alertCard}>
-                <View style={[styles.alertRow, isRtl && styles.rtlRow]}>
+                <View style={[styles.alertRow, isRtl && rtlStyles.rtlRow]}>
                   <View
                     style={[
                       styles.alertIconWrap,
@@ -498,10 +499,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
                     />
                   </View>
                   <View style={styles.alertTextWrap}>
-                    <Text style={[styles.alertTitle, isRtl && styles.rtlText]} numberOfLines={1}>
+                    <Text style={[styles.alertTitle, isRtl && rtlStyles.rtlText]} numberOfLines={1}>
                       {alert.title}
                     </Text>
-                    <Text style={[styles.alertMessage, isRtl && styles.rtlText]} numberOfLines={2}>
+                    <Text style={[styles.alertMessage, isRtl && rtlStyles.rtlText]} numberOfLines={2}>
                       {alert.message}
                     </Text>
                   </View>
@@ -518,7 +519,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
       </View>
 
       {serverOk === false ? (
-        <View style={[styles.connectionFooter, isRtl && styles.rtlRow]}>
+        <View style={[styles.connectionFooter, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="server-off" size={14} color={colors.textMuted} />
           <Text style={styles.connectionFooterText}>{t.serverOffline}</Text>
         </View>
@@ -546,10 +547,10 @@ const ActionTile: React.FC<{
     <View style={[styles.actionTileIcon, { backgroundColor: bg }]}>
       <MaterialCommunityIcons name={icon} size={22} color={color} />
     </View>
-    <Text style={[styles.actionTileTitle, isRtl && styles.rtlText]} numberOfLines={1}>
+    <Text style={[styles.actionTileTitle, isRtl && rtlStyles.rtlText]} numberOfLines={1}>
       {title}
     </Text>
-    <Text style={[styles.actionTileSub, isRtl && styles.rtlText]} numberOfLines={2}>
+    <Text style={[styles.actionTileSub, isRtl && rtlStyles.rtlText]} numberOfLines={2}>
       {sub}
     </Text>
   </TouchableOpacity>
@@ -558,8 +559,6 @@ const ActionTile: React.FC<{
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   // Hero gradient surface: rounded, with generous padding and a soft shadow so
   // it reads as the screen's primary anchor rather than a plain card. The shadow
   // sits on the wrapper (not the gradient) so Android keeps its elevation while

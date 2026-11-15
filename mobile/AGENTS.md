@@ -394,3 +394,17 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 52 suites / 250 passed (7 live tests skipped, 2 suites skipped).
 `LimitationsNotice` has its own regression test
 (`tests/unit/limitations-notice.test.tsx`).
+
+### Premium UI polish pass — line-height tokenisation (verified 2026-11)
+
+The theme declared `typography.lineHeights` "instead of ad-hoc line-height
+literals", but 266 call sites still used raw numbers. Every `lineHeight` literal
+in `src` was replaced with the matching `typography.lineHeights` token (the
+values are identical, so nothing moves), and a `fontSizes.display` /
+`lineHeights.display` pair was added for the weather hero numeral (previously a
+bare `54`/`81`). No raw `lineHeight` number remains outside `theme/colors.ts`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 52 suites / 250 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home and the
+tab bar correctly with no spacing regression.

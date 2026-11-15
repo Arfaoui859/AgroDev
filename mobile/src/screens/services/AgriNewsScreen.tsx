@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { rtlStyles } from '../../theme/rtl';
 import {
   View,
   Text,
@@ -115,7 +116,7 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
       />
 
       {result?.categories?.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.catScroll, isRtl && styles.rtlRow]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.catScroll, isRtl && rtlStyles.rtlRow]}>
           <CategoryPill label={x.newsAllCategories} selected={category === null} onPress={() => applyCategory(null)} />
           {result.categories.map((cat) => (
             <CategoryPill
@@ -148,7 +149,7 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
         </Card>
       ) : (
         <>
-          <View style={[styles.provBar, isRtl && styles.rtlRow]}>
+          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
             {result?.meta ? <ProvenanceBadge meta={result.meta} detailed /> : null}
           </View>
 
@@ -161,23 +162,23 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
               accessibilityLabel={article.title}
               accessibilityHint={x.articleOpenSource}
             >
-              <View style={[styles.articleHeader, isRtl && styles.rtlRow]}>
+              <View style={[styles.articleHeader, isRtl && rtlStyles.rtlRow]}>
                 <Badge label={article.sourceName || x.newsUnknownSource} variant="secondary" size="sm" />
                 {article.categories[0] ? (
                   <Badge label={newsCategoryLabel(article.categories[0], language)} variant="info" size="sm" />
                 ) : null}
               </View>
-              <Text style={[styles.articleTitle, isRtl && styles.rtlText]} numberOfLines={3}>
+              <Text style={[styles.articleTitle, isRtl && rtlStyles.rtlText]} numberOfLines={3}>
                 {article.title}
               </Text>
               {article.summary ? (
-                <Text style={[styles.articleSummary, isRtl && styles.rtlText]} numberOfLines={3}>
+                <Text style={[styles.articleSummary, isRtl && rtlStyles.rtlText]} numberOfLines={3}>
                   {article.summary}
                 </Text>
               ) : null}
-              <View style={[styles.articleFooter, isRtl && styles.rtlRow]}>
+              <View style={[styles.articleFooter, isRtl && rtlStyles.rtlRow]}>
                 <Text style={styles.articleDate}>{formatDate(article.publishedAt, language)}</Text>
-                <View style={[styles.readMore, isRtl && styles.rtlRow]}>
+                <View style={[styles.readMore, isRtl && rtlStyles.rtlRow]}>
                   <Text style={styles.readMoreText}>{x.newsReadMore}</Text>
                   <MaterialCommunityIcons name={isRtl ? 'arrow-left' : 'arrow-right'} size={14} color={colors.primary} />
                 </View>
@@ -203,8 +204,6 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
   provBar: { marginBottom: spacing.sm },
   articleCard: { padding: spacing.md, marginBottom: spacing.sm },

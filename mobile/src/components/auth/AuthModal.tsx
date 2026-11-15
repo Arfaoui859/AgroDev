@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { rtlStyles } from '../../theme/rtl';
 import {
   View,
   Text,
@@ -122,8 +123,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
         style={styles.overlay}
       >
         <View style={styles.sheet}>
-          <View style={[styles.header, isRtl && styles.rtlRow]}>
-            <View style={[styles.brandRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.header, isRtl && rtlStyles.rtlRow]}>
+            <View style={[styles.brandRow, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
               <Text style={styles.brandTitle}>AgroGrowth</Text>
             </View>
@@ -137,14 +138,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.title, isRtl && styles.rtlText]}>
+          <Text style={[styles.title, isRtl && rtlStyles.rtlText]}>
             {tab === 'signin' ? x.authWelcomeBack : tab === 'signup' ? x.authCreateAccount : x.authReset}
           </Text>
           {tab !== 'reset' ? (
-            <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{x.authSubtitle}</Text>
+            <Text style={[styles.subtitle, isRtl && rtlStyles.rtlText]}>{x.authSubtitle}</Text>
           ) : null}
 
-          <View style={[styles.tabBar, isRtl && styles.rtlRow]}>
+          <View style={[styles.tabBar, isRtl && rtlStyles.rtlRow]}>
             {(['signin', 'signup', 'reset'] as Tab[]).map((item) => (
               <TouchableOpacity
                 key={item}
@@ -172,7 +173,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
               <>
                 <Field label={x.authFullName} isRtl={isRtl}>
                   <TextInput
-                    style={[styles.input, isRtl && styles.rtlText]}
+                    style={[styles.input, isRtl && rtlStyles.rtlText]}
                     placeholder={x.authFullNamePlaceholder}
                     placeholderTextColor={colors.textMuted}
                     value={fullName}
@@ -183,7 +184,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                 </Field>
                 <Field label={x.authPhone} isRtl={isRtl}>
                   <TextInput
-                    style={[styles.input, isRtl && styles.rtlText]}
+                    style={[styles.input, isRtl && rtlStyles.rtlText]}
                     placeholder="+216 98 000 000"
                     placeholderTextColor={colors.textMuted}
                     keyboardType="phone-pad"
@@ -194,7 +195,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                   />
                 </Field>
                 <Field label={x.authAccountType} isRtl={isRtl}>
-                  <View style={[styles.roleGrid, isRtl && styles.rtlRow]}>
+                  <View style={[styles.roleGrid, isRtl && rtlStyles.rtlRow]}>
                     {ROLE_OPTIONS.map((option) => {
                       const selected = role === option.role;
                       return (
@@ -205,7 +206,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                           accessibilityRole="button"
                           accessibilityState={{ selected }}
                           accessibilityLabel={x[option.labelKey]}
-                          style={[styles.roleChip, isRtl && styles.rtlRow, selected && styles.roleChipSelected]}
+                          style={[styles.roleChip, isRtl && rtlStyles.rtlRow, selected && styles.roleChipSelected]}
                         >
                           <MaterialCommunityIcons
                             name={option.icon as any}
@@ -225,7 +226,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
 
             <Field label={x.authEmail} isRtl={isRtl}>
               <TextInput
-                style={[styles.input, isRtl && styles.rtlText]}
+                style={[styles.input, isRtl && rtlStyles.rtlText]}
                 placeholder="name@example.com"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="email-address"
@@ -242,7 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
             {tab !== 'reset' ? (
               <Field label={x.authPassword} isRtl={isRtl}>
                 <TextInput
-                  style={[styles.input, isRtl && styles.rtlText]}
+                  style={[styles.input, isRtl && rtlStyles.rtlText]}
                   placeholder="••••••••"
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry
@@ -255,7 +256,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
             ) : null}
 
             {error ? (
-              <View style={[styles.errorBox, isRtl && styles.rtlRow]}>
+              <View style={[styles.errorBox, isRtl && rtlStyles.rtlRow]}>
                 <MaterialCommunityIcons name="alert-circle-outline" size={16} color={colors.danger} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
@@ -299,7 +300,7 @@ const Field: React.FC<{ label: string; isRtl: boolean; children: React.ReactNode
   children,
 }) => (
   <View style={styles.field}>
-    <Text style={[styles.label, isRtl && styles.rtlText]}>{label}</Text>
+    <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{label}</Text>
     {children}
   </View>
 );
@@ -428,6 +429,4 @@ const styles = StyleSheet.create({
   switchRow: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: spacing.md },
   switchText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
   switchLink: { color: colors.primary, fontWeight: typography.fontWeights.bold },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

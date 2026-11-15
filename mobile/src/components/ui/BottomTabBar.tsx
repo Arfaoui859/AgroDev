@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +34,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChan
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
-      <View style={[styles.inner, isRtl && styles.rtlRow]}>
+      <View style={[styles.inner, isRtl && rtlStyles.rtlRow]}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
           const isAssistant = tab.key === 'assistant';
@@ -112,9 +113,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     height: 56,
-  },
-  rtlRow: {
-    flexDirection: 'row-reverse',
   },
   tabItem: {
     flex: 1,

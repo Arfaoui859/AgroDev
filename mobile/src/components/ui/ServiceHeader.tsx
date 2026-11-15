@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -23,13 +24,13 @@ export const ServiceHeader: React.FC<ServiceHeaderProps> = ({
   const { isRtl } = useLanguage();
   return (
     <View style={styles.headerBox}>
-      <View style={[styles.titleRow, isRtl && styles.rtlRow]}>
+      <View style={[styles.titleRow, isRtl && rtlStyles.rtlRow]}>
         <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
           <MaterialCommunityIcons name={icon} size={26} color={iconColor} />
         </View>
         <View style={styles.titleTextContainer}>
-          <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{title}</Text>
-          {subtitle ? <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{subtitle}</Text> : null}
+          <Text style={[styles.mainTitle, isRtl && rtlStyles.rtlText]}>{title}</Text>
+          {subtitle ? <Text style={[styles.mainSub, isRtl && rtlStyles.rtlText]}>{subtitle}</Text> : null}
         </View>
       </View>
     </View>
@@ -49,6 +50,4 @@ const styles = StyleSheet.create({
   titleTextContainer: { flex: 1 },
   mainTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
   mainSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.sm },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

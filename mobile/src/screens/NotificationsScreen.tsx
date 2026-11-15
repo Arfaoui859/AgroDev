@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
@@ -117,7 +118,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
         </Card>
       ) : (
         <View style={styles.list}>
-          <View style={[styles.provBar, isRtl && styles.rtlRow]}>
+          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
             <ProvenanceBadge meta={meta} />
           </View>
           {items.map((item) => (
@@ -131,14 +132,14 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
               style={styles.notificationTouchable}
             >
               <Card variant="elevated" style={[styles.card, item.readAt ? null : styles.unreadCard]}>
-                <View style={[styles.cardHeader, isRtl && styles.rtlRow]}>
-                  <Text style={[styles.cardTitle, isRtl && styles.rtlText]}>{item.title}</Text>
+                <View style={[styles.cardHeader, isRtl && rtlStyles.rtlRow]}>
+                  <Text style={[styles.cardTitle, isRtl && rtlStyles.rtlText]}>{item.title}</Text>
                   <Badge label={notificationPriorityLabel(item.priority, x)} variant={priorityVariant(item.priority)} size="sm" />
                 </View>
-                <Text style={[styles.cardMessage, isRtl && styles.rtlText]}>{item.message}</Text>
-                <View style={[styles.cardFooter, isRtl && styles.rtlRow]}>
+                <Text style={[styles.cardMessage, isRtl && rtlStyles.rtlText]}>{item.message}</Text>
+                <View style={[styles.cardFooter, isRtl && rtlStyles.rtlRow]}>
                   {!item.readAt ? (
-                    <View style={[styles.unreadDot, isRtl && styles.rtlRow]}>
+                    <View style={[styles.unreadDot, isRtl && rtlStyles.rtlRow]}>
                       <View style={styles.dot} />
                       <Text style={styles.unreadText}>{x.notificationUnread}</Text>
                     </View>
@@ -161,8 +162,6 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   list: { gap: spacing.sm },
   provBar: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
   notificationTouchable: { minHeight: 48 },

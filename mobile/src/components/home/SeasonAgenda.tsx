@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -40,16 +41,16 @@ export const SeasonAgenda: React.FC = () => {
         trailing={<Badge label={t.homeSeasonGeneral} variant="accent" size="sm" />}
       />
       <Card variant="elevated" style={styles.card}>
-        <View style={[styles.row, isRtl && styles.rtlRow]}>
+        <View style={[styles.row, isRtl && rtlStyles.rtlRow]}>
           <View style={[styles.iconWrap, { backgroundColor: tint.bg }]}>
             <MaterialCommunityIcons name={SEASON_ICON[season]} size={26} color={tint.color} />
           </View>
           <View style={styles.textWrap}>
-            <Text style={[styles.seasonName, isRtl && styles.rtlText]}>{seasonLabel(season, x)}</Text>
-            <Text style={[styles.tip, isRtl && styles.rtlText]}>{seasonTip(season, x)}</Text>
+            <Text style={[styles.seasonName, isRtl && rtlStyles.rtlText]}>{seasonLabel(season, x)}</Text>
+            <Text style={[styles.tip, isRtl && rtlStyles.rtlText]}>{seasonTip(season, x)}</Text>
           </View>
         </View>
-        <Text style={[styles.note, isRtl && styles.rtlText]}>{t.homeSeasonSubtitle}</Text>
+        <Text style={[styles.note, isRtl && rtlStyles.rtlText]}>{t.homeSeasonSubtitle}</Text>
       </Card>
     </View>
   );
@@ -59,8 +60,6 @@ const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   card: { padding: spacing.md },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   iconWrap: {
     width: 46,
     height: 46,

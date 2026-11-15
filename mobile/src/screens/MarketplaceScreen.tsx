@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { rtlStyles } from '../theme/rtl';
 import {
   View,
   Text,
@@ -101,7 +102,7 @@ export const MarketplaceScreen: React.FC = () => {
         </Card>
       ) : (
         <>
-          <View style={[styles.provBar, isRtl && styles.rtlRow]}>
+          <View style={[styles.provBar, isRtl && rtlStyles.rtlRow]}>
             <ProvenanceBadge meta={meta} detailed />
             {fromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
           </View>
@@ -114,13 +115,13 @@ export const MarketplaceScreen: React.FC = () => {
             ) : (
               filteredPrices.map((item) => (
               <Card key={item.id} variant="elevated" style={styles.priceCard}>
-                <View style={[styles.cardHeader, isRtl && styles.rtlRow]}>
+                <View style={[styles.cardHeader, isRtl && rtlStyles.rtlRow]}>
                   <View style={styles.cropInfo}>
-                    <Text style={[styles.cropName, isRtl && styles.rtlText]}>
+                    <Text style={[styles.cropName, isRtl && rtlStyles.rtlText]}>
                       {language === 'ar' ? item.cropNameAr : item.cropName}
                     </Text>
                     {item.marketLocation && item.marketLocation !== '—' ? (
-                      <View style={[styles.locationRow, isRtl && styles.rtlRow]}>
+                      <View style={[styles.locationRow, isRtl && rtlStyles.rtlRow]}>
                         <MaterialCommunityIcons name="map-marker" size={13} color={colors.textMuted} />
                         <Text style={styles.marketLocation}>{item.marketLocation}</Text>
                       </View>
@@ -133,7 +134,7 @@ export const MarketplaceScreen: React.FC = () => {
                   </View>
                 </View>
 
-                <View style={[styles.cardBottomRow, isRtl && styles.rtlRow]}>
+                <View style={[styles.cardBottomRow, isRtl && rtlStyles.rtlRow]}>
                   {item.qualityGrade && item.qualityGrade !== '—' ? (
                     <Badge label={item.qualityGrade} variant="secondary" size="sm" />
                   ) : (
@@ -152,7 +153,7 @@ export const MarketplaceScreen: React.FC = () => {
                                 ? colors.dangerLight
                                 : colors.surfaceSubtle,
                         },
-                        isRtl && styles.rtlRow,
+                        isRtl && rtlStyles.rtlRow,
                       ]}
                     >
                       <MaterialCommunityIcons
@@ -185,11 +186,11 @@ export const MarketplaceScreen: React.FC = () => {
 
       {/* Market intelligence — honest availability of forecast & supply/demand */}
       <Card variant="outlined" style={styles.intelCard}>
-        <View style={[styles.tipRow, isRtl && styles.rtlRow]}>
+        <View style={[styles.tipRow, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={colors.primary} />
           <View style={styles.tipTextContent}>
-            <Text style={[styles.tipTitle, isRtl && styles.rtlText]}>{x.marketIntelTitle}</Text>
-            <Text style={[styles.tipBody, isRtl && styles.rtlText]}>{x.marketIntelNote}</Text>
+            <Text style={[styles.tipTitle, isRtl && rtlStyles.rtlText]}>{x.marketIntelTitle}</Text>
+            <Text style={[styles.tipBody, isRtl && rtlStyles.rtlText]}>{x.marketIntelNote}</Text>
           </View>
         </View>
         <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
@@ -199,11 +200,11 @@ export const MarketplaceScreen: React.FC = () => {
       </Card>
 
       <Card variant="outlined" style={styles.tipCard}>
-        <View style={[styles.tipRow, isRtl && styles.rtlRow]}>
+        <View style={[styles.tipRow, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="information" size={22} color={colors.secondary} />
           <View style={styles.tipTextContent}>
-            <Text style={[styles.tipTitle, isRtl && styles.rtlText]}>{x.marketAboutTitle}</Text>
-            <Text style={[styles.tipBody, isRtl && styles.rtlText]}>{x.marketAboutBody}</Text>
+            <Text style={[styles.tipTitle, isRtl && rtlStyles.rtlText]}>{x.marketAboutTitle}</Text>
+            <Text style={[styles.tipBody, isRtl && rtlStyles.rtlText]}>{x.marketAboutBody}</Text>
           </View>
         </View>
       </Card>
@@ -219,14 +220,14 @@ const MarketIntelRow: React.FC<{
 }> = ({ label, capability, x, isRtl }) => {
   const available = Boolean(capability) && capability!.engine !== 'unavailable' && capability!.available !== false;
   return (
-    <View style={[styles.intelRow, isRtl && styles.rtlRow]}>
-      <View style={[styles.intelLeft, isRtl && styles.rtlRow]}>
+    <View style={[styles.intelRow, isRtl && rtlStyles.rtlRow]}>
+      <View style={[styles.intelLeft, isRtl && rtlStyles.rtlRow]}>
         <MaterialCommunityIcons
           name={available ? 'check-circle' : 'minus-circle-outline'}
           size={16}
           color={available ? colors.success : colors.textMuted}
         />
-        <Text style={[styles.intelLabel, isRtl && styles.rtlText]}>{label}</Text>
+        <Text style={[styles.intelLabel, isRtl && rtlStyles.rtlText]}>{label}</Text>
       </View>
       <Text style={[styles.intelState, { color: available ? colors.success : colors.textMuted }]}>
         {available ? x.aiAvailable : x.aiNotConfigured}
@@ -238,8 +239,6 @@ const MarketIntelRow: React.FC<{
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   intelCard: { marginTop: spacing.md },
   intelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },

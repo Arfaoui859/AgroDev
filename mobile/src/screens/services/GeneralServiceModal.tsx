@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -150,14 +151,14 @@ const IrrigationService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       />
 
       <Card variant="elevated" style={styles.card}>
-        <Text style={[styles.label, isRtl && styles.rtlText]}>{x.irrigationCrop}</Text>
-        <View style={[styles.chipsRow, isRtl && styles.rtlRow]}>
+        <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{x.irrigationCrop}</Text>
+        <View style={[styles.chipsRow, isRtl && rtlStyles.rtlRow]}>
           {CROPS.map((c) => (
             <Chip key={c.value} label={x[c.labelKey]} selected={crop === c.value} onPress={() => setCrop(c.value)} />
           ))}
         </View>
-        <Text style={[styles.label, { marginTop: spacing.md }, isRtl && styles.rtlText]}>{x.irrigationStage}</Text>
-        <View style={[styles.chipsRow, isRtl && styles.rtlRow]}>
+        <Text style={[styles.label, { marginTop: spacing.md }, isRtl && rtlStyles.rtlText]}>{x.irrigationStage}</Text>
+        <View style={[styles.chipsRow, isRtl && rtlStyles.rtlRow]}>
           {STAGES.map((st) => (
             <Chip key={st.value} label={x[st.labelKey]} selected={stage === st.value} onPress={() => setStage(st.value)} />
           ))}
@@ -185,13 +186,13 @@ const IrrigationService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {result ? (
         <Card variant="elevated" style={styles.card}>
-          <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
             <ProvenanceBadge meta={result.meta} detailed />
           </View>
           {climateUsed ? (
-            <View style={[styles.climateNote, isRtl && styles.rtlRow]}>
+            <View style={[styles.climateNote, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="weather-partly-cloudy" size={14} color={colors.secondary} />
-              <Text style={[styles.hint, isRtl && styles.rtlText]}>{x.irrigationWeatherSource}</Text>
+              <Text style={[styles.hint, isRtl && rtlStyles.rtlText]}>{x.irrigationWeatherSource}</Text>
             </View>
           ) : null}
           <IrrigationResultView data={result.data} isRtl={isRtl} />
@@ -248,9 +249,9 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       />
 
       <Card variant="elevated" style={styles.card}>
-        <Text style={[styles.label, isRtl && styles.rtlText]}>{x.pestSymptomInput}</Text>
+        <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{x.pestSymptomInput}</Text>
         <TextInput
-          style={[styles.textArea, isRtl && styles.rtlText]}
+          style={[styles.textArea, isRtl && rtlStyles.rtlText]}
           placeholder={x.pestSymptomPlaceholder}
           placeholderTextColor={colors.textMuted}
           value={symptoms}
@@ -258,10 +259,10 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           multiline
           accessibilityLabel={x.pestSymptomInput}
         />
-        <Text style={[styles.hint, isRtl && styles.rtlText]}>{x.pestSeparatorHint}</Text>
-        <Text style={[styles.label, { marginTop: spacing.md }, isRtl && styles.rtlText]}>{x.pestCropOptional}</Text>
+        <Text style={[styles.hint, isRtl && rtlStyles.rtlText]}>{x.pestSeparatorHint}</Text>
+        <Text style={[styles.label, { marginTop: spacing.md }, isRtl && rtlStyles.rtlText]}>{x.pestCropOptional}</Text>
         <TextInput
-          style={[styles.input, isRtl && styles.rtlText]}
+          style={[styles.input, isRtl && rtlStyles.rtlText]}
           placeholder={x.pestCropPlaceholder}
           placeholderTextColor={colors.textMuted}
           value={crop}
@@ -292,21 +293,21 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       {result ? (
         <Card variant="elevated" style={styles.card}>
-          <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
             <ProvenanceBadge meta={result.meta} detailed />
           </View>
           {result.identifiedPest ? (
             <>
-              <Text style={[styles.resultTitle, isRtl && styles.rtlText]}>
+              <Text style={[styles.resultTitle, isRtl && rtlStyles.rtlText]}>
                 {pestName(result.identifiedPest, result.pestNameAr, language)}
               </Text>
               {result.category ? (
                 <Badge label={pestCategory(result.category, language)} variant="danger" size="sm" />
               ) : null}
-              <Text style={[styles.hint, { marginTop: spacing.sm }, isRtl && styles.rtlText]}>
+              <Text style={[styles.hint, { marginTop: spacing.sm }, isRtl && rtlStyles.rtlText]}>
                 {x.pestMethodPrefix}: {result.method} — {x.pestSymptomsUsed}: {result.symptomsUsed.join(x.listSeparator)}
               </Text>
-              <Text style={[styles.hint, isRtl && styles.rtlText]}>{x.pestNoConfidenceNote}</Text>
+              <Text style={[styles.hint, isRtl && rtlStyles.rtlText]}>{x.pestNoConfidenceNote}</Text>
             </>
           ) : (
             <StateView kind="empty" title={x.pestNoResult} compact />
@@ -322,7 +323,7 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 const IrrigationResultView: React.FC<{ data: Record<string, unknown> | null; isRtl: boolean }> = ({ data, isRtl }) => {
   const { x } = useLanguage();
   if (!data) {
-    return <Text style={[styles.hint, isRtl && styles.rtlText]}>{x.irrigationNoDetails}</Text>;
+    return <Text style={[styles.hint, isRtl && rtlStyles.rtlText]}>{x.irrigationNoDetails}</Text>;
   }
 
   const num = (key: string): number | null => {
@@ -347,14 +348,14 @@ const IrrigationResultView: React.FC<{ data: Record<string, unknown> | null; isR
 
   if (!metrics.length && !recommendations.length) {
     return (
-      <Text style={[styles.hint, isRtl && styles.rtlText]}>{x.irrigationRawUnknown}</Text>
+      <Text style={[styles.hint, isRtl && rtlStyles.rtlText]}>{x.irrigationRawUnknown}</Text>
     );
   }
 
   return (
     <View>
       {metrics.length ? (
-        <View style={[styles.metricsGrid, isRtl && styles.rtlRow]}>
+        <View style={[styles.metricsGrid, isRtl && rtlStyles.rtlRow]}>
           {metrics.map((m) => (
             <View key={m.label} style={styles.metricBox}>
               <Text style={styles.metricBoxLabel}>{m.label}</Text>
@@ -365,11 +366,11 @@ const IrrigationResultView: React.FC<{ data: Record<string, unknown> | null; isR
       ) : null}
       {recommendations.length ? (
         <View style={{ marginTop: spacing.sm }}>
-          <Text style={[styles.label, isRtl && styles.rtlText]}>{x.irrigationRecommendations}</Text>
+          <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{x.irrigationRecommendations}</Text>
           {recommendations.map((rec, i) => (
-            <View key={i} style={[styles.bulletRow, isRtl && styles.rtlRow]}>
+            <View key={i} style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="circle-medium" size={16} color={colors.water} />
-              <Text style={[styles.hint, { flex: 1 }, isRtl && styles.rtlText]}>{rec}</Text>
+              <Text style={[styles.hint, { flex: 1 }, isRtl && rtlStyles.rtlText]}>{rec}</Text>
             </View>
           ))}
         </View>
@@ -394,8 +395,6 @@ const Chip: React.FC<{ label: string; selected: boolean; onPress: () => void }> 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   card: { padding: spacing.md, marginBottom: spacing.md },
   label: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 6, lineHeight: typography.lineHeights.xs },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -144,8 +145,8 @@ export const PlotStep: React.FC<PlotStepProps> = ({
   return (
     <View>
       <Card variant="elevated" style={styles.card}>
-        <Text style={[styles.heading, isRtl && styles.rtlText]}>{s9.plotHeading}</Text>
-        <Text style={[styles.sub, isRtl && styles.rtlText]}>{s9.plotSubtitle}</Text>
+        <Text style={[styles.heading, isRtl && rtlStyles.rtlText]}>{s9.plotHeading}</Text>
+        <Text style={[styles.sub, isRtl && rtlStyles.rtlText]}>{s9.plotSubtitle}</Text>
 
         {loadingFarms ? (
           <StateView kind="loading" title={s9.chooseFarm} compact />
@@ -156,7 +157,7 @@ export const PlotStep: React.FC<PlotStepProps> = ({
           </View>
         ) : (
           <>
-            <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.chooseFarm}</Text>
+            <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.chooseFarm}</Text>
             <View style={styles.list}>
               {farms.map((farm) => {
                 const active = selectedFarm?.id === farm.id;
@@ -180,8 +181,8 @@ export const PlotStep: React.FC<PlotStepProps> = ({
                       color={active ? colors.primary : colors.textMuted}
                     />
                     <View style={styles.optionText}>
-                      <Text style={[styles.optionTitle, isRtl && styles.rtlText]}>{farm.name}</Text>
-                      <Text style={[styles.optionSub, isRtl && styles.rtlText]}>
+                      <Text style={[styles.optionTitle, isRtl && rtlStyles.rtlText]}>{farm.name}</Text>
+                      <Text style={[styles.optionSub, isRtl && rtlStyles.rtlText]}>
                         {typeof farm.location === 'string' ? farm.location : farm.location?.region ?? ''} • {farm.size_hectares} ha
                       </Text>
                     </View>
@@ -199,7 +200,7 @@ export const PlotStep: React.FC<PlotStepProps> = ({
         {showFarmForm ? (
           <View style={styles.inlineForm}>
             <FormField label={s9.farmName} value={farmName} onChangeText={setFarmName} placeholder={s9.farmName} keyboard="default" />
-            <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.farmRegion}</Text>
+            <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.farmRegion}</Text>
             <ChipSelect options={governorateOptions} selected={farmRegion} onSelect={setFarmRegion} />
             <View style={{ height: spacing.sm }} />
             <FormField label={s9.farmAreaHa} value={farmSize} onChangeText={setFarmSize} placeholder="4.5" suffix="ha" />
@@ -219,7 +220,7 @@ export const PlotStep: React.FC<PlotStepProps> = ({
             </View>
           ) : (
             <>
-              <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.choosePlot}</Text>
+              <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.choosePlot}</Text>
               <View style={styles.list}>
                 {fields.map((field) => {
                   const active = selectedField?.id === field.id;
@@ -239,8 +240,8 @@ export const PlotStep: React.FC<PlotStepProps> = ({
                         color={active ? colors.primary : colors.textMuted}
                       />
                       <View style={styles.optionText}>
-                        <Text style={[styles.optionTitle, isRtl && styles.rtlText]}>{field.name}</Text>
-                        <Text style={[styles.optionSub, isRtl && styles.rtlText]}>
+                        <Text style={[styles.optionTitle, isRtl && rtlStyles.rtlText]}>{field.name}</Text>
+                        <Text style={[styles.optionSub, isRtl && rtlStyles.rtlText]}>
                           {field.size_hectares} ha{field.soil_type ? ` • ${field.soil_type}` : ''}
                           {field.current_crop ? ` • ${field.current_crop}` : ''}
                         </Text>
@@ -260,7 +261,7 @@ export const PlotStep: React.FC<PlotStepProps> = ({
             <View style={styles.inlineForm}>
               <FormField label={s9.plotName} value={fieldName} onChangeText={setFieldName} placeholder={s9.plotNamePlaceholder} keyboard="default" />
               <FormField label={s9.plotAreaHa} value={fieldSize} onChangeText={setFieldSize} placeholder="1.5" suffix="ha" />
-              <Text style={[styles.label, isRtl && styles.rtlText]}>{s9.plotSoilType}</Text>
+              <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{s9.plotSoilType}</Text>
               <ChipSelect options={soilTypeOptions} selected={fieldSoil} onSelect={setFieldSoil} clearable />
               <View style={{ height: spacing.sm }} />
               <FormField label={s9.currentCropLabel} value={fieldCrop} onChangeText={setFieldCrop} placeholder={s9.currentCropPlaceholder} keyboard="default" />
@@ -284,7 +285,6 @@ const styles = StyleSheet.create({
   heading: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
   sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
   label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   list: { gap: spacing.sm, marginBottom: spacing.sm },
   option: {
     flexDirection: 'row',

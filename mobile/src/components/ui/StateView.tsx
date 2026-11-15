@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -62,7 +63,7 @@ export const StateView: React.FC<StateViewProps> = ({
           onPress={onRetry}
           accessibilityRole="button"
           accessibilityLabel={retryLabel ?? x.retry}
-          style={[styles.retryBtn, isRtl && styles.rtlRow]}
+          style={[styles.retryBtn, isRtl && rtlStyles.rtlRow]}
         >
           <MaterialCommunityIcons name="refresh" size={16} color={colors.textInverse} />
           <Text style={styles.retryText}>{retryLabel ?? x.retry}</Text>
@@ -103,7 +104,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: typography.lineHeights.xs,
   },
-  rtlRow: { flexDirection: 'row-reverse' },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',

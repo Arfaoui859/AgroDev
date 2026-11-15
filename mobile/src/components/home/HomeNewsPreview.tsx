@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Linking } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -84,12 +85,12 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
               accessibilityLabel={article.title}
               accessibilityHint={x.articleOpenSource}
             >
-              <View style={[styles.articleRow, isRtl && styles.rtlRow]}>
+              <View style={[styles.articleRow, isRtl && rtlStyles.rtlRow]}>
                 <View style={styles.articleTextWrap}>
-                  <Text style={[styles.articleTitle, isRtl && styles.rtlText]} numberOfLines={2}>
+                  <Text style={[styles.articleTitle, isRtl && rtlStyles.rtlText]} numberOfLines={2}>
                     {article.title}
                   </Text>
-                  <View style={[styles.articleMeta, isRtl && styles.rtlRow]}>
+                  <View style={[styles.articleMeta, isRtl && rtlStyles.rtlRow]}>
                     <Text style={styles.articleSource} numberOfLines={1}>
                       {article.sourceName || x.newsUnknownSource}
                     </Text>
@@ -104,7 +105,7 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
                 />
               </View>
               {article.categories[0] ? (
-                <View style={[styles.catRow, isRtl && styles.rtlRow]}>
+                <View style={[styles.catRow, isRtl && rtlStyles.rtlRow]}>
                   <View style={styles.catTag}>
                     <Text style={styles.catTagText}>{newsCategoryLabel(article.categories[0], language)}</Text>
                   </View>
@@ -113,7 +114,7 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
             </Card>
           ))}
           {result?.meta ? (
-            <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
               <ProvenanceBadge meta={result.meta} />
             </View>
           ) : null}
@@ -125,8 +126,6 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
 
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   card: { paddingVertical: spacing.xs },
   articleCard: { padding: spacing.md, ...shadows.sm },
   articleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

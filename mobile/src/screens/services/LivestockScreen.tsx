@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
@@ -113,11 +114,11 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
       ) : (
         <>
           <Card variant="elevated" style={styles.summaryCard}>
-            <View style={[styles.summaryHeader, isRtl && styles.rtlRow]}>
-              <Text style={[styles.summaryTitle, isRtl && styles.rtlText]}>{x.livestockSummary}</Text>
+            <View style={[styles.summaryHeader, isRtl && rtlStyles.rtlRow]}>
+              <Text style={[styles.summaryTitle, isRtl && rtlStyles.rtlText]}>{x.livestockSummary}</Text>
               <ProvenanceBadge meta={meta} />
             </View>
-            <View style={[styles.summaryRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.summaryRow, isRtl && rtlStyles.rtlRow]}>
               <SummaryStat label={x.livestockTotal} value={String(animals.length)} color={colors.text} />
               <View style={styles.divider} />
               <SummaryStat label={x.livestockHealthy} value={String(healthy)} color={colors.success} />
@@ -125,7 +126,7 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
               <SummaryStat label={x.livestockSick} value={String(sick)} color={colors.danger} />
             </View>
             {totalValue > 0 ? (
-              <Text style={[styles.totalValue, isRtl && styles.rtlText]}>
+              <Text style={[styles.totalValue, isRtl && rtlStyles.rtlText]}>
                 {x.livestockValue}: {formatNumber(totalValue, language)} {x.currencyTnd}
               </Text>
             ) : null}
@@ -134,12 +135,12 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
           <View style={styles.animalList}>
             {animals.map((animal) => (
               <Card key={animal.id} variant="elevated" style={styles.animalCard}>
-                <View style={[styles.animalHeader, isRtl && styles.rtlRow]}>
+                <View style={[styles.animalHeader, isRtl && rtlStyles.rtlRow]}>
                   <View style={styles.animalTitleArea}>
-                    <Text style={[styles.animalTag, isRtl && styles.rtlText]}>
+                    <Text style={[styles.animalTag, isRtl && rtlStyles.rtlText]}>
                       {animal.earTag || livestockSpecies(animal.species, language)}
                     </Text>
-                    <Text style={[styles.animalMeta, isRtl && styles.rtlText]}>
+                    <Text style={[styles.animalMeta, isRtl && rtlStyles.rtlText]}>
                       {[livestockSpecies(animal.species, language), animal.breed]
                         .filter(Boolean)
                         .join(' • ')}
@@ -152,7 +153,7 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
                   />
                 </View>
 
-                <View style={[styles.animalMetrics, isRtl && styles.rtlRow]}>
+                <View style={[styles.animalMetrics, isRtl && rtlStyles.rtlRow]}>
                   {animal.age !== null ? (
                     <Metric label={x.livestockAge} value={`${animal.age}`} />
                   ) : null}
@@ -197,8 +198,6 @@ const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) =>
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   summaryCard: { padding: spacing.md, marginBottom: spacing.md },
   summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   summaryTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },

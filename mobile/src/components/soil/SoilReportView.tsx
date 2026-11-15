@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -22,9 +23,9 @@ const Section: React.FC<{
 const Bullet: React.FC<{ text: string }> = ({ text }) => {
   const { isRtl } = useLanguage();
   return (
-    <View style={[styles.bulletRow, isRtl && styles.rtlRow]}>
+    <View style={[styles.bulletRow, isRtl && rtlStyles.rtlRow]}>
       <Text style={styles.dot}>•</Text>
-      <Text style={[styles.bulletText, isRtl && styles.rtlText]}>{text}</Text>
+      <Text style={[styles.bulletText, isRtl && rtlStyles.rtlText]}>{text}</Text>
     </View>
   );
 };
@@ -101,15 +102,15 @@ const ActionItem: React.FC<{ action: SoilReportAction }> = ({ action }) => {
   const s9 = getSoil(language);
   return (
     <View style={styles.actionItem}>
-      <View style={[styles.actionHead, isRtl && styles.rtlRow]}>
+      <View style={[styles.actionHead, isRtl && rtlStyles.rtlRow]}>
         <Chip text={priorityLabel(action.priority, s9)} tone="info" />
-        {action.when ? <Text style={[styles.actionWhen, isRtl && styles.rtlText]}>{action.when}</Text> : null}
+        {action.when ? <Text style={[styles.actionWhen, isRtl && rtlStyles.rtlText]}>{action.when}</Text> : null}
       </View>
-      <Text style={[styles.actionText, isRtl && styles.rtlText]}>{action.action}</Text>
-      {action.reason ? <Text style={[styles.actionSub, isRtl && styles.rtlText]}>{action.reason}</Text> : null}
-      {action.howTo ? <Text style={[styles.actionSub, isRtl && styles.rtlText]}>{action.howTo}</Text> : null}
+      <Text style={[styles.actionText, isRtl && rtlStyles.rtlText]}>{action.action}</Text>
+      {action.reason ? <Text style={[styles.actionSub, isRtl && rtlStyles.rtlText]}>{action.reason}</Text> : null}
+      {action.howTo ? <Text style={[styles.actionSub, isRtl && rtlStyles.rtlText]}>{action.howTo}</Text> : null}
       {action.verification ? (
-        <Text style={[styles.actionVerify, isRtl && styles.rtlText]}>{action.verification}</Text>
+        <Text style={[styles.actionVerify, isRtl && rtlStyles.rtlText]}>{action.verification}</Text>
       ) : null}
     </View>
   );
@@ -124,7 +125,7 @@ const ActionItem: React.FC<{ action: SoilReportAction }> = ({ action }) => {
 export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => {
   const { language, isRtl } = useLanguage();
   const s9 = getSoil(language);
-  const empty = <Text style={[styles.empty, isRtl && styles.rtlText]}>{s9.reportNoSection}</Text>;
+  const empty = <Text style={[styles.empty, isRtl && rtlStyles.rtlText]}>{s9.reportNoSection}</Text>;
 
   const confidenceKey: Record<string, string> = {
     low: s9.confidenceLow,
@@ -142,8 +143,8 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
   return (
     <View>
       <Section title={s9.reportExecutive} icon="text-box-outline">
-        <Text style={[styles.body, isRtl && styles.rtlText]}>{report.executiveSummary}</Text>
-        <View style={[styles.chipRow, isRtl && styles.rtlRow]}>
+        <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{report.executiveSummary}</Text>
+        <View style={[styles.chipRow, isRtl && rtlStyles.rtlRow]}>
           <Chip
             text={`${s9.reportConfidence}: ${confidenceKey[report.confidence.level] ?? report.confidence.level}`}
             tone="info"
@@ -157,7 +158,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       <Section title={s9.reportDataQuality} icon="clipboard-check-outline">
         {report.dataQuality.providedMeasurements.length ? (
           <>
-            <Text style={[styles.subHead, isRtl && styles.rtlText]}>{s9.reportProvided}</Text>
+            <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportProvided}</Text>
             {report.dataQuality.providedMeasurements.map((m, i) => (
               <Bullet key={`prov-${i}`} text={`${m.name}: ${m.value} ${m.unit} (${m.source})`} />
             ))}
@@ -165,8 +166,8 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         ) : null}
         {report.dataQuality.missingMeasurements.length ? (
           <>
-            <Text style={[styles.subHead, isRtl && styles.rtlText]}>{s9.reportMissing}</Text>
-            <View style={[styles.chipRow, isRtl && styles.rtlRow]}>
+            <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportMissing}</Text>
+            <View style={[styles.chipRow, isRtl && rtlStyles.rtlRow]}>
               {report.dataQuality.missingMeasurements.map((m, i) => (
                 <Chip key={`miss-${i}`} text={m} tone="warn" />
               ))}
@@ -175,7 +176,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         ) : null}
         {report.dataQuality.limitations.length ? (
           <>
-            <Text style={[styles.subHead, isRtl && styles.rtlText]}>{s9.reportLimitations}</Text>
+            <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportLimitations}</Text>
             {report.dataQuality.limitations.map((m, i) => (
               <Bullet key={`lim-${i}`} text={m} />
             ))}
@@ -183,7 +184,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         ) : null}
         {report.dataQuality.consistencyChecks.length ? (
           <>
-            <Text style={[styles.subHead, isRtl && styles.rtlText]}>{s9.reportConsistency}</Text>
+            <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportConsistency}</Text>
             {report.dataQuality.consistencyChecks.map((m, i) => (
               <Bullet key={`con-${i}`} text={m} />
             ))}
@@ -195,22 +196,22 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         <Section title={s9.reportIndicators} icon="table">
           {report.indicatorTable.map((row, i) => (
             <View key={`ind-${i}`} style={styles.tableRow}>
-              <View style={[styles.tableHead, isRtl && styles.rtlRow]}>
-                <Text style={[styles.tableParam, isRtl && styles.rtlText]}>{row.parameter}</Text>
+              <View style={[styles.tableHead, isRtl && rtlStyles.rtlRow]}>
+                <Text style={[styles.tableParam, isRtl && rtlStyles.rtlText]}>{row.parameter}</Text>
                 <Text style={styles.tableValue}>
                   {row.value} {row.unit}
                 </Text>
               </View>
-              <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{row.classification}</Text>
-              {row.cropEffect ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{row.cropEffect}</Text> : null}
-              {row.evidence ? <Text style={[styles.tableEvidence, isRtl && styles.rtlText]}>{row.evidence}</Text> : null}
+              <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{row.classification}</Text>
+              {row.cropEffect ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{row.cropEffect}</Text> : null}
+              {row.evidence ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{row.evidence}</Text> : null}
             </View>
           ))}
         </Section>
       ) : null}
 
       <Section title={s9.reportTexture} icon="grain">
-        <Text style={[styles.body, isRtl && styles.rtlText]}>
+        <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>
           {report.soilCharacterization.texture.classification} — {report.soilCharacterization.texture.basis}
         </Text>
         {report.soilCharacterization.chemical.map((c, i) => (
@@ -225,14 +226,14 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         <Section title={s9.reportFindings} icon="magnify">
           {report.findings.map((f, i) => (
             <View key={`find-${i}`} style={styles.findingRow}>
-              <View style={[styles.actionHead, isRtl && styles.rtlRow]}>
-                <Text style={[styles.findingParam, isRtl && styles.rtlText]}>
+              <View style={[styles.actionHead, isRtl && rtlStyles.rtlRow]}>
+                <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>
                   {f.parameter}: {f.observedValue} {f.unit}
                 </Text>
                 <Chip text={severityLabel(f.severity, s9)} tone={severityTone(f.severity)} />
               </View>
-              <Text style={[styles.body, isRtl && styles.rtlText]}>{f.interpretation}</Text>
-              {f.evidence ? <Text style={[styles.tableEvidence, isRtl && styles.rtlText]}>{f.evidence}</Text> : null}
+              <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{f.interpretation}</Text>
+              {f.evidence ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{f.evidence}</Text> : null}
             </View>
           ))}
         </Section>
@@ -242,15 +243,15 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         <Section title={s9.reportConstraints} icon="alert-outline">
           {report.rankedConstraints.map((c, i) => (
             <View key={`rank-${i}`} style={styles.findingRow}>
-              <View style={[styles.actionHead, isRtl && styles.rtlRow]}>
-                <Text style={[styles.findingParam, isRtl && styles.rtlText]}>
+              <View style={[styles.actionHead, isRtl && rtlStyles.rtlRow]}>
+                <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>
                   {c.rank}. {c.constraint}
                 </Text>
                 <Chip text={severityLabel(c.severity, s9)} tone={severityTone(c.severity)} />
               </View>
-              {c.evidence ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{c.evidence}</Text> : null}
-              {c.cropImpact ? <Text style={[styles.body, isRtl && styles.rtlText]}>{c.cropImpact}</Text> : null}
-              {c.whatToConfirm ? <Text style={[styles.tableEvidence, isRtl && styles.rtlText]}>{c.whatToConfirm}</Text> : null}
+              {c.evidence ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{c.evidence}</Text> : null}
+              {c.cropImpact ? <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{c.cropImpact}</Text> : null}
+              {c.whatToConfirm ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{c.whatToConfirm}</Text> : null}
             </View>
           ))}
         </Section>
@@ -271,17 +272,17 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         {report.cropSuitability.candidates.length ? (
           report.cropSuitability.candidates.map((cand, i) => (
             <View key={`cand-${i}`} style={styles.findingRow}>
-              <View style={[styles.actionHead, isRtl && styles.rtlRow]}>
-                <Text style={[styles.findingParam, isRtl && styles.rtlText]}>{cand.crop}</Text>
+              <View style={[styles.actionHead, isRtl && rtlStyles.rtlRow]}>
+                <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>{cand.crop}</Text>
                 <Chip text={cand.status} tone={cand.status === 'possible' ? 'ok' : 'warn'} />
               </View>
-              {cand.why_it_may_fit ? <Text style={[styles.body, isRtl && styles.rtlText]}>{cand.why_it_may_fit}</Text> : null}
-              {cand.risk ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{cand.risk}</Text> : null}
-              {cand.sowingWindow ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{cand.sowingWindow}</Text> : null}
+              {cand.why_it_may_fit ? <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{cand.why_it_may_fit}</Text> : null}
+              {cand.risk ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{cand.risk}</Text> : null}
+              {cand.sowingWindow ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{cand.sowingWindow}</Text> : null}
               {cand.conditions_to_check.map((cond, j) => (
                 <Bullet key={`cond-${i}-${j}`} text={cond} />
               ))}
-              {cand.limitations ? <Text style={[styles.tableEvidence, isRtl && styles.rtlText]}>{cand.limitations}</Text> : null}
+              {cand.limitations ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{cand.limitations}</Text> : null}
             </View>
           ))
         ) : (
@@ -289,14 +290,14 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         )}
         {report.cropSuitability.avoid.length ? (
           <>
-            <Text style={[styles.subHead, isRtl && styles.rtlText]}>{s9.reportCropAvoid}</Text>
+            <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportCropAvoid}</Text>
             {report.cropSuitability.avoid.map((a, i) => (
               <Bullet key={`avoid-${i}`} text={`${a.crop}: ${a.reason}`} />
             ))}
           </>
         ) : null}
         {report.cropSuitability.caveats.map((c, i) => (
-          <Text key={`caveat-${i}`} style={[styles.tableEvidence, isRtl && styles.rtlText]}>
+          <Text key={`caveat-${i}`} style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>
             {c}
           </Text>
         ))}
@@ -304,7 +305,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
 
       {report.targetCropPlan && report.targetCropPlan.targetCrop ? (
         <Section title={s9.reportTargetPlan} icon="target">
-          <View style={[styles.chipRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.chipRow, isRtl && rtlStyles.rtlRow]}>
             <Chip text={report.targetCropPlan.targetCrop} tone="info" />
             <Chip
               text={feasibilityKey[report.targetCropPlan.feasibility] ?? report.targetCropPlan.feasibility}
@@ -322,19 +323,19 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
           ))}
           {report.targetCropPlan.gaps.length ? (
             <>
-              <Text style={[styles.subHead, isRtl && styles.rtlText]}>{s9.reportGaps}</Text>
+              <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportGaps}</Text>
               {report.targetCropPlan.gaps.map((g, i) => (
                 <Bullet key={`gap-${i}`} text={`${g.parameter}: ${g.current} → ${g.required} (${g.gap})`} />
               ))}
             </>
           ) : null}
           {report.targetCropPlan.firstAction ? (
-            <Text style={[styles.body, isRtl && styles.rtlText]}>
+            <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>
               {s9.reportFirstAction}: {report.targetCropPlan.firstAction}
             </Text>
           ) : null}
           {report.targetCropPlan.retestWhen ? (
-            <Text style={[styles.tableSub, isRtl && styles.rtlText]}>
+            <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>
               {s9.reportRetestWhen}: {report.targetCropPlan.retestWhen}
             </Text>
           ) : null}
@@ -347,27 +348,27 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       <Section title={s9.reportFertilization} icon="flask-outline">
         {report.fertilizationPlan.stages.map((stage, i) => (
           <View key={`fert-${i}`} style={styles.findingRow}>
-            <Text style={[styles.findingParam, isRtl && styles.rtlText]}>{stageLabel(stage.stage, s9)}</Text>
-            <Text style={[styles.body, isRtl && styles.rtlText]}>{stage.strategy}</Text>
+            <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>{stageLabel(stage.stage, s9)}</Text>
+            <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{stage.strategy}</Text>
             {stage.productExamples.length ? (
-              <View style={[styles.chipRow, isRtl && styles.rtlRow]}>
+              <View style={[styles.chipRow, isRtl && rtlStyles.rtlRow]}>
                 {stage.productExamples.map((p, j) => (
                   <Chip key={`prod-${i}-${j}`} text={p} tone="neutral" />
                 ))}
               </View>
             ) : null}
-            {stage.timing ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{stage.timing}</Text> : null}
-            {stage.basis ? <Text style={[styles.tableEvidence, isRtl && styles.rtlText]}>{stage.basis}</Text> : null}
+            {stage.timing ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{stage.timing}</Text> : null}
+            {stage.basis ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{stage.basis}</Text> : null}
           </View>
         ))}
         {report.fertilizationPlan.withheldDosesReason ? (
-          <Text style={[styles.tableEvidence, isRtl && styles.rtlText]}>
+          <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>
             {report.fertilizationPlan.withheldDosesReason}
           </Text>
         ) : null}
         {report.fertilizationPlan.organicOptions.length ? (
           <>
-            <Text style={[styles.subHead, isRtl && styles.rtlText]}>{s9.reportOrganicOptions}</Text>
+            <Text style={[styles.subHead, isRtl && rtlStyles.rtlText]}>{s9.reportOrganicOptions}</Text>
             {report.fertilizationPlan.organicOptions.map((o, i) => (
               <Bullet key={`org-${i}`} text={o} />
             ))}
@@ -389,7 +390,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
             <Bullet key={`water-${i}`} text={line} />
           ))}
         {report.waterAndIrrigation.limitations.map((l, i) => (
-          <Text key={`wlim-${i}`} style={[styles.tableEvidence, isRtl && styles.rtlText]}>
+          <Text key={`wlim-${i}`} style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>
             {l}
           </Text>
         ))}
@@ -399,13 +400,13 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         <Section title={s9.reportCalendar} icon="calendar-month-outline">
           {report.twelveWeekCalendar.map((w) => (
             <View key={`week-${w.week}`} style={styles.findingRow}>
-              <Text style={[styles.findingParam, isRtl && styles.rtlText]}>
+              <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>
                 {w.week}
               </Text>
               {w.actions.map((a, j) => (
                 <Bullet key={`wa-${w.week}-${j}`} text={a} />
               ))}
-              {w.check ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{w.check}</Text> : null}
+              {w.check ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{w.check}</Text> : null}
             </View>
           ))}
         </Section>
@@ -415,15 +416,15 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         <Section title={s9.reportRisks} icon="alert-circle-outline">
           {report.riskAlerts.map((risk, i) => (
             <View key={`risk-${i}`} style={styles.findingRow}>
-              <View style={[styles.actionHead, isRtl && styles.rtlRow]}>
-                <Text style={[styles.findingParam, isRtl && styles.rtlText]}>{risk.risk}</Text>
+              <View style={[styles.actionHead, isRtl && rtlStyles.rtlRow]}>
+                <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>{risk.risk}</Text>
                 <Chip text={severityLabel(risk.severity, s9)} tone={severityTone(risk.severity)} />
               </View>
-              {risk.trigger ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{risk.trigger}</Text> : null}
+              {risk.trigger ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{risk.trigger}</Text> : null}
               {risk.symptomsToMonitor.map((s, j) => (
                 <Bullet key={`sym-${i}-${j}`} text={s} />
               ))}
-              {risk.safeResponse ? <Text style={[styles.body, isRtl && styles.rtlText]}>{risk.safeResponse}</Text> : null}
+              {risk.safeResponse ? <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{risk.safeResponse}</Text> : null}
             </View>
           ))}
         </Section>
@@ -441,12 +442,12 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         <Section title={s9.reportFollowUp} icon="calendar-check-outline">
           {report.followUpPlan.map((f) => (
             <View key={`fu-${f.step}`} style={styles.findingRow}>
-              <Text style={[styles.findingParam, isRtl && styles.rtlText]}>
+              <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>
                 {f.step}. {f.when}
               </Text>
-              <Text style={[styles.body, isRtl && styles.rtlText]}>{f.whatToDo}</Text>
-              {f.whatToMeasure ? <Text style={[styles.tableSub, isRtl && styles.rtlText]}>{f.whatToMeasure}</Text> : null}
-              {f.why ? <Text style={[styles.tableEvidence, isRtl && styles.rtlText]}>{f.why}</Text> : null}
+              <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{f.whatToDo}</Text>
+              {f.whatToMeasure ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{f.whatToMeasure}</Text> : null}
+              {f.why ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{f.why}</Text> : null}
             </View>
           ))}
         </Section>
@@ -461,7 +462,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       ) : null}
 
       <Section title={s9.reportReview} icon="account-tie-outline">
-        <Text style={[styles.body, isRtl && styles.rtlText]}>{report.professionalReview.reason}</Text>
+        <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{report.professionalReview.reason}</Text>
         {report.professionalReview.bringToAgronomist.map((b, i) => (
           <Bullet key={`br-${i}`} text={b} />
         ))}
@@ -470,7 +471,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       {report.disclaimers.length ? (
         <Section title={s9.reportDisclaimers} icon="shield-alert-outline">
           {report.disclaimers.map((d, i) => (
-            <Text key={`disc-${i}`} style={[styles.tableEvidence, isRtl && styles.rtlText]}>
+            <Text key={`disc-${i}`} style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>
               {d}
             </Text>
           ))}
@@ -489,8 +490,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.md,
   },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   body: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text, marginBottom: 4 },
   subHead: {
     fontSize: typography.fontSizes.xs,

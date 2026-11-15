@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -26,7 +27,7 @@ export const CategoryPill: React.FC<CategoryPillProps> = ({ label, selected, onP
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
-      style={[styles.pill, isRtl && styles.rtlRow, selected && styles.pillSelected]}
+      style={[styles.pill, isRtl && rtlStyles.rtlRow, selected && styles.pillSelected]}
     >
       {icon ? (
         <MaterialCommunityIcons
@@ -61,5 +62,4 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.medium,
   },
   textSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
-  rtlRow: { flexDirection: 'row-reverse' },
 });

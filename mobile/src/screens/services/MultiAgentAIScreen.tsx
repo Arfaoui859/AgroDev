@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -69,13 +70,13 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
 
       {data?.summary ? (
         <Card variant="elevated" style={styles.summaryCard}>
-          <View style={[styles.summaryRow, isRtl && styles.rtlRow]}>
+          <View style={[styles.summaryRow, isRtl && rtlStyles.rtlRow]}>
             <SummaryStat label={x.aiSummaryTotal} value={data.summary.total} color={colors.text} />
             <SummaryStat label={x.aiSummaryAvailable} value={data.summary.available} color={colors.success} />
             <SummaryStat label={x.aiSummaryModelPowered} value={data.summary.modelPowered} color={colors.primary} />
           </View>
           {data.llm ? (
-            <View style={[styles.llmRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.llmRow, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons
                 name={data.llm.credentialAvailable ? 'check-circle' : 'alert-circle'}
                 size={16}
@@ -112,16 +113,16 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
           const available = cap.available !== false && cap.engine !== 'unavailable';
           return (
             <Card key={cap.id} variant="elevated" style={styles.agentCard}>
-              <View style={[styles.agentHeader, isRtl && styles.rtlRow]}>
+              <View style={[styles.agentHeader, isRtl && rtlStyles.rtlRow]}>
                 <View style={[styles.agentIconBox, { backgroundColor: meta.bg }]}>
                   <MaterialCommunityIcons name={meta.icon} size={22} color={meta.color} />
                 </View>
                 <View style={styles.agentTitleArea}>
-                  <Text style={[styles.agentNameAr, isRtl && styles.rtlText]}>
+                  <Text style={[styles.agentNameAr, isRtl && rtlStyles.rtlText]}>
                     {language === 'ar' ? cap.nameAr || cap.name : cap.name}
                   </Text>
                   {language !== 'ar' && cap.nameAr ? (
-                    <Text style={[styles.agentNameEn, isRtl && styles.rtlText]}>{cap.nameAr}</Text>
+                    <Text style={[styles.agentNameEn, isRtl && rtlStyles.rtlText]}>{cap.nameAr}</Text>
                   ) : null}
                 </View>
                 <Badge
@@ -132,11 +133,11 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
               </View>
 
               <View style={styles.provenanceBox}>
-                <View style={[styles.provRow, isRtl && styles.rtlRow]}>
+                <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
                   <MaterialCommunityIcons name="shield-check" size={14} color={colors.primary} />
                   <Text style={styles.provTitle}>{x.aiEngineProvenanceTitle}</Text>
                 </View>
-                <Text style={[styles.provDetail, isRtl && styles.rtlText]}>
+                <Text style={[styles.provDetail, isRtl && rtlStyles.rtlText]}>
                   {language === 'ar' ? cap.provenanceAr || cap.provenance : cap.provenance}
                 </Text>
                 <Text style={styles.engineText}>{meta.label}</Text>
@@ -168,8 +169,6 @@ const SummaryStat: React.FC<{ label: string; value: number; color: string }> = (
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   summaryCard: { padding: spacing.md, marginBottom: spacing.md },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   summaryStat: { alignItems: 'center' },

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -212,12 +213,12 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
         </Card>
       ) : (
         <Card variant="elevated" style={styles.card}>
-          <View style={[styles.successHead, isRtl && styles.rtlRow]}>
+          <View style={[styles.successHead, isRtl && rtlStyles.rtlRow]}>
             <MaterialCommunityIcons name="check-circle" size={24} color={colors.success} />
-            <Text style={[styles.successTitle, isRtl && styles.rtlText]}>{s9.projectCreatedTitle}</Text>
+            <Text style={[styles.successTitle, isRtl && rtlStyles.rtlText]}>{s9.projectCreatedTitle}</Text>
           </View>
-          <Text style={[styles.successSub, isRtl && styles.rtlText]}>{s9.projectCreatedSubtitle}</Text>
-          <View style={[styles.chipRow, isRtl && styles.rtlRow]}>
+          <Text style={[styles.successSub, isRtl && rtlStyles.rtlText]}>{s9.projectCreatedSubtitle}</Text>
+          <View style={[styles.chipRow, isRtl && rtlStyles.rtlRow]}>
             <Badge label={created.crop_name} variant="primary" size="sm" />
             <Badge label={s9.projectStagePlanned} variant="info" size="sm" />
             {created.expected_harvest_date ? (
@@ -229,8 +230,8 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
 
       {created && reportLoaded ? (
         <Card variant="elevated" style={styles.card}>
-          <Text style={[styles.tasksTitle, isRtl && styles.rtlText]}>{s9.projectTasksTitle}</Text>
-          <Text style={[styles.tasksSub, isRtl && styles.rtlText]}>{s9.projectTasksSubtitle}</Text>
+          <Text style={[styles.tasksTitle, isRtl && rtlStyles.rtlText]}>{s9.projectTasksTitle}</Text>
+          <Text style={[styles.tasksSub, isRtl && rtlStyles.rtlText]}>{s9.projectTasksSubtitle}</Text>
           {tasks.length === 0 ? (
             <StateView kind="empty" message={s9.projectTasksSubtitle} compact />
           ) : (
@@ -245,30 +246,30 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: done }}
                     accessibilityLabel={label}
-                    style={[styles.taskRow, isRtl && styles.rtlRow]}
+                    style={[styles.taskRow, isRtl && rtlStyles.rtlRow]}
                   >
                     <MaterialCommunityIcons
                       name={done ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
                       size={22}
                       color={done ? colors.success : colors.textMuted}
                     />
-                    <Text style={[styles.taskText, done && styles.taskTextDone, isRtl && styles.rtlText]}>{label}</Text>
+                    <Text style={[styles.taskText, done && styles.taskTextDone, isRtl && rtlStyles.rtlText]}>{label}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
           )}
-          <Text style={[styles.progress, isRtl && styles.rtlText]}>
+          <Text style={[styles.progress, isRtl && rtlStyles.rtlText]}>
             {doneCount} / {tasks.length}
           </Text>
-          <Text style={[styles.cycleNote, isRtl && styles.rtlText]}>{s9.projectCycleNote}</Text>
+          <Text style={[styles.cycleNote, isRtl && rtlStyles.rtlText]}>{s9.projectCycleNote}</Text>
         </Card>
       ) : null}
 
       {created ? <MarketplaceMatch query={created.crop_name} /> : null}
 
       <Card variant="elevated" style={styles.card}>
-        <Text style={[styles.tasksTitle, isRtl && styles.rtlText]}>{s9.projectMyProjects}</Text>
+        <Text style={[styles.tasksTitle, isRtl && rtlStyles.rtlText]}>{s9.projectMyProjects}</Text>
         {loadingProjects ? (
           <StateView kind="loading" title={s9.projectMyProjects} compact />
         ) : projectsError ? (
@@ -278,10 +279,10 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
         ) : (
           <View style={styles.taskList}>
             {projects.map((project) => (
-              <View key={project.id} style={[styles.projectRow, isRtl && styles.rtlRow]}>
+              <View key={project.id} style={[styles.projectRow, isRtl && rtlStyles.rtlRow]}>
                 <View style={styles.projectText}>
-                  <Text style={[styles.projectName, isRtl && styles.rtlText]}>{project.crop_name}</Text>
-                  <Text style={[styles.projectMeta, isRtl && styles.rtlText]}>
+                  <Text style={[styles.projectName, isRtl && rtlStyles.rtlText]}>{project.crop_name}</Text>
+                  <Text style={[styles.projectMeta, isRtl && rtlStyles.rtlText]}>
                     {project.planting_date ?? '—'} • {project.area_hectares} ha
                     {project.current_growth_stage ? ` • ${project.current_growth_stage}` : ''}
                   </Text>
@@ -304,17 +305,15 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
 };
 
 const DetailRow: React.FC<{ label: string; value: string; isRtl: boolean }> = ({ label, value, isRtl }) => (
-  <View style={[styles.detailRow, isRtl && styles.rtlRow]}>
-    <Text style={[styles.detailLabel, isRtl && styles.rtlText]}>{label}</Text>
-    <Text style={[styles.detailValue, isRtl && styles.rtlText]}>{value}</Text>
+  <View style={[styles.detailRow, isRtl && rtlStyles.rtlRow]}>
+    <Text style={[styles.detailLabel, isRtl && rtlStyles.rtlText]}>{label}</Text>
+    <Text style={[styles.detailValue, isRtl && rtlStyles.rtlText]}>{value}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   card: { padding: spacing.md, marginBottom: spacing.md },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, gap: spacing.sm },
   detailLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },

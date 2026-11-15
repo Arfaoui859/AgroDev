@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { rtlStyles } from '../../theme/rtl';
 import {
   View,
   Text,
@@ -67,7 +68,7 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.catScroll, isRtl && styles.rtlRow]}
+        contentContainerStyle={[styles.catScroll, isRtl && rtlStyles.rtlRow]}
       >
         <CategoryPill
           label={t.viewAll}
@@ -109,16 +110,16 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
             </View>
           </View>
           <View style={styles.cardBody}>
-            <View style={[styles.tagRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.tagRow, isRtl && rtlStyles.rtlRow]}>
               <View style={styles.catTag}>
                 <Text style={styles.catTagText}>{videoCategoryLabel(video.category, x)}</Text>
               </View>
               <Text style={styles.langTag}>{videoLanguageLabel(video.language, x)}</Text>
             </View>
-            <Text style={[styles.videoTitle, isRtl && styles.rtlText]} numberOfLines={3}>
+            <Text style={[styles.videoTitle, isRtl && rtlStyles.rtlText]} numberOfLines={3}>
               {video.title}
             </Text>
-            <View style={[styles.watchRow, isRtl && styles.rtlRow]}>
+            <View style={[styles.watchRow, isRtl && rtlStyles.rtlRow]}>
               <MaterialCommunityIcons name="youtube" size={16} color={colors.danger} />
               <Text style={styles.channel} numberOfLines={1}>
                 {video.channel}
@@ -128,9 +129,9 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
         </TouchableOpacity>
       ))}
 
-      <View style={[styles.sourceNote, isRtl && styles.rtlRow]}>
+      <View style={[styles.sourceNote, isRtl && rtlStyles.rtlRow]}>
         <MaterialCommunityIcons name="information-outline" size={13} color={colors.textMuted} />
-        <Text style={[styles.sourceText, isRtl && styles.rtlText]}>{t.homeLearningSource}</Text>
+        <Text style={[styles.sourceText, isRtl && rtlStyles.rtlText]}>{t.homeLearningSource}</Text>
       </View>
 
       <Button title={t.back} variant="outline" onPress={onBack} style={{ marginTop: spacing.lg }} />
@@ -141,8 +142,6 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
-  rtlRow: { flexDirection: 'row-reverse' },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
   card: {
     backgroundColor: colors.card,
