@@ -251,7 +251,7 @@ export interface ExtraTranslations {
   videoLanguageArabic: string;
   videoLanguageEnglish: string;
 
-  // AgroGrowth Academy
+  // AgriVibe Academy
   academyTitle: string;
   academySubtitle: string;
   academyOpenVideos: string;
@@ -525,6 +525,44 @@ export interface ExtraTranslations {
   languageArabicLabel: string;
   listSeparator: string;
   arabicOnlyNote: string;
+  // Multi-agent orchestration
+  agentsTraceTitle: string;
+  agentsTraceSubtitle: string;
+  agentsPlanTitle: string;
+  agentsPlannedByLlm: string;
+  agentsPlannedByKeywords: string;
+  agentsConcurrency: string;
+  agentsDuration: string;
+  agentsRunTitle: string;
+  agentsStepFindings: string;
+  agentsStepNote: string;
+  agentsStepAttempts: string;
+  agentsStatusOk: string;
+  agentsStatusInsufficient: string;
+  agentsStatusUnavailable: string;
+  agentsStatusBlocked: string;
+  agentsStatusFailed: string;
+  agentsSourceRuleBased: string;
+  agentsSourceOpenMeteo: string;
+  agentsSourceRecords: string;
+  agentsSourceRss: string;
+  agentsSourceTrained: string;
+  agentsSourceLlm: string;
+  agentsSourceNone: string;
+  agentsConfidenceHigh: string;
+  agentsConfidenceMedium: string;
+  agentsConfidenceLow: string;
+  agentsConfidenceUnknown: string;
+  agentsShowTrace: string;
+  agentsHideTrace: string;
+  agentsRegistryTitle: string;
+  agentsRegistrySubtitle: string;
+  agentsRegistryLoadFailed: string;
+  agentsSpecialistCount: string;
+  agentsDependsOn: string;
+  agentsNoDependencies: string;
+  agentsInAction: string;
+  agentsPreamble: string;
 }
 
 const ar: ExtraTranslations = {
@@ -543,7 +581,7 @@ const ar: ExtraTranslations = {
   authForgot: 'نسيت كلمة المرور؟',
   authConfirmEmail: 'تم إنشاء الحساب. يرجى تأكيد بريدك الإلكتروني ثم تسجيل الدخول.',
   authWelcomeBack: 'مرحباً بعودتك',
-  authCreateAccount: 'إنشاء حساب AgroGrowth',
+  authCreateAccount: 'إنشاء حساب AgriVibe',
   authSubtitle: 'سجّل الدخول للوصول إلى بيانات مزرعتك وأدواتك الزراعية',
   authErrEmailRequired: 'يرجى إدخال البريد الإلكتروني',
   authErrPasswordShort: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
@@ -758,7 +796,7 @@ const ar: ExtraTranslations = {
   videoLanguageArabic: 'بالعربية',
   videoLanguageEnglish: 'بالإنجليزية',
 
-  academyTitle: 'أكاديمية AgroGrowth',
+  academyTitle: 'أكاديمية AgriVibe',
   academySubtitle: 'مواضيع زراعية مرتبطة بمحتوى حقيقي وخدمات فعلية.',
   academyOpenVideos: 'دروس مصوّرة',
   academyOpenService: 'افتح الخدمة',
@@ -795,7 +833,7 @@ const ar: ExtraTranslations = {
   profileSignInPrompt: 'سجّل الدخول للوصول إلى بياناتك',
   profileSignOutConfirm: 'هل تريد تسجيل الخروج من حسابك؟',
   profileSignedInAs: 'مسجّل الدخول باسم',
-  profileServerReachable: 'تم الاتصال بخادم AgroGrowth بنجاح.',
+  profileServerReachable: 'تم الاتصال بخادم AgriVibe بنجاح.',
   profileCacheCleared: 'تم مسح البيانات المؤقتة المخزّنة على الجهاز.',
   profileClearCache: 'مسح البيانات المؤقتة',
   profileSupabaseUnconfigured: 'Supabase غير مُهيّأ (تحقق من متغيرات البيئة).',
@@ -951,7 +989,7 @@ const ar: ExtraTranslations = {
   dataProvenance: 'مصدر البيانات',
 
   // Profile screen
-  profileUserFallback: 'مستخدم AgroGrowth',
+  profileUserFallback: 'مستخدم AgriVibe',
   profileGuest: 'زائر',
   profileNotSignedIn: 'غير مسجّل الدخول',
   profileTestConnection: 'اختبار الاتصال بالخادم الآن',
@@ -983,7 +1021,7 @@ const ar: ExtraTranslations = {
   // API client messages (localised at render time)
   apiUnavailable: 'الخدمة غير متاحة حالياً على الخادم',
   apiTimeout: 'انتهت مهلة الاتصال بالخادم',
-  apiOffline: 'تعذر الاتصال بخادم AgroGrowth',
+  apiOffline: 'تعذر الاتصال بخادم AgriVibe',
   weatherFetchFailed: 'تعذّر جلب بيانات الطقس الحية',
   diseaseServiceUnconfigured: 'خدمة تشخيص الصور غير مُهيّأة',
   diseaseAnalysisFailed: 'فشل تحليل الصورة',
@@ -1019,6 +1057,43 @@ const ar: ExtraTranslations = {
   languageArabicLabel: 'العربية (تونس)',
   listSeparator: '، ',
   arabicOnlyNote: 'ملاحظة: النصوص التفصيلية لهذه النتيجة مُصاغة بالعربية فقط من محرّك القواعد على الخادم.',
+  agentsTraceTitle: 'تنسيق الوكلاء المتعدّدين',
+  agentsTraceSubtitle: 'كيف وزّع الخادم سؤالك على الوكلاء المتخصّصين ودمج نتائجهم.',
+  agentsPlanTitle: 'الخطة التنفيذية',
+  agentsPlannedByLlm: 'اختار النموذج اللغوي الخطة',
+  agentsPlannedByKeywords: 'اختيرت الخطة بالكلمات المفتاحية',
+  agentsConcurrency: 'التزامن',
+  agentsDuration: 'المدة',
+  agentsRunTitle: 'نتائج الوكلاء',
+  agentsStepFindings: 'النتائج',
+  agentsStepNote: 'ملاحظة',
+  agentsStepAttempts: 'المحاولات',
+  agentsStatusOk: 'تم',
+  agentsStatusInsufficient: 'بيانات ناقصة',
+  agentsStatusUnavailable: 'غير متاح',
+  agentsStatusBlocked: 'محجوب',
+  agentsStatusFailed: 'فشل',
+  agentsSourceRuleBased: 'قواعد حتمية',
+  agentsSourceOpenMeteo: 'طقس حقيقي (Open-Meteo)',
+  agentsSourceRecords: 'سجلات محفوظة',
+  agentsSourceRss: 'خلاصات RSS حقيقية',
+  agentsSourceTrained: 'نموذج مدرّب',
+  agentsSourceLlm: 'نموذج لغوي توليدي',
+  agentsSourceNone: 'لا مصدر',
+  agentsConfidenceHigh: 'ثقة عالية',
+  agentsConfidenceMedium: 'ثقة متوسطة',
+  agentsConfidenceLow: 'ثقة منخفضة',
+  agentsConfidenceUnknown: 'ثقة غير محدّدة',
+  agentsShowTrace: 'اعرض مسار التنسيق',
+  agentsHideTrace: 'أخفِ مسار التنسيق',
+  agentsRegistryTitle: 'سجلّ الوكلاء المتخصّصين',
+  agentsRegistrySubtitle: 'القائمة المقيّدة التي ينفّذها المنسّق فعلياً على الخادم.',
+  agentsRegistryLoadFailed: 'تعذّر جلب سجلّ الوكلاء.',
+  agentsSpecialistCount: 'عدد الوكلاء',
+  agentsDependsOn: 'يعتمد على',
+  agentsNoDependencies: 'مستقل',
+  agentsInAction: 'الوكلاء أثناء العمل',
+  agentsPreamble: 'كل إجابة من المساعد تمرّ عبر منسّق مركزي يختار الوكلاء المتخصّصين حسب سؤالك، ينفّذهم ضمن خطة محدودة، ثم يدمج نتائجهم الموسومة بمصادرها.',
 };
 
 const fr: ExtraTranslations = {
@@ -1037,7 +1112,7 @@ const fr: ExtraTranslations = {
   authForgot: 'Mot de passe oublié ?',
   authConfirmEmail: 'Compte créé. Confirmez votre e-mail puis connectez-vous.',
   authWelcomeBack: 'Bon retour',
-  authCreateAccount: 'Créer un compte AgroGrowth',
+  authCreateAccount: 'Créer un compte AgriVibe',
   authSubtitle: 'Connectez-vous pour accéder aux données de votre exploitation',
   authErrEmailRequired: 'Veuillez saisir votre adresse e-mail',
   authErrPasswordShort: 'Le mot de passe doit comporter au moins 6 caractères',
@@ -1252,7 +1327,7 @@ const fr: ExtraTranslations = {
   videoLanguageArabic: 'en arabe',
   videoLanguageEnglish: 'en anglais',
 
-  academyTitle: 'Académie AgroGrowth',
+  academyTitle: 'Académie AgriVibe',
   academySubtitle: 'Des thèmes agricoles liés à du contenu réel et à de vrais services.',
   academyOpenVideos: 'Tutoriels vidéo',
   academyOpenService: 'Ouvrir le service',
@@ -1289,7 +1364,7 @@ const fr: ExtraTranslations = {
   profileSignInPrompt: 'Connectez-vous pour accéder à vos données',
   profileSignOutConfirm: 'Voulez-vous vous déconnecter ?',
   profileSignedInAs: 'Connecté en tant que',
-  profileServerReachable: 'Connexion au serveur AgroGrowth réussie.',
+  profileServerReachable: 'Connexion au serveur AgriVibe réussie.',
   profileCacheCleared: 'Données en cache effacées de cet appareil.',
   profileClearCache: 'Effacer le cache',
   profileSupabaseUnconfigured: 'Supabase non configuré (vérifiez les variables d’environnement).',
@@ -1445,7 +1520,7 @@ const fr: ExtraTranslations = {
   dataProvenance: 'Source des données',
 
   // Profile screen
-  profileUserFallback: 'Utilisateur AgroGrowth',
+  profileUserFallback: 'Utilisateur AgriVibe',
   profileGuest: 'Invité',
   profileNotSignedIn: 'Non connecté',
   profileTestConnection: 'Tester la connexion au serveur',
@@ -1477,7 +1552,7 @@ const fr: ExtraTranslations = {
   // API client messages (localised at render time)
   apiUnavailable: 'Service actuellement indisponible sur le serveur',
   apiTimeout: 'Délai de connexion au serveur dépassé',
-  apiOffline: 'Impossible de joindre le serveur AgroGrowth',
+  apiOffline: 'Impossible de joindre le serveur AgriVibe',
   weatherFetchFailed: 'Impossible de récupérer les données météo en direct',
   diseaseServiceUnconfigured: 'Service de diagnostic par image non configuré',
   diseaseAnalysisFailed: 'Échec de l’analyse de l’image',
@@ -1513,6 +1588,43 @@ const fr: ExtraTranslations = {
   languageArabicLabel: 'العربية (Tunisie)',
   listSeparator: ', ',
   arabicOnlyNote: 'Remarque : les textes détaillés de ce résultat ne sont rédigés qu’en arabe par le moteur de règles du serveur.',
+  agentsTraceTitle: 'Orchestration multi-agents',
+  agentsTraceSubtitle: 'Comment le serveur a réparti votre question entre les agents spécialisés et fusionné leurs résultats.',
+  agentsPlanTitle: 'Plan d’exécution',
+  agentsPlannedByLlm: 'Plan choisi par le modèle de langage',
+  agentsPlannedByKeywords: 'Plan choisi par mots-clés',
+  agentsConcurrency: 'Concurrence',
+  agentsDuration: 'Durée',
+  agentsRunTitle: 'Résultats des agents',
+  agentsStepFindings: 'Constats',
+  agentsStepNote: 'Remarque',
+  agentsStepAttempts: 'Tentatives',
+  agentsStatusOk: 'OK',
+  agentsStatusInsufficient: 'Données manquantes',
+  agentsStatusUnavailable: 'Indisponible',
+  agentsStatusBlocked: 'Bloqué',
+  agentsStatusFailed: 'Échec',
+  agentsSourceRuleBased: 'Règles déterministes',
+  agentsSourceOpenMeteo: 'Météo réelle (Open-Meteo)',
+  agentsSourceRecords: 'Enregistrements stockés',
+  agentsSourceRss: 'Flux RSS réels',
+  agentsSourceTrained: 'Modèle entraîné',
+  agentsSourceLlm: 'Modèle de langage génératif',
+  agentsSourceNone: 'Aucune source',
+  agentsConfidenceHigh: 'Confiance élevée',
+  agentsConfidenceMedium: 'Confiance moyenne',
+  agentsConfidenceLow: 'Confiance faible',
+  agentsConfidenceUnknown: 'Confiance indéterminée',
+  agentsShowTrace: 'Afficher la trace d’orchestration',
+  agentsHideTrace: 'Masquer la trace d’orchestration',
+  agentsRegistryTitle: 'Registre des agents spécialisés',
+  agentsRegistrySubtitle: 'La liste autorisée que l’orchestrateur exécute réellement sur le serveur.',
+  agentsRegistryLoadFailed: 'Impossible de charger le registre des agents.',
+  agentsSpecialistCount: 'Nombre d’agents',
+  agentsDependsOn: 'Dépend de',
+  agentsNoDependencies: 'Indépendant',
+  agentsInAction: 'Les agents en action',
+  agentsPreamble: 'Chaque réponse de l’assistant passe par un orchestrateur central qui choisit les agents spécialisés selon votre question, les exécute selon un plan borné, puis fusionne leurs résultats étiquetés par source.',
 
 };
 
@@ -1532,7 +1644,7 @@ const en: ExtraTranslations = {
   authForgot: 'Forgot password?',
   authConfirmEmail: 'Account created. Confirm your email, then sign in.',
   authWelcomeBack: 'Welcome back',
-  authCreateAccount: 'Create an AgroGrowth account',
+  authCreateAccount: 'Create an AgriVibe account',
   authSubtitle: 'Sign in to access your farm data and tools',
   authErrEmailRequired: 'Please enter your email address',
   authErrPasswordShort: 'Password must be at least 6 characters',
@@ -1747,7 +1859,7 @@ const en: ExtraTranslations = {
   videoLanguageArabic: 'in Arabic',
   videoLanguageEnglish: 'in English',
 
-  academyTitle: 'AgroGrowth Academy',
+  academyTitle: 'AgriVibe Academy',
   academySubtitle: 'Farming topics linked to real content and real services.',
   academyOpenVideos: 'Video tutorials',
   academyOpenService: 'Open service',
@@ -1784,7 +1896,7 @@ const en: ExtraTranslations = {
   profileSignInPrompt: 'Sign in to access your data',
   profileSignOutConfirm: 'Do you want to sign out?',
   profileSignedInAs: 'Signed in as',
-  profileServerReachable: 'Connected to the AgroGrowth server successfully.',
+  profileServerReachable: 'Connected to the AgriVibe server successfully.',
   profileCacheCleared: 'Cached data cleared from this device.',
   profileClearCache: 'Clear cached data',
   profileSupabaseUnconfigured: 'Supabase is not configured (check the environment variables).',
@@ -1940,7 +2052,7 @@ const en: ExtraTranslations = {
   dataProvenance: 'Data source',
 
   // Profile screen
-  profileUserFallback: 'AgroGrowth user',
+  profileUserFallback: 'AgriVibe user',
   profileGuest: 'Guest',
   profileNotSignedIn: 'Not signed in',
   profileTestConnection: 'Test server connection now',
@@ -1972,7 +2084,7 @@ const en: ExtraTranslations = {
   // API client messages (localised at render time)
   apiUnavailable: 'Service currently unavailable on the server',
   apiTimeout: 'Server connection timed out',
-  apiOffline: 'Could not reach the AgroGrowth server',
+  apiOffline: 'Could not reach the AgriVibe server',
   weatherFetchFailed: 'Could not fetch live weather data',
   diseaseServiceUnconfigured: 'Image diagnosis service not configured',
   diseaseAnalysisFailed: 'Image analysis failed',
@@ -2008,6 +2120,43 @@ const en: ExtraTranslations = {
   languageArabicLabel: 'Arabic (Tunisia)',
   listSeparator: ', ',
   arabicOnlyNote: 'Note: the detailed text of this result is authored in Arabic only by the server’s rule engine.',
+  agentsTraceTitle: 'Multi-agent orchestration',
+  agentsTraceSubtitle: 'How the server split your question across specialised agents and merged their results.',
+  agentsPlanTitle: 'Execution plan',
+  agentsPlannedByLlm: 'Plan chosen by the language model',
+  agentsPlannedByKeywords: 'Plan chosen by keywords',
+  agentsConcurrency: 'Concurrency',
+  agentsDuration: 'Duration',
+  agentsRunTitle: 'Agent results',
+  agentsStepFindings: 'Findings',
+  agentsStepNote: 'Note',
+  agentsStepAttempts: 'Attempts',
+  agentsStatusOk: 'OK',
+  agentsStatusInsufficient: 'Insufficient input',
+  agentsStatusUnavailable: 'Unavailable',
+  agentsStatusBlocked: 'Blocked',
+  agentsStatusFailed: 'Failed',
+  agentsSourceRuleBased: 'Deterministic rules',
+  agentsSourceOpenMeteo: 'Live weather (Open-Meteo)',
+  agentsSourceRecords: 'Stored records',
+  agentsSourceRss: 'Live RSS feeds',
+  agentsSourceTrained: 'Trained model',
+  agentsSourceLlm: 'Generative language model',
+  agentsSourceNone: 'No source',
+  agentsConfidenceHigh: 'High confidence',
+  agentsConfidenceMedium: 'Medium confidence',
+  agentsConfidenceLow: 'Low confidence',
+  agentsConfidenceUnknown: 'Unknown confidence',
+  agentsShowTrace: 'Show orchestration trace',
+  agentsHideTrace: 'Hide orchestration trace',
+  agentsRegistryTitle: 'Specialist agent registry',
+  agentsRegistrySubtitle: 'The allow-listed set the orchestrator actually runs on the server.',
+  agentsRegistryLoadFailed: 'Could not load the agent registry.',
+  agentsSpecialistCount: 'Agent count',
+  agentsDependsOn: 'Depends on',
+  agentsNoDependencies: 'Independent',
+  agentsInAction: 'Agents in action',
+  agentsPreamble: 'Every assistant answer passes through a central orchestrator that selects specialised agents from your question, runs them under a bounded plan, then merges their source-labelled findings.',
 
 };
 

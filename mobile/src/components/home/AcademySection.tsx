@@ -28,7 +28,7 @@ const TINT: Record<AcademyTopic['tint'], { color: string; bg: string }> = {
 };
 
 /**
- * AgroGrowth Academy — a topical index. Each tile leads to something that
+ * AgriVibe Academy — a topical index. Each tile leads to something that
  * genuinely exists: a curated video category or an existing service screen.
  * There are no decorative categories and no fabricated content.
  */

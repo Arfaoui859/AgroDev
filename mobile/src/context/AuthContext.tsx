@@ -61,7 +61,7 @@ function mapUser(sbUser: SupabaseUser, profile?: any): User {
   return {
     id: sbUser.id,
     email: sbUser.email || profile?.email || '',
-    full_name: profile?.full_name || meta.full_name || 'AgroGrowth User',
+    full_name: profile?.full_name || meta.full_name || 'AgriVibe User',
     full_name_ar: profile?.full_name_ar || meta.full_name_ar,
     phone: sbUser.phone || profile?.phone || meta.phone,
     role: (profile?.role || meta.role || 'farmer') as UserRole,

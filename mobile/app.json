@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "AgroGrowth",
-    "slug": "agrogrowth-mobile",
+    "name": "AgriVibe",
+    "slug": "agrivibe-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "agrogrowth",
+    "scheme": "agrivibe",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "tn.agrogrowth.mobile",
+      "bundleIdentifier": "tn.agrivibe.mobile",
       "infoPlist": {
         "NSCameraUsageDescription": "يطلب التطبيق استخدام الكاميرا لالتقاط صور أوراق النباتات وتشخيص الأمراض الفطرية والآفات بالذكاء الاصطناعي.",
         "NSPhotoLibraryUsageDescription": "يطلب التطبيق الوصول لمعرض الصور لاختيار صور المحاصيل وتشخيصها.",
@@ -17,9 +17,9 @@
       }
     },
     "android": {
-      "package": "tn.agrogrowth.mobile",
+      "package": "tn.agrivibe.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#16a34a",
+        "backgroundColor": "#0b3b22",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -62,7 +62,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#16a34a",
+          "backgroundColor": "#0b3b22",
           "resizeMode": "contain",
           "image": "./assets/splash-icon.png"
         }

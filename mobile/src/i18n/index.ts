@@ -162,8 +162,8 @@ export interface Translations {
 }
 
 const ar: Translations = {
-  appName: 'AgroGrowth',
-  tagline: 'منصة زراعية ذكية متكاملة لتونس',
+  appName: 'AgriVibe',
+  tagline: 'الذكاء وراء الزراعة',
   navHome: 'الرئيسية',
   navServices: 'الخدمات',
   navAssistant: 'المساعد الذكي',
@@ -229,7 +229,7 @@ const ar: Translations = {
 
   assistantTitle: 'المستشار الزراعي الذكي',
   assistantSubtitle: 'اسأل عن أي موضوع زراعي وتلقى إجابات علمية مخصصة ومجربة',
-  assistantGreeting: 'مرحباً بك! أنا مستشارك الزراعي الذكي في AgroGrowth. كيف أستطيع مساعدتك اليوم في مزرعتك؟',
+  assistantGreeting: 'مرحباً بك! أنا مستشارك الزراعي الذكي في AgriVibe. كيف أستطيع مساعدتك اليوم في مزرعتك؟',
   typeYourMessage: 'اكتب سؤالك هنا بالعامية التونسية أو الفصحى...',
   send: 'إرسال',
   suggestedPromptsTitle: 'أسئلة شائعة يمكنك تجربتها:',
@@ -311,8 +311,8 @@ const ar: Translations = {
 };
 
 const fr: Translations = {
-  appName: 'AgroGrowth',
-  tagline: 'Plateforme Agricole Intelligente pour la Tunisie',
+  appName: 'AgriVibe',
+  tagline: 'L’intelligence derrière l’agriculture',
   navHome: 'Accueil',
   navServices: 'Services',
   navAssistant: 'Assistant IA',
@@ -345,7 +345,7 @@ const fr: Translations = {
   actionIrrigationSub: 'Optimisez l’eau et réduisez vos dépenses énergétiques',
 
   servicesTitle: 'Tous les Services Agricoles',
-  servicesSubtitle: 'Accédez à l’ensemble des outils AgroGrowth en toute simplicité',
+  servicesSubtitle: 'Accédez à l’ensemble des outils AgriVibe en toute simplicité',
   searchServices: 'Rechercher un service, une maladie...',
   catSoilAndCrops: 'Sol & Cultures',
   catHealthAndProtection: 'Santé & Protection',
@@ -378,7 +378,7 @@ const fr: Translations = {
 
   assistantTitle: 'Conseiller Agricole IA',
   assistantSubtitle: 'Posez vos questions agronomiques et obtenez des réponses claires',
-  assistantGreeting: 'Bonjour ! Je suis votre conseiller AgroGrowth. Comment puis-je vous aider aujourd’hui ?',
+  assistantGreeting: 'Bonjour ! Je suis votre conseiller AgriVibe. Comment puis-je vous aider aujourd’hui ?',
   typeYourMessage: 'Posez votre question ici...',
   send: 'Envoyer',
   suggestedPromptsTitle: 'Questions suggérées :',
@@ -460,8 +460,8 @@ const fr: Translations = {
 };
 
 const en: Translations = {
-  appName: 'AgroGrowth',
-  tagline: 'Smart Agricultural Platform for Tunisia',
+  appName: 'AgriVibe',
+  tagline: 'The Intelligence Behind Agriculture',
   navHome: 'Home',
   navServices: 'Services',
   navAssistant: 'AI Assistant',
@@ -494,7 +494,7 @@ const en: Translations = {
   actionIrrigationSub: 'Save water and energy with smart irrigation schedules',
 
   servicesTitle: 'All Agricultural Services',
-  servicesSubtitle: 'Intuitive access to every AgroGrowth platform feature',
+  servicesSubtitle: 'Intuitive access to every AgriVibe platform feature',
   searchServices: 'Search services, diagnosis, or recommendations...',
   catSoilAndCrops: 'Soil & Crops',
   catHealthAndProtection: 'Plant Health & Protection',
@@ -527,7 +527,7 @@ const en: Translations = {
 
   assistantTitle: 'Smart Agronomist AI',
   assistantSubtitle: 'Ask any farming question and get practical agronomic guidance',
-  assistantGreeting: 'Welcome! I am your AgroGrowth assistant. What can I help you with on your farm today?',
+  assistantGreeting: 'Welcome! I am your AgriVibe assistant. What can I help you with on your farm today?',
   typeYourMessage: 'Type your question here (Arabic, French, or English)...',
   send: 'Send',
   suggestedPromptsTitle: 'Suggested questions:',
@@ -563,7 +563,7 @@ const en: Translations = {
   roleInvestor: 'Investor / Institution',
   languageSelect: 'Application Language',
   connectionStatus: 'System Connection',
-  serverOnline: 'Connected to AgroGrowth Cloud',
+  serverOnline: 'Connected to AgriVibe Cloud',
   serverOffline: 'Running in Local Offline Mode',
   offlineMode: 'Local Data Storage',
   syncData: 'Sync Data Now',

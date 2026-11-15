@@ -7,6 +7,7 @@ import { rowGapSm, rowGapXs } from '../../theme/layout';
 import { linkCaption, titleBaseCenter, titleLg } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
+import { BrandMark } from './BrandMark';
 import { IconButton } from './IconButton';
 
 interface HeaderProps {
@@ -75,9 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
           />
         ) : (
           <View style={[styles.brandContainer, isRtl && rtlStyles.rtlRow]}>
-            <View style={styles.logoBadge}>
-              <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
-            </View>
+            <BrandMark size={36} />
             <View>
               <Text style={styles.brandTitle}>{t.appName}</Text>
               <Text style={styles.roleSub}>{getRoleLabel()}</Text>
@@ -145,14 +144,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   brandContainer: rowGapSm,
-  logoBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   brandTitle: titleLg,
   roleSub: linkCaption,
   titleContainer: {

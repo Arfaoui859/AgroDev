@@ -4,6 +4,14 @@ export const colors = {
   primaryLight: '#dcfce7',
   primaryForeground: '#ffffff',
 
+  // AgriVibe identity: the deep green of the launcher icon plus the bronze and
+  // illuminated-leaf greens that the emblem itself carries.
+  brandDeep: '#0b3b22',
+  brandDeepLight: '#10522f',
+  brandBronze: '#b06a38',
+  brandBronzeLight: '#d9a06a',
+  brandLeaf: '#4aa25f',
+
   secondary: '#0284c7', // Sky blue
   secondaryLight: '#e0f2fe',
   secondaryDark: '#0369a1',

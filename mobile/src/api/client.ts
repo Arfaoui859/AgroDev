@@ -22,6 +22,7 @@ import {
   IrrigationResult,
   MarketPriceItem,
   MarketResult,
+  OrchestrationTrace,
   MarketplaceListing,
   MarketplaceResult,
   NewsArticle,
@@ -1038,8 +1039,56 @@ export async function chatWithAIAssistant(
       meta,
       farmContextStatus: res.data.farmContextStatus,
       conversationId: res.data.conversationId ?? null,
+      // The gateway runs a real multi-agent orchestration for every turn and
+      // returns its trace; surface it so the UI can show which specialists ran
+      // and where each finding came from.
+      orchestration: normalizeOrchestrationTrace(res.data.orchestrationTrace),
+      plannedBy: res.data.plannedBy ?? null,
     },
     error: null,
+  };
+}
+
+/**
+ * Defensive normaliser for the orchestrator trace. The server is trusted, but
+ * the shape is re-validated so a partial payload can never crash the renderer
+ * (the UI walks `plan`, `steps` and their `findings`).
+ */
+function normalizeOrchestrationTrace(raw: any): OrchestrationTrace | undefined {
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.steps)) return undefined;
+  const steps = raw.steps
+    .filter((s: any) => s && typeof s.id === 'string')
+    .map((s: any) => ({
+      id: s.id,
+      title: typeof s.title === 'string' ? s.title : s.id,
+      status: s.status,
+      findings: Array.isArray(s.findings) ? s.findings.filter((f: any) => typeof f === 'string') : [],
+      dataSource: typeof s.dataSource === 'string' ? s.dataSource : null,
+      isRealData: s.isRealData === true,
+      confidence: s.confidence ?? 'unknown',
+      dependsOn: Array.isArray(s.dependsOn) ? s.dependsOn : [],
+      attempts: typeof s.attempts === 'number' ? s.attempts : 0,
+      latencyMs: typeof s.latencyMs === 'number' ? s.latencyMs : 0,
+      note: typeof s.note === 'string' ? s.note : undefined,
+    }));
+  const plan = Array.isArray(raw.plan)
+    ? raw.plan
+        .filter((p: any) => p && typeof p.id === 'string')
+        .map((p: any) => ({
+          id: p.id,
+          title: typeof p.title === 'string' ? p.title : p.id,
+          dependsOn: Array.isArray(p.dependsOn) ? p.dependsOn : [],
+        }))
+    : [];
+  return {
+    plan,
+    steps,
+    blocked: Array.isArray(raw.blocked) ? raw.blocked : [],
+    startedAt: typeof raw.startedAt === 'string' ? raw.startedAt : '',
+    finishedAt: typeof raw.finishedAt === 'string' ? raw.finishedAt : '',
+    concurrency: typeof raw.concurrency === 'number' ? raw.concurrency : 0,
+    plannedBy: raw.plannedBy === 'llm' ? 'llm' : 'keywords',
+    rejectedPlanIds: Array.isArray(raw.rejectedPlanIds) ? raw.rejectedPlanIds : [],
   };
 }
 

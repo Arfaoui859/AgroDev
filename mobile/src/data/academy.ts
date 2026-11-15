@@ -2,7 +2,7 @@ import { VideoCategory } from './agriculturalVideos';
 import { ExtraTranslations } from '../i18n/extra';
 
 /**
- * AgroGrowth Academy — the topical index that links each learning theme to the
+ * AgriVibe Academy — the topical index that links each learning theme to the
  * real content or service that covers it. Every entry points at something the
  * platform genuinely has: a curated video category (real YouTube content) or an
  * existing service screen. Nothing here is a decorative button.

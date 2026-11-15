@@ -71,6 +71,14 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
         subtitle={x.aiCapSubtitle}
       />
 
+      <Card variant="outlined" style={styles.preambleCard}>
+        <View style={[styles.provRow, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="hub" size={16} color={colors.primaryDark} />
+          <Text style={styles.preambleTitle}>{x.agentsInAction}</Text>
+        </View>
+        <Text style={[styles.preambleText, isRtl && rtlStyles.rtlText]}>{x.agentsPreamble}</Text>
+      </Card>
+
       {data?.summary ? (
         <Card variant="elevated" style={styles.summaryCard}>
           <View style={[summaryRow, isRtl && rtlStyles.rtlRow]}>
@@ -188,6 +196,9 @@ const styles = StyleSheet.create({
   provDetail: { fontSize: typography.fontSizes.xs, color: colors.text, lineHeight: typography.lineHeights.xs },
   engineText: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, lineHeight: typography.lineHeights.xs },
   requirement: { fontSize: typography.fontSizes.xs, color: colors.warning, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  preambleCard: { backgroundColor: colors.surfaceSubtle, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.md },
+  preambleTitle: { fontSize: typography.fontSizes.sm, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, lineHeight: typography.lineHeights.sm },
+  preambleText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm, marginTop: spacing.xs },
   noteCard: { backgroundColor: colors.primaryLight, borderColor: colors.primary, padding: spacing.md, marginTop: spacing.md },
   noteText: noteCaption,
 });

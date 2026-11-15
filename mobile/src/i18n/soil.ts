@@ -431,7 +431,7 @@ const ar: SoilTranslations = {
   reportReportOf: 'تقرير القطعة',
 
   marketMatchTitle: 'منتجات مطابقة في السوق',
-  marketMatchSubtitle: 'منتجات وعروض بائعين مسجّلين في منصة AgroGrowth، عند توفّرها.',
+  marketMatchSubtitle: 'منتجات وعروض بائعين مسجّلين في منصة AgriVibe، عند توفّرها.',
   marketMatchSearch: 'ابحث عن منتج أو سماد…',
   marketMatchEmpty: 'لا يوجد منتج مطابق مسجّل حالياً. لم نخترع أي منتج أو سعر.',
   marketMatchUnavailable: 'سوق المنتجات الزراعية غير متاح حتى ربط عروض بائعين ومخزون محفوظ في قاعدة البيانات.',
@@ -676,7 +676,7 @@ const fr: SoilTranslations = {
   reportReportOf: 'Rapport de la parcelle',
 
   marketMatchTitle: 'Produits correspondants sur le marché',
-  marketMatchSubtitle: 'Produits et offres de vendeurs enregistrés sur AgroGrowth, lorsqu’ils existent.',
+  marketMatchSubtitle: 'Produits et offres de vendeurs enregistrés sur AgriVibe, lorsqu’ils existent.',
   marketMatchSearch: 'Rechercher un produit ou un engrais…',
   marketMatchEmpty: 'Aucun produit correspondant enregistré. Aucun produit ni prix n’a été inventé.',
   marketMatchUnavailable: 'Le marché agricole est indisponible tant que les offres et stocks ne sont pas connectés à la base.',
@@ -921,7 +921,7 @@ const en: SoilTranslations = {
   reportReportOf: 'Plot report',
 
   marketMatchTitle: 'Matching products on the marketplace',
-  marketMatchSubtitle: 'Products and seller offers registered on AgroGrowth, when available.',
+  marketMatchSubtitle: 'Products and seller offers registered on AgriVibe, when available.',
   marketMatchSearch: 'Search a product or fertilizer…',
   marketMatchEmpty: 'No matching product is registered. No product or price was invented.',
   marketMatchUnavailable: 'The agricultural marketplace is unavailable until seller offers and stock are connected to the database.',

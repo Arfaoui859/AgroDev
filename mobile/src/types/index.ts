@@ -500,6 +500,8 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   meta?: ProvenanceMeta;
+  /** The multi-agent trace for this answer, when the server ran an orchestration. */
+  orchestration?: OrchestrationTrace;
 }
 
 export interface AssistantReply {
@@ -508,6 +510,78 @@ export interface AssistantReply {
   farmContextStatus?: string;
   /** Persisted thread id for this turn, when the caller had a verified session. */
   conversationId?: string | null;
+  /** Multi-agent orchestration metadata for this turn, when the server ran one. */
+  orchestration?: OrchestrationTrace;
+  /** True when a configured LLM chose the specialist plan instead of keywords. */
+  plannedBy?: 'llm' | 'keywords' | null;
+}
+
+// --------------------------- Multi-agent orchestration ----------------------
+
+/** Allow-listed specialist ids the orchestrator may run. */
+export type SpecialistId =
+  | 'soil'
+  | 'lab_soil'
+  | 'weather'
+  | 'crop'
+  | 'irrigation'
+  | 'plant_health'
+  | 'market'
+  | 'agri_news'
+  | 'pest_control'
+  | 'finance'
+  | 'yield_intel'
+  | 'livestock'
+  | 'marketplace'
+  | 'advisor';
+
+export type SpecialistStatus = 'ok' | 'insufficient_input' | 'unavailable' | 'blocked' | 'failed';
+
+export type SpecialistConfidence = 'high' | 'medium' | 'low' | 'unknown';
+
+export interface OrchestrationPlanStep {
+  id: SpecialistId;
+  title: string;
+  dependsOn: SpecialistId[];
+}
+
+export interface OrchestrationStep {
+  id: SpecialistId;
+  title: string;
+  status: SpecialistStatus;
+  /** Deterministic, provenance-labelled findings (never free-form invention). */
+  findings: string[];
+  /** e.g. "rule-based" | "open-meteo" | "persisted-records" | "rss-feeds" | null. */
+  dataSource: string | null;
+  isRealData: boolean;
+  confidence: SpecialistConfidence;
+  dependsOn: SpecialistId[];
+  attempts: number;
+  latencyMs: number;
+  note?: string;
+}
+
+export interface OrchestrationTrace {
+  plan: OrchestrationPlanStep[];
+  steps: OrchestrationStep[];
+  blocked: SpecialistId[];
+  startedAt: string;
+  finishedAt: string;
+  concurrency: number;
+  plannedBy: 'llm' | 'keywords';
+  rejectedPlanIds: string[];
+}
+
+/** One row of the live specialist registry reported by the gateway. */
+export interface SpecialistRegistryEntry {
+  id: SpecialistId;
+  title: string;
+  dependsOn: SpecialistId[];
+}
+
+export interface MultiAgentRegistryResponse {
+  specialists: SpecialistRegistryEntry[];
+  count: number;
 }
 
 // --------------------------- Notifications ---------------------------------

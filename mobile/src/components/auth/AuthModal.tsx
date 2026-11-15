@@ -15,6 +15,7 @@ import { rowGapXs, rowWrapSm, stackSm } from '../../theme/layout';
 import { fieldLabel, labelMedium, primaryBoldText, subtitleMetaBase, subtleCaption, titleLg, titleXl } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
+import { BrandMark } from '../ui/BrandMark';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
 import { IconChip } from '../ui/IconChip';
@@ -42,7 +43,7 @@ const ROLE_OPTIONS: { role: UserRole; labelKey: keyof ExtraTranslations; icon: s
 ];
 
 export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
-  const { x, isRtl } = useLanguage();
+  const { t, x, isRtl } = useLanguage();
   const { signIn, signUp, resetPassword, isLoading } = useAuth();
 
   const [tab, setTab] = useState<Tab>('signin');
@@ -128,8 +129,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
       headerStyle={styles.header}
       header={
         <View style={[styles.brandRow, isRtl && rtlStyles.rtlRow]}>
-          <MaterialCommunityIcons name="sprout" size={24} color={colors.primary} />
-          <Text style={styles.brandTitle}>AgroGrowth</Text>
+          <BrandMark size={32} plain />
+          <Text style={styles.brandTitle}>{t.appName}</Text>
         </View>
       }
     >

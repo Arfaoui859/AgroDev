@@ -19,6 +19,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { chatWithAIAssistant } from '../api/client';
 import { ChatMessage } from '../types';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
+import { OrchestrationTraceView } from '../components/ui/OrchestrationTraceView';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { formatTime } from '../utils/date';
 
@@ -92,6 +93,7 @@ export const AIAssistantScreen: React.FC = () => {
         text: response.data?.reply || x.assistantUnavailable,
         timestamp: formatTime(new Date(), language),
         meta: response.data?.meta,
+        orchestration: response.data?.orchestration,
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch {
@@ -204,6 +206,9 @@ export const AIAssistantScreen: React.FC = () => {
                 </Text>
                 {!isUser && msg.meta ? (
                   <ProvenanceBar meta={msg.meta} style={styles.provRow} />
+                ) : null}
+                {!isUser && msg.orchestration ? (
+                  <OrchestrationTraceView trace={msg.orchestration} />
                 ) : null}
               </View>
             </View>

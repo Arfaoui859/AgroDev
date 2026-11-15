@@ -23,6 +23,7 @@ import { apiRequest, getApiBaseUrl } from '../api/client';
 import { supabaseHost, isSupabaseConfigured } from '../api/supabase';
 import { clearCache } from '../api/cache';
 import { AuthModal } from '../components/auth/AuthModal';
+import { BrandMark } from '../components/ui/BrandMark';
 
 export const ProfileScreen: React.FC = () => {
   const { t, x, isRtl, isArabic, language, setLanguage } = useLanguage();
@@ -283,6 +284,15 @@ export const ProfileScreen: React.FC = () => {
         style={{ marginTop: spacing.md, marginBottom: spacing['2xl'] }}
       />
 
+      {/* Brand footer */}
+      <View style={[styles.brandFooter, isRtl && rtlStyles.rtlRow]}>
+        <BrandMark size={34} plain />
+        <View style={styles.brandFooterText}>
+          <Text style={styles.brandFooterName}>{t.appName}</Text>
+          <Text style={styles.brandFooterTagline}>{t.tagline}</Text>
+        </View>
+      </View>
+
       {/* Auth Modal */}
       <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </ScrollView>
@@ -298,6 +308,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
+  brandFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  brandFooterText: { flexShrink: 1 },
+  brandFooterName: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  brandFooterTagline: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: 1 },
   profileCard: paddedCardLg,
   avatarRow: rowGapMd,
   avatarLarge: {

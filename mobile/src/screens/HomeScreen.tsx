@@ -16,6 +16,7 @@ import { linkCaption, mutedCaption, subtitleMeta, titleBaseAccent, titleSm } fro
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
+import { BrandMark } from '../components/ui/BrandMark';
 import { Badge } from '../components/ui/Badge';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
@@ -240,6 +241,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         >
           <View style={[styles.heroTopRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.heroTextWrap}>
+              <View style={[styles.heroBrandRow, isRtl && rtlStyles.rtlRow]}>
+                <BrandMark size={30} />
+                <View style={styles.heroBrandText}>
+                  <Text style={styles.heroBrandName}>{t.appName}</Text>
+                  <Text style={styles.heroBrandTagline}>{t.tagline}</Text>
+                </View>
+              </View>
               <Text style={styles.heroDate}>{formatDate(new Date().toISOString(), language)}</Text>
               <Text style={[styles.heroTitle, isRtl && rtlStyles.rtlText]}>
                 {t.greeting}{x.listSeparator}{displayName} 👋
@@ -431,7 +439,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         </View>
       </TouchableOpacity>
 
-      {/* AgroGrowth Academy — topical index into real content & services */}
+      {/* AgriVibe Academy — topical index into real content & services */}
       <AcademySection
         onOpenVideos={(category) =>
           onOpenLearning ? onOpenLearning(category) : onNavigateToService('learning')
@@ -575,6 +583,10 @@ const styles = StyleSheet.create({
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
   heroTextWrap: flex1,
+  heroBrandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  heroBrandText: { flexShrink: 1 },
+  heroBrandName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
+  heroBrandTagline: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandMuted, marginTop: 1 },
   heroDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandSubtle, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
   heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.textInverse, marginTop: 2 },
   heroSub: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandMuted, marginTop: 2 },
