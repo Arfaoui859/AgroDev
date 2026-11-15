@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native
 import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { mutedCaption, subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
   animalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
   animalTitleArea: { flex: 1 },
   animalTag: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
-  animalMeta: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  animalMeta: subtitleMeta,
   animalMetrics: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -216,6 +217,6 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   metricItem: { alignItems: 'center', flex: 1 },
-  metricLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  metricLabel: mutedCaption,
   metricValue: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text, marginTop: 2 },
 });

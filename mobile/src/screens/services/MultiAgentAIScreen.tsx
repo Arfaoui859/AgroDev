@@ -4,6 +4,7 @@ import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { mutedCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
   agentIconBox: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   agentTitleArea: { flex: 1 },
   agentNameAr: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
-  agentNameEn: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  agentNameEn: mutedCaption,
   provenanceBox: {
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.md,

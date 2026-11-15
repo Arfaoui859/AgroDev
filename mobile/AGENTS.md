@@ -566,3 +566,20 @@ Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
 `npx jest` 61 suites / 270 passed (7 live tests skipped, 2 suites skipped), and
 `npx expo export --platform web` bundles; the web export renders Services and the
 irrigation modal's chip pickers correctly.
+
+### Premium UI polish pass — IconChip + shared caption styles (verified 2026-11)
+
+- **`IconChip`** (`src/components/ui/IconChip.tsx`) is the one icon-leading
+  selectable pill (≥48dp, `radius.full`, outlined, primary fill when selected,
+  icon + label flip to inverse). The sign-up role picker and the disease crop
+  picker were byte-for-byte identical; both now render `<IconChip>` (crop passes
+  `iconSize={18}`). Test: `tests/unit/icon-chip.test.tsx`.
+- **`mutedCaption` / `subtleCaption` / `subtitleMeta`**
+  (`src/theme/typographyStyles.ts`) are the three xs caption styles that were
+  inlined verbatim ~25 times (dates, units, sub-labels). Screens spread them into
+  their own `StyleSheet` entries. Test: `tests/unit/typography-styles.test.ts`.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx eslint src` clean,
+`npx jest` 63 suites / 276 passed (7 live tests skipped, 2 suites skipped), and
+`npx expo export --platform web` bundles; the web export renders Home, Services,
+the irrigation modal and the disease scanner with their chip pickers intact.

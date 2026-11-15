@@ -4,6 +4,7 @@ import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
   cropHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
   cropTitleBox: { flex: 1 },
   cropNameAr: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
-  cropCategory: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  cropCategory: subtitleMeta,
   scoreBadge: {
     backgroundColor: colors.primaryLight,
     paddingHorizontal: 10,

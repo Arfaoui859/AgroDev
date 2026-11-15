@@ -11,6 +11,7 @@ import {
 import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { mutedCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
-  articleDate: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  articleDate: mutedCaption,
   readMore: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   readMoreText: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
   sourcesNote: { padding: spacing.md, backgroundColor: colors.surfaceSubtle, marginTop: spacing.xs },

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { subtleCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface ChipSelectProps {
@@ -48,6 +49,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  chipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary },
+  chipText: subtleCaption,
   chipTextActive: { color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
 });

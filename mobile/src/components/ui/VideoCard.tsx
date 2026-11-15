@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { subtleCaption } from '../../theme/typographyStyles';
 import { rtlStyles } from '../../theme/rtl';
 import { useLanguage } from '../../context/LanguageContext';
 import { LearningVideo, videoThumbnailUrl } from '../../data/agriculturalVideos';
@@ -143,6 +144,6 @@ const styles = StyleSheet.create({
   videoTitleStrip: { minHeight: 42 },
   watchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   watchText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.danger, fontWeight: typography.fontWeights.semibold },
-  channel: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary },
+  channel: subtleCaption,
   channelRow: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary },
 });

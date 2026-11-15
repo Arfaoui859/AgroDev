@@ -1,0 +1,27 @@
+import { mutedCaption, subtleCaption, subtitleMeta } from '../../src/theme/typographyStyles';
+import { colors, typography } from '../../src/theme/colors';
+
+/**
+ * These three caption constants replaced dozens of identical inline definitions
+ * across screens. They must keep the xs type scale with a matching line height
+ * (Arabic needs it) and only differ by colour / top gap.
+ */
+describe('caption styles', () => {
+  it('all use the xs scale with a line height', () => {
+    for (const s of [mutedCaption, subtleCaption, subtitleMeta]) {
+      expect(s.fontSize).toBe(typography.fontSizes.xs);
+      expect(s.lineHeight).toBe(typography.lineHeights.xs);
+    }
+  });
+
+  it('muted vs secondary colour', () => {
+    expect(mutedCaption.color).toBe(colors.textMuted);
+    expect(subtleCaption.color).toBe(colors.textSecondary);
+    expect(subtitleMeta.color).toBe(colors.textSecondary);
+  });
+
+  it('subtitleMeta is subtleCaption plus a 2px top gap', () => {
+    expect(subtitleMeta.marginTop).toBe(2);
+    expect(subtleCaption.marginTop).toBeUndefined();
+  });
+});

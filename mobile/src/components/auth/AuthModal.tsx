@@ -15,6 +15,7 @@ import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
+import { IconChip } from '../ui/IconChip';
 import { ModalSheet } from '../ui/ModalSheet';
 import { UserRole } from '../../types';
 import { ExtraTranslations } from '../../i18n/extra';
@@ -189,29 +190,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                 </Field>
                 <Field label={x.authAccountType} isRtl={isRtl}>
                   <View style={[styles.roleGrid, isRtl && rtlStyles.rtlRow]}>
-                    {ROLE_OPTIONS.map((option) => {
-                      const selected = role === option.role;
-                      return (
-                        <TouchableOpacity
-                          key={option.role}
-                          activeOpacity={0.85}
-                          onPress={() => setRole(option.role)}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected }}
-                          accessibilityLabel={x[option.labelKey]}
-                          style={[styles.roleChip, isRtl && rtlStyles.rtlRow, selected && styles.roleChipSelected]}
-                        >
-                          <MaterialCommunityIcons
-                            name={option.icon as any}
-                            size={16}
-                            color={selected ? colors.textInverse : colors.primary}
-                          />
-                          <Text style={[styles.roleChipText, selected && styles.roleChipTextSelected]}>
-                            {x[option.labelKey]}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                    {ROLE_OPTIONS.map((option) => (
+                      <IconChip
+                        key={option.role}
+                        icon={option.icon as any}
+                        label={x[option.labelKey]}
+                        selected={role === option.role}
+                        onPress={() => setRole(option.role)}
+                      />
+                    ))}
                   </View>
                 </Field>
               </>
@@ -358,26 +345,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  roleChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  roleChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  roleChipText: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeights.medium,
-  },
-  roleChipTextSelected: { color: colors.textInverse },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',

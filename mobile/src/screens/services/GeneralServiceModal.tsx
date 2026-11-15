@@ -4,6 +4,7 @@ import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { mutedCaption } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     gap: 2,
   },
-  metricBoxLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  metricBoxLabel: mutedCaption,
   metricBoxValue: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.water },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, marginTop: 2 },
   provRow: { marginBottom: spacing.sm },

@@ -12,6 +12,7 @@ import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
+import { mutedCaption, subtitleMeta } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -655,7 +656,7 @@ const styles = StyleSheet.create({
   },
   actionTileIcon: { width: 38, height: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
   actionTileTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
-  actionTileSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  actionTileSub: subtitleMeta,
   assistantBanner: {
     minHeight: 48,
     backgroundColor: colors.primaryLight,
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
   },
   assistantTextContainer: { flex: 1 },
   assistantBannerTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
-  assistantBannerSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  assistantBannerSub: subtitleMeta,
   alertsContainer: { paddingVertical: spacing.xs },
   alertCard: { padding: spacing.sm },
   alertRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -694,7 +695,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
-  alertMessage: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  alertMessage: subtitleMeta,
   connectionFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -702,5 +703,5 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.sm,
   },
-  connectionFooterText: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  connectionFooterText: mutedCaption,
 });

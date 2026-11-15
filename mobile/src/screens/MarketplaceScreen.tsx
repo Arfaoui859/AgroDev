@@ -10,6 +10,7 @@ import {
 import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
+import { mutedCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   trendText: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
-  noTrend: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  noTrend: mutedCaption,
   tipCard: { backgroundColor: colors.secondaryLight, borderColor: colors.secondary, padding: spacing.md },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   tipTextContent: { flex: 1 },

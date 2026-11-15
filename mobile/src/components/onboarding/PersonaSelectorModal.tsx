@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
+import { subtitleMeta } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -175,7 +176,7 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
 
 const styles = StyleSheet.create({
   modalTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
-  modalSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
+  modalSub: subtitleMeta,
   personaList: { marginVertical: spacing.xs },
   personaCard: {
     minHeight: 48,

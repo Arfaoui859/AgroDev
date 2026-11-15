@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Chip } from '../../components/ui/Chip';
+import { IconChip } from '../../components/ui/IconChip';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { LimitationsNotice } from '../../components/ui/LimitationsNotice';
@@ -228,23 +229,16 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       <View style={styles.section}>
         <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.diseaseStepCrop}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.cropsScroll, isRtl && rtlStyles.rtlRow]}>
-          {CROP_CHOICES.map((c) => {
-            const selected = selectedCrop === c.id;
-            return (
-              <TouchableOpacity
-                key={c.id}
-                activeOpacity={0.85}
-                onPress={() => setSelectedCrop(c.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={x[c.labelKey]}
-                style={[styles.cropChip, isRtl && rtlStyles.rtlRow, selected && styles.cropChipSelected]}
-              >
-                <MaterialCommunityIcons name={c.icon as any} size={18} color={selected ? colors.textInverse : colors.primary} />
-                <Text style={[styles.cropChipText, selected && styles.cropChipTextSelected]}>{x[c.labelKey]}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {CROP_CHOICES.map((c) => (
+            <IconChip
+              key={c.id}
+              icon={c.icon as any}
+              label={x[c.labelKey]}
+              selected={selectedCrop === c.id}
+              onPress={() => setSelectedCrop(c.id)}
+              iconSize={18}
+            />
+          ))}
         </ScrollView>
       </View>
 
@@ -410,21 +404,6 @@ const styles = StyleSheet.create({
   actionPickText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.bold, textAlign: 'center', lineHeight: typography.lineHeights.xs },
   section: { marginBottom: spacing.md },
   cropsScroll: { gap: spacing.sm, paddingVertical: spacing.xs },
-  cropChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  cropChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  cropChipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: typography.lineHeights.xs },
-  cropChipTextSelected: { color: colors.textInverse },
   partsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   symptomsInput: {
     minHeight: 80,

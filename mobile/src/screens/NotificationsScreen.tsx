@@ -4,6 +4,7 @@ import { screenStyles } from '../theme/layout';
 import { rtlStyles } from '../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../theme/colors';
+import { mutedCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -169,5 +170,5 @@ const styles = StyleSheet.create({
   unreadDot: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
   unreadText: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
-  cardDate: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  cardDate: mutedCaption,
 });

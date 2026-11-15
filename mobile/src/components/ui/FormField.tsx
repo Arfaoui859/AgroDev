@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
+import { mutedCaption } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface FormFieldProps {
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
   group: { marginBottom: spacing.sm },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   label: { flex: 1, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, lineHeight: typography.lineHeights.xs },
-  suffix: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  suffix: mutedCaption,
   input: {
     minHeight: 48,
     backgroundColor: colors.surfaceSubtle,
