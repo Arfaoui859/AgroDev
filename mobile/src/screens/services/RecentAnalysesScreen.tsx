@@ -137,7 +137,7 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
         onRequestClose={() => setDetail(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+          <View style={modalSheet}>
             <View style={[styles.modalHeader, isRtl && rtlStyles.rtlRow]}>
               <Text style={[styles.modalTitle, isRtl && rtlStyles.rtlText]}>{detail?.title}</Text>
               <TouchableOpacity
@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.scrim,
     justifyContent: 'flex-end',
   },
-  modalSheet: modalSheet,
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -117,7 +117,7 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
               <Text style={[styles.summaryTitle, isRtl && rtlStyles.rtlText]}>{x.livestockSummary}</Text>
               <ProvenanceBadge meta={meta} />
             </View>
-            <View style={[styles.summaryRow, isRtl && rtlStyles.rtlRow]}>
+            <View style={[summaryRow, isRtl && rtlStyles.rtlRow]}>
               <StatTile style={styles.statTile} label={x.livestockTotal} value={String(animals.length)} color={colors.text} />
               <View style={styles.divider} />
               <StatTile style={styles.statTile} label={x.livestockHealthy} value={String(healthy)} color={colors.success} />
@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
   summaryCard: stackedCard,
   summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   summaryTitle: titleSm,
-  summaryRow: summaryRow,
   statTile: flex1,
   divider: { width: 1, height: 32, backgroundColor: colors.border },
   totalValue: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center', lineHeight: typography.lineHeights.xs },

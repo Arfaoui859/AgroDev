@@ -131,7 +131,7 @@ export const MarketplaceScreen: React.FC = () => {
                   </View>
                 </View>
 
-                <View style={[styles.cardBottomRow, isRtl && rtlStyles.rtlRow]}>
+                <View style={[cardBottomRow, isRtl && rtlStyles.rtlRow]}>
                   {item.qualityGrade && item.qualityGrade !== '—' ? (
                     <Badge label={item.qualityGrade} variant="secondary" size="sm" />
                   ) : (
@@ -256,7 +256,6 @@ const styles = StyleSheet.create({
   },
   priceValue: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
   currencyLabel: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: typography.lineHeights.xs },
-  cardBottomRow: cardBottomRow,
   trendBadge: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -73,7 +73,7 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
 
       {data?.summary ? (
         <Card variant="elevated" style={styles.summaryCard}>
-          <View style={[styles.summaryRow, isRtl && rtlStyles.rtlRow]}>
+          <View style={[summaryRow, isRtl && rtlStyles.rtlRow]}>
             <StatTile label={x.aiSummaryTotal} value={data.summary.total} color={colors.text} />
             <StatTile label={x.aiSummaryAvailable} value={data.summary.available} color={colors.success} />
             <StatTile label={x.aiSummaryModelPowered} value={data.summary.modelPowered} color={colors.primary} />
@@ -158,7 +158,6 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
 
 const styles = StyleSheet.create({
   summaryCard: stackedCard,
-  summaryRow: summaryRow,
   llmRow: {
     flexDirection: 'row',
     alignItems: 'center',
