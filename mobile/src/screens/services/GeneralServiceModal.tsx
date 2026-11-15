@@ -171,7 +171,11 @@ const IrrigationService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       ) : null}
 
       {unavailable ? (
-        <StateCard kind="unavailable" title={x.irrigationUnavailableTitle} message={x.irrigationUnavailable} />
+        <StateCard
+          kind="unavailable"
+          title={x.irrigationUnavailableTitle}
+          message={x.irrigationUnavailable}
+        />
       ) : null}
 
       {error && !unavailable ? (
@@ -274,7 +278,13 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       ) : null}
 
       {error && !unavailable ? (
-        <StateCard kind="error" title={x.stateError} message={error} onRetry={identify} retryLabel={x.retry} />
+        <StateCard
+          kind="error"
+          title={x.stateError}
+          message={error}
+          onRetry={identify}
+          retryLabel={x.retry}
+        />
       ) : null}
 
       {result ? (

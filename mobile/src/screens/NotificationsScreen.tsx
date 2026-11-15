@@ -98,7 +98,13 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
       ) : unavailable ? (
         <StateCard kind="unavailable" title={x.stateUnavailable} message={error || undefined} />
       ) : error && items.length === 0 ? (
-        <StateCard kind={isOnline ? 'error' : 'offline'} title={isOnline ? x.stateError : x.stateOffline} message={error} onRetry={load} retryLabel={x.retry} />
+        <StateCard
+          kind={isOnline ? 'error' : 'offline'}
+          title={isOnline ? x.stateError : x.stateOffline}
+          message={error}
+          onRetry={load}
+          retryLabel={x.retry}
+        />
       ) : items.length === 0 ? (
         <StateCard kind="empty" title={x.notificationsEmpty} compact />
       ) : (

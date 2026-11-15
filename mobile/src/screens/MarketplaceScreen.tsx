@@ -86,9 +86,21 @@ export const MarketplaceScreen: React.FC = () => {
       {loading ? (
         <StateCard kind="loading" title={x.stateLoading} compact />
       ) : error && prices.length === 0 ? (
-        <StateCard kind="error" title={x.stateError} message={error} onRetry={loadPrices} retryLabel={x.retry} />
+        <StateCard
+          kind="error"
+          title={x.stateError}
+          message={error}
+          onRetry={loadPrices}
+          retryLabel={x.retry}
+        />
       ) : prices.length === 0 ? (
-        <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoPrices} onRetry={loadPrices} retryLabel={x.retry} />
+        <StateCard
+          kind="empty"
+          title={x.stateEmpty}
+          message={x.marketNoPrices}
+          onRetry={loadPrices}
+          retryLabel={x.retry}
+        />
       ) : (
         <>
           <ProvenanceBar meta={meta} detailed cached={fromCache} style={styles.provBar} />

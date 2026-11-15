@@ -304,7 +304,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           this card carries the actionable advice and its provenance instead of
           repeating the same numbers. */}
       {loading ? (
-        <StateCard variant="elevated" cardStyle={styles.weatherCard} kind="loading" title={x.stateLoading} compact />
+        <StateCard
+          variant="elevated"
+          cardStyle={styles.weatherCard}
+          kind="loading"
+          title={x.stateLoading}
+          compact
+        />
       ) : weather ? (
         <Card
           variant="elevated"
@@ -337,7 +343,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           </View>
         </Card>
       ) : (
-        <StateCard variant="elevated" cardStyle={styles.weatherCard} kind={isOnline ? 'error' : 'offline'} title={x.homeWeatherUnavailable} message={weatherError || undefined} onRetry={loadDashboardData} retryLabel={x.retry} />
+        <StateCard
+          variant="elevated"
+          cardStyle={styles.weatherCard}
+          kind={isOnline ? 'error' : 'offline'}
+          title={x.homeWeatherUnavailable}
+          message={weatherError || undefined}
+          onRetry={loadDashboardData}
+          retryLabel={x.retry}
+        />
       )}
 
       {/* Quick actions */}
@@ -443,11 +457,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         />
 
         {alertsUnavailable ? (
-          <StateCard cardStyle={styles.alertsContainer} kind="unavailable" title={x.stateUnavailable} message={x.homeAlertsUnavailable} compact />
+          <StateCard
+            cardStyle={styles.alertsContainer}
+            kind="unavailable"
+            title={x.stateUnavailable}
+            message={x.homeAlertsUnavailable}
+            compact
+          />
         ) : alertsError && alerts.length === 0 ? (
-          <StateCard cardStyle={styles.alertsContainer} kind={isOnline ? 'error' : 'offline'} title={isOnline ? x.stateError : x.stateOffline} message={alertsError} onRetry={loadDashboardData} retryLabel={x.retry} compact />
+          <StateCard
+            cardStyle={styles.alertsContainer}
+            kind={isOnline ? 'error' : 'offline'}
+            title={isOnline ? x.stateError : x.stateOffline}
+            message={alertsError}
+            onRetry={loadDashboardData}
+            retryLabel={x.retry}
+            compact
+          />
         ) : alerts.length === 0 ? (
-          <StateCard cardStyle={styles.alertsContainer} kind="empty" title={x.homeNoAlerts} message={isAuthenticated ? undefined : x.loginRequiredDesc} compact />
+          <StateCard
+            cardStyle={styles.alertsContainer}
+            kind="empty"
+            title={x.homeNoAlerts}
+            message={isAuthenticated ? undefined : x.loginRequiredDesc}
+            compact
+          />
         ) : (
           <View style={{ gap: spacing.sm }}>
             {alerts.slice(0, 3).map((alert) => (

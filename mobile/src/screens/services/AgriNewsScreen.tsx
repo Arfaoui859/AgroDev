@@ -133,9 +133,21 @@ export const AgriNewsScreen: React.FC<AgriNewsScreenProps> = ({ onBack }) => {
       {loading && articles.length === 0 ? (
         <StateCard kind="loading" title={x.stateLoading} compact />
       ) : error && articles.length === 0 ? (
-        <StateCard kind="error" title={x.stateError} message={error} onRetry={() => load({ q: query, cat: category })} retryLabel={x.retry} />
+        <StateCard
+          kind="error"
+          title={x.stateError}
+          message={error}
+          onRetry={() => load({ q: query, cat: category })}
+          retryLabel={x.retry}
+        />
       ) : articles.length === 0 ? (
-        <StateCard kind={error ? 'unavailable' : 'empty'} title={x.newsEmpty} message={error || x.newsEmptyDesc} onRetry={() => load({ q: query, cat: category })} retryLabel={x.retry} />
+        <StateCard
+          kind={error ? 'unavailable' : 'empty'}
+          title={x.newsEmpty}
+          message={error || x.newsEmptyDesc}
+          onRetry={() => load({ q: query, cat: category })}
+          retryLabel={x.retry}
+        />
       ) : (
         <>
           {result?.meta ? <ProvenanceBar meta={result.meta} detailed style={styles.provBar} /> : null}

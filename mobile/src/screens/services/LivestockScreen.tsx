@@ -97,7 +97,13 @@ export const LivestockScreen: React.FC<LivestockScreenProps> = ({ onBack }) => {
       ) : loading && animals.length === 0 ? (
         <StateCard kind="loading" title={x.stateLoading} compact />
       ) : unavailable ? (
-        <StateCard kind="unavailable" title={x.livestockUnavailable} message={error || x.livestockUnavailableDesc} onRetry={load} retryLabel={x.retry} />
+        <StateCard
+          kind="unavailable"
+          title={x.livestockUnavailable}
+          message={error || x.livestockUnavailableDesc}
+          onRetry={load}
+          retryLabel={x.retry}
+        />
       ) : error && animals.length === 0 ? (
         <StateCard kind="error" title={x.stateError} message={error} onRetry={load} retryLabel={x.retry} />
       ) : animals.length === 0 ? (

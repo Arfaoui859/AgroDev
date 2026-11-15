@@ -215,7 +215,14 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
           <Text style={[styles.blankNote, isRtl && rtlStyles.rtlText]}>{x.soilBlankNote}</Text>
 
           {error ? (
-            <StateCard cardStyle={styles.formCard} kind="error" title={x.stateError} message={error} onRetry={handleAnalyze} retryLabel={x.retry} />
+            <StateCard
+              cardStyle={styles.formCard}
+              kind="error"
+              title={x.stateError}
+              message={error}
+              onRetry={handleAnalyze}
+              retryLabel={x.retry}
+            />
           ) : null}
 
           <Button

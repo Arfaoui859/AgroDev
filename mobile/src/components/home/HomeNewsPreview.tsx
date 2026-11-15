@@ -58,9 +58,23 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
       {loading ? (
         <StateCard cardStyle={styles.card} kind="loading" title={x.stateLoading} compact />
       ) : error && articles.length === 0 ? (
-        <StateCard cardStyle={styles.card} kind="error" title={x.newsEmpty} message={error} onRetry={load} retryLabel={x.retry} compact />
+        <StateCard
+          cardStyle={styles.card}
+          kind="error"
+          title={x.newsEmpty}
+          message={error}
+          onRetry={load}
+          retryLabel={x.retry}
+          compact
+        />
       ) : articles.length === 0 ? (
-        <StateCard cardStyle={styles.card} kind="empty" title={x.newsEmpty} message={x.newsEmptyDesc} compact />
+        <StateCard
+          cardStyle={styles.card}
+          kind="empty"
+          title={x.newsEmpty}
+          message={x.newsEmptyDesc}
+          compact
+        />
       ) : (
         <View style={{ gap: spacing.sm }}>
           {articles.map((article) => (

@@ -169,7 +169,13 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
       {loading && <StateView kind="loading" message={x.weatherLoading} />}
 
       {!loading && !weather ? (
-        <StateCard kind={isOnline ? 'error' : 'offline'} title={isOnline ? x.stateError : x.stateOffline} message={error || undefined} onRetry={() => loadWeather(selectedGovernorate)} retryLabel={x.retry} />
+        <StateCard
+          kind={isOnline ? 'error' : 'offline'}
+          title={isOnline ? x.stateError : x.stateOffline}
+          message={error || undefined}
+          onRetry={() => loadWeather(selectedGovernorate)}
+          retryLabel={x.retry}
+        />
       ) : null}
 
       {/* Main Today Weather Card */}

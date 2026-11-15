@@ -169,7 +169,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       />
 
       {!isAuthenticated ? (
-        <StateCard cardStyle={{ marginBottom: spacing.lg }} kind="unavailable" title={x.loginRequired} message={x.farmLoginToManage} />
+        <StateCard
+          cardStyle={{ marginBottom: spacing.lg }}
+          kind="unavailable"
+          title={x.loginRequired}
+          message={x.farmLoginToManage}
+        />
       ) : null}
 
       {/* Farm Overview Card */}
@@ -216,7 +221,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       {/* First-run: no farm yet — guide the user to register one. Adding a
           field is impossible without a farm, so this must come first. */}
       {isAuthenticated && !loading && farms.length === 0 && (
-        <StateCard cardStyle={{ marginBottom: spacing.md }} kind="empty" title={x.farmNoFarmYet} message={x.farmCreateHint} />
+        <StateCard
+          cardStyle={{ marginBottom: spacing.md }}
+          kind="empty"
+          title={x.farmNoFarmYet}
+          message={x.farmCreateHint}
+        />
       )}
 
       {/* Add Farm / Add Field Button */}

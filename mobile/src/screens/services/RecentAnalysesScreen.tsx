@@ -78,7 +78,12 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
       {loading ? (
         <StateCard kind="loading" title={x.stateLoading} compact />
       ) : records.length === 0 ? (
-        <StateCard kind="empty" title={x.recentAnalysesEmptyTitle} message={x.recentAnalysesEmptyMsg} compact />
+        <StateCard
+          kind="empty"
+          title={x.recentAnalysesEmptyTitle}
+          message={x.recentAnalysesEmptyMsg}
+          compact
+        />
       ) : (
         <>
           <Text style={[styles.tapHint, isRtl && rtlStyles.rtlText]}>{x.recentAnalysesTapHint}</Text>

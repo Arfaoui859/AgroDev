@@ -292,11 +292,23 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       />
 
       {unavailable ? (
-        <StateCard cardStyle={styles.resultCard} kind="unavailable" title={x.scannerUnavailableTitle} message={error || x.scannerUnavailableDesc} />
+        <StateCard
+          cardStyle={styles.resultCard}
+          kind="unavailable"
+          title={x.scannerUnavailableTitle}
+          message={error || x.scannerUnavailableDesc}
+        />
       ) : null}
 
       {error && !unavailable ? (
-        <StateCard cardStyle={styles.resultCard} kind="error" title={x.stateError} message={error} onRetry={handleDiagnose} retryLabel={x.retry} />
+        <StateCard
+          cardStyle={styles.resultCard}
+          kind="error"
+          title={x.stateError}
+          message={error}
+          onRetry={handleDiagnose}
+          retryLabel={x.retry}
+        />
       ) : null}
 
       {result ? (
