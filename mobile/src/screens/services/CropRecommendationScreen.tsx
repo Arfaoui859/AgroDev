@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -229,7 +230,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content} showsVerticalScrollIndicator={false}>
       <ServiceHeader
         icon="sprout"
         iconColor={colors.crop}
@@ -372,8 +373,6 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   reuseBanner: {
     flexDirection: 'row',
     alignItems: 'center',

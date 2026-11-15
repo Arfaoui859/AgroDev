@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
@@ -221,8 +222,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.container}
+      contentContainerStyle={screenStyles.content}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
@@ -557,8 +558,6 @@ const ActionTile: React.FC<{
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   // Hero gradient surface: rounded, with generous padding and a soft shadow so
   // it reads as the screen's primary anchor rather than a plain card. The shadow
   // sits on the wrapper (not the gradient) so Android keeps its elevation while

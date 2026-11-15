@@ -7,6 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import { screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
@@ -68,8 +69,8 @@ export const MarketplaceScreen: React.FC = () => {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={screenStyles.container}
+      contentContainerStyle={screenStyles.content}
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
     >
@@ -234,8 +235,6 @@ const MarketIntelRow: React.FC<{
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   intelCard: { marginTop: spacing.md },
   intelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },

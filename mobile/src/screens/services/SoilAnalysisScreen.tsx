@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -183,7 +184,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
   const canContinueFromPlot = !!selectedField || !!selectedFarm;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content} showsVerticalScrollIndicator={false}>
       <ServiceHeader
         icon="flask-outline"
         iconColor={colors.soil}
@@ -375,8 +376,6 @@ const Bullet: React.FC<{ text: string; color: string; isRtl: boolean }> = ({ tex
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginBottom: spacing.md, lineHeight: typography.lineHeights.xs },
   formCard: { padding: spacing.md, marginBottom: spacing.lg },
   blankNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.sm, lineHeight: typography.lineHeights.sm },

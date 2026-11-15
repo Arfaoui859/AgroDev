@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { screenStyles } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
@@ -62,7 +63,7 @@ export const GeneralServiceModal: React.FC<GeneralServiceModalProps> = ({ servic
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content}>
       <ServiceHeader icon={info.icon} iconColor={info.color} iconBg={info.bg} title={info.title} />
       <Card variant="outlined">
         <StateView kind="unavailable" title={x.svcUnavailableTitle} message={info.note} />
@@ -141,7 +142,7 @@ const IrrigationService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content}>
       <ServiceHeader
         icon="water-pump"
         iconColor={colors.water}
@@ -239,7 +240,7 @@ const PestService: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content}>
       <ServiceHeader
         icon="bug"
         iconColor={colors.danger}
@@ -393,8 +394,6 @@ const Chip: React.FC<{ label: string; selected: boolean; onPress: () => void }> 
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   card: { padding: spacing.md, marginBottom: spacing.md },
   label: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 6, lineHeight: typography.lineHeights.xs },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

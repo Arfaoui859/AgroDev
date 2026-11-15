@@ -9,6 +9,7 @@ import {
   Image,
   Linking,
 } from 'react-native';
+import { screenStyles } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
@@ -56,7 +57,7 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content} showsVerticalScrollIndicator={false}>
       <ServiceHeader
         icon="play-box-multiple-outline"
         iconColor={colors.danger}
@@ -140,8 +141,6 @@ export const LearningVideosScreen: React.FC<LearningVideosScreenProps> = ({ onBa
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   catScroll: { gap: spacing.xs, paddingBottom: spacing.md },
   card: {
     backgroundColor: colors.card,
