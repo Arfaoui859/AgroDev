@@ -94,14 +94,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: typography.fontSizes.base,
-    lineHeight: 24,
+    lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     textAlign: 'center',
   },
   message: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.textSecondary,
     textAlign: 'center',
   },

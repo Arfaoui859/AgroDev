@@ -314,7 +314,7 @@ function weatherIconColor(icon: string | undefined): string {
 
 const styles = StyleSheet.create({
   provRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.sm, flexWrap: 'wrap' },
-  cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: 20 },
+  cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -344,13 +344,13 @@ const styles = StyleSheet.create({
   locationBtnDisabled: { opacity: 0.6 },
   locationBtnText: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.semibold,
     color: colors.secondary,
   },
   locationNotice: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.warning,
     marginBottom: spacing.sm,
   },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   },
   govPillText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },
@@ -391,13 +391,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   currentGov: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
+    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   currentCondition: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -408,7 +408,8 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   tempLarge: {
-    fontSize: 54, lineHeight: 81,
+    fontSize: typography.fontSizes.display,
+    lineHeight: typography.lineHeights.display,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -424,13 +425,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metricVal: {
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   metricSub: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
   },
   adviceBanner: {
@@ -446,13 +447,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: typography.fontSizes.xs,
     color: colors.accentDark,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
   },
   forecastSection: {
     gap: spacing.xs,
   },
   forecastHeading: {
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: spacing.xs,
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     width: 80,
@@ -480,7 +481,7 @@ const styles = StyleSheet.create({
   },
   conditionSub: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
   },
   tempMinMax: {
@@ -488,13 +489,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tempMax: {
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   tempMin: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
   },
 });

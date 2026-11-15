@@ -328,13 +328,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   profileEmail: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   langChoiceText: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.text,
     fontWeight: typography.fontWeights.medium,
   },
@@ -394,13 +394,13 @@ const styles = StyleSheet.create({
   },
   statusMainText: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   statusSubText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
   },
   connectionResultBox: {
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   connectionResultText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.text,
     textAlign: 'center',
   },
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   offlineTitle: {
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -435,6 +435,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
     marginTop: 2,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
   },
 });

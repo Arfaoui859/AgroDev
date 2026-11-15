@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   card: { padding: spacing.md, marginBottom: spacing.md },
-  label: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 6, lineHeight: 20 },
+  label: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 6, lineHeight: typography.lineHeights.xs },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     justifyContent: 'center',
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
+  chipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
   chipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   textArea: {
     minHeight: 88,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.md,
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.text,
     textAlignVertical: 'top',
   },
@@ -430,10 +430,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     color: colors.text,
   },
-  hint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 21, marginTop: 6 },
+  hint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.sm, marginTop: 6 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
   metricBox: {
     flexGrow: 1,
@@ -443,8 +443,8 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     gap: 2,
   },
-  metricBoxLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 20 },
-  metricBoxValue: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.water },
+  metricBoxLabel: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
+  metricBoxValue: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.water },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: 2 },
   provRow: { marginBottom: spacing.sm },
   climateNote: {
@@ -456,5 +456,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.secondaryLight,
   },
-  resultTitle: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: 4 },
+  resultTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: 4 },
 });

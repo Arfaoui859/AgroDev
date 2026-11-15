@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.text,
     height: '100%',
   },

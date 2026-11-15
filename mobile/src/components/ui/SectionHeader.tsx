@@ -87,20 +87,20 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   title: {
     fontSize: typography.fontSizes.base,
-    lineHeight: 24,
+    lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   subtitle: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     marginTop: 2,
   },
   linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
   linkText: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.primary,
     fontWeight: typography.fontWeights.semibold,
   },

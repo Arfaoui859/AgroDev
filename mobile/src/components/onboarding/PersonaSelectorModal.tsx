@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   headerTextWrap: { flex: 1 },
-  modalTitle: { fontSize: typography.fontSizes.lg, lineHeight: 27, fontWeight: typography.fontWeights.bold, color: colors.text },
-  modalSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: 20 },
+  modalTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
+  modalSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.xs },
   closeBtn: {
     width: 48,
     height: 48,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   iconWrapNormal: { backgroundColor: colors.primaryLight },
   iconWrapSelected: { backgroundColor: colors.primary },
   titleArea: { flex: 1 },
-  personaTitle: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
+  personaTitle: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
   personaTitleSelected: { color: colors.primaryDark },
-  personaDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20, marginTop: 2 },
+  personaDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs, marginTop: 2 },
 });

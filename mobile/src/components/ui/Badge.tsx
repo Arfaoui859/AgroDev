@@ -68,10 +68,10 @@ const styles = StyleSheet.create({
   },
   textSm: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
   },
   textMd: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
   },
 });

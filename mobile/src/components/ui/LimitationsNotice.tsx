@@ -34,11 +34,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: 4,
   },
-  text: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 21 },
+  text: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

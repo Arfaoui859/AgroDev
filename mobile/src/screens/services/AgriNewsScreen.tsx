@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   articleCard: { padding: spacing.md, marginBottom: spacing.sm },
   articleHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },
   articleTitle: { fontSize: typography.fontSizes.base, fontWeight: typography.fontWeights.bold, color: colors.text, lineHeight: 22 },
-  articleSummary: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: 21 },
+  articleSummary: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: typography.lineHeights.sm },
   articleFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -220,9 +220,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
   },
-  articleDate: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 20 },
+  articleDate: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
   readMore: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  readMoreText: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold, lineHeight: 20 },
+  readMoreText: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
   sourcesNote: { padding: spacing.md, backgroundColor: colors.surfaceSubtle, marginTop: spacing.xs },
-  sourcesNoteText: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 21 },
+  sourcesNoteText: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.sm },
 });

@@ -41,13 +41,13 @@ const styles = StyleSheet.create({
   textWrap: { flex: 1 },
   title: {
     fontSize: typography.fontSizes.xl,
-    lineHeight: 30,
+    lineHeight: typography.lineHeights.xl,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   subtitle: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.textSecondary,
     marginTop: 3,
   },

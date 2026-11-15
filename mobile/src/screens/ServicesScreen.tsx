@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   serviceTitle: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
+    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: 4,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   serviceDesc: {
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     marginBottom: spacing.md,
   },
   cardFooter: {
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   launchText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.primary,
     fontWeight: typography.fontWeights.bold,
   },

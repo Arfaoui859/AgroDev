@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
+    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     textAlign: 'center',
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.sm,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
   },
   rtlRow: { flexDirection: 'row-reverse' },
   retryBtn: {
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: colors.textInverse,
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
   },
 });

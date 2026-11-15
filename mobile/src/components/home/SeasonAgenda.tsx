@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textWrap: { flex: 1 },
-  seasonName: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  tip: { fontSize: typography.fontSizes.xs, lineHeight: 21, color: colors.textSecondary, marginTop: 2 },
-  note: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textMuted, marginTop: spacing.sm },
+  seasonName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  tip: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, marginTop: 2 },
+  note: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: spacing.sm },
 });

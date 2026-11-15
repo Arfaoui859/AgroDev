@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   promptChipText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
   },
   messagesContainer: {
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     marginTop: 4,
   },
   userTime: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
   },
   inputContainer: {
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: 10,
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     color: colors.text,
   },
   sendButton: {

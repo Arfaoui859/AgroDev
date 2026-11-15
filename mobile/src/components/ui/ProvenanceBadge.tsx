@@ -77,12 +77,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     fontWeight: typography.fontWeights.semibold,
   },
   source: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
     marginTop: 3,
   },
@@ -90,6 +90,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.xs,
     color: colors.textMuted,
     marginTop: 2,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
   },
 });

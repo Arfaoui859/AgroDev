@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
   },
-  guidanceText: { color: colors.textInverse, fontSize: typography.fontSizes.sm, lineHeight: 21 },
+  guidanceText: { color: colors.textInverse, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm },
   captureError: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     maxWidth: '92%',
   },
-  captureErrorText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, flexShrink: 1, lineHeight: 20 },
+  captureErrorText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, flexShrink: 1, lineHeight: typography.lineHeights.xs },
   errorClose: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginVertical: -14, marginHorizontal: -6 },
   controls: {
     flexDirection: 'row',
@@ -407,14 +407,14 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
   },
   reviewTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     textAlign: 'center',
   },
   reviewSub: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 4,
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     color: colors.textSecondary,
     fontSize: typography.fontSizes.base,
-    lineHeight: 24,
+    lineHeight: typography.lineHeights.base,
   },
   permIcon: {
     width: 80,
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   permTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     textAlign: 'center',
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.sm,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     marginBottom: spacing.xl,
   },
   errorThumb: { width: 120, height: 120, borderRadius: radius.lg, marginBottom: spacing.lg },
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     flex: 1,
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -477,16 +477,16 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: spacing.sm,
   },
-  confidenceText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.text },
+  confidenceText: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text },
   noConfidence: {
     marginTop: spacing.sm,
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
     fontStyle: 'italic',
   },
-  severity: { marginTop: 4, fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.textSecondary },
-  arabicNote: { marginTop: spacing.sm, fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: 20 },
+  severity: { marginTop: 4, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary },
+  arabicNote: { marginTop: spacing.sm, fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: typography.lineHeights.xs },
   section: { marginBottom: spacing.md },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
   bullet: {
@@ -496,5 +496,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     marginTop: 7,
   },
-  bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: 20 },
+  bulletText: { flex: 1, fontSize: typography.fontSizes.sm, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
 });

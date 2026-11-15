@@ -281,9 +281,9 @@ export const PlotStep: React.FC<PlotStepProps> = ({
 
 const styles = StyleSheet.create({
   card: { padding: spacing.md, marginBottom: spacing.md },
-  heading: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  sub: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
-  label: { fontSize: typography.fontSizes.xs, lineHeight: 20, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
+  heading: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
+  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   list: { gap: spacing.sm, marginBottom: spacing.sm },
   option: {
@@ -300,10 +300,10 @@ const styles = StyleSheet.create({
   },
   optionActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   optionText: { flex: 1 },
-  optionTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.semibold, color: colors.text },
-  optionSub: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
+  optionTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text },
+  optionSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2 },
   addLink: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48 },
-  addLinkText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.primary, fontWeight: typography.fontWeights.semibold },
+  addLinkText: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   emptyBox: { gap: spacing.sm, paddingVertical: spacing.sm },
   inlineForm: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

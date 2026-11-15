@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   tapHint: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
     marginBottom: spacing.sm,
   },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     flex: 1,
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -238,13 +238,13 @@ const styles = StyleSheet.create({
   },
   modalDate: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
     marginTop: 4,
   },
   modalImageLabel: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
     marginTop: spacing.md,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   modalSummary: {
     fontSize: typography.fontSizes.sm,
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     marginTop: spacing.md,
   },
   recordCard: {
@@ -274,20 +274,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recordTitle: {
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   recordDate: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
     marginTop: 2,
   },
   recordSummary: {
     fontSize: typography.fontSizes.xs,
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     marginVertical: spacing.xs,
   },
 });

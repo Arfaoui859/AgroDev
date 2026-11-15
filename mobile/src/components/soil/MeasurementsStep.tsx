@@ -209,15 +209,15 @@ export const MeasurementsStep: React.FC<MeasurementsStepProps> = ({ initial, onC
 
 const styles = StyleSheet.create({
   card: { padding: spacing.md, marginBottom: spacing.md },
-  heading: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  sub: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
-  groupTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, marginTop: spacing.sm, marginBottom: spacing.xs },
-  groupHint: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textMuted, marginBottom: spacing.xs },
-  label: { fontSize: typography.fontSizes.xs, lineHeight: 20, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
+  heading: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
+  groupTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, marginTop: spacing.sm, marginBottom: spacing.xs },
+  groupHint: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginBottom: spacing.xs },
+  label: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 4 },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   fieldRtl: {},
   subBlock: { marginTop: spacing.xs },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, marginTop: spacing.sm },
-  toggleText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.primary, fontWeight: typography.fontWeights.semibold },
-  note: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textMuted, marginTop: spacing.sm },
+  toggleText: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.primary, fontWeight: typography.fontWeights.semibold },
+  note: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: spacing.sm },
 });

@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
   card: { padding: spacing.md },
   unreadCard: { borderColor: colors.primary, borderWidth: 1.5 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm, marginBottom: 4 },
-  cardTitle: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
-  cardMessage: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 21 },
+  cardTitle: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  cardMessage: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.sm },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -182,6 +182,6 @@ const styles = StyleSheet.create({
   },
   unreadDot: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
-  unreadText: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold, lineHeight: 20 },
-  cardDate: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 20 },
+  unreadText: { fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
+  cardDate: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs },
 });

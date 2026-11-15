@@ -167,13 +167,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   roleSub: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.primary,
     fontWeight: typography.fontWeights.semibold,
   },
@@ -182,14 +182,14 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.sm,
   },
   screenTitle: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
+    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     textAlign: 'center',
   },
   screenSubtitle: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
     textAlign: 'center',
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   langText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     fontWeight: typography.fontWeights.bold,
     color: colors.primaryDark,
   },

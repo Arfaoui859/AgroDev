@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   pillSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   text: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },

@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   brandTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
+    fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
@@ -339,13 +339,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   title: {
-    fontSize: typography.fontSizes.xl, lineHeight: 30,
+    fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   subtitle: {
     fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
+    lineHeight: typography.lineHeights.sm,
     color: colors.textSecondary,
     marginTop: 2,
     marginBottom: spacing.md,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   tabBtnActive: { backgroundColor: colors.card },
   tabText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: spacing.sm },
   label: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
     marginBottom: 4,
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     color: colors.text,
   },
   roleGrid: {
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   roleChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   roleChipText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     fontWeight: typography.fontWeights.medium,
   },
@@ -424,9 +424,9 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     marginTop: spacing.sm,
   },
-  errorText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.danger, lineHeight: 20 },
+  errorText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.danger, lineHeight: typography.lineHeights.xs },
   switchRow: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: spacing.md },
-  switchText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
+  switchText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
   switchLink: { color: colors.primary, fontWeight: typography.fontWeights.bold },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },

@@ -48,6 +48,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
   },
   chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  chipText: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary },
+  chipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary },
   chipTextActive: { color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
 });

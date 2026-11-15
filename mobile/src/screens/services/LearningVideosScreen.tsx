@@ -180,9 +180,9 @@ const styles = StyleSheet.create({
   catTag: { backgroundColor: colors.primaryLight, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2 },
   catTagText: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
   langTag: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.textMuted },
-  videoTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
+  videoTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
   watchRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  channel: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary },
+  channel: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary },
   sourceNote: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.sm },
-  sourceText: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textMuted },
+  sourceText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
 });

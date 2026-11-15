@@ -47,8 +47,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   titleTextContainer: { flex: 1 },
-  mainTitle: { fontSize: typography.fontSizes.lg, lineHeight: 27, fontWeight: typography.fontWeights.bold, color: colors.text },
-  mainSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: 21 },
+  mainTitle: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.text },
+  mainSub: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: 2, lineHeight: typography.lineHeights.sm },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

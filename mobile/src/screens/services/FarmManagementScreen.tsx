@@ -484,13 +484,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   farmName: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
+    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   farmLocation: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -506,13 +506,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statVal: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
+    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.primaryDark,
   },
   statLabel: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   formTitle: {
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
     marginBottom: spacing.sm,
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     fontWeight: typography.fontWeights.semibold,
     color: colors.text,
     marginBottom: 4,
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: 21,
+    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     color: colors.text,
   },
   chipWrap: {
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   regionChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  regionChipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20 },
+  regionChipText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: typography.lineHeights.xs },
   regionChipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   fieldsSection: {
     gap: spacing.sm,
@@ -585,13 +585,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fieldName: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
+    fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base,
     fontWeight: typography.fontWeights.bold,
     color: colors.text,
   },
   fieldCrop: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     color: colors.textSecondary,
   },
 });

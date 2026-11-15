@@ -92,13 +92,13 @@ export const MarketplaceMatch: React.FC<MarketplaceMatchProps> = ({ query }) => 
 const styles = StyleSheet.create({
   card: { padding: spacing.md, marginBottom: spacing.md },
   head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  sub: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
+  title: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  sub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   list: { gap: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   rowText: { flex: 1 },
-  itemTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.semibold, color: colors.text },
-  itemMeta: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
+  itemTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold, color: colors.text },
+  itemMeta: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginTop: 2 },
 });

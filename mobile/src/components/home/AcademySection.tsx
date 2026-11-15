@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.text },
+  cardTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
   cardDesc: { fontSize: typography.fontSizes.xs, lineHeight: 19, color: colors.textSecondary, minHeight: 38 },
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   actionText: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.primary, fontWeight: typography.fontWeights.semibold },

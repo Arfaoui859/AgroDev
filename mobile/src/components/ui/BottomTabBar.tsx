@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     marginTop: 2,
     fontWeight: typography.fontWeights.normal,
   },
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   assistantLabel: {
     fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
+    lineHeight: typography.lineHeights.xs,
     marginTop: 3,
     fontWeight: typography.fontWeights.bold,
   },

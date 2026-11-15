@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   chipOn: { borderColor: colors.primaryLight },
   chipOff: { borderColor: colors.border, backgroundColor: colors.surfaceSubtle },
   chipSkeleton: { width: 132, borderColor: colors.border, backgroundColor: colors.surfaceSubtle },
-  chipText: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.text, fontWeight: typography.fontWeights.semibold, maxWidth: 150 },
+  chipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.text, fontWeight: typography.fontWeights.semibold, maxWidth: 150 },
   chipTextOff: { color: colors.textMuted, fontWeight: typography.fontWeights.medium },
   dot: { width: 8, height: 8, borderRadius: radius.full, marginLeft: 2 },
   errorBox: {
@@ -180,5 +180,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.md,
   },
-  errorText: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textMuted },
+  errorText: { flex: 1, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted },
 });

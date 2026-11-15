@@ -89,6 +89,8 @@ export const typography = {
     xl: 20,
     '2xl': 24,
     '3xl': 30,
+    /** Oversized hero numerals (e.g. the current temperature). */
+    display: 54,
   },
   // Line height ≈ 1.5× the paired font size, which reads well for Arabic and
   // Latin alike. Use these instead of ad-hoc line-height literals.
@@ -98,6 +100,7 @@ export const typography = {
     base: 24,
     lg: 27,
     xl: 30,
+    display: 81,
   },
   fontWeights: {
     normal: '400' as const,
