@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
 import { StateView } from '../ui/StateView';
+import { SectionHeader } from '../ui/SectionHeader';
 import { ProvenanceBadge } from '../ui/ProvenanceBadge';
 import { getAgriNews } from '../../api/client';
 import { NewsResult } from '../../types';
@@ -46,21 +47,12 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
 
   return (
     <View style={styles.section}>
-      <View style={[styles.header, isRtl && styles.rtlRow]}>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, isRtl && styles.rtlText]}>{t.homeNewsTitle}</Text>
-          <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{t.homeNewsSubtitle}</Text>
-        </View>
-        <TouchableOpacity
-          onPress={onOpenAll}
-          accessibilityRole="button"
-          accessibilityLabel={t.homeNewsOpenAll}
-          hitSlop={12}
-          style={styles.linkButton}
-        >
-          <Text style={styles.linkText}>{t.homeNewsOpenAll}</Text>
-        </TouchableOpacity>
-      </View>
+      <SectionHeader
+        title={t.homeNewsTitle}
+        subtitle={t.homeNewsSubtitle}
+        actionLabel={t.homeNewsOpenAll}
+        onAction={onOpenAll}
+      />
 
       {loading ? (
         <Card variant="outlined" style={styles.card}>
@@ -133,19 +125,8 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
 
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  headerText: { flex: 1 },
-  title: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  subtitle: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
-  linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
-  linkText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   card: { paddingVertical: spacing.xs },
   articleCard: { padding: spacing.md, ...shadows.sm },
   articleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

@@ -11,6 +11,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
+import { SectionHeader } from '../ui/SectionHeader';
 import {
   LearningVideo,
   featuredVideos,
@@ -43,23 +44,12 @@ export const LearningVideos: React.FC<LearningVideosProps> = ({ onOpenAll }) => 
 
   return (
     <View style={styles.section}>
-      <View style={[styles.header, isRtl && styles.rtlRow]}>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, isRtl && styles.rtlText]}>{t.homeLearningTitle}</Text>
-          <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{t.homeLearningSubtitle}</Text>
-        </View>
-        {onOpenAll ? (
-          <TouchableOpacity
-            onPress={onOpenAll}
-            accessibilityRole="button"
-            accessibilityLabel={t.viewAll}
-            hitSlop={12}
-            style={styles.linkButton}
-          >
-            <Text style={styles.linkText}>{t.viewAll}</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <SectionHeader
+        title={t.homeLearningTitle}
+        subtitle={t.homeLearningSubtitle}
+        actionLabel={onOpenAll ? t.viewAll : undefined}
+        onAction={onOpenAll}
+      />
 
       <ScrollView
         horizontal
@@ -123,17 +113,6 @@ export const LearningVideos: React.FC<LearningVideosProps> = ({ onOpenAll }) => 
 
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  headerText: { flex: 1 },
-  title: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  subtitle: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
-  linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
-  linkText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   row: { gap: spacing.md, paddingVertical: 2 },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
@@ -156,13 +135,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(15,23,42,0.28)',
+    backgroundColor: colors.scrimLight,
   },
   durationPill: {
     position: 'absolute',
     bottom: 6,
     right: 6,
-    backgroundColor: 'rgba(15,23,42,0.82)',
+    backgroundColor: colors.scrimStrong,
     borderRadius: radius.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,

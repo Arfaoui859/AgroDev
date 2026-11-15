@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { StateView } from '../../components/ui/StateView';
+import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { clearHistory, getHistory } from '../../api/history';
 import { SavedAnalysis } from '../../types';
 import { formatDateTime } from '../../utils/date';
@@ -64,17 +65,13 @@ export const RecentAnalysesScreen: React.FC<RecentAnalysesScreenProps> = ({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.headerBox}>
-        <View style={[styles.titleRow, isRtl && styles.rtlRow]}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="history" size={26} color={colors.primary} />
-          </View>
-          <View style={styles.titleTextContainer}>
-            <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{x.recentAnalysesTitle}</Text>
-            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{x.recentAnalysesSubtitle}</Text>
-          </View>
-        </View>
-      </View>
+      <ServiceHeader
+        icon="history"
+        iconColor={colors.primary}
+        iconBg={colors.primaryLight}
+        title={x.recentAnalysesTitle}
+        subtitle={x.recentAnalysesSubtitle}
+      />
 
       {loading ? (
         <Card variant="outlined">
@@ -198,36 +195,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  headerBox: {
-    marginBottom: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleTextContainer: {
-    flex: 1,
-  },
-  mainTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  mainSub: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 20,
-  },
   recordsList: {
     gap: spacing.sm,
   },
@@ -239,7 +206,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.scrim,
     justifyContent: 'flex-end',
   },
   modalSheet: {

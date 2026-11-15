@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { SectionHeader } from '../components/ui/SectionHeader';
 import { UserRole } from '../types';
 import { apiRequest, getApiBaseUrl } from '../api/client';
 import { supabaseHost, isSupabaseConfigured } from '../api/supabase';
@@ -121,22 +122,26 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Account action. The user role is chosen once during onboarding; the
-            Profile screen only surfaces it read-only and never re-prompts. */}
-        <View style={[styles.quickAuthRow, isRtl && styles.rtlRow]}>
-          <Button
-            title={isAuthenticated ? x.profileSignedInAs : x.authSignIn}
-            variant="outline"
-            size="sm"
-            onPress={() => setShowAuthModal(true)}
-            style={{ flex: 1 }}
-          />
-        </View>
+        {/* Signed-out users get a sign-in affordance. Signed-in users see their
+            identity above and sign out from the primary action at the bottom,
+            so the header never shows a redundant "manage account" button that
+            would only re-open the sign-in form. */}
+        {!isAuthenticated && (
+          <View style={[styles.quickAuthRow, isRtl && styles.rtlRow]}>
+            <Button
+              title={x.authSignIn}
+              variant="outline"
+              size="sm"
+              onPress={() => setShowAuthModal(true)}
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}
       </Card>
 
       {/* 2. Language Selection Card */}
       <View style={styles.section}>
-        <Text style={[styles.sectionHeading, isRtl && styles.rtlText]}>{t.languageSelect}</Text>
+        <SectionHeader title={t.languageSelect} />
         <Card variant="outlined" style={styles.optionsCard}>
           <View style={styles.languageRow}>
             <TouchableOpacity
@@ -192,7 +197,7 @@ export const ProfileScreen: React.FC = () => {
 
       {/* 3. Server & Backend Connectivity Diagnostics */}
       <View style={styles.section}>
-        <Text style={[styles.sectionHeading, isRtl && styles.rtlText]}>{t.connectionStatus}</Text>
+        <SectionHeader title={t.connectionStatus} />
         <Card variant="outlined" style={styles.statusCard}>
           <View style={[styles.statusRow, isRtl && styles.rtlRow]}>
             <View
@@ -341,12 +346,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.lg,
-  },
-  sectionHeading: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
   },
   optionsCard: {
     padding: spacing.sm,

@@ -5,24 +5,19 @@ import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
 import { getSoil, SoilTranslations } from '../../i18n/soil';
 import { SoilReport, SoilReportAction } from '../../types';
+import { SectionHeader } from '../ui/SectionHeader';
 
 /** A titled section that only renders when it has content. */
 const Section: React.FC<{
   title: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   children: React.ReactNode;
-}> = ({ title, icon, children }) => {
-  const { isRtl } = useLanguage();
-  return (
-    <View style={styles.section}>
-      <View style={[styles.sectionHead, isRtl && styles.rtlRow]}>
-        <MaterialCommunityIcons name={icon} size={18} color={colors.primaryDark} />
-        <Text style={[styles.sectionTitle, isRtl && styles.rtlText]}>{title}</Text>
-      </View>
-      {children}
-    </View>
-  );
-};
+}> = ({ title, icon, children }) => (
+  <View style={styles.section}>
+    <SectionHeader title={title} icon={icon} iconSize={18} titleNumberOfLines={0} />
+    {children}
+  </View>
+);
 
 const Bullet: React.FC<{ text: string }> = ({ text }) => {
   const { isRtl } = useLanguage();
@@ -493,14 +488,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: spacing.lg,
     marginBottom: spacing.md,
-  },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
-  sectionTitle: {
-    flex: 1,
-    fontSize: typography.fontSizes.base,
-    lineHeight: 24,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
   },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },

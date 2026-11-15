@@ -8,11 +8,13 @@ import {
   RefreshControl,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography, shadows } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { SectionHeader } from '../components/ui/SectionHeader';
 import { StateView } from '../components/ui/StateView';
 import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
 import { getWeather, pingServer, getNotifications } from '../api/client';
@@ -21,6 +23,7 @@ import { useConnectivity } from '../hooks/useConnectivity';
 import { useAICapabilities } from '../hooks/useAICapabilities';
 import { weatherConditionLabel, weatherIconName } from '../utils/weather';
 import { governorateFromName, governorateLabel } from '../utils/governorates';
+import { formatDate } from '../utils/date';
 import { IntelligenceStrip } from '../components/home/IntelligenceStrip';
 import { LearningVideos } from '../components/home/LearningVideos';
 import { HomeNewsPreview } from '../components/home/HomeNewsPreview';
@@ -224,26 +227,59 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
       }
     >
-      {/* Greeting */}
-      <View style={[styles.greetingCard, isRtl && styles.rtlRow]}>
-        <View style={styles.greetingTextContainer}>
-          <Text style={[styles.greetingTitle, isRtl && styles.rtlText]}>
-            {t.greeting}{x.listSeparator}{displayName} 👋
-          </Text>
-          <Text style={[styles.greetingSub, isRtl && styles.rtlText]}>
-            {t.welcomeSub}
-            {user?.governorate ? ` • ${user.governorate}` : ''}
-          </Text>
-        </View>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => onNavigateToTab('profile')}
-          accessibilityRole="button"
-          accessibilityLabel={t.profileTitle}
-          style={styles.avatarButton}
+      {/* Hero — gradient welcome surface with the live weather summary */}
+      <View style={styles.heroShadow}>
+        <LinearGradient
+          colors={gradients.hero}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
         >
-          <MaterialCommunityIcons name="account" size={24} color={colors.primary} />
-        </TouchableOpacity>
+          <View style={[styles.heroTopRow, isRtl && styles.rtlRow]}>
+            <View style={styles.heroTextWrap}>
+              <Text style={styles.heroDate}>{formatDate(new Date().toISOString(), language)}</Text>
+              <Text style={[styles.heroTitle, isRtl && styles.rtlText]}>
+                {t.greeting}{x.listSeparator}{displayName} 👋
+              </Text>
+              <Text style={[styles.heroSub, isRtl && styles.rtlText]}>
+                {t.welcomeSub}
+                {user?.governorate ? ` • ${user.governorate}` : ''}
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => onNavigateToTab('profile')}
+              accessibilityRole="button"
+              accessibilityLabel={t.profileTitle}
+              style={styles.heroAvatar}
+            >
+              <MaterialCommunityIcons name="account" size={24} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {loading ? null : weather ? (
+            <View style={[styles.heroWeatherRow, isRtl && styles.rtlRow]}>
+              <MaterialCommunityIcons
+                name={weatherIconName(weather.icon) as keyof typeof MaterialCommunityIcons.glyphMap}
+                size={30}
+                color={colors.textInverse}
+              />
+              <Text style={styles.heroTemp}>{weather.temperature}°</Text>
+              <Text style={styles.heroCondition} numberOfLines={1}>
+                {weatherConditionLabel(weather.icon, language, weather.condition_ar)}
+              </Text>
+              <View style={styles.heroWeatherSpacer} />
+              <View style={[styles.heroChip, isRtl && styles.rtlRow]}>
+                <MaterialCommunityIcons name="water-percent" size={14} color={colors.textInverse} />
+                <Text style={styles.heroChipText}>{weather.humidity}%</Text>
+              </View>
+              <View style={[styles.heroChip, isRtl && styles.rtlRow]}>
+                <MaterialCommunityIcons name="weather-windy" size={14} color={colors.textInverse} />
+                <Text style={styles.heroChipText}>{weather.wind_speed}</Text>
+              </View>
+            </View>
+          ) : null}
+        </LinearGradient>
       </View>
 
       {!isOnline ? (
@@ -262,7 +298,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         onOpenService={openCapabilityService}
       />
 
-      {/* Weather — live observation */}
+      {/* Weather — live observation. The temperature itself is in the hero, so
+          this card carries the actionable advice and its provenance instead of
+          repeating the same numbers. */}
       {loading ? (
         <Card variant="elevated" style={styles.weatherCard}>
           <StateView kind="loading" title={x.stateLoading} compact />
@@ -277,41 +315,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         >
           <View style={[styles.weatherHeader, isRtl && styles.rtlRow]}>
             <View style={[styles.weatherMain, isRtl && styles.rtlRow]}>
-              <MaterialCommunityIcons
-                name={weatherIconName(weather.icon) as keyof typeof MaterialCommunityIcons.glyphMap}
-                size={38}
-                color={colors.secondary}
-              />
-              <View style={styles.weatherTempContainer}>
-                <Text style={styles.tempText}>{weather.temperature}°C</Text>
-                <Text style={styles.conditionText}>{weatherConditionLabel(weather.icon, language, weather.condition_ar)}</Text>
-              </View>
+              <MaterialCommunityIcons name="lightbulb-on" size={20} color={colors.accent} />
+              <Text style={styles.weatherAdviceTitle}>{x.homeWeatherAdviceTitle}</Text>
             </View>
-            <Badge label={weather.governorate} variant="secondary" size="md" />
+            <Badge label={weather.governorate} variant="secondary" size="sm" />
           </View>
 
-          <View style={[styles.weatherMetricsRow, isRtl && styles.rtlRow]}>
-            <View style={[styles.metricItem, isRtl && styles.rtlRow]}>
-              <MaterialCommunityIcons name="water-percent" size={18} color={colors.secondary} />
-              <Text style={styles.metricLabel}>{weather.humidity}% {x.metricHumidity}</Text>
-            </View>
-            <View style={styles.metricDivider} />
-            <View style={[styles.metricItem, isRtl && styles.rtlRow]}>
-              <MaterialCommunityIcons name="weather-windy" size={18} color={colors.textSecondary} />
-              <Text style={styles.metricLabel}>{weather.wind_speed} {x.metricWind}</Text>
-            </View>
-          </View>
-
-          <View style={[styles.weatherAdviceBox, isRtl && styles.rtlRow]}>
-            <MaterialCommunityIcons name="lightbulb-on" size={18} color={colors.accent} />
-            <Text style={[styles.weatherAdviceText, isRtl && styles.rtlText]} numberOfLines={3}>
-              {language === 'ar' ? weather.advice_ar : language === 'fr' ? weather.advice_fr : weather.advice_en}
-            </Text>
-          </View>
+          <Text style={[styles.weatherAdviceBody, isRtl && styles.rtlText]} numberOfLines={4}>
+            {language === 'ar' ? weather.advice_ar : language === 'fr' ? weather.advice_fr : weather.advice_en}
+          </Text>
 
           <View style={[styles.provRow, isRtl && styles.rtlRow]}>
             <ProvenanceBadge meta={weather.meta} />
             {weatherFromCache ? <Text style={styles.cachedTag}>{x.cachedNotice}</Text> : null}
+            <View style={styles.weatherMoreSpacer} />
+            <Text style={styles.weatherMoreText}>{x.weatherOpenDetail}</Text>
+            <MaterialCommunityIcons
+              name={isRtl ? 'chevron-left' : 'chevron-right'}
+              size={16}
+              color={colors.primary}
+            />
           </View>
         </Card>
       ) : (
@@ -328,35 +351,35 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
 
       {/* Quick actions */}
       <View style={styles.sectionContainer}>
-        <View style={[styles.sectionHeader, isRtl && styles.rtlRow]}>
-          <Text style={styles.sectionTitle}>{t.quickActions}</Text>
-          <TouchableOpacity
-            onPress={() => onNavigateToTab('services')}
-            accessibilityRole="button"
-            accessibilityLabel={t.viewAll}
-            hitSlop={12}
-            style={styles.linkButton}
-          >
-            <Text style={styles.viewAllText}>{t.viewAll}</Text>
-          </TouchableOpacity>
-        </View>
+        <SectionHeader
+          title={t.quickActions}
+          actionLabel={t.viewAll}
+          onAction={() => onNavigateToTab('services')}
+        />
 
         <View style={styles.quickActionsGrid}>
           <TouchableOpacity
-            activeOpacity={0.85}
+            activeOpacity={0.9}
             onPress={() => (heroIsTab ? onNavigateToTab(hero.serviceId) : onNavigateToService(hero.serviceId))}
             accessibilityRole="button"
             accessibilityLabel={`${heroAction.title}. ${heroAction.sub}`}
-            style={[styles.bigActionCard, { backgroundColor: heroAction.color }]}
+            style={styles.bigActionShadow}
           >
-            <View style={[styles.bigActionHeader, isRtl && styles.rtlRow]}>
-              <View style={styles.bigActionIconWrapper}>
-                <MaterialCommunityIcons name={heroAction.icon} size={30} color={colors.textInverse} />
+            <LinearGradient
+              colors={gradients.hero}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.bigActionCard}
+            >
+              <View style={[styles.bigActionHeader, isRtl && styles.rtlRow]}>
+                <View style={styles.bigActionIconWrapper}>
+                  <MaterialCommunityIcons name={heroAction.icon} size={30} color={colors.textInverse} />
+                </View>
+                <Badge label={heroAction.badge} variant="accent" size="sm" />
               </View>
-              <Badge label={heroAction.badge} variant="accent" size="sm" />
-            </View>
-            <Text style={[styles.bigActionTitle, isRtl && styles.rtlText]}>{heroAction.title}</Text>
-            <Text style={[styles.bigActionSub, isRtl && styles.rtlText]}>{heroAction.sub}</Text>
+              <Text style={[styles.bigActionTitle, isRtl && styles.rtlText]}>{heroAction.title}</Text>
+              <Text style={[styles.bigActionSub, isRtl && styles.rtlText]}>{heroAction.sub}</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
           {tileRows.map((row, rowIndex) => (
@@ -421,23 +444,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
 
       {/* Urgent alerts — from the caller's own persisted notifications */}
       <View style={styles.sectionContainer}>
-        <View style={[styles.sectionHeader, isRtl && styles.rtlRow]}>
-          <View style={[styles.sectionTitleRow, isRtl && styles.rtlRow]}>
-            <MaterialCommunityIcons name="bell-outline" size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>{t.urgentAlerts}</Text>
-          </View>
-          {alerts.length > 0 ? (
-            <TouchableOpacity
-              onPress={onOpenNotifications}
-              accessibilityRole="button"
-              accessibilityLabel={t.viewAll}
-              hitSlop={12}
-              style={styles.linkButton}
-            >
-              <Text style={styles.viewAllText}>{t.viewAll}</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <SectionHeader
+          title={t.urgentAlerts}
+          icon="bell-outline"
+          actionLabel={alerts.length > 0 ? t.viewAll : undefined}
+          onAction={onOpenNotifications}
+        />
 
         {alertsUnavailable ? (
           <Card variant="outlined" style={styles.alertsContainer}>
@@ -548,23 +560,56 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  greetingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
+  // Hero gradient surface: rounded, with generous padding and a soft shadow so
+  // it reads as the screen's primary anchor rather than a plain card. The shadow
+  // sits on the wrapper (not the gradient) so Android keeps its elevation while
+  // the gradient itself clips its children.
+  heroShadow: {
+    borderRadius: radius.xl,
+    marginBottom: spacing.lg,
+    ...shadows.md,
   },
-  greetingTextContainer: { flex: 1 },
-  greetingTitle: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold, color: colors.text },
-  greetingSub: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.textSecondary, marginTop: 2 },
-  avatarButton: {
+  hero: {
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    overflow: 'hidden',
+  },
+  heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
+  heroTextWrap: { flex: 1 },
+  heroDate: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.onBrandSubtle, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
+  heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold, color: colors.textInverse, marginTop: 2 },
+  heroSub: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.onBrandMuted, marginTop: 2 },
+  heroAvatar: {
     width: 48,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.sm,
   },
+  heroWeatherRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.onBrandBorder,
+  },
+  heroTemp: { fontSize: typography.fontSizes['2xl'], lineHeight: 34, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
+  heroCondition: { flexShrink: 1, fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.onBrandStrong, fontWeight: typography.fontWeights.medium },
+  heroWeatherSpacer: { flex: 1 },
+  heroChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.onBrandSurface,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+  },
+  heroChipText: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textInverse, fontWeight: typography.fontWeights.semibold },
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -576,54 +621,30 @@ const styles = StyleSheet.create({
   },
   offlineText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.warning, lineHeight: 20 },
   weatherCard: { marginBottom: spacing.lg, backgroundColor: colors.card },
-  weatherHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  weatherMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  weatherTempContainer: { marginLeft: spacing.xs },
-  tempText: { fontSize: typography.fontSizes['2xl'], fontWeight: typography.fontWeights.bold, color: colors.text, lineHeight: 34 },
-  conditionText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.textSecondary },
-  weatherMetricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm,
-    marginVertical: spacing.md,
-  },
-  metricItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metricLabel: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: 20 },
-  metricDivider: { width: 1, height: 16, backgroundColor: colors.border },
-  weatherAdviceBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.accentLight,
-    padding: spacing.sm,
-    borderRadius: radius.md,
-  },
-  weatherAdviceText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.accentDark, fontWeight: typography.fontWeights.medium, lineHeight: 20 },
-  provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
+  weatherHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  weatherMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+  weatherAdviceTitle: { fontSize: typography.fontSizes.sm, lineHeight: 21, fontWeight: typography.fontWeights.bold, color: colors.accentDark },
+  weatherAdviceBody: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.text, marginTop: spacing.sm },
+  weatherMoreSpacer: { flex: 1 },
+  weatherMoreText: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.primary, fontWeight: typography.fontWeights.semibold },
+  provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' },
   cachedTag: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: 20 },
   sectionContainer: { marginBottom: spacing.lg },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  sectionTitle: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
-  viewAllText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   quickActionsGrid: { gap: spacing.sm },
   tilesRow: { flexDirection: 'row', gap: spacing.sm },
-  bigActionCard: { minHeight: 48, borderRadius: radius.lg, padding: spacing.lg, ...shadows.md },
+  bigActionShadow: { borderRadius: radius.lg, ...shadows.md },
+  bigActionCard: { minHeight: 48, borderRadius: radius.lg, padding: spacing.lg },
   bigActionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   bigActionIconWrapper: {
     width: 48,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.onBrandSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bigActionTitle: { fontSize: typography.fontSizes.lg, lineHeight: 27, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
-  bigActionSub: { fontSize: typography.fontSizes.xs, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 21 },
+  bigActionSub: { fontSize: typography.fontSizes.xs, color: colors.onBrandMuted, marginTop: 4, lineHeight: 21 },
   actionTile: {
     flex: 1,
     minHeight: 48,

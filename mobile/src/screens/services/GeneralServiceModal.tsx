@@ -62,7 +62,7 @@ export const GeneralServiceModal: React.FC<GeneralServiceModalProps> = ({ servic
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <ServiceHeader icon={info.icon} iconColor={info.color} iconBg={info.bg} title={info.title} subtitle="" />
+      <ServiceHeader icon={info.icon} iconColor={info.color} iconBg={info.bg} title={info.title} />
       <Card variant="outlined">
         <StateView kind="unavailable" title={x.svcUnavailableTitle} message={info.note} />
       </Card>
@@ -457,5 +457,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondaryLight,
   },
   resultTitle: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text, marginBottom: 4 },
-  resultText: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontFamily: 'monospace', lineHeight: 20 },
 });

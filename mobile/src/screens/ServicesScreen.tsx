@@ -12,6 +12,7 @@ import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { Badge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
+import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { StateView } from '../components/ui/StateView';
 
 interface ServicesScreenProps {
@@ -211,10 +212,7 @@ export const ServicesScreen: React.FC<ServicesScreenProps> = ({ onSelectService 
       showsVerticalScrollIndicator={false}
     >
       {/* Title & Subtitle */}
-      <View style={styles.headerBox}>
-        <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{t.servicesTitle}</Text>
-        <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{t.servicesSubtitle}</Text>
-      </View>
+      <ScreenHeading title={t.servicesTitle} subtitle={t.servicesSubtitle} />
 
       {/* Search Input Bar */}
       <View style={[styles.searchBar, isRtl && styles.rtlRow]}>
@@ -325,20 +323,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  headerBox: {
-    marginBottom: spacing.md,
-  },
-  mainTitle: {
-    fontSize: typography.fontSizes.xl, lineHeight: 30,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  mainSub: {
-    fontSize: typography.fontSizes.sm,
-    lineHeight: 21,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',

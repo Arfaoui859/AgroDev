@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { StateView } from '../components/ui/StateView';
 import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
 import { getNotifications, markNotificationRead } from '../api/client';
@@ -83,10 +84,10 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ onBack
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
     >
-      <View style={[styles.header, isRtl && styles.rtlRow]}>
-        <MaterialCommunityIcons name="bell-outline" size={24} color={colors.primary} />
-        <Text style={[styles.title, isRtl && styles.rtlText]}>{x.notificationsTitle}</Text>
-      </View>
+      <ScreenHeading
+        title={x.notificationsTitle}
+        leading={<MaterialCommunityIcons name="bell-outline" size={24} color={colors.primary} />}
+      />
 
       {!isAuthenticated ? (
         <Card variant="outlined">
@@ -162,8 +163,6 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
-  title: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold, color: colors.text },
   list: { gap: spacing.sm },
   provBar: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
   notificationTouchable: { minHeight: 48 },

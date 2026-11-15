@@ -16,6 +16,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ProvenanceBadge } from '../ui/ProvenanceBadge';
+import { SectionHeader } from '../ui/SectionHeader';
 import { prepareImageForUpload } from '../../utils/image';
 import { anyContainsArabic } from '../../utils/text';
 import { severityLabel } from '../../utils/severity';
@@ -149,12 +150,12 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
         <CameraView ref={cameraRef} style={styles.flex} facing="back" />
         <View style={styles.overlay}>
           <View style={[styles.guidance, isRtl && styles.rtlRow]}>
-            <MaterialCommunityIcons name="information-outline" size={16} color="#fff" />
+            <MaterialCommunityIcons name="information-outline" size={16} color={colors.textInverse} />
             <Text style={styles.guidanceText}>{x.scannerGuidance}</Text>
           </View>
           {errorMsg ? (
             <View style={[styles.captureError, isRtl && styles.rtlRow]}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#fff" />
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={colors.textInverse} />
               <Text style={styles.captureErrorText}>{errorMsg}</Text>
               <TouchableOpacity
                 onPress={() => setErrorMsg(null)}
@@ -162,7 +163,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
                 accessibilityLabel={x.close}
                 style={styles.errorClose}
               >
-                <MaterialCommunityIcons name="close" size={16} color="#fff" />
+                <MaterialCommunityIcons name="close" size={16} color={colors.textInverse} />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -173,7 +174,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
               accessibilityLabel={x.close}
               style={styles.sideBtn}
             >
-              <MaterialCommunityIcons name="close" size={26} color="#fff" />
+              <MaterialCommunityIcons name="close" size={26} color={colors.textInverse} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCapture}
@@ -184,9 +185,9 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
               style={styles.shutter}
             >
               {capturing ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.textInverse} />
               ) : (
-                <MaterialCommunityIcons name="camera" size={30} color="#fff" />
+                <MaterialCommunityIcons name="camera" size={30} color={colors.textInverse} />
               )}
             </TouchableOpacity>
             <TouchableOpacity
@@ -196,7 +197,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
               style={styles.sideBtn}
               testID="scanner-gallery"
             >
-              <MaterialCommunityIcons name="image-multiple" size={24} color="#fff" />
+              <MaterialCommunityIcons name="image-multiple" size={24} color={colors.textInverse} />
             </TouchableOpacity>
           </View>
         </View>
@@ -319,10 +320,7 @@ const Section: React.FC<{ icon: keyof typeof MaterialCommunityIcons.glyphMap; ti
   const { isRtl } = useLanguage();
   return (
     <Card variant="flat" style={styles.section}>
-      <View style={[styles.sectionHeader, isRtl && styles.rtlRow]}>
-        <MaterialCommunityIcons name={icon} size={18} color={colors.primary} />
-        <Text style={[styles.sectionTitle, isRtl && styles.rtlText]}>{title}</Text>
-      </View>
+      <SectionHeader title={title} icon={icon} iconSize={18} titleNumberOfLines={0} />
       {items.map((item, index) => (
         <View key={index} style={[styles.bulletRow, isRtl && styles.rtlRow]}>
           <View style={styles.bullet} />
@@ -357,24 +355,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.scrim,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
   },
-  guidanceText: { color: '#fff', fontSize: typography.fontSizes.sm, lineHeight: 21 },
+  guidanceText: { color: colors.textInverse, fontSize: typography.fontSizes.sm, lineHeight: 21 },
   captureError: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     alignSelf: 'center',
-    backgroundColor: 'rgba(220,38,38,0.85)',
+    backgroundColor: colors.dangerScrim,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
     maxWidth: '92%',
   },
-  captureErrorText: { color: '#fff', fontSize: typography.fontSizes.xs, flexShrink: 1, lineHeight: 20 },
+  captureErrorText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, flexShrink: 1, lineHeight: 20 },
   errorClose: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginVertical: -14, marginHorizontal: -6 },
   controls: {
     flexDirection: 'row',
@@ -385,7 +383,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: colors.scrimLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -397,7 +395,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.85)',
+    borderColor: colors.onBrandSubtle,
   },
   preview: { flex: 1, backgroundColor: '#000' },
   reviewPanel: {
@@ -488,12 +486,6 @@ const styles = StyleSheet.create({
   severity: { marginTop: 4, fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.textSecondary },
   arabicNote: { marginTop: spacing.sm, fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', lineHeight: 20 },
   section: { marginBottom: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
-  sectionTitle: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
   bulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
   bullet: {
     width: 6,

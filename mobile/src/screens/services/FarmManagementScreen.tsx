@@ -20,6 +20,8 @@ import { Farm, Field, ProvenanceMeta } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { SectionHeader } from '../../components/ui/SectionHeader';
+import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { GOVERNORATES } from '../../utils/governorates';
 
 interface FarmManagementScreenProps {
@@ -156,17 +158,13 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       showsVerticalScrollIndicator={false}
     >
       {/* Header Info */}
-      <View style={styles.headerBox}>
-        <View style={[styles.titleRow, isRtl && styles.rtlRow]}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="map-marker-radius" size={26} color={colors.primary} />
-          </View>
-          <View style={styles.titleTextContainer}>
-            <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{t.farmManagementName}</Text>
-            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{t.farmManagementDesc}</Text>
-          </View>
-        </View>
-      </View>
+      <ServiceHeader
+        icon="map-marker-radius"
+        iconColor={colors.primary}
+        iconBg={colors.primaryLight}
+        title={t.farmManagementName}
+        subtitle={t.farmManagementDesc}
+      />
 
       {!isAuthenticated ? (
         <Card variant="outlined" style={{ marginBottom: spacing.lg }}>
@@ -395,7 +393,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
 
       {/* Fields List */}
       <View style={styles.fieldsSection}>
-        <Text style={[styles.sectionTitle, isRtl && styles.rtlText]}>{x.farmFieldsSection}</Text>
+        <SectionHeader title={x.farmFieldsSection} icon="sprout" />
 
         {loading ? (
           <ActivityIndicator size="small" color={colors.primary} />
@@ -469,36 +467,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
   },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  headerBox: {
-    marginBottom: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleTextContainer: {
-    flex: 1,
-  },
-  mainTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  mainSub: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 20,
-  },
   farmSummaryCard: {
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -604,12 +572,6 @@ const styles = StyleSheet.create({
   regionChipTextSelected: { color: colors.textInverse, fontWeight: typography.fontWeights.bold },
   fieldsSection: {
     gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
   },
   fieldCard: {
     padding: spacing.md,

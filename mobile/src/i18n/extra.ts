@@ -209,6 +209,8 @@ export interface ExtraTranslations {
   homeNoAlerts: string;
   homeAlertsUnavailable: string;
   homeWeatherUnavailable: string;
+  /** Heading for the Home weather-advice card. */
+  homeWeatherAdviceTitle: string;
   homeGuest: string;
   metricHumidity: string;
   metricWind: string;
@@ -717,6 +719,7 @@ const ar: ExtraTranslations = {
   homeNoAlerts: 'لا توجد تنبيهات عاجلة اليوم',
   homeAlertsUnavailable: 'تعذّر تحميل التنبيهات؛ مخزن التنبيهات غير متاح حالياً.',
   homeWeatherUnavailable: 'تعذّر جلب بيانات الطقس',
+  homeWeatherAdviceTitle: 'نصيحة الطقس لليوم',
   homeGuest: 'الفلاح الكريم',
   metricHumidity: 'رطوبة',
   metricWind: 'كم/س',
@@ -1210,6 +1213,7 @@ const fr: ExtraTranslations = {
   homeNoAlerts: 'Aucune alerte urgente aujourd’hui',
   homeAlertsUnavailable: 'Alertes indisponibles : le stockage des notifications est injoignable.',
   homeWeatherUnavailable: 'Météo indisponible',
+  homeWeatherAdviceTitle: 'Conseil météo du jour',
   homeGuest: 'Cher agriculteur',
   metricHumidity: 'humidité',
   metricWind: 'km/h',
@@ -1717,6 +1721,7 @@ const en: ExtraTranslations = {
   heroBadgeIndicators: 'Indicators',
   heroBadgeNews: 'News',
   homeWeatherUnavailable: 'Weather unavailable',
+  homeWeatherAdviceTitle: 'Today’s weather advice',
   homeGuest: 'Dear farmer',
 
   newsTitle: 'Tunisian agricultural news',

@@ -181,7 +181,7 @@ export const PersonaSelectorModal: React.FC<PersonaSelectorModalProps> = ({ visi
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  overlay: { flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.xl,
@@ -227,6 +227,5 @@ const styles = StyleSheet.create({
   titleArea: { flex: 1 },
   personaTitle: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
   personaTitleSelected: { color: colors.primaryDark },
-  personaTitleEn: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: 20 },
   personaDesc: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, lineHeight: 20, marginTop: 2 },
 });

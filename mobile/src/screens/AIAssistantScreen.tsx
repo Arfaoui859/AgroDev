@@ -16,6 +16,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { chatWithAIAssistant } from '../api/client';
 import { ChatMessage } from '../types';
 import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
+import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { formatTime } from '../utils/date';
 
 let messageSeq = 0;
@@ -113,14 +114,17 @@ export const AIAssistantScreen: React.FC = () => {
       style={styles.container}
     >
       {/* Header Info Banner */}
-      <View style={[styles.headerBanner, isRtl && styles.rtlRow]}>
-        <View style={styles.assistantAvatar}>
-          <MaterialCommunityIcons name="robot" size={24} color={colors.primary} />
-        </View>
-        <View style={styles.headerText}>
-          <Text style={[styles.headerTitle, isRtl && styles.rtlText]}>{t.assistantTitle}</Text>
-          <Text style={[styles.headerSub, isRtl && styles.rtlText]}>{t.assistantSubtitle}</Text>
-        </View>
+      <View style={styles.headerBanner}>
+        <ScreenHeading
+          title={t.assistantTitle}
+          subtitle={t.assistantSubtitle}
+          style={styles.headingFlush}
+          leading={
+            <View style={styles.assistantAvatar}>
+              <MaterialCommunityIcons name="robot" size={24} color={colors.primary} />
+            </View>
+          }
+        />
       </View>
 
       {/* Suggested Quick Prompt Chips */}
@@ -264,15 +268,13 @@ const styles = StyleSheet.create({
   },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   headerBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
     backgroundColor: colors.card,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headingFlush: { marginBottom: 0 },
   assistantAvatar: {
     width: 40,
     height: 40,
@@ -280,20 +282,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: typography.fontSizes.base, lineHeight: 24,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  headerSub: {
-    fontSize: typography.fontSizes.xs,
-    lineHeight: 20,
-    color: colors.textSecondary,
-    marginTop: 1,
   },
   chipsSection: {
     backgroundColor: colors.card,
@@ -390,7 +378,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   userTime: {
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.onBrandFaint,
   },
   assistantTime: {
     color: colors.textMuted,

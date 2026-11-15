@@ -275,3 +275,71 @@ The mobile UI renders an explicit unavailable/empty state for each 5xx above;
 none of them is turned into a fabricated success. The Marketplace screen adds a
 read-only "Market intelligence" panel that reflects the capability document for
 price-forecast and supply/demand instead of inventing trends.
+
+### UI consistency polish pass (verified 2026-11)
+
+A cross-screen consistency pass centralised the shared chrome so the same
+treatment is used everywhere:
+
+- **`SectionHeader`** (`src/components/ui/SectionHeader.tsx`) is the one section
+  title used by Home and the home discovery components
+  (`IntelligenceStrip`, `HomeNewsPreview`, `LearningVideos`, `SeasonAgenda`,
+  `AcademySection`). It supports an optional leading icon, subtitle, trailing
+  node (e.g. a `Badge`) or a "see all" action. Home's inline quick-actions and
+  urgent-alerts headers now use it too, and their bespoke `sectionHeader` /
+  `sectionTitle` / `linkButton` styles were deleted.
+- **`ScreenHeading`** (`src/components/ui/ScreenHeading.tsx`) is the title block
+  for tab-root screens (`ServicesScreen`, `MarketplaceScreen`,
+  `AIAssistantScreen`, `NotificationsScreen`) — RTL-aware, with an optional
+  `leading` node (avatar/icon). Their local `headerBox`/`mainTitle`/`mainSub`
+  styles were removed.
+- **`ServiceHeader`** is the header for the pushed service screens; its
+  `subtitle` is now optional (`GeneralServiceModal` no longer passes `""`).
+- **Scrim** — every modal/sheet/overlay backdrop uses the theme token
+  `colors.scrim` / `colors.scrimLight` (added to `src/theme/colors.ts`), not a
+  raw `rgba(0,0,0,…)`: `AuthModal`, `PersonaSelectorModal`, `PlantScanner`,
+  `DiseaseDetectionScreen`, `RecentAnalysesScreen`.
+- **`shadows.primary`** is the brand-tinted shadow for the prominent floating
+  assistant tab in `BottomTabBar`.
+- **Profile** shows a sign-in button only when signed out; the signed-in state
+  reads its identity from the card above and signs out from the primary action
+  at the bottom, so there is no redundant "manage account" button. The screen
+  still exposes no role/persona selector (onboarding owns that).
+
+A repo-wide sweep also removed dead `StyleSheet` keys
+(`GeneralServiceModal.resultText`, `PersonaSelectorModal.personaTitleEn`) and an
+unused import. Re-verified after the pass: `npx tsc --noEmit` clean,
+`npx expo lint` clean, `npx jest` 48 suites / 237 passed (7 live tests skipped),
+`npx expo-doctor` 20/20, and both `npx expo export --platform web|android`
+bundle. The web export renders Home (AR/FR), Services, Assistant, Marketplace,
+Profile, Notifications and the Disease-detection camera screen correctly.
+
+### Premium UI polish pass, continued (verified 2026-11)
+
+A second pass extended the same centralisation and tokenisation to the screens
+that had been left with local copies:
+
+- **`SectionHeader`** gained `iconSize` and `titleNumberOfLines` props so the
+  in-card section heads could adopt it too. `PlantScanner` (symptoms/treatment/
+  prevention blocks) and `SoilReportView` (its local `Section` helper) now use
+  it; their `sectionHeader` / `sectionHead` / `sectionTitle` styles were deleted.
+- **`ProfileScreen`** language and connectivity section titles now use
+  `SectionHeader`; the bespoke `sectionHeading` style was deleted.
+- **Theme tokens** — the last raw colour literals in components were replaced by
+  tokens in `src/theme/colors.ts`: `scrimStrong` (video duration pill),
+  `dangerScrim` (camera error pill), and the white-on-brand ramp
+  `onBrandFaint` / `onBrandSubtle` / `onBrandMuted` / `onBrandStrong` /
+  `onBrandBorder` / `onBrandSurface` (Home hero + gradient action card, assistant
+  empty state, scanner controls). `PlantScanner`'s `#fff` literals now read
+  `colors.textInverse`.
+- **Regression coverage** — `tests/unit/headers.test.tsx` guards the three
+  shared heading components (`ServiceHeader`, `SectionHeader`, `ScreenHeading`):
+  subtitle presence/absence, the mutually-exclusive action/trailing slots, the
+  leading node, and the new icon/wrap props.
+
+Re-verified after this pass: `npx tsc --noEmit` clean, `npx expo lint` clean,
+`npx jest` 49 suites / 243 passed (7 live tests skipped, 2 suites skipped),
+`npx expo export --platform web` bundles, and the web export renders Home,
+Services, Farm Management and Profile correctly (all with the unified headers).
+
+

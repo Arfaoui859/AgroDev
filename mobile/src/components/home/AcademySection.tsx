@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
+import { SectionHeader } from '../ui/SectionHeader';
 import { ACADEMY_TOPICS, AcademyTopic } from '../../data/academy';
 
 interface AcademySectionProps {
@@ -37,12 +38,7 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
 
   return (
     <View style={styles.section}>
-      <View style={[styles.header, isRtl && styles.rtlRow]}>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, isRtl && styles.rtlText]}>{x.academyTitle}</Text>
-          <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{x.academySubtitle}</Text>
-        </View>
-      </View>
+      <SectionHeader title={x.academyTitle} subtitle={x.academySubtitle} />
 
       <ScrollView
         horizontal
@@ -90,15 +86,6 @@ export const AcademySection: React.FC<AcademySectionProps> = ({ onOpenVideos, on
 
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  headerText: { flex: 1 },
-  title: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  subtitle: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
   row: { gap: spacing.md, paddingVertical: 2 },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },

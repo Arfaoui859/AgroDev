@@ -13,6 +13,7 @@ import { colors, radius, spacing, typography } from '../theme/colors';
 import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { StateView } from '../components/ui/StateView';
 import { ProvenanceBadge } from '../components/ui/ProvenanceBadge';
 import { getMarketPrices } from '../api/client';
@@ -72,10 +73,7 @@ export const MarketplaceScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
     >
-      <View style={styles.headerBox}>
-        <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{t.marketTitle}</Text>
-        <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{t.marketSubtitle}</Text>
-      </View>
+      <ScreenHeading title={t.marketTitle} subtitle={t.marketSubtitle} />
 
       <View style={[styles.searchBar, isRtl && styles.rtlRow]}>
         <MaterialCommunityIcons name="magnify" size={22} color={colors.textMuted} />
@@ -258,14 +256,11 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing['3xl'] },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-  headerBox: { marginBottom: spacing.md },
   intelCard: { marginTop: spacing.md },
   intelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   intelLabel: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.text, fontWeight: typography.fontWeights.semibold },
   intelState: { fontSize: typography.fontSizes.xs, lineHeight: 20, fontWeight: typography.fontWeights.semibold },
-  mainTitle: { fontSize: typography.fontSizes.xl, lineHeight: 30, fontWeight: typography.fontWeights.bold, color: colors.text },
-  mainSub: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.textSecondary, marginTop: 3 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',

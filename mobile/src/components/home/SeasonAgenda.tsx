@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
+import { SectionHeader } from '../ui/SectionHeader';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Season, seasonForMonth, seasonLabel, seasonTip } from '../../utils/season';
@@ -34,10 +35,10 @@ export const SeasonAgenda: React.FC = () => {
 
   return (
     <View style={styles.section}>
-      <View style={[styles.header, isRtl && styles.rtlRow]}>
-        <Text style={[styles.title, isRtl && styles.rtlText]}>{t.homeSeasonTitle}</Text>
-        <Badge label={t.homeSeasonGeneral} variant="accent" size="sm" />
-      </View>
+      <SectionHeader
+        title={t.homeSeasonTitle}
+        trailing={<Badge label={t.homeSeasonGeneral} variant="accent" size="sm" />}
+      />
       <Card variant="elevated" style={styles.card}>
         <View style={[styles.row, isRtl && styles.rtlRow]}>
           <View style={[styles.iconWrap, { backgroundColor: tint.bg }]}>
@@ -56,13 +57,6 @@ export const SeasonAgenda: React.FC = () => {
 
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  title: { flex: 1, fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
   card: { padding: spacing.md },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   rtlRow: { flexDirection: 'row-reverse' },

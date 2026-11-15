@@ -9,7 +9,7 @@ interface ServiceHeaderProps {
   iconColor: string;
   iconBg: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
 }
 
 /** Consistent RTL-aware header used by every service screen. */
@@ -29,7 +29,7 @@ export const ServiceHeader: React.FC<ServiceHeaderProps> = ({
         </View>
         <View style={styles.titleTextContainer}>
           <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>{title}</Text>
-          <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{subtitle}</Text>
+          {subtitle ? <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{subtitle}</Text> : null}
         </View>
       </View>
     </View>

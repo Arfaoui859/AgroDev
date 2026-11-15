@@ -18,6 +18,7 @@ import { getWeather } from '../../api/client';
 import { WeatherData } from '../../types';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBadge } from '../../components/ui/ProvenanceBadge';
+import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { useConnectivity } from '../../hooks/useConnectivity';
 import { GOVERNORATES, governorateLabel } from '../../utils/governorates';
 import { weatherConditionLabel, weatherIconName, weatherIconTone } from '../../utils/weather';
@@ -105,19 +106,13 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
       showsVerticalScrollIndicator={false}
     >
       {/* Header Info */}
-      <View style={styles.headerBox}>
-        <View style={[styles.titleRow, isRtl && styles.rtlRow]}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="weather-partly-cloudy" size={26} color={colors.secondary} />
-          </View>
-          <View style={styles.titleTextContainer}>
-            <Text style={[styles.mainTitle, isRtl && styles.rtlText]}>
-              {t.weatherIntelligenceName}
-            </Text>
-            <Text style={[styles.mainSub, isRtl && styles.rtlText]}>{x.weatherSubtitle}</Text>
-          </View>
-        </View>
-      </View>
+      <ServiceHeader
+        icon="weather-partly-cloudy"
+        iconColor={colors.secondary}
+        iconBg={colors.secondaryLight}
+        title={t.weatherIntelligenceName}
+        subtitle={x.weatherSubtitle}
+      />
 
       {/* Governorate Selector Pills */}
       <ScrollView
@@ -364,36 +359,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.warning,
     marginBottom: spacing.sm,
-  },
-  headerBox: {
-    marginBottom: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.secondaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleTextContainer: {
-    flex: 1,
-  },
-  mainTitle: {
-    fontSize: typography.fontSizes.lg, lineHeight: 27,
-    fontWeight: typography.fontWeights.bold,
-    color: colors.text,
-  },
-  mainSub: {
-    fontSize: typography.fontSizes.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-    lineHeight: 20,
   },
   govScroll: {
     gap: spacing.xs,

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { useLanguage } from '../../context/LanguageContext';
+import { SectionHeader } from '../ui/SectionHeader';
 import { AICapability } from '../../types';
 
 interface IntelligenceStripProps {
@@ -88,21 +89,13 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
 
   return (
     <View style={styles.section}>
-      <View style={[styles.header, isRtl && styles.rtlRow]}>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, isRtl && styles.rtlText]}>{t.homeIntelTitle}</Text>
-          <Text style={[styles.subtitle, isRtl && styles.rtlText]}>{t.homeIntelSubtitle}</Text>
-        </View>
-        <TouchableOpacity
-          onPress={onOpenCapabilities}
-          accessibilityRole="button"
-          accessibilityLabel={t.multiAgentAiName}
-          hitSlop={12}
-          style={styles.linkButton}
-        >
-          <Text style={styles.linkText}>{t.viewAll}</Text>
-        </TouchableOpacity>
-      </View>
+      <SectionHeader
+        title={t.homeIntelTitle}
+        subtitle={t.homeIntelSubtitle}
+        actionLabel={t.viewAll}
+        onAction={onOpenCapabilities}
+        actionAccessibilityLabel={t.multiAgentAiName}
+      />
 
       {loading ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
@@ -159,17 +152,6 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
 
 const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.sm,
-  },
-  headerText: { flex: 1 },
-  title: { fontSize: typography.fontSizes.base, lineHeight: 24, fontWeight: typography.fontWeights.bold, color: colors.text },
-  subtitle: { fontSize: typography.fontSizes.xs, lineHeight: 20, color: colors.textSecondary, marginTop: 2 },
-  linkButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.xs },
-  linkText: { fontSize: typography.fontSizes.sm, lineHeight: 21, color: colors.primary, fontWeight: typography.fontWeights.semibold },
   row: { gap: spacing.sm, paddingVertical: 2 },
   rtlRow: { flexDirection: 'row-reverse' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },

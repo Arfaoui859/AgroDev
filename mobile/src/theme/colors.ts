@@ -44,6 +44,35 @@ export const colors = {
   waterLight: '#e0f2fe',
   disease: '#b91c1c',
   diseaseLight: '#fee2e2',
+
+  // Neutral scrim for modal/sheet backdrops and image overlays.
+  scrim: 'rgba(15, 23, 42, 0.55)',
+  scrimLight: 'rgba(15, 23, 42, 0.28)',
+  // Darker neutral used for pill labels laid over imagery (e.g. video duration).
+  scrimStrong: 'rgba(15, 23, 42, 0.82)',
+
+  // White-on-brand overlays for hero surfaces, gradient cards and camera controls.
+  onBrandFaint: 'rgba(255, 255, 255, 0.7)',
+  onBrandSubtle: 'rgba(255, 255, 255, 0.85)',
+  onBrandMuted: 'rgba(255, 255, 255, 0.9)',
+  onBrandStrong: 'rgba(255, 255, 255, 0.95)',
+  onBrandBorder: 'rgba(255, 255, 255, 0.25)',
+  onBrandSurface: 'rgba(255, 255, 255, 0.2)',
+  // Tinted red used for error pills floating over the camera preview.
+  dangerScrim: 'rgba(220, 38, 38, 0.85)',
+};
+
+/**
+ * Multi-stop gradients for premium surfaces. Kept as plain arrays so the same
+ * definitions drive `expo-linear-gradient` and any future canvas/PDF export.
+ * Every gradient is a same-hue ramp (no muddy midpoints) so text contrast stays
+ * predictable for the light-on-dark hero copy.
+ */
+export const gradients = {
+  hero: ['#15803d', '#16a34a', '#22c55e'] as const,
+  harvest: ['#b45309', '#d97706', '#f59e0b'] as const,
+  sky: ['#0369a1', '#0284c7', '#38bdf8'] as const,
+  earth: ['#854d0e', '#a16207', '#ca8a04'] as const,
 };
 
 export const typography = {
@@ -115,6 +144,14 @@ export const shadows = {
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 10,
+    elevation: 6,
+  },
+  /** Brand-tinted shadow for the prominent floating controls (e.g. assistant tab). */
+  primary: {
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 6,
   },
 };
