@@ -4,7 +4,7 @@ import { flex1, rowWrapSm, screenStyles, stackSm, stackedCard } from '../../them
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaption } from '../../theme/typographyStyles';
+import { labelSemibold, mutedCaption } from '../../theme/typographyStyles';
 import { formInput } from '../../theme/formStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
@@ -378,7 +378,7 @@ const IrrigationResultView: React.FC<{ data: Record<string, unknown> | null; isR
 
 const styles = StyleSheet.create({
   card: stackedCard,
-  label: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, marginBottom: 6, lineHeight: typography.lineHeights.xs },
+  label: { ...labelSemibold, marginBottom: spacing.sm },
   chipsRow: rowWrapSm,
   textArea: {
     minHeight: 88,

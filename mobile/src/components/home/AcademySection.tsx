@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { gapMdTight, stackLg } from '../../theme/layout';
+import { gapMdTight, rowGapXs, stackLg } from '../../theme/layout';
 import { titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -101,6 +101,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: titleSm,
   cardDesc: { fontSize: typography.fontSizes.xs, lineHeight: 19, color: colors.textSecondary, minHeight: 38 },
-  actionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
+  actionRow: { ...rowGapXs, marginTop: 2 },
   actionText: { fontSize: typography.fontSizes.xs, lineHeight: 18, color: colors.primary, fontWeight: typography.fontWeights.semibold },
 });

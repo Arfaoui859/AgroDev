@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { flex1, gapXs, screenStyles, sectionHeadRow, stackedCard } from '../../theme/layout';
+import { flex1, gapXs, rowGapSm, screenStyles, sectionHeadRow, spaceBetween, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
@@ -321,12 +321,12 @@ const styles = StyleSheet.create({
   tasksTitle: titleBase,
   tasksSub: subtitleMetaSm,
   taskList: gapXs,
-  taskRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48, paddingVertical: spacing.xs },
+  taskRow: { ...rowGapSm, minHeight: 48, paddingVertical: spacing.xs },
   taskText: { flex: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text },
   taskTextDone: { textDecorationLine: 'line-through', color: colors.textMuted },
   progress: { fontSize: typography.fontSizes.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.bold, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   cycleNote: mutedCaptionTop,
-  projectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  projectRow: { ...spaceBetween, gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   projectText: flex1,
   projectName: titleSmSemibold,
   projectMeta: subtitleMeta,

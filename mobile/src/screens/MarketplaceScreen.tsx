@@ -7,7 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { badgePill, cardBottomRow, cardPad, flex1, screenStyles, spaceBetweenSm, stackSm, stackTopMd } from '../theme/layout';
+import { badgePill, cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, spaceBetweenSm, stackSm, stackTopMd } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
 import { labelSemibold, mutedCaption, subtleCaption, titleBase, xsSemibold } from '../theme/typographyStyles';
@@ -235,7 +235,7 @@ const MarketIntelRow: React.FC<{
 
 const styles = StyleSheet.create({
   intelCard: stackTopMd,
-  intelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  intelRow: { ...spaceBetween, gap: spacing.sm },
   intelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   intelLabel: labelSemibold,
   intelState: xsSemibold,
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   priceValue: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
   currencyLabel: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: typography.lineHeights.xs },
   trendBadge: badgePill,
-  trendText: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, lineHeight: typography.lineHeights.xs },
+  trendText: labelSemibold,
   noTrend: mutedCaption,
   tipCard: { backgroundColor: colors.secondaryLight, borderColor: colors.secondary, padding: spacing.md },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },

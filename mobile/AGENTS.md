@@ -794,3 +794,80 @@ correctly.
 Suite: `npx tsc --noEmit` clean, `npx eslint src` clean, `npx jest` **335
 passed / 7 skipped / 342 total** (68 suites passed, 2 skipped). Live gateway
 tests: `LIVE_API_TESTS=1 npx jest tests/live` → 2 suites / 7 tests passed.
+
+### Premium polish pass — capability localization + token sweep + i18n dead-key removal (verified 2026-11)
+
+**Localization bug fixed.** `GET /api/ai/capabilities` returns a stable English
+`id`, an English `name`, and an Arabic `nameAr` — there is **no French label**.
+`IntelligenceStrip` and `MultiAgentAIScreen` rendered `isRtl ? nameAr : name`,
+so a French caller saw the English name. `src/utils/capabilityLabels.ts` now
+exports `capabilityLabel(id, name, nameAr, language)` backed by a closed
+id→{ar,fr,en} map (16 ids, matching the live server exactly). Arabic prefers the
+server's `nameAr`; French/English use the map and fall back to the server `name`
+then the `id` — an Arabic name is never shown to a non-Arabic caller. Same
+pattern as `pestLabels.ts` / `cropLabels.ts`. Test:
+`tests/unit/capability-labels.test.ts` (7 tests) asserts every server id has a
+French and Arabic label, so a new capability can never silently leak English.
+
+**Remaining provenance prose is English in FR mode by backend design.** The
+`provenance` string on each capability is an English sentence with no
+`provenanceFr`; the screen shows `provenanceAr` for Arabic and the English text
+otherwise. This is a backend limitation, not a client bug — a real French UI
+would need the gateway to send a French variant. Do not fabricate one.
+
+**Token sweep.** Added `accentSemibold` (`typographyStyles.ts`) = `labelSemibold`
+in `colors.primaryDark`; applied it plus existing `labelSemibold`, `rowGapXs`,
+`rowGapSm`, `rowCenter`, `spaceBetween`, `rowWrapSm` across 11 files, replacing
+inline `flexDirection: 'row', alignItems: 'center', gap: spacing.*` and
+`fontSize/lineHeight/fontWeight/color` quadruplets. Six inline rows remain where
+the gap is a deliberate optical value (2/3/6px), not a scale step — leave them.
+`tests/unit/typography-styles.test.ts` guards `accentSemibold`.
+
+**Dead i18n keys removed.** 56 keys (80 lines in `src/i18n/index.ts`, 144 in
+`src/i18n/extra.ts`) were declared in all three locales but referenced nowhere in
+`src/` or `tests/` — including `agentsStepFindings`/`agentsStepNote`/
+`agentsRegistry*` (the orchestration trace renders server-authored text, not
+these) and `metricHumidity`/`metricWind` (the weather screen uses
+`weatherHumidity`/`weatherWindSpeed`). Verified against dynamic key access
+(`labelKey`/`titleKey`/`subKey`/`badgeKey`/`descKey` lists) before deleting; the
+ar/fr/en parity test still passes, so removal was safe. Net diff this session:
+**+51 / −269 lines**.
+
+Verified: `npx tsc --noEmit` exit 0, `npx eslint src tests` 0 errors,
+`npx expo install --check` "Dependencies are up to date", `npx jest`
+**343 passed / 7 skipped / 350 total**, `expo export --platform web` succeeds.
+Live browser QA (export behind same-origin proxy): Home, Services and AI
+Assistant render correctly in AR (RTL) and FR; the FR capability strip now shows
+`Analyse du sol` / `Prévision du marché` instead of the English names.
+
+### AI-coverage pass — multi-mode image analysis decision + localised 429 (verified 2026-11)
+
+**The extra image-diagnosis modes are deliberately NOT exposed.** The Python
+`image_diagnosis` service serves four analysis modes (`detect-disease`,
+`quick-health-check`, `analyze-leaf`, `analyze-plant`); mobile uses only
+`detect-disease`. Probing each mode locally showed the three others answer
+`data_source` `mixed`/`heuristic` with `is_real_data: false` and a non-approved
+`model_source` (`heuristic-demo`, `mobilenetv3-plantvillage-v1+leaf-feature-heuristics…`).
+`respondFromImageMicroservice` in `server/routes/ai-services-gateway.ts` fails
+closed unless `is_real_data === true` **and** `data_source` is
+`vision-model`/`llm`/`trained-ml`, so all three would always return 503 through
+the gateway. Surfacing them would only ever render the honest "unavailable"
+state, so they are intentionally left out. Do not add them without a backend
+change that gives those modes real model provenance.
+
+**`GET /api/ai/images/supported-diseases` is a real trained-model library** (the
+local service answers 200 with the MobileNetV3 class list) but the deployed
+gateway returns 429 because the **upstream microservice** rate-limits, not the
+gateway (the gateway response shows `ratelimit-remaining: 29`). That is a
+backend/ops matter, out of mobile scope.
+
+**HTTP 429 is now localised.** The AI routes are rate-limited (30/min) and the
+upstream answers a bare English `Too Many Requests`. `localizeServerError` in
+`src/api/client.ts` now maps status 429 to the new `apiRateLimited` string
+(ar/fr/en) before the language branch, so an Arabic-first user no longer sees
+raw English. Covered by two tests in `tests/unit/client.test.ts`.
+
+Verified: `npx tsc --noEmit` exit 0, `npx eslint . --ext .ts,.tsx` 0 errors,
+`npx jest` **345 passed / 7 skipped / 352 total**, `npx expo install --check`
+"up to date", `npx expo-doctor` 20/20, `npx expo export --platform android`
+succeeds.

@@ -16,12 +16,9 @@ export interface Translations {
   weatherTitle: string;
   urgentAlerts: string;
   quickActions: string;
-  todaysTasks: string;
   assistantPrompt: string;
   askAssistant: string;
   viewAll: string;
-  noAlerts: string;
-  allClear: string;
 
   // Quick Action Buttons
   actionScanDisease: string;
@@ -32,8 +29,6 @@ export interface Translations {
   actionCropRecommendSub: string;
   actionMarketPrices: string;
   actionMarketPricesSub: string;
-  actionWeatherDetail: string;
-  actionWeatherDetailSub: string;
   actionIrrigation: string;
   actionIrrigationSub: string;
 
@@ -56,8 +51,6 @@ export interface Translations {
   diseaseDiagnosisDesc: string;
   weatherIntelligenceName: string;
   weatherIntelligenceDesc: string;
-  marketIntelligenceName: string;
-  marketIntelligenceDesc: string;
   smartIrrigationName: string;
   smartIrrigationDesc: string;
   livestockName: string;
@@ -77,29 +70,23 @@ export interface Translations {
   assistantGreeting: string;
   typeYourMessage: string;
   send: string;
-  suggestedPromptsTitle: string;
   promptIrrigation: string;
   promptPest: string;
   promptSoil: string;
   promptMarket: string;
-  disclaimerAI: string;
 
   // Marketplace Screen
   marketTitle: string;
   marketSubtitle: string;
-  cropPrices: string;
   currencyPerKg: string;
   marketLocation: string;
-  priceTrend: string;
   rising: string;
   falling: string;
   stable: string;
-  filterByGovernorate: string;
   searchCrop: string;
 
   // Profile Screen
   profileTitle: string;
-  userRole: string;
   roleFarmer: string;
   roleAgronomist: string;
   roleTrader: string;
@@ -112,11 +99,8 @@ export interface Translations {
   roleInvestor: string;
   languageSelect: string;
   connectionStatus: string;
-  serverOnline: string;
   serverOffline: string;
   offlineMode: string;
-  syncData: string;
-  loginBtn: string;
   logoutBtn: string;
 
   // Actions & Feedback
@@ -131,12 +115,8 @@ export interface Translations {
   back: string;
   takePhoto: string;
   chooseGallery: string;
-  uploadPhoto: string;
   resultTitle: string;
   recommendations: string;
-  provenanceReal: string;
-  provenanceRuleBased: string;
-  provenanceSimulated: string;
 
   // Home — Agricultural intelligence & discovery
   homeIntelTitle: string;
@@ -175,12 +155,9 @@ const ar: Translations = {
   weatherTitle: 'حالة الطقس والتنبيهات',
   urgentAlerts: 'تنبيهات عاجلة لمزرعتك',
   quickActions: 'خدمات سريعة بنقرة واحدة',
-  todaysTasks: 'مهام اليوم الموصى بها',
   assistantPrompt: 'هل لديك سؤال حول حقلك أو محاصيلك؟',
   askAssistant: 'اسأل المستشار الزراعي الذكي',
   viewAll: 'عرض الكل',
-  noAlerts: 'لا توجد تنبيهات عاجلة اليوم',
-  allClear: 'الحالة ممتازة ومستقرة في حقولك',
 
   actionScanDisease: 'فحص النباتات بالصورة',
   actionScanDiseaseSub: 'التقط صورة لورقة نبات مصابة لاكتشاف المرض فوراً',
@@ -190,8 +167,6 @@ const ar: Translations = {
   actionCropRecommendSub: 'اكتشف أفضل المحاصيل لمناخك وتربتك مع تقدير الأرباح',
   actionMarketPrices: 'أسعار السوق اليوم',
   actionMarketPricesSub: 'تابع أسعار الجملة المحدثة في أسواق تونس وسوسة وصفاقس',
-  actionWeatherDetail: 'توقعات الطقس والري',
-  actionWeatherDetailSub: 'جدول ري مخصص حسب سرعة الرياح ودرجة الحرارة',
   actionIrrigation: 'جدولة الري الذكي',
   actionIrrigationSub: 'ترشيد استهلاك المياه وتحديد مواعيد السقي بدقة',
 
@@ -212,8 +187,6 @@ const ar: Translations = {
   diseaseDiagnosisDesc: 'تشخيص فوري للأمراض الفطرية والحشرية عبر الذكاء الاصطناعي مع خطة علاج.',
   weatherIntelligenceName: 'الطقس الزراعي والتنبيهات',
   weatherIntelligenceDesc: 'بيانات حية مباشرة من محطات الرصد التونسية وتنبيهات الجليد والرياح.',
-  marketIntelligenceName: 'ذكاء السوق والأسعار',
-  marketIntelligenceDesc: 'أسعار الجملة الرسمية وتوقعات الطلب وتوجيهات لتسويق منتجاتك بأفضل سعر.',
   smartIrrigationName: 'الري الذكي وترشيد المياه',
   smartIrrigationDesc: 'حساب الاحتياجات المائية بدقة حسب نوع المحصول وحالة الجو لتوفير الماء والكهرباء.',
   livestockName: 'إدارة الثروة الحيوانية',
@@ -232,27 +205,21 @@ const ar: Translations = {
   assistantGreeting: 'مرحباً بك! أنا مستشارك الزراعي الذكي في AgriVibe. كيف أستطيع مساعدتك اليوم في مزرعتك؟',
   typeYourMessage: 'اكتب سؤالك هنا بالعامية التونسية أو الفصحى...',
   send: 'إرسال',
-  suggestedPromptsTitle: 'أسئلة شائعة يمكنك تجربتها:',
   promptIrrigation: 'متى أفضل وقت لري أشجار الزيتون في هذا الفصل؟',
   promptPest: 'عندي بقع بنية وصفراء على أوراق الطماطم، ما العلاج؟',
   promptSoil: 'تربتي تميل للملوحة، ما هي الأسمدة والمحاصيل المناسبة؟',
   promptMarket: 'ما هي مؤشرات أسعار زيت الزيتون والقمح في تونس؟',
-  disclaimerAI: 'الإجابات مبنية على نماذج الذكاء الاصطناعي وقاعدة المعرفة الزراعية التونسية.',
 
   marketTitle: 'أسعار السلع الزراعية',
   marketSubtitle: 'مؤشرات الأسعار اليومية في أسواق الجملة التونسية بالدينار (TND)',
-  cropPrices: 'أسعار المحاصيل',
   currencyPerKg: 'د.ت / كغ',
   marketLocation: 'السوق',
-  priceTrend: 'المسار',
   rising: 'ارتفاع',
   falling: 'انخفاض',
   stable: 'مستقر',
-  filterByGovernorate: 'تصفية حسب الولاية',
   searchCrop: 'ابحث عن محصول (زيتون، قمح، طماطم...)',
 
   profileTitle: 'الملف الشخصي والإعدادات',
-  userRole: 'الصفة / الدور المهني',
   roleFarmer: 'فلاح / مزارع',
   roleAgronomist: 'مهندس / خبير زراعي',
   roleTrader: 'تاجر / مسوق منتجات',
@@ -265,11 +232,8 @@ const ar: Translations = {
   roleInvestor: 'مستثمر / مؤسسة مالية',
   languageSelect: 'لغة التطبيق',
   connectionStatus: 'حالة الاتصال بالنظام',
-  serverOnline: 'متصل بالنظام والسحابة',
   serverOffline: 'يعمل محلياً (وضع عدم الاتصال)',
   offlineMode: 'حفظ البيانات محلياً',
-  syncData: 'مزامنة البيانات الآن',
-  loginBtn: 'تسجيل الدخول',
   logoutBtn: 'تسجيل الخروج',
 
   save: 'حفظ',
@@ -283,12 +247,8 @@ const ar: Translations = {
   back: 'رجوع',
   takePhoto: 'التقاط صورة بالكاميرا',
   chooseGallery: 'اختيار صورة من المعرض',
-  uploadPhoto: 'رفع صورة للفحص',
   resultTitle: 'نتيجة التشخيص والتوصيات',
   recommendations: 'خطة الإجراءات الموصى بها',
-  provenanceReal: 'بيانات حقيقية معتمدة',
-  provenanceRuleBased: 'نظام إرشادي زراعي دقيق',
-  provenanceSimulated: 'بيانات استرشادية توضيحية',
   multiAgentAiName: 'نظام الوكلاء الأذكياء المتعددين',
   multiAgentAiDesc: 'وكلاء ذكاء اصطناعي متخصصون يعملون بتنسيق مشترك لتحليل شامل ومتكامل لمزرعتك.',
   agriNewsName: 'الأخبار الزراعية',
@@ -324,12 +284,9 @@ const fr: Translations = {
   weatherTitle: 'Météo et Alertes',
   urgentAlerts: 'Alertes urgentes pour votre ferme',
   quickActions: 'Actions rapides en un clic',
-  todaysTasks: 'Tâches recommandées aujourd’hui',
   assistantPrompt: 'Une question sur vos parcelles ou vos cultures ?',
   askAssistant: 'Consulter l’assistant agronomique IA',
   viewAll: 'Voir tout',
-  noAlerts: 'Aucune alerte urgente aujourd’hui',
-  allClear: 'Conditions optimales sur vos parcelles',
 
   actionScanDisease: 'Scanner une plante',
   actionScanDiseaseSub: 'Prenez une photo de feuille pour identifier la maladie',
@@ -339,8 +296,6 @@ const fr: Translations = {
   actionCropRecommendSub: 'Découvrez les cultures les plus rentables',
   actionMarketPrices: 'Prix du marché',
   actionMarketPricesSub: 'Consultez les cours de gros en Tunisie (TND)',
-  actionWeatherDetail: 'Météo & Irrigation',
-  actionWeatherDetailSub: 'Prévisions et recommandations d’arrosage',
   actionIrrigation: 'Irrigation intelligente',
   actionIrrigationSub: 'Optimisez l’eau et réduisez vos dépenses énergétiques',
 
@@ -361,8 +316,6 @@ const fr: Translations = {
   diseaseDiagnosisDesc: 'Détection visuelle par IA des maladies foliaires avec traitements adaptés.',
   weatherIntelligenceName: 'Météo Agricole & Alertes',
   weatherIntelligenceDesc: 'Données en direct des stations météo tunisiennes et alertes gel/sirocco.',
-  marketIntelligenceName: 'Intelligence du Marché',
-  marketIntelligenceDesc: 'Cours des marchés de gros (Tunis, Sfax, Sousse) et tendances.',
   smartIrrigationName: 'Irrigation Optimisée',
   smartIrrigationDesc: 'Calcul précis des besoins hydriques pour économiser l’eau.',
   livestockName: 'Gestion du Bétail',
@@ -381,27 +334,21 @@ const fr: Translations = {
   assistantGreeting: 'Bonjour ! Je suis votre conseiller AgriVibe. Comment puis-je vous aider aujourd’hui ?',
   typeYourMessage: 'Posez votre question ici...',
   send: 'Envoyer',
-  suggestedPromptsTitle: 'Questions suggérées :',
   promptIrrigation: 'Quel est le meilleur moment pour irriguer mes oliviers ?',
   promptPest: 'Feuilles de tomates tachées de jaune et brun, que faire ?',
   promptSoil: 'Mon sol est calcaire, quelles cultures privilégier ?',
   promptMarket: 'Quelles sont les tendances des prix de l’huile d’olive ?',
-  disclaimerAI: 'Réponses générées par l’IA selon les données agronomiques tunisiennes.',
 
   marketTitle: 'Marché & Cours Agricoles',
   marketSubtitle: 'Prix indicatifs sur les marchés de gros tunisiens en Dinars (TND)',
-  cropPrices: 'Prix des produits',
   currencyPerKg: 'DT / kg',
   marketLocation: 'Marché',
-  priceTrend: 'Tendance',
   rising: 'En hausse',
   falling: 'En baisse',
   stable: 'Stable',
-  filterByGovernorate: 'Filtrer par gouvernorat',
   searchCrop: 'Rechercher un produit (olives, blé, tomates...)',
 
   profileTitle: 'Mon Profil & Paramètres',
-  userRole: 'Rôle professionnel',
   roleFarmer: 'Agriculteur / Éleveur',
   roleAgronomist: 'Ingénieur agronome',
   roleTrader: 'Commerçant / Grossiste',
@@ -414,11 +361,8 @@ const fr: Translations = {
   roleInvestor: 'Investisseur / Institution',
   languageSelect: 'Langue de l’application',
   connectionStatus: 'Statut de connexion',
-  serverOnline: 'Connecté au serveur',
   serverOffline: 'Mode hors ligne actif',
   offlineMode: 'Stockage local des données',
-  syncData: 'Synchroniser maintenant',
-  loginBtn: 'Se connecter',
   logoutBtn: 'Se déconnecter',
 
   save: 'Enregistrer',
@@ -432,12 +376,8 @@ const fr: Translations = {
   back: 'Retour',
   takePhoto: 'Prendre une photo',
   chooseGallery: 'Choisir depuis la galerie',
-  uploadPhoto: 'Téléverser pour diagnostic',
   resultTitle: 'Résultat du diagnostic',
   recommendations: 'Plan d’action recommandé',
-  provenanceReal: 'Données réelles certifiées',
-  provenanceRuleBased: 'Système expert agronomique',
-  provenanceSimulated: 'Données indicatives de démonstration',
   multiAgentAiName: 'Système Multi-Agents IA',
   multiAgentAiDesc: 'Agents IA spécialisés travaillant en coordination pour une analyse agricole complète.',
   agriNewsName: 'Actualités agricoles',
@@ -473,12 +413,9 @@ const en: Translations = {
   weatherTitle: 'Weather & Field Alerts',
   urgentAlerts: 'Urgent Farm Alerts',
   quickActions: 'Quick 1-Tap Actions',
-  todaysTasks: 'Recommended Tasks Today',
   assistantPrompt: 'Have a question about your field or crops?',
   askAssistant: 'Ask the Smart Agronomist Assistant',
   viewAll: 'View All',
-  noAlerts: 'No urgent alerts today',
-  allClear: 'Conditions in your fields are healthy and clear',
 
   actionScanDisease: 'Scan Plant Leaves',
   actionScanDiseaseSub: 'Snap a photo to identify crop diseases instantly',
@@ -488,8 +425,6 @@ const en: Translations = {
   actionCropRecommendSub: 'Find high-yield crops matching your soil and climate',
   actionMarketPrices: 'Market Prices Today',
   actionMarketPricesSub: 'Check wholesale commodity prices in Tunisian dinars',
-  actionWeatherDetail: 'Weather & Irrigation',
-  actionWeatherDetailSub: 'Detailed forecast and customized irrigation schedule',
   actionIrrigation: 'Smart Irrigation',
   actionIrrigationSub: 'Save water and energy with smart irrigation schedules',
 
@@ -510,8 +445,6 @@ const en: Translations = {
   diseaseDiagnosisDesc: 'Computer vision analysis of crop leaves with instant treatment plans.',
   weatherIntelligenceName: 'Agro Weather & Alerts',
   weatherIntelligenceDesc: 'Live observations from Tunisian weather stations with frost warnings.',
-  marketIntelligenceName: 'Market Intelligence & Prices',
-  marketIntelligenceDesc: 'Wholesale prices across governorates and seasonal price trends.',
   smartIrrigationName: 'Smart Irrigation & Water Saving',
   smartIrrigationDesc: 'Precise crop water balance calculation to prevent over-watering.',
   livestockName: 'Livestock Management',
@@ -530,27 +463,21 @@ const en: Translations = {
   assistantGreeting: 'Welcome! I am your AgriVibe assistant. What can I help you with on your farm today?',
   typeYourMessage: 'Type your question here (Arabic, French, or English)...',
   send: 'Send',
-  suggestedPromptsTitle: 'Suggested questions:',
   promptIrrigation: 'When is the best time to irrigate olive trees this month?',
   promptPest: 'My tomato leaves have yellow spots with brown borders. What is it?',
   promptSoil: 'My soil has high salinity, what crops and amendments work best?',
   promptMarket: 'What are current wholesale prices for durum wheat in Tunisia?',
-  disclaimerAI: 'Answers generated by AI backed by the Tunisian agronomy knowledge engine.',
 
   marketTitle: 'Agricultural Market Prices',
   marketSubtitle: 'Daily wholesale market commodity prices in Tunisian Dinars (TND)',
-  cropPrices: 'Commodity Prices',
   currencyPerKg: 'TND / kg',
   marketLocation: 'Market',
-  priceTrend: 'Trend',
   rising: 'Rising',
   falling: 'Falling',
   stable: 'Stable',
-  filterByGovernorate: 'Filter by governorate',
   searchCrop: 'Search crop (olive, wheat, tomato...)',
 
   profileTitle: 'Profile & Settings',
-  userRole: 'Professional Role',
   roleFarmer: 'Farmer / Producer',
   roleAgronomist: 'Agronomist / Consultant',
   roleTrader: 'Trader / Distributor',
@@ -563,11 +490,8 @@ const en: Translations = {
   roleInvestor: 'Investor / Institution',
   languageSelect: 'Application Language',
   connectionStatus: 'System Connection',
-  serverOnline: 'Connected to AgriVibe Cloud',
   serverOffline: 'Running in Local Offline Mode',
   offlineMode: 'Local Data Storage',
-  syncData: 'Sync Data Now',
-  loginBtn: 'Sign In',
   logoutBtn: 'Sign Out',
 
   save: 'Save',
@@ -581,12 +505,8 @@ const en: Translations = {
   back: 'Back',
   takePhoto: 'Take Photo with Camera',
   chooseGallery: 'Choose from Gallery',
-  uploadPhoto: 'Upload for Diagnosis',
   resultTitle: 'Diagnostic Result & Treatment',
   recommendations: 'Recommended Action Plan',
-  provenanceReal: 'Certified Live Observation',
-  provenanceRuleBased: 'Agronomic Expert Rules',
-  provenanceSimulated: 'Illustrative Demonstration Data',
   multiAgentAiName: 'Multi-Agent AI System',
   multiAgentAiDesc: 'Specialized AI agents working in coordination for comprehensive agricultural analysis.',
   agriNewsName: 'Agricultural news',

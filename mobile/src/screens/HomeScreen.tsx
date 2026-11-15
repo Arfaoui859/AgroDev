@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { actionsRow, flex1, gapSm, rowGapMd, rowGapSm, screenStyles, spaceBetweenSm, stackLg } from '../theme/layout';
+import { actionsRow, flex1, gapSm, rowGapMd, rowGapSm, rowGapXs, screenStyles, spaceBetweenSm, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, spacing, typography, shadows, gradients } from '../theme/colors';
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
   heroTextWrap: flex1,
-  heroBrandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  heroBrandRow: { ...rowGapSm, marginBottom: spacing.xs },
   heroBrandText: { flexShrink: 1 },
   heroBrandName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
   heroBrandTagline: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandMuted, marginTop: 1 },
@@ -633,12 +633,12 @@ const styles = StyleSheet.create({
   offlineText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.warning, lineHeight: typography.lineHeights.xs },
   weatherCard: { marginBottom: spacing.lg, backgroundColor: colors.card },
   weatherHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  weatherMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+  weatherMain: { ...rowGapXs, flexShrink: 1 },
   weatherAdviceTitle: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.accentDark },
   weatherAdviceBody: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text, marginTop: spacing.sm },
   weatherMoreSpacer: flex1,
   weatherMoreText: linkCaption,
-  provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' },
+  provRow: { ...rowGapSm, marginTop: spacing.md, flexWrap: 'wrap' },
   sectionContainer: stackLg,
   quickActionsGrid: gapSm,
   tilesRow: actionsRow,

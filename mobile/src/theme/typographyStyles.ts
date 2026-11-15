@@ -161,6 +161,9 @@ export const labelSemibold: TextStyle = {
   color: colors.text,
 };
 
+/** xs semibold label in the dark brand accent (category tags, source labels). */
+export const accentSemibold: TextStyle = { ...labelSemibold, color: colors.primaryDark };
+
 /** Field label: `labelSemibold` with the tight gap beneath it. */
 export const fieldLabel: TextStyle = { ...labelSemibold, marginBottom: spacing.xs };
 

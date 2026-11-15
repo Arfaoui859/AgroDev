@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { centerText, mutedCaptionTop, textAccent, textAccentSemibold } from '../../theme/typographyStyles';
-import { chipActiveFill, primaryFill, selectedChip } from '../../theme/layout';
+import { chipActiveFill, primaryFill, rowCenter, selectedChip } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
 export interface Step {
@@ -68,7 +68,7 @@ export const Stepper: React.FC<StepperProps> = ({ steps, activeIndex, onSelect }
 };
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
+  row: { ...rowCenter, marginBottom: spacing.md },
   step: { alignItems: 'center', minHeight: 48, minWidth: 48, justifyContent: 'center', flex: 1 },
   circle: {
     width: 30,

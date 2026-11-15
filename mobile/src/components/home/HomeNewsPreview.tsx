@@ -5,7 +5,7 @@ import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
 import { flex1, metaRow, rowGapSm, stackLg } from '../../theme/layout';
-import { mutedCaption, titleSm } from '../../theme/typographyStyles';
+import { accentSemibold, mutedCaption, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../ui/Card';
 import { SectionHeader } from '../ui/SectionHeader';
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   articleTextWrap: flex1,
   articleTitle: titleSm,
   articleMeta: metaRow,
-  articleSource: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold, maxWidth: 180 },
+  articleSource: { ...accentSemibold, maxWidth: 180 },
   articleDot: { fontSize: typography.fontSizes.xs, color: colors.textMuted },
   articleDate: mutedCaption,
   catRow: { flexDirection: 'row', marginTop: spacing.xs },

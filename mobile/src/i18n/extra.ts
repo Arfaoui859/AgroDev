@@ -19,7 +19,6 @@ export interface ExtraTranslations {
   authResetBtn: string;
   authNeedAccount: string;
   authHaveAccount: string;
-  authForgot: string;
   authConfirmEmail: string;
   authWelcomeBack: string;
   authCreateAccount: string;
@@ -48,7 +47,6 @@ export interface ExtraTranslations {
   // Onboarding
   onboardingTitle: string;
   onboardingSubtitle: string;
-  onboardingContinue: string;
   onboardingSkip: string;
   personaGardenerTitle: string;
   personaGardenerSub: string;
@@ -81,7 +79,6 @@ export interface ExtraTranslations {
   // Login gate
   loginRequired: string;
   loginRequiredDesc: string;
-  loginToContinue: string;
 
   // States
   stateLoading: string;
@@ -100,7 +97,6 @@ export interface ExtraTranslations {
   // Notifications
   notificationsTitle: string;
   notificationsEmpty: string;
-  markAllRead: string;
   notificationUnread: string;
 
   // Scanner
@@ -192,8 +188,6 @@ export interface ExtraTranslations {
 
   // Crop recommendation inputs
   cropSoilPh: string;
-  cropTemperature: string;
-  cropRainfall: string;
   cropSalinity: string;
   cropArea: string;
   cropCompute: string;
@@ -202,8 +196,6 @@ export interface ExtraTranslations {
 
   // Assistant
   assistantUnavailable: string;
-  assistantProvenanceLlm: string;
-  assistantProvenanceRules: string;
 
   // Home
   homeNoAlerts: string;
@@ -212,8 +204,6 @@ export interface ExtraTranslations {
   /** Heading for the Home weather-advice card. */
   homeWeatherAdviceTitle: string;
   homeGuest: string;
-  metricHumidity: string;
-  metricWind: string;
   priorityCritical: string;
   priorityHigh: string;
   priorityMedium: string;
@@ -290,7 +280,6 @@ export interface ExtraTranslations {
   // Profile
   profileSignInPrompt: string;
   profileSignOutConfirm: string;
-  profileSignedInAs: string;
   profileServerReachable: string;
   profileCacheCleared: string;
   profileClearCache: string;
@@ -331,14 +320,6 @@ export interface ExtraTranslations {
   servicesNoMatch: string;
 
   // Soil analysis screen
-  soilFormHeading: string;
-  soilPhLabel: string;
-  soilPhHint: string;
-  soilNitrogenLabel: string;
-  soilPhosphorusLabel: string;
-  soilPotassiumLabel: string;
-  soilOrganicMatterLabel: string;
-  soilMoistureLabel: string;
   soilAnalyzeButton: string;
   soilFertilityScore: string;
   soilProblems: string;
@@ -348,7 +329,6 @@ export interface ExtraTranslations {
   /** Shown when the user submits the form with every measurement blank. */
   soilNeedOneMeasurement: string;
   /** Shown when a field holds text that is not a valid number. */
-  soilInvalidInput: string;
   /** Note that blank fields are reported as missing, never substituted. */
   soilBlankNote: string;
 
@@ -368,10 +348,7 @@ export interface ExtraTranslations {
   weatherMyLocationLabel: string;
 
   // Crop recommendation screen
-  cropEmptyResult: string;
   cropSuitabilityShort: string;
-  cropEstimatedProfit: string;
-  cropWaterRequirement: string;
   cropHistorySummary: string;
 
   // Recent analyses screen
@@ -436,7 +413,6 @@ export interface ExtraTranslations {
   livestockUnavailable: string;
   livestockUnavailableDesc: string;
   livestockLoginRequired: string;
-  livestockEarTag: string;
   livestockSpecies: string;
   livestockValue: string;
   livestockAge: string;
@@ -449,9 +425,6 @@ export interface ExtraTranslations {
   clearSearch: string;
   save: string;
   cancel: string;
-  seeAll: string;
-  poweredBy: string;
-  dataProvenance: string;
 
   // Profile screen
   profileUserFallback: string;
@@ -469,7 +442,6 @@ export interface ExtraTranslations {
   marketIntelNote: string;
   marketIntelForecast: string;
   marketIntelSupplyDemand: string;
-  marketIntelUnavailableHint: string;
 
   // AI assistant screen
   assistantErrorReply: string;
@@ -487,6 +459,7 @@ export interface ExtraTranslations {
   apiUnavailable: string;
   apiTimeout: string;
   apiOffline: string;
+  apiRateLimited: string;
   weatherFetchFailed: string;
   diseaseServiceUnconfigured: string;
   diseaseAnalysisFailed: string;
@@ -535,8 +508,6 @@ export interface ExtraTranslations {
   agentsConcurrency: string;
   agentsDuration: string;
   agentsRunTitle: string;
-  agentsStepFindings: string;
-  agentsStepNote: string;
   agentsStepAttempts: string;
   agentsStatusOk: string;
   agentsStatusInsufficient: string;
@@ -556,12 +527,6 @@ export interface ExtraTranslations {
   agentsConfidenceUnknown: string;
   agentsShowTrace: string;
   agentsHideTrace: string;
-  agentsRegistryTitle: string;
-  agentsRegistrySubtitle: string;
-  agentsRegistryLoadFailed: string;
-  agentsSpecialistCount: string;
-  agentsDependsOn: string;
-  agentsNoDependencies: string;
   agentsInAction: string;
   agentsPreamble: string;
 }
@@ -579,7 +544,6 @@ const ar: ExtraTranslations = {
   authResetBtn: 'إرسال رابط الاستعادة',
   authNeedAccount: 'ليس لديك حساب؟',
   authHaveAccount: 'لديك حساب بالفعل؟',
-  authForgot: 'نسيت كلمة المرور؟',
   authConfirmEmail: 'تم إنشاء الحساب. يرجى تأكيد بريدك الإلكتروني ثم تسجيل الدخول.',
   authWelcomeBack: 'مرحباً بعودتك',
   authCreateAccount: 'إنشاء حساب AgriVibe',
@@ -607,7 +571,6 @@ const ar: ExtraTranslations = {
 
   onboardingTitle: 'اختر نوع استخدامك',
   onboardingSubtitle: 'نخصص الواجهة والخدمات الأكثر ملاءمة لاحتياجاتك',
-  onboardingContinue: 'متابعة',
   onboardingSkip: 'تخطّي',
   personaGardenerTitle: 'زراعة منزلية وحدائق',
   personaGardenerSub: 'رعاية نباتات الحديقة المنزلية، فحص الأوراق السريع، وجداول السقي البسيطة.',
@@ -639,7 +602,6 @@ const ar: ExtraTranslations = {
 
   loginRequired: 'يلزم تسجيل الدخول',
   loginRequiredDesc: 'هذه الخدمة مرتبطة ببيانات حسابك الخاصة ومزرعتك.',
-  loginToContinue: 'تسجيل الدخول للمتابعة',
 
   stateLoading: 'جاري التحميل...',
   stateEmpty: 'لا توجد بيانات لعرضها',
@@ -656,7 +618,6 @@ const ar: ExtraTranslations = {
 
   notificationsTitle: 'الإشعارات',
   notificationsEmpty: 'لا توجد إشعارات جديدة',
-  markAllRead: 'تعليم الكل كمقروء',
   notificationUnread: 'غير مقروء',
 
   scannerCapture: 'التقاط صورة',
@@ -743,8 +704,6 @@ const ar: ExtraTranslations = {
   irrigationUnavailable: 'خدمة الري الذكي غير مُهيّأة على الخادم حالياً.',
 
   cropSoilPh: 'حموضة التربة (pH)',
-  cropTemperature: 'متوسط الحرارة (°م)',
-  cropRainfall: 'الأمطار السنوية (مم)',
   cropSalinity: 'الملوحة (dS/m)',
   cropArea: 'المساحة (هكتار)',
   cropCompute: 'احسب المحاصيل المناسبة',
@@ -752,16 +711,12 @@ const ar: ExtraTranslations = {
   cropInvalidInput: 'يرجى إدخال أرقام صحيحة أو ترك الحقول فارغة.',
 
   assistantUnavailable: 'تعذّر الحصول على إجابة من المستشار.',
-  assistantProvenanceLlm: 'إجابة من نموذج لغوي مُهيّأ',
-  assistantProvenanceRules: 'إجابة من محرك القواعد الزراعية المحلي',
 
   homeNoAlerts: 'لا توجد تنبيهات عاجلة اليوم',
   homeAlertsUnavailable: 'تعذّر تحميل التنبيهات؛ مخزن التنبيهات غير متاح حالياً.',
   homeWeatherUnavailable: 'تعذّر جلب بيانات الطقس',
   homeWeatherAdviceTitle: 'نصيحة الطقس لليوم',
   homeGuest: 'الفلاح الكريم',
-  metricHumidity: 'رطوبة',
-  metricWind: 'كم/س',
   priorityCritical: 'حرج',
   priorityHigh: 'مرتفع',
   priorityMedium: 'متوسط',
@@ -833,7 +788,6 @@ const ar: ExtraTranslations = {
 
   profileSignInPrompt: 'سجّل الدخول للوصول إلى بياناتك',
   profileSignOutConfirm: 'هل تريد تسجيل الخروج من حسابك؟',
-  profileSignedInAs: 'مسجّل الدخول باسم',
   profileServerReachable: 'تم الاتصال بخادم AgriVibe بنجاح.',
   profileCacheCleared: 'تم مسح البيانات المؤقتة المخزّنة على الجهاز.',
   profileClearCache: 'مسح البيانات المؤقتة',
@@ -873,14 +827,6 @@ const ar: ExtraTranslations = {
   servicesNoMatch: 'لا توجد خدمة مطابقة لبحثك. جرّب كلمة أخرى أو اختر فئة مختلفة.',
 
   // Soil analysis screen
-  soilFormHeading: 'أدخل نتائج تحليل عينة التربة (اترك الحقل فارغاً إذا لم تتوفر القيمة)',
-  soilPhLabel: 'درجة حموضة التربة (pH)',
-  soilPhHint: 'المثالي: 6.5 - 7.8',
-  soilNitrogenLabel: 'الآزوت N (ملغ/كغ)',
-  soilPhosphorusLabel: 'الفسفور P (ملغ/كغ)',
-  soilPotassiumLabel: 'البوتاسيوم K (ملغ/كغ)',
-  soilOrganicMatterLabel: 'المادة العضوية (%)',
-  soilMoistureLabel: 'رطوبة التربة (%) — اختياري',
   soilAnalyzeButton: 'تحليل خصوبة التربة',
   soilFertilityScore: 'تقييم الخصوبة',
   soilProblems: 'مشاكل تم رصدها',
@@ -888,7 +834,6 @@ const ar: ExtraTranslations = {
   soilFindings: 'قراءة المؤشرات',
   soilRecommendations: 'التوصيات الزراعية',
   soilNeedOneMeasurement: 'أدخل قياساً واحداً على الأقل من نتائج التحليل المخبري. الحقول الفارغة تُعامل كقياسات ناقصة ولا تُخترع لها قيم.',
-  soilInvalidInput: 'يرجى إدخال أرقام صحيحة أو ترك الحقول فارغة.',
   soilBlankNote: 'الحقول الفارغة تُرسل كقياسات ناقصة؛ لا يُستبدل أي قياس بقيمة افتراضية.',
 
   // Weather screen
@@ -907,10 +852,7 @@ const ar: ExtraTranslations = {
   weatherMyLocationLabel: 'موقعي الحالي',
 
   // Crop recommendation screen
-  cropEmptyResult: 'لم تُرجع خدمة التوصيات أي محصول مطابق.',
   cropSuitabilityShort: 'ملاءمة',
-  cropEstimatedProfit: 'العائد التقديري للهكتار',
-  cropWaterRequirement: 'الاحتياج المائي',
   cropHistorySummary: '{score}% ملاءمة • {count} محصول مقترح',
 
   // Recent analyses screen
@@ -973,7 +915,6 @@ const ar: ExtraTranslations = {
   livestockUnavailable: 'جدول الثروة الحيوانية غير مهيّأ على الخادم',
   livestockUnavailableDesc: 'لا توجد جداول ثروة حيوانية مُهيّأة في قاعدة البيانات حالياً. لم نعرض أي بيانات مختلقة.',
   livestockLoginRequired: 'سجّل الدخول لعرض سجل حيواناتك المحفوظ.',
-  livestockEarTag: 'رقم الأذن',
   livestockSpecies: 'النوع',
   livestockValue: 'القيمة التقديرية',
   livestockAge: 'العمر',
@@ -985,9 +926,6 @@ const ar: ExtraTranslations = {
   clearSearch: 'مسح البحث',
   save: 'حفظ',
   cancel: 'إلغاء',
-  seeAll: 'عرض الكل',
-  poweredBy: 'مصدر البيانات',
-  dataProvenance: 'مصدر البيانات',
 
   // Profile screen
   profileUserFallback: 'مستخدم AgriVibe',
@@ -1005,7 +943,6 @@ const ar: ExtraTranslations = {
   marketIntelNote: 'حالة خدمات التحليل السوقي كما يعلنها الخادم الآن — لا نعرض توقعات مختلقة.',
   marketIntelForecast: 'توقّع الأسعار',
   marketIntelSupplyDemand: 'العرض والطلب',
-  marketIntelUnavailableHint: 'غير متاح حتى يتم ربط مصدر سوق موثّق ومؤرّخ ونموذج متحقّق منه. تحقق من أسواق الجملة المحلية قبل القرار.',
 
   // AI assistant screen
   assistantErrorReply: 'عذراً، حدث خطأ أثناء معالجة السؤال. يرجى التأكد من الاتصال والمحاولة ثانية.',
@@ -1023,6 +960,7 @@ const ar: ExtraTranslations = {
   apiUnavailable: 'الخدمة غير متاحة حالياً على الخادم',
   apiTimeout: 'انتهت مهلة الاتصال بالخادم',
   apiOffline: 'تعذر الاتصال بخادم AgriVibe',
+  apiRateLimited: 'عدد الطلبات كبير جداً. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.',
   weatherFetchFailed: 'تعذّر جلب بيانات الطقس الحية',
   diseaseServiceUnconfigured: 'خدمة تشخيص الصور غير مُهيّأة',
   diseaseAnalysisFailed: 'فشل تحليل الصورة',
@@ -1067,8 +1005,6 @@ const ar: ExtraTranslations = {
   agentsConcurrency: 'التزامن',
   agentsDuration: 'المدة',
   agentsRunTitle: 'نتائج الوكلاء',
-  agentsStepFindings: 'النتائج',
-  agentsStepNote: 'ملاحظة',
   agentsStepAttempts: 'المحاولات',
   agentsStatusOk: 'تم',
   agentsStatusInsufficient: 'بيانات ناقصة',
@@ -1088,12 +1024,6 @@ const ar: ExtraTranslations = {
   agentsConfidenceUnknown: 'ثقة غير محدّدة',
   agentsShowTrace: 'اعرض مسار التنسيق',
   agentsHideTrace: 'أخفِ مسار التنسيق',
-  agentsRegistryTitle: 'سجلّ الوكلاء المتخصّصين',
-  agentsRegistrySubtitle: 'القائمة المقيّدة التي ينفّذها المنسّق فعلياً على الخادم.',
-  agentsRegistryLoadFailed: 'تعذّر جلب سجلّ الوكلاء.',
-  agentsSpecialistCount: 'عدد الوكلاء',
-  agentsDependsOn: 'يعتمد على',
-  agentsNoDependencies: 'مستقل',
   agentsInAction: 'الوكلاء أثناء العمل',
   agentsPreamble: 'كل إجابة من المساعد تمرّ عبر منسّق مركزي يختار الوكلاء المتخصّصين حسب سؤالك، ينفّذهم ضمن خطة محدودة، ثم يدمج نتائجهم الموسومة بمصادرها.',
 };
@@ -1111,7 +1041,6 @@ const fr: ExtraTranslations = {
   authResetBtn: 'Envoyer le lien de réinitialisation',
   authNeedAccount: 'Pas encore de compte ?',
   authHaveAccount: 'Vous avez déjà un compte ?',
-  authForgot: 'Mot de passe oublié ?',
   authConfirmEmail: 'Compte créé. Confirmez votre e-mail puis connectez-vous.',
   authWelcomeBack: 'Bon retour',
   authCreateAccount: 'Créer un compte AgriVibe',
@@ -1139,7 +1068,6 @@ const fr: ExtraTranslations = {
 
   onboardingTitle: 'Choisissez votre profil',
   onboardingSubtitle: 'Nous adaptons l’interface et les services à vos besoins',
-  onboardingContinue: 'Continuer',
   onboardingSkip: 'Passer',
   personaGardenerTitle: 'Jardinage familial',
   personaGardenerSub: 'Entretien des plantes du jardin, diagnostic rapide des feuilles et arrosage simple.',
@@ -1171,7 +1099,6 @@ const fr: ExtraTranslations = {
 
   loginRequired: 'Connexion requise',
   loginRequiredDesc: 'Ce service est lié aux données de votre compte et de votre exploitation.',
-  loginToContinue: 'Se connecter pour continuer',
 
   stateLoading: 'Chargement...',
   stateEmpty: 'Aucune donnée à afficher',
@@ -1188,7 +1115,6 @@ const fr: ExtraTranslations = {
 
   notificationsTitle: 'Notifications',
   notificationsEmpty: 'Aucune nouvelle notification',
-  markAllRead: 'Tout marquer comme lu',
   notificationUnread: 'Non lu',
 
   scannerCapture: 'Prendre une photo',
@@ -1275,8 +1201,6 @@ const fr: ExtraTranslations = {
   irrigationUnavailable: 'Le service d’irrigation n’est pas configuré sur le serveur.',
 
   cropSoilPh: 'pH du sol',
-  cropTemperature: 'Température moyenne (°C)',
-  cropRainfall: 'Pluviométrie annuelle (mm)',
   cropSalinity: 'Salinité (dS/m)',
   cropArea: 'Superficie (ha)',
   cropCompute: 'Calculer les cultures adaptées',
@@ -1284,16 +1208,12 @@ const fr: ExtraTranslations = {
   cropInvalidInput: 'Saisissez des nombres valides ou laissez les champs vides.',
 
   assistantUnavailable: 'Impossible d’obtenir une réponse de l’assistant.',
-  assistantProvenanceLlm: 'Réponse d’un modèle de langage configuré',
-  assistantProvenanceRules: 'Réponse du moteur de règles local',
 
   homeNoAlerts: 'Aucune alerte urgente aujourd’hui',
   homeAlertsUnavailable: 'Alertes indisponibles : le stockage des notifications est injoignable.',
   homeWeatherUnavailable: 'Météo indisponible',
   homeWeatherAdviceTitle: 'Conseil météo du jour',
   homeGuest: 'Cher agriculteur',
-  metricHumidity: 'humidité',
-  metricWind: 'km/h',
   priorityCritical: 'Critique',
   priorityHigh: 'Élevée',
   priorityMedium: 'Moyenne',
@@ -1365,7 +1285,6 @@ const fr: ExtraTranslations = {
 
   profileSignInPrompt: 'Connectez-vous pour accéder à vos données',
   profileSignOutConfirm: 'Voulez-vous vous déconnecter ?',
-  profileSignedInAs: 'Connecté en tant que',
   profileServerReachable: 'Connexion au serveur AgriVibe réussie.',
   profileCacheCleared: 'Données en cache effacées de cet appareil.',
   profileClearCache: 'Effacer le cache',
@@ -1405,14 +1324,6 @@ const fr: ExtraTranslations = {
   servicesNoMatch: 'Aucun service ne correspond à votre recherche. Essayez un autre mot ou une autre catégorie.',
 
   // Soil analysis screen
-  soilFormHeading: 'Saisissez les résultats d’analyse de l’échantillon de sol (laissez vide si la valeur est indisponible)',
-  soilPhLabel: 'Acidité du sol (pH)',
-  soilPhHint: 'Optimal : 6,5 - 7,8',
-  soilNitrogenLabel: 'Azote N (mg/kg)',
-  soilPhosphorusLabel: 'Phosphore P (mg/kg)',
-  soilPotassiumLabel: 'Potassium K (mg/kg)',
-  soilOrganicMatterLabel: 'Matière organique (%)',
-  soilMoistureLabel: 'Humidité du sol (%) — facultatif',
   soilAnalyzeButton: 'Analyser la fertilité du sol',
   soilFertilityScore: 'Évaluation de la fertilité',
   soilProblems: 'Problèmes détectés',
@@ -1420,7 +1331,6 @@ const fr: ExtraTranslations = {
   soilFindings: 'Lecture des indicateurs',
   soilRecommendations: 'Recommandations agronomiques',
   soilNeedOneMeasurement: 'Saisissez au moins une mesure issue de l’analyse de laboratoire. Les champs vides sont traités comme des mesures manquantes et ne sont jamais remplacés par une valeur inventée.',
-  soilInvalidInput: 'Saisissez des nombres valides ou laissez les champs vides.',
   soilBlankNote: 'Les champs vides sont envoyés comme mesures manquantes ; aucune valeur par défaut n’est substituée.',
 
   // Weather screen
@@ -1439,10 +1349,7 @@ const fr: ExtraTranslations = {
   weatherMyLocationLabel: 'Ma position',
 
   // Crop recommendation screen
-  cropEmptyResult: 'Le service de recommandation n’a renvoyé aucune culture correspondante.',
   cropSuitabilityShort: 'Adéquation',
-  cropEstimatedProfit: 'Rendement estimé par hectare',
-  cropWaterRequirement: 'Besoin en eau',
   cropHistorySummary: '{score} % d’adéquation • {count} cultures proposées',
 
   // Recent analyses screen
@@ -1505,7 +1412,6 @@ const fr: ExtraTranslations = {
   livestockUnavailable: 'Table du cheptel non configurée sur le serveur',
   livestockUnavailableDesc: 'Les tables de cheptel ne sont pas configurées dans la base. Aucune donnée inventée n’est affichée.',
   livestockLoginRequired: 'Connectez-vous pour voir votre cheptel enregistré.',
-  livestockEarTag: 'Boucle',
   livestockSpecies: 'Espèce',
   livestockValue: 'Valeur estimée',
   livestockAge: 'Âge',
@@ -1517,9 +1423,6 @@ const fr: ExtraTranslations = {
   clearSearch: 'Effacer la recherche',
   save: 'Enregistrer',
   cancel: 'Annuler',
-  seeAll: 'Voir tout',
-  poweredBy: 'Source des données',
-  dataProvenance: 'Source des données',
 
   // Profile screen
   profileUserFallback: 'Utilisateur AgriVibe',
@@ -1537,7 +1440,6 @@ const fr: ExtraTranslations = {
   marketIntelNote: 'État réel des analyses de marché tel que déclaré par le serveur — aucune prévision inventée.',
   marketIntelForecast: 'Prévision des prix',
   marketIntelSupplyDemand: 'Offre et demande',
-  marketIntelUnavailableHint: 'Indisponible tant qu’une source de marché vérifiée et horodatée et un modèle validé ne sont pas connectés. Vérifiez les marchés de gros locaux avant de décider.',
 
   // AI assistant screen
   assistantErrorReply: 'Désolé, une erreur s’est produite lors du traitement de la question. Vérifiez la connexion et réessayez.',
@@ -1555,6 +1457,7 @@ const fr: ExtraTranslations = {
   apiUnavailable: 'Service actuellement indisponible sur le serveur',
   apiTimeout: 'Délai de connexion au serveur dépassé',
   apiOffline: 'Impossible de joindre le serveur AgriVibe',
+  apiRateLimited: 'Trop de requêtes. Veuillez patienter un instant puis réessayer.',
   weatherFetchFailed: 'Impossible de récupérer les données météo en direct',
   diseaseServiceUnconfigured: 'Service de diagnostic par image non configuré',
   diseaseAnalysisFailed: 'Échec de l’analyse de l’image',
@@ -1599,8 +1502,6 @@ const fr: ExtraTranslations = {
   agentsConcurrency: 'Concurrence',
   agentsDuration: 'Durée',
   agentsRunTitle: 'Résultats des agents',
-  agentsStepFindings: 'Constats',
-  agentsStepNote: 'Remarque',
   agentsStepAttempts: 'Tentatives',
   agentsStatusOk: 'OK',
   agentsStatusInsufficient: 'Données manquantes',
@@ -1620,12 +1521,6 @@ const fr: ExtraTranslations = {
   agentsConfidenceUnknown: 'Confiance indéterminée',
   agentsShowTrace: 'Afficher la trace d’orchestration',
   agentsHideTrace: 'Masquer la trace d’orchestration',
-  agentsRegistryTitle: 'Registre des agents spécialisés',
-  agentsRegistrySubtitle: 'La liste autorisée que l’orchestrateur exécute réellement sur le serveur.',
-  agentsRegistryLoadFailed: 'Impossible de charger le registre des agents.',
-  agentsSpecialistCount: 'Nombre d’agents',
-  agentsDependsOn: 'Dépend de',
-  agentsNoDependencies: 'Indépendant',
   agentsInAction: 'Les agents en action',
   agentsPreamble: 'Chaque réponse de l’assistant passe par un orchestrateur central qui choisit les agents spécialisés selon votre question, les exécute selon un plan borné, puis fusionne leurs résultats étiquetés par source.',
 
@@ -1644,7 +1539,6 @@ const en: ExtraTranslations = {
   authResetBtn: 'Send reset link',
   authNeedAccount: "Don't have an account?",
   authHaveAccount: 'Already have an account?',
-  authForgot: 'Forgot password?',
   authConfirmEmail: 'Account created. Confirm your email, then sign in.',
   authWelcomeBack: 'Welcome back',
   authCreateAccount: 'Create an AgriVibe account',
@@ -1672,7 +1566,6 @@ const en: ExtraTranslations = {
 
   onboardingTitle: 'Choose your profile',
   onboardingSubtitle: 'We tailor the interface and services to your needs',
-  onboardingContinue: 'Continue',
   onboardingSkip: 'Skip',
   personaGardenerTitle: 'Home growing & gardening',
   personaGardenerSub: 'Home garden plant care, quick leaf checks and simple watering schedules.',
@@ -1704,7 +1597,6 @@ const en: ExtraTranslations = {
 
   loginRequired: 'Sign-in required',
   loginRequiredDesc: 'This service is tied to your account and farm data.',
-  loginToContinue: 'Sign in to continue',
 
   stateLoading: 'Loading...',
   stateEmpty: 'Nothing to show yet',
@@ -1721,7 +1613,6 @@ const en: ExtraTranslations = {
 
   notificationsTitle: 'Notifications',
   notificationsEmpty: 'No new notifications',
-  markAllRead: 'Mark all as read',
   notificationUnread: 'Unread',
 
   scannerCapture: 'Take a photo',
@@ -1808,8 +1699,6 @@ const en: ExtraTranslations = {
   irrigationUnavailable: 'The irrigation service is not configured on the server.',
 
   cropSoilPh: 'Soil pH',
-  cropTemperature: 'Average temperature (°C)',
-  cropRainfall: 'Annual rainfall (mm)',
   cropSalinity: 'Salinity (dS/m)',
   cropArea: 'Area (hectares)',
   cropCompute: 'Find suitable crops',
@@ -1817,13 +1706,9 @@ const en: ExtraTranslations = {
   cropInvalidInput: 'Enter valid numbers or leave the fields empty.',
 
   assistantUnavailable: 'Could not get a reply from the assistant.',
-  assistantProvenanceLlm: 'Answer from a configured language model',
-  assistantProvenanceRules: 'Answer from the local rule-based engine',
 
   homeNoAlerts: 'No urgent alerts today',
   homeAlertsUnavailable: 'Alerts unavailable: the notification store could not be reached.',
-  metricHumidity: 'humidity',
-  metricWind: 'km/h',
   priorityCritical: 'Critical',
   priorityHigh: 'High',
   priorityMedium: 'Medium',
@@ -1898,7 +1783,6 @@ const en: ExtraTranslations = {
 
   profileSignInPrompt: 'Sign in to access your data',
   profileSignOutConfirm: 'Do you want to sign out?',
-  profileSignedInAs: 'Signed in as',
   profileServerReachable: 'Connected to the AgriVibe server successfully.',
   profileCacheCleared: 'Cached data cleared from this device.',
   profileClearCache: 'Clear cached data',
@@ -1938,14 +1822,6 @@ const en: ExtraTranslations = {
   servicesNoMatch: 'No service matches your search. Try another word or a different category.',
 
   // Soil analysis screen
-  soilFormHeading: 'Enter the soil sample analysis results (leave a field empty if the value is unavailable)',
-  soilPhLabel: 'Soil acidity (pH)',
-  soilPhHint: 'Optimal: 6.5 - 7.8',
-  soilNitrogenLabel: 'Nitrogen N (mg/kg)',
-  soilPhosphorusLabel: 'Phosphorus P (mg/kg)',
-  soilPotassiumLabel: 'Potassium K (mg/kg)',
-  soilOrganicMatterLabel: 'Organic matter (%)',
-  soilMoistureLabel: 'Soil moisture (%) — optional',
   soilAnalyzeButton: 'Analyse soil fertility',
   soilFertilityScore: 'Fertility rating',
   soilProblems: 'Detected problems',
@@ -1953,7 +1829,6 @@ const en: ExtraTranslations = {
   soilFindings: 'Indicator readings',
   soilRecommendations: 'Agronomic recommendations',
   soilNeedOneMeasurement: 'Enter at least one measurement from the lab analysis. Blank fields are treated as missing measurements and are never filled with an invented value.',
-  soilInvalidInput: 'Enter valid numbers or leave the fields empty.',
   soilBlankNote: 'Blank fields are sent as missing measurements; no default value is substituted.',
 
   // Weather screen
@@ -1972,10 +1847,7 @@ const en: ExtraTranslations = {
   weatherMyLocationLabel: 'My location',
 
   // Crop recommendation screen
-  cropEmptyResult: 'The recommendation service returned no matching crop.',
   cropSuitabilityShort: 'Suitability',
-  cropEstimatedProfit: 'Estimated profit per hectare',
-  cropWaterRequirement: 'Water requirement',
   cropHistorySummary: '{score}% suitability • {count} suggested crops',
 
   // Recent analyses screen
@@ -2038,7 +1910,6 @@ const en: ExtraTranslations = {
   livestockUnavailable: 'Livestock table not configured on the server',
   livestockUnavailableDesc: 'The livestock tables are not configured in the database. No invented data is shown.',
   livestockLoginRequired: 'Sign in to view your recorded animals.',
-  livestockEarTag: 'Ear tag',
   livestockSpecies: 'Species',
   livestockValue: 'Estimated value',
   livestockAge: 'Age',
@@ -2050,9 +1921,6 @@ const en: ExtraTranslations = {
   clearSearch: 'Clear search',
   save: 'Save',
   cancel: 'Cancel',
-  seeAll: 'See all',
-  poweredBy: 'Data source',
-  dataProvenance: 'Data source',
 
   // Profile screen
   profileUserFallback: 'AgriVibe user',
@@ -2070,7 +1938,6 @@ const en: ExtraTranslations = {
   marketIntelNote: 'The real state of market analysis services as declared by the server — no forecast is invented.',
   marketIntelForecast: 'Price forecast',
   marketIntelSupplyDemand: 'Supply & demand',
-  marketIntelUnavailableHint: 'Unavailable until a verified, timestamped market source and a validated model are connected. Check local wholesale markets before deciding.',
 
   // AI assistant screen
   assistantErrorReply: 'Sorry, an error occurred while processing the question. Please check your connection and try again.',
@@ -2088,6 +1955,7 @@ const en: ExtraTranslations = {
   apiUnavailable: 'Service currently unavailable on the server',
   apiTimeout: 'Server connection timed out',
   apiOffline: 'Could not reach the AgriVibe server',
+  apiRateLimited: 'Too many requests. Please wait a moment and try again.',
   weatherFetchFailed: 'Could not fetch live weather data',
   diseaseServiceUnconfigured: 'Image diagnosis service not configured',
   diseaseAnalysisFailed: 'Image analysis failed',
@@ -2132,8 +2000,6 @@ const en: ExtraTranslations = {
   agentsConcurrency: 'Concurrency',
   agentsDuration: 'Duration',
   agentsRunTitle: 'Agent results',
-  agentsStepFindings: 'Findings',
-  agentsStepNote: 'Note',
   agentsStepAttempts: 'Attempts',
   agentsStatusOk: 'OK',
   agentsStatusInsufficient: 'Insufficient input',
@@ -2153,12 +2019,6 @@ const en: ExtraTranslations = {
   agentsConfidenceUnknown: 'Unknown confidence',
   agentsShowTrace: 'Show orchestration trace',
   agentsHideTrace: 'Hide orchestration trace',
-  agentsRegistryTitle: 'Specialist agent registry',
-  agentsRegistrySubtitle: 'The allow-listed set the orchestrator actually runs on the server.',
-  agentsRegistryLoadFailed: 'Could not load the agent registry.',
-  agentsSpecialistCount: 'Agent count',
-  agentsDependsOn: 'Depends on',
-  agentsNoDependencies: 'Independent',
   agentsInAction: 'Agents in action',
   agentsPreamble: 'Every assistant answer passes through a central orchestrator that selects specialised agents from your question, runs them under a bounded plan, then merges their source-labelled findings.',
 

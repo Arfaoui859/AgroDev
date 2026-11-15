@@ -7,6 +7,8 @@ import { stackLg } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 import { SectionHeader } from '../ui/SectionHeader';
 import { AICapability } from '../../types';
+import { capabilityLabel } from '../../utils/capabilityLabels';
+import { labelSemibold } from '../../theme/typographyStyles';
 
 interface IntelligenceStripProps {
   capabilities: AICapability[];
@@ -70,7 +72,7 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
   onOpenCapabilities,
   onOpenService,
 }) => {
-  const { t, x, isRtl } = useLanguage();
+  const { t, x, isRtl, language } = useLanguage();
 
   // Keep the strip short and relevant: the capabilities that power the primary
   // services, in a stable order. Yield prediction is included so its honest
@@ -118,7 +120,7 @@ export const IntelligenceStrip: React.FC<IntelligenceStripProps> = ({
         >
           {shown.map((cap) => {
             const available = cap.engine !== 'unavailable';
-            const name = isRtl ? cap.nameAr || cap.name : cap.name;
+            const name = capabilityLabel(cap.id, cap.name, cap.nameAr, language);
             const serviceId = CAPABILITY_SERVICE[cap.id];
             return (
               <TouchableOpacity
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
   chipOn: { borderColor: colors.primaryLight },
   chipOff: { borderColor: colors.border, backgroundColor: colors.surfaceSubtle },
   chipSkeleton: { width: 132, borderColor: colors.border, backgroundColor: colors.surfaceSubtle },
-  chipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.text, fontWeight: typography.fontWeights.semibold, maxWidth: 150 },
+  chipText: { ...labelSemibold, maxWidth: 150 },
   chipTextOff: { color: colors.textMuted, fontWeight: typography.fontWeights.medium },
   dot: { width: 8, height: 8, borderRadius: radius.full, marginLeft: 2 },
   errorBox: {

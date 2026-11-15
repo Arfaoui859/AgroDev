@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import { cardPad, flex1, gapMd, screenStyles, sectionHeadRow, stackedCard, summaryRow } from '../../theme/layout';
+import { cardPad, flex1, gapMd, rowGapXs, screenStyles, sectionHeadRow, stackedCard, summaryRow } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaption, noteCaption, titleSm } from '../../theme/typographyStyles';
+import { noteCaption, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -13,6 +13,7 @@ import { Badge } from '../../components/ui/Badge';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateCard } from '../../components/ui/StateCard';
 import { useAICapabilities } from '../../hooks/useAICapabilities';
+import { capabilityLabel } from '../../utils/capabilityLabels';
 
 interface MultiAgentAIScreenProps {
   onBack: () => void;
@@ -124,11 +125,8 @@ export const MultiAgentAIScreen: React.FC<MultiAgentAIScreenProps> = ({ onBack }
                 </View>
                 <View style={styles.agentTitleArea}>
                   <Text style={[styles.agentNameAr, isRtl && rtlStyles.rtlText]}>
-                    {language === 'ar' ? cap.nameAr || cap.name : cap.name}
+                    {capabilityLabel(cap.id, cap.name, cap.nameAr, language)}
                   </Text>
-                  {language !== 'ar' && cap.nameAr ? (
-                    <Text style={[styles.agentNameEn, isRtl && rtlStyles.rtlText]}>{cap.nameAr}</Text>
-                  ) : null}
                 </View>
                 <Badge
                   label={available ? x.aiAvailable : x.aiNotConfigured}
@@ -182,7 +180,6 @@ const styles = StyleSheet.create({
   agentIconBox: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   agentTitleArea: flex1,
   agentNameAr: titleSm,
-  agentNameEn: mutedCaption,
   provenanceBox: {
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.md,
@@ -191,7 +188,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  provRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2 },
+  provRow: { ...rowGapXs, marginBottom: 2 },
   provTitle: { fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.bold, color: colors.primaryDark, lineHeight: typography.lineHeights.xs },
   provDetail: { fontSize: typography.fontSizes.xs, color: colors.text, lineHeight: typography.lineHeights.xs },
   engineText: { fontSize: typography.fontSizes.xs, color: colors.textMuted, marginTop: spacing.xs, lineHeight: typography.lineHeights.xs },

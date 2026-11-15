@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   confidenceBadge: { backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md, alignItems: 'center' },
   confidenceNum: titleBaseAccent,
   confidenceLabel: accentCaption,
-  badgesRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
+  badgesRow: { ...rowWrapSm, alignItems: 'center', marginTop: spacing.sm },
   arabicNote: { fontSize: typography.fontSizes.xs, color: colors.textMuted, fontStyle: 'italic', marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   diseaseDesc: { fontSize: typography.fontSizes.sm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: typography.lineHeights.xs },
   detailBlock: stackTopMd,

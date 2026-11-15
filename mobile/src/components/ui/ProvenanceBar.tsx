@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { colors, spacing, typography } from '../../theme/colors';
+import { rowGapSm } from '../../theme/layout';
+import { colors, typography } from '../../theme/colors';
 import { rtlStyles } from '../../theme/rtl';
 import { useLanguage } from '../../context/LanguageContext';
 import { ProvenanceMeta } from '../../types';
@@ -33,7 +34,7 @@ export const ProvenanceBar: React.FC<ProvenanceBarProps> = ({ meta, detailed = f
 };
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
+  bar: { ...rowGapSm, flexWrap: 'wrap' },
   cachedTag: {
     fontSize: typography.fontSizes.xs,
     color: colors.textMuted,

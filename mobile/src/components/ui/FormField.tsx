@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TextInput, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { rtlStyles } from '../../theme/rtl';
 import { colors, radius, spacing, typography } from '../../theme/colors';
-import { mutedCaption } from '../../theme/typographyStyles';
+import { labelSemibold, mutedCaption } from '../../theme/typographyStyles';
 import { spaceBetweenXs, stackSm } from '../../theme/layout';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -59,7 +59,7 @@ export const FormField: React.FC<FormFieldProps> = ({
 const styles = StyleSheet.create({
   group: stackSm,
   labelRow: spaceBetweenXs,
-  label: { flex: 1, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.semibold, color: colors.text, lineHeight: typography.lineHeights.xs },
+  label: { ...labelSemibold, flex: 1 },
   suffix: mutedCaption,
   input: {
     minHeight: 48,

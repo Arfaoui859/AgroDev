@@ -60,6 +60,11 @@ const ARABIC_RE = /[\u0600-\u06FF]/;
 
 function localizeServerError(message: string, status: number | null): string {
   const lang = getActiveLanguage();
+  // The AI routes are rate-limited (30/min). The upstream answers a bare
+  // English "Too Many Requests", which is unreadable for an Arabic-first
+  // caller, so replace it with a localised, actionable message in every
+  // language rather than leaking the raw status text.
+  if (status === 429) return msg('apiRateLimited');
   if (lang === 'ar') return message;
   if (!ARABIC_RE.test(message)) return message;
   const x = getExtra(lang);

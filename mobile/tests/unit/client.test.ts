@@ -66,6 +66,27 @@ describe('apiRequest', () => {
     setActiveLanguage('ar');
   });
 
+  it('localises a 429 rate-limit for an Arabic caller instead of leaking English', async () => {
+    setActiveLanguage('ar');
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ message: 'Too Many Requests\n' }, 429),
+    );
+    const res = await apiRequest('/api/ai/images/supported-diseases');
+    expect(res.status).toBe(429);
+    expect(res.error).toBe('عدد الطلبات كبير جداً. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.');
+    expect(res.error).not.toMatch(/Too Many Requests/);
+  });
+
+  it('localises a 429 rate-limit for a French caller', async () => {
+    setActiveLanguage('fr');
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ message: 'Too Many Requests\n' }, 429),
+    );
+    const res = await apiRequest('/api/ai/images/analyze-leaf');
+    expect(res.error).toBe('Trop de requêtes. Veuillez patienter un instant puis réessayer.');
+    setActiveLanguage('ar');
+  });
+
   it('surfaces an HTTP error without throwing', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       jsonResponse({ message: 'service down' }, 503),

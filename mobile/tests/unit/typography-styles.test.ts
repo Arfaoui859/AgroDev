@@ -1,5 +1,5 @@
 import {
-  accentCaption, cardHeading, labelMedium, mutedCaption, mutedCaptionTop, noteCaption, sectionHeading,
+  accentCaption, accentSemibold, cardHeading, labelMedium, mutedCaption, mutedCaptionTop, noteCaption, sectionHeading,
   subtleCaption, subtitleMeta, subtitleMetaBase, textAccentSemibold, textOnPrimary, titleBase, titleBaseAccent,
   centerText, fieldLabel, labelSemibold, linkCaption, linkText, mutedCaptionSm, primaryBoldText,
   subtitleMetaSm, textAccent, xsSemibold, titleBaseCenter, titleBaseFlex, titleLgFlex, titleLg, titleSm, titleSmSemibold, titleXl, typeSm, typeXs, xsNote,
@@ -137,6 +137,9 @@ describe('link, label and accent tokens', () => {
   it('linkText / linkCaption are the sm and xs brand links', () => {
     expect(linkText).toMatchObject({ fontSize: typography.fontSizes.sm, color: colors.primary, fontWeight: typography.fontWeights.semibold });
     expect(linkCaption).toMatchObject({ fontSize: typography.fontSizes.xs, color: colors.primary, fontWeight: typography.fontWeights.semibold });
+  });
+  it('accentSemibold is labelSemibold in the dark brand accent', () => {
+    expect(accentSemibold).toMatchObject({ ...labelSemibold, color: colors.primaryDark });
   });
   it('primaryBoldText / textAccent / centerText / titleLgFlex', () => {
     expect(primaryBoldText).toMatchObject({ color: colors.primary, fontWeight: typography.fontWeights.bold });

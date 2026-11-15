@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../../theme/colors';
-import { metaRow, stackMd } from '../../theme/layout';
-import { mutedCaption, subtleCaption, titleSm } from '../../theme/typographyStyles';
+import { metaRow, spaceBetween, stackMd } from '../../theme/layout';
+import { accentSemibold, mutedCaption, subtleCaption, titleSm } from '../../theme/typographyStyles';
 import { rtlStyles } from '../../theme/rtl';
 import { useLanguage } from '../../context/LanguageContext';
 import { LearningVideo, videoThumbnailUrl } from '../../data/agriculturalVideos';
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeights.semibold,
   },
   cardBody: { padding: spacing.md, gap: spacing.xs },
-  tagRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
+  tagRow: { ...spaceBetween, gap: spacing.xs },
   catTag: { backgroundColor: colors.primaryLight, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  catTagText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.primaryDark, fontWeight: typography.fontWeights.semibold },
+  catTagText: accentSemibold,
   langTag: mutedCaption,
   videoTitle: titleSm,
   videoTitleStrip: { minHeight: 42 },

@@ -8,7 +8,7 @@ import {
   RefreshControl,
   Linking,
 } from 'react-native';
-import { chipScrollRow, screenStyles, stackSm } from '../../theme/layout';
+import { chipScrollRow, rowGapXs, screenStyles, stackSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
 import { linkCaption, mutedCaption } from '../../theme/typographyStyles';
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   catScroll: chipScrollRow,
   provBar: stackSm,
   articleCard: { padding: spacing.md, marginBottom: spacing.sm },
-  articleHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm, flexWrap: 'wrap' },
+  articleHeader: { ...rowGapXs, marginBottom: spacing.sm, flexWrap: 'wrap' },
   articleTitle: { fontSize: typography.fontSizes.base, fontWeight: typography.fontWeights.bold, color: colors.text, lineHeight: 22 },
   articleSummary: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, marginTop: spacing.xs, lineHeight: typography.lineHeights.sm },
   articleFooter: {
