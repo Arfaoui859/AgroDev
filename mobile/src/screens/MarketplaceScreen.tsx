@@ -421,6 +421,8 @@ export const MarketplaceScreen: React.FC = () => {
                           {language === 'ar' ? 'معدل شهري' : language === 'fr' ? 'Moyenne mensuelle' : 'Monthly average'}
                           {item.supplyQuantityTons != null ? ' · ' + (language === 'ar' ? 'التزويد' : language === 'fr' ? 'Approvisionnement' : 'Supply') + ': ' + item.supplyQuantityTons.toLocaleString() + ' t' : ''}
                           {item.observationDays != null ? ' · ' + item.observationDays + (language === 'ar' ? ' يوم رصد' : language === 'fr' ? ' jours observés' : ' observation days') : ''}
+                          {item.supplyChangePercent != null ? ' · ' + (language === 'ar' ? 'تغير التزويد' : language === 'fr' ? 'Variation offre' : 'Supply change') + ': ' + (item.supplyChangePercent > 0 ? '+' : '') + item.supplyChangePercent.toFixed(1) + '%' : ''}
+                          {item.changePercent != null ? ' · ' + (language === 'ar' ? 'مقارنة بالعام السابق' : language === 'fr' ? 'vs année précédente' : 'vs previous year') : ''}
                         </Text>
                       ) : null}
                       </View>
