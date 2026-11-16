@@ -16,6 +16,8 @@ concurrency:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    env:
+      ONAGRI_REUSE_CONFIRMED: ${{ secrets.ONAGRI_REUSE_CONFIRMED }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,14 +28,14 @@ jobs:
           python-version: "3.11"
 
       - name: Import latest ONAGRI monthly mercuriales
-        if: ${{ secrets.AGROGROWTH_API_URL != '' && secrets.AGROGROWTH_ADMIN_TOKEN != '' && secrets.ONAGRI_REUSE_CONFIRMED == 'true' }}
+        if: ${{ env.ONAGRI_REUSE_CONFIRMED == 'true' }}
         env:
           AGROGROWTH_API_URL: ${{ secrets.AGROGROWTH_API_URL }}
           AGROGROWTH_ADMIN_TOKEN: ${{ secrets.AGROGROWTH_ADMIN_TOKEN }}
         run: python scripts/market-data/ingest_onagri_bir_el_kassaa.py
 
       - name: Explain skipped ingestion when credentials are not configured
-        if: ${{ secrets.AGROGROWTH_API_URL == '' || secrets.AGROGROWTH_ADMIN_TOKEN == '' || secrets.ONAGRI_REUSE_CONFIRMED != 'true' }}
+        if: ${{ env.ONAGRI_REUSE_CONFIRMED != 'true' }}
         run: |
           echo "::warning::Set AGROGROWTH_API_URL, AGROGROWTH_ADMIN_TOKEN and ONAGRI_REUSE_CONFIRMED=true (only after reviewing ONAGRI reuse terms) to activate ingestion."
           echo "The official source was checked only after the credentials are configured."
