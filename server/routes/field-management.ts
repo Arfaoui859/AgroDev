@@ -493,3 +493,48 @@ export const createFarm: RequestHandler = async (req, res) => {
     sendCaughtError(res, error, "فشل في إنشاء المزرعة");
   }
 };
+
+/** Persist a farmer-recorded GeoJSON perimeter for the existing Sentinel-2 workflow. */
+export const updateFarmBoundaries: RequestHandler = async (req, res) => {
+  if (!req.userId || req.identitySource !== "jwt") {
+    return res.status(401).json({ success: false, code: "VERIFIED_SESSION_REQUIRED" });
+  }
+  const db = requestDb(req);
+  if (!db) return res.status(503).json({ success: false, code: "DATABASE_NOT_CONFIGURED" });
+  const raw = req.body?.boundaries;
+  const geometry = raw?.type === "Feature" ? raw.geometry : raw;
+  if (!geometry || geometry.type !== "Polygon" || !Array.isArray(geometry.coordinates) || !Array.isArray(geometry.coordinates[0])) {
+    return res.status(400).json({ success: false, code: "GEOJSON_POLYGON_REQUIRED" });
+  }
+  const ring = geometry.coordinates[0];
+  if (ring.length < 4 || ring.length > 5000) {
+    return res.status(400).json({ success: false, code: "INVALID_BOUNDARY_VERTEX_COUNT" });
+  }
+  let minLon = 180, maxLon = -180, minLat = 90, maxLat = -90;
+  for (const point of ring) {
+    if (!Array.isArray(point) || point.length < 2) {
+      return res.status(400).json({ success: false, code: "INVALID_BOUNDARY_COORDINATE" });
+    }
+    const lon = Number(point[0]), lat = Number(point[1]);
+    if (!Number.isFinite(lon) || !Number.isFinite(lat) || Math.abs(lon) > 180 || Math.abs(lat) > 90) {
+      return res.status(400).json({ success: false, code: "INVALID_BOUNDARY_COORDINATE" });
+    }
+    minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
+    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+  }
+  const first = ring[0], last = ring[ring.length - 1];
+  if (Number(first[0]) !== Number(last[0]) || Number(first[1]) !== Number(last[1]) ||
+      maxLon - minLon < 0.00001 || maxLat - minLat < 0.00001) {
+    return res.status(400).json({ success: false, code: "BOUNDARY_MUST_BE_CLOSED_AND_HAVE_AREA" });
+  }
+  try {
+    const { data, error } = await db.from("farms").update({ boundaries: geometry, updated_at: new Date().toISOString() })
+      .eq("id", req.params.farmId).eq("owner_id", req.userId).select("id,name,boundaries").maybeSingle();
+    if (error) return sendCaughtError(res, error, "فشل في حفظ حدود الأرض");
+    if (!data) return res.status(404).json({ success: false, code: "FARM_NOT_FOUND_OR_NOT_OWNED" });
+    return res.json({ success: true, data, message: "Farm boundary saved." });
+  } catch (error) {
+    return sendCaughtError(res, error, "فشل في حفظ حدود الأرض");
+  }
+};
+
