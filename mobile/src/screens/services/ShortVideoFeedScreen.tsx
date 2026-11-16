@@ -50,7 +50,6 @@ export const ShortVideoFeedScreen: React.FC<ShortVideoFeedScreenProps> = ({
   const { t, x, isRtl, language } = useLanguage();
   const { height } = useWindowDimensions();
   const [category, setCategory] = useState<VideoCategory | 'all'>(initialCategory);
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   const videos = useMemo(() => {
     const filtered = category === 'all'
@@ -163,7 +162,6 @@ export const ShortVideoFeedScreen: React.FC<ShortVideoFeedScreenProps> = ({
           snapToAlignment="start"
           decelerationRate="fast"
           showsVerticalScrollIndicator={false}
-          onViewableItemsChanged={({ viewableItems }) => setActiveVideoId(viewableItems[0]?.item?.id ?? null)}
           viewabilityConfig={{ itemVisiblePercentThreshold: 70 }}
           contentContainerStyle={styles.feedContent}
           initialNumToRender={2}
