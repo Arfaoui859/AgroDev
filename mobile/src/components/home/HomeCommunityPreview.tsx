@@ -34,6 +34,11 @@ export const HomeCommunityPreview: React.FC<HomeCommunityPreviewProps> = ({ onOp
         setPosts(result.data.slice(0, 2));
         setUnavailable(Boolean(result.error));
       }
+    }).catch(() => {
+      if (active) {
+        setPosts([]);
+        setUnavailable(true);
+      }
     }).finally(() => {
       if (active) setLoading(false);
     });
