@@ -7,9 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  ScrollView,
   Animated,
-  TextInput,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -33,22 +31,9 @@ import { SaveDiagnosisToFarm } from '../projects/SaveDiagnosisToFarm';
 type Phase = 'capture' | 'review' | 'analyzing' | 'result' | 'unavailable' | 'error';
 
 interface PlantScannerProps {
-  /** Called with the prepared image URI + optional extra context. */
-  onSubmit: (image: {
-    uri: string;
-    mimeType: string;
-    fileName: string;
-    symptoms?: string;
-  }) => Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }>;
+  /** Sends only the prepared photo; the vision service identifies plant context. */
+  onSubmit: (image: { uri: string; mimeType: string; fileName: string }) => Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }>;
   onClose: () => void;
-  cropOptions: { id: string; label: string }[];
-  selectedCrop: string;
-  onSelectCrop: (id: string) => void;
-  partOptions: { id: string; label: string }[];
-  selectedPart: string;
-  onSelectPart: (id: string) => void;
-  cropTitle: string;
-  partTitle: string;
 }
 
 /**
@@ -59,7 +44,7 @@ interface PlantScannerProps {
  * honest "not configured" state). It never simulates a live AI scan and never
  * fabricates a diagnosis.
  */
-export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, cropOptions, selectedCrop, onSelectCrop, partOptions, selectedPart, onSelectPart, cropTitle, partTitle }) => {
+export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose }) => {
   const { x, isRtl, isArabic, language } = useLanguage();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -68,7 +53,6 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
   const [result, setResult] = useState<DiseaseDiagnosisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
-  const [symptomsInput, setSymptomsInput] = useState('');
   const [scanReady, setScanReady] = useState(false);
   const [scanProgress] = useState(() => new Animated.Value(0));
   const captureReady = scanReady && phase === 'capture' && Boolean(permission?.granted);
@@ -137,7 +121,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
     setErrorMsg(null);
     try {
       const image = await prepareImageForUpload(imageUri);
-      const response = await onSubmit({ ...image, symptoms: symptomsInput.trim() || undefined });
+      const response = await onSubmit(image);
       if (response.unavailable) {
         setErrorMsg(response.error || x.scannerUnavailableDesc);
         setPhase('unavailable');
@@ -161,7 +145,6 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
     setImageUri(null);
     setResult(null);
     setErrorMsg(null);
-    setSymptomsInput('');
     setPhase('capture');
   };
 
@@ -243,38 +226,6 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
               </TouchableOpacity>
             </View>
           ) : null}
-          <View style={styles.contextSelectors}>
-            <Text style={[styles.contextTitle, isRtl && rtlStyles.rtlText]}>{cropTitle}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.contextRow, isRtl && rtlStyles.rtlRow]}>
-              {cropOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  onPress={() => onSelectCrop(option.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={option.label}
-                  accessibilityState={{ selected: selectedCrop === option.id }}
-                  style={[styles.contextChip, selectedCrop === option.id && styles.contextChipActive]}
-                >
-                  <Text style={[styles.contextChipText, selectedCrop === option.id && styles.contextChipTextActive]}>{option.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <Text style={[styles.contextTitle, isRtl && rtlStyles.rtlText]}>{partTitle}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contextRow}>
-              {partOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  onPress={() => onSelectPart(option.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={option.label}
-                  accessibilityState={{ selected: selectedPart === option.id }}
-                  style={[styles.contextChip, selectedPart === option.id && styles.contextChipActive]}
-                >
-                  <Text style={[styles.contextChipText, selectedPart === option.id && styles.contextChipTextActive]}>{option.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
           <View style={[styles.controls, isRtl && rtlStyles.rtlRow]}>
             <TouchableOpacity
               onPress={onClose}
@@ -321,16 +272,6 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
         <View style={styles.reviewPanel}>
           <Text style={styles.reviewTitle}>{x.scannerReview}</Text>
           <Text style={styles.reviewSub}>{x.scannerReviewSub}</Text>
-          <Text style={styles.symptomsLabel}>{x.scannerSymptomsLabel}</Text>
-          <TextInput
-            style={[styles.symptomsInput, isRtl && rtlStyles.rtlText]}
-            value={symptomsInput}
-            onChangeText={setSymptomsInput}
-            placeholder={x.scannerSymptomsPlaceholder}
-            placeholderTextColor={colors.textMuted}
-            multiline
-            accessibilityLabel={x.scannerSymptomsLabel}
-          />
           <View style={{ height: spacing.md }} />
           <Button title={x.scannerConfirm} onPress={handleConfirm} variant="primary" fullWidth />
           <View style={{ height: spacing.sm }} />
@@ -556,35 +497,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.scrimLight,
   },
-  contextSelectors: {
-    width: '100%',
-    gap: 4,
-    paddingVertical: spacing.xs,
-  },
-  contextTitle: {
-    color: colors.textInverse,
-    fontSize: typography.fontSizes.xs,
-    lineHeight: typography.lineHeights.xs,
-    fontWeight: typography.fontWeights.semibold,
-    marginTop: 2,
-    textShadowColor: colors.scrim,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  contextRow: { flexDirection: 'row', gap: 6, paddingVertical: 3 },
-  contextChip: {
-    minHeight: 32,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.onBrandBorder,
-    backgroundColor: colors.scrim,
-    justifyContent: 'center',
-  },
-  contextChipActive: { backgroundColor: colors.primary, borderColor: colors.onBrandSubtle },
-  contextChipText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs },
-  contextChipTextActive: { fontWeight: typography.fontWeights.bold },
   resultDescription: {
     fontSize: typography.fontSizes.sm,
     lineHeight: typography.lineHeights.sm,
@@ -654,8 +566,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
   },
-  symptomsLabel: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.textSecondary, marginTop: spacing.md, marginBottom: spacing.xs },
-  symptomsInput: { minHeight: 72, maxHeight: 120, backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text, textAlignVertical: 'top' },
   analyzingThumb: {
     width: 160,
     height: 160,
