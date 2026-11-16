@@ -1251,7 +1251,9 @@ export async function getMarketPrices(params: { crop?: string; market?: string }
   const prices: MarketPriceItem[] = rows.map((p: any) => ({
     id: String(p.id), cropName: p.commodity_name, cropNameAr: p.commodity_name,
     pricePerKg: p.price_average == null ? null : Number(p.price_average),
-    previousPricePerKg: null, changePercent: null, trend: 'unknown',
+    previousPricePerKg: p.previous_year_price == null ? null : Number(p.previous_year_price),
+    changePercent: p.price_change_percent == null ? null : Number(p.price_change_percent),
+    trend: p.price_change_percent > 0 ? 'rising' : p.price_change_percent < 0 ? 'falling' : p.price_change_percent === 0 ? 'stable' : 'unknown',
     marketLocation: p.market_location, marketLocationAr: p.market_location, qualityGrade: p.quality_grade ?? '—',
     lastUpdated: p.observed_on,
     sourceName: p.source_name ?? null, sourceUrl: p.source_url ?? null,
@@ -1259,7 +1261,11 @@ export async function getMarketPrices(params: { crop?: string; market?: string }
     verificationStatus: p.verification_status ?? 'unverified',
     priceMin: p.price_min == null ? null : Number(p.price_min),
     priceMax: p.price_max == null ? null : Number(p.price_max),
-    priceKind: p.price_kind ?? 'wholesale',
+    priceKind: p.price_kind ?? 'wholesale', aggregationPeriod: p.aggregation_period ?? 'daily',
+    periodStart: p.period_start ?? null, periodEnd: p.period_end ?? null,
+    supplyQuantityTons: p.supply_quantity_tons == null ? null : Number(p.supply_quantity_tons),
+    supplyChangePercent: p.supply_change_percent == null ? null : Number(p.supply_change_percent),
+    observationDays: p.observation_days == null ? null : Number(p.observation_days),
   }));
   return {
     data: { prices, meta: metaFrom(res.data?.meta, 'database', 'market-price-observations') },
