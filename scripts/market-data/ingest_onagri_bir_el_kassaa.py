@@ -139,8 +139,8 @@ def extract_prices(html: str, title: str, document_url: str):
             continue
         cells = cells[-8:]
         # The official table order is: observation days, price change %,
-        # price 2025, price 2026, supply change %, supply 2025, supply 2026,
-        # commodity name. The displayed report title supplies the year.
+        # previous-year price, current-report-year price, supply change %,
+        # previous-year supply, current-report-year supply, commodity name.
         crop = cells[7].strip()
         days = parse_number(cells[0])
         price_change = parse_number(cells[1])
