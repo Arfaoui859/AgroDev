@@ -21,20 +21,25 @@ const isWeb = Platform.OS === 'web';
 
 async function cleanupPreviousChunks(key: string, head: string | null): Promise<void> {
   if (!head) return;
-  const v2 = /^chunks:v2:([^:]+):([0-9]+)$/.exec(head);
-  if (v2) {
-    const [, generation, countText] = v2;
-    const count = Number(countText);
-    await Promise.all(Array.from({ length: count }, (_, i) =>
-      SecureStore.deleteItemAsync(`${key}.v2.${generation}.${i}`),
-    ));
-    return;
-  }
-  const legacyCount = Number.parseInt(head, 10);
-  if (Number.isInteger(legacyCount) && legacyCount > 0) {
-    await Promise.all(Array.from({ length: legacyCount }, (_, i) =>
-      SecureStore.deleteItemAsync(`${key}${CHUNK_COUNT_SUFFIX}${i}`),
-    ));
+  try {
+    const v2 = /^chunks:v2:([^:]+):([0-9]+)$/.exec(head);
+    if (v2) {
+      const [, generation, countText] = v2;
+      const count = Number(countText);
+      await Promise.all(Array.from({ length: count }, (_, i) =>
+        SecureStore.deleteItemAsync(`${key}.v2.${generation}.${i}`),
+      ));
+      return;
+    }
+    const legacyCount = Number.parseInt(head, 10);
+    if (Number.isInteger(legacyCount) && legacyCount > 0) {
+      await Promise.all(Array.from({ length: legacyCount }, (_, i) =>
+        SecureStore.deleteItemAsync(`${key}${CHUNK_COUNT_SUFFIX}${i}`),
+      ));
+    }
+  } catch (error) {
+    // The new pointer/value is already committed; orphan cleanup is best-effort.
+    console.warn('secureStorage.cleanupPreviousChunks failed:', error);
   }
 }
 
