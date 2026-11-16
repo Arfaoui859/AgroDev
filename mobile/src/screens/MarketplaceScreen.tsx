@@ -140,7 +140,7 @@ export const MarketplaceScreen: React.FC = () => {
       Alert.alert(language === 'ar' ? 'السعر غير صحيح' : language === 'fr' ? 'Prix invalide' : 'Invalid price');
       return;
     }
-    if (sellerType === 'harvest' && (!harvestCrop.trim() || !/^\\d{4}-\\d{2}-\\d{2}$/.test(harvestDate))) {
+    if (sellerType === 'harvest' && (!harvestCrop.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(harvestDate))) {
       Alert.alert(language === 'ar' ? 'نوع المحصول وتاريخ الحصاد مطلوبان' : language === 'fr' ? 'Culture et date de récolte requises' : 'Crop and harvest date are required (YYYY-MM-DD)');
       return;
     }
