@@ -60,7 +60,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
 
   const [showScanner, setShowScanner] = useState(startWithCamera);
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [selectedCrop, setSelectedCrop] = useState('olive');
+  const [selectedCrop, setSelectedCrop] = useState(startWithCamera ? '' : 'olive');
   const [selectedPart, setSelectedPart] = useState('leaves');
   const [symptomsInput, setSymptomsInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -139,23 +139,32 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
   if (showScanner) {
     return (
       <PlantScanner
+        cropTitle={x.diseaseStepCrop}
+        partTitle={x.diseaseStepPart}
+        cropOptions={CROP_CHOICES.map((c) => ({ id: c.id, label: x[c.labelKey] }))}
+        selectedCrop={selectedCrop}
+        onSelectCrop={setSelectedCrop}
+        partOptions={PART_CHOICES.map((p) => ({ id: p.id, label: x[p.labelKey] }))}
+        selectedPart={selectedPart}
+        onSelectPart={setSelectedPart}
         onClose={() => {
           setShowScanner(false);
           if (startWithCamera && !imageUri) onBack();
         }}
         onSubmit={async ({ uri, mimeType, fileName, symptoms }) => {
           try {
-            const prepared = await prepareImageForUpload(uri);
+            // PlantScanner already prepares/compresses the image before calling
+            // this callback; prepare it once to avoid duplicate native work.
             const res = await diagnosePlantDisease({
-              imageUri: prepared.uri,
-              mimeType: prepared.mimeType || mimeType,
-              fileName: prepared.fileName || fileName,
-              cropType: selectedCrop,
+              imageUri: uri,
+              mimeType,
+              fileName,
+              cropType: selectedCrop || undefined,
               plantPart: selectedPart,
               symptoms: symptoms || symptomsInput || undefined,
             });
             if (res.data) {
-              setImageUri(prepared.uri);
+              setImageUri(uri);
               setResult(res.data);
               void addHistoryEntry({
                 type: 'disease',
