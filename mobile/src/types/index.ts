@@ -52,6 +52,24 @@ export interface User {
   interests?: string[];
 }
 
+export interface FarmBoundary {
+  type: 'Polygon';
+  coordinates: number[][][];
+}
+
+export interface SatelliteNdviObservation {
+  id: string;
+  observed_from: string;
+  observed_to: string;
+  mean_value: number;
+  min_value: number;
+  max_value: number;
+  standard_deviation: number;
+  sample_count: number;
+  no_data_count: number;
+  resolution_meters: number;
+}
+
 export interface Farm {
   id: string;
   name: string;
@@ -59,6 +77,7 @@ export interface Farm {
   location: string | { lat: number; lng: number; region?: string };
   size_hectares: number;
   soil_type?: string;
+  boundaries?: FarmBoundary | null;
   created_at?: string;
 }
 
