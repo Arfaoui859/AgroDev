@@ -1,14 +1,10 @@
 /**
- * Real weather provider backed by Open-Meteo (https://open-meteo.com).
+ * Production weather provider: WeatherAPI.com for current conditions + forecast,
+ * NASA POWER for historical daily meteorological observations.
  *
- * Open-Meteo is free for non-commercial use and requires no API key, which makes
- * it suitable as the default provider. An OpenWeatherMap provider can be enabled
- * by setting WEATHER_PROVIDER=openweathermap and providing WEATHER_API_KEY.
- *
- * The provider returns the existing `WeatherData` shape used across the client so
- * no UI changes are required, while all values now come from a real source.
+ * WeatherAPI.com Free currently includes 100,000 calls/month and a 3-day
+ * forecast for commercial applications. Keep the key server-side only.
  */
-
 import { fetchJson, round, ProviderError } from "./http";
 
 export interface WeatherData {
@@ -72,78 +68,61 @@ export interface WeatherData {
   };
 }
 
-interface OpenMeteoResponse {
+interface WeatherApiResponse {
   current?: {
-    time?: string;
-    temperature_2m?: number;
-    relative_humidity_2m?: number;
-    wind_speed_10m?: number;
-    pressure_msl?: number;
-    weather_code?: number;
-    visibility?: number;
-    precipitation?: number;
+    last_updated?: string;
+    temp_c?: number;
+    humidity?: number;
+    wind_kph?: number;
+    pressure_mb?: number;
+    vis_km?: number;
+    condition?: { text?: string; code?: number };
   };
-  daily?: {
-    time?: string[];
-    weather_code?: number[];
-    temperature_2m_max?: number[];
-    temperature_2m_min?: number[];
-    precipitation_sum?: number[];
-    relative_humidity_2m_mean?: number[];
-    et0_fao_evapotranspiration?: number[];
-    wind_speed_10m_max?: number[];
-    shortwave_radiation_sum?: number[];
-    uv_index_max?: number[];
-    pressure_msl_mean?: number[];
-    visibility_mean?: number[];
-    wind_direction_10m_dominant?: number[];
-  };
-  hourly?: {
-    time?: string[];
-    soil_moisture_0_to_7cm?: number[];
+  forecast?: {
+    forecastday?: Array<{
+      date?: string;
+      day?: {
+        maxtemp_c?: number;
+        mintemp_c?: number;
+        avghumidity?: number;
+        totalprecip_mm?: number;
+        condition?: { text?: string; code?: number };
+        maxwind_kph?: number;
+        avgvis_km?: number;
+        uv?: number;
+      };
+    }>;
   };
 }
 
-// WMO weather interpretation codes -> Arabic description + icon name
-const WMO_CODES: Record<number, { description: string; icon: string }> = {
-  0: { description: "صافٍ", icon: "sunny" },
-  1: { description: "صافٍ إلى حد كبير", icon: "sunny" },
-  2: { description: "غائم جزئياً", icon: "partly-cloudy" },
-  3: { description: "غائم", icon: "cloudy" },
-  45: { description: "ضباب", icon: "mist" },
-  48: { description: "ضباب متجمد", icon: "mist" },
-  51: { description: "رذاذ خفيف", icon: "drizzle" },
-  53: { description: "رذاذ", icon: "drizzle" },
-  55: { description: "رذاذ كثيف", icon: "drizzle" },
-  56: { description: "رذاذ متجمد خفيف", icon: "drizzle" },
-  57: { description: "رذاذ متجمد كثيف", icon: "drizzle" },
-  61: { description: "مطر خفيف", icon: "rain" },
-  63: { description: "مطر", icon: "rain" },
-  65: { description: "مطر غزير", icon: "rain" },
-  66: { description: "مطر متجمد خفيف", icon: "rain" },
-  67: { description: "مطر متجمد غزير", icon: "rain" },
-  71: { description: "ثلوج خفيفة", icon: "snow" },
-  73: { description: "ثلوج", icon: "snow" },
-  75: { description: "ثلوج كثيفة", icon: "snow" },
-  77: { description: "حبيبات ثلجية", icon: "snow" },
-  80: { description: "زخات مطر خفيفة", icon: "rain" },
-  81: { description: "زخات مطر", icon: "rain" },
-  82: { description: "زخات مطر عنيفة", icon: "rain" },
-  85: { description: "زخات ثلجية خفيفة", icon: "snow" },
-  86: { description: "زخات ثلجية", icon: "snow" },
-  95: { description: "عاصفة رعدية", icon: "thunderstorm" },
-  96: { description: "عاصفة رعدية مع برد", icon: "thunderstorm" },
-  99: { description: "عاصفة رعدية شديدة مع برد", icon: "thunderstorm" },
+interface NasaPowerResponse {
+  properties?: {
+    parameter?: Record<string, Record<string, number>>;
+  };
+}
+
+// WeatherAPI condition codes -> stable UI icon keys. -> Arabic description + icon name
+const WEATHERAPI_ICONS: Record<number, string> = {
+  1000: "sunny", 1003: "partly-cloudy", 1006: "cloudy", 1009: "cloudy",
+  1030: "mist", 1063: "rain", 1066: "snow", 1069: "sleet", 1072: "drizzle",
+  1087: "thunderstorm", 1114: "snow", 1117: "snow", 1135: "mist", 1147: "mist",
+  1150: "drizzle", 1153: "drizzle", 1168: "drizzle", 1171: "drizzle",
+  1180: "rain", 1183: "rain", 1186: "rain", 1189: "rain", 1192: "rain", 1195: "rain",
+  1198: "sleet", 1201: "sleet", 1204: "sleet", 1207: "sleet",
+  1210: "snow", 1213: "snow", 1216: "snow", 1219: "snow", 1222: "snow", 1225: "snow",
+  1237: "hail", 1240: "rain", 1243: "rain", 1246: "rain",
+  1249: "sleet", 1252: "sleet", 1255: "snow", 1258: "snow",
+  1261: "hail", 1264: "hail", 1273: "thunderstorm", 1276: "thunderstorm",
+  1279: "thunderstorm", 1282: "thunderstorm",
 };
 
-function decodeWeatherCode(code: number | undefined): {
-  description: string;
-  icon: string;
-} {
-  if (code === undefined || code === null) {
-    return { description: "غير متوفر", icon: "unknown" };
-  }
-  return WMO_CODES[code] ?? { description: "غير معروف", icon: "unknown" };
+function decodeWeatherCondition(condition?: { text?: string; code?: number }) {
+  return {
+    description: condition?.text?.trim() || "غير متوفر",
+    icon: typeof condition?.code === "number"
+      ? WEATHERAPI_ICONS[condition.code] ?? "unknown"
+      : "unknown",
+  };
 }
 
 const MONTHS_AR = [
@@ -170,181 +149,152 @@ export interface WeatherRequest {
 }
 
 /**
- * Fetch a real, current + 7 day forecast from Open-Meteo and map it to the
- * platform's WeatherData contract.
- *
- * @throws ProviderError when the upstream provider is unreachable or returns an error.
+ * Fetch current conditions and a 3-day forecast from WeatherAPI.com.
+ * Results are cached for 8 minutes and concurrent requests for the same
+ * rounded coordinates share one upstream call.
  */
-export async function getWeatherFromOpenMeteo(
+const weatherCache = new Map<string, { expiresAt: number; value: WeatherData }>();
+const weatherInflight = new Map<string, Promise<WeatherData>>();
+
+export async function getWeatherFromWeatherApi(
   request: WeatherRequest,
 ): Promise<WeatherData> {
   const { lat, lon, locationName } = request;
-
-  const params = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lon),
-    current:
-      "temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl,weather_code,visibility,precipitation",
-    hourly: "soil_moisture_0_to_7cm",
-    daily:
-      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,et0_fao_evapotranspiration,wind_speed_10m_max,shortwave_radiation_sum,uv_index_max,pressure_msl_mean,visibility_mean,wind_direction_10m_dominant",
-    timezone: "Africa/Tunis",
-    forecast_days: "7",
-  });
-
-  const data = await fetchJson<OpenMeteoResponse>(
-    `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
-    {
-      provider: "Open-Meteo",
-      // Overridable so tests and constrained environments can cap the total
-      // budget; the default keeps the full retry window for production.
-      timeoutMs: Number(process.env.WEATHER_FORECAST_TIMEOUT_MS) || 12_000,
-      retries: Number(process.env.WEATHER_FORECAST_RETRIES ?? 2),
-    },
-  );
-
-  // A 200 with a missing/empty payload is not usable data. Fail as a
-  // provider error (route -> 502) instead of letting a downstream
-  // TypeError surface as an unexpected 500.
-  if (!data || typeof data !== "object" || !data.current || !data.daily) {
-    throw new ProviderError(
-      "Open-Meteo",
-      "parse",
-      "Open-Meteo returned no current/daily observations",
-    );
+  const apiKey = process.env.WEATHERAPI_KEY || process.env.WEATHER_API_KEY;
+  if (!apiKey) {
+    throw new ProviderError("WeatherAPI.com", "unconfigured", "WEATHERAPI_KEY is not configured");
   }
 
-  const current = data.current ?? {};
-  const daily = data.daily ?? {};
-  const currentWeather = decodeWeatherCode(current.weather_code);
+  const cacheKey = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  const cached = weatherCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  const pending = weatherInflight.get(cacheKey);
+  if (pending) return pending;
 
-  const dailyDates = daily.time ?? [];
-  const dailyForecast = dailyDates.map((date, index) => {
-    const weather = decodeWeatherCode(daily.weather_code?.[index]);
-    return {
-      date,
-      maxTemp: round(daily.temperature_2m_max?.[index]),
-      minTemp: round(daily.temperature_2m_min?.[index]),
-      humidity: round(daily.relative_humidity_2m_mean?.[index]),
-      rainfall: round(daily.precipitation_sum?.[index], 1),
-      description: weather.description,
-      icon: weather.icon,
-      solarRadiation:
-        typeof daily.shortwave_radiation_sum?.[index] === "number"
-          ? round(daily.shortwave_radiation_sum[index] / 3.6, 1)
-          : undefined,
-      uvIndex:
-        typeof daily.uv_index_max?.[index] === "number"
-          ? round(daily.uv_index_max[index])
-          : undefined,
-      pressure:
-        typeof daily.pressure_msl_mean?.[index] === "number"
-          ? round(daily.pressure_msl_mean[index])
-          : undefined,
-      visibility:
-        typeof daily.visibility_mean?.[index] === "number"
-          ? round(daily.visibility_mean[index] / 1000, 1)
-          : undefined,
-      windDirection:
-        typeof daily.wind_direction_10m_dominant?.[index] === "number"
-          ? round(daily.wind_direction_10m_dominant[index])
-          : undefined,
-      windSpeed:
-        typeof daily.wind_speed_10m_max?.[index] === "number"
-          ? round(daily.wind_speed_10m_max[index])
-          : undefined,
-    };
-  });
-
-  const avgTemp = dailyForecast.length
-    ? dailyForecast.reduce((sum, d) => sum + (d.maxTemp + d.minTemp) / 2, 0) /
-      dailyForecast.length
-    : round(current.temperature_2m);
-  const totalRainfall = dailyForecast.reduce((sum, d) => sum + d.rainfall, 0);
-  const avgHumidity = dailyForecast.length
-    ? dailyForecast.reduce((sum, d) => sum + d.humidity, 0) / dailyForecast.length
-    : round(current.relative_humidity_2m);
-
-  // Evapotranspiration: prefer the provider's FAO-56 value for today, fall back
-  // to a value derived from the current observations.
-  const et0Today = daily.et0_fao_evapotranspiration?.[0];
-  const et0 =
-    typeof et0Today === "number" && Number.isFinite(et0Today)
-      ? et0Today
-      : calculateEvapotranspiration(
-          Number(current.temperature_2m) || 20,
-          Number(current.relative_humidity_2m) || 55,
-          Number(current.wind_speed_10m) || 10,
-        );
-
-  // Volumetric soil moisture (m3/m3) -> percentage. Take the latest hourly value.
-  const soilMoistureSeries = data.hourly?.soil_moisture_0_to_7cm ?? [];
-  const latestSoilMoisture = [...soilMoistureSeries]
-    .reverse()
-    .find((value) => typeof value === "number" && Number.isFinite(value));
-  const soilMoisturePercent =
-    typeof latestSoilMoisture === "number"
-      ? round(latestSoilMoisture * 100)
-      : estimateSoilMoisturePercent(et0, dailyForecast[0]?.rainfall ?? 0);
-
-  const cropStress: "low" | "medium" | "high" =
-    soilMoisturePercent > 60
-      ? "low"
-      : soilMoisturePercent > 35
-        ? "medium"
-        : "high";
-
-  // Growing degree days for the coming week (base 10°C), a standard agronomic index.
-  const growingDegreeDays = round(
-    dailyForecast.reduce((sum, d) => sum + Math.max(0, (d.maxTemp + d.minTemp) / 2 - 10), 0),
-  );
-
-  return {
-    location: {
-      name: locationName || `موقع (${lat.toFixed(2)}, ${lon.toFixed(2)})`,
-      lat,
-      lon,
-    },
-    current: {
-      temperature: round(current.temperature_2m),
-      humidity: round(current.relative_humidity_2m),
-      windSpeed: round(current.wind_speed_10m),
-      pressure: round(current.pressure_msl),
-      visibility: round((current.visibility ?? 0) / 1000),
-      description: currentWeather.description,
-      icon: currentWeather.icon,
-    },
-    forecast: {
-      daily: dailyForecast,
-      weekly: {
-        averageTemp: round(avgTemp),
-        totalRainfall: round(totalRainfall, 1),
-        averageHumidity: round(avgHumidity),
+  const task = (async () => {
+    const params = new URLSearchParams({
+      key: apiKey,
+      q: `${lat},${lon}`,
+      days: "3",
+      aqi: "no",
+      alerts: "no",
+      lang: "ar",
+    });
+    const data = await fetchJson<WeatherApiResponse>(
+      `https://api.weatherapi.com/v1/forecast.json?${params.toString()}`,
+      {
+        provider: "WeatherAPI.com",
+        timeoutMs: Number(process.env.WEATHER_FORECAST_TIMEOUT_MS) || 8_000,
+        retries: Number(process.env.WEATHER_FORECAST_RETRIES ?? 1),
+        retryDelayMs: 350,
+        maxRetryDelayMs: 2_500,
       },
-    },
-    historical: {
-      monthlyAverages: buildSeasonalClimatology(
-        request.governorate,
-        Number(current.temperature_2m) || avgTemp,
-        avgHumidity,
-      ),
-    },
-    agriculturalIndices: {
-      growingDegreeDays,
-      evapotranspiration: round(et0, 1),
-      soilMoisture: soilMoisturePercent,
-      cropStress,
-    },
-    source: {
-      provider: "Open-Meteo",
-      observationTime: current.time ?? null,
-      isRealData: true,
-    },
-  };
+    );
+
+    const current = data?.current;
+    const forecastDays = data?.forecast?.forecastday ?? [];
+    if (
+      !current ||
+      !Number.isFinite(current.temp_c) ||
+      !Number.isFinite(current.humidity) ||
+      forecastDays.length === 0
+    ) {
+      throw new ProviderError("WeatherAPI.com", "parse", "WeatherAPI.com returned an incomplete current/forecast payload");
+    }
+
+    const currentCondition = decodeWeatherCondition(current.condition);
+    const dailyForecast = forecastDays.map((entry) => {
+      const day = entry.day ?? {};
+      const condition = decodeWeatherCondition(day.condition);
+      return {
+        date: String(entry.date ?? ""),
+        maxTemp: round(day.maxtemp_c),
+        minTemp: round(day.mintemp_c),
+        humidity: round(day.avghumidity),
+        rainfall: round(day.totalprecip_mm, 1),
+        description: condition.description,
+        icon: condition.icon,
+        uvIndex: typeof day.uv === "number" ? round(day.uv) : undefined,
+        visibility: typeof day.avgvis_km === "number" ? round(day.avgvis_km, 1) : undefined,
+        windSpeed: typeof day.maxwind_kph === "number" ? round(day.maxwind_kph) : undefined,
+      };
+    });
+
+    const avgTemp = dailyForecast.reduce((sum, d) => sum + (d.maxTemp + d.minTemp) / 2, 0) / dailyForecast.length;
+    const totalRainfall = dailyForecast.reduce((sum, d) => sum + d.rainfall, 0);
+    const avgHumidity = dailyForecast.reduce((sum, d) => sum + d.humidity, 0) / dailyForecast.length;
+    const et0 = calculateEvapotranspiration(
+      current.temp_c,
+      current.humidity,
+      current.wind_kph ?? 10,
+    );
+    // WeatherAPI does not expose measured field soil moisture on the free tier.
+    // This is explicitly a weather-derived proxy, not a soil sensor reading.
+    const soilMoisturePercent = estimateSoilMoisturePercent(et0, dailyForecast[0]?.rainfall ?? 0);
+    const cropStress: "low" | "medium" | "high" =
+      soilMoisturePercent > 60 ? "low" : soilMoisturePercent > 35 ? "medium" : "high";
+
+    const value: WeatherData = {
+      location: {
+        name: locationName || `موقع (${lat.toFixed(2)}, ${lon.toFixed(2)})`,
+        lat,
+        lon,
+      },
+      current: {
+        temperature: round(current.temp_c),
+        humidity: round(current.humidity),
+        windSpeed: round(current.wind_kph),
+        pressure: round(current.pressure_mb),
+        visibility: round(current.vis_km, 1),
+        description: currentCondition.description,
+        icon: currentCondition.icon,
+      },
+      forecast: {
+        daily: dailyForecast,
+        weekly: {
+          averageTemp: round(avgTemp),
+          totalRainfall: round(totalRainfall, 1),
+          averageHumidity: round(avgHumidity),
+        },
+      },
+      historical: {
+        monthlyAverages: buildSeasonalClimatology(
+          request.governorate,
+          current.temp_c,
+          current.humidity,
+        ),
+      },
+      agriculturalIndices: {
+        growingDegreeDays: round(dailyForecast.reduce(
+          (sum, d) => sum + Math.max(0, (d.maxTemp + d.minTemp) / 2 - 10), 0,
+        )),
+        evapotranspiration: round(et0, 1),
+        soilMoisture: soilMoisturePercent,
+        cropStress,
+      },
+      source: {
+        provider: "WeatherAPI.com",
+        observationTime: current.last_updated ?? null,
+        isRealData: true,
+      },
+    };
+
+    weatherCache.set(cacheKey, { expiresAt: Date.now() + 8 * 60 * 1000, value });
+    return value;
+  })();
+
+  weatherInflight.set(cacheKey, task);
+  try {
+    return await task;
+  } finally {
+    weatherInflight.delete(cacheKey);
+  }
 }
 
 /**
- * Open-Meteo forecast API does not expose historical monthly averages. Rather than
+ * The current provider's seasonal table is a clearly-labelled climatology,
+ * not a measured historical time series.
+ Rather than
  * fabricate "historical observations", we return a clearly-labelled seasonal
  * climatology derived from the current temperature/humidity so charts still render.
  */
@@ -425,72 +375,90 @@ interface OpenMeteoArchiveResponse {
 }
 
 /**
- * Fetch real historical daily observations from the Open-Meteo archive API and
- * aggregate them into monthly averages. Used by the crop/weather correlation
- * view, which previously fabricated "historical" figures.
- *
- * @throws ProviderError when the archive API is unreachable or errors.
+ * Fetch daily historical meteorology from NASA POWER and aggregate it by month.
+ * NASA POWER provides global daily meteorological data from 1981 to near-real-time.
+ * Cache successful aggregates for 24 hours because this endpoint is archival,
+ * not a live observation service.
  */
-export async function getHistoricalWeatherFromOpenMeteo(
+const historyCache = new Map<string, { expiresAt: number; value: HistoricalWeather }>();
+
+export async function getHistoricalWeatherFromNasaPower(
   lat: number,
   lon: number,
   months: number,
 ): Promise<HistoricalWeather> {
+  const count = Math.max(1, Math.min(60, Math.trunc(months)));
+  const cacheKey = `${lat.toFixed(2)},${lon.toFixed(2)},${count}`;
+  const cached = historyCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
   const end = new Date();
+  end.setUTCDate(end.getUTCDate() - 3); // POWER daily products are not instantaneous.
   const start = new Date(end);
-  start.setMonth(start.getMonth() - Math.max(1, months));
+  start.setUTCMonth(start.getUTCMonth() - count);
+  const formatDate = (date: Date) =>
+    `${date.getUTCFullYear()}${String(date.getUTCMonth()+1).padStart(2,"0")}${String(date.getUTCDate()).padStart(2,"0")}`;
 
   const params = new URLSearchParams({
-    latitude: String(lat),
+    parameters: "T2M,T2M_MAX,T2M_MIN,RH2M,PRECTOTCORR",
+    community: "AG",
     longitude: String(lon),
-    start_date: start.toISOString().slice(0, 10),
-    end_date: end.toISOString().slice(0, 10),
-    daily: "temperature_2m_mean,relative_humidity_2m_mean,precipitation_sum",
-    timezone: "Africa/Tunis",
+    latitude: String(lat),
+    start: formatDate(start),
+    end: formatDate(end),
+    format: "JSON",
+    "time-standard": "UTC",
   });
-
-  const data = await fetchJson<OpenMeteoArchiveResponse>(
-    `https://archive-api.open-meteo.com/v1/archive?${params.toString()}`,
-    { provider: "Open-Meteo Archive", timeoutMs: 15_000, retries: 2 },
+  const data = await fetchJson<NasaPowerResponse>(
+    `https://power.larc.nasa.gov/api/temporal/daily/point?${params.toString()}`,
+    {
+      provider: "NASA POWER",
+      timeoutMs: Number(process.env.WEATHER_HISTORY_TIMEOUT_MS) || 25_000,
+      retries: 1,
+      retryDelayMs: 700,
+      maxRetryDelayMs: 3_000,
+    },
   );
 
-  const times = data.daily?.time ?? [];
-  const buckets = new Map<
-    string,
-    { tempSum: number; tempCount: number; rainSum: number; humSum: number; humCount: number }
-  >();
+  const parameters = data?.properties?.parameter;
+  const temps = parameters?.T2M ?? {};
+  const maxTemps = parameters?.T2M_MAX ?? {};
+  const minTemps = parameters?.T2M_MIN ?? {};
+  const humidity = parameters?.RH2M ?? {};
+  const rainfall = parameters?.PRECTOTCORR ?? {};
+  const buckets = new Map<string, { tempSum: number; tempCount: number; rainSum: number; humSum: number; humCount: number }>();
 
-  times.forEach((iso, index) => {
-    const key = iso.slice(0, 7); // YYYY-MM
-    const bucket =
-      buckets.get(key) ??
-      { tempSum: 0, tempCount: 0, rainSum: 0, humSum: 0, humCount: 0 };
-    const temp = data.daily?.temperature_2m_mean?.[index];
-    const hum = data.daily?.relative_humidity_2m_mean?.[index];
-    const rain = data.daily?.precipitation_sum?.[index];
-    if (typeof temp === "number") {
-      bucket.tempSum += temp;
-      bucket.tempCount += 1;
-    }
-    if (typeof hum === "number") {
-      bucket.humSum += hum;
-      bucket.humCount += 1;
-    }
-    if (typeof rain === "number") bucket.rainSum += rain;
-    buckets.set(key, bucket);
-  });
+  for (const [dateKey, rawTemp] of Object.entries(temps)) {
+    const temp = Number.isFinite(rawTemp) && rawTemp > -900
+      ? rawTemp
+      : (Number(maxTemps[dateKey]) > -900 && Number(minTemps[dateKey]) > -900
+        ? (Number(maxTemps[dateKey]) + Number(minTemps[dateKey])) / 2
+        : null);
+    const hum = humidity[dateKey];
+    const rain = rainfall[dateKey];
+    if (temp === null && !(typeof rain === "number" && rain > -900)) continue;
+    const month = `${dateKey.slice(0,4)}-${dateKey.slice(4,6)}`;
+    const bucket = buckets.get(month) ?? { tempSum: 0, tempCount: 0, rainSum: 0, humSum: 0, humCount: 0 };
+    if (temp !== null) { bucket.tempSum += temp; bucket.tempCount++; }
+    if (typeof hum === "number" && hum > -900) { bucket.humSum += hum; bucket.humCount++; }
+    if (typeof rain === "number" && rain > -900) bucket.rainSum += rain;
+    buckets.set(month, bucket);
+  }
 
-  const monthly: HistoricalMonthlyAverage[] = [...buckets.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, b]) => ({
-      month,
-      avgTemp: b.tempCount ? round(b.tempSum / b.tempCount, 1) : 0,
-      totalRainfall: round(b.rainSum, 1),
-      avgHumidity: b.humCount ? round(b.humSum / b.humCount) : 0,
-    }));
+  const monthly = [...buckets.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([month,b])=>({
+    month,
+    avgTemp: b.tempCount ? round(b.tempSum/b.tempCount,1) : 0,
+    totalRainfall: round(b.rainSum,1),
+    avgHumidity: b.humCount ? round(b.humSum/b.humCount) : 0,
+  }));
+  if (!monthly.length) {
+    throw new ProviderError("NASA POWER", "parse", "NASA POWER returned no valid historical daily observations");
+  }
 
-  return {
+  const value: HistoricalWeather = {
     monthly,
-    source: { provider: "Open-Meteo Archive", isRealData: true },
+    source: { provider: "NASA POWER", isRealData: true },
   };
+  historyCache.set(cacheKey, { expiresAt: Date.now() + 24 * 60 * 60 * 1000, value });
+  return value;
 }
