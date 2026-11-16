@@ -48,11 +48,13 @@ export const AIAssistantScreen: React.FC = () => {
   // Keep each verified user's local conversation separate on shared devices.
   useEffect(() => {
     let active = true;
-    setMessages([]);
     conversationIdRef.current = null;
-    setThreadReadyKey(null);
     if (!threadStorageKey) {
-      setThreadReadyKey('anonymous');
+      Promise.resolve().then(() => {
+        if (!active) return;
+        setMessages([]);
+        setThreadReadyKey('anonymous');
+      });
       return () => { active = false; };
     }
     (async () => {
@@ -61,8 +63,10 @@ export const AIAssistantScreen: React.FC = () => {
         if (!active) return;
         if (raw) {
           const saved = JSON.parse(raw);
-          if (Array.isArray(saved.messages)) setMessages(saved.messages.slice(-40));
+          setMessages(Array.isArray(saved.messages) ? saved.messages.slice(-40) : []);
           conversationIdRef.current = typeof saved.conversationId === 'string' ? saved.conversationId : null;
+        } else {
+          setMessages([]);
         }
       } catch {
         if (active) {
