@@ -94,28 +94,33 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
       setError(null);
       setRequiresSoil(false);
       setCrops([]);
-      const res = await getFieldCropRecommendations(fieldId);
-      if (res.data) {
-        setCrops(
-          res.data.recommendations.map((r: FieldCropRecommendation) => ({
-            id: r.cropId,
-            name: r.cropName,
-            nameAr: r.cropNameAr,
-            category: '',
-            season: r.plantingSeason,
-            waterNeed: r.waterNeed,
-            suitabilityScore: r.suitabilityScore,
-            reasonsAr: r.reasons.join(' • '),
-            daysToMaturity: r.daysToMaturity,
-          })),
-        );
-        setMeta(res.data.meta);
-        setSource('plot');
-      } else {
-        setRequiresSoil(res.requiresSoilData);
-        setError(res.requiresSoilData ? null : res.error);
+      try {
+        const res = await getFieldCropRecommendations(fieldId);
+        if (res.data) {
+          setCrops(
+            res.data.recommendations.map((r: FieldCropRecommendation) => ({
+              id: r.cropId,
+              name: r.cropName,
+              nameAr: r.cropNameAr,
+              category: '',
+              season: r.plantingSeason,
+              waterNeed: r.waterNeed,
+              suitabilityScore: r.suitabilityScore,
+              reasonsAr: r.reasons.join(' • '),
+              daysToMaturity: r.daysToMaturity,
+            })),
+          );
+          setMeta(res.data.meta);
+          setSource('plot');
+        } else {
+          setRequiresSoil(res.requiresSoilData);
+          setError(res.requiresSoilData ? null : res.error);
+        }
+      } catch {
+        setError(x.stateError);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     },
     [],
   );
@@ -126,39 +131,44 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
       setError(null);
       setRequiresSoil(false);
       setCrops([]);
-      const res = await getCropRecommendations(input);
-      if (res.data) {
-        setCrops(
-          res.data.crops.map((c) => ({
-            id: c.id,
-            name: c.name,
-            nameAr: c.nameAr,
-            category: c.category,
-            season: c.season,
-            waterNeed: c.waterRequirement,
-            suitabilityScore: c.suitabilityScore,
-            reasonsAr: c.keyTipsAr,
-            daysToMaturity: c.growthCycleDays || null,
-          })),
-        );
-        setMeta(res.data.meta);
-        setSource('measurements');
-        if (res.data.crops.length > 0) {
-          const top = res.data.crops[0];
-          void addHistoryEntry({
-            type: 'crop',
-            title: language === 'ar' ? top.nameAr : cropName(top.name, language),
-            summary: x.cropHistorySummary
-              .replace('{score}', String(top.suitabilityScore))
-              .replace('{count}', String(res.data.crops.length)),
-            badge: provenanceLabel(res.data.meta.provenance, language),
-            badgeVariant: 'success',
-          });
+      try {
+        const res = await getCropRecommendations(input);
+        if (res.data) {
+          setCrops(
+            res.data.crops.map((c) => ({
+              id: c.id,
+              name: c.name,
+              nameAr: c.nameAr,
+              category: c.category,
+              season: c.season,
+              waterNeed: c.waterRequirement,
+              suitabilityScore: c.suitabilityScore,
+              reasonsAr: c.keyTipsAr,
+              daysToMaturity: c.growthCycleDays || null,
+            })),
+          );
+          setMeta(res.data.meta);
+          setSource('measurements');
+          if (res.data.crops.length > 0) {
+            const top = res.data.crops[0];
+            void addHistoryEntry({
+              type: 'crop',
+              title: language === 'ar' ? top.nameAr : cropName(top.name, language),
+              summary: x.cropHistorySummary
+                .replace('{score}', String(top.suitabilityScore))
+                .replace('{count}', String(res.data.crops.length)),
+              badge: provenanceLabel(res.data.meta.provenance, language),
+              badgeVariant: 'success',
+            });
+          }
+        } else {
+          setError(res.error);
         }
-      } else {
-        setError(res.error);
+      } catch {
+        setError(x.stateError);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     },
     [language, x.cropHistorySummary],
   );
@@ -273,6 +283,10 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
 
       {error && !loading ? (
         <StateCard kind="error" title={x.stateError} message={error} onRetry={retry} retryLabel={x.retry} />
+      ) : null}
+
+      {!loading && source && crops.length === 0 && !error && !requiresSoil ? (
+        <StateCard kind="empty" title={x.stateEmpty} message={s9.cropCompareHint} compact />
       ) : null}
 
       {!loading && crops.length > 0 ? (
