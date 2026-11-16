@@ -64,7 +64,6 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
   }, []);
 
   const loadFarms = useCallback(async () => {
-    setLoadingFarms(true);
     try {
       const res = await getFarms();
       setFarms(res.data);
