@@ -33,6 +33,11 @@ export interface MeasurementsValues {
   irrigationMethod: string;
   targetCrop: string;
   samplingDate: string;
+  drainage: string;
+  previousCrop: string;
+  currentCrop: string;
+  season: string;
+  notes: string;
 }
 
 interface MeasurementsStepProps {
@@ -50,6 +55,11 @@ const emptyValues: MeasurementsValues = {
   irrigationMethod: '',
   targetCrop: '',
   samplingDate: '',
+  drainage: '',
+  previousCrop: '',
+  currentCrop: '',
+  season: '',
+  notes: '',
 };
 
 /** Renders one measurement field with its unit suffix and help line. */
@@ -193,6 +203,39 @@ export const MeasurementsStep: React.FC<MeasurementsStepProps> = ({ initial, onC
             <ChipSelect options={irrigationOptions} selected={state.irrigationMethod} onSelect={(v) => update({ irrigationMethod: v })} clearable />
             <View style={{ height: spacing.sm }} />
             <FormField label={s9.samplingDateLabel} value={state.samplingDate} onChangeText={(v) => update({ samplingDate: v })} placeholder="YYYY-MM-DD" keyboard="default" />
+            <FormField
+              label={s9.currentCropLabel}
+              value={state.currentCrop}
+              onChangeText={(v) => update({ currentCrop: v })}
+              placeholder={s9.currentCropPlaceholder}
+              keyboard="default"
+            />
+            <FormField
+              label={s9.previousCropLabel}
+              value={state.previousCrop}
+              onChangeText={(v) => update({ previousCrop: v })}
+              placeholder={s9.currentCropPlaceholder}
+              keyboard="default"
+            />
+            <FormField
+              label={s9.seasonLabel}
+              value={state.season}
+              onChangeText={(v) => update({ season: v })}
+              keyboard="default"
+            />
+            <FormField
+              label={s9.drainageLabel}
+              value={state.drainage}
+              onChangeText={(v) => update({ drainage: v })}
+              keyboard="default"
+            />
+            <FormField
+              label={s9.notesLabel}
+              value={state.notes}
+              onChangeText={(v) => update({ notes: v })}
+              multiline
+              keyboard="default"
+            />
             <FormField
               label={s9.targetCropLabel}
               value={state.targetCrop}
