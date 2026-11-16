@@ -171,7 +171,8 @@
       "onError": "stopWorkflow",
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 4000
+      "waitBetweenTries": 4000,
+      "genericAuthType": "httpHeaderAuth"
     }
   ],
   "connections": {
