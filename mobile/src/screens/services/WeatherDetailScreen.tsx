@@ -57,8 +57,8 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
   );
 
   // Real device coordinates replace the governorate reference point when the
-  // user grants location access. The gateway resolves the actual Open-Meteo
-  // observation for the exact lat/lon; nothing here is estimated.
+  // user grants location access. The gateway resolves current conditions
+  // from WeatherAPI.com for the exact lat/lon; no location is hardcoded.
   const loadMyLocation = React.useCallback(async () => {
     setLocating(true);
     setLocationNotice(null);
@@ -190,7 +190,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
                 {weatherConditionLabel(weather.icon, language, weather.condition_ar)}
               </Text>
               </View>
-              <Badge label={x.weatherLiveBadge} variant="info" size="sm" />
+              <Badge label={fromCache ? x.weatherCachedBadge : x.weatherLiveBadge} variant={fromCache ? "warning" : "info"} size="sm" />
             </View>
 
             <View style={[styles.tempRow, isRtl && rtlStyles.rtlRow]}>
