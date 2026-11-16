@@ -5,21 +5,17 @@ import {
 import { ProviderError } from "../../server/services/providers/http";
 
 const originalWeatherApiKey = process.env.WEATHERAPI_KEY;
-const originalWeatherApiAlias = process.env.WEATHER_API_KEY;
 const originalFetch = global.fetch;
 
 afterEach(() => {
   global.fetch = originalFetch;
   if (originalWeatherApiKey === undefined) delete process.env.WEATHERAPI_KEY;
   else process.env.WEATHERAPI_KEY = originalWeatherApiKey;
-  if (originalWeatherApiAlias === undefined) delete process.env.WEATHER_API_KEY;
-  else process.env.WEATHER_API_KEY = originalWeatherApiAlias;
 });
 
 describe("WeatherAPI.com current conditions and forecast", () => {
   test("maps real current and 3-day forecast fields into the platform contract", async () => {
     process.env.WEATHERAPI_KEY = "unit-test-key";
-    delete process.env.WEATHER_API_KEY;
     const payload = {
       current: {
         last_updated: "2026-11-16 10:00",
@@ -106,7 +102,6 @@ describe("WeatherAPI.com current conditions and forecast", () => {
 
   test("fails explicitly when the server-side API key is missing", async () => {
     delete process.env.WEATHERAPI_KEY;
-    delete process.env.WEATHER_API_KEY;
     await expect(
       getWeatherFromWeatherApi({ lat: 12.12, lon: 23.23 }),
     ).rejects.toMatchObject<Partial<ProviderError>>({
