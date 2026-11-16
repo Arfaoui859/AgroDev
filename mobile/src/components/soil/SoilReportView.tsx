@@ -208,6 +208,11 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>
           {report.soilCharacterization.texture.classification} — {report.soilCharacterization.texture.basis}
         </Text>
+        {report.soilCharacterization.texture.confidence ? (
+          <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>
+            {s9.reportConfidence}: {report.soilCharacterization.texture.confidence}
+          </Text>
+        ) : null}
         {report.soilCharacterization.chemical.map((c, i) => (
           <Bullet variant="glyph" key={`chem-${i}`} text={c} />
         ))}
