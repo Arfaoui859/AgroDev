@@ -21,6 +21,14 @@ describe("farm finance input validation", () => {
     }, "user-1")).toBeNull();
   });
 
+  it("accepts a cultivation link only with a valid farm and cultivation UUID", () => {
+    const validUuid = "33333333-3333-4333-8333-333333333333";
+    expect(expensePayload({ amount: 25, date: "2026-11-10", category: "seeds", farm_id: validUuid, cultivation_id: validUuid }, "user-1"))
+      .toMatchObject({ farm_id: validUuid, cultivation_id: validUuid });
+    expect(expensePayload({ amount: 25, date: "2026-11-10", category: "seeds", cultivation_id: validUuid }, "user-1")).toBeNull();
+    expect(expensePayload({ amount: 25, date: "2026-11-10", category: "seeds", farm_id: validUuid, cultivation_id: "bad-id" }, "user-1")).toBeNull();
+  });
+
   it("persists accepted expense amounts in TND and binds the user id", () => {
     expect(expensePayload({
       amount: 120,

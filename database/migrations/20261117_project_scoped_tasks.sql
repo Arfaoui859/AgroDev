@@ -29,7 +29,7 @@ BEGIN
   END IF;
 END $$;
 
-DO $
+DO $finance$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'farm_expenses_cultivation_farm_fk' AND conrelid = 'public.farm_expenses'::regclass) THEN
     ALTER TABLE public.farm_expenses ADD CONSTRAINT farm_expenses_cultivation_farm_fk
@@ -39,7 +39,7 @@ BEGIN
     ALTER TABLE public.farm_revenues ADD CONSTRAINT farm_revenues_cultivation_farm_fk
       FOREIGN KEY (cultivation_id, farm_id) REFERENCES public.crop_cultivations(id, farm_id) ON DELETE SET NULL (cultivation_id);
   END IF;
-END $;
+END $finance$;
 
 CREATE INDEX IF NOT EXISTS farm_tasks_cultivation_due_idx
   ON public.farm_tasks(farm_id, cultivation_id, due_date NULLS LAST, created_at DESC);

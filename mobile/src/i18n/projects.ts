@@ -202,7 +202,7 @@ const ar: ProjectTranslations = {
 
   financeHeading: 'النتيجة المالية',
   financeScopeNote:
-    'الأرقام محسوبة من المصاريف والمداخيل المسجّلة لهذه المزرعة.',
+    'الأرقام محسوبة فقط من المصاريف والمداخيل المرتبطة بهذا المشروع الزراعي.',
   totalExpenses: 'مجموع المصاريف',
   grossRevenue: 'المداخيل الإجمالية',
   salesCosts: 'تكاليف البيع',
@@ -326,7 +326,7 @@ const fr: ProjectTranslations = {
 
   financeHeading: 'Résultat financier',
   financeScopeNote:
-    'Les chiffres sont calculés à partir des dépenses et recettes enregistrées pour cette ferme.',
+    'Les chiffres incluent uniquement les dépenses et recettes liées à ce projet agricole.',
   totalExpenses: 'Total des dépenses',
   grossRevenue: 'Recettes brutes',
   salesCosts: 'Frais de vente',
@@ -450,7 +450,7 @@ const en: ProjectTranslations = {
 
   financeHeading: 'Financial result',
   financeScopeNote:
-    'The figures are computed from expenses and revenues recorded against this farm.',
+    'Figures include only expenses and revenues linked to this cultivation project.',
   totalExpenses: 'Total expenses',
   grossRevenue: 'Gross revenue',
   salesCosts: 'Sales costs',
