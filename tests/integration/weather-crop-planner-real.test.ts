@@ -91,6 +91,33 @@ describe("🌦️ Weather crop planner uses real provider data", () => {
     expect(res.body.currentConditions.temperature).toBe(24);
   });
 
+  test("alerts evaluate forecast-day maximum temperature and include upcoming alert dates", async () => {
+    mockedCurrent.mockResolvedValue({
+      ...sampleWeather,
+      forecast: {
+        ...sampleWeather.forecast,
+        daily: [
+          { ...sampleWeather.forecast.daily[0], date: "2026-11-16", maxTemp: 24, windSpeed: 10, rainfall: 0 },
+          { ...sampleWeather.forecast.daily[1], date: "2026-11-17", maxTemp: 42, windSpeed: 30, rainfall: 0 },
+          { ...sampleWeather.forecast.daily[2], date: "2026-11-18", maxTemp: 26, windSpeed: 10, rainfall: 22 },
+        ],
+      },
+    });
+
+    const res = await request(app).get("/api/weather-crop-planner/alerts/tunis");
+
+    expect(res.status).toBe(200);
+    expect(res.body.isRealData).toBe(true);
+    expect(res.body.activeAlerts).toEqual([]);
+    expect(res.body.upcomingAlerts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "temperature", date: "2026-11-17", isUpcoming: true }),
+        expect.objectContaining({ type: "wind", date: "2026-11-17", isUpcoming: true }),
+        expect.objectContaining({ type: "precipitation", date: "2026-11-18", isUpcoming: true }),
+      ]),
+    );
+  });
+
   test("smart-schedule labels the forecast real", async () => {
     mockedCurrent.mockResolvedValue(sampleWeather);
     const res = await request(app)
