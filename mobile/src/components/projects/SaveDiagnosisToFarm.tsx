@@ -78,7 +78,7 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
   }, [loadCultivationsForFarm, p.noFarmToSave]);
 
   useEffect(() => {
-    void loadFarms();
+    void Promise.resolve().then(loadFarms);
   }, [loadFarms]);
 
   const handleSave = async () => {
