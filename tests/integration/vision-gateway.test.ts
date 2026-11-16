@@ -159,11 +159,15 @@ describe("🔎 Vision gateway forwarding", () => {
       model_source: "provider:test-vision-model",
     };
     await request(app)
-      .post("/api/ai/images/detect-disease")
+      .post("/api/ai/plant-disease-detection")
       .field("plant_type", "tomato")
+      .field("plant_part", "leaves")
+      .field("symptoms", "yellow spots")
       .attach("file", PNG, { filename: "leaf.png", contentType: "image/png" })
       .expect(200);
     expect(received[0].body).toContain("tomato");
+    expect(received[0].body).toContain("leaves");
+    expect(received[0].body).toContain("yellow spots");
   });
 
   test("routes leaf and comprehensive analyses to their endpoints", async () => {

@@ -3,6 +3,10 @@ import { render, screen, waitFor, userEvent } from '@testing-library/react-nativ
 import { LanguageProvider } from '../../src/context/LanguageContext';
 import { AIAssistantScreen } from '../../src/screens/AIAssistantScreen';
 
+jest.mock('../../src/context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'assistant-test-user' } }),
+}));
+
 const mockChat = jest.fn();
 
 jest.mock('../../src/api/client', () => ({

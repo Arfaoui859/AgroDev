@@ -70,9 +70,14 @@ def _png_bytes() -> bytes:
     return buf.getvalue()
 
 
-def _detect():
+def _detect(plant_part=None, symptoms=None):
     return asyncio.run(
-        image_main.detect_plant_disease(_FakeUpload(_png_bytes()), plant_type="tomato")
+        image_main.detect_plant_disease(
+            _FakeUpload(_png_bytes()),
+            plant_type="tomato",
+            plant_part=plant_part,
+            symptoms=symptoms,
+        )
     )
 
 
@@ -109,6 +114,28 @@ def test_configured_provider_is_used_and_labelled(monkeypatch):
     assert result.disease_detection["detection_method"] == "vision_model"
     assert result.disease_detection["primary_disease"]["disease"] == "early_blight"
     assert result.disease_detection["matched_catalogue"] is True
+
+ 
+def test_vision_prompt_receives_farmer_crop_part_and_symptoms(monkeypatch):
+    monkeypatch.setenv("AI_API_KEY", "k")
+    monkeypatch.setenv("AI_BASE_URL", "https://api.openai.com/v1")
+    captured = {}
+
+    def fake_image_json(self, image_b64, mime_type, prompt, **kwargs):
+        captured["prompt"] = prompt
+        return {
+            "disease": "early_blight",
+            "disease_name_ar": "اللفحة المبكرة",
+            "confidence": 0.82,
+            "severity": "medium",
+        }
+
+    monkeypatch.setattr(llm.LLMProvider, "chat_image_json", fake_image_json)
+    result = _detect(plant_part="leaves", symptoms="yellow spots")
+    assert result.data_source == "vision-model"
+    assert "Crop (if known): tomato" in captured["prompt"]
+    assert "Plant part photographed: leaves" in captured["prompt"]
+    assert "Farmer-reported symptoms: yellow spots" in captured["prompt"]
 
 
 def test_provider_failure_fails_closed_without_onnx_classifier(monkeypatch):
