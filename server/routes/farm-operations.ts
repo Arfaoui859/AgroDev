@@ -51,11 +51,14 @@ export function taskPayload(body: any, userId?: string) {
   const task_type = body.task_type ?? "general";
   const priority = body.priority ?? "medium";
   const status = body.status ?? "pending";
+  const cultivationId = body.cultivation_id == null || body.cultivation_id === "" ? null : String(body.cultivation_id);
   if (!title || !taskTypes.has(task_type) || !taskPriorities.has(priority) ||
-      !taskStatuses.has(status) || (body.due_date != null && body.due_date !== "" && !validDate(body.due_date)) ||
+      !taskStatuses.has(status) || (cultivationId !== null && !UUID.test(cultivationId)) ||
+      (body.due_date != null && body.due_date !== "" && !validDate(body.due_date)) ||
       (body.assigned_to != null && body.assigned_to !== "" && (!UUID.test(body.assigned_to) || (userId && body.assigned_to !== userId)))) return null;
   return {
     title, task_type, priority, status,
+    cultivation_id: cultivationId,
     description: optionalText(body.description, 4000),
     due_date: body.due_date || null,
     assigned_to: body.assigned_to || null,
@@ -122,8 +125,12 @@ router.get("/tasks", async (req, res) => {
   const farmId = req.query.farm_id;
   if (farmId !== undefined && (typeof farmId !== "string" || !UUID.test(farmId)))
     return fail(res, 400, "INVALID_FARM_ID", "معرّف المزرعة غير صالح.");
+  const cultivationId = req.query.cultivation_id;
+  if (cultivationId !== undefined && (typeof cultivationId !== "string" || !UUID.test(cultivationId)))
+    return fail(res, 400, "INVALID_CULTIVATION_ID", "معرّف المشروع الزراعي غير صالح.");
   let query = db.from("farm_tasks").select("*").order("created_at", { ascending: false });
   if (typeof farmId === "string") query = query.eq("farm_id", farmId);
+  if (typeof cultivationId === "string") query = query.eq("cultivation_id", cultivationId);
   const { data, error } = await query;
   if (error) return fail(res, 503, "TASK_READ_FAILED", "تعذّر استرجاع المهام.");
   return res.json({ success: true, data: data ?? [], provenance: { source: "supabase.farm_tasks", persisted: true } });
@@ -136,6 +143,12 @@ router.post("/tasks", async (req, res) => {
   const payload = taskPayload(req.body ?? {}, (req as any).userId);
   if (typeof farmId !== "string" || !UUID.test(farmId) || !payload)
     return fail(res, 400, "INVALID_TASK_INPUT", "تحقق من المزرعة وبيانات المهمة.");
+  if (payload.cultivation_id) {
+    const { data: cultivation, error: cultivationError } = await db.from("crop_cultivations")
+      .select("id").eq("id", payload.cultivation_id).eq("farm_id", farmId).maybeSingle();
+    if (cultivationError) return fail(res, 503, "CULTIVATION_LOOKUP_FAILED", "تعذّر التحقق من المشروع الزراعي.");
+    if (!cultivation) return fail(res, 404, "CULTIVATION_NOT_FOUND_IN_FARM", "المشروع الزراعي لا يتبع هذه المزرعة.");
+  }
   const { data, error } = await db.from("farm_tasks").insert({ ...payload, farm_id: farmId, created_by: (req as any).userId }).select("*").single();
   if (error) return fail(res, error.code === "42501" ? 403 : 503, error.code === "42501" ? "FARM_OWNERSHIP_REQUIRED" : "TASK_CREATE_FAILED", "لم يتم حفظ المهمة. تحقق من ملكية المزرعة وتطبيق migration.");
   return res.status(201).json({ success: true, data, provenance: { source: "supabase.farm_tasks", persisted: true } });
@@ -147,7 +160,9 @@ router.put("/tasks/:id", async (req, res) => {
   if (!UUID.test(req.params.id)) return fail(res, 400, "INVALID_TASK_ID", "معرّف المهمة غير صالح.");
   const payload = taskPayload(req.body ?? {});
   if (!payload) return fail(res, 400, "INVALID_TASK_INPUT", "بيانات المهمة غير صالحة.");
-  const { data, error } = await db.from("farm_tasks").update({ ...payload, updated_at: new Date().toISOString() }).eq("id", req.params.id).select("*").maybeSingle();
+  const updatePayload: Record<string, unknown> = { ...payload, updated_at: new Date().toISOString() };
+  if (req.body?.cultivation_id === undefined) delete updatePayload.cultivation_id;
+  const { data, error } = await db.from("farm_tasks").update(updatePayload).eq("id", req.params.id).select("*").maybeSingle();
   if (error) return fail(res, 503, "TASK_UPDATE_FAILED", "تعذّر تحديث المهمة.");
   if (!data) return fail(res, 404, "TASK_NOT_FOUND", "المهمة غير موجودة أو لا تملك صلاحية الوصول إليها.");
   return res.json({ success: true, data, provenance: { source: "supabase.farm_tasks", persisted: true } });

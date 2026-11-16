@@ -417,6 +417,7 @@ export type FarmTaskType =
 export interface FarmTask {
   id: string;
   farm_id: string;
+  cultivation_id: string | null;
   title: string;
   description: string;
   task_type: FarmTaskType;
