@@ -56,23 +56,25 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
     if (!selectedFarmId || !result.imageUri) return;
     setSaving(true);
     setError(null);
-    const prepared = await prepareImageForUpload(result.imageUri);
-    const res = await saveDiseaseDetection({
-      imageUri: prepared.uri,
-      mimeType: prepared.mimeType,
-      fileName: prepared.fileName,
-      farmId: selectedFarmId,
-      plantType: result.diseaseName || undefined,
-      primaryDisease: result.diseaseName,
-      severityLevel: result.severity,
-      confidence: result.confidence,
-    });
-    if (res.data) {
-      setSaved(true);
-    } else {
-      setError(res.error || p.diagnosisSaveFailed);
+    try {
+      const prepared = await prepareImageForUpload(result.imageUri);
+      const res = await saveDiseaseDetection({
+        imageUri: prepared.uri,
+        mimeType: prepared.mimeType,
+        fileName: prepared.fileName,
+        farmId: selectedFarmId,
+        plantType: result.plantType || undefined,
+        primaryDisease: result.diseaseName,
+        severityLevel: result.severity,
+        confidence: result.confidence,
+      });
+      if (res.data) setSaved(true);
+      else setError(res.error || p.diagnosisSaveFailed);
+    } catch {
+      setError(p.diagnosisSaveFailed);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   // The visual diagnosis is not field-verified; saving is only a record action.

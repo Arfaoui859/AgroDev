@@ -92,13 +92,13 @@ export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cropName
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await getProjectFinancialSummary();
+    const res = await getProjectFinancialSummary(farmId);
     setSummary(res.data);
     setMeta(res.meta);
     setError(res.error);
     setRoleBlocked(res.roleBlocked);
     setLoading(false);
-  }, []);
+  }, [farmId]);
 
   useEffect(() => {
     (async () => {
@@ -124,45 +124,50 @@ export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cropName
       setFormError(p.invalidAmount);
       return;
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const parsedDate = new Date(date + 'T00:00:00.000Z');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsedDate.valueOf()) || parsedDate.toISOString().slice(0, 10) !== date) {
       setFormError(p.invalidDate);
       return;
     }
+    if (mode === 'revenue') {
+      const parsedQuantity = quantity.trim() ? Number(quantity) : undefined;
+      const parsedUnitPrice = unitPrice.trim() ? Number(unitPrice) : undefined;
+      if ((parsedQuantity !== undefined && (!Number.isFinite(parsedQuantity) || parsedQuantity <= 0)) ||
+          (parsedUnitPrice !== undefined && (!Number.isFinite(parsedUnitPrice) || parsedUnitPrice <= 0))) {
+        setFormError(p.invalidAmount);
+        return;
+      }
+    }
     setSaving(true);
     setFormError(null);
-    const res =
-      mode === 'expense'
+    try {
+      const res = mode === 'expense'
         ? await createProjectExpense({
-            amount: value,
-            date,
-            category,
-            farm_id: farmId,
-            cropRelated: cropName,
-            description: description || undefined,
-            supplier: supplier || undefined,
+            amount: value, date, category, farm_id: farmId, cropRelated: cropName,
+            description: description || undefined, supplier: supplier || undefined,
           })
         : await createProjectRevenue({
-            amount: value,
-            date,
-            farm_id: farmId,
-            cropRelated: cropName,
+            amount: value, date, farm_id: farmId, cropRelated: cropName,
             quantity: quantity ? Number(quantity) : undefined,
             unitPrice: unitPrice ? Number(unitPrice) : undefined,
-            buyer: buyer || undefined,
-            description: description || undefined,
+            buyer: buyer || undefined, description: description || undefined,
           });
-    setSaving(false);
-    if (res.roleBlocked) {
-      setRoleBlocked(true);
-      return;
+      if (res.roleBlocked) {
+        setRoleBlocked(true);
+        return;
+      }
+      if (res.error || !res.data) {
+        setFormError(res.error || p.saveFailed);
+        return;
+      }
+      setNotice(mode === 'expense' ? p.expenseCreated : p.revenueCreated);
+      resetForm();
+      await load();
+    } catch {
+      setFormError(p.saveFailed);
+    } finally {
+      setSaving(false);
     }
-    if (res.error || !res.data) {
-      setFormError(res.error || p.saveFailed);
-      return;
-    }
-    setNotice(mode === 'expense' ? p.expenseCreated : p.revenueCreated);
-    resetForm();
-    await load();
   };
 
   return (

@@ -70,6 +70,7 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
   const [dueDate, setDueDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -99,14 +100,21 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
     }
     setSaving(true);
     setFormError(null);
-    const res = await createProjectTask({
-      farm_id: farmId,
-      title: title.trim(),
-      task_type: taskType,
-      priority,
-      due_date: dueDate.trim() || undefined,
-    });
-    setSaving(false);
+    let res;
+    try {
+      res = await createProjectTask({
+        farm_id: farmId,
+        title: title.trim(),
+        task_type: taskType,
+        priority,
+        due_date: dueDate.trim() || undefined,
+      });
+    } catch {
+      setFormError(p.saveFailed);
+      return;
+    } finally {
+      setSaving(false);
+    }
     if (res.roleBlocked) {
       setRoleBlocked(true);
       return;
@@ -127,20 +135,28 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
   const toggleDone = async (task: FarmTask) => {
     const nextStatus = task.status === 'completed' ? 'pending' : 'completed';
     setBusyTaskId(task.id);
-    const res = await updateProjectTask(task.id, {
-      title: task.title,
-      status: nextStatus,
-      priority: task.priority,
-      description: task.description,
-    });
-    setBusyTaskId(null);
-    if (res.roleBlocked) {
-      setRoleBlocked(true);
-      return;
+    setActionError(null);
+    try {
+      const res = await updateProjectTask(task.id, {
+        title: task.title,
+        status: nextStatus,
+        priority: task.priority,
+        description: task.description,
+      });
+      if (res.roleBlocked) {
+        setRoleBlocked(true);
+        return;
+      }
+      if (res.error || !res.data) {
+        setActionError(res.error || p.saveFailed);
+        return;
+      }
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? res.data! : t)));
+    } catch {
+      setActionError(p.saveFailed);
+    } finally {
+      setBusyTaskId(null);
     }
-    if (res.error || !res.data) return;
-    const updated = res.data;
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
   };
 
   return (
@@ -226,6 +242,7 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
             </View>
           ) : null}
 
+          {actionError ? <Text style={[styles.formError, isRtl && rtlStyles.rtlText]}>{actionError}</Text> : null}
           {tasks.length === 0 ? (
             <StateView kind="empty" title={p.noTasks} message={p.noTasksHint} compact />
           ) : (
