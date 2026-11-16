@@ -141,7 +141,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
             return { data: null, error: x.stateError, unavailable: false };
           }
         }}
-      />;
+      />);
   }
 
   return (
