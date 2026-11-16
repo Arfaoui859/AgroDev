@@ -60,6 +60,13 @@ describe("farm equipment and task input validation", () => {
     expect(taskPayload({ title: "Inspect", assigned_to: otherUserId }, userId)).toBeNull();
   });
 
+  it("scopes an optional task to a valid cultivation id", () => {
+    const cultivationId = "44444444-4444-4444-8444-444444444444";
+    expect(taskPayload({ title: "Prune", cultivation_id: cultivationId }, userId)?.cultivation_id).toBe(cultivationId);
+    expect(taskPayload({ title: "Prune", cultivation_id: "not-a-uuid" }, userId)).toBeNull();
+    expect(taskPayload({ title: "Prune" }, userId)?.cultivation_id).toBeNull();
+  });
+
   it("rejects unsupported statuses, categories, and negative amounts", () => {
     expect(equipmentPayload({ name: "Pump", purchase_cost: -1 })).toBeNull();
     expect(equipmentPayload({ name: "Pump", category: "spaceship" })).toBeNull();

@@ -70,13 +70,13 @@ describe('project API client', () => {
           provenance: { source: 'supabase.farm_tasks', persisted: true },
         }),
       );
-      const res = await getProjectTasks({ farmId: 'f1' });
+      const res = await getProjectTasks({ farmId: 'f1', cultivationId: 'cult-1' });
       expect(res.data).toHaveLength(1);
       expect(res.data[0].title).toBe('Till');
       expect(res.roleBlocked).toBe(false);
       expect(res.meta.provenance).toBe('database');
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://test.local/api/farm-operations/tasks?farm_id=f1',
+        'http://test.local/api/farm-operations/tasks?farm_id=f1&cultivation_id=cult-1',
         expect.anything(),
       );
     });
@@ -97,13 +97,13 @@ describe('project API client', () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce(
         jsonResponse({ success: true, data: { id: 't2', farm_id: 'f1', title: 'Irrigate', status: 'pending', task_type: 'irrigation', priority: 'high', description: '', due_date: '2026-12-01', completed_at: null } }, 201),
       );
-      const res = await createProjectTask({ farm_id: 'f1', title: 'Irrigate', task_type: 'irrigation', priority: 'high' });
+      const res = await createProjectTask({ farm_id: 'f1', cultivation_id: 'cult-1', title: 'Irrigate', task_type: 'irrigation', priority: 'high' });
       expect(res.data?.id).toBe('t2');
       expect(res.error).toBeNull();
       const [url, init] = (global.fetch as jest.Mock).mock.calls[0];
       expect(url).toBe('http://test.local/api/farm-operations/tasks');
       expect(init.method).toBe('POST');
-      expect(JSON.parse(init.body)).toMatchObject({ farm_id: 'f1', title: 'Irrigate' });
+      expect(JSON.parse(init.body)).toMatchObject({ farm_id: 'f1', cultivation_id: 'cult-1', title: 'Irrigate' });
     });
 
     it('flags a role-blocked create', async () => {
