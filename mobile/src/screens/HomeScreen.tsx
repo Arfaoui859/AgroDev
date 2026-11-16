@@ -109,8 +109,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDashboardData();
-    setRefreshing(false);
+    try {
+      await loadDashboardData();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const displayName = isArabic
