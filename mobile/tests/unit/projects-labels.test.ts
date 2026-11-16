@@ -2,6 +2,7 @@ import { getProjects } from '../../src/i18n/projects';
 import {
   expenseCategoryLabel,
   projectStatusLabel,
+  growthStageLabel,
   taskPriorityLabel,
   taskStatusLabel,
   taskTypeLabel,
@@ -38,6 +39,9 @@ describe('projects i18n', () => {
     expect(expenseCategoryLabel('labor', en)).toBe('Labor');
     expect(expenseCategoryLabel('labor', ar)).toBe('أجرة عمل');
     expect(projectStatusLabel('harvested', en)).toBe('Harvested');
+    expect(growthStageLabel('vegetative_growth', en)).toBe('Vegetative growth');
+    expect(growthStageLabel('flowering', ar)).toBe('الإزهار');
+    expect(growthStageLabel('future_unknown_stage', en)).toBe(en.noStage);
   });
 
   it('never leaks an English token for an unknown enum value', () => {

@@ -100,37 +100,40 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
     setError(null);
     setUnavailable(false);
 
-    const prepared = await prepareImageForUpload(imageUri);
-    const res = await diagnosePlantDisease({
-      imageUri: prepared.uri,
-      mimeType: prepared.mimeType,
-      fileName: prepared.fileName,
-      cropType: selectedCrop,
-      plantPart: selectedPart,
-      symptoms: symptomsInput || undefined,
-    });
+    try {
+      const prepared = await prepareImageForUpload(imageUri);
+      const res = await diagnosePlantDisease({
+        imageUri: prepared.uri,
+        mimeType: prepared.mimeType,
+        fileName: prepared.fileName,
+        cropType: selectedCrop,
+        plantPart: selectedPart,
+        symptoms: symptomsInput || undefined,
+      });
 
-    if (res.unavailable) {
-      setUnavailable(true);
-      setError(res.error);
-    } else if (res.data) {
-      setResult(res.data);
-      // Persist the real diagnosis on the device so the history screen shows it.
-      void addHistoryEntry({
-        type: 'disease',
-        title: (language === 'ar' ? res.data.diseaseNameAr : res.data.diseaseName) || res.data.diseaseNameAr,
-        summary:
-          res.data.confidence !== null
+      if (res.unavailable) {
+        setUnavailable(true);
+        setError(res.error);
+      } else if (res.data) {
+        setResult(res.data);
+        void addHistoryEntry({
+          type: 'disease',
+          title: (language === 'ar' ? res.data.diseaseNameAr : res.data.diseaseName) || res.data.diseaseNameAr,
+          summary: res.data.confidence !== null
             ? `${x.diseaseConfidenceLabel} ${res.data.confidence}%`
             : x.diseaseNoConfidence,
-        badge: provenanceLabel(res.data.meta.provenance, language),
-        badgeVariant: res.data.severity === 'high' || res.data.severity === 'critical' ? 'danger' : 'warning',
-        imageUri: res.data.imageUri,
-      });
-    } else {
-      setError(res.error || x.stateError);
+          badge: provenanceLabel(res.data.meta.provenance, language),
+          badgeVariant: res.data.severity === 'high' || res.data.severity === 'critical' ? 'danger' : 'warning',
+          imageUri: res.data.imageUri,
+        });
+      } else {
+        setError(res.error || x.stateError);
+      }
+    } catch {
+      setError(x.stateError);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (showScanner) {
@@ -141,30 +144,34 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           if (startWithCamera && !imageUri) onBack();
         }}
         onSubmit={async ({ uri, mimeType, fileName, symptoms }) => {
-          const res = await diagnosePlantDisease({
-            imageUri: uri,
-            mimeType,
-            fileName,
-            cropType: selectedCrop,
-            plantPart: selectedPart,
-            symptoms: symptoms || symptomsInput || undefined,
-          });
-          if (res.data) {
-            setImageUri(uri);
-            void addHistoryEntry({
-              type: 'disease',
-              title: (language === 'ar' ? res.data.diseaseNameAr : res.data.diseaseName) || res.data.diseaseNameAr,
-              summary:
-                res.data.confidence !== null
+          try {
+            const prepared = await prepareImageForUpload(uri);
+            const res = await diagnosePlantDisease({
+              imageUri: prepared.uri,
+              mimeType: prepared.mimeType || mimeType,
+              fileName: prepared.fileName || fileName,
+              cropType: selectedCrop,
+              plantPart: selectedPart,
+              symptoms: symptoms || symptomsInput || undefined,
+            });
+            if (res.data) {
+              setImageUri(prepared.uri);
+              setResult(res.data);
+              void addHistoryEntry({
+                type: 'disease',
+                title: (language === 'ar' ? res.data.diseaseNameAr : res.data.diseaseName) || res.data.diseaseNameAr,
+                summary: res.data.confidence !== null
                   ? `${x.diseaseConfidenceLabel} ${res.data.confidence}%`
                   : x.diseaseNoConfidence,
-              badge: provenanceLabel(res.data.meta.provenance, language),
-              badgeVariant:
-                res.data.severity === 'high' || res.data.severity === 'critical' ? 'danger' : 'warning',
-              imageUri: res.data.imageUri,
-            });
+                badge: provenanceLabel(res.data.meta.provenance, language),
+                badgeVariant: res.data.severity === 'high' || res.data.severity === 'critical' ? 'danger' : 'warning',
+                imageUri: res.data.imageUri,
+              });
+            }
+            return res;
+          } catch {
+            return { data: null, error: x.stateError, unavailable: false };
           }
-          return res;
         }}
       />
     );

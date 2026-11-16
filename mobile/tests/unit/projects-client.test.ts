@@ -1,4 +1,5 @@
 import {
+  diagnosePlantDisease,
   getProjectTasks,
   createProjectTask,
   updateProjectTask,
@@ -39,6 +40,25 @@ describe('project API client', () => {
 
   afterAll(() => {
     global.fetch = originalFetch;
+  });
+
+  describe('plant disease endpoint contract', () => {
+    it('posts multipart image and crop context to the clean capability URL', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({
+        disease_detection: { primary_disease: { disease: 'leaf_spot', disease_name_ar: 'تبقع الأوراق', probability: 0.8 } },
+        severity_assessment: { severity_level: 'medium' },
+        treatment_plan: { immediate_treatment: [], prevention_measures: [] },
+        provenance: { source: 'vision-model', verified: true },
+      }));
+      const result = await diagnosePlantDisease({ imageUri: 'file:///leaf.jpg', cropType: 'olive', plantPart: 'leaves', symptoms: 'spots' });
+      expect(result.data?.plantType).toBe('olive');
+      const [url, init] = (global.fetch as jest.Mock).mock.calls[0];
+      expect(url).toBe('http://test.local/api/ai/plant-disease-detection');
+      expect(init.method).toBe('POST');
+      expect((init.body as FormData).get('plant_type')).toBe('olive');
+      expect((init.body as FormData).get('plant_part')).toBe('leaves');
+      expect((init.body as FormData).get('symptoms')).toBe('spots');
+    });
   });
 
   describe('getProjectTasks', () => {
