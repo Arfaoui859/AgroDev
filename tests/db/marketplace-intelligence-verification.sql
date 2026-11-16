@@ -52,4 +52,13 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.market_data_sources WHERE source_key='tn-onagri-agricultural-input-prices' AND enabled=false) THEN
     RAISE EXCEPTION 'ONAGRI source must be registered but disabled pending adapter review';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.market_data_sources WHERE source_key='tn-onagri-pesticide-workbooks' AND enabled=false AND last_status='review_workflow_ready') THEN
+    RAISE EXCEPTION 'ONAGRI pesticide workbook source must remain disabled pending human review';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.market_data_sources WHERE source_key='tn-onagri-fertilizer-workbooks' AND enabled=false AND last_status='review_workflow_ready') THEN
+    RAISE EXCEPTION 'ONAGRI fertilizer workbook source must remain disabled pending human review';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.market_data_sources WHERE source_key='tn-ministry-approved-pesticides-2025' AND enabled=false AND last_status='manual_pdf_review_required') THEN
+    RAISE EXCEPTION 'Ministry 2025 pesticide PDF must remain disabled pending manual review';
+  END IF;
 END $$;
