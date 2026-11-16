@@ -33,6 +33,7 @@ import { LivestockScreen } from './src/screens/services/LivestockScreen';
 import { MultiAgentAIScreen } from './src/screens/services/MultiAgentAIScreen';
 import { AgriNewsScreen } from './src/screens/services/AgriNewsScreen';
 import { ShortVideoFeedScreen } from './src/screens/services/ShortVideoFeedScreen';
+import { CommunityScreen } from './src/screens/services/CommunityScreen';
 import { RecentAnalysesScreen } from './src/screens/services/RecentAnalysesScreen';
 import { ProjectsScreen } from './src/screens/services/ProjectsScreen';
 import { GeneralServiceModal } from './src/screens/services/GeneralServiceModal';
@@ -131,7 +132,9 @@ const MainAppContent: React.FC = () => {
           return { title: t.multiAgentAiName };
         case 'agri_news':
           return { title: t.agriNewsName };
-        case 'learning':
+        case 'community':
+        return <CommunityScreen onBack={() => setActiveService(null)} />;
+      case 'learning':
           return { title: t.homeLearningTitle };
         case 'recent_analyses':
           return { title: x.recentAnalysesTitle };
