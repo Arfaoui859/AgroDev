@@ -53,11 +53,14 @@ export interface WeatherData {
       totalRainfall: number;
       avgHumidity: number;
     }>;
+    isClimatology?: boolean;
+    source?: string;
   };
   agriculturalIndices: {
     growingDegreeDays: number;
     evapotranspiration: number;
     soilMoisture: number;
+    soilMoistureSource?: "weather-derived-estimate";
     cropStress: "low" | "medium" | "high";
   };
   /** Provenance so callers never confuse real observations with estimates. */
@@ -101,7 +104,7 @@ interface NasaPowerResponse {
   };
 }
 
-// WeatherAPI condition codes -> stable UI icon keys. -> Arabic description + icon name
+// WeatherAPI condition codes -> stable UI icon keys.
 const WEATHERAPI_ICONS: Record<number, string> = {
   1000: "sunny", 1003: "partly-cloudy", 1006: "cloudy", 1009: "cloudy",
   1030: "mist", 1063: "rain", 1066: "snow", 1069: "sleet", 1072: "drizzle",
@@ -263,6 +266,8 @@ export async function getWeatherFromWeatherApi(
           current.temp_c,
           current.humidity,
         ),
+        isClimatology: true,
+        source: "governorate-climatology-estimate",
       },
       agriculturalIndices: {
         growingDegreeDays: round(dailyForecast.reduce(
@@ -270,6 +275,7 @@ export async function getWeatherFromWeatherApi(
         )),
         evapotranspiration: round(et0, 1),
         soilMoisture: soilMoisturePercent,
+        soilMoistureSource: "weather-derived-estimate",
         cropStress,
       },
       source: {
@@ -292,11 +298,8 @@ export async function getWeatherFromWeatherApi(
 }
 
 /**
- * The current provider's seasonal table is a clearly-labelled climatology,
- * not a measured historical time series.
- Rather than
- * fabricate "historical observations", we return a clearly-labelled seasonal
- * climatology derived from the current temperature/humidity so charts still render.
+ * This fallback seasonal table is an approximate climatology, not a measured
+ * historical time series. Historical trend endpoints use NASA POWER separately.
  */
 function buildSeasonalClimatology(
   governorate: string | undefined,
@@ -363,15 +366,6 @@ export interface HistoricalMonthlyAverage {
 export interface HistoricalWeather {
   monthly: HistoricalMonthlyAverage[];
   source: { provider: string; isRealData: true };
-}
-
-interface OpenMeteoArchiveResponse {
-  daily?: {
-    time?: string[];
-    temperature_2m_mean?: number[];
-    relative_humidity_2m_mean?: number[];
-    precipitation_sum?: number[];
-  };
 }
 
 /**
