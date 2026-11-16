@@ -3,6 +3,12 @@ import { SoilReport } from '../../src/types';
 
 const emptyReport = (overrides: Partial<SoilReport> = {}): SoilReport => ({
   recommendations: [],
+  dataQuality: {
+    providedMeasurements: [],
+    missingMeasurements: [],
+    limitations: [],
+    consistencyChecks: [],
+  },
   fertilizationPlan: {
     status: 'guidance_only',
     stages: [],
