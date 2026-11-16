@@ -122,7 +122,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true);
     try {
-      const res = await getCultivations(selection.farmId ?? selectedFarmId);
+      const res = await getCultivations(selection.farmId ?? selectedFarmId ?? undefined);
       setProjects(res.data);
       setProjectsError(res.error);
       setProjectsMeta(res.meta);
@@ -205,7 +205,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
           plant: 'planting',
           monitor: 'inspection',
           retest: 'inspection',
-          general: 'general',
+          general: 'maintenance',
         };
 
         for (const task of tasks) {
@@ -400,6 +400,8 @@ const styles = StyleSheet.create({
   successTitle: titleBaseFlex,
   successSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginBottom: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  tasksTitle: titleBaseFlex,
+  taskList: { gap: spacing.xs },
   projectRow: { ...spaceBetween, gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   projectText: flex1,
   projectName: titleSmSemibold,
