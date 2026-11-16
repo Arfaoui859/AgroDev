@@ -202,7 +202,8 @@ router.post("/smart-schedule", async (req, res) => {
       farmLocation,
       cropType,
       analysisDate: new Date().toISOString(),
-      weatherPeriod,
+      weatherPeriod: weatherForecast.length,
+      requestedWeatherPeriod: weatherPeriod,
       optimizedSchedule,
       recommendations,
       weatherForecast: weatherForecast.slice(0, 3), // WeatherAPI.com Free plan: up to 3 days
