@@ -893,7 +893,7 @@ const ar: ExtraTranslations = {
   metricCropCoefficient: 'معامل المحصول (Kc)',
   metricWaterEfficiency: 'كفاءة استخدام المياه',
   irrigationRawUnknown: 'أعادت الخدمة ردّاً بلا حقول معروفة. القيم الخام غير معروضة لأنها غير مُفسّرة.',
-  irrigationWeatherSource: 'درجة الحرارة والرطوبة المرسلتان إلى خدمة الري من الطقس الحي (Open-Meteo) لولايتك.',
+  irrigationWeatherSource: 'درجة الحرارة والرطوبة المرسلتان إلى خدمة الري من الطقس الحي عبر WeatherAPI.com لولايتك.',
 
   // Crop / growth-stage labels
   stageVegetative: 'نمو خضري',
@@ -1020,7 +1020,7 @@ const ar: ExtraTranslations = {
   agentsStatusBlocked: 'محجوب',
   agentsStatusFailed: 'فشل',
   agentsSourceRuleBased: 'قواعد حتمية',
-  agentsSourceOpenMeteo: 'طقس حقيقي (Open-Meteo)',
+  agentsSourceOpenMeteo: 'طقس مباشر (WeatherAPI.com)',
   agentsSourceRecords: 'سجلات محفوظة',
   agentsSourceRss: 'خلاصات RSS حقيقية',
   agentsSourceTrained: 'نموذج مدرّب',
@@ -1394,7 +1394,7 @@ const fr: ExtraTranslations = {
   metricCropCoefficient: 'Coefficient cultural (Kc)',
   metricWaterEfficiency: 'Efficacité d’utilisation de l’eau',
   irrigationRawUnknown: 'Le service a renvoyé une réponse sans champs connus. Les valeurs brutes ne sont pas affichées car elles ne sont pas interprétées.',
-  irrigationWeatherSource: 'Température et humidité envoyées au service d’irrigation depuis la météo en direct (Open-Meteo) de votre gouvernorat.',
+  irrigationWeatherSource: 'Température et humidité envoyées au service d’irrigation depuis WeatherAPI.com pour votre gouvernorat.',
 
   // Crop / growth-stage labels
   stageVegetative: 'Croissance végétative',
@@ -1521,7 +1521,7 @@ const fr: ExtraTranslations = {
   agentsStatusBlocked: 'Bloqué',
   agentsStatusFailed: 'Échec',
   agentsSourceRuleBased: 'Règles déterministes',
-  agentsSourceOpenMeteo: 'Météo réelle (Open-Meteo)',
+  agentsSourceOpenMeteo: 'Météo en direct (WeatherAPI.com)',
   agentsSourceRecords: 'Enregistrements stockés',
   agentsSourceRss: 'Flux RSS réels',
   agentsSourceTrained: 'Modèle entraîné',
@@ -1896,7 +1896,7 @@ const en: ExtraTranslations = {
   metricCropCoefficient: 'Crop coefficient (Kc)',
   metricWaterEfficiency: 'Water-use efficiency',
   irrigationRawUnknown: 'The service returned a response with no known fields. Raw values are not shown because they are not interpreted.',
-  irrigationWeatherSource: 'Temperature and humidity sent to the irrigation service from the live weather (Open-Meteo) of your governorate.',
+  irrigationWeatherSource: 'Temperature and humidity sent to the irrigation service from WeatherAPI.com for your governorate.',
 
   // Crop / growth-stage labels
   stageVegetative: 'Vegetative growth',
@@ -2023,7 +2023,7 @@ const en: ExtraTranslations = {
   agentsStatusBlocked: 'Blocked',
   agentsStatusFailed: 'Failed',
   agentsSourceRuleBased: 'Deterministic rules',
-  agentsSourceOpenMeteo: 'Live weather (Open-Meteo)',
+  agentsSourceOpenMeteo: 'Live weather (WeatherAPI.com)',
   agentsSourceRecords: 'Stored records',
   agentsSourceRss: 'Live RSS feeds',
   agentsSourceTrained: 'Trained model',
