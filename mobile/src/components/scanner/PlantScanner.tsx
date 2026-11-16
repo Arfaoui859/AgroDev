@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Animated,
+  TextInput,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -67,6 +68,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
   const [result, setResult] = useState<DiseaseDiagnosisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [symptomsInput, setSymptomsInput] = useState('');
   const [scanReady, setScanReady] = useState(false);
   const scanProgress = useRef(new Animated.Value(0)).current;
 
@@ -137,7 +139,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
     setErrorMsg(null);
     try {
       const image = await prepareImageForUpload(imageUri);
-      const response = await onSubmit({ ...image });
+      const response = await onSubmit({ ...image, symptoms: symptomsInput.trim() || undefined });
       if (response.unavailable) {
         setErrorMsg(response.error || x.scannerUnavailableDesc);
         setPhase('unavailable');
@@ -160,6 +162,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
     setImageUri(null);
     setResult(null);
     setErrorMsg(null);
+    setSymptomsInput('');
     setPhase('capture');
   };
 
@@ -317,6 +320,16 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
         <View style={styles.reviewPanel}>
           <Text style={styles.reviewTitle}>{x.scannerReview}</Text>
           <Text style={styles.reviewSub}>{x.scannerReviewSub}</Text>
+          <Text style={styles.symptomsLabel}>{x.scannerSymptomsLabel}</Text>
+          <TextInput
+            style={[styles.symptomsInput, isRtl && rtlStyles.rtlText]}
+            value={symptomsInput}
+            onChangeText={setSymptomsInput}
+            placeholder={x.scannerSymptomsPlaceholder}
+            placeholderTextColor={colors.textMuted}
+            multiline
+            accessibilityLabel={x.scannerSymptomsLabel}
+          />
           <View style={{ height: spacing.md }} />
           <Button title={x.scannerConfirm} onPress={handleConfirm} variant="primary" fullWidth />
           <View style={{ height: spacing.sm }} />
@@ -640,6 +653,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
   },
+  symptomsLabel: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, fontWeight: typography.fontWeights.semibold, color: colors.textSecondary, marginTop: spacing.md, marginBottom: spacing.xs },
+  symptomsInput: { minHeight: 72, maxHeight: 120, backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.text, textAlignVertical: 'top' },
   analyzingThumb: {
     width: 160,
     height: 160,
