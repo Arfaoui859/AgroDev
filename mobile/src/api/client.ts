@@ -32,6 +32,7 @@ import {
   MarketResult,
   OrchestrationTrace,
   MarketplaceListing,
+  MarketplaceInquiry,
   MarketplaceResult,
   NewsArticle,
   NewsResult,
@@ -1161,6 +1162,56 @@ export async function createMarketplaceListing(input: {
     listingType: l.listing_type, expectedHarvestDate: l.expected_harvest_date ?? null,
     harvestWindowEnd: l.harvest_window_end ?? null, governorate: l.governorate ?? null, description: l.description ?? null,
   }, error: null };
+}
+
+export async function getMyMarketplaceListings(): Promise<{ data: MarketplaceListing[]; error: string | null }> {
+  const res = await apiRequest<any>('/api/agro-market/my-listings');
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return {
+    data: rows.map((l: any) => ({
+      id: String(l.id), title: l.title, category: l.category, price: l.price == null ? null : Number(l.price),
+      currency: l.currency ?? 'TND', unit: l.unit ?? undefined, location: l.location ?? null,
+      quantity: l.quantity == null ? null : Number(l.quantity), imageUrl: l.image_urls?.[0] ?? null,
+      listingType: l.listing_type, expectedHarvestDate: l.expected_harvest_date ?? null,
+      harvestWindowEnd: l.harvest_window_end ?? null, governorate: l.governorate ?? null,
+      description: l.description ?? null, status: l.status,
+    })),
+    error: res.error,
+  };
+}
+
+export async function createMarketplaceInquiry(listingId: string, message: string, quantity?: number | null): Promise<{ success: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/listings/${encodeURIComponent(listingId)}/inquiries`, {
+    method: 'POST', body: JSON.stringify({ message, quantity: quantity ?? null }),
+  });
+  return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'INQUIRY_CREATE_FAILED' };
+}
+
+export async function getMarketplaceInquiries(): Promise<{ data: MarketplaceInquiry[]; error: string | null }> {
+  const res = await apiRequest<any>('/api/agro-market/inquiries');
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return {
+    data: rows.map((i: any) => ({
+      id: String(i.id), listingId: String(i.listing_id), buyerId: String(i.buyer_id), sellerId: String(i.seller_id),
+      message: i.message, quantity: i.quantity == null ? null : Number(i.quantity), status: i.status,
+      createdAt: i.created_at, listingTitle: i.listing?.title ?? null,
+    })),
+    error: res.error,
+  };
+}
+
+export async function updateMarketplaceInquiryStatus(id: string, status: MarketplaceInquiry['status']): Promise<{ success: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/inquiries/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH', body: JSON.stringify({ status }),
+  });
+  return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'INQUIRY_UPDATE_FAILED' };
+}
+
+export async function updateMarketplaceListingStatus(id: string, status: NonNullable<MarketplaceListing['status']>): Promise<{ success: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/listings/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify({ status }),
+  });
+  return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'LISTING_UPDATE_FAILED' };
 }
 
 export async function getAgriculturalCatalog(params: { q?: string; type?: AgriculturalCatalogProduct['productType'] } = {}): Promise<{
