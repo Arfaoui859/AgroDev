@@ -26,7 +26,7 @@ import { resolveUserIdFromJwt } from "../middleware/auth";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { persistTrustedAssistantTurn } from "./assistant-conversations";
-import { getWeatherFromOpenMeteo } from "../services/providers/weatherProvider";
+import { getWeatherFromWeatherApi } from "../services/providers/weatherProvider";
 import { getTunisianAgriNews } from "../services/news/tunisianAgriNews";
 
 /**
@@ -1243,7 +1243,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 const lon = Number((farmLocation as any).lng ?? (farmLocation as any).lon);
                 if (Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
                   try {
-                    const liveWeather = await getWeatherFromOpenMeteo({
+                    const liveWeather = await getWeatherFromWeatherApi({
                       lat,
                       lon,
                       locationName: selectedFarm.name,
@@ -1259,9 +1259,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                         farmContext.rainfall = todayRainfall;
                       }
                     }
-                    platformRecords.push("LIVE WEATHER FROM OPEN-METEO for the selected farm " + selectedFarm.name + " [observation_time=" + (liveWeather.source.observationTime || "unreported") + "; provider=" + liveWeather.source.provider + "; current_temperature=" + liveWeather.current.temperature + " C; humidity=" + liveWeather.current.humidity + "%; wind=" + liveWeather.current.windSpeed + " km/h; conditions=" + liveWeather.current.description + "; ET0=" + liveWeather.agriculturalIndices.evapotranspiration + "; gridded_soil_moisture_estimate=" + liveWeather.agriculturalIndices.soilMoisture + "; crop_stress_indicator=" + liveWeather.agriculturalIndices.cropStress + "; next_days=" + nextDays + "]. Real provider forecast for farm coordinates, not an on-farm sensor measurement; soil moisture is a gridded model estimate.");
+                    platformRecords.push("LIVE WEATHER FROM WEATHERAPI.COM for the selected farm " + selectedFarm.name + " [observation_time=" + (liveWeather.source.observationTime || "unreported") + "; provider=" + liveWeather.source.provider + "; current_temperature=" + liveWeather.current.temperature + " C; humidity=" + liveWeather.current.humidity + "%; wind=" + liveWeather.current.windSpeed + " km/h; conditions=" + liveWeather.current.description + "; ET0=" + liveWeather.agriculturalIndices.evapotranspiration + "; gridded_soil_moisture_estimate=" + liveWeather.agriculturalIndices.soilMoisture + "; crop_stress_indicator=" + liveWeather.agriculturalIndices.cropStress + "; next_days=" + nextDays + "]. Real provider forecast for farm coordinates, not an on-farm sensor measurement; soil moisture is a gridded model estimate.");
                   } catch (weatherError) {
-                    platformRecords.push("Live Open-Meteo weather request failed for the registered farm; no live values were substituted. Existing dated weather records remain historical only. Provider error=" + (weatherError instanceof Error ? weatherError.message.slice(0, 180) : "unknown"));
+                    platformRecords.push("Live WeatherAPI.com weather request failed for the registered farm; no live values were substituted. Existing dated weather records remain historical only. Provider error=" + (weatherError instanceof Error ? weatherError.message.slice(0, 180) : "unknown"));
                   }
                 } else {
                   platformRecords.push("Live farm-specific weather unavailable: the single registered farm has no valid latitude/longitude in its saved location. Ask the user to update the farm coordinates; do not infer a location.");
