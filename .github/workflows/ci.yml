@@ -250,7 +250,15 @@ jobs:
           server-port = 3001
           CONF
           /tmp/postgrest /tmp/pgrest.conf & echo $! > /tmp/pgrest.pid
-          for i in $(seq 1 30); do curl -s -o /dev/null "http://127.0.0.1:3001/" && break; sleep 1; done
+          for i in $(seq 1 30); do
+            status="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3001/ || true)"
+            if [ "$status" = "200" ]; then break; fi
+            sleep 1
+          done
+          if [ "${status:-}" != "200" ]; then
+            echo "PostgREST did not finish loading its schema cache (last HTTP status: ${status:-none})." >&2
+            exit 2
+          fi
           bash scripts/verify-local-persistence.sh
           kill "$(cat /tmp/pgrest.pid)"
 

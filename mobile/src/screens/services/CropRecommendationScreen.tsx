@@ -177,7 +177,6 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
         });
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleManual = () => {
