@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { rtlStyles } from '../../theme/rtl';
 import {
   View,
@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -57,6 +58,21 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
   const [result, setResult] = useState<DiseaseDiagnosisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const scanProgress = useRef(new Animated.Value(0)).current;
+
+  // Decorative camera guidance only; diagnosis starts after photo submission.
+  useEffect(() => {
+    if (phase !== 'capture' || !permission?.granted) return;
+    scanProgress.setValue(0);
+    const sweep = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanProgress, { toValue: 1, duration: 2200, useNativeDriver: true }),
+        Animated.timing(scanProgress, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ]),
+    );
+    sweep.start();
+    return () => sweep.stop();
+  }, [phase, permission?.granted, scanProgress]);
 
   const handleCapture = async () => {
     if (!cameraRef.current || capturing) return;
@@ -176,10 +192,22 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
               <View style={[styles.scanCorner, styles.scanBottomLeft]} />
               <View style={[styles.scanCorner, styles.scanBottomRight]} />
               <View style={styles.scanCenter}>
-                <MaterialCommunityIcons name="leaf" size={34} color={colors.textInverse} />
+                <MaterialCommunityIcons name="leaf" size={38} color={colors.textInverse} />
               </View>
+              <Animated.View
+                style={[
+                  styles.scanLine,
+                  { transform: [{ translateY: scanProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 245] }) }] },
+                ]}
+              />
             </View>
-            <Text style={styles.scanHint}>{x.scannerGuidance}</Text>
+            <View style={styles.scanTip}>
+              <View style={styles.scanTipIcon}>
+                <MaterialCommunityIcons name="leaf-circle" size={22} color={colors.textInverse} />
+              </View>
+              <Text style={styles.scanHint}>{x.scannerGuidance}</Text>
+            </View>
+            <Text style={styles.capturePrompt}>{x.scannerCapture}</Text>
           </View>
           {errorMsg ? (
             <View style={[styles.captureError, isRtl && rtlStyles.rtlRow]}>
@@ -396,6 +424,9 @@ const styles = StyleSheet.create({
     aspectRatio: 0.82,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    borderRadius: radius.xl,
+    backgroundColor: colors.scrimLight,
   },
   scanCorner: {
     position: 'absolute',
@@ -417,12 +448,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scanHint: {
+    flex: 1,
     color: colors.textInverse,
     fontSize: typography.fontSizes.xs,
     lineHeight: typography.lineHeights.xs,
+    textAlign: 'left',
+    textShadowColor: colors.scrim,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  scanLine: {
+    position: 'absolute',
+    top: 0,
+    left: '7%',
+    width: '86%',
+    height: 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.onBrandSubtle,
+    shadowColor: colors.onBrandSubtle,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.95,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  scanTip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.sm,
+    maxWidth: 320,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: colors.scrim,
+  },
+  scanTipIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.scrimLight,
+  },
+  capturePrompt: {
+    color: colors.textInverse,
+    fontSize: typography.fontSizes.sm,
+    lineHeight: typography.lineHeights.sm,
+    fontWeight: typography.fontWeights.semibold,
     textAlign: 'center',
     marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
     textShadowColor: colors.scrim,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
