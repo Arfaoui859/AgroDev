@@ -368,6 +368,8 @@ export interface SoilReportSummary {
  * the crop screen read the plot's PERSISTED analysis instead.
  */
 export interface SoilToCropContext {
+  /** Exact persisted report used for the recommendation/project handoff. */
+  analysisId?: string;
   fieldId?: string;
   farmId?: string;
   /** Human-readable names for the project confirmation screen. */
