@@ -101,9 +101,10 @@ const ActionItem: React.FC<{ action: SoilReportAction }> = ({ action }) => {
       </View>
       <Text style={[styles.actionText, isRtl && rtlStyles.rtlText]}>{action.action}</Text>
       {action.reason ? <Text style={[styles.actionSub, isRtl && rtlStyles.rtlText]}>{action.reason}</Text> : null}
+      {action.evidence ? <Text style={[styles.actionSub, isRtl && rtlStyles.rtlText]}>{s9.reportEvidence}: {action.evidence}</Text> : null}
       {action.howTo ? <Text style={[styles.actionSub, isRtl && rtlStyles.rtlText]}>{action.howTo}</Text> : null}
       {action.verification ? (
-        <Text style={[styles.actionVerify, isRtl && rtlStyles.rtlText]}>{action.verification}</Text>
+        <Text style={[styles.actionVerify, isRtl && rtlStyles.rtlText]}>{s9.reportVerification}: {action.verification}</Text>
       ) : null}
     </View>
   );
@@ -226,7 +227,8 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
                 <Chip text={severityLabel(f.severity, s9)} tone={severityTone(f.severity)} />
               </View>
               <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{f.interpretation}</Text>
-              {f.evidence ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{f.evidence}</Text> : null}
+              {f.importance ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{s9.reportImportance}: {f.importance}</Text> : null}
+              {f.evidence ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{s9.reportEvidence}: {f.evidence}</Text> : null}
             </View>
           ))}
         </Section>
@@ -267,7 +269,16 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
             <View key={`cand-${i}`} style={styles.findingRow}>
               <View style={[styles.actionHead, isRtl && rtlStyles.rtlRow]}>
                 <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>{cand.crop}</Text>
-                <Chip text={cand.status} tone={cand.status === 'possible' ? 'ok' : 'warn'} />
+                <Chip
+                  text={
+                    cand.status === 'possible'
+                      ? s9.candidatePossible
+                      : cand.status === 'possible_with_checks'
+                        ? s9.candidateChecks
+                        : s9.statusNotAssessed
+                  }
+                  tone={cand.status === 'possible' ? 'ok' : cand.status === 'possible_with_checks' ? 'warn' : 'neutral'}
+                />
               </View>
               {cand.why_it_may_fit ? <Text style={[styles.body, isRtl && rtlStyles.rtlText]}>{cand.why_it_may_fit}</Text> : null}
               {cand.risk ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{cand.risk}</Text> : null}
@@ -339,6 +350,10 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       ) : null}
 
       <Section title={s9.reportFertilization} icon="flask-outline">
+        <Chip
+          text={report.fertilizationPlan.status === 'guidance_only' ? s9.statusGuidanceOnly : s9.statusNotAssessed}
+          tone={report.fertilizationPlan.status === 'guidance_only' ? 'info' : 'neutral'}
+        />
         {report.fertilizationPlan.stages.map((stage, i) => (
           <View key={`fert-${i}`} style={styles.findingRow}>
             <Text style={[styles.findingParam, isRtl && rtlStyles.rtlText]}>{stageLabel(stage.stage, s9)}</Text>
@@ -351,7 +366,8 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
               </View>
             ) : null}
             {stage.timing ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{stage.timing}</Text> : null}
-            {stage.basis ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{stage.basis}</Text> : null}
+            {stage.basis ? <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>{s9.reportEvidence}: {stage.basis}</Text> : null}
+            {stage.verification ? <Text style={[styles.tableSub, isRtl && rtlStyles.rtlText]}>{s9.reportVerification}: {stage.verification}</Text> : null}
           </View>
         ))}
         {report.fertilizationPlan.withheldDosesReason ? (
@@ -370,6 +386,10 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
       </Section>
 
       <Section title={s9.reportWater} icon="water">
+        <Chip
+          text={report.waterAndIrrigation.status === 'guidance_only' ? s9.statusGuidanceOnly : s9.statusNotAssessed}
+          tone={report.waterAndIrrigation.status === 'guidance_only' ? 'info' : 'neutral'}
+        />
         {[
           report.waterAndIrrigation.method,
           report.waterAndIrrigation.frequency,
