@@ -205,6 +205,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
           plant: 'planting',
           monitor: 'inspection',
           retest: 'inspection',
+          general: 'general',
         };
 
         for (const task of tasks) {
