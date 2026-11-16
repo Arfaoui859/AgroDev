@@ -150,6 +150,16 @@ export const ShortVideoFeedScreen: React.FC<ShortVideoFeedScreenProps> = ({
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        onPress={onBack}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={language === 'ar' ? 'رجوع' : language === 'fr' ? 'Retour' : 'Back'}
+        style={[styles.backButton, isRtl && rtlStyles.rtlRow]}
+      >
+        <MaterialCommunityIcons name={isRtl ? 'arrow-right' : 'arrow-left'} size={18} color={colors.textSecondary} />
+        <Text style={styles.backText}>{language === 'ar' ? 'رجوع' : language === 'fr' ? 'Retour' : 'Back'}</Text>
+      </TouchableOpacity>
       <ServiceHeader
         icon="play-box-multiple-outline"
         iconColor={colors.danger}
@@ -212,6 +222,8 @@ export const ShortVideoFeedScreen: React.FC<ShortVideoFeedScreenProps> = ({
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  backButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
+  backText: { color: colors.textSecondary, fontSize: typography.fontSizes.sm, fontWeight: typography.fontWeights.medium },
   categories: { gap: spacing.xs, paddingVertical: spacing.sm },
   feedContent: { paddingBottom: spacing.sm },
   videoPage: { width: '100%', paddingBottom: spacing.sm },
