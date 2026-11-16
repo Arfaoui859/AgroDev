@@ -112,6 +112,21 @@ export function deriveProjectTasks(report: SoilReport | null): ProjectTask[] {
       }
     }
 
+    if (report.fertilizationPlan.stages.length === 0 && report.fertilizationPlan.withheldDosesReason?.trim()) {
+      tasks.push({
+        id: 'fertilizer-dose-withheld',
+        kind: 'amend',
+        text: 'Do not apply a calculated fertilizer dose yet',
+        generic: false,
+        priority: 'high',
+        reason: report.fertilizationPlan.withheldDosesReason,
+        when: 'Before applying mineral fertilizer',
+        verification: 'Obtain the missing laboratory nutrient values and confirm the nutrient units and extraction method',
+        evidence: 'The soil report explicitly withheld dose calculations',
+        quantity: null,
+      });
+    }
+
     report.fertilizationPlan.stages.forEach((stage, index) => {
       const text = [stage.stage, stage.strategy].filter(Boolean).join(': ').trim();
       if (!text || seen.has(text)) return;
