@@ -207,7 +207,7 @@ router.get("/prices", async (req,res) => {
   try {
     const crop = text(req.query.crop,100), market = text(req.query.market,120);
     const limit = Math.min(200,Math.max(1,Number(req.query.limit)||100));
-    let query = db.from("market_price_observations").select("id,commodity_name,variety,quality_grade,market_location,price_kind,price_average,price_min,price_max,unit,currency,observed_on,source_name,source_url,source_type,collected_at,verification_status")
+    let query = db.from("market_price_observations").select("id,commodity_name,variety,quality_grade,market_location,price_kind,price_average,price_min,price_max,previous_year_price,aggregation_period,period_start,period_end,supply_quantity_tons,supply_change_percent,price_change_percent,observation_days,unit,currency,observed_on,source_name,source_url,source_type,collected_at,verification_status")
       .order("observed_on",{ascending:false}).limit(limit);
     if (crop) query = query.ilike("commodity_name",`%${crop}%`);
     if (market) query = query.ilike("market_location",`%${market}%`);
