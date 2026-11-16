@@ -239,7 +239,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
     >
       {/* Hero — gradient welcome surface with the live weather summary */}
       <View style={styles.heroShadow}>
-        <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+        <LinearGradient colors={[colors.brandDeep, colors.brandDeepLight, colors.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <View style={[styles.heroTopRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.heroTextWrap}>
               <View style={[styles.heroBrandRow, isRtl && rtlStyles.rtlRow]}>
