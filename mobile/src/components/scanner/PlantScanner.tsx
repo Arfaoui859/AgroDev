@@ -245,13 +245,14 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
             </View>
           ) : null}
           <View style={styles.contextSelectors}>
-            <Text style={styles.contextTitle}>{cropTitle}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contextRow}>
+            <Text style={[styles.contextTitle, isRtl && rtlStyles.rtlText]}>{cropTitle}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.contextRow, isRtl && rtlStyles.rtlRow]}>
               {cropOptions.map((option) => (
                 <TouchableOpacity
                   key={option.id}
                   onPress={() => onSelectCrop(option.id)}
                   accessibilityRole="button"
+                  accessibilityLabel={option.label}
                   accessibilityState={{ selected: selectedCrop === option.id }}
                   style={[styles.contextChip, selectedCrop === option.id && styles.contextChipActive]}
                 >
@@ -259,13 +260,14 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <Text style={styles.contextTitle}>{partTitle}</Text>
+            <Text style={[styles.contextTitle, isRtl && rtlStyles.rtlText]}>{partTitle}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contextRow}>
               {partOptions.map((option) => (
                 <TouchableOpacity
                   key={option.id}
                   onPress={() => onSelectPart(option.id)}
                   accessibilityRole="button"
+                  accessibilityLabel={option.label}
                   accessibilityState={{ selected: selectedPart === option.id }}
                   style={[styles.contextChip, selectedPart === option.id && styles.contextChipActive]}
                 >
