@@ -318,12 +318,6 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
             {selectedFarm.boundaries ? 'Imagery © Esri and contributors' : ''}
             {boundaryPoints.length ? (language === 'ar' ? ` · نقاط مسجلة: ${boundaryPoints.length}` : ` · GPS points: ${boundaryPoints.length}`) : ''}
           </Text>
-          <View style={[styles.farmStatsRow, isRtl && rtlStyles.rtlRow]}>
-            <Button title={language === 'ar' ? 'تسجيل نقطة GPS' : language === 'fr' ? 'Enregistrer un point GPS' : 'Record GPS point'}
-              onPress={recordBoundaryPoint} variant="outline" size="md" />
-            <Button title={savingBoundary ? (language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ الحدود' : language === 'fr' ? 'Enregistrer les limites' : 'Save boundary')}
-              onPress={saveBoundary} disabled={boundaryPoints.length < 3 || savingBoundary} loading={savingBoundary} size="md" />
-          </View>
           {selectedFarm.boundaries ? (
             <Button title={language === 'ar' ? 'تحليل الغطاء النباتي NDVI (90 يوم)' : language === 'fr' ? 'Analyser NDVI (90 jours)' : 'Analyze vegetation (NDVI · 90 days)'}
               onPress={runSatelliteAnalysis} loading={satelliteLoading} disabled={satelliteLoading} variant="secondary" size="md" />
@@ -357,7 +351,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
             </View>
           ) : null}
         </Card>
-      ) : null}
+      )}
 
       {/* First-run: no farm yet — guide the user to register one. Adding a
           field is impossible without a farm, so this must come first. */}
