@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
   bigActionSub: { fontSize: typography.fontSizes.xs, color: colors.onBrandMuted, marginTop: spacing.xs, lineHeight: typography.lineHeights.sm },
   actionTile: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 132,
     backgroundColor: colors.card,
     borderRadius: radius.md,
     padding: spacing.md,
