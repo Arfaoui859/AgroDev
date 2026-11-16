@@ -417,9 +417,14 @@ export async function getWeather(
         icon: f.icon,
         wind_speed: typeof f.windSpeed === 'number' ? Math.round(f.windSpeed) : undefined,
       })),
-      meta: { provenance: 'live-observation', isRealData: true, source: d.source?.provider || 'weatherapi.com' },
+      meta: {
+        provenance: 'live-observation',
+        isRealData: true,
+        source: d.source?.provider || 'weatherapi.com',
+        ...(d.source?.isStale ? { disclaimer: 'Cached weather data: the live provider is temporarily unavailable.' } : {}),
+      },
     };
-    return { data: mapped, error: null, fromCache: res.fromCache };
+    return { data: mapped, error: null, fromCache: res.fromCache || Boolean(d.source?.isStale) };
   }
 
   return { data: null, error: res.error || msg('weatherFetchFailed'), fromCache: false };
