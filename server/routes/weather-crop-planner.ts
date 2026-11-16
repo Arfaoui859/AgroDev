@@ -233,19 +233,30 @@ router.get("/alerts/:farmLocation", async (req, res) => {
       });
     }
     const currentWeather = adaptCurrent(adapted.weather);
-    const alerts = generateAgriculturalAlerts(currentWeather, alertTypes);
-    // Upcoming alerts are derived from the real multi-day forecast rather than
-    // only today's observations.
-    const upcoming = adapted.forecast
+    const observedAt = adapted.weather.source.observationTime || new Date().toISOString();
+    const currentAlerts = generateAgriculturalAlerts(
+      { ...currentWeather, date: observedAt },
+      alertTypes,
+    );
+    // Upcoming alerts are evaluated against the forecast day's maximum
+    // temperature, wind and rainfall, not the current-conditions shape.
+    const forecastAlerts = adapted.forecast
       .slice(1)
       .flatMap((day) => generateAgriculturalAlerts(day, alertTypes))
       .map((alert) => ({ ...alert, isActive: false, isUpcoming: true }));
+    const upcoming = [
+      ...currentAlerts.filter((alert) => !alert.isActive).map((alert) => ({
+        ...alert,
+        isUpcoming: true,
+      })),
+      ...forecastAlerts,
+    ];
 
     res.json({
       location: farmLocation,
       timestamp: new Date().toISOString(),
       currentConditions: currentWeather,
-      activeAlerts: alerts.filter((alert) => alert.isActive),
+      activeAlerts: currentAlerts.filter((alert) => alert.isActive),
       upcomingAlerts: upcoming,
       recommendations: generateImmediateRecommendations(currentWeather, alerts),
       dataSource: adapted.weather.source.provider,
@@ -497,31 +508,40 @@ function generateComprehensiveRecommendations(
 }
 
 function generateAgriculturalAlerts(weather: any, alertTypes: string[]) {
-  const alerts = [];
+  const alerts: Array<Record<string, any>> = [];
+  const enabled = (type: string) => alertTypes.includes("all") || alertTypes.includes(type);
+  const temperature = typeof weather.temperature === "number"
+    ? weather.temperature
+    : Number(weather.temperature?.max);
+  const windSpeed = Number(weather.windSpeed);
+  const precipitation = Number(weather.precipitation);
+  const date = typeof weather.date === "string" ? weather.date : new Date().toISOString();
 
-  if (weather.temperature > 40) {
+  if (enabled("temperature") && Number.isFinite(temperature) && temperature > 40) {
     alerts.push({
-      id: "heat_warning",
+      id: `heat_warning:${date}`,
       type: "temperature",
       severity: "high",
       title: "تحذير من موجة حر",
-      message: `درجة حرارة مرتفعة جداً: ${weather.temperature.toFixed(1)}°م`,
+      message: `درجة حرارة مرتفعة جداً: ${temperature.toFixed(1)}°م`,
+      date,
       isActive: true,
       recommendations: [
-        "زد من تكرار الري",
+        "زد من تكرار الري بعد التحقق من رطوبة التربة",
         "احم النباتات الحساسة",
         "تجنب العمل في منتصف النهار",
       ],
     });
   }
 
-  if (weather.windSpeed > 20) {
+  if (enabled("wind") && Number.isFinite(windSpeed) && windSpeed > 20) {
     alerts.push({
-      id: "wind_warning",
+      id: `wind_warning:${date}`,
       type: "wind",
       severity: "medium",
       title: "رياح قوية",
-      message: `سرعة رياح عالية: ${weather.windSpeed.toFixed(1)} كم/س`,
+      message: `سرعة رياح عالية: ${windSpeed.toFixed(1)} كم/س`,
+      date,
       isActive: true,
       recommendations: [
         "أوقف أنشطة الرش",
@@ -531,16 +551,17 @@ function generateAgriculturalAlerts(weather: any, alertTypes: string[]) {
     });
   }
 
-  if (weather.precipitation > 15) {
+  if (enabled("precipitation") && Number.isFinite(precipitation) && precipitation > 15) {
     alerts.push({
-      id: "rain_alert",
+      id: `rain_alert:${date}`,
       type: "precipitation",
       severity: "medium",
       title: "أمطار غزيرة متوقعة",
-      message: `كمية أمطار: ${weather.precipitation} مم`,
+      message: `كمية أمطار متوقعة: ${precipitation.toFixed(1)} مم`,
+      date,
       isActive: false,
       isUpcoming: true,
-      recommendations: ["أوقف الري", "تأجيل الرش", "تحقق من تصريف المياه"],
+      recommendations: ["راجع برنامج الري", "أجّل الرش عند توقع هطول الأمطار", "تحقق من تصريف المياه"],
     });
   }
 
