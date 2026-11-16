@@ -227,7 +227,7 @@ def main():
     req = Request(
         api + "/api/agro-market/ingest/market-prices",
         data=body,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+        headers={"Content-Type": "application/json", "x-admin-token": token},
         method="POST",
     )
     with urlopen(req, timeout=60) as response:
