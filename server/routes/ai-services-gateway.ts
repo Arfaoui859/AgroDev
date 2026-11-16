@@ -770,9 +770,9 @@ export const detectPlantDisease = [
         contentType: req.file.mimetype,
       });
 
-      if (req.body.plant_type) {
-        formData.append("plant_type", req.body.plant_type);
-      }
+      if (req.body.plant_type) formData.append("plant_type", req.body.plant_type);
+      if (req.body.plant_part) formData.append("plant_part", req.body.plant_part);
+      if (req.body.symptoms) formData.append("symptoms", req.body.symptoms);
 
       const response = await axios.post(
         `${AI_SERVICES.IMAGE_DIAGNOSIS}/detect-disease`,

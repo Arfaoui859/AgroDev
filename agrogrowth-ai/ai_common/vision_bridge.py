@@ -43,10 +43,19 @@ def _catalogue_block(disease_db: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _build_prompt(plant_type: Optional[str], disease_db: Dict[str, Any]) -> str:
+def _build_prompt(
+    plant_type: Optional[str],
+    disease_db: Dict[str, Any],
+    plant_part: Optional[str] = None,
+    symptoms: Optional[str] = None,
+) -> str:
     crop = plant_type or "unknown"
+    part = plant_part or "unknown"
+    reported_symptoms = symptoms.strip() if isinstance(symptoms, str) and symptoms.strip() else "none supplied"
     return (
-        f"Crop (if known): {crop}\n\n"
+        f"Crop (if known): {crop}\n"
+        f"Plant part photographed: {part}\n"
+        f"Farmer-reported symptoms: {reported_symptoms}\n\n"
         "Known conditions in this platform's catalogue (choose one id when it "
         "matches, otherwise use a short descriptive id):\n"
         f"{_catalogue_block(disease_db)}\n\n"
@@ -86,6 +95,8 @@ def diagnose_with_vision(
     mime_type: Optional[str],
     plant_type: Optional[str],
     disease_db: Dict[str, Any],
+    plant_part: Optional[str] = None,
+    symptoms: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Ask the configured vision model for a diagnosis, or return None.
 
@@ -105,7 +116,7 @@ def diagnose_with_vision(
         data = provider.chat_image_json(
             image_b64,
             mime,
-            _build_prompt(plant_type, disease_db),
+            _build_prompt(plant_type, disease_db, plant_part, symptoms),
             system=SYSTEM_PROMPT,
         )
     except LLMError as exc:

@@ -297,11 +297,17 @@ async def health():
 # The upload handlers must stay `async` (they await the upload read), so the
 # blocking part is extracted here and run via `offload()` in the threadpool,
 # keeping the event loop free to answer /health while a diagnosis is running.
-def _run_disease_detection(image_data: bytes, content_type: str, plant_type: Optional[str]) -> Dict[str, Any]:
+def _run_disease_detection(
+    image_data: bytes,
+    content_type: str,
+    plant_type: Optional[str],
+    plant_part: Optional[str] = None,
+    symptoms: Optional[str] = None,
+) -> Dict[str, Any]:
     detector = get_disease_detector()
     classifier = getattr(detector, "ml_classifier", None)
     disease_catalogue = getattr(detector, "disease_database", {}) or {}
-    vision = diagnose_with_vision(image_data, content_type, plant_type, disease_catalogue)
+    vision = diagnose_with_vision(image_data, content_type, plant_type, disease_catalogue, plant_part, symptoms)
 
     # A configured multimodal provider is a valid image-analysis path even
     # without ONNX. Do not manufacture heuristic health/area scores in that case.
@@ -663,7 +669,9 @@ def _run_comprehensive_analysis(
 @app.post("/detect-disease", response_model=PlantDiseaseResponse)
 async def detect_plant_disease(
     file: UploadFile = File(...),
-    plant_type: Optional[str] = Form(None)
+    plant_type: Optional[str] = Form(None),
+    plant_part: Optional[str] = Form(None),
+    symptoms: Optional[str] = Form(None),
 ):
     try:
         logger.info(f"Processing disease detection: {file.filename}")
@@ -672,7 +680,7 @@ async def detect_plant_disease(
 
         # Model load/inference and the vision call run in the threadpool.
         result = await offload(
-            _run_disease_detection, image_data, detected_content_type, plant_type
+            _run_disease_detection, image_data, detected_content_type, plant_type, plant_part, symptoms
         )
 
         return PlantDiseaseResponse(**result)
