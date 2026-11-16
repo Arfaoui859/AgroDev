@@ -23,6 +23,7 @@ import { ProvenanceBar } from '../ui/ProvenanceBar';
 import { createProjectTask, getProjectTasks, updateProjectTask } from '../../api/client';
 import { FarmTask, FarmTaskPriority, FarmTaskType, ProvenanceMeta } from '../../types';
 import {
+  taskPriorityLabel,
   taskPriorityOptions,
   taskStatusLabel,
   taskTypeLabel,
@@ -292,6 +293,11 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId, cultivat
                         <Badge
                           label={taskStatusLabel(task.status, p)}
                           variant={statusVariant(task.status)}
+                          size="sm"
+                        />
+                        <Badge
+                          label={taskPriorityLabel(task.priority, p)}
+                          variant={task.priority === 'urgent' ? 'danger' : task.priority === 'high' ? 'warning' : 'secondary'}
                           size="sm"
                         />
                         {task.due_date ? <Text style={styles.due}>{task.due_date}</Text> : null}
