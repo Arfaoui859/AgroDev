@@ -15,7 +15,7 @@ interface LearningVideosProps {
 }
 
 /**
- * A horizontally scrolling strip of curated agricultural video tutorials.
+ * A featured real agricultural tutorial followed by a horizontally scrolling strip of curated videos.
  *
  * These are real, publicly available YouTube videos (see
  * `src/data/agriculturalVideos.ts`). Titles and channel names are shown verbatim
