@@ -6,6 +6,7 @@ ALTER TABLE public.market_price_observations
     CHECK (aggregation_period IN ('daily','monthly','annual')),
   ADD COLUMN IF NOT EXISTS period_start date,
   ADD COLUMN IF NOT EXISTS period_end date,
+  ADD COLUMN IF NOT EXISTS previous_year_price numeric(12,3),
   ADD COLUMN IF NOT EXISTS supply_quantity_tons numeric(14,3),
   ADD COLUMN IF NOT EXISTS supply_change_percent numeric(9,3),
   ADD COLUMN IF NOT EXISTS price_change_percent numeric(9,3),
@@ -63,3 +64,7 @@ DROP POLICY IF EXISTS "Sellers can update inquiry status" ON public.marketplace_
 CREATE POLICY "Sellers can update inquiry status"
   ON public.marketplace_inquiries FOR UPDATE TO authenticated
   USING (seller_id = auth.uid()) WITH CHECK (seller_id = auth.uid());
+
+-- Restrict authenticated sellers to changing inquiry status only.
+REVOKE UPDATE ON public.marketplace_inquiries FROM authenticated;
+GRANT UPDATE (status, updated_at) ON public.marketplace_inquiries TO authenticated;
