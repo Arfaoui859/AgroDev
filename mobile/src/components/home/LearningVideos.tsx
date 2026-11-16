@@ -41,15 +41,21 @@ export const LearningVideos: React.FC<LearningVideosProps> = ({ onOpenAll }) => 
         onAction={onOpenAll}
       />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.row, isRtl && rtlStyles.rtlRow]}
-      >
-        {videos.map((video) => (
-          <VideoCard key={video.id} video={video} variant="strip" onPress={() => openVideo(video)} />
-        ))}
-      </ScrollView>
+      {videos[0] ? (
+        <VideoCard video={videos[0]} variant="full" onPress={() => openVideo(videos[0])} />
+      ) : null}
+
+      {videos.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.row, isRtl && rtlStyles.rtlRow]}
+        >
+          {videos.slice(1).map((video) => (
+            <VideoCard key={video.id} video={video} variant="strip" onPress={() => openVideo(video)} />
+          ))}
+        </ScrollView>
+      ) : null}
 
       <View style={[styles.sourceNote, isRtl && rtlStyles.rtlRow]}>
         <MaterialCommunityIcons name="information-outline" size={13} color={colors.textMuted} />
