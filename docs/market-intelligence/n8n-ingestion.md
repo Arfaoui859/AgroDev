@@ -1,58 +1,47 @@
-# AgroGrowth Market Automation (n8n)
+# AgroGrowth market automation
 
-This integration is intentionally source-agnostic until each supplier/market URL and its reuse licence are confirmed. It does not invent prices or scrape arbitrary URLs.
+## ONAGRI Bir El Kassaa — official monthly wholesale mercuriales
 
-## Existing capabilities reused
-- The Express gateway already exists; this module mounts under `/api/agro-market`.
-- Supabase is the persistence layer.
-- Farm boundaries and Sentinel-2 NDVI already exist through `POST /api/assistant/satellite/ndvi`; do not create a second satellite pipeline.
-- Existing `market_prices` is extended additively; existing observations are retained.
+Official source page supplied and verified:
+https://www.onagri.nat.tn/Marche-de-gros-bir-el-kasaa/fr/62
 
-## Suggested n8n workflow
-1. Schedule Trigger (daily or source-specific interval).
-2. HTTP Request: fetch the official CSV/API/RSS URL supplied for that source.
-3. Parse CSV/JSON/XML with native n8n nodes.
-4. Code node: map rows to the normalized schema below; preserve the provider's original row in `raw_payload`.
-5. HTTP Request: POST normalized records to the AgroGrowth endpoint with an admin credential stored in n8n Credentials (never in workflow JSON).
-6. On success, record source timestamp and count; on failure, alert the operator and do not overwrite good observations.
+The ONAGRI page describes a daily and monthly follow-up of the Bir El Kassaa national wholesale market, and its archive lists monthly mercuriales. The visible archive contained 190 documents when checked; the first page showed monthly reports from March through July 2026. Each monthly report contains:
+- average price for the reported year in millimes/kg;
+- the previous-year comparison price and price variation percentage;
+- monthly supply quantity in tonnes and its year-over-year variation;
+- number of observation days.
 
-## Price ingestion
-POST `/api/agro-market/ingest/market-prices`:
-```json
-{
-  "source_key": "official-market-feed-key",
-  "source_name": "Official market feed",
-  "source_url": "https://example.gov.tn/dataset.csv",
-  "source_type": "official_open_data",
-  "verification_status": "official-source",
-  "prices": [{
-    "external_id": "provider-row-id",
-    "crop_name": "Potato",
-    "market_location": "Bir El Kassaa",
-    "price_per_kg": 1.8,
-    "price_min": 1.5,
-    "price_max": 2.1,
-    "unit": "kg",
-    "currency": "TND",
-    "price_date": "2026-11-16"
-  }]
-}
-```
-Use the provider's own average if available. Do not derive a market average from min/max unless the source explicitly defines that calculation.
+Example: the July 2026 report contains separate fruit, vegetable and fish tables. Its 2026 prices are monthly averages, not daily spot quotations. The collector converts millimes/kg to TND/kg by dividing by 1,000. It stores the monthly period explicitly and does not invent minimum/maximum prices.
 
-## Product catalog ingestion
-POST `/api/agro-market/ingest/products`. Product rows require stable `external_id`, `product_type`, and `trade_name`. For pesticides, use `registration_status: registered_tunisia` only when the official Tunisian registration source explicitly confirms it. Keep unknown records as `unverified`. A product record is not itself a recommendation or a dosage instruction.
+### Collector implementation
 
-## n8n environment / security
-- Store the AgroGrowth admin token in n8n Credentials, not in a committed workflow.
-- Never accept a URL supplied by a mobile client for server-side fetching (SSRF risk).
-- Keep one source key per publisher/dataset; use provider row IDs as external IDs for idempotent updates.
-- Respect the publisher's API terms, licence, robots policy and rate limits.
-- Use daily schedules for daily datasets; never poll faster than the source's publication cadence.
+- Script: `scripts/market-data/ingest_onagri_bir_el_kassaa.py`
+- Scheduled workflow: `.github/workflows/onagri-market-ingestion.yml`
+- Endpoint: `POST /api/agro-market/ingest/market-prices`
+- Source key: `tn-onagri-bir-el-kassaa`
+- Database migration: `database/migrations/20261117_bir_el_kassaa_and_marketplace_inquiries.sql`
 
-## Confirmed Tunisian open-data sources
+The script reads the ONAGRI index, follows the newest six monthly report links, parses the published HTML tables, preserves the original cells/document URL in `raw_payload`, and posts normalized observations. External IDs are stable by report month and commodity, so repeated scheduled runs upsert rather than duplicate. The rolling six-report import also backfills recent months when the workflow is first activated.
 
-These are official dataset pages/resources found in the national open-data catalogue. They are registered in `market_data_sources` as `adapter_pending` and remain disabled until the n8n mapping is configured and a successful test run is reviewed.
+The database keeps the source's monthly context:
+- `aggregation_period=monthly`, `period_start`, `period_end`;
+- `price_average` in TND/kg (the official monthly average);
+- `price_change_percent` and `observation_days`;
+- `supply_quantity_tons` and `supply_change_percent`.
+
+### Activate scheduled ingestion
+
+Configure these GitHub repository secrets:
+- `AGROGROWTH_API_URL`: the base URL of the deployed AgroGrowth Express API, without a trailing slash;
+- `AGROGROWTH_ADMIN_TOKEN`: the server-side admin bearer token accepted by `requireAdminAccess`.
+
+The workflow checks once daily at 04:15 UTC for a new monthly report and is also manually runnable from GitHub Actions. It is intentionally a daily *publication check*, not a claim that ONAGRI publishes a new price table every day. The collector uses a descriptive user-agent, normal HTTPS requests and a 30-second timeout; it does not bypass access controls. Review ONAGRI's reuse terms and rate-limit guidance before enabling automated collection.
+
+Use `DRY_RUN=1 python scripts/market-data/ingest_onagri_bir_el_kassaa.py` locally to inspect the normalized payload without writing to AgroGrowth. The live job remains inactive until both GitHub secrets are configured.
+
+## Other official Tunisian sources
+
+These sources are registered separately; they are not interchangeable with Bir El Kassaa.
 
 - CRDA Sidi Bouzid produce prices: https://catalog.data.gov.tn/dataset/suivi-des-prix
 - Vegetables CSV resource: https://catalog.data.gov.tn/dataset/suivi-des-prix/resource/1a522c14-4d20-430f-adb4-9820cb057d29
@@ -60,52 +49,19 @@ These are official dataset pages/resources found in the national open-data catal
 - ONAGRI agricultural input prices (XLSX: seeds, plants, fertilizers, pesticides, mechanization and tools): https://catalog.data.gov.tn/fr/dataset/prix-des-principaux-intrants-des-produits-agricoles
 - Ministry pesticide homologation register (PDF; requires reviewed extraction): https://catalog.data.gov.tn/dataset/liste-des-pesticides-homologues-en-tunisie
 
-The CRDA dataset describes columns `Date`, `Type`, `Qte`, `pgmin`, `pgmax`, `pdmin`, and `pdmax`. Map each source row into two observations when the ranges exist:
-- `price_kind=wholesale`, `price_min=pgmin`, `price_max=pgmax`
-- `price_kind=retail`, `price_min=pdmin`, `price_max=pdmax`
+CRDA Sidi Bouzid columns include `Date`, `Type`, `Qte`, `pgmin`, `pgmax`, `pdmin`, and `pdmax`. Its wholesale and retail ranges must remain labelled Sidi Bouzid. Do not display those records as Bir El Kassaa prices. When the source supplies only min/max, leave the average null.
 
-Do not fabricate an average when the publisher supplies only a min/max range. Set `price_average=null`. Set the location to `Sidi Bouzid`; this source does **not** provide Bir El Kassaa prices. A separate Bir El Kassaa source/URL is still needed before that market can be represented.
+## Existing ingestion contract
 
-### CRDA CSV normalization Code node
+POST `/api/agro-market/ingest/market-prices` is restricted to platform admins/server-side automation. Mobile clients never receive the admin token. Payloads must carry source identity, URL, date, market, commodity and price evidence. The API validates and upserts by source/external ID/date/market/commodity/price kind, records source status, and retains the original source row.
 
-After the CKAN resource metadata request, download the CSV and parse it into item JSON. In a Code node configured to run once for all items:
+Product catalog ingestion is separate at `POST /api/agro-market/ingest/products`. Pesticides must remain `unverified` unless the official Tunisian registration source confirms their status. Presence in a catalog is not an application recommendation or a dosage instruction.
 
-```javascript
-const rows = $input.all().map(x => x.json);
-const get = (row, names) => {
-  const keys = Object.keys(row);
-  const key = keys.find(k => names.includes(k.trim().toLowerCase()));
-  return key ? row[key] : null;
-};
-const dateValue = (v) => {
-  if (typeof v === 'number') {
-    const d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
-    return d.toISOString().slice(0, 10);
-  }
-  const s = String(v ?? '').trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
-};
-const numberValue = (v) => {
-  if (v === null || v === undefined || String(v).trim() === '') return null;
-  const n = Number(String(v).replace(',', '.').replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(n) && n >= 0 ? n : null;
-};
-const out = [];
-for (const row of rows) {
-  const crop = String(get(row, ['type','نوع']) ?? '').trim();
-  const date = dateValue(get(row, ['date','التاريخ']));
-  if (!crop || !date) continue;
-  const common = { crop_name: crop, market_location: 'Sidi Bouzid', price_date: date, unit: 'kg', currency: 'TND' };
-  const pgmin = numberValue(get(row, ['pgmin']));
-  const pgmax = numberValue(get(row, ['pgmax']));
-  if (pgmin !== null || pgmax !== null) out.push({ json: { ...common, price_kind: 'wholesale', price_min: pgmin, price_max: pgmax } });
-  const pdmin = numberValue(get(row, ['pdmin']));
-  const pdmax = numberValue(get(row, ['pdmax']));
-  if (pdmin !== null || pdmax !== null) out.push({ json: { ...common, price_kind: 'retail', price_min: pdmin, price_max: pdmax } });
-}
-return out;
-```
+## Marketplace buyer/seller inquiry APIs
 
-Then map the Code node output into the ingestion request's `prices` array. Keep source keys distinct for vegetables and fruits so each feed can be monitored independently. The n8n workflow must query CKAN's resource metadata for the current download URL rather than hard-coding a temporary download URL.
+- `GET /api/agro-market/my-listings`: authenticated seller's own listings, including non-public statuses.
+- `POST /api/agro-market/listings/:id/inquiries`: buyer creates an inquiry on a published listing.
+- `GET /api/agro-market/inquiries`: buyer or seller reads only conversations they participate in.
+- `PATCH /api/agro-market/inquiries/:id/status`: seller updates inquiry status.
+
+RLS enforces buyer/seller separation. This is an inquiry/contact foundation, not online payment, escrow, shipping or a completed chat system. Mobile screens still need to expose these endpoints before the buyer/seller flow is complete.
