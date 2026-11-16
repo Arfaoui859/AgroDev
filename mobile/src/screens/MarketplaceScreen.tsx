@@ -309,13 +309,14 @@ export const MarketplaceScreen: React.FC = () => {
                       <View style={[styles.locationRow, isRtl && rtlStyles.rtlRow]}>
                         <MaterialCommunityIcons name="map-marker" size={13} color={colors.textMuted} />
                         <Text style={styles.marketLocation}>{item.marketLocation}</Text>
+                      {item.sourceName ? <Text style={styles.marketLocation}>{item.sourceName} · {item.verificationStatus === 'official-source' ? (language === 'ar' ? 'مصدر رسمي' : language === 'fr' ? 'Source officielle' : 'Official source') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'Non vérifié' : 'Unverified')}</Text> : null}
                       </View>
                     ) : null}
                   </View>
 
                   <View style={styles.priceDisplay}>
                     <Text style={styles.priceValue}>{item.pricePerKg.toFixed(2)}</Text>
-                    <Text style={styles.currencyLabel}>{t.currencyPerKg}</Text>
+                    <Text style={styles.currencyLabel}>{item.currency === 'TND' && item.unit === 'kg' ? t.currencyPerKg : `${item.currency || 'TND'} / ${item.unit || 'kg'}`}</Text>
                   </View>
                 </View>
 
