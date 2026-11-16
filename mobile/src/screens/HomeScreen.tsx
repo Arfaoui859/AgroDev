@@ -35,6 +35,7 @@ import { HomeNewsPreview } from '../components/home/HomeNewsPreview';
 import { SeasonAgenda } from '../components/home/SeasonAgenda';
 import { AcademySection } from '../components/home/AcademySection';
 import { HomeCommunityPreview } from '../components/home/HomeCommunityPreview';
+import { HomeFarmOverview } from '../components/home/HomeFarmOverview';
 
 interface HomeScreenProps {
   onNavigateToService: (serviceId: string) => void;
@@ -397,6 +398,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         </View>
       </View>
 
+
+      {/* Real, account-scoped farm and crop activity — no demo metrics. */}
+      <HomeFarmOverview
+        onOpenFarms={() => onNavigateToService('farms')}
+        onOpenProjects={() => onNavigateToService('projects')}
+      />
 
       {/* Available agricultural intelligence — server-declared capability state */}
       <IntelligenceStrip
