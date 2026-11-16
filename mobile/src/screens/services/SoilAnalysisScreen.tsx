@@ -6,7 +6,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { accentCaption, cardHeading, noteCaption, subtitleMeta, titleBase, titleBaseFlex, titleSm } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
-import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -60,7 +59,6 @@ const defaultValues: MeasurementsValues = {
  */
 export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, onFindCrops }) => {
   const { t, x, isRtl, isArabic, language } = useLanguage();
-  const { isAuthenticated } = useAuth();
   const s9 = useMemo(() => getSoil(language), [language]);
   const loader = useFarmsFields();
 
@@ -145,7 +143,7 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
     try {
       // Prefer the detailed advisory report. The API persists it when a
       // selected plot belongs to the authenticated account.
-      if (isAuthenticated) {
+      {
         const detailed = await analyzeSoilDetailed(input);
         if (detailed.data) {
           setReport(detailed.data);
