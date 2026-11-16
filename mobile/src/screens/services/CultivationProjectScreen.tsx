@@ -119,12 +119,17 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
 
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true);
-    const res = await getCultivations(selection.farmId ?? selectedFarmId);
-    setProjects(res.data);
-    setProjectsError(res.error);
-    setProjectsMeta(res.meta);
-    setLoadingProjects(false);
-  }, [selection.farmId, selectedFarmId]);
+    try {
+      const res = await getCultivations(selection.farmId ?? selectedFarmId);
+      setProjects(res.data);
+      setProjectsError(res.error);
+      setProjectsMeta(res.meta);
+    } catch {
+      setProjectsError(s9.projectLoadFailed);
+    } finally {
+      setLoadingProjects(false);
+    }
+  }, [selection.farmId, selectedFarmId, s9.projectLoadFailed]);
 
   useEffect(() => {
     (async () => {
@@ -132,33 +137,45 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
     })();
   }, [loadProjects]);
 
-  // Fetch the plot's latest persisted soil report to derive real tasks.
+  // Fetch the plot's latest persisted soil report to derive project tasks.
+  // If the report service is unavailable, keep the project usable with the
+  // transparent generic task sequence rather than leaving the checklist stuck.
   useEffect(() => {
     let active = true;
     (async () => {
       if (!selection.fieldId) {
-        // No plot: fall back to the honest generic sequence rather than an
-        // empty checklist, which would look like the project has no steps.
         if (active) {
           setTasks(deriveProjectTasks(null));
           setReportLoaded(true);
         }
         return;
       }
-      const list = await getSoilReports(20);
-      const match = list.data.find((r) => r.fieldId === selection.fieldId);
-      let report: SoilReport | null = null;
-      if (match) {
-        const full = await getSoilReport(match.analysisId);
-        report = full.data?.report ?? null;
+      try {
+        const list = await getSoilReports(20);
+        const match = list.data.find((r) => r.fieldId === selection.fieldId);
+        let report: SoilReport | null = null;
+        if (match) {
+          const full = await getSoilReport(match.analysisId);
+          report = full.data?.report ?? null;
+        }
+        if (!active) return;
+        setTasks(deriveProjectTasks(report));
+        if (created?.id) {
+          setTaskState(await getTaskState(created.id));
+        }
+      } catch {
+        if (!active) return;
+        setTasks(deriveProjectTasks(null));
+        if (created?.id) {
+          try {
+            setTaskState(await getTaskState(created.id));
+          } catch {
+            setTaskState({});
+          }
+        }
+      } finally {
+        if (active) setReportLoaded(true);
       }
-      if (!active) return;
-      setTasks(deriveProjectTasks(report));
-      // Restore any ticks the user made on a previous visit to this project.
-      if (created?.id) {
-        setTaskState(await getTaskState(created.id));
-      }
-      setReportLoaded(true);
     })();
     return () => {
       active = false;
