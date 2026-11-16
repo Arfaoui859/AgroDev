@@ -507,6 +507,7 @@ export interface MarketplaceListing {
   harvestWindowEnd?: string | null;
   governorate?: string | null;
   description?: string | null;
+  status?: 'draft' | 'published' | 'reserved' | 'sold' | 'archived';
 }
 
 export interface AgriculturalCatalogProduct {
@@ -521,6 +522,18 @@ export interface AgriculturalCatalogProduct {
   targetCrops: string[];
   sourceName: string;
   sourceUrl?: string | null;
+}
+
+export interface MarketplaceInquiry {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  sellerId: string;
+  message: string;
+  quantity: number | null;
+  status: 'new' | 'replied' | 'accepted' | 'rejected' | 'closed';
+  createdAt: string;
+  listingTitle?: string | null;
 }
 
 export interface MarketplaceResult {
