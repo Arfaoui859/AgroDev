@@ -8,6 +8,13 @@ beforeAll(() => {
 });
 
 describe("📈 Market endpoints", () => {
+  test("product catalog ingestion rejects requests without admin authorization", async () => {
+    const response = await request(app)
+      .post("/api/agro-market/ingest/products")
+      .send({ source_key: "test", source_name: "test", source_url: "https://example.org", products: [] });
+    expect([401, 403]).toContain(response.status);
+  });
+
   test("GET /api/market/all never fabricates prices when no records exist", async () => {
     const response = await request(app).get("/api/market/all");
     if (response.status === 503) {
