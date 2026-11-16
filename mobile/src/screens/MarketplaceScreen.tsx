@@ -358,6 +358,13 @@ export const MarketplaceScreen: React.FC = () => {
                         <MaterialCommunityIcons name="map-marker" size={13} color={colors.textMuted} />
                         <Text style={styles.marketLocation}>{item.marketLocation}</Text>
                       {item.sourceName ? <Text style={styles.marketLocation}>{item.sourceName} · {item.priceKind === 'retail' ? (language === 'ar' ? 'تفصيل' : language === 'fr' ? 'Détail' : 'Retail') : (language === 'ar' ? 'جملة' : language === 'fr' ? 'Gros' : 'Wholesale')} · {item.verificationStatus === 'official-source' ? (language === 'ar' ? 'مصدر رسمي' : language === 'fr' ? 'Source officielle' : 'Official source') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'Non vérifié' : 'Unverified')}</Text> : null}
+                      {item.aggregationPeriod === 'monthly' ? (
+                        <Text style={styles.marketLocation}>
+                          {language === 'ar' ? 'معدل شهري' : language === 'fr' ? 'Moyenne mensuelle' : 'Monthly average'}
+                          {item.supplyQuantityTons != null ? ' · ' + (language === 'ar' ? 'التزويد' : language === 'fr' ? 'Approvisionnement' : 'Supply') + ': ' + item.supplyQuantityTons.toLocaleString() + ' t' : ''}
+                          {item.observationDays != null ? ' · ' + item.observationDays + (language === 'ar' ? ' يوم رصد' : language === 'fr' ? ' jours observés' : ' observation days') : ''}
+                        </Text>
+                      ) : null}
                       </View>
                     ) : null}
                   </View>
