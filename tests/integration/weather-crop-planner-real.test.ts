@@ -123,14 +123,14 @@ describe("🌦️ Weather crop planner uses real provider data", () => {
         { month: "2026-01", avgTemp: 12, totalRainfall: 60, avgHumidity: 70 },
         { month: "2026-02", avgTemp: 13, totalRainfall: 55, avgHumidity: 68 },
       ],
-      source: { provider: "WeatherAPI.com Archive", isRealData: true },
+      source: { provider: "NASA POWER", isRealData: true },
     });
     const res = await request(app).get(
       "/api/weather-crop-planner/historical-analysis/tunis/olive",
     );
     expect(res.status).toBe(200);
     expect(res.body.isRealData).toBe(true);
-    expect(res.body.dataSource).toBe("WeatherAPI.com Archive");
+    expect(res.body.dataSource).toBe("NASA POWER");
     expect(res.body.monthlyAverages).toHaveLength(2);
   });
 
