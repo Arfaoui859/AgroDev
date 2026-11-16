@@ -169,6 +169,16 @@ describe('HomeScreen urgent-alert panel', () => {
     await waitFor(() => expect(screen.getByText('تنبيه عاجل')).toBeTruthy());
   });
 
+  it('features a real curated agricultural video on the home dashboard', async () => {
+    mockGetNotifications.mockResolvedValueOnce({ data: [], error: null, unavailable: false });
+
+    await renderScreen();
+
+    await waitFor(() =>
+      expect(screen.getByText('تقليم شجرة الزيتون خطوة بخطوة 🫒')).toBeTruthy(),
+    );
+  });
+
   it('exposes the agricultural-projects module from the role-aware home tiles', async () => {
     mockGetNotifications.mockResolvedValueOnce({ data: [], error: null, unavailable: false });
 
