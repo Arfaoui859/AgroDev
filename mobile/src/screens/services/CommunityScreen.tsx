@@ -282,7 +282,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack }) => {
                 <Text style={[styles.authorName, isRtl && rtlStyles.rtlText]}>{post.author?.full_name || text.role}</Text>
                 <Text style={[styles.authorMeta, isRtl && rtlStyles.rtlText]}>{[post.author?.role, post.author?.governorate].filter(Boolean).join(' · ') || text.role} · {new Date(post.created_at).toLocaleDateString(language)}</Text>
               </View>
-              <Badge label={categoryLabel((CATEGORIES.includes(post.category as CommunityCategory) ? post.category : 'general') as CommunityCategory, language)} variant="neutral" size="sm" />
+              <Badge label={categoryLabel((CATEGORIES.includes(post.category as CommunityCategory) ? post.category : 'general') as CommunityCategory, language)} variant="secondary" size="sm" />
             </View>
             <Text style={[styles.postContent, isRtl && rtlStyles.rtlText]}>{post.content}</Text>
             <View style={[styles.postActions, isRtl && rtlStyles.rtlRow]}>
