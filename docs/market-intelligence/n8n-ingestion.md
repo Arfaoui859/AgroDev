@@ -33,7 +33,7 @@ The database keeps the source's monthly context:
 
 Configure these GitHub repository secrets:
 - `AGROGROWTH_API_URL`: the base URL of the deployed AgroGrowth Express API, without a trailing slash;
-- `AGROGROWTH_ADMIN_TOKEN`: the server-side admin bearer token accepted by `requireAdminAccess`.
+- `AGROGROWTH_ADMIN_TOKEN`: the server-side `ADMIN_API_TOKEN` value; the collector sends it as the `x-admin-token` header required by `requireAdminAccess`.
 - `ONAGRI_REUSE_CONFIRMED=true`: set only after reviewing ONAGRI's reuse terms and confirming automated collection is allowed.
 
 The workflow checks once daily at 04:15 UTC for a new monthly report and is also manually runnable from GitHub Actions. It is intentionally a daily *publication check*, not a claim that ONAGRI publishes a new price table every day. The collector uses a descriptive user-agent, normal HTTPS requests and a 30-second timeout; it does not bypass access controls. Review ONAGRI's reuse terms and rate-limit guidance before enabling automated collection.
