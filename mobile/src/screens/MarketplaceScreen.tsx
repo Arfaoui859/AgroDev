@@ -3,6 +3,7 @@ import { rtlStyles } from '../theme/rtl';
 import {
   View,
   Text,
+  Linking,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -595,6 +596,18 @@ export const MarketplaceScreen: React.FC = () => {
                   <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
                     {[product.productType, product.activeIngredient, product.sourceName].filter(Boolean).join(' • ')}
                   </Text>
+                  {product.registrationNumber ? (
+                    <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                      {(language === 'ar' ? 'رقم التسجيل: ' : language === 'fr' ? 'N° homologation : ' : 'Registration no.: ') + product.registrationNumber}
+                    </Text>
+                  ) : null}
+                  {product.registrationEvidenceUrl ? (
+                    <Pressable onPress={() => { void Linking.openURL(product.registrationEvidenceUrl!).catch(() => Alert.alert(language === 'ar' ? 'تعذر فتح الوثيقة' : language === 'fr' ? 'Impossible d’ouvrir le document' : 'Could not open evidence')); }}>
+                      <Text style={[styles.listingMeta, { color: colors.primary, textDecorationLine: 'underline' }, isRtl && rtlStyles.rtlText]}>
+                        {language === 'ar' ? 'عرض وثيقة التثبت الرسمية' : language === 'fr' ? 'Voir la preuve officielle' : 'View official registration evidence'}
+                      </Text>
+                    </Pressable>
+                  ) : null}
                 </View>
                 <Badge label={product.registrationStatus === 'registered_tunisia' ? (language === 'ar' ? 'مرخّص' : language === 'fr' ? 'Homologué' : 'Registered') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'À vérifier' : 'Unverified')}
                   variant={product.registrationStatus === 'registered_tunisia' ? 'success' : 'warning'} size="sm" />
