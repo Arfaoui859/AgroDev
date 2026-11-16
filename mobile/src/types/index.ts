@@ -605,6 +605,13 @@ export interface MarketPriceItem {
   priceMin?: number | null;
   priceMax?: number | null;
   priceKind?: 'wholesale' | 'retail' | 'seller' | 'other';
+  aggregationPeriod?: 'daily' | 'monthly' | 'annual';
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  previousYearPricePerKg?: number | null;
+  supplyQuantityTons?: number | null;
+  supplyChangePercent?: number | null;
+  observationDays?: number | null;
 }
 
 export interface MarketResult {
