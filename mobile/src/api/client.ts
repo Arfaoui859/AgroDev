@@ -895,15 +895,19 @@ function projectMsg(key: 'tasksUnavailable' | 'financeUnavailable' | 'saveFailed
  * receives 403 and this resolves to an honest `roleBlocked` state rather than
  * an error, so the UI can explain *why* instead of showing a red failure.
  */
-export async function getProjectTasks(params: { farmId?: string } = {}): Promise<{
+export async function getProjectTasks(params: { farmId?: string; cultivationId?: string } = {}): Promise<{
   data: FarmTask[];
   error: string | null;
   roleBlocked: boolean;
   meta: ProvenanceMeta;
 }> {
-  const query = params.farmId ? `?farm_id=${encodeURIComponent(params.farmId)}` : '';
+  const queryParts = [
+    params.farmId ? `farm_id=${encodeURIComponent(params.farmId)}` : null,
+    params.cultivationId ? `cultivation_id=${encodeURIComponent(params.cultivationId)}` : null,
+  ].filter(Boolean);
+  const query = queryParts.length ? `?${queryParts.join('&')}` : '';
   const res = await apiRequest<any>(`/api/farm-operations/tasks${query}`, {
-    cacheKey: `tasks:${params.farmId || 'all'}`,
+    cacheKey: `tasks:${params.farmId || 'all'}:${params.cultivationId || 'all'}`,
   });
   const roleBlocked = res.status === 403;
   const list: FarmTask[] = Array.isArray(res.data?.data) ? res.data.data : [];
@@ -922,6 +926,7 @@ export async function getProjectTasks(params: { farmId?: string } = {}): Promise
  */
 export async function createProjectTask(payload: {
   farm_id: string;
+  cultivation_id?: string | null;
   title: string;
   task_type?: FarmTaskType;
   priority?: FarmTaskPriority;

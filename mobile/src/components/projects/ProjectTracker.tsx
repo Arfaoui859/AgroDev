@@ -31,6 +31,7 @@ import {
 
 interface ProjectTrackerProps {
   farmId: string;
+  cultivationId?: string;
 }
 
 /** A task's status pill: honest colour by lifecycle state, never by guess. */
@@ -53,7 +54,7 @@ function statusVariant(status: string): 'success' | 'warning' | 'secondary' | 'd
  * "not available for this account" state, not as a red failure — the backend
  * genuinely restricts these writes by role.
  */
-export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
+export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId, cultivationId }) => {
   const { x, isRtl, language } = useLanguage();
   const p = useMemo(() => getProjects(language), [language]);
 
@@ -76,7 +77,7 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getProjectTasks({ farmId });
+      const res = await getProjectTasks({ farmId, cultivationId });
       setTasks(res.data);
       setMeta(res.meta);
       setError(res.error);
@@ -86,7 +87,7 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
     } finally {
       setLoading(false);
     }
-  }, [farmId, p.tasksUnavailable]);
+  }, [farmId, cultivationId, p.tasksUnavailable]);
 
   useEffect(() => {
     (async () => {
@@ -112,6 +113,7 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
     try {
       res = await createProjectTask({
         farm_id: farmId,
+        cultivation_id: cultivationId,
         title: title.trim(),
         task_type: taskType,
         priority,

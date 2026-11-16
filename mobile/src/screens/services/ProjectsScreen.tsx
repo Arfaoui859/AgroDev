@@ -158,7 +158,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBack, initialP
                 ) : null}
               </Card>
 
-              <ProjectTracker farmId={selected.farm_id} />
+              <ProjectTracker farmId={selected.farm_id} cultivationId={selected.id} />
               <ProjectFinance farmId={selected.farm_id} cropName={selected.crop_name} />
             </View>
           ) : null}
