@@ -125,11 +125,11 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
       setProjectsError(res.error);
       setProjectsMeta(res.meta);
     } catch {
-      setProjectsError(s9.projectLoadFailed);
+      setProjectsError(x.stateError);
     } finally {
       setLoadingProjects(false);
     }
-  }, [selection.farmId, selectedFarmId, s9.projectLoadFailed]);
+  }, [selection.farmId, selectedFarmId, x.stateError]);
 
   useEffect(() => {
     (async () => {
