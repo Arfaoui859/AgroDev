@@ -1,0 +1,246 @@
+{
+  "name": "AgroGrowth — ONAGRI Bir El Kassaa Monthly Prices",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "15 4 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a9b8c7d6-e5f4-4321-9876-123456789001",
+      "name": "Daily 04:15 Africa Tunis",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -760,
+        80
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a9b8c7d6-e5f4-4321-9876-123456789002",
+      "name": "Manual Test",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -760,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.onagri.nat.tn/Marche-de-gros-bir-el-kasaa/fr/62",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "AgroGrowth-n8n-ONAGRI-collector/1.0"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "indexHtml"
+            }
+          }
+        }
+      },
+      "id": "a9b8c7d6-e5f4-4321-9876-123456789003",
+      "name": "Fetch ONAGRI Archive",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -500,
+        180
+      ],
+      "onError": "stopWorkflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst html = String(input.indexHtml ?? input.body ?? input.data ?? \"\");\nif (!html || html.length < 500) throw new Error(\"ONAGRI archive response is empty or unexpectedly short\");\nconst decode = s => String(s).replace(/&amp;/g,\"&\").replace(/&#39;|&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&nbsp;/g,\" \").replace(/&lt;/g,\"<\").replace(/&gt;/g,\">\").replace(/&#(\\\\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));\nconst strip = s => decode(s.replace(/<script[\\\\s\\\\S]*?<\\\\/script>/gi,\" \").replace(/<style[\\\\s\\\\S]*?<\\\\/style>/gi,\" \").replace(/<[^>]+>/g,\" \")).replace(/\\\\s+/g,\" \").trim();\nconst monthNames = [\"janvier\",\"fevrier\",\"février\",\"mars\",\"avril\",\"mai\",\"juin\",\"juillet\",\"aout\",\"août\",\"septembre\",\"octobre\",\"novembre\",\"decembre\",\"décembre\"];\nconst links = [];\nfor (const match of html.matchAll(/<a\\\\b([^>]*)>([\\\\s\\\\S]*?)<\\\\/a>/gi)) {\n  const href = match[1].match(/href\\\\s*=\\\\s*[\"']([^\"']+)[\"']/i)?.[1];\n  const label = strip(match[2]);\n  if (!href || !/Mercuriale Bir El Kassaa/i.test(label)) continue;\n  const year = label.match(/20\\\\d{2}/)?.[0];\n  const month = monthNames.find(m => new RegExp(\"(^|\\\\\\\\b)\"+m+\"(\\\\\\\\b|$)\",\"i\").test(label));\n  if (!year || !month) continue;\n  const url = new URL(href,\"https://www.onagri.nat.tn/Marche-de-gros-bir-el-kasaa/fr/62\").href;\n  if (!links.some(x=>x.url===url)) links.push({title:label,url});\n  if (links.length===5) break;\n}\nif (!links.length) throw new Error(\"No dated monthly Mercuriale links found. Do not send empty prices.\");\nreturn links.map(x=>({json:x}));"
+      },
+      "id": "a9b8c7d6-e5f4-4321-9876-123456789004",
+      "name": "Find Latest 5 Monthly Reports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        180
+      ],
+      "onError": "stopWorkflow"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "AgroGrowth-n8n-ONAGRI-collector/1.0"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "reportHtml"
+            }
+          }
+        }
+      },
+      "id": "a9b8c7d6-e5f4-4321-9876-123456789005",
+      "name": "Download Monthly Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        20,
+        180
+      ],
+      "onError": "stopWorkflow"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nconst months = {janvier:1,fevrier:2,\"février\":2,mars:3,avril:4,mai:5,juin:6,juillet:7,aout:8,\"août\":8,septembre:9,octobre:10,novembre:11,decembre:12,\"décembre\":12};\nconst decode = s => String(s).replace(/&amp;/g,\"&\").replace(/&#39;|&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&nbsp;/g,\" \").replace(/&lt;/g,\"<\").replace(/&gt;/g,\">\").replace(/&#(\\\\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));\nconst clean = s => decode(s.replace(/<[^>]+>/g,\" \")).replace(/\\\\s+/g,\" \").trim();\nconst number = v => {v=decode(v).replace(/[٠-٩]/g,c=>\"٠١٢٣٤٥٦٧٨٩\".indexOf(c)).replace(/[%\\\\s\\\\u00a0]/g,\"\").replace(/,/g,\".\");v=v.replace(/[^0-9.\\\\-]/g,\"\");if(!v||v===\".\"||v===\"-\"||v===\"-.\")return null;const n=Number(v);return Number.isFinite(n)?n:null;};\nconst slug = s => {const ascii=s.normalize(\"NFKD\").replace(/[\\\\u0300-\\\\u036f]/g,\"\").replace(/[^a-zA-Z0-9]+/g,\"-\").replace(/^-|-$/g,\"\").toLowerCase();if(ascii)return ascii;let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return \"ar-\"+h.toString(16);};\nconst prices=[];\nfor (const item of items) {\n const title=String(item.json.title??\"\"); const url=String(item.json.url??\"\");\n const year=Number(title.match(/20\\\\d{2}/)?.[0]);\n const monthName=Object.keys(months).find(m=>new RegExp(\"(^|\\\\\\\\b)\"+m+\"(\\\\\\\\b|$)\",\"i\").test(title));\n const month=months[monthName];\n if(!year||!month) throw new Error(\"Cannot determine report month/year: \"+title);\n const start=new Date(Date.UTC(year,month-1,1)).toISOString().slice(0,10);\n const end=new Date(Date.UTC(year,month,0)).toISOString().slice(0,10);\n const html=String(item.json.reportHtml??item.json.body??item.json.data??\"\");\n if(html.length<300) throw new Error(\"Monthly report HTML missing/too short: \"+title);\n for(const tr of html.matchAll(/<tr\\\\b[^>]*>([\\\\s\\\\S]*?)<\\\\/tr>/gi)){\n   const cells=[...tr[1].matchAll(/<(?:td|th)\\\\b[^>]*>([\\\\s\\\\S]*?)<\\\\/(?:td|th)>/gi)].map(m=>clean(m[1]));\n   if(cells.length<8) continue;\n   const c=cells.slice(-8); const crop=c[7]; const days=number(c[0]); const priceChange=number(c[1]); const previous=number(c[2]); const current=number(c[3]); const supplyChange=number(c[4]); const supply=number(c[6]);\n   if(!crop||current===null||current<=0) continue;\n   prices.push({external_id:year+\"-\"+String(month).padStart(2,\"0\")+\":\"+slug(crop),crop_name:crop,market_location:\"Bir El Kassaa\",price_kind:\"wholesale\",price_per_kg:Number((current/1000).toFixed(3)),previous_year_price:previous===null?null:Number((previous/1000).toFixed(3)),source_url:url,price_date:start,period_start:start,period_end:end,aggregation_period:\"monthly\",unit:\"kg\",currency:\"TND\",supply_quantity_tons:supply,supply_change_percent:supplyChange,price_change_percent:priceChange,observation_days:days===null?null:Math.trunc(days),raw_source:{document_title:title,document_url:url,previous_year_price_millimes_per_kg:previous,current_year_price_millimes_per_kg:current,previous_year_supply_tons:number(c[5]),current_year_supply_tons:supply,source_cells:c}});\n }\n}\nconst unique=[...new Map(prices.map(p=>[p.external_id,p])).values()];\nif(!unique.length) throw new Error(\"No monthly commodity price rows parsed; refusing to ingest an empty payload.\");\nreturn [{json:{source_key:\"tn-onagri-bir-el-kassaa\",source_name:\"ONAGRI - Mercuriale du marché de gros de Bir El Kassaa\",source_url:\"https://www.onagri.nat.tn/Marche-de-gros-bir-el-kasaa/fr/62\",source_type:\"permitted_scrape\",verification_status:\"official-source\",prices:unique,collector_meta:{reports_checked:items.length,rows_parsed:unique.length,aggregation_period:\"monthly\",unit_conversion:\"millimes/kg to TND/kg\"}}}];"
+      },
+      "id": "a9b8c7d6-e5f4-4321-9876-123456789006",
+      "name": "Normalize and Validate Prices",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        180
+      ],
+      "onError": "stopWorkflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agrodev-3.onrender.com/api/agro-market/ingest/market-prices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "a9b8c7d6-e5f4-4321-9876-123456789007",
+      "name": "Upsert Prices into AgroGrowth",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        180
+      ],
+      "onError": "stopWorkflow"
+    }
+  ],
+  "connections": {
+    "Daily 04:15 Africa Tunis": {
+      "main": [
+        [
+          {
+            "node": "Fetch ONAGRI Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Test": {
+      "main": [
+        [
+          {
+            "node": "Fetch ONAGRI Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch ONAGRI Archive": {
+      "main": [
+        [
+          {
+            "node": "Find Latest 5 Monthly Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Latest 5 Monthly Reports": {
+      "main": [
+        [
+          {
+            "node": "Download Monthly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Monthly Report": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Validate Prices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Validate Prices": {
+      "main": [
+        [
+          {
+            "node": "Upsert Prices into AgroGrowth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Tunis"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "versionId": "9d6b70aa-ff2c-4a4b-9c6a-72c9f3b6a001",
+  "active": false
+}
