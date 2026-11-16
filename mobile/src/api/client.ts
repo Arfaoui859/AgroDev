@@ -20,6 +20,8 @@ import {
   DataProvenance,
   DiseaseDiagnosisResult,
   Farm,
+  FarmBoundary,
+  SatelliteNdviObservation,
   FarmTask,
   FarmTaskPriority,
   FarmTaskStatus,
@@ -1449,6 +1451,34 @@ export async function createFarm(payload: {
   });
   if (!res.data?.data) return { data: null, error: res.error || msg('farmCreateFailed') };
   return { data: res.data.data as Farm, error: null };
+}
+
+export async function saveFarmBoundaries(farmId: string, boundaries: FarmBoundary): Promise<{ data: FarmBoundary | null; error: string | null }> {
+  const res = await apiRequest<any>(`/api/farms/${encodeURIComponent(farmId)}/boundaries`, {
+    method: 'PUT', body: JSON.stringify({ boundaries }),
+  });
+  if (!res.data?.success || !res.data?.data?.boundaries) return { data: null, error: res.error || 'BOUNDARY_SAVE_FAILED' };
+  return { data: res.data.data.boundaries as FarmBoundary, error: null };
+}
+
+export async function analyzeFarmSatelliteNdvi(farmId: string, periodDays: 30 | 60 | 90 | 180 = 90): Promise<{
+  data: SatelliteNdviObservation[];
+  error: string | null;
+  provider?: string;
+  resolutionMeters?: number;
+}> {
+  const res = await apiRequest<any>('/api/assistant/satellite/ndvi', {
+    method: 'POST', body: JSON.stringify({ farm_id: farmId, period_days: periodDays }),
+  });
+  if (!res.data?.success || !Array.isArray(res.data?.data)) {
+    return { data: [], error: res.error || res.data?.code || 'SATELLITE_ANALYSIS_FAILED' };
+  }
+  return {
+    data: res.data.data as SatelliteNdviObservation[],
+    error: null,
+    provider: res.data.provenance?.provider,
+    resolutionMeters: res.data.provenance?.resolutionMeters,
+  };
 }
 
 // ---------------------------------------------------------------------------
