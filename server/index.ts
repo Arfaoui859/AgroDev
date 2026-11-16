@@ -287,6 +287,7 @@ import {
   getSegmentationAnalytics,
   updateFarmerProfile,
 } from "./routes/farmer-segmentation";
+import { listCommunityPosts, createCommunityPost, listCommunityComments, createCommunityComment, toggleCommunityLike } from "./routes/community-social";
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { listAssistantFarms, createAssistantCultivation, listAssistantCultivations } from "./routes/assistant-actions";
 import { createAssistantDiseaseDetection, getAssistantDiseaseEvidenceUrl } from "./routes/assistant-disease-records";
@@ -825,6 +826,14 @@ export function createServer() {
   app.get("/api/public/key-info", getAPIKeyInfo);
   app.get("/api/public/stats", getPublicStats);
   app.post("/api/public/create-key", keyMintRateLimiter(), createAPIKey);
+
+  // 🌱 Persistent AgriVibe community. These routes require a verified JWT;
+  // the caller-scoped Supabase client and RLS enforce ownership on every write.
+  app.get("/api/community/posts", requireAuth, requireVerifiedAuth, listCommunityPosts);
+  app.post("/api/community/posts", requireAuth, requireVerifiedAuth, createCommunityPost);
+  app.get("/api/community/posts/:postId/comments", requireAuth, requireVerifiedAuth, listCommunityComments);
+  app.post("/api/community/posts/:postId/comments", requireAuth, requireVerifiedAuth, createCommunityComment);
+  app.post("/api/community/posts/:postId/like", requireAuth, requireVerifiedAuth, toggleCommunityLike);
 
   // 👥 FARMER COLLABORATION ROUTES
   app.get("/api/collaboration/chat-rooms", getChatRooms);
