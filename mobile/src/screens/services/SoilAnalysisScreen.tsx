@@ -44,6 +44,11 @@ const defaultValues: MeasurementsValues = {
   irrigationMethod: '',
   targetCrop: '',
   samplingDate: '',
+  drainage: '',
+  previousCrop: '',
+  currentCrop: '',
+  season: '',
+  notes: '',
 };
 
 /**
