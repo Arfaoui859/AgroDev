@@ -33,10 +33,14 @@ export const HomeNewsPreview: React.FC<HomeNewsPreviewProps> = ({ onOpenAll }) =
 
   const load = useCallback(async () => {
     setError(null);
-    const res = await getAgriNews({ language, pageSize: 4 });
-    setResult(res.data);
-    setError(res.error);
-  }, [language]);
+    try {
+      const res = await getAgriNews({ language, pageSize: 4 });
+      setResult(res.data);
+      setError(res.error);
+    } catch {
+      setError(x.stateOffline);
+    }
+  }, [language, x.stateOffline]);
 
   useEffect(() => {
     (async () => {
