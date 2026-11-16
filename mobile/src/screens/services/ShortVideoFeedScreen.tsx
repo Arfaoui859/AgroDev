@@ -171,7 +171,7 @@ export const ShortVideoFeedScreen: React.FC<ShortVideoFeedScreenProps> = ({
       ) : (
         <View style={styles.empty}>
           <MaterialCommunityIcons name="video-off-outline" size={36} color={colors.textMuted} />
-          <Text style={styles.emptyText}>{x.stateEmpty}</Text>
+          <Text style={styles.emptyText}>{language === 'ar' ? 'ما فماش فيديوهات في التصنيف هذا حالياً.' : language === 'fr' ? 'Aucune vidéo dans cette catégorie pour le moment.' : 'No videos in this category yet.'}</Text>
         </View>
       )}
 
