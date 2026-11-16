@@ -43,15 +43,20 @@ export async function getHistory(): Promise<SavedAnalysis[]> {
 }
 
 export async function addHistoryEntry(entry: Omit<SavedAnalysis, 'id' | 'date'>): Promise<SavedAnalysis[]> {
+  // Capture the namespace once. An account switch while AsyncStorage is
+  // resolving must never redirect an in-flight write into the next account.
+  const key = historyKey();
   try {
-    const existing = await getHistory();
+    const raw = await AsyncStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const existing: SavedAnalysis[] = Array.isArray(parsed) ? parsed : [];
     const full: SavedAnalysis = {
       ...entry,
       id: `h_${Date.now()}`,
       date: new Date().toISOString(),
     };
     const next = [full, ...existing].slice(0, MAX_ENTRIES);
-    await AsyncStorage.setItem(historyKey(), JSON.stringify(next));
+    await AsyncStorage.setItem(key, JSON.stringify(next));
     return next;
   } catch (error) {
     console.warn('history write failed:', error);
