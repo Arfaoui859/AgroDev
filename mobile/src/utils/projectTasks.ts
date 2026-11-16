@@ -61,6 +61,57 @@ export function deriveProjectTasks(report: SoilReport | null): ProjectTask[] {
 
     report.targetCropPlan?.actions.forEach((action, index) => appendAction(`target-${index}`, action));
 
+    if (report.targetCropPlan?.firstAction?.trim() && !seen.has(report.targetCropPlan.firstAction.trim())) {
+      const text = report.targetCropPlan.firstAction.trim();
+      seen.add(text);
+      tasks.push({
+        id: 'target-first-action',
+        kind: 'prepare',
+        text,
+        generic: false,
+        priority: 'high',
+        reason: report.targetCropPlan.reasons.join('; '),
+        when: 'Before planting or before the next crop decision',
+        verification: report.targetCropPlan.retestWhen,
+      });
+    }
+
+    if (report.targetCropPlan?.gaps.length) {
+      const gapText = report.targetCropPlan.gaps
+        .map((gap) => `${gap.parameter}: ${gap.current} → ${gap.required}`)
+        .join('; ');
+      if (gapText && !seen.has(gapText)) {
+        seen.add(gapText);
+        tasks.push({
+          id: 'target-crop-gaps',
+          kind: 'measure',
+          text: `Confirm target-crop constraints: ${gapText}`,
+          generic: false,
+          priority: 'high',
+          reason: report.targetCropPlan.gaps.map((gap) => gap.evidence).filter(Boolean).join('; '),
+          when: 'Before committing to planting',
+          verification: 'Confirm each required value with a field or laboratory measurement',
+        });
+      }
+    }
+
+    if (report.dataQuality.missingMeasurements.length) {
+      const missing = report.dataQuality.missingMeasurements.join(', ');
+      if (!seen.has(missing)) {
+        seen.add(missing);
+        tasks.push({
+          id: 'missing-soil-measurements',
+          kind: 'measure',
+          text: `Collect missing soil measurements: ${missing}`,
+          generic: false,
+          priority: 'high',
+          reason: 'The report lists these measurements as missing',
+          when: 'Before final fertilizer or crop suitability decisions',
+          verification: 'Attach a laboratory result or a documented field measurement',
+        });
+      }
+    }
+
     report.fertilizationPlan.stages.forEach((stage, index) => {
       const text = [stage.stage, stage.strategy].filter(Boolean).join(': ').trim();
       if (!text || seen.has(text)) return;
