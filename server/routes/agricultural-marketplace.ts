@@ -178,16 +178,22 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
   const records = [];
   for(const row of rows) {
     const crop = text(row?.crop_name,100), location = text(row?.market_location,160);
-    const price = positive(row?.price_per_kg);
-    const externalId = text(row?.external_id,180) || hash({crop,location,date:row?.price_date,price:row?.price_per_kg});
-    if(!crop || !location || Number.isNaN(price) || price === null || !/^\d{4}-\d{2}-\d{2}$/.test(text(row?.price_date,10)))
+    const average = positive(row?.price_average ?? row?.price_per_kg);
+    const min = positive(row?.price_min), max = positive(row?.price_max);
+    const externalId = text(row?.external_id,180) || hash({crop,location,date:row?.price_date,average,min,max,kind:row?.price_kind});
+    if(!crop || !location || [average,min,max].some(Number.isNaN) ||
+      (average === null && min === null && max === null) ||
+      (min !== null && max !== null && min > max) ||
+      !/^\\d{4}-\\d{2}-\\d{2}$/.test(text(row?.price_date,10)))
       return res.status(400).json({success:false,code:"INVALID_PRICE_ROW",row:records.length});
-    records.push({crop_name:crop,market_location:location,price_per_kg:price,price_min:positive(row?.price_min),price_max:positive(row?.price_max),
-      unit:text(row?.unit,30)||"kg",currency:text(row?.currency,3)||"TND",price_date:row.price_date,
-      quality_grade:text(row?.quality_grade,30)||null,source:sourceName.slice(0,100),source_url:sourceUrl,source_key:sourceKey,
-      external_id:externalId,source_type:sourceType,
-      collected_at:new Date().toISOString(),verification_status:verificationStatus,
-      raw_payload:row});
+    const priceKind = text(row?.price_kind,20) || "wholesale";
+    if(!["wholesale","retail","seller","other"].includes(priceKind))
+      return res.status(400).json({success:false,code:"INVALID_PRICE_KIND",row:records.length});
+    records.push({commodity_name:crop,market_location:location,price_average:average,price_min:min,price_max:max,
+      price_kind:priceKind,unit:text(row?.unit,30)||"kg",currency:text(row?.currency,3)||"TND",observed_on:row.price_date,
+      quality_grade:text(row?.quality_grade,30)||null,source_name:sourceName,source_url:sourceUrl,source_key:sourceKey,
+      external_id:externalId,source_type:sourceType,collected_at:new Date().toISOString(),
+      verification_status:verificationStatus,raw_payload:row});
   }
   const {data,error}=await db.from("market_price_observations").upsert(records,{onConflict:"source_key,external_id,observed_on,market_location,commodity_name,price_kind"}).select("id");
   if(error){console.error("[agro-market] market ingest failed",error.message);await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_status:"failed",last_error:error.message.slice(0,500)});return res.status(503).json({success:false,code:"MARKET_INGEST_FAILED"});}
