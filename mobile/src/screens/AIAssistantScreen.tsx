@@ -84,11 +84,15 @@ export const AIAssistantScreen: React.FC = () => {
     })).catch(() => undefined);
   }, [messages, threadStorageKey, threadReadyKey]);
 
+  // Never render a previous account's in-memory messages while the next
+  // account's local thread is still loading.
+  const messagesReady = threadStorageKey ? threadReadyKey === threadStorageKey : threadReadyKey === 'anonymous';
+
   // The welcome bubble is derived at render time (not stored) so switching
   // language updates it immediately instead of leaving it in the old language.
   const displayMessages: ChatMessage[] = [
     { id: 'welcome', sender: 'assistant', text: t.assistantGreeting, timestamp: formatTime(new Date(), language) },
-    ...messages,
+    ...(messagesReady ? messages : []),
   ];
 
   const suggestedPrompts = [
@@ -99,6 +103,7 @@ export const AIAssistantScreen: React.FC = () => {
   ];
 
   const handleSend = async (messageText?: string) => {
+    if (!messagesReady) return;
     const textToSend = messageText || inputText.trim();
     if (!textToSend || loading) return;
 
