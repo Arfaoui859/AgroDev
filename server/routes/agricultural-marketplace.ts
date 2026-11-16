@@ -233,8 +233,15 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
     const crop = text(row?.crop_name,100), location = text(row?.market_location,160);
     const average = positive(row?.price_average ?? row?.price_per_kg);
     const min = positive(row?.price_min), max = positive(row?.price_max);
+    const previousYearPrice = positive(row?.previous_year_price);
+    const supplyQuantity = positive(row?.supply_quantity_tons);
+    const supplyChange = positiveSigned(row?.supply_change_percent);
+    const priceChange = positiveSigned(row?.price_change_percent);
+    const observationDays = positive(row?.observation_days);
+    const rowSourceUrl = text(row?.source_url,1000);
     const externalId = text(row?.external_id,180) || hash({crop,location,date:row?.price_date,average,min,max,kind:row?.price_kind});
-    if(!crop || !location || [average,min,max].some(Number.isNaN) ||
+    if(!crop || !location || [average,min,max,previousYearPrice,supplyQuantity,supplyChange,priceChange,observationDays].some(Number.isNaN) ||
+      (observationDays !== null && !Number.isInteger(observationDays)) ||
       (average === null && min === null && max === null) ||
       (min !== null && max !== null && min > max) ||
       !/^\d{4}-\d{2}-\d{2}$/.test(text(row?.price_date,10)))
@@ -246,9 +253,10 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
       price_kind:priceKind,unit:text(row?.unit,30)||"kg",currency:text(row?.currency,3)||"TND",observed_on:row.price_date,
       aggregation_period:["daily","monthly","annual"].includes(text(row?.aggregation_period,20))?text(row.aggregation_period,20):"daily",
       period_start:text(row?.period_start,10)||null,period_end:text(row?.period_end,10)||null,
-      supply_quantity_tons:positive(row?.supply_quantity_tons),supply_change_percent:positiveSigned(row?.supply_change_percent),
-      price_change_percent:positiveSigned(row?.price_change_percent),observation_days:positive(row?.observation_days),
-      quality_grade:text(row?.quality_grade,30)||null,source_name:sourceName,source_url:sourceUrl,source_key:sourceKey,
+      previous_year_price:previousYearPrice,supply_quantity_tons:supplyQuantity,supply_change_percent:supplyChange,
+      price_change_percent:priceChange,observation_days:observationDays,
+      quality_grade:text(row?.quality_grade,30)||null,source_name:sourceName,
+      source_url:/^https:\/\//i.test(rowSourceUrl)?rowSourceUrl:sourceUrl,source_key:sourceKey,
       external_id:externalId,source_type:sourceType,collected_at:new Date().toISOString(),
       verification_status:verificationStatus,raw_payload:row});
   }
