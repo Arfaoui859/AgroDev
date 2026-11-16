@@ -75,13 +75,18 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await getProjectTasks({ farmId });
-    setTasks(res.data);
-    setMeta(res.meta);
-    setError(res.error);
-    setRoleBlocked(res.roleBlocked);
-    setLoading(false);
-  }, [farmId]);
+    try {
+      const res = await getProjectTasks({ farmId });
+      setTasks(res.data);
+      setMeta(res.meta);
+      setError(res.error);
+      setRoleBlocked(res.roleBlocked);
+    } catch {
+      setError(p.tasksUnavailable);
+    } finally {
+      setLoading(false);
+    }
+  }, [farmId, p.tasksUnavailable]);
 
   useEffect(() => {
     (async () => {
@@ -94,9 +99,12 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId }) => {
       setFormError(p.invalidTitle);
       return;
     }
-    if (dueDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate.trim())) {
-      setFormError(p.invalidDate);
-      return;
+    if (dueDate.trim()) {
+      const parsedDate = new Date(dueDate.trim() + 'T00:00:00.000Z');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate.trim()) || Number.isNaN(parsedDate.valueOf()) || parsedDate.toISOString().slice(0, 10) !== dueDate.trim()) {
+        setFormError(p.invalidDate);
+        return;
+      }
     }
     setSaving(true);
     setFormError(null);

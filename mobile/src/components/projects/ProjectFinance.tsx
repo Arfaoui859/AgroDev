@@ -92,13 +92,18 @@ export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cropName
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await getProjectFinancialSummary(farmId);
-    setSummary(res.data);
-    setMeta(res.meta);
-    setError(res.error);
-    setRoleBlocked(res.roleBlocked);
-    setLoading(false);
-  }, [farmId]);
+    try {
+      const res = await getProjectFinancialSummary(farmId);
+      setSummary(res.data);
+      setMeta(res.meta);
+      setError(res.error);
+      setRoleBlocked(res.roleBlocked);
+    } catch {
+      setError(p.saveFailed);
+    } finally {
+      setLoading(false);
+    }
+  }, [farmId, p.saveFailed]);
 
   useEffect(() => {
     (async () => {
