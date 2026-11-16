@@ -129,6 +129,8 @@ router.patch("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Reque
 
 router.delete("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
   const db = callerDb(req,res); if (!db) return;
+  const sellerId = req.userId;
+  if (!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
   const {data,error} = await db.from("marketplace_listings").delete().eq("id",req.params.id).eq("seller_id",sellerId).select("id").maybeSingle();
   if (error) return res.status(503).json({success:false,code:"LISTING_DELETE_FAILED"});
   if (!data) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
