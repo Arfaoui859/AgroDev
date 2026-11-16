@@ -171,9 +171,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 🧪 Test ONAGRI parser
+      - name: 📦 Install XLSX review dependency
+        run: python -m pip install --quiet openpyxl
+
+      - name: 🧪 Test ONAGRI market and catalog parsers
         run: |
-          python -m py_compile scripts/market-data/ingest_onagri_bir_el_kassaa.py
+          python -m py_compile scripts/market-data/ingest_onagri_bir_el_kassaa.py scripts/market-data/prepare_onagri_catalog_review.py
           python -m unittest discover -s tests/market_data -v
 
   # =====================================
