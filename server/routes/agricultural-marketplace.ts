@@ -27,7 +27,7 @@ function adminDb(res: Response) {
 router.get("/listings", async (req, res) => {
   const db = publicDb(res); if (!db) return;
   try {
-    const q = text(req.query.q, 100);
+    const q = text(req.query.q, 100).replace(/[,%()]/g, " ");
     const type = text(req.query.type, 40);
     const governorate = text(req.query.governorate, 80);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
@@ -55,6 +55,8 @@ router.get("/listings", async (req, res) => {
 
 router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
   const db = callerDb(req,res); if (!db) return;
+  const sellerId = req.userId;
+  if (!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
   const b = req.body ?? {};
   const listingType = text(b.listing_type,40);
   const title = text(b.title,160);
@@ -74,7 +76,7 @@ router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,re
   }
   try {
     const payload = {
-      seller_id:req.userId, listing_type:listingType, title, description:text(b.description,3000) || null,
+      seller_id:sellerId, listing_type:listingType, title, description:text(b.description,3000) || null,
       category, price, currency:text(b.currency,3) || "TND", unit:text(b.unit,40) || null,
       quantity, location:text(b.location,160) || null, governorate:text(b.governorate,80) || null,
       image_urls:b.image_urls ?? [], status:"published", harvest_crop:harvestCrop,
@@ -92,12 +94,19 @@ router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,re
 
 router.patch("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
   const db = callerDb(req,res); if (!db) return;
+  const sellerId = req.userId;
+  if (!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
   const allowed = ["title","description","category","price","currency","unit","quantity","location","governorate","image_urls","status","harvest_crop","expected_harvest_date","harvest_window_end","quality_notes"];
   const patch:Record<string,unknown> = {};
   for (const k of allowed) if (req.body?.[k] !== undefined) patch[k] = req.body[k];
+  if (patch.price !== undefined && Number.isNaN(positive(patch.price))) return res.status(400).json({success:false,code:"INVALID_PRICE"});
+  if (patch.quantity !== undefined && Number.isNaN(positive(patch.quantity))) return res.status(400).json({success:false,code:"INVALID_QUANTITY"});
+  if (patch.status !== undefined && !["draft","published","reserved","sold","archived"].includes(String(patch.status))) return res.status(400).json({success:false,code:"INVALID_LISTING_STATUS"});
+  if (patch.listing_type !== undefined) return res.status(400).json({success:false,code:"LISTING_TYPE_IMMUTABLE"});
+  if (patch.image_urls !== undefined && (!Array.isArray(patch.image_urls) || patch.image_urls.length > 8 || !patch.image_urls.every((u:unknown)=>typeof u==="string" && /^https:\/\//i.test(u)))) return res.status(400).json({success:false,code:"INVALID_IMAGE_URLS"});
   if (!Object.keys(patch).length) return res.status(400).json({success:false,code:"NO_UPDATES"});
   patch.updated_at = new Date().toISOString();
-  const {data,error} = await db.from("marketplace_listings").update(patch).eq("id",req.params.id).eq("seller_id",req.userId).select("*").maybeSingle();
+  const {data,error} = await db.from("marketplace_listings").update(patch).eq("id",req.params.id).eq("seller_id",sellerId).select("*").maybeSingle();
   if (error) return res.status(503).json({success:false,code:"LISTING_UPDATE_FAILED"});
   if (!data) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
   res.json({success:true,data});
@@ -105,7 +114,7 @@ router.patch("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Reque
 
 router.delete("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
   const db = callerDb(req,res); if (!db) return;
-  const {data,error} = await db.from("marketplace_listings").delete().eq("id",req.params.id).eq("seller_id",req.userId).select("id").maybeSingle();
+  const {data,error} = await db.from("marketplace_listings").delete().eq("id",req.params.id).eq("seller_id",sellerId).select("id").maybeSingle();
   if (error) return res.status(503).json({success:false,code:"LISTING_DELETE_FAILED"});
   if (!data) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
   res.json({success:true,data});
@@ -114,7 +123,7 @@ router.delete("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Requ
 router.get("/products", async (req,res) => {
   const db = publicDb(res); if (!db) return;
   try {
-    const type = text(req.query.type,40), q = text(req.query.q,100);
+    const type = text(req.query.type,40), q = text(req.query.q,100).replace(/[,%()]/g, " ");
     const limit = Math.min(100,Math.max(1,Number(req.query.limit)||50));
     let query = db.from("agricultural_product_catalog").select("*").eq("active",true).order("trade_name").limit(limit);
     if (type && PRODUCT_TYPES.has(type)) query = query.eq("product_type",type);
