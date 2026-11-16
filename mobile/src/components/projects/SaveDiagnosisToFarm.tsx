@@ -10,9 +10,9 @@ import { getProjects } from '../../i18n/projects';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Chip } from '../ui/Chip';
-import { getFarms, saveDiseaseDetection } from '../../api/client';
+import { getCultivations, getFarms, saveDiseaseDetection } from '../../api/client';
 import { prepareImageForUpload } from '../../utils/image';
-import { Farm, DiseaseDiagnosisResult } from '../../types';
+import { Cultivation, Farm, DiseaseDiagnosisResult } from '../../types';
 
 interface SaveDiagnosisToFarmProps {
   result: DiseaseDiagnosisResult;
@@ -33,7 +33,10 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
 
   const [farms, setFarms] = useState<Farm[]>([]);
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+  const [cultivations, setCultivations] = useState<Cultivation[]>([]);
+  const [selectedCultivationId, setSelectedCultivationId] = useState<string | null>(null);
   const [loadingFarms, setLoadingFarms] = useState(true);
+  const [loadingCultivations, setLoadingCultivations] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +60,29 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
     })();
   }, [loadFarms]);
 
+  const loadCultivations = useCallback(async () => {
+    if (!selectedFarmId) {
+      setCultivations([]);
+      setSelectedCultivationId(null);
+      return;
+    }
+    setLoadingCultivations(true);
+    try {
+      const res = await getCultivations(selectedFarmId);
+      setCultivations(res.data);
+      setSelectedCultivationId((current) => res.data.some((item) => item.id === current) ? current : null);
+    } catch {
+      setCultivations([]);
+      setSelectedCultivationId(null);
+    } finally {
+      setLoadingCultivations(false);
+    }
+  }, [selectedFarmId]);
+
+  useEffect(() => {
+    void loadCultivations();
+  }, [loadCultivations]);
+
   const handleSave = async () => {
     if (!selectedFarmId || !result.imageUri) return;
     setSaving(true);
@@ -68,7 +94,17 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
         mimeType: prepared.mimeType,
         fileName: prepared.fileName,
         farmId: selectedFarmId,
+        cultivationId: selectedCultivationId,
         plantType: result.plantType || undefined,
+        analysisResult: {
+          description: result.descriptionAr,
+          symptoms: result.symptoms,
+          confidence: result.confidence,
+          treatment_plan: {
+            immediate_treatment: result.treatment,
+            prevention_measures: result.prevention,
+          },
+        },
         primaryDisease: result.diseaseName,
         severityLevel: result.severity,
         confidence: result.confidence,
@@ -111,6 +147,17 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
               />
             ))}
           </View>
+          {cultivations.length > 0 ? (
+            <>
+              <Text style={[styles.label, isRtl && rtlStyles.rtlText]}>{p.linkDiagnosisToProject}</Text>
+              <View style={[rowWrapSm, stackTopSm]}>
+                <Chip label={p.noProjectLink} selected={!selectedCultivationId} onPress={() => setSelectedCultivationId(null)} />
+                {cultivations.map((cultivation) => (
+                  <Chip key={cultivation.id} label={cultivation.crop_name} selected={cultivation.id === selectedCultivationId} onPress={() => setSelectedCultivationId(cultivation.id)} />
+                ))}
+              </View>
+            </>
+          ) : loadingCultivations ? <Text style={[styles.note, isRtl && rtlStyles.rtlText]}>{p.savingDiagnosis}</Text> : null}
           {error ? <Text style={[styles.error, isRtl && rtlStyles.rtlText]}>{error}</Text> : null}
           <Button
             title={saving ? p.savingDiagnosis : p.saveDiagnosisToFarm}

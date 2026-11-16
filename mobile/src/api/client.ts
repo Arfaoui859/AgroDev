@@ -846,6 +846,7 @@ export async function saveDiseaseDetection(input: {
   farmId: string;
   cultivationId?: string | null;
   plantType?: string;
+  analysisResult?: Record<string, unknown>;
   primaryDisease: string;
   severityLevel?: string;
   confidence?: number | null;
@@ -858,8 +859,8 @@ export async function saveDiseaseDetection(input: {
   });
   form.append('farm_id', input.farmId);
   if (input.cultivationId) form.append('cultivation_id', input.cultivationId);
-  if (input.plantType) form.append('plant_type', input.plantType);
   form.append('primary_disease', input.primaryDisease);
+  if (input.analysisResult) form.append('analysis_result', JSON.stringify(input.analysisResult));
   if (input.severityLevel) form.append('severity_level', input.severityLevel);
   // The server expects a 0..1 confidence; our UI works in whole percents.
   if (typeof input.confidence === 'number' && Number.isFinite(input.confidence)) {

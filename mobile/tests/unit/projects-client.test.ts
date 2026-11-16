@@ -199,6 +199,9 @@ describe('project API client', () => {
       const res = await saveDiseaseDetection({
         imageUri: 'file:///tmp/leaf.jpg',
         farmId: 'f1',
+        cultivationId: 'cult-1',
+        plantType: 'olive',
+        analysisResult: { symptoms: ['spots'], treatment_plan: { immediate_treatment: ['prune'] } },
         primaryDisease: 'Olive leaf spot',
         severityLevel: 'medium',
         confidence: 87,
@@ -210,6 +213,9 @@ describe('project API client', () => {
       expect(init.method).toBe('POST');
       const body = init.body as FormData;
       expect(body.get('farm_id')).toBe('f1');
+      expect(body.get('cultivation_id')).toBe('cult-1');
+      expect(body.get('plant_type')).toBe('olive');
+      expect(JSON.parse(String(body.get('analysis_result'))).symptoms).toEqual(['spots']);
       expect(body.get('primary_disease')).toBe('Olive leaf spot');
       // UI percents are converted to the server's 0..1 confidence.
       expect(body.get('disease_confidence')).toBe('0.87');
