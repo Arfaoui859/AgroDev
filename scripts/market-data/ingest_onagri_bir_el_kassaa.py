@@ -93,7 +93,7 @@ class TableParser(HTMLParser):
 def parse_number(value: str):
     value = (value or "").translate(ARABIC_DIGITS).replace("\u00a0", " ").strip()
     value = value.replace("%", "").replace(" ", "").replace(",", ".")
-    value = re.sub(r"[^0-9.\\-]", "", value)
+    value = re.sub(r"[^0-9.-]", "", value)
     if not value or value in ("-", ".", "-."):
         return None
     try:
@@ -104,11 +104,11 @@ def parse_number(value: str):
 
 def month_from_title(title: str):
     normalized = title.lower()
-    year_match = re.search(r"20\\d{2}", normalized)
+    year_match = re.search(r"20\d{2}", normalized)
     if not year_match:
         return None
     for name, month in MONTHS.items():
-        if re.search(rf"\\b{re.escape(name)}\\b", normalized):
+        if re.search(rf"\b{re.escape(name)}\b", normalized):
             return int(year_match.group()), month
     return None
 
