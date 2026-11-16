@@ -147,3 +147,28 @@ DROP POLICY IF EXISTS "Public can read market prices" ON public.market_prices;
 CREATE POLICY "Public can read market prices"
   ON public.market_prices FOR SELECT USING (true);
 
+
+-- Public marketplace images; uploads are isolated under the authenticated seller UUID.
+INSERT INTO storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
+VALUES ('marketplace-images','marketplace-images',true,5242880,ARRAY['image/jpeg','image/png','image/webp'])
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public can view marketplace images" ON storage.objects;
+CREATE POLICY "Public can view marketplace images" ON storage.objects
+  FOR SELECT USING (bucket_id = 'marketplace-images');
+
+DROP POLICY IF EXISTS "Sellers upload own marketplace images" ON storage.objects;
+CREATE POLICY "Sellers upload own marketplace images" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'marketplace-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+DROP POLICY IF EXISTS "Sellers update own marketplace images" ON storage.objects;
+CREATE POLICY "Sellers update own marketplace images" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (bucket_id = 'marketplace-images' AND auth.uid()::text = (storage.foldername(name))[1])
+  WITH CHECK (bucket_id = 'marketplace-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+DROP POLICY IF EXISTS "Sellers delete own marketplace images" ON storage.objects;
+CREATE POLICY "Sellers delete own marketplace images" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (bucket_id = 'marketplace-images' AND auth.uid()::text = (storage.foldername(name))[1]);
