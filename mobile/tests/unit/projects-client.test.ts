@@ -119,11 +119,12 @@ describe('project API client', () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce(
         jsonResponse({ success: true, data: { id: 't1', status: 'completed' } }),
       );
-      const res = await updateProjectTask('t1', { title: 'Till', status: 'completed' });
+      const res = await updateProjectTask('t1', { title: 'Till', status: 'completed', task_type: 'irrigation', priority: 'medium', due_date: '2026-12-01', description: 'water the olive trees' });
       expect(res.data?.status).toBe('completed');
       const [url, init] = (global.fetch as jest.Mock).mock.calls[0];
       expect(url).toBe('http://test.local/api/farm-operations/tasks/t1');
       expect(init.method).toBe('PUT');
+      expect(JSON.parse(init.body)).toMatchObject({ task_type: 'irrigation', priority: 'medium', due_date: '2026-12-01', description: 'water the olive trees' });
     });
   });
 

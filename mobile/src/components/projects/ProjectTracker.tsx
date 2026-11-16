@@ -150,7 +150,9 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId, cultivat
       const res = await updateProjectTask(task.id, {
         title: task.title,
         status: nextStatus,
+        task_type: task.task_type,
         priority: task.priority,
+        due_date: task.due_date,
         description: task.description,
       });
       if (res.roleBlocked) {

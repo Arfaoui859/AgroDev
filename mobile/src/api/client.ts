@@ -950,6 +950,7 @@ export async function updateProjectTask(
   patch: {
     title?: string;
     status?: FarmTaskStatus;
+    task_type?: FarmTaskType;
     priority?: FarmTaskPriority;
     due_date?: string | null;
     description?: string;
