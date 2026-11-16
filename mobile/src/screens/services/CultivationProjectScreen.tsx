@@ -62,6 +62,32 @@ function genericLabel(kind: ProjectTask['kind'], s9: ReturnType<typeof getSoil>)
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+const taskDescription = (task: ProjectTask, language: string): string => {
+  if (task.generic) {
+    return language === 'ar'
+      ? 'مهمة عامة ضمن دورة الزراعة. راجع الصنف والموسم وظروف الحقل قبل التنفيذ.'
+      : language === 'fr'
+        ? 'Étape générale du cycle cultural. Vérifiez la variété, la saison et les conditions de la parcelle avant exécution.'
+        : 'General cultivation stage. Confirm the crop variety, season and field conditions before carrying it out.';
+  }
+  const labels = language === 'ar'
+    ? { reason: 'السبب', how: 'طريقة التنفيذ', when: 'التوقيت', verify: 'كيف تتحقق', evidence: 'الدليل' }
+    : language === 'fr'
+      ? { reason: 'Pourquoi', how: 'Méthode', when: 'Quand', verify: 'Vérification', evidence: 'Éléments justificatifs' }
+      : { reason: 'Why', how: 'How to do it', when: 'When', verify: 'How to verify', evidence: 'Evidence' };
+  return [
+    task.reason ? `${labels.reason}: ${task.reason}` : '',
+    task.howTo ? `${labels.how}: ${task.howTo}` : '',
+    task.when ? `${labels.when}: ${task.when}` : '',
+    task.verification ? `${labels.verify}: ${task.verification}` : '',
+    task.evidence ? `${labels.evidence}: ${task.evidence}` : '',
+  ].filter(Boolean).join('\n') || (language === 'ar'
+    ? 'راجع التقرير الزراعي المرتبط بهذه المهمة قبل التنفيذ.'
+    : language === 'fr'
+      ? 'Consultez le rapport agronomique associé avant exécution.'
+      : 'Review the linked agronomic report before carrying out this task.');
+};
+
 /**
  * Cultivation project — confirms the crop/farm/plot/date, persists it via the
  * existing `POST /api/assistant/actions/cultivations`, then shows a checklist
@@ -217,9 +243,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
             title,
             task_type: taskTypes[task.kind],
             priority: task.priority,
-            description: task.generic
-              ? 'General cultivation lifecycle task.'
-              : 'Generated from the selected plot soil analysis recommendations.',
+            description: taskDescription(task, language),
           });
           if (saved.roleBlocked || saved.error || !saved.data) break;
           existingTitles.add(title.toLocaleLowerCase());
@@ -234,7 +258,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
     return () => {
       active = false;
     };
-  }, [created, reportLoaded, tasks, s9]);
+  }, [created, reportLoaded, tasks, s9, language]);
 
   const handleCreate = async () => {
     const parsedArea = Number(area.replace(',', '.'));
