@@ -70,6 +70,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
   const [alerts, setAlerts] = useState<AppNotification[]>([]);
   const [alertsError, setAlertsError] = useState<string | null>(null);
   const [alertsUnavailable, setAlertsUnavailable] = useState(false);
+  const [farmOverviewRefreshKey, setFarmOverviewRefreshKey] = useState(0);
 
   // Resolve the weather location from the signed-in user's governorate, so the
   // dashboard is relevant to their region instead of always showing Tunis.
@@ -142,6 +143,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setFarmOverviewRefreshKey((current) => current + 1);
     try {
       await loadDashboardData();
     } finally {
@@ -403,6 +405,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
       <HomeFarmOverview
         onOpenFarms={() => onNavigateToService('farms')}
         onOpenProjects={() => onNavigateToService('projects')}
+        refreshKey={farmOverviewRefreshKey}
       />
 
       {/* Available agricultural intelligence — server-declared capability state */}
