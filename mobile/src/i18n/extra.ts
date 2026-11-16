@@ -442,6 +442,9 @@ export interface ExtraTranslations {
   marketIntelNote: string;
   marketIntelForecast: string;
   marketIntelSupplyDemand: string;
+  marketListingsTitle: string;
+  marketListingsUnavailable: string;
+  marketListingsBody: string;
 
   // AI assistant screen
   assistantErrorReply: string;
@@ -943,6 +946,9 @@ const ar: ExtraTranslations = {
   marketIntelNote: 'حالة خدمات التحليل السوقي كما يعلنها الخادم الآن — لا نعرض توقعات مختلقة.',
   marketIntelForecast: 'توقّع الأسعار',
   marketIntelSupplyDemand: 'العرض والطلب',
+  marketListingsTitle: 'عروض البيع والشراء',
+  marketListingsUnavailable: 'العروض غير متاحة حالياً',
+  marketListingsBody: 'خدمة العروض لم تُربط بعد بقاعدة بيانات البائعين والمنتجات. الأسعار المسجّلة متاحة للعرض فقط؛ لا توجد إعلانات بيع أو شراء فعلية حالياً.',
 
   // AI assistant screen
   assistantErrorReply: 'عذراً، حدث خطأ أثناء معالجة السؤال. يرجى التأكد من الاتصال والمحاولة ثانية.',
@@ -1440,6 +1446,9 @@ const fr: ExtraTranslations = {
   marketIntelNote: 'État réel des analyses de marché tel que déclaré par le serveur — aucune prévision inventée.',
   marketIntelForecast: 'Prévision des prix',
   marketIntelSupplyDemand: 'Offre et demande',
+  marketListingsTitle: 'Offres d’achat et de vente',
+  marketListingsUnavailable: 'Les annonces ne sont pas disponibles',
+  marketListingsBody: 'Le service d’annonces n’est pas encore relié à une base de vendeurs et de produits. Les prix enregistrés sont consultables, mais aucune annonce réelle n’est disponible.',
 
   // AI assistant screen
   assistantErrorReply: 'Désolé, une erreur s’est produite lors du traitement de la question. Vérifiez la connexion et réessayez.',
@@ -1938,6 +1947,9 @@ const en: ExtraTranslations = {
   marketIntelNote: 'The real state of market analysis services as declared by the server — no forecast is invented.',
   marketIntelForecast: 'Price forecast',
   marketIntelSupplyDemand: 'Supply & demand',
+  marketListingsTitle: 'Buy & sell listings',
+  marketListingsUnavailable: 'Listings are not available yet',
+  marketListingsBody: 'The listings service is not connected to a persisted seller and product store yet. Recorded market prices can be viewed, but there are no real buy/sell listings available.',
 
   // AI assistant screen
   assistantErrorReply: 'Sorry, an error occurred while processing the question. Please check your connection and try again.',

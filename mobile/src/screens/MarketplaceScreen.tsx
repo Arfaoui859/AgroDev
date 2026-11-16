@@ -18,8 +18,8 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { getMarketPrices } from '../api/client';
-import { AICapability, MarketPriceItem, ProvenanceMeta } from '../types';
+import { getMarketPrices, getMarketplaceListings } from '../api/client';
+import { AICapability, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import { useAICapabilities } from '../hooks/useAICapabilities';
 
 /**
@@ -32,6 +32,8 @@ export const MarketplaceScreen: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
   const { byId: capabilities } = useAICapabilities();
   const [prices, setPrices] = useState<MarketPriceItem[]>([]);
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [listingsUnavailable, setListingsUnavailable] = useState(false);
   // Default to an honest "stored, not verified" label; the load replaces it with
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
@@ -42,11 +44,13 @@ export const MarketplaceScreen: React.FC = () => {
   const [fromCache, setFromCache] = useState(false);
 
   const loadPrices = useCallback(async () => {
-    const res = await getMarketPrices();
+    const [res, listingRes] = await Promise.all([getMarketPrices(), getMarketplaceListings()]);
     setPrices(res.data?.prices ?? []);
     if (res.data?.meta) setMeta(res.data.meta);
     setError(res.error);
     setFromCache(res.fromCache);
+    setListings(listingRes.data.listings);
+    setListingsUnavailable(listingRes.unavailable);
   }, []);
 
   React.useEffect(() => {
@@ -181,6 +185,34 @@ export const MarketplaceScreen: React.FC = () => {
         </>
       )}
 
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="storefront-outline" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>{x.marketListingsTitle}</Text>
+        </View>
+        {listingsUnavailable ? (
+          <StateCard kind="unavailable" title={x.marketListingsUnavailable} message={x.marketListingsBody} compact />
+        ) : listings.length === 0 ? (
+          <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
+        ) : (
+          <View style={styles.listingRows}>
+            {listings.map((listing) => (
+              <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
+                <View style={styles.listingText}>
+                  <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {[listing.category, listing.sellerName, listing.location].filter(Boolean).join(' • ')}
+                  </Text>
+                </View>
+                {listing.price != null ? (
+                  <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
+
       {/* Market intelligence — honest availability of forecast & supply/demand */}
       <Card variant="outlined" style={styles.intelCard}>
         <View style={[styles.tipRow, isRtl && rtlStyles.rtlRow]}>
@@ -240,6 +272,15 @@ const styles = StyleSheet.create({
   intelLabel: labelSemibold,
   intelState: xsSemibold,
   provBar: stackSm,
+  listingsCard: { marginBottom: spacing.lg, padding: spacing.md },
+  listingsHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  listingsTitle: { ...titleBase, color: colors.text },
+  listingRows: { gap: spacing.sm },
+  listingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
+  listingText: { flex: 1, gap: 2 },
+  listingName: { ...labelSemibold, color: colors.text },
+  listingMeta: subtleCaption,
+  listingPrice: { ...labelSemibold, color: colors.primaryDark, textAlign: 'right' },
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },
   priceCard: cardPad,
   cardHeader: spaceBetweenSm,

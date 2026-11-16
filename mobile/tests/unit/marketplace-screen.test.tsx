@@ -4,10 +4,12 @@ import { LanguageProvider } from '../../src/context/LanguageContext';
 import { MarketplaceScreen } from '../../src/screens/MarketplaceScreen';
 
 const mockGetMarketPrices = jest.fn();
+const mockGetMarketplaceListings = jest.fn();
 const mockGetAICapabilities = jest.fn();
 
 jest.mock('../../src/api/client', () => ({
   getMarketPrices: (...args: any[]) => mockGetMarketPrices(...args),
+  getMarketplaceListings: (...args: any[]) => mockGetMarketplaceListings(...args),
   getAICapabilities: (...args: any[]) => mockGetAICapabilities(...args),
   capabilityMap: (payload: any) => {
     const map: Record<string, any> = {};
@@ -26,6 +28,7 @@ const renderScreen = () =>
 describe('MarketplaceScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetMarketplaceListings.mockResolvedValue({ data: { listings: [], meta: { provenance: 'unavailable', isRealData: false } }, error: 'not connected', unavailable: true });
     mockGetAICapabilities.mockResolvedValue({
       data: {
         capabilities: [
