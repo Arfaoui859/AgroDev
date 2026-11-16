@@ -3,7 +3,7 @@ import { SoilReport } from '../types';
 export type ProjectTaskKind = 'measure' | 'prepare' | 'amend' | 'irrigation' | 'plant' | 'monitor' | 'retest';
 
 export interface ProjectTask {
-  /** Stable id so the local done-tick survives re-derivation. */
+  /** Stable id so the task can be de-duplicated when persisted for a project. */
   id: string;
   kind: ProjectTaskKind;
   /** Server-authored text (Arabic) or a localised generic label. */
