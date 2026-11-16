@@ -18,8 +18,8 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { getMarketPrices, getMarketplaceListings } from '../api/client';
-import { AICapability, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
+import { getAgriculturalCatalog, getMarketPrices, getMarketplaceListings } from '../api/client';
+import { AICapability, AgriculturalCatalogProduct, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import { useAICapabilities } from '../hooks/useAICapabilities';
 
 /**
@@ -33,6 +33,8 @@ export const MarketplaceScreen: React.FC = () => {
   const { byId: capabilities } = useAICapabilities();
   const [prices, setPrices] = useState<MarketPriceItem[]>([]);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [catalog, setCatalog] = useState<AgriculturalCatalogProduct[]>([]);
+  const [catalogUnavailable, setCatalogUnavailable] = useState(false);
   const [listingsUnavailable, setListingsUnavailable] = useState(false);
   // Default to an honest "stored, not verified" label; the load replaces it with
   // the backend's own provenance. Never default to `isRealData: true`.
@@ -46,9 +48,10 @@ export const MarketplaceScreen: React.FC = () => {
   const loadPrices = useCallback(async () => {
     // Prices and seller listings are separate backend capabilities. A failure
     // in one must not suppress useful data returned by the other.
-    const [priceOutcome, listingsOutcome] = await Promise.all([
+    const [priceOutcome, listingsOutcome, catalogOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getAgriculturalCatalog().then((data) => ({ data })).catch((error: unknown) => ({ error })),
     ]);
 
     if ('data' in priceOutcome) {
@@ -70,6 +73,14 @@ export const MarketplaceScreen: React.FC = () => {
       setListings([]);
       setListingsUnavailable(true);
     }
+
+    if ('data' in catalogOutcome) {
+      setCatalog(catalogOutcome.data.data);
+      setCatalogUnavailable(Boolean(catalogOutcome.data.error));
+    } else {
+      setCatalog([]);
+      setCatalogUnavailable(true);
+    }
   }, []);
 
   React.useEffect(() => {
@@ -90,6 +101,9 @@ export const MarketplaceScreen: React.FC = () => {
       setRefreshing(false);
     }
   };
+
+  const sellerListings = listings.filter((item) => item.listingType !== 'harvest');
+  const futureHarvests = listings.filter((item) => item.listingType === 'harvest');
 
   const filteredPrices = prices.filter((item) => {
     const q = searchQuery.trim().toLowerCase();
@@ -217,11 +231,11 @@ export const MarketplaceScreen: React.FC = () => {
         </View>
         {listingsUnavailable ? (
           <StateCard kind="unavailable" title={x.marketListingsUnavailable} message={x.marketListingsBody} compact />
-        ) : listings.length === 0 ? (
+        ) : sellerListings.length === 0 ? (
           <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
         ) : (
           <View style={styles.listingRows}>
-            {listings.map((listing) => (
+            {sellerListings.map((listing) => (
               <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
                 <View style={styles.listingText}>
                   <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
@@ -236,6 +250,74 @@ export const MarketplaceScreen: React.FC = () => {
             ))}
           </View>
         )}
+      </Card>
+
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="sprout" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'محاصيل قادمة للحصاد' : language === 'fr' ? 'Récoltes à venir' : 'Upcoming harvests'}
+          </Text>
+        </View>
+        {listingsUnavailable ? (
+          <StateCard kind="unavailable" title={x.marketListingsUnavailable} message={x.marketListingsBody} compact />
+        ) : futureHarvests.length === 0 ? (
+          <StateCard kind="empty" title={x.stateEmpty}
+            message={language === 'ar' ? 'لا توجد عروض حصاد متوقعة منشورة حالياً.' : language === 'fr' ? 'Aucune récolte prévisionnelle publiée.' : 'No upcoming harvest offers have been published yet.'} compact />
+        ) : (
+          <View style={styles.listingRows}>
+            {futureHarvests.map((listing) => (
+              <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
+                <View style={styles.listingText}>
+                  <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {[listing.sellerName, listing.governorate || listing.location,
+                      listing.expectedHarvestDate ? (language === 'ar' ? 'الحصاد: ' : language === 'fr' ? 'Récolte : ' : 'Harvest: ') + listing.expectedHarvestDate : null]
+                      .filter(Boolean).join(' • ')}
+                  </Text>
+                </View>
+                {listing.price != null ? (
+                  <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
+
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="flask-outline" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'دليل الأدوية والأسمدة والبذور' : language === 'fr' ? 'Catalogue agricole' : 'Agricultural inputs catalog'}
+          </Text>
+        </View>
+        {catalogUnavailable ? (
+          <StateCard kind="unavailable"
+            title={language === 'ar' ? 'الكتالوج غير متاح' : language === 'fr' ? 'Catalogue indisponible' : 'Catalog unavailable'}
+            message={language === 'ar' ? 'يلزم تطبيق ترحيل قاعدة البيانات وربط مصدر موثوق.' : language === 'fr' ? 'La migration et une source fiable doivent être configurées.' : 'Apply the database migration and connect a trusted source.'} compact />
+        ) : catalog.length === 0 ? (
+          <StateCard kind="empty" title={x.stateEmpty}
+            message={language === 'ar' ? 'لم يتم استيراد منتجات موثّقة بعد. لن نعرض أسماء أو جرعات مخمّنة.' : language === 'fr' ? 'Aucun produit source n’a encore été importé.' : 'No source-backed products have been imported yet.'} compact />
+        ) : (
+          <View style={styles.listingRows}>
+            {catalog.slice(0, 12).map((product) => (
+              <View key={product.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
+                <View style={styles.listingText}>
+                  <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{product.tradeName}</Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {[product.productType, product.activeIngredient, product.sourceName].filter(Boolean).join(' • ')}
+                  </Text>
+                </View>
+                <Badge label={product.registrationStatus === 'registered_tunisia' ? (language === 'ar' ? 'مرخّص' : language === 'fr' ? 'Homologué' : 'Registered') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'À vérifier' : 'Unverified')}
+                  variant={product.registrationStatus === 'registered_tunisia' ? 'success' : 'warning'} size="sm" />
+              </View>
+            ))}
+          </View>
+        )}
+        <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+          {language === 'ar' ? 'حالة التسجيل ومصدر البيانات ظاهرين لكل منتج. وجود المنتج في الكتالوج لا يثبت وحده صلاحيته للاستعمال.' : language === 'fr' ? 'Le statut et la source sont affichés. Une fiche ne remplace pas la vérification de l’étiquette.' : 'Registration status and source are shown. A catalog record alone does not authorize product use.'}
+        </Text>
       </Card>
 
       {/* Market intelligence — honest availability of forecast & supply/demand */}
