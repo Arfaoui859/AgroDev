@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, radius, shadows, spacing, typography } from '../../theme/colors';
 import { rtlStyles } from '../../theme/rtl';
 import { Card } from '../../components/ui/Card';
@@ -29,6 +30,7 @@ import {
 
 interface CommunityScreenProps {
   onBack: () => void;
+  onOpenProfile: () => void;
 }
 
 type CommunityCategory = 'all' | 'general' | 'crops' | 'soil' | 'irrigation' | 'plant_protection';
@@ -101,8 +103,9 @@ const copy = (language: string) => ({
   },
 });
 
-export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack }) => {
+export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpenProfile }) => {
   const { language, isRtl } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const text = copy(language);
   const [category, setCategory] = useState<CommunityCategory>('all');
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -125,6 +128,12 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack }) => {
 
   useEffect(() => {
     let active = true;
+    if (!isAuthenticated) {
+      setPosts([]);
+      setError(null);
+      setLoading(false);
+      return () => { active = false; };
+    }
     setLoading(true);
     getCommunityPosts(category).then((result) => {
       if (!active) return;
@@ -139,7 +148,7 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack }) => {
       }
     });
     return () => { active = false; };
-  }, [category, text.loadError]);
+  }, [category, text.loadError, isAuthenticated]);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -225,7 +234,17 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} colors={[colors.primary]} tintColor={colors.primary} />}
         contentContainerStyle={styles.content}
       >
-        <Card variant="elevated" style={styles.composer}>
+        {!isAuthenticated ? (
+          <Card variant="elevated" style={styles.loginCard}>
+            <MaterialCommunityIcons name="account-lock-outline" size={30} color={colors.primary} />
+            <Text style={[styles.loginText, isRtl && rtlStyles.rtlText]}>{text.login}</Text>
+            <TouchableOpacity onPress={onOpenProfile} style={styles.publishButton} accessibilityRole="button">
+              <Text style={styles.publishText}>{language === 'ar' ? 'افتح الملف الشخصي' : language === 'fr' ? 'Ouvrir le profil' : 'Open profile'}</Text>
+              <MaterialCommunityIcons name={isRtl ? 'arrow-left' : 'arrow-right'} size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          </Card>
+        ) : (
+          <Card variant="elevated" style={styles.composer}>
           <View style={[styles.composerHeader, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.composerIcon}>
               <MaterialCommunityIcons name="feather" size={20} color={colors.primary} />
@@ -257,17 +276,18 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack }) => {
             </TouchableOpacity>
           </View>
         </Card>
+        )}
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.categories, isRtl && rtlStyles.rtlRow]}>
+        {isAuthenticated ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.categories, isRtl && rtlStyles.rtlRow]}>
           {CATEGORIES.map((item) => (
             <CategoryPill key={item} label={categoryLabel(item, language)} selected={category === item} onPress={() => setCategory(item)} />
           ))}
-        </ScrollView>
+        </ScrollView> : null}
 
-        {interactionError ? <Text style={styles.errorText}>{interactionError}</Text> : null}
-        {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{text.loadError}</Text><TouchableOpacity onPress={refresh}><Text style={styles.retry}>{text.send}</Text></TouchableOpacity></View> : null}
+        {isAuthenticated && interactionError ? <Text style={styles.errorText}>{interactionError}</Text> : null}
+        {isAuthenticated && error ? <View style={styles.errorBox}><Text style={styles.errorText}>{text.loadError}</Text><TouchableOpacity onPress={refresh}><Text style={styles.retry}>{text.send}</Text></TouchableOpacity></View> : null}
 
-        {loading ? (
+        {!isAuthenticated ? null : loading ? (
           <View style={styles.loading}><ActivityIndicator color={colors.primary} size="large" /></View>
         ) : posts.length === 0 ? (
           <View style={styles.empty}>
@@ -332,6 +352,8 @@ const styles = StyleSheet.create({
   back: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
   backText: { color: colors.textSecondary, fontSize: typography.fontSizes.sm, fontWeight: typography.fontWeights.medium },
   content: { paddingBottom: spacing['3xl'], gap: spacing.md },
+  loginCard: { alignItems: 'center', gap: spacing.md, padding: spacing.lg },
+  loginText: { color: colors.textSecondary, fontSize: typography.fontSizes.sm, textAlign: 'center', lineHeight: 22 },
   composer: { padding: spacing.md, gap: spacing.md },
   composerHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   composerIcon: { width: 38, height: 38, borderRadius: radius.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
