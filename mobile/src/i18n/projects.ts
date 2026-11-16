@@ -123,6 +123,8 @@ export interface ProjectTranslations {
   // Disease evidence persistence
   saveDiagnosisToFarm: string;
   saveDiagnosisHeading: string;
+  linkDiagnosisToProject: string;
+  noProjectLink: string;
   savingDiagnosis: string;
   diagnosisSaved: string;
   diagnosisSaveFailed: string;
@@ -245,6 +247,8 @@ const ar: ProjectTranslations = {
 
   saveDiagnosisToFarm: 'حفظ في سجل المزرعة',
   saveDiagnosisHeading: 'حفظ التشخيص في المزرعة',
+  linkDiagnosisToProject: 'ربط التشخيص بمشروع زراعي (اختياري)',
+  noProjectLink: 'دون ربط بمشروع',
   savingDiagnosis: 'جارٍ الحفظ…',
   diagnosisSaved: 'تم حفظ التشخيص والصورة في سجل المزرعة.',
   diagnosisSaveFailed: 'تعذّر حفظ التشخيص في سجل المزرعة.',
@@ -367,6 +371,8 @@ const fr: ProjectTranslations = {
 
   saveDiagnosisToFarm: 'Enregistrer dans le registre',
   saveDiagnosisHeading: 'Enregistrer le diagnostic dans la ferme',
+  linkDiagnosisToProject: 'Lier le diagnostic à un projet agricole (facultatif)',
+  noProjectLink: 'Sans projet associé',
   savingDiagnosis: 'Enregistrement…',
   diagnosisSaved: 'Diagnostic et image enregistrés dans le registre de la ferme.',
   diagnosisSaveFailed: 'Échec de l\u2019enregistrement du diagnostic dans la ferme.',
@@ -489,6 +495,8 @@ const en: ProjectTranslations = {
 
   saveDiagnosisToFarm: 'Save to farm record',
   saveDiagnosisHeading: 'Save diagnosis to a farm',
+  linkDiagnosisToProject: 'Link diagnosis to an agricultural project (optional)',
+  noProjectLink: 'No project link',
   savingDiagnosis: 'Saving…',
   diagnosisSaved: 'Diagnosis and image saved to the farm record.',
   diagnosisSaveFailed: 'Could not save the diagnosis to the farm record.',
