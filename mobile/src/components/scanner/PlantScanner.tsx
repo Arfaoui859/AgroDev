@@ -58,11 +58,17 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
   const [result, setResult] = useState<DiseaseDiagnosisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [scanReady, setScanReady] = useState(false);
   const scanProgress = useRef(new Animated.Value(0)).current;
 
   // Decorative camera guidance only; diagnosis starts after photo submission.
   useEffect(() => {
-    if (phase !== 'capture' || !permission?.granted) return;
+    if (phase !== 'capture' || !permission?.granted) {
+      setScanReady(false);
+      return;
+    }
+    setScanReady(false);
+    const readyTimer = setTimeout(() => setScanReady(true), 1600);
     scanProgress.setValue(0);
     const sweep = Animated.loop(
       Animated.sequence([
@@ -71,7 +77,10 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
       ]),
     );
     sweep.start();
-    return () => sweep.stop();
+    return () => {
+      clearTimeout(readyTimer);
+      sweep.stop();
+    };
   }, [phase, permission?.granted, scanProgress]);
 
   const handleCapture = async () => {
@@ -207,7 +216,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
               </View>
               <Text style={styles.scanHint}>{x.scannerGuidance}</Text>
             </View>
-            <Text style={styles.capturePrompt}>{x.scannerCapture}</Text>
+            <Text style={styles.capturePrompt}>{scanReady ? x.scannerCapture : x.scannerGuidance}</Text>
           </View>
           {errorMsg ? (
             <View style={[styles.captureError, isRtl && rtlStyles.rtlRow]}>
@@ -234,10 +243,10 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCapture}
-              disabled={capturing}
+              disabled={capturing || !scanReady}
               accessibilityRole="button"
               accessibilityLabel={x.scannerCapture}
-              accessibilityState={{ disabled: capturing, busy: capturing }}
+              accessibilityState={{ disabled: capturing || !scanReady, busy: capturing }}
               style={styles.shutter}
             >
               {capturing ? (
