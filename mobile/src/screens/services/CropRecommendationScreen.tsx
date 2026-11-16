@@ -171,7 +171,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
         setLoading(false);
       }
     },
-    [language, x.cropHistorySummary],
+    [language, x.cropHistorySummary, x.stateError],
   );
 
   // Auto-run from the handed-over context: a plot reads its persisted soil, a
@@ -188,7 +188,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
         });
       }
     })();
-  }, []);
+  }, [initialContext?.fieldId, initialContext?.soil, runFromPlot, runFromMeasurements]);
 
   const handleManual = () => {
     const parse = (raw: string): number | undefined => {
