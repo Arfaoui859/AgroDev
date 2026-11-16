@@ -59,6 +59,7 @@ export interface WeatherData {
   agriculturalIndices: {
     growingDegreeDays: number;
     evapotranspiration: number;
+    evapotranspirationSource?: "simplified-weather-estimate";
     soilMoisture: number;
     soilMoistureSource?: "weather-derived-estimate";
     cropStress: "low" | "medium" | "high";
@@ -274,6 +275,7 @@ export async function getWeatherFromWeatherApi(
           (sum, d) => sum + Math.max(0, (d.maxTemp + d.minTemp) / 2 - 10), 0,
         )),
         evapotranspiration: round(et0, 1),
+        evapotranspirationSource: "simplified-weather-estimate",
         soilMoisture: soilMoisturePercent,
         soilMoistureSource: "weather-derived-estimate",
         cropStress,
@@ -330,7 +332,7 @@ const TUNISIA_MONTHLY_TEMP: Record<string, number[]> = {
 /** Approximate monthly rainfall (mm) representative of northern Tunisia (Jan..Dec). */
 const TUNISIA_MONTHLY_RAIN = [70, 60, 50, 40, 25, 10, 5, 8, 30, 55, 65, 75];
 
-/** FAO-56 derived reference evapotranspiration (mm/day) from current observations. */
+/** Simplified FAO-56-style ET0 estimate (mm/day); radiation is assumed, not measured. */
 export function calculateEvapotranspiration(
   temp: number,
   humidity: number,
