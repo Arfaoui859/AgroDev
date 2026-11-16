@@ -114,6 +114,24 @@ describe('MarketplaceScreen', () => {
     expect(screen.queryByText(/%/)).toBeNull();
   });
 
+  it('states clearly that buying and selling listings are not connected yet', async () => {
+    mockGetMarketPrices.mockResolvedValueOnce({
+      data: { prices: [], meta: { provenance: 'unavailable', isRealData: false } },
+      error: null,
+      fromCache: false,
+    });
+    mockGetMarketplaceListings.mockResolvedValueOnce({
+      data: { listings: [], meta: { provenance: 'unavailable', isRealData: false } },
+      error: 'MARKETPLACE_STORE_NOT_CONNECTED',
+      unavailable: true,
+    });
+
+    await renderScreen();
+
+    await waitFor(() => expect(screen.getByText('العروض غير متاحة حالياً')).toBeTruthy());
+    expect(screen.getByText(/لم تُربط بعد بقاعدة بيانات البائعين/)).toBeTruthy();
+  });
+
   it('surfaces forecast and supply/demand as unavailable instead of inventing them', async () => {
     mockGetMarketPrices.mockResolvedValueOnce({
       data: { prices: [], meta: { provenance: 'unavailable', isRealData: false } },
