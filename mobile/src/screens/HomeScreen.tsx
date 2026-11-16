@@ -263,7 +263,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
   return (
     <ScrollView
       style={screenStyles.container}
-      contentContainerStyle={screenStyles.content}
+      contentContainerStyle={[screenStyles.content, styles.content]}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
@@ -290,15 +290,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
                 {user?.governorate ? ` • ${user.governorate}` : ''}
               </Text>
             </View>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => onNavigateToTab('profile')}
-              accessibilityRole="button"
-              accessibilityLabel={t.profileTitle}
-              style={styles.heroAvatar}
-            >
-              <MaterialCommunityIcons name="account" size={24} color={colors.textInverse} />
-            </TouchableOpacity>
+            <View style={styles.heroActions}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={onOpenNotifications}
+                accessibilityRole="button"
+                accessibilityLabel={t.urgentAlerts}
+                style={styles.heroIconButton}
+              >
+                <MaterialCommunityIcons name="bell-outline" size={21} color={colors.textInverse} />
+                {alerts.length > 0 ? <View style={styles.heroNotificationDot} /> : null}
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => onNavigateToTab('profile')}
+                accessibilityRole="button"
+                accessibilityLabel={t.profileTitle}
+                style={styles.heroAvatar}
+              >
+                <MaterialCommunityIcons name="account" size={23} color={colors.textInverse} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {loading ? null : weather ? (
@@ -681,11 +693,11 @@ const styles = StyleSheet.create({
   weatherMoreSpacer: flex1,
   weatherMoreText: linkCaption,
   provRow: { ...rowGapSm, marginTop: spacing.md, flexWrap: 'wrap' },
-  sectionContainer: stackLg,
+  sectionContainer: { ...stackLg, marginBottom: spacing.xs },
   quickActionsGrid: gapSm,
   tilesRow: actionsRow,
   bigActionShadow: { borderRadius: radius.lg, ...shadows.md },
-  bigActionCard: { minHeight: 48, borderRadius: radius.lg, padding: spacing.lg },
+  bigActionCard: { minHeight: 148, borderRadius: radius.lg, padding: spacing.lg, justifyContent: 'space-between' },
   bigActionHeader: spaceBetweenSm,
   bigActionIconWrapper: {
     width: 48,
