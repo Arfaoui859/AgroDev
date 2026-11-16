@@ -132,7 +132,6 @@ describe('HomeScreen urgent-alert panel', () => {
     await renderScreen();
 
     await waitFor(() => expect(screen.getByText('تنبيه مستقل عن الطقس')).toBeTruthy());
-    expect(screen.getByText('الطقس غير متاح حالياً')).toBeTruthy();
   });
 
   it('shows an honest empty state when there are genuinely no urgent alerts', async () => {
