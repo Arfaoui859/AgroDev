@@ -268,43 +268,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
 
           <ProvenanceBar meta={meta} style={styles.provBar} />
 
-          <View style={[styles.farmStatsRow, isRtl && rtlStyles.rtlRow]}>
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>{fields.length}</Text>
-              <Text style={styles.statLabel}>{x.farmFieldCount}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>
-                {fields.reduce((acc, f) => acc + (f.size_hectares || 0), 0).toFixed(1)}
-              </Text>
-              <Text style={styles.statLabel}>{x.farmTotalArea}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>
-                {new Set(fields.map((f) => (f.current_crop || '').trim()).filter(Boolean)).size}
-              </Text>
-              <Text style={styles.statLabel}>{x.farmCropCount}</Text>
-            </View>
+          <View style={{ gap: spacing.xs }}>
+            <Button title={language === 'ar' ? 'تسجيل نقطة GPS' : language === 'fr' ? 'Enregistrer un point GPS' : 'Record GPS point'}
+              onPress={recordBoundaryPoint} variant="outline" size="md" />
+            <Button title={savingBoundary ? (language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ الحدود' : language === 'fr' ? 'Enregistrer les limites' : 'Save boundary')}
+              onPress={saveBoundary} disabled={boundaryPoints.length < 3 || savingBoundary} loading={savingBoundary} size="md" />
           </View>
-        </Card>
-      )}
-
-      {isAuthenticated && farms[0] ? (
-        <Card variant="elevated" style={{ marginBottom: spacing.md, padding: spacing.md, gap: spacing.sm }}>
-          <View style={[styles.farmHeader, isRtl && rtlStyles.rtlRow]}>
-            <View style={styles.farmHeaderInfo}>
-              <Text style={[styles.formTitle, isRtl && rtlStyles.rtlText]}>
-                {language === 'ar' ? 'صورة الأرض بالأقمار الصناعية' : language === 'fr' ? 'Vue satellite de la parcelle' : 'Satellite view of your farm'}
-              </Text>
-              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
-                {language === 'ar' ? 'سجّل نقاط محيط الأرض عبر GPS، ثم احفظ الحدود.' : language === 'fr' ? 'Enregistrez le périmètre avec le GPS puis sauvegardez-le.' : 'Record perimeter points with GPS, then save the boundary.'}
-              </Text>
-            </View>
-            <MaterialCommunityIcons name="satellite-variant" size={26} color={colors.primary} />
-          </View>
-
           {farms[0].boundaries ? (
             <Image
               source={{ uri: getSatellitePreviewUrl(farms[0].boundaries) }}
@@ -315,12 +284,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           ) : (
             <View style={{ minHeight: 100, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle, alignItems: 'center', justifyContent: 'center', padding: spacing.md }}>
               <MaterialCommunityIcons name="map-outline" size={30} color={colors.textMuted} />
-              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText, { textAlign: 'center' }]}>
+              <Text style={[styles.footerText, isRtl && rtlStyles.rtlText, { textAlign: 'center' }]}>
                 {language === 'ar' ? 'لا توجد حدود محفوظة بعد. امشِ حول الأرض وسجّل نقاط الزوايا.' : language === 'fr' ? 'Aucune limite enregistrée. Faites le tour de la parcelle et relevez les sommets.' : 'No saved boundary yet. Walk around the plot and record its corners.'}
               </Text>
             </View>
           )}
-          <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+          <Text style={[styles.footerText, isRtl && rtlStyles.rtlText]}>
             {farms[0].boundaries ? 'Imagery © Esri and contributors' : ''}
             {boundaryPoints.length ? (language === 'ar' ? ` · نقاط مسجلة: ${boundaryPoints.length}` : ` · GPS points: ${boundaryPoints.length}`) : ''}
           </Text>
@@ -357,7 +326,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
                   </View>
                 </View>
               ))}
-              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+              <Text style={[styles.footerText, isRtl && rtlStyles.rtlText]}>
                 {satelliteProvider || 'Copernicus Sentinel-2'} · 10 m · {language === 'ar' ? 'مؤشر اخضرار وليس تشخيص مرض أو قياس مردودية.' : 'Greenness index only; not disease diagnosis or yield measurement.'}
               </Text>
             </View>
