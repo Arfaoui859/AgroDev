@@ -95,18 +95,51 @@ export default function WeatherAlerts() {
     selectedStations: ['tunis-center']
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
 
   const fetchAlerts = async () => {
     setIsLoading(true);
+    setWeatherError(null);
     try {
-      const response = await fetch(`/api/weather-irrigation/alerts/${selectedStation}`);
-      const data = await response.json();
-      setAlerts(data.alerts || []);
+      // The old weather-irrigation router is intentionally disabled because
+      // its agronomic coefficients were not validated. Use the live,
+      // WeatherAPI.com-backed crop-planner alert endpoint instead.
+      const response = await fetch(`/api/weather-crop-planner/alerts/${selectedStation}`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data?.isRealData !== true) {
+        throw new Error(data?.message || data?.error || `Weather service unavailable (HTTP ${response.status})`);
+      }
+
+      const stationName = tunisianStations.find((station) => station.id === selectedStation)?.name;
+      const sourceAlerts = [
+        ...(Array.isArray(data.activeAlerts) ? data.activeAlerts : []),
+        ...(Array.isArray(data.upcomingAlerts) ? data.upcomingAlerts : []),
+      ];
+      const normalisedAlerts: WeatherAlert[] = sourceAlerts.map((alert: any) => ({
+        id: String(alert.id || `weather-alert-${alert.type}-${alert.date || data.timestamp}`),
+        type: ['temperature', 'frost', 'wind', 'precipitation', 'drought', 'storm'].includes(alert.type)
+          ? alert.type
+          : 'temperature',
+        severity: alert.severity === 'high' || alert.severity === 'critical'
+          ? 'critical'
+          : alert.severity === 'medium' || alert.severity === 'warning'
+            ? 'warning'
+            : 'info',
+        title: String(alert.title || 'تنبيه جوي'),
+        message: String(alert.message || ''),
+        date: String(alert.date || data.timestamp || new Date().toISOString()),
+        recommendations: Array.isArray(alert.recommendations) ? alert.recommendations : [],
+        isActive: Boolean(alert.isActive),
+        station: stationName,
+      }));
+      setAlerts(normalisedAlerts);
     } catch (error) {
       console.error('Error fetching weather alerts:', error);
+      setAlerts([]);
+      setWeatherError(error instanceof Error ? error.message : 'تعذّر جلب بيانات الطقس');
     } finally {
       setIsLoading(false);
     }
@@ -393,6 +426,17 @@ export default function WeatherAlerts() {
         </div>
       </div>
 
+      {weatherError && (
+        <Card role="alert">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-destructive">{weatherError}</p>
+            <Button variant="outline" size="sm" onClick={fetchAlerts} disabled={isLoading}>
+              {isLoading ? 'جاري التحديث...' : 'إعادة المحاولة'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Alert Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -530,7 +574,7 @@ export default function WeatherAlerts() {
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">لا توجد تنبيهات نشطة</h3>
                   <p className="text-muted-foreground">
-                    الظروف الجوية مناسبة للأنشطة الزراعية
+                    لم يتم رصد تنبيهات تتجاوز الحدود المحددة حالياً
                   </p>
                 </CardContent>
               </Card>
