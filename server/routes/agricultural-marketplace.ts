@@ -154,9 +154,9 @@ router.get("/prices", async (req,res) => {
   try {
     const crop = text(req.query.crop,100), market = text(req.query.market,120);
     const limit = Math.min(200,Math.max(1,Number(req.query.limit)||100));
-    let query = db.from("market_prices").select("id,crop_name,variety,quality_grade,market_location,price_per_kg,price_min,price_max,unit,currency,price_date,source,source_url,source_type,collected_at,verification_status")
-      .order("price_date",{ascending:false}).limit(limit);
-    if (crop) query = query.ilike("crop_name",`%${crop}%`);
+    let query = db.from("market_price_observations").select("id,commodity_name,variety,quality_grade,market_location,price_kind,price_average,price_min,price_max,unit,currency,observed_on,source_name,source_url,source_type,collected_at,verification_status")
+      .order("observed_on",{ascending:false}).limit(limit);
+    if (crop) query = query.ilike("commodity_name",`%${crop}%`);
     if (market) query = query.ilike("market_location",`%${market}%`);
     const {data,error} = await query; if(error) throw error;
     res.json({success:true,data:data??[],meta:{provenance:"market-price-observations",isRealData:(data??[]).length>0}});
@@ -189,7 +189,7 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
       collected_at:new Date().toISOString(),verification_status:verificationStatus,
       raw_payload:row});
   }
-  const {data,error}=await db.from("market_prices").upsert(records,{onConflict:"source_key,external_id,price_date,market_location,crop_name"}).select("id");
+  const {data,error}=await db.from("market_price_observations").upsert(records,{onConflict:"source_key,external_id,observed_on,market_location,commodity_name,price_kind"}).select("id");
   if(error){console.error("[agro-market] market ingest failed",error.message);await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_status:"failed",last_error:error.message.slice(0,500)});return res.status(503).json({success:false,code:"MARKET_INGEST_FAILED"});}
   await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_success_at:new Date().toISOString(),last_status:"success",last_error:null});
   res.json({success:true,insertedOrUpdated:data?.length??records.length,sourceKey});
