@@ -70,15 +70,12 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
   const [capturing, setCapturing] = useState(false);
   const [symptomsInput, setSymptomsInput] = useState('');
   const [scanReady, setScanReady] = useState(false);
-  const scanProgress = useRef(new Animated.Value(0)).current;
+  const [scanProgress] = useState(() => new Animated.Value(0));
+  const captureReady = scanReady && phase === 'capture' && Boolean(permission?.granted);
 
   // Decorative camera guidance only; diagnosis starts after photo submission.
   useEffect(() => {
-    if (phase !== 'capture' || !permission?.granted) {
-      setScanReady(false);
-      return;
-    }
-    setScanReady(false);
+    if (phase !== 'capture' || !permission?.granted) return;
     const readyTimer = setTimeout(() => setScanReady(true), 1600);
     scanProgress.setValue(0);
     const sweep = Animated.loop(
@@ -96,6 +93,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
 
   const handleCapture = async () => {
     if (!cameraRef.current || capturing) return;
+    setScanReady(false);
     setCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.85, skipProcessing: false });
@@ -159,6 +157,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
   };
 
   const reset = () => {
+    setScanReady(false);
     setImageUri(null);
     setResult(null);
     setErrorMsg(null);
@@ -228,7 +227,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
               </View>
               <Text style={styles.scanHint}>{x.scannerGuidance}</Text>
             </View>
-            <Text style={styles.capturePrompt}>{scanReady ? x.scannerCapture : x.scannerGuidance}</Text>
+            <Text style={styles.capturePrompt}>{captureReady ? x.scannerCapture : x.scannerGuidance}</Text>
           </View>
           {errorMsg ? (
             <View style={[styles.captureError, isRtl && rtlStyles.rtlRow]}>
@@ -287,7 +286,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, c
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCapture}
-              disabled={capturing || !scanReady}
+              disabled={capturing || !captureReady}
               accessibilityRole="button"
               accessibilityLabel={x.scannerCapture}
               accessibilityState={{ disabled: capturing || !scanReady, busy: capturing }}
