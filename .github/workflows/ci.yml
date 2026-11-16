@@ -234,6 +234,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261112_requested_role.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261116_marketplace_market_intelligence.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261117_bir_el_kassaa_and_marketplace_inquiries.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/marketplace-intelligence-verification.sql
 
       - name: 🔁 Re-apply hardening (must be idempotent)
