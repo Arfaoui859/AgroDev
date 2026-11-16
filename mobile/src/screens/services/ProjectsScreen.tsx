@@ -51,12 +51,17 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBack, initialP
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await getCultivations();
-    setProjects(res.data);
-    setMeta(res.meta);
-    setError(res.error);
-    setLoading(false);
-  }, []);
+    try {
+      const res = await getCultivations();
+      setProjects(res.data);
+      setMeta(res.meta);
+      setError(res.error);
+    } catch {
+      setError(p.loadFailed);
+    } finally {
+      setLoading(false);
+    }
+  }, [p.loadFailed]);
 
   useEffect(() => {
     (async () => {
