@@ -191,7 +191,7 @@ def main():
         seen.add(url)
         if month_from_title(title):
             reports.append((title, url))
-        if len(reports) == 6:
+        if len(reports) == 5:
             break
     if not reports:
         raise RuntimeError("No monthly Mercuriale Bir El Kassaa documents found on the official ONAGRI index")
