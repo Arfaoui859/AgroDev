@@ -4,6 +4,7 @@ import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../api/supabase';
 import { apiRequest } from '../api/client';
 import { clearCache, setCacheNamespace, namespaceUserId } from '../api/cache';
+import { clearLegacyHistory, setHistoryUserId } from '../api/history';
 import { User, UserRole } from '../types';
 
 const ONBOARDED_KEY = 'agrogrowth.onboarded';
@@ -120,6 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Namespace the offline cache before any authenticated request runs so
         // one account can never read another's cached private records.
         setCacheNamespace(restored?.user?.id ?? null);
+        setHistoryUserId(restored?.user?.id ?? null);
+        await clearLegacyHistory();
         setSession(restored);
         if (restored?.user) {
           const profile = await fetchProfile();
@@ -136,6 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       setSession(nextSession);
+      setHistoryUserId(nextSession?.user?.id ?? null);
       if (nextSession?.user) {
         // A different account may be signing in on this device: re-point the
         // cache namespace and drop anything cached under the previous one.
@@ -244,6 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // namespace so a later account on this device cannot replay them.
     await clearCache();
     setCacheNamespace(null);
+    setHistoryUserId(null);
     setUser(null);
     setSession(null);
   };

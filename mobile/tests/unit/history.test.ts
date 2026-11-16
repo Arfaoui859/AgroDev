@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { addHistoryEntry, clearHistory, getHistory } from '../../src/api/history';
+import { addHistoryEntry, clearHistory, getHistory, setHistoryUserId } from '../../src/api/history';
 
 describe('analysis history (device-local)', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    setHistoryUserId(null);
   });
 
   it('starts empty (nothing is seeded)', async () => {
@@ -29,6 +30,18 @@ describe('analysis history (device-local)', () => {
     expect(list[0].type).toBe('disease');
     expect(list[0].id).toBeTruthy();
     expect(list[0].date).toBeTruthy();
+  });
+
+  it('keeps histories isolated when accounts change on one device', async () => {
+    setHistoryUserId('farmer-a');
+    await addHistoryEntry({ type: 'soil', title: 'A private soil report', summary: 'A', badge: 'database', badgeVariant: 'success' });
+    setHistoryUserId('farmer-b');
+    expect(await getHistory()).toEqual([]);
+    await addHistoryEntry({ type: 'crop', title: 'B crop report', summary: 'B', badge: 'database', badgeVariant: 'success' });
+    setHistoryUserId('farmer-a');
+    expect((await getHistory()).map((entry) => entry.title)).toEqual(['A private soil report']);
+    setHistoryUserId('farmer-b');
+    expect((await getHistory()).map((entry) => entry.title)).toEqual(['B crop report']);
   });
 
   it('clears the history', async () => {
