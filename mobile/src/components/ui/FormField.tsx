@@ -17,6 +17,8 @@ interface FormFieldProps {
   style?: StyleProp<ViewStyle>;
   /** Trailing marker such as the unit ("%", "dS/m"). */
   suffix?: string;
+  /** Expand for longer free-text context such as field notes. */
+  multiline?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export const FormField: React.FC<FormFieldProps> = ({
   keyboard = 'decimal-pad',
   style,
   suffix,
+  multiline = false,
 }) => {
   const { isRtl } = useLanguage();
   return (
@@ -42,7 +45,9 @@ export const FormField: React.FC<FormFieldProps> = ({
         {suffix ? <Text style={styles.suffix}>{suffix}</Text> : null}
       </View>
       <TextInput
-        style={[styles.input, isRtl && rtlStyles.rtlText]}
+        style={[styles.input, multiline && styles.multilineInput, isRtl && rtlStyles.rtlText]}
+        multiline={multiline}
+        textAlignVertical={multiline ? 'top' : 'center'}
         keyboardType={keyboard}
         inputMode={keyboard === 'default' ? 'text' : 'decimal'}
         value={value}
@@ -72,5 +77,6 @@ const styles = StyleSheet.create({
     lineHeight: typography.lineHeights.sm,
     color: colors.text,
   },
+  multilineInput: { minHeight: 88, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   hint: { fontSize: typography.fontSizes.xs, color: colors.textMuted, lineHeight: typography.lineHeights.xs, marginTop: 3 },
 });
