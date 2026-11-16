@@ -500,7 +500,8 @@ export interface SoilFinding {
 
 export interface SoilAnalysisResult {
   grade: string;
-  gradeScore: number;
+  /** Null when the backend did not calculate a validated numeric score. */
+  gradeScore: number | null;
   fertilityLevel: string;
   interpretationAr: string;
   recommendations: string[];
