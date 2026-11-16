@@ -206,6 +206,8 @@ def main():
         print(f"Parsed {len(parsed)} monthly commodity rows from {title}", file=sys.stderr)
     # Keep only the latest occurrence of each period/crop if the publisher repeats rows.
     unique = {row["external_id"]: row for row in all_prices}
+    if not unique:
+        raise RuntimeError("No commodity price rows were parsed from the ONAGRI reports; refusing an empty ingestion")
     payload = {
         "source_key": SOURCE_KEY,
         "source_name": "ONAGRI - Mercuriale du marché de gros de Bir El Kassaa",
