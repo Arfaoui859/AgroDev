@@ -460,7 +460,7 @@ export async function diagnosePlantDisease(
   options: ImageUploadOptions,
 ): Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }> {
   const form = await buildImageForm(options);
-  const res = await apiRequest<any>('/api/ai/images/detect-disease', {
+  const res = await apiRequest<any>('/api/ai/plant-disease-detection', {
     method: 'POST',
     body: form,
   });
@@ -515,6 +515,7 @@ export async function diagnosePlantDisease(
         : [],
       meta,
       imageUri: options.imageUri,
+      plantType: options.cropType,
       processedAt: formatDateTime(new Date().toISOString(), getActiveLanguage()),
     },
     error: null,

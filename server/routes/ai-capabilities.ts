@@ -22,7 +22,7 @@ import { probeService } from "../services/providers/serviceProbe";
 import type { ProvenanceKind } from "../services/providers/modelProvenance";
 import { capabilityStatus } from "../services/providers/aiTelemetry";
 import { firstEnv } from "../lib/env";
-import { localServiceFallback, normalizeServiceUrl } from "./ai-services-gateway";
+import { detectPlantDisease, localServiceFallback, normalizeServiceUrl } from "./ai-services-gateway";
 
 const router = express.Router();
 
@@ -645,11 +645,13 @@ router.get("/agro-chat", async (_req, res) => {
 // Vision + market capabilities that are genuinely unavailable without
 // configuration. They answer 200 (so the client can read the reason) but
 // clearly report `available: false`.
+router.post("/plant-disease-detection", ...detectPlantDisease);
+
 router.get("/plant-disease-detection", async (_req, res) => {
   const cap = (await findCapability("plant-disease-detection"))!;
   res.json(
     await capabilityPayload(cap, {
-      note: "Image upload endpoint: POST /api/ai/images/detect-disease.",
+      note: "Image upload endpoint: POST /api/ai/plant-disease-detection.",
     }),
   );
 });

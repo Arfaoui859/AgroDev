@@ -135,6 +135,8 @@ export interface DiseaseDiagnosisResult {
   prevention: string[];
   meta: ProvenanceMeta;
   imageUri?: string;
+  /** Crop selected by the user for this diagnosis; used when saving farm evidence. */
+  plantType?: string;
   processedAt: string;
 }
 
