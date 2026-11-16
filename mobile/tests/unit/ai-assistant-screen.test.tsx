@@ -1,4 +1,5 @@
 import React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { render, screen, waitFor, userEvent } from '@testing-library/react-native';
 import { LanguageProvider } from '../../src/context/LanguageContext';
 import { AIAssistantScreen } from '../../src/screens/AIAssistantScreen';
@@ -21,8 +22,34 @@ const renderScreen = () =>
   );
 
 describe('AIAssistantScreen', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    await AsyncStorage.clear();
+  });
+
+  it('restores and persists the signed-in user conversation locally', async () => {
+    await AsyncStorage.setItem('agrogrowth.assistant.assistant-test-user', JSON.stringify({
+      conversationId: 'saved-conversation',
+      messages: [{ id: 'saved-1', sender: 'assistant', text: 'Saved project advice', timestamp: '10:00' }],
+    }));
+
+    await renderScreen();
+    await waitFor(() => expect(screen.getByText('Saved project advice')).toBeTruthy());
+
+    mockChat.mockResolvedValueOnce({
+      data: { reply: 'New response', meta: { provenance: 'llm', isRealData: true }, conversationId: 'saved-conversation' },
+      error: null,
+    });
+    const user = userEvent.setup();
+    const input = screen.getByPlaceholderText('اكتب سؤالك هنا بالعامية التونسية أو الفصحى...');
+    await user.type(input, 'Continue my project');
+    await user.press(screen.getByLabelText('إرسال'));
+    await waitFor(() => expect(screen.getByText('New response')).toBeTruthy());
+
+    const stored = JSON.parse((await AsyncStorage.getItem('agrogrowth.assistant.assistant-test-user')) || '{}');
+    expect(stored.conversationId).toBe('saved-conversation');
+    expect(stored.messages.some((message: any) => message.text === 'Saved project advice')).toBe(true);
+    expect(stored.messages.some((message: any) => message.text === 'New response')).toBe(true);
   });
 
   it('threads prior turns and the returned conversationId across messages', async () => {
