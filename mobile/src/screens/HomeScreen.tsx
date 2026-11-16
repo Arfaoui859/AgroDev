@@ -74,31 +74,49 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
   const { lat, lon } = governorate;
 
   const loadDashboardData = useCallback(async () => {
-    const [w, ping] = await Promise.all([
-      getWeather(lat, lon, governorateLabel(governorate, language)),
-      pingServer(),
-    ]);
-    setWeather(w.data);
-    setWeatherError(w.error);
-    setWeatherFromCache(w.fromCache);
-    setServerOk(ping.ok);
+    // Load independent dashboard sources independently: a weather outage must
+    // not hide notification results (or make an empty alert list look genuine).
+    try {
+      const w = await getWeather(lat, lon, governorateLabel(governorate, language));
+      setWeather(w.data);
+      setWeatherError(w.error);
+      setWeatherFromCache(w.fromCache);
+    } catch {
+      setWeather(null);
+      setWeatherError(x.stateOffline);
+      setWeatherFromCache(false);
+    }
+
+    try {
+      const ping = await pingServer();
+      setServerOk(ping.ok);
+    } catch {
+      setServerOk(false);
+    }
+
     if (isAuthenticated) {
-      const notif = await getNotifications();
-      setAlerts(
-        notif.data.filter(
-          (n) => !n.readAt && (n.priority === 'critical' || n.priority === 'high'),
-        ),
-      );
-      // A genuine fetch failure or an unavailable store must not be shown as
-      // "no urgent alerts" — those are different truths.
-      setAlertsError(notif.unavailable ? null : notif.error);
-      setAlertsUnavailable(notif.unavailable);
+      try {
+        const notif = await getNotifications();
+        setAlerts(
+          notif.data.filter(
+            (n) => !n.readAt && (n.priority === 'critical' || n.priority === 'high'),
+          ),
+        );
+        // A genuine fetch failure or an unavailable store must not be shown as
+        // "no urgent alerts" — those are different truths.
+        setAlertsError(notif.unavailable ? null : notif.error);
+        setAlertsUnavailable(notif.unavailable);
+      } catch {
+        setAlerts([]);
+        setAlertsError(x.stateOffline);
+        setAlertsUnavailable(false);
+      }
     } else {
       setAlerts([]);
       setAlertsError(null);
       setAlertsUnavailable(false);
     }
-  }, [lat, lon, language, governorate, isAuthenticated]);
+  }, [lat, lon, language, governorate, isAuthenticated, x.stateOffline]);
 
   React.useEffect(() => {
     let active = true;
@@ -277,7 +295,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
               accessibilityLabel={t.profileTitle}
               style={styles.heroAvatar}
             >
-              <MaterialCommunityIcons name="account" size={24} color={colors.primary} />
+              <MaterialCommunityIcons name="account" size={24} color={colors.textInverse} />
             </TouchableOpacity>
           </View>
 
@@ -581,8 +599,8 @@ const ActionTile: React.FC<{
 );
 
 const styles = StyleSheet.create({
-  // Clean, light dashboard header: restrained border and spacing keep the
-  // greeting and live weather readable without a large saturated hero.
+  // Premium brand hero: a deep green gradient anchors the welcome and live
+  // weather summary while translucent surfaces preserve text contrast.
   heroShadow: {
     borderRadius: radius.xl,
     marginBottom: spacing.lg,
@@ -616,6 +634,7 @@ const styles = StyleSheet.create({
   },
   heroWeatherRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
