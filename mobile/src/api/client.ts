@@ -1109,6 +1109,26 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
   };
 }
 
+export async function uploadMarketplaceImage(uri: string, mimeType = 'image/jpeg'): Promise<{ url: string | null; error: string | null }> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { url: null, error: 'Sign in before uploading a marketplace image.' };
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) return { url: null, error: 'Only JPG, PNG and WebP images are accepted.' };
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const extension = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension}`;
+    const { error } = await supabase.storage.from('marketplace-images').upload(path, blob, {
+      contentType: mimeType, upsert: false, cacheControl: '3600',
+    });
+    if (error) return { url: null, error: error.message };
+    const { data } = supabase.storage.from('marketplace-images').getPublicUrl(path);
+    return { url: data.publicUrl, error: null };
+  } catch (error) {
+    return { url: null, error: error instanceof Error ? error.message : 'Image upload failed.' };
+  }
+}
+
 export async function createMarketplaceListing(input: {
   listing_type: NonNullable<MarketplaceListing['listingType']>;
   title: string;
