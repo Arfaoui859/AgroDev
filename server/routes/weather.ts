@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import {
-  getWeatherFromOpenMeteo,
+  getWeatherFromWeatherApi,
   type WeatherData,
 } from "../services/providers/weatherProvider";
 import { ProviderError } from "../services/providers/http";
@@ -91,8 +91,8 @@ export const getWeatherByCoordinates: RequestHandler = async (req, res) => {
   }
 
   try {
-    const weatherData = await getWeatherFromOpenMeteo({ lat, lon });
-    markReal(res, "open-meteo");
+    const weatherData = await getWeatherFromWeatherApi({ lat, lon });
+    markReal(res, "WeatherAPI.com");
     res.json(weatherData);
   } catch (error) {
     providerErrorResponse(error, res, "خطأ في جلب بيانات الطقس");
@@ -118,13 +118,13 @@ export const getWeatherByLocation: RequestHandler = async (req, res) => {
   }
 
   try {
-    const weatherData = await getWeatherFromOpenMeteo({
+    const weatherData = await getWeatherFromWeatherApi({
       lat: coords.lat,
       lon: coords.lon,
       locationName: city ? `${city}, ${governorate}` : governorate,
       governorate: key,
     });
-    markReal(res, "open-meteo");
+    markReal(res, "WeatherAPI.com");
     res.json(weatherData);
   } catch (error) {
     providerErrorResponse(error, res, "خطأ في جلب بيانات الطقس");
@@ -143,12 +143,12 @@ export const getCropSpecificWeather: RequestHandler = async (req, res) => {
   }
 
   try {
-    const baseWeather = await getWeatherFromOpenMeteo({ lat, lon });
+    const baseWeather = await getWeatherFromWeatherApi({ lat, lon });
     const cropRecommendations = getCropSpecificRecommendations(
       cropType,
       baseWeather,
     );
-    markReal(res, "open-meteo");
+    markReal(res, "WeatherAPI.com");
     res.json({ ...baseWeather, cropSpecific: cropRecommendations });
   } catch (error) {
     providerErrorResponse(error, res, "خطأ في جلب بيانات الطقس للمحصول");
