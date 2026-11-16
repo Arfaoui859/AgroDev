@@ -193,9 +193,11 @@ import {
   triggerModelTraining,
 } from "./routes/adaptive-ai";
 import {
+  getMarketplaceListings,
   getMarketplaceInquiries,
   getMarketplaceAnalytics,
   getSupplyChainNodes,
+  createMarketplaceListing,
   createInquiry,
 } from "./routes/smart-marketplace";
 import {
@@ -669,10 +671,13 @@ export function createServer() {
   // Persisted agricultural marketplace, seller products, harvest offers and source ingestion.
   app.use("/api/agro-market", agriculturalMarketplaceRoutes);
 
-  // Smart Marketplace routes (legacy inquiries/analytics remain fail-closed until persisted).
+  // Legacy web Marketplace contract remains explicitly unavailable until its
+  // response model is migrated; mobile uses /api/agro-market and real persistence.
+  app.get("/api/marketplace/listings", getMarketplaceListings);
   app.get("/api/marketplace/inquiries", getMarketplaceInquiries);
   app.get("/api/marketplace/analytics", getMarketplaceAnalytics);
   app.get("/api/supply-chain/nodes", getSupplyChainNodes);
+  app.post("/api/marketplace/listings", createMarketplaceListing);
   app.post("/api/marketplace/inquiries", createInquiry);
 
   // Supply Chain Tracking routes
