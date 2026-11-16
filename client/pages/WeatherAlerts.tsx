@@ -96,6 +96,7 @@ export default function WeatherAlerts() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
+  const [weatherStale, setWeatherStale] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
@@ -136,9 +137,11 @@ export default function WeatherAlerts() {
         station: stationName,
       }));
       setAlerts(normalisedAlerts);
+      setWeatherStale(Boolean(data.isStale));
     } catch (error) {
       console.error('Error fetching weather alerts:', error);
       setAlerts([]);
+      setWeatherStale(false);
       setWeatherError(error instanceof Error ? error.message : 'تعذّر جلب بيانات الطقس');
     } finally {
       setIsLoading(false);
@@ -234,8 +237,13 @@ export default function WeatherAlerts() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">تنبيهات الطقس</h1>
           <p className="text-muted-foreground">
-            مراقبة مباشرة للظروف الجوية وتنبيهات فورية للأنشطة الزراعية
+            تنبيهات مبنية على الطقس الحالي وتوقعات WeatherAPI.com
           </p>
+          <div className="mt-2">
+            <Badge variant={weatherStale ? "outline" : "secondary"}>
+              {weatherStale ? "بيانات محفوظة مؤقتاً — آخر تحديث قد يكون قديماً" : "مصدر الطقس: WeatherAPI.com"}
+            </Badge>
+          </div>
         </div>
         <div className="flex gap-2">
           <Select value={selectedStation} onValueChange={setSelectedStation}>
