@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getCultivations, getFarms } from '../../api/client';
+import { getCultivations, getFarms, getProjectTasks } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { Farm, Cultivation } from '../../types';
+import { Farm, Cultivation, FarmTask } from '../../types';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { rtlStyles } from '../../theme/rtl';
 import { Card } from '../ui/Card';
@@ -19,13 +19,14 @@ interface HomeFarmOverviewProps {
 type OverviewState = {
   farms: Farm[];
   cultivations: Cultivation[];
+  tasks: FarmTask[];
   error: boolean;
 };
 
 export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms, onOpenProjects, refreshKey = 0 }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { language, isRtl } = useLanguage();
-  const [data, setData] = useState<OverviewState>({ farms: [], cultivations: [], error: false });
+  const [data, setData] = useState<OverviewState>({ farms: [], cultivations: [], tasks: [], error: false });
   const [loading, setLoading] = useState(true);
 
   const labels = language === 'ar'
@@ -36,28 +37,30 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
 
   const load = useCallback(async () => {
     if (!isAuthenticated) {
-      setData({ farms: [], cultivations: [], error: false });
+      setData({ farms: [], cultivations: [], tasks: [], error: false });
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
       const [farmsResult, cropsResult] = await Promise.all([getFarms(), getCultivations()]);
+      const tasksResult = user?.role === 'farmer' ? await getProjectTasks() : null;
       setData({
         farms: farmsResult.data,
         cultivations: cropsResult.data,
-        error: Boolean(farmsResult.error || cropsResult.error),
+        tasks: tasksResult?.data ?? [],
+        error: Boolean(farmsResult.error || cropsResult.error || tasksResult?.error),
       });
     } catch {
       setData((current) => ({ ...current, error: true }));
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.role]);
 
   useEffect(() => { void load(); }, [load, refreshKey]);
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || !['farmer', 'gardener', 'agronomist', 'company', 'inspector'].includes(user?.role ?? 'farmer')) return null;
 
   const totalArea = data.farms.reduce((sum, farm) => sum + (Number.isFinite(Number(farm.size_hectares)) ? Number(farm.size_hectares) : 0), 0);
   const nextHarvest = data.cultivations
