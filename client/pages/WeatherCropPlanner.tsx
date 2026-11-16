@@ -162,7 +162,7 @@ export default function WeatherCropPlanner() {
         body: JSON.stringify({
           ...farmConfig,
           plannedTasks,
-          weatherPeriod: 14
+          weatherPeriod: 3
         }),
       });
 
