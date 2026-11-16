@@ -10,7 +10,7 @@ The project already had:
 The mobile implementation reuses that endpoint and service; it does not create a second NDVI engine.
 
 ## Mobile boundary workflow
-1. Open Farm Management and select the first saved farm (current screen behaviour).
+1. Open Farm Management and select the farm to monitor; each saved farm has its own boundary and NDVI result.
 2. Walk around the plot perimeter and record at least three GPS corner points.
 3. Save the closed GeoJSON Polygon to `farms.boundaries` through the authenticated, owner-scoped endpoint `PUT /api/farms/:farmId/boundaries`.
 4. The screen renders an Esri World Imagery snapshot around the saved polygon and displays attribution.
