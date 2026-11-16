@@ -50,7 +50,7 @@ router.get("/listings", async (req, res) => {
       .order("created_at",{ascending:false}).limit(limit);
     if (type && LISTING_TYPES.has(type)) query = query.eq("listing_type",type);
     if (governorate) query = query.ilike("governorate",governorate);
-    if (q) query = query.or(`title.ilike.%${q}%,category.ilike.%${q}%,description.ilike.%${q}%,harvest_crop.ilike.%${q}%`);
+    if (q) query = query.ilike("title", `%${q}%`);
     const {data,error} = await query;
     if (error) throw error;
     const rows = data ?? [];
@@ -142,7 +142,7 @@ router.get("/products", async (req,res) => {
     const limit = Math.min(100,Math.max(1,Number(req.query.limit)||50));
     let query = db.from("agricultural_product_catalog").select("*").eq("active",true).order("trade_name").limit(limit);
     if (type && PRODUCT_TYPES.has(type)) query = query.eq("product_type",type);
-    if (q) query = query.or(`trade_name.ilike.%${q}%,active_ingredient.ilike.%${q}%,composition.ilike.%${q}%`);
+    if (q) query = query.ilike("trade_name", `%${q}%`);
     const {data,error} = await query; if(error) throw error;
     res.json({success:true,data:data??[],meta:{provenance:"catalog-source-records",isRealData:true,verifiedOnly:false},
       disclaimer:"وجود المنتج في الكتالوج لا يعني تلقائياً أنه مرخّص للاستعمال في تونس. راجع حالة التسجيل والملصق الرسمي."});
