@@ -7,6 +7,7 @@ daily quotes), preserves the source HTML row, and never invents min/max prices.
 from __future__ import annotations
 
 import calendar
+import hashlib
 import json
 import os
 import re
@@ -114,10 +115,13 @@ def month_from_title(title: str):
 
 
 def slug(value: str) -> str:
+    original = value
     value = unicodedata.normalize("NFKD", value)
     value = "".join(c for c in value if not unicodedata.combining(c))
     value = re.sub(r"[^a-zA-Z0-9]+", "-", value).strip("-").lower()
-    return value or "commodity"
+    # Most ONAGRI commodity labels are Arabic; retain deterministic uniqueness
+    # instead of collapsing every Arabic-only name to the same fallback slug.
+    return value or "ar-" + hashlib.sha256(original.encode("utf-8")).hexdigest()[:16]
 
 
 def extract_prices(html: str, title: str, document_url: str):
