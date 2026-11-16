@@ -236,7 +236,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
     >
       {/* Hero — gradient welcome surface with the live weather summary */}
       <View style={styles.heroShadow}>
-        <View style={styles.hero}>
+        <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <View style={[styles.heroTopRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.heroTextWrap}>
               <View style={[styles.heroBrandRow, isRtl && rtlStyles.rtlRow]}>
@@ -271,7 +271,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
               <MaterialCommunityIcons
                 name={weatherIconName(weather.icon) as keyof typeof MaterialCommunityIcons.glyphMap}
                 size={30}
-                color={colors.primary}
+                color={colors.textInverse}
               />
               <Text style={styles.heroTemp}>{weather.temperature}°</Text>
               <Text style={styles.heroCondition} numberOfLines={1}>
@@ -279,16 +279,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
               </Text>
               <View style={styles.heroWeatherSpacer} />
               <View style={[styles.heroChip, isRtl && rtlStyles.rtlRow]}>
-                <MaterialCommunityIcons name="water-percent" size={14} color={colors.textSecondary} />
+                <MaterialCommunityIcons name="water-percent" size={14} color={colors.onBrandMuted} />
                 <Text style={styles.heroChipText}>{weather.humidity}%</Text>
               </View>
               <View style={[styles.heroChip, isRtl && rtlStyles.rtlRow]}>
-                <MaterialCommunityIcons name="weather-windy" size={14} color={colors.textSecondary} />
+                <MaterialCommunityIcons name="weather-windy" size={14} color={colors.onBrandMuted} />
                 <Text style={styles.heroChipText}>{weather.wind_speed}</Text>
               </View>
             </View>
           ) : null}
-        </View>
+        </LinearGradient>
       </View>
 
       {!isOnline ? (
@@ -583,11 +583,11 @@ const styles = StyleSheet.create({
   heroTextWrap: flex1,
   heroBrandRow: { ...rowGapSm, marginBottom: spacing.xs },
   heroBrandText: { flexShrink: 1 },
-  heroBrandName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
-  heroBrandTagline: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: 1 },
-  heroDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
-  heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.text, marginTop: 2 },
-  heroSub: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, marginTop: 2 },
+  heroBrandName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
+  heroBrandTagline: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandFaint, marginTop: 1 },
+  heroDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandFaint, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
+  heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.textInverse, marginTop: 2 },
+  heroSub: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandMuted, marginTop: 2 },
   heroAvatar: {
     width: 48,
     height: 48,
@@ -604,10 +604,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.onBrandBorder,
   },
-  heroTemp: { fontSize: typography.fontSizes['2xl'], lineHeight: 34, fontWeight: typography.fontWeights.bold, color: colors.text },
-  heroCondition: { flexShrink: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, fontWeight: typography.fontWeights.medium },
+  heroTemp: { fontSize: typography.fontSizes['2xl'], lineHeight: 34, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
+  heroCondition: { flexShrink: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandMuted, fontWeight: typography.fontWeights.medium },
   heroWeatherSpacer: flex1,
   heroChip: {
     flexDirection: 'row',
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
   },
-  heroChipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.semibold },
+  heroChipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textInverse, fontWeight: typography.fontWeights.semibold },
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
