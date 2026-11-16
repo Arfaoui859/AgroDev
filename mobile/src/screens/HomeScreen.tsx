@@ -45,8 +45,9 @@ interface HomeScreenProps {
 }
 
 /**
- * Home dashboard. Weather is the only live external feed here (Open-Meteo via
- * the gateway) and is labelled as such. Urgent alerts come from the caller's own
+ * Home dashboard. Weather is the live external feed here (WeatherAPI through
+ * the gateway, with cache provenance shown by the weather detail screen).
+ * Urgent alerts come from the caller's own
  * persisted notifications (`GET /api/notifications`, requires a verified
  * session); when there is no session or nothing is urgent the panel says so
  * honestly instead of inventing alerts.
