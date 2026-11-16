@@ -556,7 +556,7 @@ export interface MarketPriceItem {
   id: string;
   cropName: string;
   cropNameAr: string;
-  pricePerKg: number;
+  pricePerKg: number | null;
   previousPricePerKg: number | null;
   changePercent: number | null;
   trend: 'rising' | 'falling' | 'stable' | 'unknown';
@@ -571,6 +571,7 @@ export interface MarketPriceItem {
   verificationStatus?: 'unverified' | 'source-checked' | 'official-source' | 'rejected';
   priceMin?: number | null;
   priceMax?: number | null;
+  priceKind?: 'wholesale' | 'retail' | 'seller' | 'other';
 }
 
 export interface MarketResult {
