@@ -192,11 +192,9 @@ import {
   triggerModelTraining,
 } from "./routes/adaptive-ai";
 import {
-  getMarketplaceListings,
   getMarketplaceInquiries,
   getMarketplaceAnalytics,
   getSupplyChainNodes,
-  createMarketplaceListing,
   createInquiry,
 } from "./routes/smart-marketplace";
 import {
