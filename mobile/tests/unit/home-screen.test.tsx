@@ -110,6 +110,31 @@ describe('HomeScreen urgent-alert panel', () => {
     mockGetAgriNews.mockResolvedValue({ data: { articles: [], sources: [], categories: [] }, error: null });
   });
 
+  it('keeps notification results visible when the independent weather request fails', async () => {
+    mockGetWeather.mockRejectedValueOnce(new Error('weather unavailable'));
+    mockGetNotifications.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'n-weather-independent',
+          type: 'alert',
+          title: 'تنبيه مستقل عن الطقس',
+          message: 'راجع حالة الحقل',
+          priority: 'high',
+          readAt: null,
+          createdAt: '2026-11-16T08:00:00.000Z',
+          isStarred: false,
+        },
+      ],
+      error: null,
+      unavailable: false,
+    });
+
+    await renderScreen();
+
+    await waitFor(() => expect(screen.getByText('تنبيه مستقل عن الطقس')).toBeTruthy());
+    expect(screen.getByText('الطقس غير متاح حالياً')).toBeTruthy();
+  });
+
   it('shows an honest empty state when there are genuinely no urgent alerts', async () => {
     mockGetNotifications.mockResolvedValueOnce({ data: [], error: null, unavailable: false });
 
