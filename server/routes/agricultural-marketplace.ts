@@ -9,6 +9,7 @@ const PRODUCT_TYPES = new Set(["pesticide","fertilizer","seed","seedling","soil_
 const text = (v: unknown, max = 500) => typeof v === "string" ? v.trim().slice(0,max) : "";
 const positive = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN;
 const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
+const positiveSigned = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) ? Number(v) : NaN;
 
 const SOURCE_TYPES = new Set(["official_open_data","api","csv","rss","permitted_scrape","seller_feed","manual"]);
 const VERIFICATION_STATES = new Set(["unverified","source-checked","official-source","rejected"]);
@@ -137,6 +138,56 @@ router.delete("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Requ
   res.json({success:true,data});
 });
 
+router.get("/my-listings", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const sellerId=req.userId;
+  if(!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const {data,error}=await db.from("marketplace_listings").select("*").eq("seller_id",sellerId).order("created_at",{ascending:false}).limit(100);
+  if(error) return res.status(503).json({success:false,code:"SELLER_LISTINGS_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.post("/listings/:id/inquiries", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const buyerId=req.userId;
+  if(!buyerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const message=text(req.body?.message,2000), quantity=positive(req.body?.quantity);
+  if(message.length<5 || Number.isNaN(quantity)) return res.status(400).json({success:false,code:"INVALID_INQUIRY"});
+  const {data:listing,error:listingError}=await db.from("marketplace_listings").select("id,seller_id,status").eq("id",req.params.id).eq("status","published").maybeSingle();
+  if(listingError) return res.status(503).json({success:false,code:"LISTING_LOOKUP_FAILED"});
+  if(!listing) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
+  if(listing.seller_id===buyerId) return res.status(400).json({success:false,code:"CANNOT_INQUIRE_OWN_LISTING"});
+  const {data,error}=await db.from("marketplace_inquiries").insert({
+    listing_id:listing.id,buyer_id:buyerId,seller_id:listing.seller_id,message,quantity
+  }).select("*").single();
+  if(error) return res.status(503).json({success:false,code:"INQUIRY_CREATE_FAILED"});
+  res.status(201).json({success:true,data});
+});
+
+router.get("/inquiries", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const userId=req.userId;
+  if(!userId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const {data,error}=await db.from("marketplace_inquiries").select("*,listing:marketplace_listings(id,title,price,currency,unit,status)")
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order("created_at",{ascending:false}).limit(100);
+  if(error) return res.status(503).json({success:false,code:"INQUIRIES_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.patch("/inquiries/:id/status", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const sellerId=req.userId;
+  if(!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const status=text(req.body?.status,20);
+  if(!["replied","accepted","rejected","closed"].includes(status))
+    return res.status(400).json({success:false,code:"INVALID_INQUIRY_STATUS"});
+  const {data,error}=await db.from("marketplace_inquiries").update({status,updated_at:new Date().toISOString()})
+    .eq("id",req.params.id).eq("seller_id",sellerId).select("*").maybeSingle();
+  if(error) return res.status(503).json({success:false,code:"INQUIRY_UPDATE_FAILED"});
+  if(!data) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
+  res.json({success:true,data});
+});
+
 router.get("/products", async (req,res) => {
   const db = publicDb(res); if (!db) return;
   try {
@@ -193,6 +244,10 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
       return res.status(400).json({success:false,code:"INVALID_PRICE_KIND",row:records.length});
     records.push({commodity_name:crop,market_location:location,price_average:average,price_min:min,price_max:max,
       price_kind:priceKind,unit:text(row?.unit,30)||"kg",currency:text(row?.currency,3)||"TND",observed_on:row.price_date,
+      aggregation_period:["daily","monthly","annual"].includes(text(row?.aggregation_period,20))?text(row.aggregation_period,20):"daily",
+      period_start:text(row?.period_start,10)||null,period_end:text(row?.period_end,10)||null,
+      supply_quantity_tons:positive(row?.supply_quantity_tons),supply_change_percent:positiveSigned(row?.supply_change_percent),
+      price_change_percent:positiveSigned(row?.price_change_percent),observation_days:positive(row?.observation_days),
       quality_grade:text(row?.quality_grade,30)||null,source_name:sourceName,source_url:sourceUrl,source_key:sourceKey,
       external_id:externalId,source_type:sourceType,collected_at:new Date().toISOString(),
       verification_status:verificationStatus,raw_payload:row});
