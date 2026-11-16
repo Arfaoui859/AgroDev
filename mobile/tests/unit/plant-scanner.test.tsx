@@ -46,7 +46,10 @@ const result: DiseaseDiagnosisResult = {
 const renderScanner = (onSubmit: jest.Mock, onClose = jest.fn()) =>
   render(
     <LanguageProvider>
-      <PlantScanner onSubmit={onSubmit} onClose={onClose} />
+      <PlantScanner onSubmit={onSubmit} onClose={onClose}
+        cropOptions={[{ id: 'olive', label: 'Olive' }]} selectedCrop="olive" onSelectCrop={jest.fn()}
+        partOptions={[{ id: 'leaf', label: 'Leaf' }]} selectedPart="leaf" onSelectPart={jest.fn()}
+        cropTitle="Crop" partTitle="Affected part" />
     </LanguageProvider>,
   );
 
