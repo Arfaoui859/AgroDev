@@ -53,7 +53,7 @@ AgroGrowth is a comprehensive, AI-powered agricultural management platform speci
 > trained model produced its output. Every AI response carries the origin of its
 > result, and the UI discloses it:
 >
-> - **Real data**: weather comes from Open-Meteo (no key required) and is
+> - **Real data**: weather comes from WeatherAPI.com (server-side API key required; 3-day forecast) and is
 >   labelled `isRealData: true`.
 > - **Heuristic / reference-table output**: soil and disease analysis may be
 >   produced by deterministic rules when no model or provider credential is
