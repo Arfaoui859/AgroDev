@@ -152,6 +152,27 @@ describe('project API client', () => {
       expect(JSON.parse(init.body)).toMatchObject({ amount: 20, date: '2026-11-01', category: 'labor', cultivation_id: 'cult-1' });
     });
 
+    it('posts a revenue against the selected cultivation', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce(
+        jsonResponse({ success: true, data: { id: 'r2', amount: 900, farm_id: 'f1', cultivation_id: 'cult-1' } }, 201),
+      );
+      const res = await createProjectRevenue({ amount: 900, date: '2026-12-01', farm_id: 'f1', cultivation_id: 'cult-1', cropRelated: 'Olive' });
+      expect(res.data?.id).toBe('r2');
+      const [, init] = (global.fetch as jest.Mock).mock.calls[0];
+      expect(JSON.parse(init.body)).toMatchObject({ farm_id: 'f1', cultivation_id: 'cult-1', cropRelated: 'Olive' });
+    });
+
+    it('requests financial totals for the selected cultivation, not the whole farm', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce(
+        jsonResponse({ success: true, data: { totalExpenses: 25, grossRevenue: 0, salesCosts: 0, totalRevenue: 0, netProfit: -25, categoryBreakdown: {}, expenseCount: 1, revenueCount: 0 } }),
+      );
+      await getProjectFinancialSummary('farm-1', 'cult-1');
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://test.local/api/financial-summary?farm_id=farm-1&cultivation_id=cult-1',
+        expect.anything(),
+      );
+    });
+
     it('posts a revenue', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce(
         jsonResponse({ success: true, data: { id: 'r1', amount: 900, currency: 'TND' } }, 201),
