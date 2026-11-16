@@ -44,18 +44,29 @@ export const MarketplaceScreen: React.FC = () => {
   const [fromCache, setFromCache] = useState(false);
 
   const loadPrices = useCallback(async () => {
-    try {
-      const [res, listingRes] = await Promise.all([getMarketPrices(), getMarketplaceListings()]);
+    // Prices and seller listings are separate backend capabilities. A failure
+    // in one must not suppress useful data returned by the other.
+    const [priceOutcome, listingsOutcome] = await Promise.all([
+      getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+    ]);
+
+    if ('data' in priceOutcome) {
+      const res = priceOutcome.data;
       setPrices(res.data?.prices ?? []);
       if (res.data?.meta) setMeta(res.data.meta);
       setError(res.error);
       setFromCache(res.fromCache);
-      setListings(listingRes.data.listings);
-      setListingsUnavailable(listingRes.unavailable);
-    } catch (cause) {
-      // A rejected request must not leave the screen in a permanent spinner.
-      // Keep the market data empty and distinguish the unavailable listings store.
-      setError(cause instanceof Error ? cause.message : 'Marketplace request failed');
+    } else {
+      setPrices([]);
+      setError(priceOutcome.error instanceof Error ? priceOutcome.error.message : 'Market prices request failed');
+      setFromCache(false);
+    }
+
+    if ('data' in listingsOutcome) {
+      setListings(listingsOutcome.data.data.listings);
+      setListingsUnavailable(listingsOutcome.data.unavailable);
+    } else {
       setListings([]);
       setListingsUnavailable(true);
     }
