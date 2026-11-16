@@ -19,16 +19,21 @@ export const HomeCommunityPreview: React.FC<HomeCommunityPreviewProps> = ({ onOp
   const { language, isRtl } = useLanguage();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     let active = true;
     if (!isAuthenticated) {
       setPosts([]);
+      setUnavailable(false);
       return () => { active = false; };
     }
     setLoading(true);
     getCommunityPosts().then((result) => {
-      if (active) setPosts(result.data.slice(0, 2));
+      if (active) {
+        setPosts(result.data.slice(0, 2));
+        setUnavailable(Boolean(result.error));
+      }
     }).finally(() => {
       if (active) setLoading(false);
     });
@@ -36,10 +41,10 @@ export const HomeCommunityPreview: React.FC<HomeCommunityPreviewProps> = ({ onOp
   }, [isAuthenticated]);
 
   const labels = language === 'ar'
-    ? { title: 'من المجتمع الفلاحي', subtitle: 'تجارب وأسئلة من أعضاء AgriVibe', join: 'اكتشف المجتمع', signIn: 'سجّل الدخول للمشاركة', empty: 'ما فماش منشورات جديدة توّة', comments: 'تعليقات', likes: 'إعجاب' }
+    ? { title: 'من المجتمع الفلاحي', subtitle: 'تجارب وأسئلة من أعضاء AgriVibe', join: 'اكتشف المجتمع', signIn: 'سجّل الدخول للمشاركة', empty: 'ما فماش منشورات جديدة توّة', unavailable: 'المجتمع غير متاح حالياً', comments: 'تعليقات', likes: 'إعجاب' }
     : language === 'fr'
-      ? { title: 'Communauté agricole', subtitle: 'Expériences et questions des membres', join: 'Découvrir la communauté', signIn: 'Connectez-vous pour participer', empty: 'Pas encore de nouvelles publications', comments: 'commentaires', likes: 'J’aime' }
-      : { title: 'From the community', subtitle: 'Experiences and questions from AgriVibe members', join: 'Explore community', signIn: 'Sign in to participate', empty: 'No new posts yet', comments: 'comments', likes: 'likes' };
+      ? { title: 'Communauté agricole', subtitle: 'Expériences et questions des membres', join: 'Découvrir la communauté', signIn: 'Connectez-vous pour participer', empty: 'Pas encore de nouvelles publications', unavailable: 'Communauté temporairement indisponible', comments: 'commentaires', likes: 'J’aime' }
+      : { title: 'From the community', subtitle: 'Experiences and questions from AgriVibe members', join: 'Explore community', signIn: 'Sign in to participate', empty: 'No new posts yet', unavailable: 'Community is temporarily unavailable', comments: 'comments', likes: 'likes' };
 
   return (
     <View style={styles.section}>
@@ -55,6 +60,13 @@ export const HomeCommunityPreview: React.FC<HomeCommunityPreviewProps> = ({ onOp
         </Card>
       ) : loading ? (
         <View style={styles.loading}><ActivityIndicator color={colors.primary} /></View>
+      ) : unavailable ? (
+        <TouchableOpacity onPress={onOpenCommunity} activeOpacity={0.85}>
+          <Card variant="outlined" style={styles.empty}>
+            <MaterialCommunityIcons name="cloud-off-outline" size={24} color={colors.textMuted} />
+            <Text style={styles.emptyText}>{labels.unavailable}</Text>
+          </Card>
+        </TouchableOpacity>
       ) : posts.length ? (
         posts.map((post) => (
           <TouchableOpacity key={post.id} activeOpacity={0.85} onPress={onOpenCommunity}>
