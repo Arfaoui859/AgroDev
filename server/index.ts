@@ -135,6 +135,7 @@ import governmentDashboardRoutes from "./routes/government-dashboard";
 import {
   getFarms,
   createFarm,
+  updateFarmBoundaries,
   getFarmById,
   getFields,
   getFieldById,
@@ -605,6 +606,7 @@ export function createServer() {
   // ownership through RLS as a second layer.
   app.get("/api/farms", requireAuth, requireRole(["farmer"]), getFarms);
   app.post("/api/farms", requireAuth, requireRole(["farmer"]), createFarm);
+  app.put("/api/farms/:farmId/boundaries", requireAuth, requireRole(["farmer"]), updateFarmBoundaries);
   app.get("/api/farms/:farmId", requireAuth, requireRole(["farmer"]), getFarmById);
   app.get("/api/fields", requireAuth, requireRole(["farmer"]), getFields);
   app.get("/api/fields/:fieldId", requireAuth, requireRole(["farmer"]), getFieldById);
