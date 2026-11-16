@@ -32,7 +32,7 @@ import { FarmManagementScreen } from './src/screens/services/FarmManagementScree
 import { LivestockScreen } from './src/screens/services/LivestockScreen';
 import { MultiAgentAIScreen } from './src/screens/services/MultiAgentAIScreen';
 import { AgriNewsScreen } from './src/screens/services/AgriNewsScreen';
-import { LearningVideosScreen } from './src/screens/services/LearningVideosScreen';
+import { ShortVideoFeedScreen } from './src/screens/services/ShortVideoFeedScreen';
 import { RecentAnalysesScreen } from './src/screens/services/RecentAnalysesScreen';
 import { ProjectsScreen } from './src/screens/services/ProjectsScreen';
 import { GeneralServiceModal } from './src/screens/services/GeneralServiceModal';
@@ -221,7 +221,7 @@ const MainAppContent: React.FC = () => {
         return <AgriNewsScreen onBack={() => setActiveService(null)} />;
       case 'learning':
         return (
-          <LearningVideosScreen
+          <ShortVideoFeedScreen
             onBack={() => {
               setLearningCategory(undefined);
               setActiveService(null);
