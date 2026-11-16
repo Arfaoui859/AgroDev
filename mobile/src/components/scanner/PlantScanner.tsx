@@ -76,39 +76,50 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
   };
 
   const handlePickFromGallery = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setErrorMsg(x.scannerGalleryDenied);
+        return;
+      }
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+        allowsEditing: false,
+      });
+      if (!picked.canceled && picked.assets[0]?.uri) {
+        setImageUri(picked.assets[0].uri);
+        setErrorMsg(null);
+        setPhase('review');
+      }
+    } catch {
       setErrorMsg(x.scannerGalleryDenied);
-      return;
-    }
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.9,
-      allowsEditing: false,
-    });
-    if (!picked.canceled && picked.assets[0]?.uri) {
-      setImageUri(picked.assets[0].uri);
-      setPhase('review');
     }
   };
 
   const handleConfirm = async () => {
-    if (!imageUri) return;
+    if (!imageUri || phase === 'analyzing') return;
     setPhase('analyzing');
-    const image = await prepareImageForUpload(imageUri);
-    const response = await onSubmit({ ...image });
-    if (response.unavailable) {
-      setErrorMsg(response.error);
-      setPhase('unavailable');
-      return;
-    }
-    if (!response.data) {
-      setErrorMsg(response.error || x.scannerAnalysisFailed);
+    setErrorMsg(null);
+    try {
+      const image = await prepareImageForUpload(imageUri);
+      const response = await onSubmit({ ...image });
+      if (response.unavailable) {
+        setErrorMsg(response.error || x.scannerUnavailableDesc);
+        setPhase('unavailable');
+        return;
+      }
+      if (!response.data) {
+        setErrorMsg(response.error || x.scannerAnalysisFailed);
+        setPhase('error');
+        return;
+      }
+      setResult(response.data);
+      setPhase('result');
+    } catch {
+      setErrorMsg(x.scannerAnalysisFailed);
       setPhase('error');
-      return;
     }
-    setResult(response.data);
-    setPhase('result');
   };
 
   const reset = () => {
@@ -157,6 +168,18 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
           <View style={[styles.guidance, isRtl && rtlStyles.rtlRow]}>
             <MaterialCommunityIcons name="information-outline" size={16} color={colors.textInverse} />
             <Text style={styles.guidanceText}>{x.scannerGuidance}</Text>
+          </View>
+          <View pointerEvents="none" style={styles.scanGuide}>
+            <View style={styles.scanFrame}>
+              <View style={[styles.scanCorner, styles.scanTopLeft]} />
+              <View style={[styles.scanCorner, styles.scanTopRight]} />
+              <View style={[styles.scanCorner, styles.scanBottomLeft]} />
+              <View style={[styles.scanCorner, styles.scanBottomRight]} />
+              <View style={styles.scanCenter}>
+                <MaterialCommunityIcons name="leaf" size={34} color={colors.textInverse} />
+              </View>
+            </View>
+            <Text style={styles.scanHint}>{x.scannerGuidance}</Text>
           </View>
           {errorMsg ? (
             <View style={[styles.captureError, isRtl && rtlStyles.rtlRow]}>
@@ -361,6 +384,49 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   guidanceText: { color: colors.textInverse, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm },
+  scanGuide: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+  },
+  scanFrame: {
+    width: '78%',
+    maxWidth: 320,
+    aspectRatio: 0.82,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanCorner: {
+    position: 'absolute',
+    width: 34,
+    height: 34,
+    borderColor: colors.textInverse,
+    borderWidth: 3,
+  },
+  scanTopLeft: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: radius.md },
+  scanTopRight: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: radius.md },
+  scanBottomLeft: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: radius.md },
+  scanBottomRight: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: radius.md },
+  scanCenter: {
+    width: 68,
+    height: 68,
+    borderRadius: radius.full,
+    backgroundColor: colors.scrimLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanHint: {
+    color: colors.textInverse,
+    fontSize: typography.fontSizes.xs,
+    lineHeight: typography.lineHeights.xs,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    textShadowColor: colors.scrim,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
   captureError: {
     flexDirection: 'row',
     alignItems: 'center',
