@@ -280,11 +280,17 @@ router.post("/ingest/products", requireAdminAccess, async (req,res) => {
     if(!PRODUCT_TYPES.has(productType)||!tradeName||!externalId)
       return res.status(400).json({success:false,code:"INVALID_PRODUCT_ROW",row:records.length});
     const registration=text(p?.registration_status,40)||"unverified";
+    const registrationNumber=text(p?.registration_number,100)||null;
+    const registrationEvidenceUrl=text(p?.registration_evidence_url,1000)||null;
     if(!["unverified","registered_tunisia","expired","prohibited","not_applicable"].includes(registration))
       return res.status(400).json({success:false,code:"INVALID_REGISTRATION_STATUS",row:records.length});
+    if(["registered_tunisia","expired","prohibited"].includes(registration) &&
+      (!registrationNumber || !/^https:\/\//i.test(registrationEvidenceUrl || "")))
+      return res.status(400).json({success:false,code:"REGISTRATION_EVIDENCE_REQUIRED",row:records.length});
     records.push({product_type:productType,trade_name:tradeName,active_ingredient:text(p?.active_ingredient,250)||null,
       composition:text(p?.composition,500)||null,manufacturer:text(p?.manufacturer,180)||null,
-      registration_number:text(p?.registration_number,100)||null,registration_status:registration,
+      registration_number:registrationNumber,registration_status:registration,
+      registration_evidence_url:registrationEvidenceUrl,registration_verified_at:text(p?.registration_verified_at,50)||null,
       target_crops:Array.isArray(p?.target_crops)?p.target_crops.filter((v:unknown)=>typeof v==="string").slice(0,50):[],
       target_pests_diseases:Array.isArray(p?.target_pests_diseases)?p.target_pests_diseases.filter((v:unknown)=>typeof v==="string").slice(0,50):[],
       approved_uses:Array.isArray(p?.approved_uses)?p.approved_uses.slice(0,100):[],label_url:text(p?.label_url,1000)||null,
