@@ -301,6 +301,59 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         </View>
       ) : null}
 
+      {/* Quick actions */}
+      <View style={styles.sectionContainer}>
+        <SectionHeader
+          title={t.quickActions}
+          actionLabel={t.viewAll}
+          onAction={() => onNavigateToTab('services')}
+        />
+
+        <View style={styles.quickActionsGrid}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => (heroIsTab ? onNavigateToTab(hero.serviceId) : onNavigateToService(hero.serviceId))}
+            accessibilityRole="button"
+            accessibilityLabel={`${heroAction.title}. ${heroAction.sub}`}
+            style={styles.bigActionShadow}
+          >
+            <LinearGradient
+              colors={gradients.hero}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.bigActionCard}
+            >
+              <View style={[styles.bigActionHeader, isRtl && rtlStyles.rtlRow]}>
+                <View style={styles.bigActionIconWrapper}>
+                  <MaterialCommunityIcons name={heroAction.icon} size={30} color={colors.textInverse} />
+                </View>
+                <Badge label={heroAction.badge} variant="accent" size="sm" />
+              </View>
+              <Text style={[styles.bigActionTitle, isRtl && rtlStyles.rtlText]}>{heroAction.title}</Text>
+              <Text style={[styles.bigActionSub, isRtl && rtlStyles.rtlText]}>{heroAction.sub}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {tileRows.map((row, rowIndex) => (
+            <View key={rowIndex} style={[styles.tilesRow, isRtl && rtlStyles.rtlRow]}>
+              {row.map((tile) => (
+                <ActionTile
+                  key={tile.serviceId}
+                  icon={tile.icon}
+                  color={tile.color}
+                  bg={tile.bg}
+                  title={tile.title}
+                  sub={tile.sub}
+                  onPress={() => tile.tab ? onNavigateToTab(tile.tab) : onNavigateToService(tile.serviceId)}
+                  isRtl={isRtl}
+                />
+              ))}
+            </View>
+          ))}
+        </View>
+      </View>
+
+
       {/* Available agricultural intelligence — server-declared capability state */}
       <IntelligenceStrip
         capabilities={capabilities?.capabilities ?? []}
@@ -363,58 +416,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
           retryLabel={x.retry}
         />
       )}
-
-      {/* Quick actions */}
-      <View style={styles.sectionContainer}>
-        <SectionHeader
-          title={t.quickActions}
-          actionLabel={t.viewAll}
-          onAction={() => onNavigateToTab('services')}
-        />
-
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => (heroIsTab ? onNavigateToTab(hero.serviceId) : onNavigateToService(hero.serviceId))}
-            accessibilityRole="button"
-            accessibilityLabel={`${heroAction.title}. ${heroAction.sub}`}
-            style={styles.bigActionShadow}
-          >
-            <LinearGradient
-              colors={gradients.hero}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.bigActionCard}
-            >
-              <View style={[styles.bigActionHeader, isRtl && rtlStyles.rtlRow]}>
-                <View style={styles.bigActionIconWrapper}>
-                  <MaterialCommunityIcons name={heroAction.icon} size={30} color={colors.textInverse} />
-                </View>
-                <Badge label={heroAction.badge} variant="accent" size="sm" />
-              </View>
-              <Text style={[styles.bigActionTitle, isRtl && rtlStyles.rtlText]}>{heroAction.title}</Text>
-              <Text style={[styles.bigActionSub, isRtl && rtlStyles.rtlText]}>{heroAction.sub}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {tileRows.map((row, rowIndex) => (
-            <View key={rowIndex} style={[styles.tilesRow, isRtl && rtlStyles.rtlRow]}>
-              {row.map((tile) => (
-                <ActionTile
-                  key={tile.serviceId}
-                  icon={tile.icon}
-                  color={tile.color}
-                  bg={tile.bg}
-                  title={tile.title}
-                  sub={tile.sub}
-                  onPress={() => tile.tab ? onNavigateToTab(tile.tab) : onNavigateToService(tile.serviceId)}
-                  isRtl={isRtl}
-                />
-              ))}
-            </View>
-          ))}
-        </View>
-      </View>
 
       {/* Assistant entry */}
       <TouchableOpacity
