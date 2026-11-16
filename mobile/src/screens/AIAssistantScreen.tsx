@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { rtlStyles } from '../theme/rtl';
 import {
   View,
@@ -16,6 +17,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { subtleCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { chatWithAIAssistant } from '../api/client';
 import { ChatMessage } from '../types';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
@@ -31,6 +33,7 @@ function nextMessageId(): string {
 
 export const AIAssistantScreen: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,6 +42,47 @@ export const AIAssistantScreen: React.FC = () => {
   // new one per turn; it stays null for anonymous (unverified) callers.
   const conversationIdRef = useRef<string | null>(null);
   const scrollViewRef = useRef<any>(null);
+  const threadStorageKey = user?.id ? `agrogrowth.assistant.${user.id}` : null;
+  const [threadReadyKey, setThreadReadyKey] = useState<string | null>(null);
+
+  // Keep each verified user's local conversation separate on shared devices.
+  useEffect(() => {
+    let active = true;
+    setMessages([]);
+    conversationIdRef.current = null;
+    setThreadReadyKey(null);
+    if (!threadStorageKey) {
+      setThreadReadyKey('anonymous');
+      return () => { active = false; };
+    }
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(threadStorageKey);
+        if (!active) return;
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (Array.isArray(saved.messages)) setMessages(saved.messages.slice(-40));
+          conversationIdRef.current = typeof saved.conversationId === 'string' ? saved.conversationId : null;
+        }
+      } catch {
+        if (active) {
+          setMessages([]);
+          conversationIdRef.current = null;
+        }
+      } finally {
+        if (active) setThreadReadyKey(threadStorageKey);
+      }
+    })();
+    return () => { active = false; };
+  }, [threadStorageKey]);
+
+  useEffect(() => {
+    if (!threadStorageKey || threadReadyKey !== threadStorageKey) return;
+    void AsyncStorage.setItem(threadStorageKey, JSON.stringify({
+      conversationId: conversationIdRef.current,
+      messages: messages.slice(-40),
+    })).catch(() => undefined);
+  }, [messages, threadStorageKey, threadReadyKey]);
 
   // The welcome bubble is derived at render time (not stored) so switching
   // language updates it immediately instead of leaving it in the old language.
