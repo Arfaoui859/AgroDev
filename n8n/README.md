@@ -18,7 +18,7 @@ Import `n8n/workflows/agrogrowth-onagri-bir-el-kassaa.json` into the n8n instanc
 
 1. Import the JSON workflow.
 2. Open **Upsert Prices into AgroGrowth**.
-3. Create/select an **HTTP Bearer Auth** credential named `AgroGrowth Admin API`. Paste the server-side admin bearer token accepted by AgroGrowth's `requireAdminAccess`. Never put this token in the mobile app or commit it to Git.
+3. Create/select an **HTTP Header Auth** credential named `AgroGrowth Admin API` with header name `x-admin-token` and value equal to the server-side `ADMIN_API_TOKEN` configured on Render. The backend checks this exact header; an `Authorization: Bearer` header alone is not the operator credential. Never put this token in the mobile app or commit it to Git.
 4. Confirm the URL points to the deployed AgroGrowth Express API:
    `https://agrodev-3.onrender.com/api/agro-market/ingest/market-prices`
 5. Save the workflow and run **Manual Test** once.
