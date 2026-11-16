@@ -83,13 +83,13 @@ const dateValue = (v) => {
     return d.toISOString().slice(0, 10);
   }
   const s = String(v ?? '').trim();
-  if (/^\\d{4}-\\d{2}-\\d{2}/.test(s)) return s.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 };
 const numberValue = (v) => {
   if (v === null || v === undefined || String(v).trim() === '') return null;
-  const n = Number(String(v).replace(',', '.').replace(/[^0-9.\\-]/g, ''));
+  const n = Number(String(v).replace(',', '.').replace(/[^0-9.-]/g, ''));
   return Number.isFinite(n) && n >= 0 ? n : null;
 };
 const out = [];
