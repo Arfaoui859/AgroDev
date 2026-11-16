@@ -320,7 +320,7 @@ export const MarketplaceScreen: React.FC = () => {
         <Button title={sellerFormOpen
           ? (language === 'ar' ? 'إغلاق النموذج' : language === 'fr' ? 'Fermer' : 'Close form')
           : (language === 'ar' ? 'إضافة عرض للبيع' : language === 'fr' ? 'Ajouter une annonce' : 'Create a listing')}
-          onPress={() => setSellerFormOpen(v => !v)} variant="outline" size="md" />
+          onPress={() => setSellerFormOpen(v => !v)} variant="outline" size="md" fullWidth={false} />
         {sellerFormOpen ? (
           <View style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
@@ -511,7 +511,7 @@ export const MarketplaceScreen: React.FC = () => {
                   <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
                 ) : null}
                 <Button title={language === 'ar' ? 'تواصل' : language === 'fr' ? 'Contacter' : 'Contact seller'}
-                  onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" />
+                  onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" fullWidth={false} />
               </View>
             ))}
           </View>
@@ -563,7 +563,7 @@ export const MarketplaceScreen: React.FC = () => {
             style={{ minHeight: 90, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left' }} />
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Button title={language === 'ar' ? 'إرسال' : language === 'fr' ? 'Envoyer' : 'Send inquiry'}
-              onPress={sendMarketplaceInquiry} loading={inquirySubmitting} disabled={inquirySubmitting} size="md" />
+              onPress={sendMarketplaceInquiry} loading={inquirySubmitting} disabled={inquirySubmitting} size="md" fullWidth={false} />
             <Button title={language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel'}
               onPress={() => { setActiveInquiryListing(null); setInquiryMessage(''); }} variant="outline" size="md" />
           </View>
@@ -653,7 +653,7 @@ export const MarketplaceScreen: React.FC = () => {
               style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               <Button title={language === 'ar' ? 'حفظ' : language === 'fr' ? 'Enregistrer' : 'Save changes'}
-                onPress={saveListingEdits} loading={editListingSaving} disabled={editListingSaving} size="md" />
+                onPress={saveListingEdits} loading={editListingSaving} disabled={editListingSaving} size="md" fullWidth={false} />
               <Button title={language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel'}
                 onPress={() => setEditingListingId(null)} variant="outline" size="md" />
             </View>
