@@ -40,6 +40,14 @@ describe('MarketplaceScreen', () => {
     });
   });
 
+  it('recovers from a rejected market request instead of keeping the loading state forever', async () => {
+    mockGetMarketPrices.mockRejectedValueOnce(new Error('network offline'));
+
+    await renderScreen();
+
+    await waitFor(() => expect(screen.getByText('network offline')).toBeTruthy());
+  });
+
   it('shows an honest empty state when the platform has no recorded prices', async () => {
     mockGetMarketPrices.mockResolvedValueOnce({
       data: { prices: [], meta: { provenance: 'unavailable', isRealData: false } },
