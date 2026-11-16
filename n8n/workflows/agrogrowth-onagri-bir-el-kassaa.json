@@ -65,7 +65,10 @@
         -500,
         180
       ],
-      "onError": "stopWorkflow"
+      "onError": "stopWorkflow",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
     },
     {
       "parameters": {
@@ -114,7 +117,10 @@
         20,
         180
       ],
-      "onError": "stopWorkflow"
+      "onError": "stopWorkflow",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
     },
     {
       "parameters": {
@@ -162,7 +168,10 @@
         560,
         180
       ],
-      "onError": "stopWorkflow"
+      "onError": "stopWorkflow",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
     }
   ],
   "connections": {
