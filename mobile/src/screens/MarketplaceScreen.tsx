@@ -44,26 +44,40 @@ export const MarketplaceScreen: React.FC = () => {
   const [fromCache, setFromCache] = useState(false);
 
   const loadPrices = useCallback(async () => {
-    const [res, listingRes] = await Promise.all([getMarketPrices(), getMarketplaceListings()]);
-    setPrices(res.data?.prices ?? []);
-    if (res.data?.meta) setMeta(res.data.meta);
-    setError(res.error);
-    setFromCache(res.fromCache);
-    setListings(listingRes.data.listings);
-    setListingsUnavailable(listingRes.unavailable);
+    try {
+      const [res, listingRes] = await Promise.all([getMarketPrices(), getMarketplaceListings()]);
+      setPrices(res.data?.prices ?? []);
+      if (res.data?.meta) setMeta(res.data.meta);
+      setError(res.error);
+      setFromCache(res.fromCache);
+      setListings(listingRes.data.listings);
+      setListingsUnavailable(listingRes.unavailable);
+    } catch (cause) {
+      // A rejected request must not leave the screen in a permanent spinner.
+      // Keep the market data empty and distinguish the unavailable listings store.
+      setError(cause instanceof Error ? cause.message : 'Marketplace request failed');
+      setListings([]);
+      setListingsUnavailable(true);
+    }
   }, []);
 
   React.useEffect(() => {
     (async () => {
-      await loadPrices();
-      setLoading(false);
+      try {
+        await loadPrices();
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [loadPrices]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadPrices();
-    setRefreshing(false);
+    try {
+      await loadPrices();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filteredPrices = prices.filter((item) => {
