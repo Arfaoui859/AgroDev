@@ -65,4 +65,4 @@ Product catalog ingestion is separate at `POST /api/agro-market/ingest/products`
 - `GET /api/agro-market/inquiries`: buyer or seller reads only conversations they participate in.
 - `PATCH /api/agro-market/inquiries/:id/status`: seller updates inquiry status.
 
-RLS enforces buyer/seller separation. This is an inquiry/contact foundation, not online payment, escrow, shipping or a completed chat system. Mobile screens still need to expose these endpoints before the buyer/seller flow is complete.
+RLS enforces buyer/seller separation. The mobile Marketplace screen now exposes contact-seller, an inquiry inbox, seller edit/archive/delete controls and seller acceptance of new inquiries. This is still an inquiry/contact foundation, not online payment, escrow, shipping, threaded replies or a completed real-time chat system.
