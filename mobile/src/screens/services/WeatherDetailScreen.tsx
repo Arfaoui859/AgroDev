@@ -231,7 +231,7 @@ export const WeatherDetailScreen: React.FC<WeatherDetailScreenProps> = ({ onBack
 
           <ProvenanceBar meta={weather.meta} detailed cached={fromCache} style={styles.provRow} />
 
-          {/* 5-Day Forecast */}
+          {/* WeatherAPI.com Free plan: up to 3 forecast days */}
           <View style={styles.forecastSection}>
             <Text style={[styles.forecastHeading, isRtl && rtlStyles.rtlText]}>{x.weatherForecast}</Text>
             {weather.forecast.length === 0 ? (
