@@ -555,7 +555,7 @@ export async function analyzeSoil(
   return {
     data: {
       grade: d.fertility_level || msg('soilGradeUnknown'),
-      gradeScore: typeof d.health_score === 'number' ? d.health_score : 0,
+      gradeScore: typeof d.health_score === 'number' ? d.health_score : null,
       fertilityLevel: d.fertility_level || msg('soilGradeUnknown'),
       interpretationAr: d.disclaimer || msg('soilGenericDisclaimer'),
       recommendations: Array.isArray(d.overall_recommendations) ? d.overall_recommendations : [],
