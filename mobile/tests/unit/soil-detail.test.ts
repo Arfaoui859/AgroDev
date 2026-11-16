@@ -15,6 +15,10 @@ const baseValues = (overrides: Partial<MeasurementsValues> = {}): MeasurementsVa
   targetCrop: '',
   samplingDate: '',
   drainage: '',
+  previousCrop: '',
+  currentCrop: '',
+  season: '',
+  notes: '',
   ...overrides,
 });
 
