@@ -325,7 +325,7 @@ SOIL_ANALYSIS_URL=http://ai-soil:8001
 CROP_RECOMMENDATION_URL=http://ai-crop:8002
 
 # External APIs
-WEATHER_API_KEY=your_weather_api_key
+WEATHERAPI_KEY=your_weatherapi_key
 MARKET_API_KEY=your_market_api_key
 ```
 
