@@ -13,6 +13,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { colors, radius, spacing, typography } from '../../theme/colors';
 import { rtlStyles } from '../../theme/rtl';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
@@ -48,6 +49,7 @@ export const ShortVideoFeedScreen: React.FC<ShortVideoFeedScreenProps> = ({
   initialCategory = 'all',
 }) => {
   const { t, x, isRtl, language } = useLanguage();
+  const { user } = useAuth();
   const { height } = useWindowDimensions();
   const [category, setCategory] = useState<VideoCategory | 'all'>(initialCategory);
 
@@ -56,8 +58,27 @@ export const ShortVideoFeedScreen: React.FC<ShortVideoFeedScreenProps> = ({
       ? LEARNING_VIDEOS
       : LEARNING_VIDEOS.filter((video) => video.category === category);
     const preferred = language === 'ar' ? 'ar' : 'en';
-    return filtered.slice().sort((a, b) => Number(b.language === preferred) - Number(a.language === preferred));
-  }, [category, language]);
+    const roleCategories: Record<string, VideoCategory[]> = {
+      farmer: ['vegetable-growing', 'soil-prep', 'irrigation', 'plant-protection', 'harvest'],
+      gardener: ['vegetable-growing', 'plant-protection', 'soil-prep', 'irrigation', 'pruning'],
+      agronomist: ['soil-prep', 'plant-protection', 'irrigation', 'vegetable-growing', 'harvest'],
+      veterinarian: ['livestock', 'plant-protection'],
+      trader: ['harvest', 'vegetable-growing', 'livestock'],
+      company: ['harvest', 'irrigation', 'soil-prep', 'greenhouse'],
+      inspector: ['plant-protection', 'soil-prep', 'livestock'],
+      investor: ['harvest', 'greenhouse', 'vegetable-growing'],
+      government: ['harvest', 'irrigation', 'soil-prep'],
+      admin: [...VIDEO_CATEGORIES],
+    };
+    const priorities = roleCategories[user?.role ?? 'farmer'] ?? roleCategories.farmer;
+    return filtered.slice().sort((a, b) => {
+      const languageScore = Number(b.language === preferred) - Number(a.language === preferred);
+      if (languageScore !== 0) return languageScore;
+      const aPriority = priorities.indexOf(a.category);
+      const bPriority = priorities.indexOf(b.category);
+      return (aPriority < 0 ? Number.MAX_SAFE_INTEGER : aPriority) - (bPriority < 0 ? Number.MAX_SAFE_INTEGER : bPriority);
+    });
+  }, [category, language, user?.role]);
 
   const openVideo = (video: LearningVideo) => {
     Linking.openURL(videoWatchUrl(video.id)).catch(() => undefined);
