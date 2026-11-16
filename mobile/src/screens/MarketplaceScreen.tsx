@@ -609,8 +609,21 @@ export const MarketplaceScreen: React.FC = () => {
                     </Pressable>
                   ) : null}
                 </View>
-                <Badge label={product.registrationStatus === 'registered_tunisia' ? (language === 'ar' ? 'مرخّص' : language === 'fr' ? 'Homologué' : 'Registered') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'À vérifier' : 'Unverified')}
-                  variant={product.registrationStatus === 'registered_tunisia' ? 'success' : 'warning'} size="sm" />
+                <Badge label={
+                  product.registrationStatus === 'registered_tunisia'
+                    ? (language === 'ar' ? 'مرخّص' : language === 'fr' ? 'Homologué' : 'Registered')
+                    : product.registrationStatus === 'expired'
+                      ? (language === 'ar' ? 'منتهي الصلاحية' : language === 'fr' ? 'Expiré' : 'Expired')
+                      : product.registrationStatus === 'prohibited'
+                        ? (language === 'ar' ? 'ممنوع' : language === 'fr' ? 'Interdit' : 'Prohibited')
+                        : product.registrationStatus === 'not_applicable'
+                          ? (language === 'ar' ? 'غير منطبق' : language === 'fr' ? 'Non applicable' : 'Not applicable')
+                          : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'À vérifier' : 'Unverified')
+                } variant={
+                  product.registrationStatus === 'registered_tunisia' ? 'success'
+                    : product.registrationStatus === 'expired' || product.registrationStatus === 'prohibited' ? 'danger'
+                      : product.registrationStatus === 'not_applicable' ? 'secondary' : 'warning'
+                } size="sm" />
               </View>
             ))}
           </View>
