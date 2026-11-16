@@ -6,6 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   RefreshControl,
+  TextInput,
+  Pressable,
+  Alert,
 } from 'react-native';
 import { badgePill, cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, spaceBetweenSm, stackSm, stackTopMd } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -18,9 +21,11 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { getAgriculturalCatalog, getMarketPrices, getMarketplaceListings } from '../api/client';
+import { createMarketplaceListing, getAgriculturalCatalog, getMarketPrices, getMarketplaceListings, uploadMarketplaceImage } from '../api/client';
 import { AICapability, AgriculturalCatalogProduct, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import { useAICapabilities } from '../hooks/useAICapabilities';
+import * as ImagePicker from 'expo-image-picker';
+import { Button } from '../components/ui/Button';
 
 /**
  * Market prices read from the platform's stored `market_prices` records.
@@ -35,6 +40,20 @@ export const MarketplaceScreen: React.FC = () => {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [catalog, setCatalog] = useState<AgriculturalCatalogProduct[]>([]);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
+  const [sellerFormOpen, setSellerFormOpen] = useState(false);
+  const [sellerSubmitting, setSellerSubmitting] = useState(false);
+  const [sellerType, setSellerType] = useState<NonNullable<MarketplaceListing['listingType']>>('agricultural_input');
+  const [sellerTitle, setSellerTitle] = useState('');
+  const [sellerCategory, setSellerCategory] = useState('');
+  const [sellerDescription, setSellerDescription] = useState('');
+  const [sellerPrice, setSellerPrice] = useState('');
+  const [sellerQuantity, setSellerQuantity] = useState('');
+  const [sellerUnit, setSellerUnit] = useState('kg');
+  const [sellerLocation, setSellerLocation] = useState('');
+  const [sellerGovernorate, setSellerGovernorate] = useState('');
+  const [harvestCrop, setHarvestCrop] = useState('');
+  const [harvestDate, setHarvestDate] = useState('');
+  const [sellerImage, setSellerImage] = useState<{ uri: string; mimeType?: string } | null>(null);
   const [listingsUnavailable, setListingsUnavailable] = useState(false);
   // Default to an honest "stored, not verified" label; the load replaces it with
   // the backend's own provenance. Never default to `isRealData: true`.
@@ -102,6 +121,62 @@ export const MarketplaceScreen: React.FC = () => {
     }
   };
 
+  const pickSellerImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(language === 'ar' ? 'إذن الصور مطلوب' : language === 'fr' ? 'Autorisation requise' : 'Permission required');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.82 });
+    if (!result.canceled && result.assets[0]) setSellerImage({ uri: result.assets[0].uri, mimeType: result.assets[0].mimeType ?? 'image/jpeg' });
+  };
+
+  const publishSellerListing = async () => {
+    if (sellerTitle.trim().length < 3 || !sellerCategory.trim()) {
+      Alert.alert(language === 'ar' ? 'أكمل اسم المنتج والصنف' : language === 'fr' ? 'Nom et catégorie requis' : 'Title and category are required');
+      return;
+    }
+    if (sellerPrice.trim() && (!Number.isFinite(Number(sellerPrice)) || Number(sellerPrice) < 0)) {
+      Alert.alert(language === 'ar' ? 'السعر غير صحيح' : language === 'fr' ? 'Prix invalide' : 'Invalid price');
+      return;
+    }
+    if (sellerType === 'harvest' && (!harvestCrop.trim() || !/^\\d{4}-\\d{2}-\\d{2}$/.test(harvestDate))) {
+      Alert.alert(language === 'ar' ? 'نوع المحصول وتاريخ الحصاد مطلوبان' : language === 'fr' ? 'Culture et date de récolte requises' : 'Crop and harvest date are required (YYYY-MM-DD)');
+      return;
+    }
+    setSellerSubmitting(true);
+    try {
+      let imageUrls: string[] = [];
+      if (sellerImage) {
+        const uploaded = await uploadMarketplaceImage(sellerImage.uri, sellerImage.mimeType);
+        if (!uploaded.url) throw new Error(uploaded.error || 'Image upload failed');
+        imageUrls = [uploaded.url];
+      }
+      const result = await createMarketplaceListing({
+        listing_type: sellerType, title: sellerTitle.trim(), category: sellerCategory.trim(),
+        description: sellerDescription.trim() || undefined,
+        price: sellerPrice.trim() ? Number(sellerPrice) : null,
+        quantity: sellerQuantity.trim() ? Number(sellerQuantity) : null,
+        currency: 'TND', unit: sellerUnit.trim() || undefined,
+        location: sellerLocation.trim() || undefined, governorate: sellerGovernorate.trim() || undefined,
+        image_urls: imageUrls,
+        harvest_crop: sellerType === 'harvest' ? harvestCrop.trim() : undefined,
+        expected_harvest_date: sellerType === 'harvest' ? harvestDate : undefined,
+      });
+      if (!result.data) throw new Error(result.error || 'Could not publish listing');
+      setSellerTitle(''); setSellerCategory(''); setSellerDescription(''); setSellerPrice('');
+      setSellerQuantity(''); setSellerLocation(''); setSellerGovernorate(''); setHarvestCrop('');
+      setHarvestDate(''); setSellerImage(null); setSellerFormOpen(false);
+      Alert.alert(language === 'ar' ? 'تم نشر العرض' : language === 'fr' ? 'Annonce publiée' : 'Listing published');
+      await loadPrices();
+    } catch (e) {
+      Alert.alert(language === 'ar' ? 'تعذر نشر العرض' : language === 'fr' ? 'Publication impossible' : 'Could not publish listing',
+        e instanceof Error ? e.message : 'Please sign in and try again.');
+    } finally {
+      setSellerSubmitting(false);
+    }
+  };
+
   const sellerListings = listings.filter((item) => item.listingType !== 'harvest');
   const futureHarvests = listings.filter((item) => item.listingType === 'harvest');
 
@@ -126,6 +201,76 @@ export const MarketplaceScreen: React.FC = () => {
         placeholder={t.searchCrop}
         clearLabel={x.clearSearch}
       />
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="store-plus-outline" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'بيع منتوجك على AgroGrowth' : language === 'fr' ? 'Vendre sur AgroGrowth' : 'Sell on AgroGrowth'}
+          </Text>
+        </View>
+        <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+          {language === 'ar' ? 'انشر منتوج فلاحي أو معدات أو محصولك القادم. يلزم تسجيل الدخول.' : language === 'fr' ? 'Publiez un intrant, un équipement ou une récolte à venir. Connexion requise.' : 'Publish agricultural inputs, equipment or an upcoming harvest. Sign-in required.'}
+        </Text>
+        <Button title={sellerFormOpen
+          ? (language === 'ar' ? 'إغلاق النموذج' : language === 'fr' ? 'Fermer' : 'Close form')
+          : (language === 'ar' ? 'إضافة عرض للبيع' : language === 'fr' ? 'Ajouter une annonce' : 'Create a listing')}
+          onPress={() => setSellerFormOpen(v => !v)} variant="outline" size="md" />
+        {sellerFormOpen ? (
+          <View style={{ gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+              {(['agricultural_input','equipment','agricultural_product','harvest'] as const).map(type => (
+                <Pressable key={type} onPress={() => setSellerType(type)}
+                  style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.lg, borderWidth: 1, borderColor: sellerType === type ? colors.primary : colors.border, backgroundColor: sellerType === type ? colors.primaryLight : colors.surface }}>
+                  <Text style={{ color: sellerType === type ? colors.primaryDark : colors.text, fontSize: typography.fontSizes.xs }}>
+                    {type === 'agricultural_input' ? (language === 'ar' ? 'أدوية وأسمدة' : language === 'fr' ? 'Intrants' : 'Inputs') :
+                     type === 'equipment' ? (language === 'ar' ? 'معدات' : language === 'fr' ? 'Matériel' : 'Equipment') :
+                     type === 'agricultural_product' ? (language === 'ar' ? 'منتوج فلاحي' : language === 'fr' ? 'Produit agricole' : 'Farm produce') :
+                     (language === 'ar' ? 'محصول قادم' : language === 'fr' ? 'Récolte à venir' : 'Future harvest')}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {[
+              { label: language === 'ar' ? 'اسم العرض' : language === 'fr' ? 'Titre' : 'Listing title', value: sellerTitle, set: setSellerTitle, placeholder: ' ' },
+              { label: language === 'ar' ? 'الصنف' : language === 'fr' ? 'Catégorie' : 'Category', value: sellerCategory, set: setSellerCategory, placeholder: language === 'ar' ? 'مثال: مبيد، سماد، زيت زيتون' : 'e.g. pesticide, fertilizer, olive oil' },
+              { label: language === 'ar' ? 'السعر بالدينار' : language === 'fr' ? 'Prix (TND)' : 'Price (TND)', value: sellerPrice, set: setSellerPrice, keyboard: 'decimal-pad' as const },
+              { label: language === 'ar' ? 'الكمية' : language === 'fr' ? 'Quantité' : 'Quantity', value: sellerQuantity, set: setSellerQuantity, keyboard: 'decimal-pad' as const },
+              { label: language === 'ar' ? 'الوحدة' : language === 'fr' ? 'Unité' : 'Unit', value: sellerUnit, set: setSellerUnit },
+              { label: language === 'ar' ? 'الموقع' : language === 'fr' ? 'Localisation' : 'Location', value: sellerLocation, set: setSellerLocation },
+              { label: language === 'ar' ? 'الولاية' : language === 'fr' ? 'Gouvernorat' : 'Governorate', value: sellerGovernorate, set: setSellerGovernorate },
+            ].map(field => (
+              <View key={field.label} style={{ gap: 4 }}>
+                <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{field.label}</Text>
+                <TextInput value={field.value} onChangeText={field.set} placeholder={field.placeholder}
+                  keyboardType={field.keyboard || 'default'} style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }} />
+              </View>
+            ))}
+            <View style={{ gap: 4 }}>
+              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'الوصف' : language === 'fr' ? 'Description' : 'Description'}</Text>
+              <TextInput value={sellerDescription} onChangeText={setSellerDescription} multiline
+                style={{ minHeight: 76, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }} />
+            </View>
+            {sellerType === 'harvest' ? (
+              <>
+                <View style={{ gap: 4 }}>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'نوع المحصول' : language === 'fr' ? 'Culture' : 'Crop'}</Text>
+                  <TextInput value={harvestCrop} onChangeText={setHarvestCrop} style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+                </View>
+                <View style={{ gap: 4 }}>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'تاريخ الحصاد المتوقع (YYYY-MM-DD)' : language === 'fr' ? 'Date prévue (YYYY-MM-DD)' : 'Expected harvest date (YYYY-MM-DD)'}</Text>
+                  <TextInput value={harvestDate} onChangeText={setHarvestDate} placeholder="2027-01-15" style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+                </View>
+              </>
+            ) : null}
+            <Button title={sellerImage
+              ? (language === 'ar' ? 'تم اختيار صورة' : language === 'fr' ? 'Image sélectionnée' : 'Image selected')
+              : (language === 'ar' ? 'إضافة صورة للمنتوج' : language === 'fr' ? 'Ajouter une photo' : 'Add product photo')}
+              onPress={pickSellerImage} variant="secondary" size="md" />
+            <Button title={language === 'ar' ? 'نشر العرض' : language === 'fr' ? 'Publier' : 'Publish listing'}
+              onPress={publishSellerListing} loading={sellerSubmitting} disabled={sellerSubmitting} size="lg" />
+          </View>
+        ) : null}
+      </Card>
 
       {loading ? (
         <StateCard kind="loading" title={x.stateLoading} compact />
