@@ -28,6 +28,7 @@ export interface CropSelection {
   suitabilityScore: number;
   farmId?: string;
   fieldId?: string;
+  soilAnalysisId?: string;
   areaHectares?: number;
 }
 
@@ -235,6 +236,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
       suitabilityScore: crop.suitabilityScore,
       farmId: initialContext?.farmId,
       fieldId: initialContext?.fieldId,
+      soilAnalysisId: initialContext?.analysisId,
       areaHectares: initialContext?.soil?.farmAreaHectares,
     });
   };
