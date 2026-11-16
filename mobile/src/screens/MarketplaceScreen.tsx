@@ -320,7 +320,7 @@ export const MarketplaceScreen: React.FC = () => {
         <Button title={sellerFormOpen
           ? (language === 'ar' ? 'إغلاق النموذج' : language === 'fr' ? 'Fermer' : 'Close form')
           : (language === 'ar' ? 'إضافة عرض للبيع' : language === 'fr' ? 'Ajouter une annonce' : 'Create a listing')}
-          onPress={() => setSellerFormOpen(v => !v)} variant="outline" size="md" fullWidth={false} />
+          onPress={() => setSellerFormOpen(v => !v)} variant="outline" size="md" />
         {sellerFormOpen ? (
           <View style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
@@ -546,7 +546,7 @@ export const MarketplaceScreen: React.FC = () => {
                   <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
                 ) : null}
                 <Button title={language === 'ar' ? 'تواصل' : language === 'fr' ? 'Contacter' : 'Contact seller'}
-                  onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" />
+                  onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" fullWidth={false} />
               </View>
             ))}
           </View>
@@ -565,7 +565,7 @@ export const MarketplaceScreen: React.FC = () => {
             <Button title={language === 'ar' ? 'إرسال' : language === 'fr' ? 'Envoyer' : 'Send inquiry'}
               onPress={sendMarketplaceInquiry} loading={inquirySubmitting} disabled={inquirySubmitting} size="md" fullWidth={false} />
             <Button title={language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel'}
-              onPress={() => { setActiveInquiryListing(null); setInquiryMessage(''); }} variant="outline" size="md" />
+              onPress={() => { setActiveInquiryListing(null); setInquiryMessage(''); }} variant="outline" size="md" fullWidth={false} />
           </View>
         </Card>
       ) : null}
@@ -628,13 +628,13 @@ export const MarketplaceScreen: React.FC = () => {
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                   <Button title={language === 'ar' ? 'تعديل' : language === 'fr' ? 'Modifier' : 'Edit'}
-                    onPress={() => beginEditListing(listing)} variant="outline" size="sm" />
+                    onPress={() => beginEditListing(listing)} variant="outline" size="sm" fullWidth={false} />
                   {listing.status !== 'archived' ? (
                     <Button title={language === 'ar' ? 'أرشفة' : language === 'fr' ? 'Archiver' : 'Archive'}
-                      onPress={() => archiveMyListing(listing.id)} variant="outline" size="sm" />
+                      onPress={() => archiveMyListing(listing.id)} variant="outline" size="sm" fullWidth={false} />
                   ) : null}
                   <Button title={language === 'ar' ? 'حذف' : language === 'fr' ? 'Supprimer' : 'Delete'}
-                    onPress={() => confirmDeleteListing(listing.id)} variant="outline" size="sm" />
+                    onPress={() => confirmDeleteListing(listing.id)} variant="outline" size="sm" fullWidth={false} />
                 </View>
               </View>
             ))}
@@ -655,7 +655,7 @@ export const MarketplaceScreen: React.FC = () => {
               <Button title={language === 'ar' ? 'حفظ' : language === 'fr' ? 'Enregistrer' : 'Save changes'}
                 onPress={saveListingEdits} loading={editListingSaving} disabled={editListingSaving} size="md" fullWidth={false} />
               <Button title={language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel'}
-                onPress={() => setEditingListingId(null)} variant="outline" size="md" />
+                onPress={() => setEditingListingId(null)} variant="outline" size="md" fullWidth={false} />
             </View>
           </View>
         ) : null}
@@ -683,7 +683,7 @@ export const MarketplaceScreen: React.FC = () => {
                 <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{inquiry.message}</Text>
                 {inquiry.isSeller && inquiry.status === 'new' ? (
                   <Button title={language === 'ar' ? 'قبول الطلب' : language === 'fr' ? 'Accepter' : 'Accept inquiry'}
-                    onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" />
+                    onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
                 ) : null}
               </View>
             ))}
