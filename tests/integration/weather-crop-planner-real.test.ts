@@ -43,7 +43,7 @@ const sampleWeather = {
     icon: "sunny",
   },
   forecast: {
-    daily: Array.from({ length: 14 }, (_, i) => ({
+    daily: Array.from({ length: 3 }, (_, i) => ({
       date: `2026-11-${String(i + 1).padStart(2, "0")}`,
       maxTemp: 26 + i,
       minTemp: 14 + i,
@@ -131,6 +131,7 @@ describe("🌦️ Weather crop planner uses real provider data", () => {
       });
     expect(res.status).toBe(200);
     expect(res.body.isRealData).toBe(true);
+    expect(res.body.weatherPeriod).toBe(3);
     expect(Array.isArray(res.body.optimizedSchedule)).toBe(true);
   });
 
