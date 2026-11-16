@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { actionsRow, cardPad, flex1, rowWrapSm, screenStyles, stackMd, stackTopMd, stackedCard } from '../../theme/layout';
+import { actionsRow, cardPad, flex1, rowWrapSm, screenStyles, stackTopMd, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -337,7 +337,6 @@ const styles = StyleSheet.create({
   },
   galleryBtn: { backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: colors.border },
   actionPickText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.bold, textAlign: 'center', lineHeight: typography.lineHeights.xs },
-  section: stackMd,
   resultCard: cardPad,
   resultTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
   resultDiseaseHeader: flex1,
