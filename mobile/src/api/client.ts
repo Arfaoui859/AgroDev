@@ -1190,11 +1190,12 @@ export async function createMarketplaceInquiry(listingId: string, message: strin
 export async function getMarketplaceInquiries(): Promise<{ data: MarketplaceInquiry[]; error: string | null }> {
   const res = await apiRequest<any>('/api/agro-market/inquiries');
   const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  const { data: { user } } = await supabase.auth.getUser();
   return {
     data: rows.map((i: any) => ({
       id: String(i.id), listingId: String(i.listing_id), buyerId: String(i.buyer_id), sellerId: String(i.seller_id),
       message: i.message, quantity: i.quantity == null ? null : Number(i.quantity), status: i.status,
-      createdAt: i.created_at, listingTitle: i.listing?.title ?? null,
+      createdAt: i.created_at, listingTitle: i.listing?.title ?? null, isSeller: Boolean(user?.id && user.id === i.seller_id),
     })),
     error: res.error,
   };
