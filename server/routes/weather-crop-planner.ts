@@ -213,7 +213,6 @@ router.post("/smart-schedule", async (req, res) => {
       isRealData: true,
       isStale: Boolean(adapted.weather.source.isStale),
       observationTime: adapted.weather.source.observationTime,
-      isStale: Boolean(adapted.weather.source.isStale),
     });
   } catch (error) {
     return respondWeatherError(res, farmLocation, error);
