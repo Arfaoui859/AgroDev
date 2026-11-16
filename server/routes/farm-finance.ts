@@ -36,14 +36,17 @@ export function expensePayload(body: any, userId: string) {
   const category = String(body.category ?? "");
   const currency = String(body.currency ?? "TND").toUpperCase();
   const farmId = body.farm_id == null || body.farm_id === "" ? null : String(body.farm_id);
+  const cultivationId = body.cultivation_id == null || body.cultivation_id === "" ? null : String(body.cultivation_id);
   const allowed = new Set(["seeds", "fertilizers", "pesticides", "labor", "equipment", "fuel", "maintenance", "utilities", "insurance", "other"]);
   if (!allowed.has(category) || currency !== "TND" || !Number.isFinite(amount) || amount <= 0 ||
-      !isValidISODate(date) || (farmId !== null && !UUID_PATTERN.test(farmId))) {
+      !isValidISODate(date) || (farmId !== null && !UUID_PATTERN.test(farmId)) ||
+      (cultivationId !== null && (!UUID_PATTERN.test(cultivationId) || farmId === null))) {
     return null;
   }
   return {
     user_id: userId,
     farm_id: farmId,
+    cultivation_id: cultivationId,
     category,
     subcategory: String(body.subcategory ?? "").slice(0, 120),
     amount,
@@ -64,6 +67,7 @@ function expenseRecord(row: any) {
     id: row.id,
     farmerId: row.user_id,
     farmId: row.farm_id,
+    cultivationId: row.cultivation_id ?? null,
     category: row.category,
     subcategory: row.subcategory,
     amount: Number(row.amount),
@@ -85,6 +89,12 @@ export const createExpense: RequestHandler = async (req, res) => {
   const payload = expensePayload(req.body ?? {}, req.userId!);
   if (!payload) return res.status(400).json({ success: false, code: "INVALID_EXPENSE", message: "تحقق من الصنف والمبلغ والتاريخ." });
 
+  if (payload.cultivation_id) {
+    const { data: cultivation, error: lookupError } = await db.from("crop_cultivations").select("id")
+      .eq("id", payload.cultivation_id).eq("farm_id", payload.farm_id).maybeSingle();
+    if (lookupError) return unavailable(res, lookupError);
+    if (!cultivation) return res.status(404).json({ success: false, code: "CULTIVATION_NOT_FOUND_IN_FARM" });
+  }
   const { data, error } = await db.from("farm_expenses").insert(payload).select("*").single();
   if (error) {
     console.error("Create expense failed:", error.code);
@@ -156,10 +166,12 @@ export const createRevenue: RequestHandler = async (req, res) => {
   const marketingCost = Number(body.marketingCost ?? 0);
   const currency = String(body.currency ?? "TND").toUpperCase();
   const farmId = body.farm_id == null || body.farm_id === "" ? null : String(body.farm_id);
+  const cultivationId = body.cultivation_id == null || body.cultivation_id === "" ? null : String(body.cultivation_id);
   const harvestDate = body.harvestDate == null || body.harvestDate === "" ? null : String(body.harvestDate);
   const storageDays = body.storageDays == null || body.storageDays === "" ? 0 : Number(body.storageDays);
   if (currency !== "TND" || !Number.isFinite(amount) || amount <= 0 || !isValidISODate(date) ||
       (farmId !== null && !UUID_PATTERN.test(farmId)) ||
+      (cultivationId !== null && (!UUID_PATTERN.test(cultivationId) || farmId === null)) ||
       (harvestDate !== null && !isValidISODate(harvestDate)) ||
       !Number.isInteger(storageDays) || storageDays < 0 ||
       (quantity !== null && (!Number.isFinite(quantity) || quantity <= 0)) ||
@@ -171,6 +183,7 @@ export const createRevenue: RequestHandler = async (req, res) => {
   const payload = {
     user_id: req.userId,
     farm_id: farmId,
+    cultivation_id: cultivationId,
     crop_related: body.cropRelated ? String(body.cropRelated).slice(0, 100) : null,
     amount,
     currency: "TND",
@@ -189,6 +202,12 @@ export const createRevenue: RequestHandler = async (req, res) => {
     transportation_cost: transportationCost,
     marketing_cost: marketingCost,
   };
+  if (payload.cultivation_id) {
+    const { data: cultivation, error: lookupError } = await db.from("crop_cultivations").select("id")
+      .eq("id", payload.cultivation_id).eq("farm_id", payload.farm_id).maybeSingle();
+    if (lookupError) return unavailable(res, lookupError);
+    if (!cultivation) return res.status(404).json({ success: false, code: "CULTIVATION_NOT_FOUND_IN_FARM" });
+  }
   const { data, error } = await db.from("farm_revenues").insert(payload).select("*").single();
   if (error) {
     console.error("Create revenue failed:", error.code);
@@ -277,11 +296,19 @@ export const getFinancialSummary: RequestHandler = async (req, res) => {
   if (farmId && !UUID_PATTERN.test(farmId)) {
     return res.status(400).json({ success: false, code: "INVALID_FARM_ID" });
   }
+  const cultivationId = typeof req.query.cultivation_id === "string" ? req.query.cultivation_id.trim() : "";
+  if (cultivationId && (!UUID_PATTERN.test(cultivationId) || !farmId)) {
+    return res.status(400).json({ success: false, code: "INVALID_CULTIVATION_SCOPE" });
+  }
   let expensesQuery = db.from("farm_expenses").select("amount,category").eq("user_id", req.userId);
   let revenuesQuery = db.from("farm_revenues").select("amount,transportation_cost,marketing_cost").eq("user_id", req.userId);
   if (farmId) {
     expensesQuery = expensesQuery.eq("farm_id", farmId);
     revenuesQuery = revenuesQuery.eq("farm_id", farmId);
+  }
+  if (cultivationId) {
+    expensesQuery = expensesQuery.eq("cultivation_id", cultivationId);
+    revenuesQuery = revenuesQuery.eq("cultivation_id", cultivationId);
   }
   const [expensesResult, revenuesResult] = await Promise.all([expensesQuery, revenuesQuery]);
   if (expensesResult.error || revenuesResult.error) return unavailable(res, expensesResult.error || revenuesResult.error || undefined);

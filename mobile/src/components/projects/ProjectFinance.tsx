@@ -30,6 +30,7 @@ import { expenseCategoryOptions } from '../../utils/projectLabels';
 
 interface ProjectFinanceProps {
   farmId: string;
+  cultivationId: string;
   cropName?: string;
 }
 
@@ -67,7 +68,7 @@ const AmountRow: React.FC<{ label: string; value: number; language: string; stro
  * server aggregates the whole account, so the UI states that scope explicitly
  * rather than implying a per-project figure it cannot produce.
  */
-export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cropName }) => {
+export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cultivationId, cropName }) => {
   const { x, isRtl, language } = useLanguage();
   const p = useMemo(() => getProjects(language), [language]);
 
@@ -93,7 +94,7 @@ export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cropName
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getProjectFinancialSummary(farmId);
+      const res = await getProjectFinancialSummary(farmId, cultivationId);
       setSummary(res.data);
       setMeta(res.meta);
       setError(res.error);
@@ -103,7 +104,7 @@ export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cropName
     } finally {
       setLoading(false);
     }
-  }, [farmId, p.saveFailed]);
+  }, [farmId, cultivationId, p.saveFailed]);
 
   useEffect(() => {
     (async () => {
@@ -148,11 +149,11 @@ export const ProjectFinance: React.FC<ProjectFinanceProps> = ({ farmId, cropName
     try {
       const res = mode === 'expense'
         ? await createProjectExpense({
-            amount: value, date, category, farm_id: farmId, cropRelated: cropName,
+            amount: value, date, category, farm_id: farmId, cultivation_id: cultivationId, cropRelated: cropName,
             description: description || undefined, supplier: supplier || undefined,
           })
         : await createProjectRevenue({
-            amount: value, date, farm_id: farmId, cropRelated: cropName,
+            amount: value, date, farm_id: farmId, cultivation_id: cultivationId, cropRelated: cropName,
             quantity: quantity ? Number(quantity) : undefined,
             unitPrice: unitPrice ? Number(unitPrice) : undefined,
             buyer: buyer || undefined, description: description || undefined,

@@ -146,10 +146,10 @@ describe('project API client', () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce(
         jsonResponse({ success: true, data: { id: 'e2', amount: 20, category: 'labor' } }, 201),
       );
-      const res = await createProjectExpense({ amount: 20, date: '2026-11-01', category: 'labor', farm_id: 'f1' });
+      const res = await createProjectExpense({ amount: 20, date: '2026-11-01', category: 'labor', farm_id: 'f1', cultivation_id: 'cult-1' });
       expect(res.data?.id).toBe('e2');
       const [, init] = (global.fetch as jest.Mock).mock.calls[0];
-      expect(JSON.parse(init.body)).toMatchObject({ amount: 20, date: '2026-11-01', category: 'labor' });
+      expect(JSON.parse(init.body)).toMatchObject({ amount: 20, date: '2026-11-01', category: 'labor', cultivation_id: 'cult-1' });
     });
 
     it('posts a revenue', async () => {

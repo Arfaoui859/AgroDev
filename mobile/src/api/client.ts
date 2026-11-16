@@ -998,6 +998,7 @@ export async function createProjectExpense(payload: {
   date: string;
   category: string;
   farm_id?: string | null;
+  cultivation_id?: string | null;
   cropRelated?: string;
   description?: string;
   supplier?: string;
@@ -1018,6 +1019,7 @@ export async function createProjectRevenue(payload: {
   amount: number;
   date: string;
   farm_id?: string | null;
+  cultivation_id?: string | null;
   cropRelated?: string;
   quantity?: number;
   unitPrice?: number;
@@ -1036,14 +1038,15 @@ export async function createProjectRevenue(payload: {
 }
 
 /** `GET /api/financial-summary` — the aggregated result, computed by the server. */
-export async function getProjectFinancialSummary(farmId?: string): Promise<{
+export async function getProjectFinancialSummary(farmId?: string, cultivationId?: string): Promise<{
   data: ProjectFinancialSummary | null;
   error: string | null;
   roleBlocked: boolean;
   meta: ProvenanceMeta;
 }> {
-  const query = farmId ? `?farm_id=${encodeURIComponent(farmId)}` : '';
-  const res = await apiRequest<any>(`/api/financial-summary${query}`, { cacheKey: `financial-summary:${farmId || 'all'}` });
+  const queryParts = [farmId ? `farm_id=${encodeURIComponent(farmId)}` : null, cultivationId ? `cultivation_id=${encodeURIComponent(cultivationId)}` : null].filter(Boolean);
+  const query = queryParts.length ? `?${queryParts.join('&')}` : '';
+  const res = await apiRequest<any>(`/api/financial-summary${query}`, { cacheKey: `financial-summary:${farmId || 'all'}:${cultivationId || 'all'}` });
   const roleBlocked = res.status === 403;
   return {
     data: (res.data?.data as ProjectFinancialSummary) ?? null,
