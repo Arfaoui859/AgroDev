@@ -309,13 +309,18 @@ export const MarketplaceScreen: React.FC = () => {
                       <View style={[styles.locationRow, isRtl && rtlStyles.rtlRow]}>
                         <MaterialCommunityIcons name="map-marker" size={13} color={colors.textMuted} />
                         <Text style={styles.marketLocation}>{item.marketLocation}</Text>
-                      {item.sourceName ? <Text style={styles.marketLocation}>{item.sourceName} · {item.verificationStatus === 'official-source' ? (language === 'ar' ? 'مصدر رسمي' : language === 'fr' ? 'Source officielle' : 'Official source') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'Non vérifié' : 'Unverified')}</Text> : null}
+                      {item.sourceName ? <Text style={styles.marketLocation}>{item.sourceName} · {item.priceKind === 'retail' ? (language === 'ar' ? 'تفصيل' : language === 'fr' ? 'Détail' : 'Retail') : (language === 'ar' ? 'جملة' : language === 'fr' ? 'Gros' : 'Wholesale')} · {item.verificationStatus === 'official-source' ? (language === 'ar' ? 'مصدر رسمي' : language === 'fr' ? 'Source officielle' : 'Official source') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'Non vérifié' : 'Unverified')}</Text> : null}
                       </View>
                     ) : null}
                   </View>
 
                   <View style={styles.priceDisplay}>
-                    <Text style={styles.priceValue}>{item.pricePerKg.toFixed(2)}</Text>
+                    <Text style={styles.priceValue}>
+                      {item.pricePerKg !== null ? item.pricePerKg.toFixed(2) :
+                        item.priceMin !== null && item.priceMin !== undefined && item.priceMax !== null && item.priceMax !== undefined
+                          ? `${item.priceMin.toFixed(2)}–${item.priceMax.toFixed(2)}`
+                          : item.priceMin != null ? item.priceMin.toFixed(2) : item.priceMax != null ? item.priceMax.toFixed(2) : '—'}
+                    </Text>
                     <Text style={styles.currencyLabel}>{item.currency === 'TND' && item.unit === 'kg' ? t.currencyPerKg : `${item.currency || 'TND'} / ${item.unit || 'kg'}`}</Text>
                   </View>
                 </View>
