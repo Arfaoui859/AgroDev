@@ -16,12 +16,13 @@ import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
 import { FormField } from '../../components/ui/FormField';
 import {
   createCultivation,
+  createProjectTask,
   getCultivations,
   getFarms,
+  getProjectTasks,
   getSoilReports,
   getSoilReport,
 } from '../../api/client';
-import { getTaskState, setTaskDone } from '../../api/projectTasks';
 import { deriveProjectTasks, ProjectTask } from '../../utils/projectTasks';
 import { cropName } from '../../utils/cropLabels';
 import { getSoil } from '../../i18n/soil';
@@ -30,6 +31,7 @@ import { growthStageLabel, projectStatusLabel } from '../../utils/projectLabels'
 import { Cultivation, Farm, SoilReport, ProvenanceMeta } from '../../types';
 import { CropSelection } from './CropRecommendationScreen';
 import { MarketplaceMatch } from '../../components/soil/MarketplaceMatch';
+import { ProjectTracker } from '../../components/projects/ProjectTracker';
 
 interface CultivationProjectScreenProps {
   onBack: () => void;
@@ -94,8 +96,8 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
 
   // Tasks + their local done-state for the created project.
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
-  const [taskState, setTaskState] = useState<Record<string, boolean>>({});
   const [reportLoaded, setReportLoaded] = useState(false);
+  const [taskSetupReady, setTaskSetupReady] = useState(false);
 
   useEffect(() => {
     if (selection.farmId) return;
@@ -160,19 +162,9 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
         }
         if (!active) return;
         setTasks(deriveProjectTasks(report));
-        if (created?.id) {
-          setTaskState(await getTaskState(created.id));
-        }
       } catch {
         if (!active) return;
         setTasks(deriveProjectTasks(null));
-        if (created?.id) {
-          try {
-            setTaskState(await getTaskState(created.id));
-          } catch {
-            setTaskState({});
-          }
-        }
       } finally {
         if (active) setReportLoaded(true);
       }
@@ -181,6 +173,60 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
       active = false;
     };
   }, [selection.fieldId, created?.id]);
+
+  // Turn the soil report's actionable recommendations into real, server-persisted
+  // project tasks. The project tracker then reads and updates the same farm_tasks
+  // rows across devices instead of keeping completion ticks only on this phone.
+  useEffect(() => {
+    if (!created || !reportLoaded) return;
+    let active = true;
+    (async () => {
+      setTaskSetupReady(false);
+      try {
+        const existing = await getProjectTasks({
+          farmId: created.farm_id,
+          cultivationId: created.id,
+        });
+        if (existing.roleBlocked || existing.error) return;
+
+        const existingTitles = new Set(existing.data.map((task) => task.title.trim().toLocaleLowerCase()));
+        const taskTypes: Record<ProjectTask['kind'], 'inspection' | 'maintenance' | 'fertilization' | 'irrigation' | 'planting'> = {
+          measure: 'inspection',
+          prepare: 'maintenance',
+          amend: 'fertilization',
+          irrigation: 'irrigation',
+          plant: 'planting',
+          monitor: 'inspection',
+          retest: 'inspection',
+        };
+
+        for (const task of tasks) {
+          const title = (task.generic ? genericLabel(task.kind, s9) : task.text).trim();
+          if (!title || existingTitles.has(title.toLocaleLowerCase())) continue;
+          const saved = await createProjectTask({
+            farm_id: created.farm_id,
+            cultivation_id: created.id,
+            title,
+            task_type: taskTypes[task.kind],
+            priority: task.priority,
+            description: task.generic
+              ? 'General cultivation lifecycle task.'
+              : 'Generated from the selected plot soil analysis recommendations.',
+          });
+          if (saved.roleBlocked || saved.error || !saved.data) break;
+          existingTitles.add(title.toLocaleLowerCase());
+        }
+      } catch {
+        // Project creation remains successful; ProjectTracker exposes its own
+        // persisted-task availability/error state and can be retried there.
+      } finally {
+        if (active) setTaskSetupReady(true);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [created?.id, created?.farm_id, reportLoaded, tasks, s9]);
 
   const handleCreate = async () => {
     const parsedArea = Number(area.replace(',', '.'));
@@ -208,6 +254,8 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
         area_hectares: parsedArea,
       });
       if (res.data) {
+        setReportLoaded(false);
+        setTaskSetupReady(false);
         setCreated(res.data);
         void loadProjects();
       } else {
@@ -220,14 +268,6 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
     }
   };
 
-  const toggleTask = async (task: ProjectTask) => {
-    if (!created) return;
-    const next = !taskState[task.id];
-    const updated = await setTaskDone(created.id, task.id, next);
-    setTaskState(updated);
-  };
-
-  const doneCount = tasks.filter((tk) => taskState[tk.id]).length;
 
   return (
     <ScrollView style={screenStyles.container} contentContainerStyle={screenStyles.content} showsVerticalScrollIndicator={false}>
@@ -294,41 +334,11 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
       )}
 
       {created && reportLoaded ? (
-        <Card variant="elevated" style={styles.card}>
-          <Text style={[styles.tasksTitle, isRtl && rtlStyles.rtlText]}>{s9.projectTasksTitle}</Text>
-          <Text style={[styles.tasksSub, isRtl && rtlStyles.rtlText]}>{s9.projectTasksSubtitle}</Text>
-          {tasks.length === 0 ? (
-            <StateView kind="empty" message={s9.projectTasksSubtitle} compact />
-          ) : (
-            <View style={styles.taskList}>
-              {tasks.map((task) => {
-                const done = !!taskState[task.id];
-                const label = task.generic ? genericLabel(task.kind, s9) : task.text;
-                return (
-                  <TouchableOpacity
-                    key={task.id}
-                    onPress={() => toggleTask(task)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: done }}
-                    accessibilityLabel={label}
-                    style={[styles.taskRow, isRtl && rtlStyles.rtlRow]}
-                  >
-                    <MaterialCommunityIcons
-                      name={done ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
-                      size={22}
-                      color={done ? colors.success : colors.textMuted}
-                    />
-                    <Text style={[styles.taskText, done && styles.taskTextDone, isRtl && rtlStyles.rtlText]}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-          <Text style={[styles.progress, isRtl && rtlStyles.rtlText]}>
-            {doneCount} / {tasks.length}
-          </Text>
-          <Text style={[styles.cycleNote, isRtl && rtlStyles.rtlText]}>{s9.projectCycleNote}</Text>
-        </Card>
+        taskSetupReady ? (
+          <ProjectTracker farmId={created.farm_id} cultivationId={created.id} />
+        ) : (
+          <StateView kind="loading" title={s9.projectTasksTitle} compact />
+        )
       ) : null}
 
       {created ? <MarketplaceMatch query={created.crop_name} /> : null}
