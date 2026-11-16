@@ -133,7 +133,7 @@ const MainAppContent: React.FC = () => {
         case 'agri_news':
           return { title: t.agriNewsName };
         case 'community':
-        return <CommunityScreen onBack={() => setActiveService(null)} />;
+        return <CommunityScreen onBack={() => setActiveService(null)} onOpenProfile={() => { setActiveService(null); setActiveTab('profile'); }} />;
       case 'learning':
           return { title: t.homeLearningTitle };
         case 'recent_analyses':
