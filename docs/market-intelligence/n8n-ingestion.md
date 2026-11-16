@@ -21,7 +21,7 @@ Example: the July 2026 report contains separate fruit, vegetable and fish tables
 - Source key: `tn-onagri-bir-el-kassaa`
 - Database migration: `database/migrations/20261117_bir_el_kassaa_and_marketplace_inquiries.sql`
 
-The script reads the ONAGRI index, follows the newest six monthly report links, parses the published HTML tables, preserves the original cells/document URL in `raw_payload`, and posts normalized observations. External IDs are stable by report month and commodity, so repeated scheduled runs upsert rather than duplicate. The rolling six-report import also backfills recent months when the workflow is first activated.
+The script reads the ONAGRI index, follows the newest five monthly report links, parses the published HTML tables, preserves the original cells/document URL in `raw_payload`, and posts normalized observations. External IDs are stable by report month and commodity, so repeated scheduled runs upsert rather than duplicate. The rolling five-report import also backfills recent months when the workflow is first activated.
 
 The database keeps the source's monthly context:
 - `aggregation_period=monthly`, `period_start`, `period_end`;
