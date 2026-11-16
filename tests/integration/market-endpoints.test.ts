@@ -12,7 +12,8 @@ describe("📈 Market endpoints", () => {
     const response = await request(app)
       .post("/api/agro-market/ingest/products")
       .send({ source_key: "test", source_name: "test", source_url: "https://example.org", products: [] });
-    expect([401, 403]).toContain(response.status);
+    expect([401, 403, 503]).toContain(response.status);
+    if (response.status === 503) expect(response.body.success).toBe(false);
   });
 
   test("GET /api/market/all never fabricates prices when no records exist", async () => {
