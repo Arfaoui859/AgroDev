@@ -212,7 +212,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   };
 
   const runSatelliteAnalysis = async () => {
-    const farm = farms[0];
+    const farm = selectedFarm;
     if (!farm?.boundaries) {
       Alert.alert(x.notice, language === 'ar' ? 'احفظ حدود الأرض أولاً.' : language === 'fr' ? 'Enregistrez d’abord les limites.' : 'Save the farm boundary first.');
       return;
@@ -281,14 +281,14 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           <View style={[styles.farmHeader, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.farmHeaderInfo}>
               <Text style={[styles.farmName, isRtl && rtlStyles.rtlText]}>
-                {language === 'ar' ? farms[0].name_ar || farms[0].name : farms[0].name}
+                {language === 'ar' ? selectedFarm.name_ar || selectedFarm.name : selectedFarm.name}
               </Text>
               <Text style={[styles.farmLocation, isRtl && rtlStyles.rtlText]}>
                 <MaterialCommunityIcons name="map-marker" size={14} color={colors.primary} />{' '}
-                {formatFarmLocation(farms[0].location)}
+                {formatFarmLocation(selectedFarm.location)}
               </Text>
             </View>
-            <Badge label={`${farms[0].size_hectares} ${x.farmSizeUnit}`} variant="primary" size="md" />
+            <Badge label={`${selectedFarm.size_hectares} ${x.farmSizeUnit}`} variant="primary" size="md" />
           </View>
 
           <ProvenanceBar meta={meta} style={styles.provBar} />
@@ -299,9 +299,9 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
             <Button title={savingBoundary ? (language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ الحدود' : language === 'fr' ? 'Enregistrer les limites' : 'Save boundary')}
               onPress={saveBoundary} disabled={boundaryPoints.length < 3 || savingBoundary} loading={savingBoundary} size="md" />
           </View>
-          {farms[0].boundaries ? (
+          {selectedFarm.boundaries ? (
             <Image
-              source={{ uri: getSatellitePreviewUrl(farms[0].boundaries) }}
+              source={{ uri: getSatellitePreviewUrl(selectedFarm.boundaries) }}
               style={{ width: '100%', height: 190, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}
               resizeMode="cover"
               accessibilityLabel={language === 'ar' ? 'صورة القمر الصناعي للأرض' : 'Satellite image of the farm'}
@@ -315,7 +315,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
             </View>
           )}
           <Text style={[styles.footerText, isRtl && rtlStyles.rtlText]}>
-            {farms[0].boundaries ? 'Imagery © Esri and contributors' : ''}
+            {selectedFarm.boundaries ? 'Imagery © Esri and contributors' : ''}
             {boundaryPoints.length ? (language === 'ar' ? ` · نقاط مسجلة: ${boundaryPoints.length}` : ` · GPS points: ${boundaryPoints.length}`) : ''}
           </Text>
           <View style={[styles.farmStatsRow, isRtl && rtlStyles.rtlRow]}>
@@ -324,7 +324,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
             <Button title={savingBoundary ? (language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ الحدود' : language === 'fr' ? 'Enregistrer les limites' : 'Save boundary')}
               onPress={saveBoundary} disabled={boundaryPoints.length < 3 || savingBoundary} loading={savingBoundary} size="md" />
           </View>
-          {farms[0].boundaries ? (
+          {selectedFarm.boundaries ? (
             <Button title={language === 'ar' ? 'تحليل الغطاء النباتي NDVI (90 يوم)' : language === 'fr' ? 'Analyser NDVI (90 jours)' : 'Analyze vegetation (NDVI · 90 days)'}
               onPress={runSatelliteAnalysis} loading={satelliteLoading} disabled={satelliteLoading} variant="secondary" size="md" />
           ) : null}
