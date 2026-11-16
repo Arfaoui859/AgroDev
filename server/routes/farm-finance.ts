@@ -273,10 +273,17 @@ export const deleteRevenue: RequestHandler = async (req, res) => {
 export const getFinancialSummary: RequestHandler = async (req, res) => {
   const db = dbFor(req);
   if (!db) return unavailable(res);
-  const [expensesResult, revenuesResult] = await Promise.all([
-    db.from("farm_expenses").select("amount,category").eq("user_id", req.userId),
-    db.from("farm_revenues").select("amount,transportation_cost,marketing_cost").eq("user_id", req.userId),
-  ]);
+  const farmId = typeof req.query.farm_id === "string" ? req.query.farm_id.trim() : "";
+  if (farmId && !UUID_PATTERN.test(farmId)) {
+    return res.status(400).json({ success: false, code: "INVALID_FARM_ID" });
+  }
+  let expensesQuery = db.from("farm_expenses").select("amount,category").eq("user_id", req.userId);
+  let revenuesQuery = db.from("farm_revenues").select("amount,transportation_cost,marketing_cost").eq("user_id", req.userId);
+  if (farmId) {
+    expensesQuery = expensesQuery.eq("farm_id", farmId);
+    revenuesQuery = revenuesQuery.eq("farm_id", farmId);
+  }
+  const [expensesResult, revenuesResult] = await Promise.all([expensesQuery, revenuesQuery]);
   if (expensesResult.error || revenuesResult.error) return unavailable(res, expensesResult.error || revenuesResult.error || undefined);
   const expenses = expensesResult.data ?? [];
   const revenues = revenuesResult.data ?? [];

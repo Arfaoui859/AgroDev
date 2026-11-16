@@ -148,8 +148,9 @@ describe('project API client', () => {
           data: { totalExpenses: 100, grossRevenue: 500, salesCosts: 20, totalRevenue: 480, netProfit: 380, categoryBreakdown: {}, expenseCount: 1, revenueCount: 1 },
         }),
       );
-      const res = await getProjectFinancialSummary();
+      const res = await getProjectFinancialSummary('farm-123');
       expect(res.data?.netProfit).toBe(380);
+      expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('http://test.local/api/financial-summary?farm_id=farm-123');
       expect(res.meta.provenance).toBe('database');
     });
 

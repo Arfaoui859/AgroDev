@@ -1028,13 +1028,14 @@ export async function createProjectRevenue(payload: {
 }
 
 /** `GET /api/financial-summary` — the aggregated result, computed by the server. */
-export async function getProjectFinancialSummary(): Promise<{
+export async function getProjectFinancialSummary(farmId?: string): Promise<{
   data: ProjectFinancialSummary | null;
   error: string | null;
   roleBlocked: boolean;
   meta: ProvenanceMeta;
 }> {
-  const res = await apiRequest<any>('/api/financial-summary', { cacheKey: 'financial-summary' });
+  const query = farmId ? `?farm_id=${encodeURIComponent(farmId)}` : '';
+  const res = await apiRequest<any>(`/api/financial-summary${query}`, { cacheKey: `financial-summary:${farmId || 'all'}` });
   const roleBlocked = res.status === 403;
   return {
     data: (res.data?.data as ProjectFinancialSummary) ?? null,
