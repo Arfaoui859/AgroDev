@@ -41,36 +41,18 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadFarms = useCallback(async () => {
-    setLoadingFarms(true);
-    try {
-      const res = await getFarms();
-      setFarms(res.data);
-      setSelectedFarmId((current) => current ?? res.data[0]?.id ?? null);
-    } catch {
-      setError(p.noFarmToSave);
-    } finally {
-      setLoadingFarms(false);
-    }
-  }, [p.noFarmToSave]);
-
-  useEffect(() => {
-    (async () => {
-      await loadFarms();
-    })();
-  }, [loadFarms]);
-
-  const loadCultivations = useCallback(async () => {
-    if (!selectedFarmId) {
+  const loadCultivationsForFarm = useCallback(async (farmId: string | null) => {
+    if (!farmId) {
       setCultivations([]);
       setSelectedCultivationId(null);
+      setLoadingCultivations(false);
       return;
     }
     setLoadingCultivations(true);
     setCultivations([]);
     setSelectedCultivationId(null);
     try {
-      const res = await getCultivations(selectedFarmId);
+      const res = await getCultivations(farmId);
       setCultivations(res.data);
       setSelectedCultivationId((current) => res.data.some((item) => item.id === current) ? current : null);
     } catch {
@@ -79,11 +61,26 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
     } finally {
       setLoadingCultivations(false);
     }
-  }, [selectedFarmId]);
+  }, []);
+
+  const loadFarms = useCallback(async () => {
+    setLoadingFarms(true);
+    try {
+      const res = await getFarms();
+      setFarms(res.data);
+      const initialFarmId = res.data[0]?.id ?? null;
+      setSelectedFarmId(initialFarmId);
+      await loadCultivationsForFarm(initialFarmId);
+    } catch {
+      setError(p.noFarmToSave);
+    } finally {
+      setLoadingFarms(false);
+    }
+  }, [loadCultivationsForFarm, p.noFarmToSave]);
 
   useEffect(() => {
-    void loadCultivations();
-  }, [loadCultivations]);
+    void loadFarms();
+  }, [loadFarms]);
 
   const handleSave = async () => {
     if (!selectedFarmId || !result.imageUri) return;
@@ -148,7 +145,7 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
                 onPress={() => {
                   if (farm.id !== selectedFarmId) {
                     setSelectedCultivationId(null);
-                    setCultivations([]);
+                    void loadCultivationsForFarm(farm.id);
                   }
                   setSelectedFarmId(farm.id);
                 }}
