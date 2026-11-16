@@ -185,7 +185,7 @@ for future work; re-verify before relying on them.
 
 ### Honesty conventions
 - Never invent weather, market prices, diagnoses or confidence values.
-- Weather comes from Open-Meteo (`/api/weather/coordinates` returns
+- Weather comes from WeatherAPI.com (`/api/weather/coordinates` returns
   `source.isRealData: true`). Market data is read from `market_prices` and
   reports `dataSource: "database"`.
 - Mock/fixture-driven pages must render the shared `SimulatedDataNotice`
