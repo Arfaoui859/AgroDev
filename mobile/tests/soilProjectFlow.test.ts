@@ -60,6 +60,7 @@ describe('soil analysis context and project handoff', () => {
         { priority: 'now', action: 'Check soil salinity' },
         { priority: 'before_planting', action: 'Prepare the seedbed' },
       ],
+      twelveWeekCalendar: [],
       followUpPlan: [
         { step: 1, when: 'After 2 weeks', whatToDo: 'Retest soil after amendment' },
         { step: 2, when: 'After 4 weeks', whatToDo: 'Inspect crop establishment' },
