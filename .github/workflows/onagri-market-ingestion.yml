@@ -1,0 +1,39 @@
+name: ONAGRI Bir El Kassaa market prices
+
+on:
+  schedule:
+    # Check once daily for a newly published monthly mercuriale.
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onagri-bir-el-kassaa-ingestion
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Import latest ONAGRI monthly mercuriales
+        if: ${{ secrets.AGROGROWTH_API_URL != '' && secrets.AGROGROWTH_ADMIN_TOKEN != '' }}
+        env:
+          AGROGROWTH_API_URL: ${{ secrets.AGROGROWTH_API_URL }}
+          AGROGROWTH_ADMIN_TOKEN: ${{ secrets.AGROGROWTH_ADMIN_TOKEN }}
+        run: python scripts/market-data/ingest_onagri_bir_el_kassaa.py
+
+      - name: Explain skipped ingestion when credentials are not configured
+        if: ${{ secrets.AGROGROWTH_API_URL == '' || secrets.AGROGROWTH_ADMIN_TOKEN == '' }}
+        run: |
+          echo "::warning::Set repository secrets AGROGROWTH_API_URL and AGROGROWTH_ADMIN_TOKEN to activate ingestion."
+          echo "The official source was checked only after the credentials are configured."
