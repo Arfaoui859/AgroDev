@@ -21,8 +21,8 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { createMarketplaceListing, getAgriculturalCatalog, getMarketPrices, getMarketplaceListings, uploadMarketplaceImage } from '../api/client';
-import { AICapability, AgriculturalCatalogProduct, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
+import { createMarketplaceInquiry, createMarketplaceListing, getAgriculturalCatalog, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { AICapability, AgriculturalCatalogProduct, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import { useAICapabilities } from '../hooks/useAICapabilities';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
@@ -38,6 +38,11 @@ export const MarketplaceScreen: React.FC = () => {
   const { byId: capabilities } = useAICapabilities();
   const [prices, setPrices] = useState<MarketPriceItem[]>([]);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
+  const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
+  const [activeInquiryListing, setActiveInquiryListing] = useState<string | null>(null);
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [inquirySubmitting, setInquirySubmitting] = useState(false);
   const [catalog, setCatalog] = useState<AgriculturalCatalogProduct[]>([]);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
   const [sellerFormOpen, setSellerFormOpen] = useState(false);
@@ -67,10 +72,12 @@ export const MarketplaceScreen: React.FC = () => {
   const loadPrices = useCallback(async () => {
     // Prices and seller listings are separate backend capabilities. A failure
     // in one must not suppress useful data returned by the other.
-    const [priceOutcome, listingsOutcome, catalogOutcome] = await Promise.all([
+    const [priceOutcome, listingsOutcome, catalogOutcome, myListingsOutcome, inquiriesOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalCatalog().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMyMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMarketplaceInquiries().then((data) => ({ data })).catch((error: unknown) => ({ error })),
     ]);
 
     if ('data' in priceOutcome) {
@@ -100,6 +107,8 @@ export const MarketplaceScreen: React.FC = () => {
       setCatalog([]);
       setCatalogUnavailable(true);
     }
+    setMyListings('data' in myListingsOutcome ? myListingsOutcome.data.data : []);
+    setInquiries('data' in inquiriesOutcome ? inquiriesOutcome.data.data : []);
   }, []);
 
   React.useEffect(() => {
@@ -175,6 +184,45 @@ export const MarketplaceScreen: React.FC = () => {
     } finally {
       setSellerSubmitting(false);
     }
+  };
+
+  const sendMarketplaceInquiry = async () => {
+    if (!activeInquiryListing || inquiryMessage.trim().length < 5) {
+      Alert.alert(language === 'ar' ? 'اكتب رسالة قصيرة للبائع' : language === 'fr' ? 'Écrivez un message au vendeur' : 'Write a short message to the seller');
+      return;
+    }
+    setInquirySubmitting(true);
+    try {
+      const result = await createMarketplaceInquiry(activeInquiryListing, inquiryMessage.trim());
+      if (!result.success) throw new Error(result.error || 'INQUIRY_CREATE_FAILED');
+      setActiveInquiryListing(null);
+      setInquiryMessage('');
+      Alert.alert(language === 'ar' ? 'تم إرسال طلب التواصل' : language === 'fr' ? 'Demande envoyée' : 'Inquiry sent');
+      await loadPrices();
+    } catch (e) {
+      Alert.alert(language === 'ar' ? 'تعذر إرسال الطلب' : language === 'fr' ? 'Envoi impossible' : 'Could not send inquiry',
+        e instanceof Error ? e.message : 'Please sign in and try again.');
+    } finally {
+      setInquirySubmitting(false);
+    }
+  };
+
+  const archiveMyListing = async (id: string) => {
+    const result = await updateMarketplaceListingStatus(id, 'archived');
+    if (!result.success) {
+      Alert.alert(language === 'ar' ? 'تعذر تحديث العرض' : language === 'fr' ? 'Mise à jour impossible' : 'Could not update listing', result.error || '');
+      return;
+    }
+    await loadPrices();
+  };
+
+  const acceptMarketplaceInquiry = async (id: string) => {
+    const result = await updateMarketplaceInquiryStatus(id, 'accepted');
+    if (!result.success) {
+      Alert.alert(language === 'ar' ? 'تعذر قبول الطلب' : language === 'fr' ? 'Action impossible' : 'Could not accept inquiry', result.error || '');
+      return;
+    }
+    await loadPrices();
   };
 
   const sellerListings = listings.filter((item) => item.listingType !== 'harvest');
@@ -397,6 +445,8 @@ export const MarketplaceScreen: React.FC = () => {
                 {listing.price != null ? (
                   <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
                 ) : null}
+                <Button title={language === 'ar' ? 'تواصل' : language === 'fr' ? 'Contacter' : 'Contact seller'}
+                  onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" />
               </View>
             ))}
           </View>
@@ -430,11 +480,30 @@ export const MarketplaceScreen: React.FC = () => {
                 {listing.price != null ? (
                   <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
                 ) : null}
+                <Button title={language === 'ar' ? 'تواصل' : language === 'fr' ? 'Contacter' : 'Contact seller'}
+                  onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" />
               </View>
             ))}
           </View>
         )}
       </Card>
+
+      {activeInquiryListing ? (
+        <Card variant="outlined" style={styles.listingsCard}>
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'إرسال طلب للبائع' : language === 'fr' ? 'Contacter le vendeur' : 'Send an inquiry'}
+          </Text>
+          <TextInput value={inquiryMessage} onChangeText={setInquiryMessage} multiline
+            placeholder={language === 'ar' ? 'اكتب رسالتك أو الكمية المطلوبة...' : language === 'fr' ? 'Votre message ou quantité souhaitée...' : 'Your message or requested quantity...'}
+            style={{ minHeight: 90, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left' }} />
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Button title={language === 'ar' ? 'إرسال' : language === 'fr' ? 'Envoyer' : 'Send inquiry'}
+              onPress={sendMarketplaceInquiry} loading={inquirySubmitting} disabled={inquirySubmitting} size="md" />
+            <Button title={language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel'}
+              onPress={() => { setActiveInquiryListing(null); setInquiryMessage(''); }} variant="outline" size="md" />
+          </View>
+        </Card>
+      ) : null}
 
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
@@ -469,6 +538,67 @@ export const MarketplaceScreen: React.FC = () => {
         <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
           {language === 'ar' ? 'حالة التسجيل ومصدر البيانات ظاهرين لكل منتج. وجود المنتج في الكتالوج لا يثبت وحده صلاحيته للاستعمال.' : language === 'fr' ? 'Le statut et la source sont affichés. Une fiche ne remplace pas la vérification de l’étiquette.' : 'Registration status and source are shown. A catalog record alone does not authorize product use.'}
         </Text>
+      </Card>
+
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="clipboard-list-outline" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'عروضي للبيع' : language === 'fr' ? 'Mes annonces' : 'My listings'}
+          </Text>
+        </View>
+        {myListings.length === 0 ? (
+          <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'سجّل الدخول لعرض وإدارة إعلاناتك.' : language === 'fr' ? 'Connectez-vous pour gérer vos annonces.' : 'Sign in to view and manage your listings.'}
+          </Text>
+        ) : (
+          <View style={styles.listingRows}>
+            {myListings.map((listing) => (
+              <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
+                <View style={styles.listingText}>
+                  <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {listing.status || 'published'} · {listing.price == null ? '—' : listing.price.toFixed(2) + ' TND'}
+                  </Text>
+                </View>
+                {listing.status !== 'archived' ? (
+                  <Button title={language === 'ar' ? 'أرشفة' : language === 'fr' ? 'Archiver' : 'Archive'}
+                    onPress={() => archiveMyListing(listing.id)} variant="outline" size="sm" />
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
+
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="message-text-outline" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'طلبات التواصل' : language === 'fr' ? 'Demandes de contact' : 'Marketplace inquiries'}
+          </Text>
+        </View>
+        {inquiries.length === 0 ? (
+          <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'لا توجد طلبات تواصل بعد.' : language === 'fr' ? 'Aucune demande pour le moment.' : 'No inquiries yet.'}
+          </Text>
+        ) : (
+          <View style={styles.listingRows}>
+            {inquiries.map((inquiry) => (
+              <View key={inquiry.id} style={{ gap: spacing.xs, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{inquiry.listingTitle || (language === 'ar' ? 'عرض فلاحي' : 'Marketplace listing')}</Text>
+                <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                  {(inquiry.isSeller ? (language === 'ar' ? 'مشتري' : language === 'fr' ? 'Acheteur' : 'Buyer') : (language === 'ar' ? 'بائع' : language === 'fr' ? 'Vendeur' : 'Seller'))} · {inquiry.status} · {inquiry.createdAt.slice(0, 10)}
+                </Text>
+                <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{inquiry.message}</Text>
+                {inquiry.isSeller && inquiry.status === 'new' ? (
+                  <Button title={language === 'ar' ? 'قبول الطلب' : language === 'fr' ? 'Accepter' : 'Accept inquiry'}
+                    onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" />
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
       </Card>
 
       {/* Market intelligence — honest availability of forecast & supply/demand */}
