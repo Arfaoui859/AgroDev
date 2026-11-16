@@ -2,7 +2,7 @@
  * Regression tests for the weather/crop planner real-data contract.
  *
  * These endpoints previously synthesised forecasts with Math.random(). They now
- * call the Open-Meteo provider. The provider is stubbed here so the tests are
+ * call the WeatherAPI.com provider. The provider is stubbed here so the tests are
  * hermetic, and the contract asserted is about behaviour, not the upstream:
  *   - a real forecast is returned and labelled as real;
  *   - an unknown location is a 404, not invented weather;
@@ -17,19 +17,19 @@ jest.mock("../../server/services/providers/weatherProvider", () => {
   const { ProviderError } = jest.requireActual("../../server/services/providers/http");
   return {
     ...actual,
-    getWeatherFromOpenMeteo: jest.fn(),
-    getHistoricalWeatherFromOpenMeteo: jest.fn(),
+    getWeatherFromWeatherApi: jest.fn(),
+    getHistoricalWeatherFromNasaPower: jest.fn(),
   };
 });
 
 import {
-  getWeatherFromOpenMeteo,
-  getHistoricalWeatherFromOpenMeteo,
+  getWeatherFromWeatherApi,
+  getHistoricalWeatherFromNasaPower,
 } from "../../server/services/providers/weatherProvider";
 import { ProviderError } from "../../server/services/providers/http";
 
-const mockedCurrent = getWeatherFromOpenMeteo as jest.Mock;
-const mockedHistorical = getHistoricalWeatherFromOpenMeteo as jest.Mock;
+const mockedCurrent = getWeatherFromWeatherApi as jest.Mock;
+const mockedHistorical = getHistoricalWeatherFromNasaPower as jest.Mock;
 
 const sampleWeather = {
   location: { name: "تونس العاصمة", lat: 36.8065, lon: 10.1815 },
@@ -67,7 +67,7 @@ const sampleWeather = {
     soilMoisture: 40,
     cropStress: "low" as const,
   },
-  source: { provider: "Open-Meteo", observationTime: "2026-11-03T10:00", isRealData: true as const },
+  source: { provider: "WeatherAPI.com", observationTime: "2026-11-03T10:00", isRealData: true as const },
 };
 
 let app: express.Application;
@@ -87,7 +87,7 @@ describe("🌦️ Weather crop planner uses real provider data", () => {
     const res = await request(app).get("/api/weather-crop-planner/alerts/tunis");
     expect(res.status).toBe(200);
     expect(res.body.isRealData).toBe(true);
-    expect(res.body.dataSource).toBe("Open-Meteo");
+    expect(res.body.dataSource).toBe("WeatherAPI.com");
     expect(res.body.currentConditions.temperature).toBe(24);
   });
 
@@ -123,14 +123,14 @@ describe("🌦️ Weather crop planner uses real provider data", () => {
         { month: "2026-01", avgTemp: 12, totalRainfall: 60, avgHumidity: 70 },
         { month: "2026-02", avgTemp: 13, totalRainfall: 55, avgHumidity: 68 },
       ],
-      source: { provider: "Open-Meteo Archive", isRealData: true },
+      source: { provider: "WeatherAPI.com Archive", isRealData: true },
     });
     const res = await request(app).get(
       "/api/weather-crop-planner/historical-analysis/tunis/olive",
     );
     expect(res.status).toBe(200);
     expect(res.body.isRealData).toBe(true);
-    expect(res.body.dataSource).toBe("Open-Meteo Archive");
+    expect(res.body.dataSource).toBe("WeatherAPI.com Archive");
     expect(res.body.monthlyAverages).toHaveLength(2);
   });
 
@@ -142,7 +142,7 @@ describe("🌦️ Weather crop planner uses real provider data", () => {
 
   test("a provider outage is a 503, not invented weather", async () => {
     mockedCurrent.mockRejectedValue(
-      new ProviderError("Open-Meteo", "network", "boom"),
+      new ProviderError("WeatherAPI.com", "network", "boom"),
     );
     const res = await request(app).get("/api/weather-crop-planner/alerts/tunis");
     expect(res.status).toBe(503);
