@@ -52,8 +52,8 @@ export const listCommunityPosts: RequestHandler = async (req, res) => {
     db.from("community_post_likes").select("post_id").eq("user_id", req.userId).in("post_id", postIds),
   ]);
 
-  if (profiles.error || likes.error || comments.error || ownLikes.error) {
-    console.error("[community] enrich posts failed:", profiles.error?.code || likes.error?.code || comments.error?.code || ownLikes.error?.code);
+  if (likes.error || comments.error || ownLikes.error) {
+    console.error("[community] enrich posts failed:", likes.error?.code || comments.error?.code || ownLikes.error?.code);
     return fail(res, "COMMUNITY_POST_DETAILS_UNAVAILABLE");
   }
 
@@ -136,7 +136,7 @@ export const listCommunityComments: RequestHandler = async (req, res) => {
   const { data: profiles, error: profileError } = authorIds.length
     ? await db.from("users").select("id,full_name,role,governorate").in("id", authorIds)
     : { data: [], error: null };
-  if (profileError) return fail(res, "COMMUNITY_COMMENT_AUTHORS_UNAVAILABLE");
+  if (profileError) console.warn("[community] comment author profiles unavailable:", profileError.code);
 
   const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
   return res.json({
