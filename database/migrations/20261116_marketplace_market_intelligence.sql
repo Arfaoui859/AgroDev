@@ -27,6 +27,33 @@ CREATE INDEX IF NOT EXISTS market_prices_location_date_idx
 CREATE UNIQUE INDEX IF NOT EXISTS market_prices_source_observation_uidx
   ON public.market_prices (source_key, external_id, price_date, market_location, crop_name);
 
+CREATE TABLE IF NOT EXISTS public.satellite_observations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  farm_id uuid NOT NULL REFERENCES public.farms(id) ON DELETE CASCADE,
+  provider text NOT NULL,
+  collection text NOT NULL,
+  index_name text NOT NULL CHECK (index_name IN ('NDVI')),
+  observed_from timestamptz NOT NULL,
+  observed_to timestamptz NOT NULL,
+  mean_value numeric(10,6) NOT NULL,
+  min_value numeric(10,6) NOT NULL,
+  max_value numeric(10,6) NOT NULL,
+  standard_deviation numeric(10,6) NOT NULL DEFAULT 0,
+  sample_count integer NOT NULL DEFAULT 0 CHECK (sample_count >= 0),
+  no_data_count integer NOT NULL DEFAULT 0 CHECK (no_data_count >= 0),
+  resolution_meters integer NOT NULL DEFAULT 10,
+  quality_metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(farm_id,provider,index_name,observed_from,observed_to)
+);
+CREATE INDEX IF NOT EXISTS satellite_observations_farm_period_idx
+  ON public.satellite_observations (farm_id, observed_from DESC);
+ALTER TABLE public.satellite_observations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Farm owners can read satellite observations" ON public.satellite_observations;
+CREATE POLICY "Farm owners can read satellite observations"
+  ON public.satellite_observations FOR SELECT TO authenticated
+  USING (public.owns_farm(farm_id));
+
 CREATE TABLE IF NOT EXISTS public.market_price_observations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   commodity_name text NOT NULL,
