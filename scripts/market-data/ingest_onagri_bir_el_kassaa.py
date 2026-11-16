@@ -151,6 +151,8 @@ def extract_prices(html: str, title: str, document_url: str):
             "market_location": "Bir El Kassaa",
             "price_kind": "wholesale",
             "price_per_kg": round(price_2026_millimes / 1000.0, 3),
+            "previous_year_price": round(parse_number(cells[2]) / 1000.0, 3) if parse_number(cells[2]) is not None else None,
+            "source_url": document_url,
             "price_date": start.isoformat(),
             "period_start": start.isoformat(),
             "period_end": end.isoformat(),
