@@ -4,6 +4,7 @@ DECLARE
   required_table text;
   required_tables text[] := ARRAY[
     'marketplace_listings',
+    'marketplace_inquiries',
     'agricultural_product_catalog',
     'market_data_sources',
     'market_price_observations',
@@ -29,6 +30,12 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='agricultural_product_catalog' AND policyname='Public can read active agricultural catalog') THEN
     RAISE EXCEPTION 'Public agricultural catalog read policy is missing';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_inquiries' AND policyname='Buyers and sellers can read their inquiries') THEN
+    RAISE EXCEPTION 'Marketplace inquiry participant read policy is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_inquiries' AND policyname='Buyers can create inquiries for published listings') THEN
+    RAISE EXCEPTION 'Marketplace inquiry buyer insert policy is missing';
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='market_price_observations' AND policyname='Public can read market price observations') THEN
     RAISE EXCEPTION 'Public market observation read policy is missing';
   END IF;
@@ -38,6 +45,9 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM public.market_data_sources WHERE source_key='tn-crda-sidi-bouzid-vegetables' AND enabled=false) THEN
     RAISE EXCEPTION 'CRDA vegetable source must be registered but disabled pending adapter review';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.market_data_sources WHERE source_key='tn-onagri-bir-el-kassaa' AND enabled=false AND last_status='adapter_ready_requires_secrets') THEN
+    RAISE EXCEPTION 'Bir El Kassaa source must be registered but disabled until credentials and reuse review';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.market_data_sources WHERE source_key='tn-onagri-agricultural-input-prices' AND enabled=false) THEN
     RAISE EXCEPTION 'ONAGRI source must be registered but disabled pending adapter review';
