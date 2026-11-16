@@ -564,6 +564,13 @@ export interface MarketPriceItem {
   marketLocationAr: string;
   qualityGrade: string;
   lastUpdated: string;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
+  unit?: string;
+  currency?: string;
+  verificationStatus?: 'unverified' | 'source-checked' | 'official-source' | 'rejected';
+  priceMin?: number | null;
+  priceMax?: number | null;
 }
 
 export interface MarketResult {
