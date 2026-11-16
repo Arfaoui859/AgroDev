@@ -1199,6 +1199,11 @@ export async function getMarketPrices(params: { crop?: string; market?: string }
     pricePerKg: Number(p.price_per_kg), previousPricePerKg: null, changePercent: null, trend: 'unknown',
     marketLocation: p.market_location, marketLocationAr: p.market_location, qualityGrade: p.quality_grade ?? '—',
     lastUpdated: p.price_date,
+    sourceName: p.source ?? null, sourceUrl: p.source_url ?? null,
+    unit: p.unit ?? 'kg', currency: p.currency ?? 'TND',
+    verificationStatus: p.verification_status ?? 'unverified',
+    priceMin: p.price_min == null ? null : Number(p.price_min),
+    priceMax: p.price_max == null ? null : Number(p.price_max),
   }));
   return {
     data: { prices, meta: metaFrom(res.data?.meta, 'database', 'market-price-observations') },
