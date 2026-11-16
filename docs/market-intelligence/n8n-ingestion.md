@@ -34,10 +34,11 @@ The database keeps the source's monthly context:
 Configure these GitHub repository secrets:
 - `AGROGROWTH_API_URL`: the base URL of the deployed AgroGrowth Express API, without a trailing slash;
 - `AGROGROWTH_ADMIN_TOKEN`: the server-side admin bearer token accepted by `requireAdminAccess`.
+- `ONAGRI_REUSE_CONFIRMED=true`: set only after reviewing ONAGRI's reuse terms and confirming automated collection is allowed.
 
 The workflow checks once daily at 04:15 UTC for a new monthly report and is also manually runnable from GitHub Actions. It is intentionally a daily *publication check*, not a claim that ONAGRI publishes a new price table every day. The collector uses a descriptive user-agent, normal HTTPS requests and a 30-second timeout; it does not bypass access controls. Review ONAGRI's reuse terms and rate-limit guidance before enabling automated collection.
 
-Use `DRY_RUN=1 python scripts/market-data/ingest_onagri_bir_el_kassaa.py` locally to inspect the normalized payload without writing to AgroGrowth. The live job remains inactive until both GitHub secrets are configured.
+Use `DRY_RUN=1 python scripts/market-data/ingest_onagri_bir_el_kassaa.py` locally to inspect the normalized payload without writing to AgroGrowth. The live job remains inactive until all three GitHub secrets are configured and the explicit reuse confirmation is set.
 
 ## Other official Tunisian sources
 
