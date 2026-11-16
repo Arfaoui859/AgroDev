@@ -153,12 +153,19 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
         return;
       }
       try {
-        const list = await getSoilReports(20);
-        const match = list.data.find((r) => r.fieldId === selection.fieldId);
         let report: SoilReport | null = null;
-        if (match) {
-          const full = await getSoilReport(match.analysisId);
+        if (selection.soilAnalysisId) {
+          // Prefer the exact report that produced the selected crop; a newer
+          // report for the same field must not silently replace this context.
+          const full = await getSoilReport(selection.soilAnalysisId);
           report = full.data?.report ?? null;
+        } else {
+          const list = await getSoilReports(20);
+          const match = list.data.find((r) => r.fieldId === selection.fieldId);
+          if (match) {
+            const full = await getSoilReport(match.analysisId);
+            report = full.data?.report ?? null;
+          }
         }
         if (!active) return;
         setTasks(deriveProjectTasks(report));
@@ -172,7 +179,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
     return () => {
       active = false;
     };
-  }, [selection.fieldId, created?.id]);
+  }, [selection.fieldId, selection.soilAnalysisId, created?.id]);
 
   // Turn the soil report's actionable recommendations into real, server-persisted
   // project tasks. The project tracker then reads and updates the same farm_tasks
