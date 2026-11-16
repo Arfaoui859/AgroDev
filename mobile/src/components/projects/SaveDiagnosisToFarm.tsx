@@ -67,6 +67,8 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
       return;
     }
     setLoadingCultivations(true);
+    setCultivations([]);
+    setSelectedCultivationId(null);
     try {
       const res = await getCultivations(selectedFarmId);
       setCultivations(res.data);
@@ -143,7 +145,13 @@ export const SaveDiagnosisToFarm: React.FC<SaveDiagnosisToFarmProps> = ({ result
                 key={farm.id}
                 label={farm.name}
                 selected={farm.id === selectedFarmId}
-                onPress={() => setSelectedFarmId(farm.id)}
+                onPress={() => {
+                  if (farm.id !== selectedFarmId) {
+                    setSelectedCultivationId(null);
+                    setCultivations([]);
+                  }
+                  setSelectedFarmId(farm.id);
+                }}
               />
             ))}
           </View>
