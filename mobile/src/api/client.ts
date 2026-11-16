@@ -1244,6 +1244,8 @@ export async function getAgriculturalCatalog(params: { q?: string; type?: Agricu
       id: String(p.id), productType: p.product_type, tradeName: p.trade_name,
       activeIngredient: p.active_ingredient ?? null, composition: p.composition ?? null,
       manufacturer: p.manufacturer ?? null, registrationNumber: p.registration_number ?? null,
+      registrationEvidenceUrl: p.registration_evidence_url ?? null,
+      registrationVerifiedAt: p.registration_verified_at ?? null,
       registrationStatus: p.registration_status, targetCrops: Array.isArray(p.target_crops) ? p.target_crops : [],
       sourceName: p.source_name, sourceUrl: p.source_url ?? null,
     })),
