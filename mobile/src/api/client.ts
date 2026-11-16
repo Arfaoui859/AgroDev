@@ -269,8 +269,8 @@ function asProvenance(value: unknown): DataProvenance {
   ) {
     return 'database';
   }
-  // External live feeds: Open-Meteo observations and Tunisian agri-news RSS.
-  if (v === 'open-meteo' || v === 'live-observation' || v === 'rss-feeds') return 'live-observation';
+  // External live feeds: WeatherAPI.com observations and Tunisian agri-news RSS.
+  if (v === 'weatherapi.com' || v === 'live-observation' || v === 'rss-feeds') return 'live-observation';
   return 'unavailable';
 }
 
@@ -359,7 +359,7 @@ function humanDiseaseName(
 }
 
 // ---------------------------------------------------------------------------
-// Weather (Open-Meteo via gateway) — real observation
+// Weather (WeatherAPI.com via gateway) — real observation
 // ---------------------------------------------------------------------------
 
 // Matches the provider's Arabic coordinate placeholder, e.g. "موقع (36.81, 10.18)".
@@ -389,7 +389,7 @@ export async function getWeather(
       temperature: Math.round(d.current.temperature),
       humidity: Math.round(d.current.humidity ?? 0),
       // Today's rainfall straight from the provider. No "% chance" is derived:
-      // Open-Meteo does not report a probability, so inventing one would be
+      // WeatherAPI.com does not report a probability, so inventing one would be
       // fabricated data.
       rainfall_mm: typeof daily[0]?.rainfall === 'number' ? daily[0].rainfall : 0,
       wind_speed: Math.round(d.current.windSpeed ?? 0),
@@ -404,9 +404,9 @@ export async function getWeather(
       governorate: serverLocationName(d.location?.name) || governorateLabel,
       advice_ar: d.agriculturalIndices?.cropStress
         ? `مؤشر إجهاد المحصول: ${d.agriculturalIndices.cropStress}. راقب الري والتسميد.`
-        : 'الظروف الجوية متاحة من محطات الرصد (Open-Meteo).',
-      advice_fr: 'Données météo en direct fournies par Open-Meteo.',
-      advice_en: 'Live weather data provided by Open-Meteo.',
+        : 'الظروف الجوية متاحة من محطات الرصد (WeatherAPI.com).',
+      advice_fr: 'Données météo en direct fournies par WeatherAPI.com.',
+      advice_en: 'Live weather data provided by WeatherAPI.com.',
       forecast: daily.map((f: any) => ({
         date: f.date,
         temp_max: Math.round(f.maxTemp ?? 0),
@@ -417,7 +417,7 @@ export async function getWeather(
         icon: f.icon,
         wind_speed: typeof f.windSpeed === 'number' ? Math.round(f.windSpeed) : undefined,
       })),
-      meta: { provenance: 'live-observation', isRealData: true, source: d.source?.provider || 'open-meteo' },
+      meta: { provenance: 'live-observation', isRealData: true, source: d.source?.provider || 'weatherapi.com' },
     };
     return { data: mapped, error: null, fromCache: res.fromCache };
   }
@@ -1357,7 +1357,7 @@ export async function getIrrigationPlan(input: {
   days?: number;
 }): Promise<{ data: IrrigationResult | null; error: string | null; unavailable: boolean }> {
   // Climate inputs are forwarded only when the caller actually has them (the
-  // caller supplies real Open-Meteo values). Injecting made-up defaults here
+  // caller supplies real WeatherAPI.com values). Injecting made-up defaults here
   // would present invented temperature/humidity as if they were observed; the
   // service applies its own documented defaults when they are omitted.
   const body: Record<string, unknown> = {
