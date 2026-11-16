@@ -290,6 +290,7 @@ import { testSupabaseConnection } from "./routes/test-supabase";
 import { listAssistantFarms, createAssistantCultivation, listAssistantCultivations } from "./routes/assistant-actions";
 import { createAssistantDiseaseDetection, getAssistantDiseaseEvidenceUrl } from "./routes/assistant-disease-records";
 import { analyzeFarmSatelliteNdvi } from "./routes/assistant-satellite";
+import agriculturalMarketplaceRoutes from "./routes/agricultural-marketplace";
 import { getAutonomousAgentStatus, updateAutonomousAgentSettings, runAutonomousAgentNow, runScheduledAutonomousAgent } from "./routes/autonomous-farm-agent";
 import { listAgentConversations, createAgentConversation, listAgentConversationMessages, addAgentConversationMessage, deleteAgentConversation } from "./routes/assistant-conversations";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
@@ -665,12 +666,13 @@ export function createServer() {
   );
   app.post("/api/ai/models/:modelId/train", triggerModelTraining);
 
-  // Smart Marketplace routes
-  app.get("/api/marketplace/listings", getMarketplaceListings);
+  // Persisted agricultural marketplace, seller products, harvest offers and source ingestion.
+  app.use("/api/agro-market", agriculturalMarketplaceRoutes);
+
+  // Smart Marketplace routes (legacy inquiries/analytics remain fail-closed until persisted).
   app.get("/api/marketplace/inquiries", getMarketplaceInquiries);
   app.get("/api/marketplace/analytics", getMarketplaceAnalytics);
   app.get("/api/supply-chain/nodes", getSupplyChainNodes);
-  app.post("/api/marketplace/listings", createMarketplaceListing);
   app.post("/api/marketplace/inquiries", createInquiry);
 
   // Supply Chain Tracking routes
