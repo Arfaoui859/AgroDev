@@ -19,7 +19,8 @@ The Ministry's separate pesticide homologation register is published as PDF and 
 - Candidates are extracted only when a recognizable product-name column exists. Unknown workbook layouts are reported with sample rows for manual mapping rather than guessed.
 - Every candidate has approved=false and registration_status=unverified.
 - A reviewer should verify the trade name, active ingredient, manufacturer, composition and current registration status against the Ministry's homologation register.
-- Set approved=true only after review. For pesticides, leave registration_status=unverified unless the exact product/registration number is confirmed in the current official register.
+- Set approved=true only after review. For pesticides, leave registration_status=unverified unless the exact product/registration number is confirmed in the official register. If setting registered_tunisia, expired or prohibited, also fill registration_number and registration_evidence_url with the exact Ministry evidence document. The API rejects those statuses without both fields.
+- The catalog stores registration_evidence_url and registration_verified_at separately from the workbook's source_url; the mobile catalog displays the registration number and opens the evidence document.
 
 ## Controlled upload
 
