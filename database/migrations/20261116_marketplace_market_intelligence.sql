@@ -25,8 +25,7 @@ CREATE INDEX IF NOT EXISTS market_prices_crop_date_idx
 CREATE INDEX IF NOT EXISTS market_prices_location_date_idx
   ON public.market_prices (market_location, price_date DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS market_prices_source_observation_uidx
-  ON public.market_prices (source_key, external_id, price_date, market_location, crop_name)
-  WHERE source_key IS NOT NULL AND external_id IS NOT NULL;
+  ON public.market_prices (source_key, external_id, price_date, market_location, crop_name);
 
 CREATE TABLE IF NOT EXISTS public.marketplace_listings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
