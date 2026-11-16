@@ -1,9 +1,7 @@
 name: ONAGRI Bir El Kassaa market prices
 
 on:
-  schedule:
-    # Check once daily for a newly published monthly mercuriale.
-    - cron: "15 4 * * *"
+  # n8n is the primary daily scheduler; keep this as a manual emergency fallback.
   workflow_dispatch:
 
 permissions:
