@@ -184,7 +184,7 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
     if(!crop || !location || [average,min,max].some(Number.isNaN) ||
       (average === null && min === null && max === null) ||
       (min !== null && max !== null && min > max) ||
-      !/^\\d{4}-\\d{2}-\\d{2}$/.test(text(row?.price_date,10)))
+      !/^\d{4}-\d{2}-\d{2}$/.test(text(row?.price_date,10)))
       return res.status(400).json({success:false,code:"INVALID_PRICE_ROW",row:records.length});
     const priceKind = text(row?.price_kind,20) || "wholesale";
     if(!["wholesale","retail","seller","other"].includes(priceKind))
