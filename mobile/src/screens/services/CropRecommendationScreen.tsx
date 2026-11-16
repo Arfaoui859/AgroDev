@@ -122,7 +122,7 @@ export const CropRecommendationScreen: React.FC<CropRecommendationScreenProps> =
         setLoading(false);
       }
     },
-    [],
+    [x.stateError],
   );
 
   const runFromMeasurements = useCallback(
