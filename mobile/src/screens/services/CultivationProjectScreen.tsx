@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { flex1, gapXs, rowGapSm, screenStyles, sectionHeadRow, spaceBetween, stackedCard } from '../../theme/layout';
+import { flex1, screenStyles, sectionHeadRow, spaceBetween, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { mutedCaption, mutedCaptionTop, subtitleMeta, subtitleMetaSm, titleBase, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
+import { mutedCaption, mutedCaptionTop, subtitleMeta, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -392,8 +392,6 @@ const styles = StyleSheet.create({
   successTitle: titleBaseFlex,
   successSub: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, marginBottom: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  tasksTitle: titleBase,
-  tasksSub: subtitleMetaSm,
   projectRow: { ...spaceBetween, gap: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   projectText: flex1,
   projectName: titleSmSemibold,
