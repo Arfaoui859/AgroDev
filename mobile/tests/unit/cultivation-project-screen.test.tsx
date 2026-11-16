@@ -8,10 +8,12 @@ const mockList = jest.fn();
 const mockReports = jest.fn();
 const mockReport = jest.fn();
 const mockListings = jest.fn();
+const mockFarms = jest.fn();
 
 jest.mock('../../src/api/client', () => ({
   createCultivation: (...args: any[]) => mockCreate(...args),
   getCultivations: (...args: any[]) => mockList(...args),
+  getFarms: (...args: any[]) => mockFarms(...args),
   getSoilReports: (...args: any[]) => mockReports(...args),
   getSoilReport: (...args: any[]) => mockReport(...args),
   getMarketplaceListings: (...args: any[]) => mockListings(...args),
@@ -44,6 +46,7 @@ describe('CultivationProjectScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockList.mockResolvedValue({ data: [], error: null, meta: { provenance: 'database', isRealData: false } });
+    mockFarms.mockResolvedValue({ data: [{ id: 'farm-a', name: 'My farm' }], error: null, fromCache: false, meta: { provenance: 'database' } });
     mockReports.mockResolvedValue({ data: [], error: null, unavailable: false });
     mockListings.mockResolvedValue({
       data: { listings: [], meta: { provenance: 'unavailable', isRealData: false } },
@@ -82,11 +85,21 @@ describe('CultivationProjectScreen', () => {
     await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1), { timeout: 5000 });
     const payload = mockCreate.mock.calls[0][0];
     expect(payload.farm_id).toBe(selection.farmId);
-    expect(payload.crop_name).toBe('زيتون');
+    expect(payload.crop_name).toBe('Olive');
 
     // Success card + the honest generic checklist (never an empty panel).
     await waitFor(() => expect(screen.getByText('تم إنشاء مشروعك الزراعي')).toBeTruthy(), { timeout: 5000 });
     expect(screen.getByText('جهّز التربة قبل الزراعة')).toBeTruthy();
+  });
+
+  it('lets a manually entered crop recommendation select a farm before project creation', async () => {
+    const user = userEvent.setup();
+    mockCreate.mockResolvedValue({ data: { id: 'cult-manual', farm_id: 'farm-a', crop_name: 'Olive', status: 'active' }, error: null });
+    await renderScreen({ selection: { ...selection, farmId: undefined } });
+    await waitFor(() => expect(screen.getByText('My farm')).toBeTruthy());
+    await user.press(screen.getByText('إنشاء المشروع'));
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+    expect(mockCreate.mock.calls[0][0]).toMatchObject({ farm_id: 'farm-a', section_id: null, crop_name: 'Olive' });
   });
 
   it('surfaces the real server error instead of a false success', async () => {

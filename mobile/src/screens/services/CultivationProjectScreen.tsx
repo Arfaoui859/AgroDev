@@ -25,6 +25,8 @@ import { getTaskState, setTaskDone } from '../../api/projectTasks';
 import { deriveProjectTasks, ProjectTask } from '../../utils/projectTasks';
 import { cropName } from '../../utils/cropLabels';
 import { getSoil } from '../../i18n/soil';
+import { getProjects } from '../../i18n/projects';
+import { growthStageLabel, projectStatusLabel } from '../../utils/projectLabels';
 import { Cultivation, Farm, SoilReport, ProvenanceMeta } from '../../types';
 import { CropSelection } from './CropRecommendationScreen';
 import { MarketplaceMatch } from '../../components/soil/MarketplaceMatch';
@@ -71,6 +73,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
 }) => {
   const { t, x, isRtl, language } = useLanguage();
   const s9 = useMemo(() => getSoil(language), [language]);
+  const p = useMemo(() => getProjects(language), [language]);
 
   const [plantingDate, setPlantingDate] = useState(todayIso());
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -116,12 +119,12 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
 
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true);
-    const res = await getCultivations(selection.farmId);
+    const res = await getCultivations(selection.farmId ?? selectedFarmId);
     setProjects(res.data);
     setProjectsError(res.error);
     setProjectsMeta(res.meta);
     setLoadingProjects(false);
-  }, [selection.farmId]);
+  }, [selection.farmId, selectedFarmId]);
 
   useEffect(() => {
     (async () => {
@@ -329,10 +332,10 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
                   <Text style={[styles.projectName, isRtl && rtlStyles.rtlText]}>{project.crop_name}</Text>
                   <Text style={[styles.projectMeta, isRtl && rtlStyles.rtlText]}>
                     {project.planting_date ?? '—'} • {project.area_hectares} ha
-                    {project.current_growth_stage ? ` • ${project.current_growth_stage}` : ''}
+                    {' • '}{growthStageLabel(project.current_growth_stage, p)}
                   </Text>
                 </View>
-                <Badge label={project.status} variant="secondary" size="sm" />
+                <Badge label={projectStatusLabel(project.status, p)} variant="secondary" size="sm" />
               </View>
             ))}
           </View>

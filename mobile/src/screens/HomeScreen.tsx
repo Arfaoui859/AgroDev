@@ -236,8 +236,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
     >
       {/* Hero — gradient welcome surface with the live weather summary */}
       <View style={styles.heroShadow}>
-        <View style={styles.hero}
-        >
+        <View style={styles.hero}>
           <View style={[styles.heroTopRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.heroTextWrap}>
               <View style={[styles.heroBrandRow, isRtl && rtlStyles.rtlRow]}>
@@ -280,11 +279,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
               </Text>
               <View style={styles.heroWeatherSpacer} />
               <View style={[styles.heroChip, isRtl && rtlStyles.rtlRow]}>
-                <MaterialCommunityIcons name="water-percent" size={14} color={colors.textInverse} />
+                <MaterialCommunityIcons name="water-percent" size={14} color={colors.textSecondary} />
                 <Text style={styles.heroChipText}>{weather.humidity}%</Text>
               </View>
               <View style={[styles.heroChip, isRtl && rtlStyles.rtlRow]}>
-                <MaterialCommunityIcons name="weather-windy" size={14} color={colors.textInverse} />
+                <MaterialCommunityIcons name="weather-windy" size={14} color={colors.textSecondary} />
                 <Text style={styles.heroChipText}>{weather.wind_speed}</Text>
               </View>
             </View>
@@ -566,10 +565,8 @@ const ActionTile: React.FC<{
 );
 
 const styles = StyleSheet.create({
-  // Hero gradient surface: rounded, with generous padding and a soft shadow so
-  // it reads as the screen's primary anchor rather than a plain card. The shadow
-  // sits on the wrapper (not the gradient) so Android keeps its elevation while
-  // the gradient itself clips its children.
+  // Clean, light dashboard header: restrained border and spacing keep the
+  // greeting and live weather readable without a large saturated hero.
   heroShadow: {
     borderRadius: radius.xl,
     marginBottom: spacing.lg,
