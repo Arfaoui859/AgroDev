@@ -1195,15 +1195,17 @@ export async function getMarketPrices(params: { crop?: string; market?: string }
   const res = await apiRequest<any>(`/api/agro-market/prices${suffix}`, { cacheKey: `market:observations:${params.crop || 'all'}:${params.market || 'all'}` });
   const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
   const prices: MarketPriceItem[] = rows.map((p: any) => ({
-    id: String(p.id), cropName: p.crop_name, cropNameAr: p.crop_name,
-    pricePerKg: Number(p.price_per_kg), previousPricePerKg: null, changePercent: null, trend: 'unknown',
+    id: String(p.id), cropName: p.commodity_name, cropNameAr: p.commodity_name,
+    pricePerKg: p.price_average == null ? null : Number(p.price_average),
+    previousPricePerKg: null, changePercent: null, trend: 'unknown',
     marketLocation: p.market_location, marketLocationAr: p.market_location, qualityGrade: p.quality_grade ?? '—',
-    lastUpdated: p.price_date,
-    sourceName: p.source ?? null, sourceUrl: p.source_url ?? null,
+    lastUpdated: p.observed_on,
+    sourceName: p.source_name ?? null, sourceUrl: p.source_url ?? null,
     unit: p.unit ?? 'kg', currency: p.currency ?? 'TND',
     verificationStatus: p.verification_status ?? 'unverified',
     priceMin: p.price_min == null ? null : Number(p.price_min),
     priceMax: p.price_max == null ? null : Number(p.price_max),
+    priceKind: p.price_kind ?? 'wholesale',
   }));
   return {
     data: { prices, meta: metaFrom(res.data?.meta, 'database', 'market-price-observations') },
