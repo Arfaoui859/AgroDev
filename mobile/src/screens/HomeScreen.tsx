@@ -101,11 +101,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
   }, [lat, lon, language, governorate, isAuthenticated]);
 
   React.useEffect(() => {
+    let active = true;
     (async () => {
-      await loadDashboardData();
-      setLoading(false);
+      try {
+        await loadDashboardData();
+      } catch {
+        if (active) {
+          setServerOk(false);
+          setWeatherError(x.stateOffline);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
-  }, [loadDashboardData]);
+    return () => {
+      active = false;
+    };
+  }, [loadDashboardData, x.stateOffline]);
 
   const onRefresh = async () => {
     setRefreshing(true);
