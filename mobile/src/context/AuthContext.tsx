@@ -88,6 +88,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasOnboarded, setHasOnboarded] = useState(true);
   // Local experience preference (UI only). Never grants server privileges.
   const preferredRoleRef = React.useRef<UserRole | null>(null);
+  // Tracks the latest auth identity so deferred profile requests cannot let an
+  // older account overwrite the state after a fast account switch.
+  const authUserIdRef = React.useRef<string | null>(null);
   // The role the backend actually assigned, kept separately so clearing the
   // preference restores the authoritative value instead of the chosen one.
   const serverRoleRef = React.useRef<UserRole | null>(null);
@@ -124,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setHistoryUserId(restored?.user?.id ?? null);
         await clearLegacyHistory();
         setSession(restored);
+        authUserIdRef.current = restored?.user?.id ?? null;
         if (restored?.user) {
           const profile = await fetchProfile();
           if (active) setUser(withPreference(mapUser(restored.user, profile)));
@@ -137,27 +141,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      // Keep this callback synchronous. Calling fetchProfile() here would call
+      // supabase.auth.getSession() while Supabase is still holding its auth
+      // lock, which can deadlock token refresh and make a valid user appear
+      // signed out.
+      const nextUser = nextSession?.user ?? null;
+      authUserIdRef.current = nextUser?.id ?? null;
       setSession(nextSession);
-      setHistoryUserId(nextSession?.user?.id ?? null);
-      if (nextSession?.user) {
-        // A different account may be signing in on this device: re-point the
-        // cache namespace and drop anything cached under the previous one.
-        if (namespaceUserId() !== nextSession.user.id) {
+      setHistoryUserId(nextUser?.id ?? null);
+
+      if (!nextUser) {
+        setUser(null);
+        return;
+      }
+
+      setUser(withPreference(mapUser(nextUser)));
+
+      // Run cache switching and profile hydration only after the auth callback
+      // has returned and released Supabase's internal lock.
+      void Promise.resolve().then(async () => {
+        if (!active || authUserIdRef.current !== nextUser.id) return;
+
+        if (namespaceUserId() !== nextUser.id) {
           await clearCache();
-          setCacheNamespace(nextSession.user.id);
+          if (!active || authUserIdRef.current !== nextUser.id) return;
+          setCacheNamespace(nextUser.id);
         }
-        setUser(withPreference(mapUser(nextSession.user)));
-        // Best-effort profile hydration; never blocks the auth state.
+
         try {
           const profile = await fetchProfile();
-          setUser(withPreference(mapUser(nextSession.user, profile)));
+          if (active && authUserIdRef.current === nextUser.id) {
+            setUser(withPreference(mapUser(nextUser, profile)));
+          }
         } catch {
           /* keep the metadata-derived user */
         }
-      } else {
-        setUser(null);
-      }
+      }).catch((error) => {
+        console.warn('deferred auth profile hydration failed:', error);
+      });
     });
 
     return () => {
@@ -175,6 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: error.message, needsConfirmation };
       }
       if (data.user) {
+        authUserIdRef.current = data.user.id;
         const profile = await fetchProfile();
         setUser(withPreference(mapUser(data.user, profile)));
         setSession(data.session);
@@ -213,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true, needsConfirmation: true };
       }
       if (data.session?.user) {
+        authUserIdRef.current = data.session.user.id;
         const profile = await fetchProfile();
         setUser(withPreference(mapUser(data.session.user, profile)));
         setSession(data.session);
@@ -239,6 +263,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    authUserIdRef.current = null;
     try {
       await supabase.auth.signOut();
     } catch (error) {
