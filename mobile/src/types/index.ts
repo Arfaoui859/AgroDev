@@ -518,6 +518,8 @@ export interface AgriculturalCatalogProduct {
   composition?: string | null;
   manufacturer?: string | null;
   registrationNumber?: string | null;
+  registrationEvidenceUrl?: string | null;
+  registrationVerifiedAt?: string | null;
   registrationStatus: 'unverified' | 'registered_tunisia' | 'expired' | 'prohibited' | 'not_applicable';
   targetCrops: string[];
   sourceName: string;
