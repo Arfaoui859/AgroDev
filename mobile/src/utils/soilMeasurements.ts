@@ -35,6 +35,7 @@ export type NumericSoilKey =
   | 'sodiumAdsorptionRatio'
   | 'exchangeableSodiumPercentage'
   | 'sampleDepth'
+  | 'slopePercent'
   | 'waterElectricalConductivity'
   | 'waterPh';
 
@@ -81,6 +82,7 @@ export const ADVANCED_MEASUREMENTS: MeasurementDef[] = [
   { key: 'sodiumAdsorptionRatio', labelKey: 'mSar', helpKey: 'helpSar' },
   { key: 'exchangeableSodiumPercentage', labelKey: 'mEsp', helpKey: 'helpSar', unit: '%' },
   { key: 'sampleDepth', labelKey: 'sampleDepthLabel', helpKey: 'helpPh', unit: 'cm' },
+  { key: 'slopePercent', labelKey: 'mSlope', helpKey: 'helpSlope', unit: '%' },
 ];
 
 export const WATER_MEASUREMENTS: MeasurementDef[] = [
