@@ -165,7 +165,7 @@ export async function getWeatherFromWeatherApi(
   request: WeatherRequest,
 ): Promise<WeatherData> {
   const { lat, lon, locationName } = request;
-  const apiKey = process.env.WEATHERAPI_KEY || process.env.WEATHER_API_KEY;
+  const apiKey = process.env.WEATHERAPI_KEY;
   if (!apiKey) {
     throw new ProviderError("WeatherAPI.com", "unconfigured", "WEATHERAPI_KEY is not configured");
   }
