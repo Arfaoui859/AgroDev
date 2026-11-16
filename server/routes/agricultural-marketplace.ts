@@ -10,6 +10,13 @@ const text = (v: unknown, max = 500) => typeof v === "string" ? v.trim().slice(0
 const positive = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN;
 const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
 
+const SOURCE_TYPES = new Set(["official_open_data","api","csv","rss","permitted_scrape","seller_feed","manual"]);
+const VERIFICATION_STATES = new Set(["unverified","source-checked","official-source","rejected"]);
+async function updateSourceStatus(db: NonNullable<typeof supabaseAdmin>, values: Record<string, unknown>) {
+  const { error } = await db.from("market_data_sources").upsert(values, { onConflict: "source_key" });
+  if (error) console.error("[agro-market] source registry update failed", error.message);
+}
+
 function publicDb(res: Response) {
   if (!supabase) { res.status(503).json({success:false,code:"DATABASE_NOT_CONFIGURED"}); return null; }
   return supabase;
@@ -23,6 +30,14 @@ function adminDb(res: Response) {
   if (!supabaseAdmin) { res.status(503).json({success:false,code:"SERVER_DATABASE_CREDENTIALS_NOT_CONFIGURED"}); return null; }
   return supabaseAdmin;
 }
+
+
+router.get("/sources/status", requireAdminAccess, async (_req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const {data,error}=await db.from("market_data_sources").select("source_key,source_name,source_url,source_type,refresh_interval_minutes,enabled,last_attempt_at,last_success_at,last_status,last_error").order("source_name");
+  if(error) return res.status(503).json({success:false,code:"SOURCE_STATUS_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
 
 router.get("/listings", async (req, res) => {
   const db = publicDb(res); if (!db) return;
@@ -165,13 +180,14 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
       return res.status(400).json({success:false,code:"INVALID_PRICE_ROW",row:records.length});
     records.push({crop_name:crop,market_location:location,price_per_kg:price,price_min:positive(row?.price_min),price_max:positive(row?.price_max),
       unit:text(row?.unit,30)||"kg",currency:text(row?.currency,3)||"TND",price_date:row.price_date,
-      quality_grade:text(row?.quality_grade,30)||null,source:sourceName,source_url:sourceUrl,source_key:sourceKey,
-      external_id:externalId,source_type:text(req.body?.source_type,40)||"official_open_data",
-      collected_at:new Date().toISOString(),verification_status:text(req.body?.verification_status,30)||"unverified",
+      quality_grade:text(row?.quality_grade,30)||null,source:sourceName.slice(0,100),source_url:sourceUrl,source_key:sourceKey,
+      external_id:externalId,source_type:sourceType,
+      collected_at:new Date().toISOString(),verification_status:verificationStatus,
       raw_payload:row});
   }
   const {data,error}=await db.from("market_prices").upsert(records,{onConflict:"source_key,external_id,price_date,market_location,crop_name"}).select("id");
-  if(error){console.error("[agro-market] market ingest failed",error.message);return res.status(503).json({success:false,code:"MARKET_INGEST_FAILED"});}
+  if(error){console.error("[agro-market] market ingest failed",error.message);await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_status:"failed",last_error:error.message.slice(0,500)});return res.status(503).json({success:false,code:"MARKET_INGEST_FAILED"});}
+  await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_success_at:new Date().toISOString(),last_status:"success",last_error:null});
   res.json({success:true,insertedOrUpdated:data?.length??records.length,sourceKey});
 });
 
@@ -199,7 +215,8 @@ router.post("/ingest/products", requireAdminAccess, async (req,res) => {
       source_updated_at:text(p?.source_updated_at,50)||null,collected_at:new Date().toISOString(),active:p?.active!==false});
   }
   const {data,error}=await db.from("agricultural_product_catalog").upsert(records,{onConflict:"source_key,external_id"}).select("id");
-  if(error){console.error("[agro-market] catalog ingest failed",error.message);return res.status(503).json({success:false,code:"PRODUCT_INGEST_FAILED"});}
+  if(error){console.error("[agro-market] catalog ingest failed",error.message);await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_status:"failed",last_error:error.message.slice(0,500)});return res.status(503).json({success:false,code:"PRODUCT_INGEST_FAILED"});}
+  await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_success_at:new Date().toISOString(),last_status:"success",last_error:null});
   res.json({success:true,insertedOrUpdated:data?.length??records.length,sourceKey});
 });
 
