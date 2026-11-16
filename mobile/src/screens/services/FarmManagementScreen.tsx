@@ -66,7 +66,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   const [satelliteObservations, setSatelliteObservations] = useState<SatelliteNdviObservation[]>([]);
   const [satelliteError, setSatelliteError] = useState<string | null>(null);
   const [satelliteProvider, setSatelliteProvider] = useState<string | undefined>(undefined);
-  const selectedFarm = farms.find(farm => farm.id === selectedFarmId) ?? selectedFarm;
+  const selectedFarm = farms.find(farm => farm.id === selectedFarmId) ?? farms[0];
 
   const loadFarmData = React.useCallback(async () => {
     setLoading(true);
