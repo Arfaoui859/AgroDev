@@ -22,7 +22,7 @@ from urllib.request import Request, urlopen
 CKAN_API = "https://catalog.data.gov.tn/api/3/action/package_show"
 PACKAGES = ("pesticides", "engrais", "prix-des-principaux-intrants-des-produits-agricoles")
 USER_AGENT = "AgroGrowth-ONAGRI-Catalog-Review/1.0 (+official-open-data-review)"
-NAME_ALIASES = {"nom commercial", "nom du produit", "nom produit", "produit", "designation", "désignation", "nom", "pesticide", "engrais", "اسم المنتج", "الاسم التجاري", "اسم المبيد", "اسم السماد", "المبيد", "السماد", "المنتج"}
+NAME_ALIASES = {"nom commercial", "nom du produit", "nom produit", "produit", "designation", "désignation", "pesticide", "engrais", "اسم المنتج", "الاسم التجاري", "اسم المبيد", "اسم السماد", "المبيد", "السماد", "المنتج"}
 ACTIVE_ALIASES = {"matiere active", "matiere active principale", "substance active", "active ingredient", "ingredient actif", "المادة الفعالة", "المادة النشطة"}
 COMPOSITION_ALIASES = {"composition", "composition npk", "formulation", "التركيبة"}
 MANUFACTURER_ALIASES = {"fabricant", "fournisseur", "societe", "société", "manufacturer", "الشركة"}
