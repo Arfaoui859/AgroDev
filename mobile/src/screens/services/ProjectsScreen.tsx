@@ -23,7 +23,7 @@ import { ProjectTracker } from '../../components/projects/ProjectTracker';
 import { ProjectFinance } from '../../components/projects/ProjectFinance';
 import { getCultivations } from '../../api/client';
 import { Cultivation, ProvenanceMeta } from '../../types';
-import { projectStatusLabel } from '../../utils/projectLabels';
+import { growthStageLabel, projectStatusLabel } from '../../utils/projectLabels';
 
 interface ProjectsScreenProps {
   onBack: () => void;
@@ -122,11 +122,9 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBack, initialP
                       {p.plantedOn}: {project.planting_date}
                     </Text>
                   ) : null}
-                  {project.current_growth_stage ? (
-                    <Text style={[styles.projectMeta, isRtl && rtlStyles.rtlText]}>
-                      {p.growthStage}: {project.current_growth_stage}
-                    </Text>
-                  ) : null}
+                  <Text style={[styles.projectMeta, isRtl && rtlStyles.rtlText]}>
+                    {p.growthStage}: {growthStageLabel(project.current_growth_stage, p)}
+                  </Text>
                   <View style={[styles.projectOpen, isRtl && rtlStyles.rtlRow]}>
                     <Text style={styles.projectOpenText}>
                       {active ? p.closeProject : p.openProject}

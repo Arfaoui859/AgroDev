@@ -122,6 +122,33 @@ export function projectStatusLabel(status: string, p: ProjectTranslations): stri
   }
 }
 
+/** Map persisted growth-stage tokens to localised labels; unknown values never leak raw API strings. */
+export function growthStageLabel(stage: string | null | undefined, p: ProjectTranslations): string {
+  if (!stage || !stage.trim()) return p.noStage;
+  const value = stage.trim().toLowerCase().replace(/[\\s-]+/g, '_');
+  switch (value) {
+    case 'germination':
+    case 'emergence': return p.stageGermination;
+    case 'seedling':
+    case 'young_plant': return p.stageSeedling;
+    case 'vegetative':
+    case 'vegetative_growth':
+    case 'growth': return p.stageVegetative;
+    case 'flowering':
+    case 'blooming': return p.stageFlowering;
+    case 'fruiting':
+    case 'fruit_set': return p.stageFruiting;
+    case 'maturity':
+    case 'ripening': return p.stageMaturity;
+    case 'harvest':
+    case 'harvesting': return p.stageHarvesting;
+    case 'post_harvest':
+    case 'postharvest': return p.stagePostHarvest;
+    case 'planned': return p.statusPlanned;
+    default: return p.noStage;
+  }
+}
+
 /** Language-aware order for enum pickers (kept explicit for clarity). */
 export function taskTypeOptions(p: ProjectTranslations): { value: FarmTaskType; label: string }[] {
   return TASK_TYPE_ORDER.map((value) => ({ value, label: taskTypeLabel(value, p) }));

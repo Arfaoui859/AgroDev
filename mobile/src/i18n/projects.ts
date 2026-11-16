@@ -27,6 +27,14 @@ export interface ProjectTranslations {
   plantedOn: string;
   expectedHarvest: string;
   growthStage: string;
+  stageGermination: string;
+  stageSeedling: string;
+  stageVegetative: string;
+  stageFlowering: string;
+  stageFruiting: string;
+  stageMaturity: string;
+  stageHarvesting: string;
+  stagePostHarvest: string;
   cropLabel: string;
   noStage: string;
 
@@ -143,6 +151,14 @@ const ar: ProjectTranslations = {
   plantedOn: 'تاريخ الزراعة',
   expectedHarvest: 'الحصاد المتوقّع',
   growthStage: 'طور النمو',
+  stageGermination: 'الإنبات',
+  stageSeedling: 'البادرة',
+  stageVegetative: 'النمو الخضري',
+  stageFlowering: 'الإزهار',
+  stageFruiting: 'الإثمار',
+  stageMaturity: 'النضج',
+  stageHarvesting: 'الحصاد',
+  stagePostHarvest: 'ما بعد الحصاد',
   cropLabel: 'المحصول',
   noStage: 'غير محدّد',
 
@@ -257,6 +273,14 @@ const fr: ProjectTranslations = {
   plantedOn: 'Date de plantation',
   expectedHarvest: 'Récolte prévue',
   growthStage: 'Stade de croissance',
+  stageGermination: 'Germination',
+  stageSeedling: 'Plantule',
+  stageVegetative: 'Croissance végétative',
+  stageFlowering: 'Floraison',
+  stageFruiting: 'Fructification',
+  stageMaturity: 'Maturation',
+  stageHarvesting: 'Récolte',
+  stagePostHarvest: 'Après récolte',
   cropLabel: 'Culture',
   noStage: 'Non renseigné',
 
@@ -371,6 +395,14 @@ const en: ProjectTranslations = {
   plantedOn: 'Planted on',
   expectedHarvest: 'Expected harvest',
   growthStage: 'Growth stage',
+  stageGermination: 'Germination',
+  stageSeedling: 'Seedling',
+  stageVegetative: 'Vegetative growth',
+  stageFlowering: 'Flowering',
+  stageFruiting: 'Fruiting',
+  stageMaturity: 'Maturity',
+  stageHarvesting: 'Harvesting',
+  stagePostHarvest: 'Post-harvest',
   cropLabel: 'Crop',
   noStage: 'Not set',
 
