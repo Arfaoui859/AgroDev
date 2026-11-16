@@ -148,6 +148,7 @@ def parse_workbook(content: bytes, resource: dict, package_title: str) -> tuple[
                 "composition": value_at("composition")[:500] or None,
                 "manufacturer": value_at("manufacturer")[:180] or None,
                 "registration_number": value_at("registration")[:100] or None,
+                "registration_evidence_url": None, "registration_verified_at": None,
                 "registration_status": "unverified",
                 "target_crops": [value_at("crops")[:100]] if value_at("crops") else [],
                 "target_pests_diseases": [], "approved_uses": [], "label_url": None,
@@ -212,7 +213,7 @@ def upload_reviewed(path: str) -> None:
             "source_type": "official_open_data",
             "products": [{k: v for k, v in row.items() if k in {
                 "external_id", "product_type", "trade_name", "active_ingredient", "composition",
-                "manufacturer", "registration_number", "registration_status", "target_crops",
+                "manufacturer", "registration_number", "registration_evidence_url", "registration_verified_at", "registration_status", "target_crops",
                 "target_pests_diseases", "approved_uses", "label_url", "active",
             }} for row in rows],
         }
