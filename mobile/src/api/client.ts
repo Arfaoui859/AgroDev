@@ -12,6 +12,7 @@ import {
   AppNotification,
   AICapabilitiesResponse,
   AICapability,
+  AgriculturalCatalogProduct,
   AssistantReply,
   CropRecommendation,
   CropRecommendationResult,
@@ -1065,100 +1066,123 @@ export async function getProjectFinancialSummary(farmId?: string, cultivationId?
  * connected; the gateway fails closed with 503 `MARKETPLACE_STORE_NOT_CONNECTED`
  * until then, which the UI renders as an honest "no matching product" state.
  */
-export async function getMarketplaceListings(params: { q?: string } = {}): Promise<{
+export async function getMarketplaceListings(params: { q?: string; type?: string } = {}): Promise<{
   data: MarketplaceResult;
   error: string | null;
   unavailable: boolean;
 }> {
-  const query = params.q ? `?q=${encodeURIComponent(params.q)}` : '';
-  const res = await apiRequest<any>(`/api/marketplace/listings${query}`, {
-    cacheKey: `marketplace:${params.q || 'all'}`,
+  const query = new URLSearchParams();
+  if (params.q) query.set('q', params.q);
+  if (params.type) query.set('type', params.type);
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  const res = await apiRequest<any>(`/api/agro-market/listings${suffix}`, {
+    cacheKey: `marketplace:${params.type || 'all'}:${params.q || 'all'}`,
   });
-
-  if (res.status === 503) {
+  if (!res.data?.success || !Array.isArray(res.data?.data?.listings)) {
     return {
       data: { listings: [], meta: { provenance: 'unavailable', isRealData: false } },
       error: res.error,
       unavailable: true,
     };
   }
-  const raw: any[] = Array.isArray(res.data?.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
-  const listings: MarketplaceListing[] = raw.map((l, index) => ({
-    id: String(l.id ?? `listing-${index}`),
-    title: l.title ?? l.name ?? '—',
+  const listings: MarketplaceListing[] = res.data.data.listings.map((l: any) => ({
+    id: String(l.id),
+    title: l.title,
     category: l.category ?? undefined,
-    price: typeof l.price === 'number' ? l.price : null,
+    price: l.price == null ? null : Number(l.price),
     currency: l.currency ?? 'TND',
     unit: l.unit ?? undefined,
-    sellerName: l.sellerName ?? l.seller_name ?? null,
+    sellerName: l.seller_name ?? null,
     location: l.location ?? null,
-    quantity: typeof l.quantity === 'number' ? l.quantity : null,
-    imageUrl: l.imageUrl ?? l.image_url ?? null,
+    quantity: l.quantity == null ? null : Number(l.quantity),
+    imageUrl: Array.isArray(l.image_urls) ? l.image_urls[0] ?? null : null,
+    listingType: l.listing_type,
+    expectedHarvestDate: l.expected_harvest_date ?? null,
+    harvestWindowEnd: l.harvest_window_end ?? null,
+    governorate: l.governorate ?? null,
+    description: l.description ?? null,
   }));
   return {
-    data: { listings, meta: metaFrom(res.data, 'database', 'marketplace-listings') },
+    data: { listings, meta: metaFrom(res.data?.meta, 'database', 'seller-published-listings') },
     error: null,
     unavailable: false,
   };
 }
 
-// ---------------------------------------------------------------------------
-// Market prices — persisted platform records (unverified, labelled as such)
-// ---------------------------------------------------------------------------
+export async function createMarketplaceListing(input: {
+  listing_type: NonNullable<MarketplaceListing['listingType']>;
+  title: string;
+  category: string;
+  description?: string;
+  price?: number | null;
+  currency?: string;
+  unit?: string;
+  quantity?: number | null;
+  location?: string;
+  governorate?: string;
+  image_urls?: string[];
+  harvest_crop?: string;
+  expected_harvest_date?: string;
+  harvest_window_end?: string;
+  quality_notes?: string;
+}): Promise<{ data: MarketplaceListing | null; error: string | null }> {
+  const res = await apiRequest<any>('/api/agro-market/listings', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  if (!res.data?.success || !res.data?.data) return { data: null, error: res.error || 'LISTING_CREATE_FAILED' };
+  const l = res.data.data;
+  return { data: {
+    id: String(l.id), title: l.title, category: l.category, price: l.price == null ? null : Number(l.price),
+    currency: l.currency ?? 'TND', unit: l.unit, sellerName: l.seller_name ?? null, location: l.location ?? null,
+    quantity: l.quantity == null ? null : Number(l.quantity), imageUrl: l.image_urls?.[0] ?? null,
+    listingType: l.listing_type, expectedHarvestDate: l.expected_harvest_date ?? null,
+    harvestWindowEnd: l.harvest_window_end ?? null, governorate: l.governorate ?? null, description: l.description ?? null,
+  }, error: null };
+}
 
-export async function getMarketPrices(): Promise<{
+export async function getAgriculturalCatalog(params: { q?: string; type?: AgriculturalCatalogProduct['productType'] } = {}): Promise<{
+  data: AgriculturalCatalogProduct[];
+  error: string | null;
+}> {
+  const query = new URLSearchParams();
+  if (params.q) query.set('q', params.q);
+  if (params.type) query.set('type', params.type);
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  const res = await apiRequest<any>(`/api/agro-market/products${suffix}`, { cacheKey: `agro-catalog:${params.type || 'all'}:${params.q || 'all'}` });
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return {
+    data: rows.map(p => ({
+      id: String(p.id), productType: p.product_type, tradeName: p.trade_name,
+      activeIngredient: p.active_ingredient ?? null, composition: p.composition ?? null,
+      manufacturer: p.manufacturer ?? null, registrationNumber: p.registration_number ?? null,
+      registrationStatus: p.registration_status, targetCrops: Array.isArray(p.target_crops) ? p.target_crops : [],
+      sourceName: p.source_name, sourceUrl: p.source_url ?? null,
+    })),
+    error: res.error,
+  };
+}
+
+export async function getMarketPrices(params: { crop?: string; market?: string } = {}): Promise<{
   data: MarketResult | null;
   error: string | null;
   fromCache: boolean;
 }> {
-  const res = await apiRequest<any>('/api/market/all', { cacheKey: 'market:all' });
-
-  // The gateway answers 503 with an Arabic-only message when no prices are
-  // recorded yet (code MARKET_DATA_NOT_AVAILABLE). That is an honest "no
-  // records" state, not a fetch failure, so it must not surface the raw Arabic
-  // text to fr/en users — the screen renders its own localised empty state.
-  const isNoData =
-    res.status === 503 &&
-    ((res.errorBody as any)?.code === 'MARKET_DATA_NOT_AVAILABLE' ||
-      (res.errorBody as any)?.dataAvailable === false);
-
-  const overview: any[] = Array.isArray(res.data?.data?.marketOverview)
-    ? res.data.data.marketOverview
-    : [];
-
-  if (!overview.length) {
-    return {
-      data: {
-        prices: [],
-        meta: { provenance: 'unavailable', isRealData: false },
-      },
-      error: isNoData ? null : res.error,
-      fromCache: res.fromCache,
-    };
-  }
-
-  const prices: MarketPriceItem[] = overview.map((m, index) => ({
-    // Deterministic id: a random fallback would change on every render and
-    // break list identity / caching. cropId is present for real records.
-    id: String(m.cropId ?? m.crop?.id ?? `market-${index}`),
-    cropName: m.crop?.name || m.cropId || '—',
-    cropNameAr: m.crop?.name_ar || m.crop?.name || '—',
-    pricePerKg: Number(m.currentPrice ?? 0),
-    previousPricePerKg: Number.isFinite(m.averagePrice) ? Number(m.averagePrice) : null,
-    changePercent: null,
-    trend: 'unknown',
-    marketLocation: m.prices?.[0]?.market_location || '—',
-    marketLocationAr: m.prices?.[0]?.market_location || '—',
-    qualityGrade: m.prices?.[0]?.quality_grade || '—',
-    lastUpdated: m.prices?.[0]?.price_date || '',
+  const query = new URLSearchParams();
+  if (params.crop) query.set('crop', params.crop);
+  if (params.market) query.set('market', params.market);
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  const res = await apiRequest<any>(`/api/agro-market/prices${suffix}`, { cacheKey: `market:observations:${params.crop || 'all'}:${params.market || 'all'}` });
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  const prices: MarketPriceItem[] = rows.map((p: any) => ({
+    id: String(p.id), cropName: p.crop_name, cropNameAr: p.crop_name,
+    pricePerKg: Number(p.price_per_kg), previousPricePerKg: null, changePercent: null, trend: 'unknown',
+    marketLocation: p.market_location, marketLocationAr: p.market_location, qualityGrade: p.quality_grade ?? '—',
+    lastUpdated: p.price_date,
   }));
-
   return {
-    data: {
-      prices,
-      meta: metaFrom(res.data?.data, 'database', 'platform-database'),
-    },
-    error: null,
+    data: { prices, meta: metaFrom(res.data?.meta, 'database', 'market-price-observations') },
+    error: res.error,
     fromCache: res.fromCache,
   };
 }
