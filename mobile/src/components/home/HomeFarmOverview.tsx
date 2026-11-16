@@ -30,10 +30,10 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
   const [loading, setLoading] = useState(true);
 
   const labels = language === 'ar'
-    ? { title: 'نظرة على نشاطك', subtitle: 'ملخّص المزارع والمحاصيل المسجّلة', farms: 'مزارع', area: 'المساحة', crops: 'زراعات', harvest: 'أقرب جني', noHarvest: 'غير محدّد', openFarms: 'إدارة المزارع', openProjects: 'خطط الإنتاج', emptyTitle: 'ابدأ بإضافة مزرعتك', emptyBody: 'سجّل مزرعتك ومحاصيلك لتظهر هنا مؤشرات نشاطك الحقيقية.', retry: 'تعذّر تحميل بيانات المزرعة' }
+    ? { title: 'نظرة على نشاطك', subtitle: 'ملخّص المزارع والمحاصيل المسجّلة', farms: 'مزارع', area: 'المساحة', crops: 'زراعات', harvest: 'أقرب جني', noHarvest: 'غير محدّد', nextTask: 'المهمّة القادمة', noTask: 'ما فماش مهام مفتوحة', openFarms: 'إدارة المزارع', openProjects: 'خطط الإنتاج', emptyTitle: 'ابدأ بإضافة مزرعتك', emptyBody: 'سجّل مزرعتك ومحاصيلك لتظهر هنا مؤشرات نشاطك الحقيقية.', retry: 'تعذّر تحميل بيانات المزرعة' }
     : language === 'fr'
-      ? { title: 'Votre activité agricole', subtitle: 'Aperçu des exploitations et cultures enregistrées', farms: 'Fermes', area: 'Surface', crops: 'Cultures', harvest: 'Prochaine récolte', noHarvest: 'Non définie', openFarms: 'Gérer les fermes', openProjects: 'Plans de culture', emptyTitle: 'Ajoutez votre première ferme', emptyBody: 'Enregistrez vos fermes et cultures pour afficher vos indicateurs réels.', retry: 'Impossible de charger les données agricoles' }
-      : { title: 'Your agricultural activity', subtitle: 'Overview of your registered farms and crops', farms: 'Farms', area: 'Area', crops: 'Cultivations', harvest: 'Next harvest', noHarvest: 'Not scheduled', openFarms: 'Manage farms', openProjects: 'Production plans', emptyTitle: 'Add your first farm', emptyBody: 'Register farms and crops to see your real activity metrics here.', retry: 'Could not load farm data' };
+      ? { title: 'Votre activité agricole', subtitle: 'Aperçu des exploitations et cultures enregistrées', farms: 'Fermes', area: 'Surface', crops: 'Cultures', harvest: 'Prochaine récolte', noHarvest: 'Non définie', nextTask: 'Prochaine tâche', noTask: 'Aucune tâche en attente', openFarms: 'Gérer les fermes', openProjects: 'Plans de culture', emptyTitle: 'Ajoutez votre première ferme', emptyBody: 'Enregistrez vos fermes et cultures pour afficher vos indicateurs réels.', retry: 'Impossible de charger les données agricoles' }
+      : { title: 'Your agricultural activity', subtitle: 'Overview of your registered farms and crops', farms: 'Farms', area: 'Area', crops: 'Cultivations', harvest: 'Next harvest', noHarvest: 'Not scheduled', nextTask: 'Next task', noTask: 'No open tasks', openFarms: 'Manage farms', openProjects: 'Production plans', emptyTitle: 'Add your first farm', emptyBody: 'Register farms and crops to see your real activity metrics here.', retry: 'Could not load farm data' };
 
   const load = useCallback(async () => {
     if (!isAuthenticated) {
@@ -66,6 +66,14 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
   const nextHarvest = data.cultivations
     .filter((item) => item.expected_harvest_date && new Date(item.expected_harvest_date).getTime() >= new Date(new Date().toDateString()).getTime())
     .sort((a, b) => new Date(a.expected_harvest_date as string).getTime() - new Date(b.expected_harvest_date as string).getTime())[0];
+  const openTasks = data.tasks
+    .filter((task) => task.status === 'pending' || task.status === 'in_progress')
+    .sort((a, b) => {
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
+  const nextTask = openTasks[0];
   const formatArea = new Intl.NumberFormat(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-TN' : 'en', { maximumFractionDigits: 2 }).format(totalArea);
   const harvestDate = nextHarvest?.expected_harvest_date
     ? new Intl.DateTimeFormat(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-TN' : 'en', { day: 'numeric', month: 'short' }).format(new Date(nextHarvest.expected_harvest_date))
@@ -107,6 +115,16 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
             </View>
             <Text style={styles.harvestDate}>{harvestDate}</Text>
           </Card>
+          {user?.role === 'farmer' ? (
+            <Card variant="outlined" style={styles.taskCard}>
+              <View style={styles.harvestIcon}><MaterialCommunityIcons name="clipboard-check-outline" size={21} color={colors.primary} /></View>
+              <View style={styles.harvestText}>
+                <Text style={[styles.harvestLabel, isRtl && rtlStyles.rtlText]}>{labels.nextTask} · {openTasks.length}</Text>
+                <Text style={[styles.harvestCrop, isRtl && rtlStyles.rtlText]} numberOfLines={2}>{nextTask?.title ?? labels.noTask}</Text>
+              </View>
+              {nextTask?.due_date ? <Text style={styles.harvestDate}>{new Intl.DateTimeFormat(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-TN' : 'en', { day: 'numeric', month: 'short' }).format(new Date(nextTask.due_date))}</Text> : null}
+            </Card>
+          ) : null}
           <View style={[styles.actions, isRtl && rtlStyles.rtlRow]}>
             <TouchableOpacity onPress={onOpenFarms} style={styles.secondaryButton} accessibilityRole="button">
               <MaterialCommunityIcons name="map-marker-radius-outline" size={17} color={colors.primary} />
@@ -140,6 +158,7 @@ const styles = StyleSheet.create({
   metricSuffix: { color: colors.textMuted, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.medium },
   metricLabel: { color: colors.textSecondary, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.medium },
   harvestCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
+  taskCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
   harvestIcon: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   harvestText: { flex: 1, gap: 2 },
   harvestLabel: { color: colors.textMuted, fontSize: typography.fontSizes.xs },
