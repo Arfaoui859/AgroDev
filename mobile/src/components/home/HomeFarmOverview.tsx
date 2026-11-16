@@ -13,6 +13,7 @@ import { SectionHeader } from '../ui/SectionHeader';
 interface HomeFarmOverviewProps {
   onOpenFarms: () => void;
   onOpenProjects: () => void;
+  refreshKey?: number;
 }
 
 type OverviewState = {
@@ -21,7 +22,7 @@ type OverviewState = {
   error: boolean;
 };
 
-export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms, onOpenProjects }) => {
+export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms, onOpenProjects, refreshKey = 0 }) => {
   const { isAuthenticated } = useAuth();
   const { language, isRtl } = useLanguage();
   const [data, setData] = useState<OverviewState>({ farms: [], cultivations: [], error: false });
@@ -54,7 +55,7 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
     }
   }, [isAuthenticated]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, refreshKey]);
 
   if (!isAuthenticated) return null;
 
