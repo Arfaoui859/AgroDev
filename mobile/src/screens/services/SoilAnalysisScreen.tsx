@@ -292,10 +292,12 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
 
           <Card variant="elevated" style={styles.gradeCard}>
             <View style={[styles.gradeRow, isRtl && rtlStyles.rtlRow]}>
-              <View style={styles.scoreCircle}>
-                <Text style={styles.scoreNumber}>{ruleResult.gradeScore}</Text>
-                <Text style={styles.scoreMax}>/100</Text>
-              </View>
+              {ruleResult.gradeScore !== null ? (
+                <View style={styles.scoreCircle}>
+                  <Text style={styles.scoreNumber}>{ruleResult.gradeScore}</Text>
+                  <Text style={styles.scoreMax}>/100</Text>
+                </View>
+              ) : null}
               <View style={styles.gradeDetails}>
                 <Text style={[styles.gradeTitle, isRtl && rtlStyles.rtlText]}>
                   {x.soilFertilityScore}: {localizeSoilGrade(ruleResult.fertilityLevel, x)}
