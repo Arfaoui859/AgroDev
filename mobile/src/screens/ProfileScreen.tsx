@@ -58,14 +58,17 @@ export const ProfileScreen: React.FC = () => {
   const handleTestConnection = async () => {
     setTestingConnection(true);
     setConnectionResult(null);
-
-    const res = await apiRequest('/api/ping', { anonymous: true });
-    setTestingConnection(false);
-
-    if (res.isOnline) {
-      setConnectionResult(x.profileServerReachable);
-    } else {
-      setConnectionResult(res.error || x.stateOffline);
+    try {
+      const res = await apiRequest('/api/ping', { anonymous: true });
+      if (res.isOnline) {
+        setConnectionResult(x.profileServerReachable);
+      } else {
+        setConnectionResult(res.error || x.stateOffline);
+      }
+    } catch (cause) {
+      setConnectionResult(cause instanceof Error ? cause.message : x.stateOffline);
+    } finally {
+      setTestingConnection(false);
     }
   };
 
