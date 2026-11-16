@@ -60,7 +60,12 @@ describe('soil analysis context and project handoff', () => {
         { priority: 'now', action: 'Check soil salinity' },
         { priority: 'before_planting', action: 'Prepare the seedbed' },
       ],
-      twelveWeekCalendar: [],
+      targetCropPlan: {
+        actions: [{ priority: 'during_season', action: 'Apply mulch after field inspection' }],
+      },
+      twelveWeekCalendar: [
+        { week: 1, actions: ['Inspect crop establishment'], check: 'Check emergence' },
+      ],
       followUpPlan: [
         { step: 1, when: 'After 2 weeks', whatToDo: 'Retest soil after amendment' },
         { step: 2, when: 'After 4 weeks', whatToDo: 'Inspect crop establishment' },
@@ -73,9 +78,12 @@ describe('soil analysis context and project handoff', () => {
       'Check soil salinity',
       'Prepare the seedbed',
       'Retest soil after amendment',
+      'Apply mulch after field inspection',
       'Inspect crop establishment',
     ]);
     expect(tasks.map((task) => task.priority)).toEqual(['urgent', 'high', 'low', 'low']);
     expect(tasks.every((task) => !task.generic)).toBe(true);
+    expect(tasks[0].kind).toBe('general');
+    expect(tasks[tasks.length - 1].kind).toBe('monitor');
   });
 });
