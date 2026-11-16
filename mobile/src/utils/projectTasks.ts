@@ -10,6 +10,7 @@ export interface ProjectTask {
   text: string;
   /** True when the text is a localised generic label, not report content. */
   generic: boolean;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
 }
 
 /**
@@ -33,23 +34,29 @@ export function deriveProjectTasks(report: SoilReport | null): ProjectTask[] {
       const text = action.action?.trim();
       if (!text || seen.has(text)) return;
       seen.add(text);
-      tasks.push({ id: `rec-${index}`, kind: kindFromPriority(action.priority), text, generic: false });
+      tasks.push({
+        id: `rec-${index}`,
+        kind: kindFromPriority(action.priority),
+        text,
+        generic: false,
+        priority: action.priority === 'now' ? 'urgent' : action.priority === 'before_planting' ? 'high' : action.priority === 'during_season' ? 'medium' : 'low',
+      });
     });
     report.followUpPlan.forEach((step, index) => {
       const text = step.whatToDo?.trim();
       if (!text || seen.has(text)) return;
       seen.add(text);
-      tasks.push({ id: `follow-${index}`, kind: 'retest', text, generic: false });
+      tasks.push({ id: `follow-${index}`, kind: 'retest', text, generic: false, priority: 'low' });
     });
     if (tasks.length > 0) return tasks;
   }
   // No report: a minimal, honest generic sequence. `generic: true` lets the UI
   // label these as general guidance rather than analysis-derived.
   return [
-    { id: 'generic-prepare', kind: 'prepare', text: '', generic: true },
-    { id: 'generic-plant', kind: 'plant', text: '', generic: true },
-    { id: 'generic-monitor', kind: 'monitor', text: '', generic: true },
-    { id: 'generic-retest', kind: 'retest', text: '', generic: true },
+    { id: 'generic-prepare', kind: 'prepare', text: '', generic: true, priority: 'high' },
+    { id: 'generic-plant', kind: 'plant', text: '', generic: true, priority: 'high' },
+    { id: 'generic-monitor', kind: 'monitor', text: '', generic: true, priority: 'medium' },
+    { id: 'generic-retest', kind: 'retest', text: '', generic: true, priority: 'low' },
   ];
 }
 
