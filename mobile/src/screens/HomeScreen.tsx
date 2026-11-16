@@ -437,16 +437,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
         </View>
       </TouchableOpacity>
 
-      {/* AgriVibe Academy — topical index into real content & services */}
+      {/* Featured real agricultural learning video, followed by more curated tutorials */}
+      <LearningVideos onOpenAll={() => onNavigateToService('learning')} />
+
+      {/* Academy topics route to real video categories or existing service screens */}
       <AcademySection
         onOpenVideos={(category) =>
           onOpenLearning ? onOpenLearning(category) : onNavigateToService('learning')
         }
         onOpenService={openCapabilityService}
       />
-
-      {/* Curated agricultural learning videos (real YouTube content) */}
-      <LearningVideos onOpenAll={() => onNavigateToService('learning')} />
 
       {/* Latest real agricultural headlines */}
       <HomeNewsPreview onOpenAll={() => onNavigateToService('agri_news')} />
