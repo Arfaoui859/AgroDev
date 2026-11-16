@@ -130,7 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authUserIdRef.current = restored?.user?.id ?? null;
         if (restored?.user) {
           const profile = await fetchProfile();
-          if (active) setUser(withPreference(mapUser(restored.user, profile)));
+          if (active && authUserIdRef.current === restored.user.id) {
+            setUser(withPreference(mapUser(restored.user, profile)));
+          }
         }
       } catch (error) {
         console.warn('session restore failed:', error);
@@ -158,28 +160,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(withPreference(mapUser(nextUser)));
 
-      // Run cache switching and profile hydration only after the auth callback
-      // has returned and released Supabase's internal lock.
-      void Promise.resolve().then(async () => {
-        if (!active || authUserIdRef.current !== nextUser.id) return;
-
-        if (namespaceUserId() !== nextUser.id) {
-          await clearCache();
+      // A macrotask guarantees the auth callback has returned and Supabase's
+      // internal lock has been released before any API helper calls getSession().
+      setTimeout(() => {
+        void (async () => {
           if (!active || authUserIdRef.current !== nextUser.id) return;
-          setCacheNamespace(nextUser.id);
-        }
 
-        try {
-          const profile = await fetchProfile();
-          if (active && authUserIdRef.current === nextUser.id) {
-            setUser(withPreference(mapUser(nextUser, profile)));
+          if (namespaceUserId() !== nextUser.id) {
+            await clearCache();
+            if (!active || authUserIdRef.current !== nextUser.id) return;
+            setCacheNamespace(nextUser.id);
           }
-        } catch {
-          /* keep the metadata-derived user */
-        }
-      }).catch((error) => {
-        console.warn('deferred auth profile hydration failed:', error);
-      });
+
+          try {
+            const profile = await fetchProfile();
+            if (active && authUserIdRef.current === nextUser.id) {
+              setUser(withPreference(mapUser(nextUser, profile)));
+            }
+          } catch {
+            /* keep the metadata-derived user */
+          }
+        })().catch((error) => {
+          console.warn('deferred auth profile hydration failed:', error);
+        });
+      }, 0);
     });
 
     return () => {
@@ -199,8 +203,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user) {
         authUserIdRef.current = data.user.id;
         const profile = await fetchProfile();
-        setUser(withPreference(mapUser(data.user, profile)));
-        setSession(data.session);
+        if (authUserIdRef.current === data.user.id) {
+          setUser(withPreference(mapUser(data.user, profile)));
+          setSession(data.session);
+        }
       }
       return { success: true };
     } catch (error: any) {
@@ -238,8 +244,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.session?.user) {
         authUserIdRef.current = data.session.user.id;
         const profile = await fetchProfile();
-        setUser(withPreference(mapUser(data.session.user, profile)));
-        setSession(data.session);
+        if (authUserIdRef.current === data.session.user.id) {
+          setUser(withPreference(mapUser(data.session.user, profile)));
+          setSession(data.session);
+        }
       }
       return { success: true };
     } catch (error: any) {
@@ -309,7 +317,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = await supabase.auth.getSession();
     if (!current?.user) return;
     const profile = await fetchProfile();
-    setUser(withPreference(mapUser(current.user, profile)));
+    if (authUserIdRef.current === current.user.id) {
+      setUser(withPreference(mapUser(current.user, profile)));
+    }
   };
 
   return (
