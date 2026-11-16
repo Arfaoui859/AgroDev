@@ -57,11 +57,11 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ onBack, initialP
       setMeta(res.meta);
       setError(res.error);
     } catch {
-      setError(p.loadFailed);
+      setError(x.stateError);
     } finally {
       setLoading(false);
     }
-  }, [p.loadFailed]);
+  }, [x.stateError]);
 
   useEffect(() => {
     (async () => {
