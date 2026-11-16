@@ -49,6 +49,11 @@ export function buildSoilInput(
   if (values.irrigationMethod.trim()) input.irrigationMethod = values.irrigationMethod.trim();
   if (values.targetCrop.trim()) input.targetCrop = values.targetCrop.trim();
   if (values.samplingDate.trim()) input.samplingDate = values.samplingDate.trim();
+  if (values.drainage.trim()) input.drainage = values.drainage.trim();
+  if (values.previousCrop.trim()) input.previousCrop = values.previousCrop.trim();
+  if (values.currentCrop.trim()) input.currentCrop = values.currentCrop.trim();
+  if (values.season.trim()) input.season = values.season.trim();
+  if (values.notes.trim()) input.notes = values.notes.trim();
 
   if (extras.fieldId) input.fieldId = extras.fieldId;
   if (extras.region) input.region = extras.region;
