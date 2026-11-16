@@ -1,7 +1,7 @@
 import express from "express";
 import {
-  getWeatherFromOpenMeteo,
-  getHistoricalWeatherFromOpenMeteo,
+  getWeatherFromWeatherApi,
+  getHistoricalWeatherFromNasaPower,
   type WeatherData,
 } from "../services/providers/weatherProvider";
 import { ProviderError } from "../services/providers/http";
@@ -58,11 +58,11 @@ function adaptCurrent(weather: WeatherData) {
   };
 }
 
-/** Real 14-day forecast (provider caps at 16); errors surface to the caller. */
+/** Real 3-day forecast on the WeatherAPI.com Free plan; errors surface to the caller. */
 async function fetchAdaptedForecast(locationId: string, days: number) {
   const loc = resolveTunisiaLocation(locationId);
   if (!loc) return { error: "unknown_location" as const };
-  const weather = await getWeatherFromOpenMeteo({
+  const weather = await getWeatherFromWeatherApi({
     lat: loc.lat,
     lon: loc.lng,
     locationName: loc.name,
@@ -272,8 +272,8 @@ router.get("/historical-analysis/:farmLocation/:cropType", async (req, res) => {
         detail: `Unknown location '${farmLocation}'.`,
       });
     }
-    // Real monthly aggregates from the Open-Meteo archive API.
-    const historical = await getHistoricalWeatherFromOpenMeteo(loc.lat, loc.lng, months);
+    // Real monthly aggregates from NASA POWER daily meteorological data.
+    const historical = await getHistoricalWeatherFromNasaPower(loc.lat, loc.lng, months);
     const trend = describeTrend(historical.monthly);
     const historicalData = {
       monthly: historical.monthly,
