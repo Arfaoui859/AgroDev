@@ -41,6 +41,10 @@ class OnagriBirElKassaaParserTests(unittest.TestCase):
         self.assertNotIn("price_max", row)
         self.assertIn("document_url", row["raw_source"])
 
+    def test_arabic_commodity_ids_are_stable_and_distinct(self):
+        self.assertNotEqual(MODULE.slug("طماطم"), MODULE.slug("بطاطا"))
+        self.assertEqual(MODULE.slug("طماطم"), MODULE.slug("طماطم"))
+
     def test_number_parser_handles_arabic_digits_and_spaces(self):
         self.assertEqual(MODULE.parse_number("٨ ٠٠٠"), 8000.0)
         self.assertEqual(MODULE.parse_number("-12 %"), -12.0)
