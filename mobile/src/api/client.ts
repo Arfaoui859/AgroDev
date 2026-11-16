@@ -1208,6 +1208,20 @@ export async function updateMarketplaceInquiryStatus(id: string, status: Marketp
   return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'INQUIRY_UPDATE_FAILED' };
 }
 
+export async function updateMarketplaceListing(id: string, input: {
+  title?: string; category?: string; description?: string; price?: number | null; quantity?: number | null;
+}): Promise<{ success: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/listings/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(input),
+  });
+  return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'LISTING_UPDATE_FAILED' };
+}
+
+export async function deleteMarketplaceListing(id: string): Promise<{ success: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/listings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'LISTING_DELETE_FAILED' };
+}
+
 export async function updateMarketplaceListingStatus(id: string, status: NonNullable<MarketplaceListing['status']>): Promise<{ success: boolean; error: string | null }> {
   const res = await apiRequest<any>(`/api/agro-market/listings/${encodeURIComponent(id)}`, {
     method: 'PATCH', body: JSON.stringify({ status }),
