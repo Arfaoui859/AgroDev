@@ -140,17 +140,17 @@ def extract_prices(html: str, title: str, document_url: str):
         crop = cells[7].strip()
         days = parse_number(cells[0])
         price_change = parse_number(cells[1])
-        price_2026_millimes = parse_number(cells[3])
+        price_current_year_millimes = parse_number(cells[3])
         supply_change = parse_number(cells[4])
-        supply_2026_tons = parse_number(cells[6])
-        if not crop or price_2026_millimes is None or price_2026_millimes <= 0:
+        supply_current_year_tons = parse_number(cells[6])
+        if not crop or price_current_year_millimes is None or price_current_year_millimes <= 0:
             continue
         prices.append({
             "external_id": f"{year}-{month:02d}:{slug(crop)}",
             "crop_name": crop,
             "market_location": "Bir El Kassaa",
             "price_kind": "wholesale",
-            "price_per_kg": round(price_2026_millimes / 1000.0, 3),
+            "price_per_kg": round(price_current_year_millimes / 1000.0, 3),
             "previous_year_price": round(parse_number(cells[2]) / 1000.0, 3) if parse_number(cells[2]) is not None else None,
             "source_url": document_url,
             "price_date": start.isoformat(),
@@ -159,17 +159,17 @@ def extract_prices(html: str, title: str, document_url: str):
             "aggregation_period": "monthly",
             "unit": "kg",
             "currency": "TND",
-            "supply_quantity_tons": supply_2026_tons,
+            "supply_quantity_tons": supply_current_year_tons,
             "supply_change_percent": supply_change,
             "price_change_percent": price_change,
             "observation_days": int(days) if days is not None else None,
             "raw_source": {
                 "document_title": title,
                 "document_url": document_url,
-                "price_2025_millimes_per_kg": parse_number(cells[2]),
-                "price_2026_millimes_per_kg": price_2026_millimes,
-                "supply_2025_tons": parse_number(cells[5]),
-                "supply_2026_tons": supply_2026_tons,
+                "previous_year_price_millimes_per_kg": parse_number(cells[2]),
+                "current_year_price_millimes_per_kg": price_current_year_millimes,
+                "previous_year_supply_tons": parse_number(cells[5]),
+                "current_year_supply_tons": supply_current_year_tons,
                 "source_cells": cells,
             },
         })
