@@ -682,7 +682,7 @@ const ar: ExtraTranslations = {
   diseaseTreatment: 'خطة العلاج والمكافحة الفورية',
   diseasePrevention: 'الوقاية',
   diseaseLimitationsTitle: 'حدود الاستخدام',
-  diseaseLimitationsText: 'النتيجة إرشادية مبنية على الصورة وقد تختلف عن التشخيص المخبري. أكّدها مع مهندس زراعي قبل المعالجة. لا تعتمد جرعة أو تخلط مبيدات دون التثبت من تسجيل المنتج للمحصول والمرض، واتباع الملصق وفترة ما قبل الجني وفترة إعادة الدخول.'
+  diseaseLimitationsText: 'النتيجة إرشادية مبنية على الصورة وقد تختلف عن التشخيص المخبري. أكّدها مع مهندس زراعي قبل المعالجة. لا تعتمد جرعة أو تخلط مبيدات دون التثبت من تسجيل المنتج للمحصول والمرض، واتباع الملصق وفترة ما قبل الجني وفترة إعادة الدخول.',
   diseaseGalleryDenied: 'يرجى منح إذن الوصول إلى معرض الصور.',
   diseasePickFirst: 'يرجى التقاط صورة أو اختيارها من المعرض أولاً.',
   cropOlive: 'شجر الزيتون',
@@ -1182,7 +1182,7 @@ const fr: ExtraTranslations = {
   diseaseTreatment: 'Plan de traitement immédiat',
   diseasePrevention: 'Prévention',
   diseaseLimitationsTitle: 'Limites d’utilisation',
-  diseaseLimitationsText: 'Le résultat est indicatif et peut différer d’un diagnostic en laboratoire. Faites-le confirmer par un agronome avant traitement. Ne choisissez pas de dose ni ne mélangez des pesticides sans vérifier l’homologation pour la culture et la maladie, l’étiquette, le délai avant récolte et le délai de rentrée.'
+  diseaseLimitationsText: 'Le résultat est indicatif et peut différer d’un diagnostic en laboratoire. Faites-le confirmer par un agronome avant traitement. Ne choisissez pas de dose ni ne mélangez des pesticides sans vérifier l’homologation pour la culture et la maladie, l’étiquette, le délai avant récolte et le délai de rentrée.',
   diseaseGalleryDenied: 'Veuillez autoriser l’accès à la galerie photos.',
   diseasePickFirst: 'Veuillez d’abord prendre ou choisir une photo.',
   cropOlive: 'Olivier',
@@ -1683,7 +1683,7 @@ const en: ExtraTranslations = {
   diseaseTreatment: 'Immediate treatment plan',
   diseasePrevention: 'Prevention',
   diseaseLimitationsTitle: 'Limits of use',
-  diseaseLimitationsText: 'This image-based result is indicative and may differ from a laboratory diagnosis. Have it confirmed by an agronomist before treatment. Do not choose a dose or mix pesticides without checking product registration for the crop and disease, the label, pre-harvest interval and re-entry interval.'
+  diseaseLimitationsText: 'This image-based result is indicative and may differ from a laboratory diagnosis. Have it confirmed by an agronomist before treatment. Do not choose a dose or mix pesticides without checking product registration for the crop and disease, the label, pre-harvest interval and re-entry interval.',
   diseaseGalleryDenied: 'Please grant access to the photo gallery.',
   diseasePickFirst: 'Please capture or choose a photo first.',
   cropOlive: 'Olive tree',
