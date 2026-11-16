@@ -210,6 +210,7 @@ router.post("/smart-schedule", async (req, res) => {
       waterManagement: optimizeWaterUsage(optimizedSchedule, weatherForecast),
       dataSource: adapted.weather.source.provider,
       isRealData: true,
+      isStale: Boolean(adapted.weather.source.isStale),
       observationTime: adapted.weather.source.observationTime,
     });
   } catch (error) {
@@ -261,6 +262,7 @@ router.get("/alerts/:farmLocation", async (req, res) => {
       recommendations: generateImmediateRecommendations(currentWeather, alerts),
       dataSource: adapted.weather.source.provider,
       isRealData: true,
+      isStale: Boolean(adapted.weather.source.isStale),
       observationTime: adapted.weather.source.observationTime,
     });
   } catch (error) {
@@ -360,6 +362,7 @@ router.post("/irrigation-optimization", async (req, res) => {
       },
       dataSource: adapted.weather.source.provider,
       isRealData: true,
+      isStale: Boolean(adapted.weather.source.isStale),
       observationTime: adapted.weather.source.observationTime,
     });
   } catch (error) {
