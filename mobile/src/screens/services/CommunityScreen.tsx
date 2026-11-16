@@ -121,10 +121,11 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpen
   const [interactionError, setInteractionError] = useState<string | null>(null);
 
   const loadPosts = useCallback(async () => {
+    if (!isAuthenticated) return;
     const result = await getCommunityPosts(category);
     setPosts(result.data);
     setError(result.error);
-  }, [category]);
+  }, [category, isAuthenticated]);
 
   useEffect(() => {
     let active = true;
