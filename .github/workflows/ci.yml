@@ -157,6 +157,26 @@ jobs:
         run: npm run lint
 
   # =====================================
+  # OFFICIAL MARKET DATA COLLECTOR: parser regression tests
+  # =====================================
+  market-data:
+    name: 📈 Market Data Collector
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 🧪 Test ONAGRI parser
+        run: |
+          python -m py_compile scripts/market-data/ingest_onagri_bir_el_kassaa.py
+          python -m unittest discover -s tests/market_data -v
+
+  # =====================================
   # AI MICROSERVICES: syntax + import check
   # =====================================
   ai-services:
@@ -251,6 +271,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261111_auth_user_sync.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261112_requested_role.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261116_marketplace_market_intelligence.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261117_bir_el_kassaa_and_marketplace_inquiries.sql
 
       - name: 🔒 Verify tenant isolation and RLS policies
         env:
@@ -348,7 +369,7 @@ jobs:
   deployment-check:
     name: 🚀 Deployment Readiness
     runs-on: ubuntu-latest
-    needs: [code-quality, mobile-quality, tests, build, ai-services, database-rls, docker-build]
+    needs: [code-quality, mobile-quality, tests, build, ai-services, market-data, database-rls, docker-build]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: ✅ All checks passed
