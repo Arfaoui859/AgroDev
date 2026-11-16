@@ -205,7 +205,7 @@ router.post("/smart-schedule", async (req, res) => {
       weatherPeriod,
       optimizedSchedule,
       recommendations,
-      weatherForecast: weatherForecast.slice(0, 7), // Next 7 days summary
+      weatherForecast: weatherForecast.slice(0, 3), // WeatherAPI.com Free plan: up to 3 days
       riskAssessment: assessWeatherRisks(weatherForecast),
       waterManagement: optimizeWaterUsage(optimizedSchedule, weatherForecast),
       dataSource: adapted.weather.source.provider,
