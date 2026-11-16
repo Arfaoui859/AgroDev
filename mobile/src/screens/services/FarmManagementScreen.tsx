@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   Image,
+  Pressable,
 } from 'react-native';
 import { cardBottomRow, cardPad, flex1, gapSm, rowGapXs, rowWrapSm, screenStyles, spaceBetween, spaceBetweenTopSm, stackSm, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -38,6 +39,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   const { t, x, isRtl, language } = useLanguage();
   const { isAuthenticated } = useAuth();
   const [farms, setFarms] = useState<Farm[]>([]);
+  const [selectedFarmId, setSelectedFarmId] = useState('');
   const [fields, setFields] = useState<Field[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,12 +66,14 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   const [satelliteObservations, setSatelliteObservations] = useState<SatelliteNdviObservation[]>([]);
   const [satelliteError, setSatelliteError] = useState<string | null>(null);
   const [satelliteProvider, setSatelliteProvider] = useState<string | undefined>(undefined);
+  const selectedFarm = farms.find(farm => farm.id === selectedFarmId) ?? selectedFarm;
 
   const loadFarmData = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     const [farmsRes, fieldsRes] = await Promise.all([getFarms(), getFields()]);
     setFarms(farmsRes.data);
+    setSelectedFarmId(current => farmsRes.data.some(farm => farm.id === current) ? current : farmsRes.data[0]?.id ?? '');
     setFields(fieldsRes.data);
     setError(farmsRes.error || fieldsRes.error);
     setMeta(farmsRes.meta ?? { provenance: 'database', isRealData: false });
@@ -97,7 +101,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
 
     setSaving(true);
     try {
-      const farmId = farms[0]?.id;
+      const farmId = selectedFarm?.id;
       if (!farmId) {
         Alert.alert(x.notice, x.farmNoFarmYet);
         return;
@@ -150,6 +154,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
         return;
       }
       setFarms((prev) => [res.data as Farm, ...prev]);
+      setSelectedFarmId((res.data as Farm).id);
       setShowFarmModal(false);
       setFarmName('');
       setFarmRegion('');
@@ -182,7 +187,7 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   };
 
   const saveBoundary = async () => {
-    const farm = farms[0];
+    const farm = selectedFarm;
     if (!farm) return;
     if (boundaryPoints.length < 3) {
       Alert.alert(x.notice, language === 'ar' ? 'سجّل 3 نقاط على الأقل حول محيط الأرض.' : language === 'fr' ? 'Enregistrez au moins 3 points autour de la parcelle.' : 'Record at least 3 perimeter points.');
@@ -251,8 +256,28 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
       ) : null}
 
       {/* Farm Overview Card */}
-      {isAuthenticated && farms.length > 0 && (
+      {isAuthenticated && selectedFarm && (
         <Card variant="elevated" style={styles.farmSummaryCard}>
+          {farms.length > 1 ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm }}>
+              {farms.map(farm => (
+                <Pressable key={farm.id} onPress={() => {
+                  setSelectedFarmId(farm.id);
+                  setBoundaryPoints([]);
+                  setSatelliteObservations([]);
+                  setSatelliteError(null);
+                }} style={{
+                  borderWidth: 1, borderColor: selectedFarm.id === farm.id ? colors.primary : colors.border,
+                  backgroundColor: selectedFarm.id === farm.id ? colors.primaryLight : colors.surface,
+                  borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                }}>
+                  <Text style={{ color: selectedFarm.id === farm.id ? colors.primaryDark : colors.text, fontSize: typography.fontSizes.sm }}>
+                    {language === 'ar' ? farm.name_ar || farm.name : farm.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           <View style={[styles.farmHeader, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.farmHeaderInfo}>
               <Text style={[styles.farmName, isRtl && rtlStyles.rtlText]}>
