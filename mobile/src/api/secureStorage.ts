@@ -21,7 +21,7 @@ const isWeb = Platform.OS === 'web';
 
 async function cleanupPreviousChunks(key: string, head: string | null): Promise<void> {
   if (!head) return;
-  const v2 = /^chunks:v2:([^:]+):(\\d+)$/.exec(head);
+  const v2 = /^chunks:v2:([^:]+):([0-9]+)$/.exec(head);
   if (v2) {
     const [, generation, countText] = v2;
     const count = Number(countText);
@@ -53,7 +53,7 @@ export const secureStorageAdapter = {
       if (head === null) return null;
 
       // Versioned pointers are committed only after every chunk is written.
-      const v2 = /^chunks:v2:([^:]+):(\\d+)$/.exec(head);
+      const v2 = /^chunks:v2:([^:]+):([0-9]+)$/.exec(head);
       if (v2) {
         const [, generation, countText] = v2;
         const parts: string[] = [];
@@ -77,7 +77,7 @@ export const secureStorageAdapter = {
       return parts.join('');
     } catch (error) {
       console.warn('secureStorage.getItem failed:', error);
-      return null;
+      throw error;
     }
   },
 
@@ -127,7 +127,7 @@ export const secureStorageAdapter = {
         return;
       }
       const head = await SecureStore.getItemAsync(key);
-      const v2 = head ? /^chunks:v2:([^:]+):(\\d+)$/.exec(head) : null;
+      const v2 = head ? /^chunks:v2:([^:]+):([0-9]+)$/.exec(head) : null;
       if (v2) {
         const [, generation, countText] = v2;
         await Promise.all(Array.from({ length: Number(countText) }, (_, i) =>
