@@ -311,7 +311,7 @@ function buildRuleBasedAnswer(
   const { question, context } = request;
   const lang = request.language ?? detectLanguage(question);
   const sections: string[] = [];
-  const storedRecords = (context?.platformRecords ?? []).filter(record => /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast|Stored market prediction|Public stored market prediction|Recorded market price|Verified soil analysis|Saved plant-health record|Saved leaf-health analysis|Saved satellite observation|Registered sensor|Stored sensor reading|Cultivation |Farm |Plot )/.test(record));
+  const storedRecords = (context?.platformRecords ?? []).filter(record => /^(LIVE WEATHER FROM WEATHERAPI.COM|Recorded weather|Stored weather forecast|Stored market prediction|Public stored market prediction|Recorded market price|Verified soil analysis|Saved plant-health record|Saved leaf-health analysis|Saved satellite observation|Registered sensor|Stored sensor reading|Cultivation |Farm |Plot )/.test(record));
 
   if (agents.includes("soil") && context?.soil) {
     const soil = analyzeSoil(context.soil);
@@ -388,11 +388,11 @@ function buildRuleBasedAnswer(
         fr: `Météo disponible : ${context?.temperature ?? "—"}°C, pluie ${context?.rainfall ?? "—"} mm. Consultez la page météo pour des prévisions précises.`,
         en: `Available weather: ${context?.temperature ?? "—"}°C, rainfall ${context?.rainfall ?? "—"} mm. Use the weather page for accurate forecasts.`,
       }[lang]);
-    } else if (!storedRecords.some(record => /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast)/.test(record))) {
+    } else if (!storedRecords.some(record => /^(LIVE WEATHER FROM WEATHERAPI.COM|Recorded weather|Stored weather forecast)/.test(record))) {
       sections.push({
-        ar: "لا توجد بيانات طقس مسجلة متاحة في سياق هذه الإجابة. يمكن جلب توقع حقيقي من Open-Meteo عند توفر إحداثيات المزرعة.",
-        fr: "Aucune donnée météo enregistrée n'est disponible dans ce contexte. Une prévision réelle Open-Meteo peut être récupérée si les coordonnées de la ferme sont disponibles.",
-        en: "No stored weather record is available in this context. A real Open-Meteo forecast can be fetched when farm coordinates are available.",
+        ar: "لا توجد بيانات طقس مسجلة متاحة في سياق هذه الإجابة. يمكن جلب توقع حقيقي من WeatherAPI.com عند توفر إحداثيات المزرعة.",
+        fr: "Aucune donnée météo enregistrée n'est disponible dans ce contexte. Une prévision réelle WeatherAPI.com peut être récupérée si les coordonnées de la ferme sont disponibles.",
+        en: "No stored weather record is available in this context. A real WeatherAPI.com forecast can be fetched when farm coordinates are available.",
       }[lang]);
     }
   }
@@ -401,7 +401,7 @@ function buildRuleBasedAnswer(
     const relevantRecords = storedRecords.filter(record => {
       if (agents.includes("general")) return true;
       return (
-        (agents.includes("weather") && /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast|Registered sensor|Stored sensor reading|Saved satellite observation)/.test(record)) ||
+        (agents.includes("weather") && /^(LIVE WEATHER FROM WEATHERAPI.COM|Recorded weather|Stored weather forecast|Registered sensor|Stored sensor reading|Saved satellite observation)/.test(record)) ||
         (agents.includes("market") && /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(record)) ||
         (agents.includes("soil") && /^Verified soil analysis/.test(record)) ||
         (agents.includes("disease") && /^(Saved plant-health record|Saved leaf-health analysis)/.test(record)) ||
