@@ -1777,6 +1777,74 @@ export function capabilityMap(payload: AICapabilitiesResponse | null): Record<st
 }
 
 // ---------------------------------------------------------------------------
+// AgriVibe community — verified, persisted social interactions
+// ---------------------------------------------------------------------------
+
+export interface CommunityPost {
+  id: string;
+  author_id: string;
+  content: string;
+  category: string;
+  media_urls: string[];
+  created_at: string;
+  author: { id: string; full_name: string | null; role: string | null; governorate: string | null } | null;
+  likes_count: number;
+  comments_count: number;
+  liked_by_me: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  author?: { id: string; full_name: string | null; role: string | null; governorate: string | null } | null;
+}
+
+export async function getCommunityPosts(category = 'all'): Promise<{ data: CommunityPost[]; error: string | null }> {
+  const query = new URLSearchParams({ limit: '30', offset: '0' });
+  if (category !== 'all') query.set('category', category);
+  const res = await apiRequest<any>(`/api/community/posts?${query.toString()}`);
+  if (!res.data?.success || !Array.isArray(res.data?.data)) {
+    return { data: [], error: res.error || msg('apiUnavailable') };
+  }
+  return { data: res.data.data as CommunityPost[], error: null };
+}
+
+export async function createCommunityPost(content: string, category = 'general'): Promise<{ data: CommunityPost | null; error: string | null }> {
+  const res = await apiRequest<any>('/api/community/posts', {
+    method: 'POST',
+    body: JSON.stringify({ content, category }),
+  });
+  if (!res.data?.success || !res.data?.data) return { data: null, error: res.error || msg('apiUnavailable') };
+  return { data: res.data.data as CommunityPost, error: null };
+}
+
+export async function toggleCommunityPostLike(postId: string): Promise<{ liked: boolean | null; error: string | null }> {
+  const res = await apiRequest<any>(`/api/community/posts/${encodeURIComponent(postId)}/like`, { method: 'POST' });
+  if (!res.data?.success || typeof res.data?.data?.liked !== 'boolean') {
+    return { liked: null, error: res.error || msg('apiUnavailable') };
+  }
+  return { liked: res.data.data.liked, error: null };
+}
+
+export async function getCommunityComments(postId: string): Promise<{ data: CommunityComment[]; error: string | null }> {
+  const res = await apiRequest<any>(`/api/community/posts/${encodeURIComponent(postId)}/comments`);
+  if (!res.data?.success || !Array.isArray(res.data?.data)) return { data: [], error: res.error || msg('apiUnavailable') };
+  return { data: res.data.data as CommunityComment[], error: null };
+}
+
+export async function createCommunityComment(postId: string, content: string): Promise<{ data: CommunityComment | null; error: string | null }> {
+  const res = await apiRequest<any>(`/api/community/posts/${encodeURIComponent(postId)}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+  if (!res.data?.success || !res.data?.data) return { data: null, error: res.error || msg('apiUnavailable') };
+  return { data: res.data.data as CommunityComment, error: null };
+}
+
+// ---------------------------------------------------------------------------
 // Diagnostics
 // ---------------------------------------------------------------------------
 
