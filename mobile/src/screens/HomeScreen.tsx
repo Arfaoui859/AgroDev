@@ -34,6 +34,7 @@ import { LearningVideos } from '../components/home/LearningVideos';
 import { HomeNewsPreview } from '../components/home/HomeNewsPreview';
 import { SeasonAgenda } from '../components/home/SeasonAgenda';
 import { AcademySection } from '../components/home/AcademySection';
+import { HomeCommunityPreview } from '../components/home/HomeCommunityPreview';
 
 interface HomeScreenProps {
   onNavigateToService: (serviceId: string) => void;
@@ -474,6 +475,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
 
       {/* Featured real agricultural learning video, followed by more curated tutorials */}
       <LearningVideos onOpenAll={() => onNavigateToService('learning')} />
+
+      {/* Recent member discussions; only authenticated, persisted posts are shown */}
+      <HomeCommunityPreview
+        onOpenCommunity={() => onNavigateToService('community')}
+        onOpenProfile={() => onNavigateToTab('profile')}
+      />
 
       {/* Academy topics route to real video categories or existing service screens */}
       <AcademySection
