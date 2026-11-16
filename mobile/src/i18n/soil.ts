@@ -67,6 +67,12 @@ export interface SoilTranslations {
   waterPhLabel: string;
   targetCropLabel: string;
   targetCropHint: string;
+  previousCropLabel: string;
+  seasonLabel: string;
+  drainageLabel: string;
+  notesLabel: string;
+  helpSlope: string;
+  mSlope: string;
   nutrientUnitHint: string;
   textureHint: string;
   optionalSuffix: string;
@@ -327,6 +333,12 @@ const ar: SoilTranslations = {
   waterPhLabel: 'pH ماء الري',
   targetCropLabel: 'المحصول المستهدف (اختياري)',
   targetCropHint: 'اذكره لتحصل على خطة تصحيح مخصّصة له.',
+  previousCropLabel: 'المحصول السابق',
+  seasonLabel: 'الموسم الزراعي',
+  drainageLabel: 'حالة صرف التربة',
+  notesLabel: 'ملاحظات إضافية',
+  helpSlope: 'انحدار الأرض يؤثر في الجريان والتعرية؛ أدخل النسبة المقاسة إن توفرت.',
+  mSlope: 'انحدار الأرض',
   nutrientUnitHint: 'مثال: mg/kg، ppm، meq/100g — اذكره مع طريقة التحليل إن توفّرت.',
   textureHint: 'يجب إدخال الرمل والغرين والطين معاً وأن يكون مجموعها ≈ 100%.',
   optionalSuffix: 'اختياري',
@@ -579,6 +591,12 @@ const fr: SoilTranslations = {
   waterPhLabel: 'pH de l’eau d’irrigation',
   targetCropLabel: 'Culture cible (facultatif)',
   targetCropHint: 'Indiquez-la pour obtenir un plan de correction dédié.',
+  previousCropLabel: 'Culture précédente',
+  seasonLabel: 'Saison culturale',
+  drainageLabel: 'Drainage du sol',
+  notesLabel: 'Notes complémentaires',
+  helpSlope: 'La pente influence le ruissellement et l’érosion ; indiquez la valeur mesurée si disponible.',
+  mSlope: 'Pente du terrain',
   nutrientUnitHint: 'Ex. : mg/kg, ppm, meq/100g — précisez la méthode si connue.',
   textureHint: 'Sable, limon et argile doivent être saisis ensemble et totaliser ≈ 100 %.',
   optionalSuffix: 'facultatif',
@@ -831,6 +849,12 @@ const en: SoilTranslations = {
   waterPhLabel: 'Irrigation water pH',
   targetCropLabel: 'Target crop (optional)',
   targetCropHint: 'Name it to get a dedicated correction plan.',
+  previousCropLabel: 'Previous crop',
+  seasonLabel: 'Growing season',
+  drainageLabel: 'Soil drainage',
+  notesLabel: 'Additional notes',
+  helpSlope: 'Slope affects runoff and erosion; enter a measured value when available.',
+  mSlope: 'Land slope',
   nutrientUnitHint: 'e.g. mg/kg, ppm, meq/100g — add the method if known.',
   textureHint: 'Sand, silt and clay must be entered together and total ≈ 100%.',
   optionalSuffix: 'optional',
