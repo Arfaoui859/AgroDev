@@ -210,7 +210,7 @@ export const SoilReportView: React.FC<{ report: SoilReport }> = ({ report }) => 
         </Text>
         {report.soilCharacterization.texture.confidence ? (
           <Text style={[styles.tableEvidence, isRtl && rtlStyles.rtlText]}>
-            {s9.reportConfidence}: {report.soilCharacterization.texture.confidence}
+            {s9.reportConfidence}: {confidenceKey[report.soilCharacterization.texture.confidence] ?? report.soilCharacterization.texture.confidence}
           </Text>
         ) : null}
         {report.soilCharacterization.chemical.map((c, i) => (
