@@ -335,6 +335,7 @@ export interface ExtraTranslations {
   // Weather screen
   weatherSubtitle: string;
   weatherLiveBadge: string;
+  weatherCachedBadge: string;
   weatherHumidity: string;
   weatherRainToday: string;
   weatherWindSpeed: string;
@@ -840,14 +841,15 @@ const ar: ExtraTranslations = {
   soilBlankNote: 'الحقول الفارغة تُرسل كقياسات ناقصة؛ لا يُستبدل أي قياس بقيمة افتراضية.',
 
   // Weather screen
-  weatherSubtitle: 'بيانات حية مباشرة من محطات الرصد الجوي التونسية (Open-Meteo)',
-  weatherLiveBadge: 'بيانات حية',
+  weatherSubtitle: 'بيانات الطقس المباشرة من WeatherAPI.com',
+  weatherLiveBadge: 'بيانات مباشرة',
+  weatherCachedBadge: 'بيانات محفوظة مؤقتاً',
   weatherHumidity: 'الرطوبة',
   weatherRainToday: 'أمطار اليوم',
   weatherWindSpeed: 'سرعة الرياح',
-  weatherForecast: 'توقعات الأيام القادمة',
+  weatherForecast: 'توقعات الطقس لثلاثة أيام',
   weatherForecastEmpty: 'لا تتوفر توقعات يومية من مزوّد الطقس حالياً.',
-  weatherLoading: 'جاري جلب أحدث بيانات الرصد الجوي...',
+  weatherLoading: 'جاري جلب أحدث بيانات الطقس...',
   weatherUseMyLocation: 'استخدم موقعي',
   weatherLocating: 'جارٍ تحديد موقعك...',
   weatherLocationDenied: 'تم رفض إذن الموقع. اختر ولاية من القائمة.',
@@ -1340,12 +1342,13 @@ const fr: ExtraTranslations = {
   soilBlankNote: 'Les champs vides sont envoyés comme mesures manquantes ; aucune valeur par défaut n’est substituée.',
 
   // Weather screen
-  weatherSubtitle: 'Données en direct des stations météo tunisiennes (Open-Meteo)',
+  weatherSubtitle: 'Données météo en direct fournies par WeatherAPI.com',
   weatherLiveBadge: 'Données en direct',
+  weatherCachedBadge: 'Données temporairement en cache',
   weatherHumidity: 'Humidité',
   weatherRainToday: 'Pluie du jour',
   weatherWindSpeed: 'Vitesse du vent',
-  weatherForecast: 'Prévisions des prochains jours',
+  weatherForecast: 'Prévisions météo sur 3 jours',
   weatherForecastEmpty: 'Aucune prévision journalière fournie par le service météo pour le moment.',
   weatherLoading: 'Récupération des dernières données météo…',
   weatherUseMyLocation: 'Utiliser ma position',
@@ -1841,14 +1844,15 @@ const en: ExtraTranslations = {
   soilBlankNote: 'Blank fields are sent as missing measurements; no default value is substituted.',
 
   // Weather screen
-  weatherSubtitle: 'Live data from Tunisian weather stations (Open-Meteo)',
+  weatherSubtitle: 'Live weather data provided by WeatherAPI.com',
   weatherLiveBadge: 'Live data',
+  weatherCachedBadge: 'Temporarily cached data',
   weatherHumidity: 'Humidity',
   weatherRainToday: 'Rain today',
   weatherWindSpeed: 'Wind speed',
-  weatherForecast: 'Next-days forecast',
+  weatherForecast: '3-day weather forecast',
   weatherForecastEmpty: 'No daily forecast is provided by the weather service right now.',
-  weatherLoading: 'Fetching the latest weather data…',
+  weatherLoading: 'Fetching the latest WeatherAPI.com data…',
   weatherUseMyLocation: 'Use my location',
   weatherLocating: 'Locating you…',
   weatherLocationDenied: 'Location permission denied. Choose a governorate.',
