@@ -169,8 +169,12 @@ router.post("/ingest/market-prices", requireAdminAccess, async (req,res) => {
   const db = adminDb(res); if(!db) return;
   const sourceKey = text(req.body?.source_key,80), sourceName = text(req.body?.source_name,160);
   const sourceUrl = text(req.body?.source_url,1000), rows = req.body?.prices;
-  if(!sourceKey || !sourceName || !/^https:\/\//i.test(sourceUrl) || !Array.isArray(rows) || rows.length>1000)
+  const sourceType = text(req.body?.source_type,40) || "official_open_data";
+  const verificationStatus = text(req.body?.verification_status,30) || "unverified";
+  if(!sourceKey || !sourceName || !/^https:\/\//i.test(sourceUrl) || !Array.isArray(rows) || rows.length>1000 ||
+    !SOURCE_TYPES.has(sourceType) || !VERIFICATION_STATES.has(verificationStatus))
     return res.status(400).json({success:false,code:"INVALID_INGEST_PAYLOAD"});
+  await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_status:"running"});
   const records = [];
   for(const row of rows) {
     const crop = text(row?.crop_name,100), location = text(row?.market_location,160);
@@ -195,8 +199,10 @@ router.post("/ingest/products", requireAdminAccess, async (req,res) => {
   const db=adminDb(res); if(!db) return;
   const sourceKey=text(req.body?.source_key,80), sourceName=text(req.body?.source_name,160);
   const sourceUrl=text(req.body?.source_url,1000), rows=req.body?.products;
-  if(!sourceKey||!sourceName||!/^https:\/\//i.test(sourceUrl)||!Array.isArray(rows)||rows.length>1000)
+  const sourceType=text(req.body?.source_type,40)||"official_open_data";
+  if(!sourceKey||!sourceName||!/^https:\/\//i.test(sourceUrl)||!Array.isArray(rows)||rows.length>1000||!SOURCE_TYPES.has(sourceType))
     return res.status(400).json({success:false,code:"INVALID_INGEST_PAYLOAD"});
+  await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_status:"running"});
   const records=[];
   for(const p of rows){
     const productType=text(p?.product_type,40), tradeName=text(p?.trade_name,180), externalId=text(p?.external_id,180);
