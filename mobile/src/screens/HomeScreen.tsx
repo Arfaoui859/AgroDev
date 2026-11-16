@@ -236,11 +236,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
     >
       {/* Hero — gradient welcome surface with the live weather summary */}
       <View style={styles.heroShadow}>
-        <LinearGradient
-          colors={gradients.hero}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
+        <View style={styles.hero}
         >
           <View style={[styles.heroTopRow, isRtl && rtlStyles.rtlRow]}>
             <View style={styles.heroTextWrap}>
@@ -276,7 +272,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
               <MaterialCommunityIcons
                 name={weatherIconName(weather.icon) as keyof typeof MaterialCommunityIcons.glyphMap}
                 size={30}
-                color={colors.textInverse}
+                color={colors.primary}
               />
               <Text style={styles.heroTemp}>{weather.temperature}°</Text>
               <Text style={styles.heroCondition} numberOfLines={1}>
@@ -293,7 +289,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToService, onN
               </View>
             </View>
           ) : null}
-        </LinearGradient>
+        </View>
       </View>
 
       {!isOnline ? (
@@ -577,27 +573,29 @@ const styles = StyleSheet.create({
   heroShadow: {
     borderRadius: radius.xl,
     marginBottom: spacing.lg,
-    ...shadows.md,
   },
   hero: {
     borderRadius: radius.xl,
     padding: spacing.lg,
-    overflow: 'hidden',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
   heroTextWrap: flex1,
   heroBrandRow: { ...rowGapSm, marginBottom: spacing.xs },
   heroBrandText: { flexShrink: 1 },
-  heroBrandName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
-  heroBrandTagline: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandMuted, marginTop: 1 },
-  heroDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandSubtle, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
-  heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.textInverse, marginTop: 2 },
-  heroSub: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandMuted, marginTop: 2 },
+  heroBrandName: { fontSize: typography.fontSizes.base, lineHeight: typography.lineHeights.base, fontWeight: typography.fontWeights.bold, color: colors.text },
+  heroBrandTagline: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, marginTop: 1 },
+  heroDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textMuted, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
+  heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.text, marginTop: 2 },
+  heroSub: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, marginTop: 2 },
   heroAvatar: {
     width: 48,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.card,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.sm,
@@ -609,21 +607,21 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.onBrandBorder,
+    borderTopColor: colors.border,
   },
-  heroTemp: { fontSize: typography.fontSizes['2xl'], lineHeight: 34, fontWeight: typography.fontWeights.bold, color: colors.textInverse },
-  heroCondition: { flexShrink: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandStrong, fontWeight: typography.fontWeights.medium },
+  heroTemp: { fontSize: typography.fontSizes['2xl'], lineHeight: 34, fontWeight: typography.fontWeights.bold, color: colors.text },
+  heroCondition: { flexShrink: 1, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.textSecondary, fontWeight: typography.fontWeights.medium },
   heroWeatherSpacer: flex1,
   heroChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: colors.onBrandSurface,
+    backgroundColor: colors.surfaceSubtle,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
   },
-  heroChipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textInverse, fontWeight: typography.fontWeights.semibold },
+  heroChipText: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.semibold },
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
