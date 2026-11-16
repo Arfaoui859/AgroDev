@@ -48,6 +48,37 @@ describe('MarketplaceScreen', () => {
     await waitFor(() => expect(screen.getByText('network offline')).toBeTruthy());
   });
 
+  it('keeps market prices visible when seller listings fail independently', async () => {
+    mockGetMarketPrices.mockResolvedValueOnce({
+      data: {
+        prices: [
+          {
+            id: 'olive-independent',
+            cropName: 'Olive',
+            cropNameAr: 'زيتون',
+            pricePerKg: 3.2,
+            previousPricePerKg: null,
+            changePercent: null,
+            trend: 'unknown',
+            marketLocation: 'Sfax',
+            marketLocationAr: 'صفاقس',
+            qualityGrade: '—',
+            lastUpdated: '2026-11-16',
+          },
+        ],
+        meta: { provenance: 'database', isRealData: false },
+      },
+      error: null,
+      fromCache: false,
+    });
+    mockGetMarketplaceListings.mockRejectedValueOnce(new Error('seller store unavailable'));
+
+    await renderScreen();
+
+    await waitFor(() => expect(screen.getByText('زيتون')).toBeTruthy());
+    expect(screen.getByText('العروض غير متاحة حالياً')).toBeTruthy();
+  });
+
   it('shows an honest empty state when the platform has no recorded prices', async () => {
     mockGetMarketPrices.mockResolvedValueOnce({
       data: { prices: [], meta: { provenance: 'unavailable', isRealData: false } },
