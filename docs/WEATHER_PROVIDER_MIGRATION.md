@@ -14,7 +14,7 @@
 4. Add `WEATHERAPI_KEY` with the key value. Keep it server-side; do not use a `VITE_` or `EXPO_PUBLIC_` variable.
 5. Save changes and redeploy AgroDev-3.
 
-The code also accepts the legacy `WEATHER_API_KEY` name as a backward-compatible alias, but `WEATHERAPI_KEY` takes precedence.
+Use the dedicated `WEATHERAPI_KEY` variable only. Do not reuse a generic `WEATHER_API_KEY` that may belong to another provider.
 
 ## Reliability controls
 
