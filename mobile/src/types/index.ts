@@ -22,7 +22,7 @@ export type UserRole =
 
 /** How a value was produced. Never present one kind as another. */
 export type DataProvenance =
-  | 'live-observation'   // external live feed, e.g. Open-Meteo
+  | 'live-observation'   // external live feed, e.g. WeatherAPI.com
   | 'database'           // persisted platform record
   | 'trained-model'      // an actual ML model served by a microservice
   | 'llm'                // generative language model
@@ -133,7 +133,7 @@ export interface WeatherData {
   advice_fr: string;
   advice_en: string;
   forecast: WeatherDay[];
-  /** Provenance of the weather numbers (Open-Meteo = live observation). */
+  /** Provenance of the weather numbers (WeatherAPI.com = live observation). */
   meta: ProvenanceMeta;
 }
 
