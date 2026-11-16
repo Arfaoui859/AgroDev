@@ -24,6 +24,11 @@ BEGIN
     END IF;
   END LOOP;
 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='agricultural_product_catalog' AND column_name='registration_evidence_url')
+    OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='agricultural_product_catalog' AND column_name='registration_verified_at') THEN
+    RAISE EXCEPTION 'Agricultural catalog registration evidence columns are missing';
+  END IF;
+
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_listings' AND policyname='Public can read published marketplace listings') THEN
     RAISE EXCEPTION 'Public marketplace listing read policy is missing';
   END IF;
