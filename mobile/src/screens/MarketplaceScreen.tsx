@@ -21,7 +21,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { createMarketplaceInquiry, createMarketplaceListing, getAgriculturalCatalog, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { createMarketplaceInquiry, createMarketplaceListing, deleteMarketplaceListing, getAgriculturalCatalog, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
 import { AICapability, AgriculturalCatalogProduct, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import { useAICapabilities } from '../hooks/useAICapabilities';
 import * as ImagePicker from 'expo-image-picker';
@@ -43,6 +43,11 @@ export const MarketplaceScreen: React.FC = () => {
   const [activeInquiryListing, setActiveInquiryListing] = useState<string | null>(null);
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [editingListingId, setEditingListingId] = useState<string | null>(null);
+  const [editListingTitle, setEditListingTitle] = useState('');
+  const [editListingPrice, setEditListingPrice] = useState('');
+  const [editListingCategory, setEditListingCategory] = useState('');
+  const [editListingSaving, setEditListingSaving] = useState(false);
   const [catalog, setCatalog] = useState<AgriculturalCatalogProduct[]>([]);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
   const [sellerFormOpen, setSellerFormOpen] = useState(false);
@@ -223,6 +228,59 @@ export const MarketplaceScreen: React.FC = () => {
       return;
     }
     await loadPrices();
+  };
+
+  const beginEditListing = (listing: MarketplaceListing) => {
+    setEditingListingId(listing.id);
+    setEditListingTitle(listing.title);
+    setEditListingCategory(listing.category || '');
+    setEditListingPrice(listing.price == null ? '' : String(listing.price));
+  };
+
+  const saveListingEdits = async () => {
+    if (!editingListingId || editListingTitle.trim().length < 3 || !editListingCategory.trim()) {
+      Alert.alert(language === 'ar' ? 'أكمل الاسم والصنف' : language === 'fr' ? 'Titre et catégorie requis' : 'Title and category are required');
+      return;
+    }
+    if (editListingPrice.trim() && (!Number.isFinite(Number(editListingPrice)) || Number(editListingPrice) < 0)) {
+      Alert.alert(language === 'ar' ? 'السعر غير صحيح' : language === 'fr' ? 'Prix invalide' : 'Invalid price');
+      return;
+    }
+    setEditListingSaving(true);
+    try {
+      const result = await updateMarketplaceListing(editingListingId, {
+        title: editListingTitle.trim(), category: editListingCategory.trim(),
+        price: editListingPrice.trim() ? Number(editListingPrice) : null,
+      });
+      if (!result.success) throw new Error(result.error || 'LISTING_UPDATE_FAILED');
+      setEditingListingId(null);
+      await loadPrices();
+    } catch (e) {
+      Alert.alert(language === 'ar' ? 'تعذر تحديث العرض' : language === 'fr' ? 'Mise à jour impossible' : 'Could not update listing',
+        e instanceof Error ? e.message : '');
+    } finally {
+      setEditListingSaving(false);
+    }
+  };
+
+  const confirmDeleteListing = (id: string) => {
+    Alert.alert(
+      language === 'ar' ? 'حذف العرض؟' : language === 'fr' ? 'Supprimer l’annonce ?' : 'Delete listing?',
+      language === 'ar' ? 'لن يظهر هذا العرض في السوق بعد الحذف.' : language === 'fr' ? 'Cette annonce sera supprimée du marché.' : 'This listing will be removed from the marketplace.',
+      [
+        { text: language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel', style: 'cancel' },
+        { text: language === 'ar' ? 'حذف' : language === 'fr' ? 'Supprimer' : 'Delete', style: 'destructive', onPress: () => {
+          void (async () => {
+            const result = await deleteMarketplaceListing(id);
+            if (!result.success) {
+              Alert.alert(language === 'ar' ? 'تعذر الحذف' : language === 'fr' ? 'Suppression impossible' : 'Could not delete listing', result.error || '');
+              return;
+            }
+            await loadPrices();
+          })();
+        }},
+      ],
+    );
   };
 
   const sellerListings = listings.filter((item) => item.listingType !== 'harvest');
@@ -568,14 +626,39 @@ export const MarketplaceScreen: React.FC = () => {
                     {listing.status || 'published'} · {listing.price == null ? '—' : listing.price.toFixed(2) + ' TND'}
                   </Text>
                 </View>
-                {listing.status !== 'archived' ? (
-                  <Button title={language === 'ar' ? 'أرشفة' : language === 'fr' ? 'Archiver' : 'Archive'}
-                    onPress={() => archiveMyListing(listing.id)} variant="outline" size="sm" />
-                ) : null}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                  <Button title={language === 'ar' ? 'تعديل' : language === 'fr' ? 'Modifier' : 'Edit'}
+                    onPress={() => beginEditListing(listing)} variant="outline" size="sm" />
+                  {listing.status !== 'archived' ? (
+                    <Button title={language === 'ar' ? 'أرشفة' : language === 'fr' ? 'Archiver' : 'Archive'}
+                      onPress={() => archiveMyListing(listing.id)} variant="outline" size="sm" />
+                  ) : null}
+                  <Button title={language === 'ar' ? 'حذف' : language === 'fr' ? 'Supprimer' : 'Delete'}
+                    onPress={() => confirmDeleteListing(listing.id)} variant="outline" size="sm" />
+                </View>
               </View>
             ))}
           </View>
         )}
+        {editingListingId ? (
+          <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+            <TextInput value={editListingTitle} onChangeText={setEditListingTitle}
+              placeholder={language === 'ar' ? 'اسم العرض' : language === 'fr' ? 'Titre' : 'Listing title'}
+              style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+            <TextInput value={editListingCategory} onChangeText={setEditListingCategory}
+              placeholder={language === 'ar' ? 'الصنف' : language === 'fr' ? 'Catégorie' : 'Category'}
+              style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+            <TextInput value={editListingPrice} onChangeText={setEditListingPrice} keyboardType="decimal-pad"
+              placeholder={language === 'ar' ? 'السعر بالدينار' : language === 'fr' ? 'Prix en TND' : 'Price in TND'}
+              style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <Button title={language === 'ar' ? 'حفظ' : language === 'fr' ? 'Enregistrer' : 'Save changes'}
+                onPress={saveListingEdits} loading={editListingSaving} disabled={editListingSaving} size="md" />
+              <Button title={language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel'}
+                onPress={() => setEditingListingId(null)} variant="outline" size="md" />
+            </View>
+          </View>
+        ) : null}
       </Card>
 
       <Card variant="outlined" style={styles.listingsCard}>
