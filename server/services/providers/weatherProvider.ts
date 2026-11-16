@@ -69,6 +69,7 @@ export interface WeatherData {
     provider: string;
     observationTime: string | null;
     isRealData: true;
+    isStale?: boolean;
   };
 }
 
@@ -157,7 +158,7 @@ export interface WeatherRequest {
  * Results are cached for 8 minutes and concurrent requests for the same
  * rounded coordinates share one upstream call.
  */
-const weatherCache = new Map<string, { expiresAt: number; value: WeatherData }>();
+const weatherCache = new Map<string, { expiresAt: number; staleUntil: number; value: WeatherData }>();
 const weatherInflight = new Map<string, Promise<WeatherData>>();
 
 export async function getWeatherFromWeatherApi(
@@ -287,13 +288,26 @@ export async function getWeatherFromWeatherApi(
       },
     };
 
-    weatherCache.set(cacheKey, { expiresAt: Date.now() + 8 * 60 * 1000, value });
+    weatherCache.set(cacheKey, {
+      expiresAt: Date.now() + 8 * 60 * 1000,
+      staleUntil: Date.now() + 60 * 60 * 1000,
+      value,
+    });
     return value;
   })();
 
   weatherInflight.set(cacheKey, task);
   try {
     return await task;
+  } catch (error) {
+    const stale = weatherCache.get(cacheKey);
+    if (stale && stale.staleUntil > Date.now()) {
+      return {
+        ...stale.value,
+        source: { ...stale.value.source, isStale: true },
+      };
+    }
+    throw error;
   } finally {
     weatherInflight.delete(cacheKey);
   }
