@@ -31,6 +31,7 @@ export const ProfileScreen: React.FC = () => {
 
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
 
@@ -58,14 +59,18 @@ export const ProfileScreen: React.FC = () => {
   const handleTestConnection = async () => {
     setTestingConnection(true);
     setConnectionResult(null);
+    setConnectionStatus('unknown');
     try {
       const res = await apiRequest('/api/ping', { anonymous: true });
       if (res.isOnline) {
+        setConnectionStatus('online');
         setConnectionResult(x.profileServerReachable);
       } else {
+        setConnectionStatus('offline');
         setConnectionResult(res.error || x.stateOffline);
       }
     } catch (cause) {
+      setConnectionStatus('offline');
       setConnectionResult(cause instanceof Error ? cause.message : x.stateOffline);
     } finally {
       setTestingConnection(false);
@@ -77,6 +82,8 @@ export const ProfileScreen: React.FC = () => {
     try {
       await clearCache();
       setConnectionResult(x.profileCacheCleared);
+    } catch (cause) {
+      setConnectionResult(cause instanceof Error ? cause.message : x.stateError);
     } finally {
       setClearingCache(false);
     }
@@ -210,7 +217,7 @@ export const ProfileScreen: React.FC = () => {
             <View
               style={[
                 styles.statusIndicatorOnline,
-                { backgroundColor: connectionResult ? colors.success : colors.textMuted },
+                { backgroundColor: connectionStatus === 'online' ? colors.success : connectionStatus === 'offline' ? colors.danger : colors.textMuted },
               ]}
             />
             <View style={styles.statusTextContainer}>
