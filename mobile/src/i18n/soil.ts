@@ -148,6 +148,13 @@ export interface SoilTranslations {
   reportFirstAction: string;
   reportRetestWhen: string;
   reportNoSection: string;
+  reportImportance: string;
+  reportEvidence: string;
+  reportVerification: string;
+  statusGuidanceOnly: string;
+  statusNotAssessed: string;
+  candidatePossible: string;
+  candidateChecks: string;
 
   confidenceLow: string;
   confidenceModerate: string;
@@ -398,6 +405,13 @@ const ar: SoilTranslations = {
   reportFirstAction: 'أول إجراء',
   reportRetestWhen: 'موعد إعادة التحليل',
   reportNoSection: 'لا تتوفر عناصر في هذا القسم بسبب نقص البيانات.',
+  reportImportance: 'الأهمية',
+  reportEvidence: 'الدليل',
+  reportVerification: 'كيف نتحقق',
+  statusGuidanceOnly: 'إرشادات عامة فقط',
+  statusNotAssessed: 'غير مُقيَّم',
+  candidatePossible: 'ملائم مبدئياً',
+  candidateChecks: 'ملائم بعد التثبت',
 
   confidenceLow: 'منخفضة',
   confidenceModerate: 'متوسطة',
@@ -643,6 +657,13 @@ const fr: SoilTranslations = {
   reportFirstAction: 'Première action',
   reportRetestWhen: 'Quand réanalyser',
   reportNoSection: 'Aucun élément disponible dans cette section faute de données.',
+  reportImportance: 'Importance',
+  reportEvidence: 'Éléments justificatifs',
+  reportVerification: 'Vérification',
+  statusGuidanceOnly: 'Conseils généraux uniquement',
+  statusNotAssessed: 'Non évalué',
+  candidatePossible: 'Envisageable',
+  candidateChecks: 'Sous réserve de vérifications',
 
   confidenceLow: 'Faible',
   confidenceModerate: 'Modérée',
@@ -888,6 +909,13 @@ const en: SoilTranslations = {
   reportFirstAction: 'First action',
   reportRetestWhen: 'When to retest',
   reportNoSection: 'No items available in this section due to missing data.',
+  reportImportance: 'Importance',
+  reportEvidence: 'Evidence',
+  reportVerification: 'How to verify',
+  statusGuidanceOnly: 'Guidance only',
+  statusNotAssessed: 'Not assessed',
+  candidatePossible: 'Potentially suitable',
+  candidateChecks: 'Suitable subject to checks',
 
   confidenceLow: 'Low',
   confidenceModerate: 'Moderate',
