@@ -97,7 +97,10 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
   }, [selectedFarm]);
 
   const buildContext = (): SoilToCropContext => ({
-    fieldId: selectedField?.id,
+    // Only use the persisted-plot recommendation endpoint when the detailed
+    // soil report was actually saved. Otherwise pass the entered measurements
+    // to the crop engine instead of sending it to a plot with no saved analysis.
+    fieldId: report?.persisted ? selectedField?.id : undefined,
     farmId: selectedFarm?.id,
     farmName: selectedFarm?.name,
     fieldName: selectedField?.name,
