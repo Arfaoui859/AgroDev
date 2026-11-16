@@ -442,11 +442,27 @@ async function buildImageForm(options: ImageUploadOptions): Promise<FormData> {
   const form = new FormData();
   const name = options.fileName || `plant_${Date.now()}.jpg`;
   const type = options.mimeType || 'image/jpeg';
-  form.append('file', {
-    uri: Platform.OS === 'ios' ? options.imageUri.replace('file://', '') : options.imageUri,
-    name,
-    type,
-  } as any);
+
+  if (Platform.OS === 'web') {
+    // React Native's { uri, name, type } upload object is not understood by
+    // browser FormData. Expo Web must send a real Blob/File or Multer receives
+    // "[object Object]" instead of an image and rejects the request.
+    const response = await fetch(options.imageUri);
+    if (!response.ok) throw new Error('Unable to read the selected plant image');
+    const blob = await response.blob();
+    const uploadBlob = blob.type ? blob : new Blob([blob], { type });
+    if (!uploadBlob.type.startsWith('image/')) {
+      throw new Error('The selected file is not a supported image');
+    }
+    form.append('file', uploadBlob, name);
+  } else {
+    form.append('file', {
+      uri: Platform.OS === 'ios' ? options.imageUri.replace('file://', '') : options.imageUri,
+      name,
+      type,
+    } as any);
+  }
+
   if (options.cropType) form.append('plant_type', options.cropType);
   if (options.plantPart) form.append('plant_part', options.plantPart);
   if (options.symptoms) form.append('symptoms', options.symptoms);
