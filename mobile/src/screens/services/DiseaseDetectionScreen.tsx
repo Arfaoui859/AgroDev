@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { actionsRow, cardPad, flex1, rowWrapSm, screenStyles, stackMd, stackTopMd, stackedCard } from '../../theme/layout';
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,8 +10,6 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { Chip } from '../../components/ui/Chip';
-import { IconChip } from '../../components/ui/IconChip';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { LimitationsNotice } from '../../components/ui/LimitationsNotice';
@@ -33,22 +31,6 @@ interface DiseaseDetectionScreenProps {
   startWithCamera?: boolean;
 }
 
-const CROP_CHOICES = [
-  { id: 'olive', labelKey: 'cropOlive', icon: 'tree' },
-  { id: 'tomato', labelKey: 'cropTomato', icon: 'food-apple' },
-  { id: 'wheat', labelKey: 'cropWheat', icon: 'barley' },
-  { id: 'citrus', labelKey: 'cropCitrus', icon: 'fruit-citrus' },
-  { id: 'dates', labelKey: 'cropDates', icon: 'palm-tree' },
-  { id: 'potato', labelKey: 'cropPotato', icon: 'circle-slice-8' },
-] as const;
-
-const PART_CHOICES = [
-  { id: 'leaves', labelKey: 'partLeaves' },
-  { id: 'fruit', labelKey: 'partFruit' },
-  { id: 'stem', labelKey: 'partStem' },
-  { id: 'root', labelKey: 'partRoot' },
-] as const;
-
 /**
  * Plant disease detection. The image bytes are uploaded to the gateway's real
  * image-diagnosis endpoint. When no approved vision model is configured the
@@ -60,9 +42,6 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
 
   const [showScanner, setShowScanner] = useState(startWithCamera);
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [selectedCrop, setSelectedCrop] = useState(startWithCamera ? '' : 'olive');
-  const [selectedPart, setSelectedPart] = useState('leaves');
-  const [symptomsInput, setSymptomsInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiseaseDiagnosisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,9 +85,6 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
         imageUri: prepared.uri,
         mimeType: prepared.mimeType,
         fileName: prepared.fileName,
-        cropType: selectedCrop,
-        plantPart: selectedPart,
-        symptoms: symptomsInput || undefined,
       });
 
       if (res.unavailable) {
@@ -139,30 +115,13 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
   if (showScanner) {
     return (
       <PlantScanner
-        cropTitle={x.diseaseStepCrop}
-        partTitle={x.diseaseStepPart}
-        cropOptions={CROP_CHOICES.map((c) => ({ id: c.id, label: x[c.labelKey] }))}
-        selectedCrop={selectedCrop}
-        onSelectCrop={setSelectedCrop}
-        partOptions={PART_CHOICES.map((p) => ({ id: p.id, label: x[p.labelKey] }))}
-        selectedPart={selectedPart}
-        onSelectPart={setSelectedPart}
         onClose={() => {
           setShowScanner(false);
           if (startWithCamera && !imageUri) onBack();
         }}
-        onSubmit={async ({ uri, mimeType, fileName, symptoms }) => {
+        onSubmit={async ({ uri, mimeType, fileName }) => {
           try {
-            // PlantScanner already prepares/compresses the image before calling
-            // this callback; prepare it once to avoid duplicate native work.
-            const res = await diagnosePlantDisease({
-              imageUri: uri,
-              mimeType,
-              fileName,
-              cropType: selectedCrop || undefined,
-              plantPart: selectedPart,
-              symptoms: symptoms || symptomsInput || undefined,
-            });
+            const res = await diagnosePlantDisease({ imageUri: uri, mimeType, fileName });
             if (res.data) {
               setImageUri(uri);
               setResult(res.data);
@@ -182,8 +141,7 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
             return { data: null, error: x.stateError, unavailable: false };
           }
         }}
-      />
-    );
+      />;
   }
 
   return (
@@ -243,49 +201,6 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
           </View>
         )}
       </Card>
-
-      <View style={styles.section}>
-        <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.diseaseStepCrop}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.cropsScroll, isRtl && rtlStyles.rtlRow]}>
-          {CROP_CHOICES.map((c) => (
-            <IconChip
-              key={c.id}
-              icon={c.icon as any}
-              label={x[c.labelKey]}
-              selected={selectedCrop === c.id}
-              onPress={() => setSelectedCrop(c.id)}
-              iconSize={18}
-            />
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.diseaseStepPart}</Text>
-        <View style={[styles.partsRow, isRtl && rtlStyles.rtlRow]}>
-          {PART_CHOICES.map((p) => (
-            <Chip
-              key={p.id}
-              label={x[p.labelKey]}
-              selected={selectedPart === p.id}
-              onPress={() => setSelectedPart(p.id)}
-            />
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.stepHeading, isRtl && rtlStyles.rtlText]}>{x.scannerSymptomsLabel}</Text>
-        <TextInput
-          style={[styles.symptomsInput, isRtl && rtlStyles.rtlText]}
-          placeholder={x.scannerSymptomsPlaceholder}
-          placeholderTextColor={colors.textMuted}
-          value={symptomsInput}
-          onChangeText={setSymptomsInput}
-          multiline
-          accessibilityLabel={x.scannerSymptomsLabel}
-        />
-      </View>
 
       <Button
         title={loading ? t.analyzing : x.diseaseAnalyzeButton}
@@ -423,19 +338,6 @@ const styles = StyleSheet.create({
   galleryBtn: { backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: colors.border },
   actionPickText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, fontWeight: typography.fontWeights.bold, textAlign: 'center', lineHeight: typography.lineHeights.xs },
   section: stackMd,
-  cropsScroll: { gap: spacing.sm, paddingVertical: spacing.xs },
-  partsRow: rowWrapSm,
-  symptomsInput: {
-    minHeight: 80,
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
-    color: colors.text,
-    textAlignVertical: 'top',
-  },
   resultCard: cardPad,
   resultTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
   resultDiseaseHeader: flex1,
