@@ -483,6 +483,25 @@ export interface MarketplaceListing {
   location?: string | null;
   quantity?: number | null;
   imageUrl?: string | null;
+  listingType?: 'agricultural_input' | 'equipment' | 'agricultural_product' | 'harvest' | 'livestock' | 'other';
+  expectedHarvestDate?: string | null;
+  harvestWindowEnd?: string | null;
+  governorate?: string | null;
+  description?: string | null;
+}
+
+export interface AgriculturalCatalogProduct {
+  id: string;
+  productType: 'pesticide' | 'fertilizer' | 'seed' | 'seedling' | 'soil_amendment' | 'animal_input' | 'other';
+  tradeName: string;
+  activeIngredient?: string | null;
+  composition?: string | null;
+  manufacturer?: string | null;
+  registrationNumber?: string | null;
+  registrationStatus: 'unverified' | 'registered_tunisia' | 'expired' | 'prohibited' | 'not_applicable';
+  targetCrops: string[];
+  sourceName: string;
+  sourceUrl?: string | null;
 }
 
 export interface MarketplaceResult {
