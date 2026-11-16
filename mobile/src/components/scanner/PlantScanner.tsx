@@ -27,6 +27,7 @@ import { prepareImageForUpload } from '../../utils/image';
 import { anyContainsArabic } from '../../utils/text';
 import { severityLabel } from '../../utils/severity';
 import { DiseaseDiagnosisResult } from '../../types';
+import { SaveDiagnosisToFarm } from '../projects/SaveDiagnosisToFarm';
 
 type Phase = 'capture' | 'review' | 'analyzing' | 'result' | 'unavailable' | 'error';
 
@@ -39,6 +40,14 @@ interface PlantScannerProps {
     symptoms?: string;
   }) => Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }>;
   onClose: () => void;
+  cropOptions: { id: string; label: string }[];
+  selectedCrop: string;
+  onSelectCrop: (id: string) => void;
+  partOptions: { id: string; label: string }[];
+  selectedPart: string;
+  onSelectPart: (id: string) => void;
+  cropTitle: string;
+  partTitle: string;
 }
 
 /**
@@ -49,7 +58,7 @@ interface PlantScannerProps {
  * honest "not configured" state). It never simulates a live AI scan and never
  * fabricates a diagnosis.
  */
-export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose }) => {
+export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose, cropOptions, selectedCrop, onSelectCrop, partOptions, selectedPart, onSelectPart, cropTitle, partTitle }) => {
   const { x, isRtl, isArabic, language } = useLanguage();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -232,6 +241,36 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
               </TouchableOpacity>
             </View>
           ) : null}
+          <View style={styles.contextSelectors}>
+            <Text style={styles.contextTitle}>{cropTitle}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contextRow}>
+              {cropOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.id}
+                  onPress={() => onSelectCrop(option.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedCrop === option.id }}
+                  style={[styles.contextChip, selectedCrop === option.id && styles.contextChipActive]}
+                >
+                  <Text style={[styles.contextChipText, selectedCrop === option.id && styles.contextChipTextActive]}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Text style={styles.contextTitle}>{partTitle}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contextRow}>
+              {partOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.id}
+                  onPress={() => onSelectPart(option.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedPart === option.id }}
+                  style={[styles.contextChip, selectedPart === option.id && styles.contextChipActive]}
+                >
+                  <Text style={[styles.contextChipText, selectedPart === option.id && styles.contextChipTextActive]}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
           <View style={[styles.controls, isRtl && rtlStyles.rtlRow]}>
             <TouchableOpacity
               onPress={onClose}
@@ -351,6 +390,7 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
           <Text style={styles.severity}>{`${x.scannerSeverityLabel}: ${severityLabel(result.severity, x)}`}</Text>
         ) : null}
 
+        {result?.descriptionAr ? <Text style={styles.resultDescription}>{result.descriptionAr}</Text> : null}
         {resultIsArabicOnly ? <Text style={styles.arabicNote}>{x.arabicOnlyNote}</Text> : null}
       </Card>
 
@@ -363,6 +403,8 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
       {result?.prevention?.length ? (
         <Section icon="shield-check-outline" title={x.scannerSectionPrevention} items={result.prevention} />
       ) : null}
+
+      {result?.imageUri ? <SaveDiagnosisToFarm result={result} /> : null}
 
       <LimitationsNotice
         title={x.diseaseLimitationsTitle}
@@ -499,6 +541,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.scrimLight,
+  },
+  contextSelectors: {
+    width: '100%',
+    gap: 4,
+    paddingVertical: spacing.xs,
+  },
+  contextTitle: {
+    color: colors.textInverse,
+    fontSize: typography.fontSizes.xs,
+    lineHeight: typography.lineHeights.xs,
+    fontWeight: typography.fontWeights.semibold,
+    marginTop: 2,
+    textShadowColor: colors.scrim,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  contextRow: { flexDirection: 'row', gap: 6, paddingVertical: 3 },
+  contextChip: {
+    minHeight: 32,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.onBrandBorder,
+    backgroundColor: colors.scrim,
+    justifyContent: 'center',
+  },
+  contextChipActive: { backgroundColor: colors.primary, borderColor: colors.onBrandSubtle },
+  contextChipText: { color: colors.textInverse, fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs },
+  contextChipTextActive: { fontWeight: typography.fontWeights.bold },
+  resultDescription: {
+    fontSize: typography.fontSizes.sm,
+    lineHeight: typography.lineHeights.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
   },
   capturePrompt: {
     color: colors.textInverse,
