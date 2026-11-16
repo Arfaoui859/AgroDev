@@ -161,28 +161,37 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpen
     if (!content || publishing) return;
     setPublishing(true);
     setInteractionError(null);
-    const result = await createCommunityPost(content, category === 'all' ? 'general' : category);
-    if (result.data) {
-      setPosts((current) => [result.data as CommunityPost, ...current]);
-      setDraft('');
-    } else {
-      setInteractionError(result.error || text.loadError);
+    try {
+      const result = await createCommunityPost(content, category === 'all' ? 'general' : category);
+      if (result.data) {
+        setPosts((current) => [result.data as CommunityPost, ...current]);
+        setDraft('');
+      } else {
+        setInteractionError(result.error || text.loadError);
+      }
+    } catch {
+      setInteractionError(text.loadError);
+    } finally {
+      setPublishing(false);
     }
-    setPublishing(false);
   };
 
   const toggleLike = async (post: CommunityPost) => {
     setInteractionError(null);
-    const result = await toggleCommunityPostLike(post.id);
-    if (result.liked === null) {
-      setInteractionError(result.error || text.loadError);
-      return;
+    try {
+      const result = await toggleCommunityPostLike(post.id);
+      if (result.liked === null) {
+        setInteractionError(result.error || text.loadError);
+        return;
+      }
+      setPosts((current) => current.map((item) => item.id === post.id ? {
+        ...item,
+        liked_by_me: result.liked as boolean,
+        likes_count: Math.max(0, item.likes_count + (result.liked ? 1 : -1)),
+      } : item));
+    } catch {
+      setInteractionError(text.loadError);
     }
-    setPosts((current) => current.map((item) => item.id === post.id ? {
-      ...item,
-      liked_by_me: result.liked as boolean,
-      likes_count: Math.max(0, item.likes_count + (result.liked ? 1 : -1)),
-    } : item));
   };
 
   const toggleComments = async (postId: string) => {
@@ -193,9 +202,13 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpen
     }
     setExpandedPost(postId);
     setInteractionError(null);
-    const result = await getCommunityComments(postId);
-    if (result.error) setInteractionError(result.error);
-    else setComments((current) => ({ ...current, [postId]: result.data }));
+    try {
+      const result = await getCommunityComments(postId);
+      if (result.error) setInteractionError(result.error);
+      else setComments((current) => ({ ...current, [postId]: result.data }));
+    } catch {
+      setInteractionError(text.loadError);
+    }
   };
 
   const sendComment = async (postId: string) => {
@@ -203,15 +216,20 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpen
     if (!content || sendingComment) return;
     setSendingComment(true);
     setInteractionError(null);
-    const result = await createCommunityComment(postId, content);
-    if (result.data) {
-      setComments((current) => ({ ...current, [postId]: [...(current[postId] ?? []), result.data as CommunityComment] }));
-      setPosts((current) => current.map((post) => post.id === postId ? { ...post, comments_count: post.comments_count + 1 } : post));
-      setCommentDraft('');
-    } else {
-      setInteractionError(result.error || text.loadError);
+    try {
+      const result = await createCommunityComment(postId, content);
+      if (result.data) {
+        setComments((current) => ({ ...current, [postId]: [...(current[postId] ?? []), result.data as CommunityComment] }));
+        setPosts((current) => current.map((post) => post.id === postId ? { ...post, comments_count: post.comments_count + 1 } : post));
+        setCommentDraft('');
+      } else {
+        setInteractionError(result.error || text.loadError);
+      }
+    } catch {
+      setInteractionError(text.loadError);
+    } finally {
+      setSendingComment(false);
     }
-    setSendingComment(false);
   };
 
   return (
