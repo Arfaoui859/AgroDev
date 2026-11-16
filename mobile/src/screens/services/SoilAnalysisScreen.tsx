@@ -139,48 +139,50 @@ export const SoilAnalysisScreen: React.FC<SoilAnalysisScreenProps> = ({ onBack, 
     setReport(null);
     setRuleResult(null);
 
-    // Preferred path: the professional advisory report (persisted when a plot
-    // is selected). Only available to a signed-in caller.
-    if (isAuthenticated) {
-      const detailed = await analyzeSoilDetailed(input);
-      if (detailed.data) {
-        setReport(detailed.data);
+    try {
+      // Prefer the detailed advisory report. The API persists it when a
+      // selected plot belongs to the authenticated account.
+      if (isAuthenticated) {
+        const detailed = await analyzeSoilDetailed(input);
+        if (detailed.data) {
+          setReport(detailed.data);
+          void addHistoryEntry({
+            type: 'soil',
+            title: selectedField ? `${s9.reportReportOf}: ${selectedField.name}` : t.soilAnalysisName,
+            summary: detailed.data.report.executiveSummary.slice(0, 120),
+            badge: provenanceLabel(detailed.data.meta.provenance, language),
+            badgeVariant: 'primary',
+          });
+          setStep(2);
+          return;
+        }
+        if (!detailed.unavailable) {
+          setError(detailed.error || x.stateError);
+          return;
+        }
+        // Only an explicitly unavailable detailed service may use the
+        // deterministic fallback; real validation/server errors stay visible.
+      }
+
+      const fallback = await analyzeSoil(toRuleBasedInput(input));
+      if (fallback.data) {
+        setRuleResult(fallback.data);
         void addHistoryEntry({
           type: 'soil',
           title: selectedField ? `${s9.reportReportOf}: ${selectedField.name}` : t.soilAnalysisName,
-          summary: detailed.data.report.executiveSummary.slice(0, 120),
-          badge: provenanceLabel(detailed.data.meta.provenance, language),
+          summary: fallback.data.fertilityLevel,
+          badge: provenanceLabel(fallback.data.meta.provenance, language),
           badgeVariant: 'primary',
         });
         setStep(2);
-        setLoading(false);
-        return;
+      } else {
+        setError(fallback.error || x.stateError);
       }
-      if (!detailed.unavailable) {
-        // A real failure (validation/schema) — surface it rather than silently
-        // degrading, so the user can correct their input.
-        setError(detailed.error || x.stateError);
-        setLoading(false);
-        return;
-      }
-      // unavailable -> fall through to the rule-based engine.
+    } catch {
+      setError(x.stateError);
+    } finally {
+      setLoading(false);
     }
-
-    const fallback = await analyzeSoil(toRuleBasedInput(input));
-    if (fallback.data) {
-      setRuleResult(fallback.data);
-      void addHistoryEntry({
-        type: 'soil',
-        title: t.soilAnalysisName,
-        summary: fallback.data.fertilityLevel,
-        badge: provenanceLabel(fallback.data.meta.provenance, language),
-        badgeVariant: 'primary',
-      });
-      setStep(2);
-    } else {
-      setError(fallback.error || x.stateError);
-    }
-    setLoading(false);
   };
 
   const canContinueFromPlot = !!selectedField || !!selectedFarm;
