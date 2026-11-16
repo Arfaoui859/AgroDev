@@ -74,6 +74,7 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId, cultivat
   const [formError, setFormError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
+  const [expandedTaskIds, setExpandedTaskIds] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -302,6 +303,28 @@ export const ProjectTracker: React.FC<ProjectTrackerProps> = ({ farmId, cultivat
                         />
                         {task.due_date ? <Text style={styles.due}>{task.due_date}</Text> : null}
                       </View>
+                      {task.description?.trim() ? (
+                        <View style={styles.descriptionWrap}>
+                          <Text
+                            style={[styles.taskDescription, isRtl && rtlStyles.rtlText]}
+                            numberOfLines={expandedTaskIds[task.id] ? undefined : 3}
+                          >
+                            {task.description}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => setExpandedTaskIds((current) => ({ ...current, [task.id]: !current[task.id] }))}
+                            accessibilityRole="button"
+                            style={styles.detailsToggle}
+                          >
+                            <Text style={styles.detailsToggleText}>
+                              {expandedTaskIds[task.id]
+                                ? (language === 'ar' ? 'عرض أقل' : language === 'fr' ? 'Voir moins' : 'Show less')
+                                : (language === 'ar' ? 'التفاصيل كاملة' : language === 'fr' ? 'Voir les détails' : 'View details')}
+                            </Text>
+                            <MaterialCommunityIcons name={expandedTaskIds[task.id] ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primaryDark} />
+                          </TouchableOpacity>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 );
@@ -340,6 +363,10 @@ const styles = StyleSheet.create({
   taskBody: { flex: 1 },
   taskTitle: titleSmSemibold,
   taskTitleDone: { textDecorationLine: 'line-through', color: colors.textMuted },
+  descriptionWrap: { marginTop: spacing.xs, backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, padding: spacing.sm, gap: spacing.xs },
+  taskDescription: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
+  detailsToggle: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 32 },
+  detailsToggleText: { color: colors.primaryDark, fontSize: 12, fontWeight: '600' },
   taskMeta: { ...rowGapSm, flexWrap: 'wrap', marginTop: spacing.xs },
   due: { ...subtitleMetaSm, color: colors.textMuted },
   provenance: { marginTop: spacing.sm },
