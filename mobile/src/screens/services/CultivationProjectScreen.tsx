@@ -4,7 +4,7 @@ import { flex1, screenStyles, sectionHeadRow, spaceBetween, stackedCard } from '
 import { rtlStyles } from '../../theme/rtl';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
-import { mutedCaption, mutedCaptionTop, subtitleMeta, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
+import { mutedCaption, subtitleMeta, titleBaseFlex, titleSmSemibold } from '../../theme/typographyStyles';
 import { useLanguage } from '../../context/LanguageContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -234,7 +234,7 @@ export const CultivationProjectScreen: React.FC<CultivationProjectScreenProps> =
     return () => {
       active = false;
     };
-  }, [created?.id, created?.farm_id, reportLoaded, tasks, s9]);
+  }, [created, reportLoaded, tasks, s9]);
 
   const handleCreate = async () => {
     const parsedArea = Number(area.replace(',', '.'));
