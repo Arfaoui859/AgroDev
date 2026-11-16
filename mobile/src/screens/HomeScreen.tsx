@@ -621,9 +621,10 @@ const ActionTile: React.FC<{
 const styles = StyleSheet.create({
   // Premium brand hero: a deep green gradient anchors the welcome and live
   // weather summary while translucent surfaces preserve text contrast.
+  content: { paddingBottom: spacing['3xl'] },
   heroShadow: {
     borderRadius: radius.xl,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   hero: {
     borderRadius: radius.xl,
@@ -641,9 +642,31 @@ const styles = StyleSheet.create({
   heroDate: { fontSize: typography.fontSizes.xs, lineHeight: typography.lineHeights.xs, color: colors.onBrandFaint, fontWeight: typography.fontWeights.medium, textTransform: 'capitalize' },
   heroTitle: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.textInverse, marginTop: 2 },
   heroSub: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, color: colors.onBrandMuted, marginTop: 2 },
+  heroActions: { flexDirection: 'column', alignItems: 'center', gap: spacing.sm },
+  heroIconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.full,
+    backgroundColor: colors.onBrandSurface,
+    borderWidth: 1,
+    borderColor: colors.onBrandBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroNotificationDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 8,
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.warning,
+    borderWidth: 1,
+    borderColor: colors.brandDeep,
+  },
   heroAvatar: {
-    width: 48,
-    height: 48,
+    width: 42,
+    height: 42,
     borderRadius: radius.full,
     backgroundColor: colors.onBrandSurface,
     borderWidth: 1,
