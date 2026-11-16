@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TextInput,
   Alert,
+  Image,
 } from 'react-native';
 import { cardBottomRow, cardPad, flex1, gapSm, rowGapXs, rowWrapSm, screenStyles, spaceBetween, spaceBetweenTopSm, stackSm, stackTopSm } from '../../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -18,8 +19,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Chip } from '../../components/ui/Chip';
-import { getFarms, getFields, createField, createFarm } from '../../api/client';
-import { Farm, Field, ProvenanceMeta } from '../../types';
+import { analyzeFarmSatelliteNdvi, getFarms, getFields, createField, createFarm, saveFarmBoundaries } from '../../api/client';
+import { Farm, FarmBoundary, Field, ProvenanceMeta, SatelliteNdviObservation } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { StateView } from '../../components/ui/StateView';
 import { ProvenanceBar } from '../../components/ui/ProvenanceBar';
@@ -27,6 +28,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader';
 import { ServiceHeader } from '../../components/ui/ServiceHeader';
 import { StateCard } from '../../components/ui/StateCard';
 import { GOVERNORATES } from '../../utils/governorates';
+import * as Location from 'expo-location';
 
 interface FarmManagementScreenProps {
   onBack: () => void;
@@ -56,6 +58,12 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
   const [farmSize, setFarmSize] = useState('');
   const [farmSoil, setFarmSoil] = useState(x.farmDefaultSoil);
   const [savingFarm, setSavingFarm] = useState(false);
+  const [boundaryPoints, setBoundaryPoints] = useState<{ latitude: number; longitude: number; accuracy?: number | null }[]>([]);
+  const [savingBoundary, setSavingBoundary] = useState(false);
+  const [satelliteLoading, setSatelliteLoading] = useState(false);
+  const [satelliteObservations, setSatelliteObservations] = useState<SatelliteNdviObservation[]>([]);
+  const [satelliteError, setSatelliteError] = useState<string | null>(null);
+  const [satelliteProvider, setSatelliteProvider] = useState<string | undefined>(undefined);
 
   const loadFarmData = React.useCallback(async () => {
     setLoading(true);
@@ -155,6 +163,69 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
     }
   };
 
+  const recordBoundaryPoint = async () => {
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(x.notice, language === 'ar' ? 'يلزم السماح بالموقع لتسجيل نقاط حدود الأرض.' : language === 'fr' ? 'Autorisez la localisation pour enregistrer les limites.' : 'Location permission is required to record field boundary points.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.BestForNavigation });
+      setBoundaryPoints(prev => [...prev, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      }]);
+    } catch (e) {
+      Alert.alert(x.stateError, e instanceof Error ? e.message : 'Could not read GPS position.');
+    }
+  };
+
+  const saveBoundary = async () => {
+    const farm = farms[0];
+    if (!farm) return;
+    if (boundaryPoints.length < 3) {
+      Alert.alert(x.notice, language === 'ar' ? 'سجّل 3 نقاط على الأقل حول محيط الأرض.' : language === 'fr' ? 'Enregistrez au moins 3 points autour de la parcelle.' : 'Record at least 3 perimeter points.');
+      return;
+    }
+    const ring = boundaryPoints.map(p => [p.longitude, p.latitude]);
+    ring.push([...ring[0]]);
+    const geometry: FarmBoundary = { type: 'Polygon', coordinates: [ring] };
+    setSavingBoundary(true);
+    try {
+      const result = await saveFarmBoundaries(farm.id, geometry);
+      if (!result.data) throw new Error(result.error || 'BOUNDARY_SAVE_FAILED');
+      setFarms(prev => prev.map(item => item.id === farm.id ? { ...item, boundaries: result.data } : item));
+      setBoundaryPoints([]);
+      setSatelliteObservations([]);
+      Alert.alert(x.successTitle, language === 'ar' ? 'تم حفظ حدود الأرض.' : language === 'fr' ? 'Limites enregistrées.' : 'Farm boundary saved.');
+    } catch (e) {
+      Alert.alert(x.stateError, e instanceof Error ? e.message : 'Could not save farm boundary.');
+    } finally {
+      setSavingBoundary(false);
+    }
+  };
+
+  const runSatelliteAnalysis = async () => {
+    const farm = farms[0];
+    if (!farm?.boundaries) {
+      Alert.alert(x.notice, language === 'ar' ? 'احفظ حدود الأرض أولاً.' : language === 'fr' ? 'Enregistrez d’abord les limites.' : 'Save the farm boundary first.');
+      return;
+    }
+    setSatelliteLoading(true);
+    setSatelliteError(null);
+    try {
+      const result = await analyzeFarmSatelliteNdvi(farm.id, 90);
+      if (result.error) throw new Error(result.error);
+      setSatelliteObservations(result.data);
+      setSatelliteProvider(result.provider);
+    } catch (e) {
+      setSatelliteError(e instanceof Error ? e.message : 'SATELLITE_ANALYSIS_FAILED');
+    } finally {
+      setSatelliteLoading(false);
+    }
+  };
+
   return (
     <ScrollView
       style={screenStyles.container}
@@ -219,6 +290,80 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
           </View>
         </Card>
       )}
+
+      {isAuthenticated && farms[0] ? (
+        <Card variant="elevated" style={{ marginBottom: spacing.md, padding: spacing.md, gap: spacing.sm }}>
+          <View style={[styles.farmHeader, isRtl && rtlStyles.rtlRow]}>
+            <View style={styles.farmHeaderInfo}>
+              <Text style={[styles.formTitle, isRtl && rtlStyles.rtlText]}>
+                {language === 'ar' ? 'صورة الأرض بالأقمار الصناعية' : language === 'fr' ? 'Vue satellite de la parcelle' : 'Satellite view of your farm'}
+              </Text>
+              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                {language === 'ar' ? 'سجّل نقاط محيط الأرض عبر GPS، ثم احفظ الحدود.' : language === 'fr' ? 'Enregistrez le périmètre avec le GPS puis sauvegardez-le.' : 'Record perimeter points with GPS, then save the boundary.'}
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="satellite-variant" size={26} color={colors.primary} />
+          </View>
+
+          {farms[0].boundaries ? (
+            <Image
+              source={{ uri: getSatellitePreviewUrl(farms[0].boundaries) }}
+              style={{ width: '100%', height: 190, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}
+              resizeMode="cover"
+              accessibilityLabel={language === 'ar' ? 'صورة القمر الصناعي للأرض' : 'Satellite image of the farm'}
+            />
+          ) : (
+            <View style={{ minHeight: 100, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle, alignItems: 'center', justifyContent: 'center', padding: spacing.md }}>
+              <MaterialCommunityIcons name="map-outline" size={30} color={colors.textMuted} />
+              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText, { textAlign: 'center' }]}>
+                {language === 'ar' ? 'لا توجد حدود محفوظة بعد. امشِ حول الأرض وسجّل نقاط الزوايا.' : language === 'fr' ? 'Aucune limite enregistrée. Faites le tour de la parcelle et relevez les sommets.' : 'No saved boundary yet. Walk around the plot and record its corners.'}
+              </Text>
+            </View>
+          )}
+          <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+            {farms[0].boundaries ? 'Imagery © Esri and contributors' : ''}
+            {boundaryPoints.length ? (language === 'ar' ? ` · نقاط مسجلة: ${boundaryPoints.length}` : ` · GPS points: ${boundaryPoints.length}`) : ''}
+          </Text>
+          <View style={[styles.farmStatsRow, isRtl && rtlStyles.rtlRow]}>
+            <Button title={language === 'ar' ? 'تسجيل نقطة GPS' : language === 'fr' ? 'Enregistrer un point GPS' : 'Record GPS point'}
+              onPress={recordBoundaryPoint} variant="outline" size="md" />
+            <Button title={savingBoundary ? (language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ الحدود' : language === 'fr' ? 'Enregistrer les limites' : 'Save boundary')}
+              onPress={saveBoundary} disabled={boundaryPoints.length < 3 || savingBoundary} loading={savingBoundary} size="md" />
+          </View>
+          {farms[0].boundaries ? (
+            <Button title={language === 'ar' ? 'تحليل الغطاء النباتي NDVI (90 يوم)' : language === 'fr' ? 'Analyser NDVI (90 jours)' : 'Analyze vegetation (NDVI · 90 days)'}
+              onPress={runSatelliteAnalysis} loading={satelliteLoading} disabled={satelliteLoading} variant="secondary" size="md" />
+          ) : null}
+          {satelliteError ? (
+            <StateCard kind="unavailable" title={language === 'ar' ? 'تحليل الأقمار الصناعية غير متاح' : language === 'fr' ? 'Analyse satellite indisponible' : 'Satellite analysis unavailable'}
+              message={satelliteError} compact />
+          ) : null}
+          {satelliteObservations.length ? (
+            <View style={{ gap: spacing.xs }}>
+              <Text style={[styles.formTitle, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'نتائج NDVI' : 'NDVI observations'}</Text>
+              {satelliteObservations.slice(-3).map(item => (
+                <View key={item.id} style={[styles.farmStatsRow, isRtl && rtlStyles.rtlRow]}>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statVal}>{item.mean_value.toFixed(3)}</Text>
+                    <Text style={styles.statLabel}>NDVI mean</Text>
+                  </View>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statVal}>{item.min_value.toFixed(2)}–{item.max_value.toFixed(2)}</Text>
+                    <Text style={styles.statLabel}>{language === 'ar' ? 'الحد الأدنى – الأقصى' : 'Min – max'}</Text>
+                  </View>
+                  <View style={styles.statBox}>
+                    <Text style={styles.statVal}>{item.sample_count}</Text>
+                    <Text style={styles.statLabel}>{language === 'ar' ? 'عينات صالحة' : 'Valid samples'}</Text>
+                  </View>
+                </View>
+              ))}
+              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                {satelliteProvider || 'Copernicus Sentinel-2'} · 10 m · {language === 'ar' ? 'مؤشر اخضرار وليس تشخيص مرض أو قياس مردودية.' : 'Greenness index only; not disease diagnosis or yield measurement.'}
+              </Text>
+            </View>
+          ) : null}
+        </Card>
+      ) : null}
 
       {/* First-run: no farm yet — guide the user to register one. Adding a
           field is impossible without a farm, so this must come first. */}
@@ -446,6 +591,20 @@ export const FarmManagementScreen: React.FC<FarmManagementScreenProps> = ({ onBa
 };
 
 /** Render a farm's `location` which may be a string or a {region, country} object. */
+function getSatellitePreviewUrl(boundary?: FarmBoundary | null): string {
+  const ring = boundary?.coordinates?.[0] ?? [];
+  if (ring.length < 4) return '';
+  const lons = ring.map(point => Number(point[0]));
+  const lats = ring.map(point => Number(point[1]));
+  let minLon = Math.min(...lons), maxLon = Math.max(...lons);
+  let minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const lonPad = Math.max((maxLon - minLon) * 0.18, 0.001);
+  const latPad = Math.max((maxLat - minLat) * 0.18, 0.001);
+  minLon -= lonPad; maxLon += lonPad; minLat -= latPad; maxLat += latPad;
+  const bbox = [minLon,minLat,maxLon,maxLat].join(',');
+  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${encodeURIComponent(bbox)}&bboxSR=4326&imageSR=4326&size=960,560&format=jpg&f=image`;
+}
+
 function formatFarmLocation(location: Farm['location']): string {
   if (!location) return '—';
   if (typeof location === 'string') return location;
