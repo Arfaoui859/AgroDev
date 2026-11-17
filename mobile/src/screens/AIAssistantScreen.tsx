@@ -34,6 +34,35 @@ function nextMessageId(): string {
   return `${Date.now()}-${messageSeq}`;
 }
 
+/** Clean markdown and split long replies into device-safe speech chunks. */
+function splitSpeechText(value: string): string[] {
+  const clean = value
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/^\s{0,3}#{1,6}\s/gm, '')
+    .replace(/^\s*[-•*]\s+/gm, '')
+    .replace(/[|*_~`]/g, '')
+    .replace(/\n+/g, '. ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return [];
+  const sentences = clean.match(/[^.!?؟。]+[.!?؟。]?/gu) ?? [clean];
+  const chunks: string[] = [];
+  let current = '';
+  for (const sentence of sentences) {
+    const part = sentence.trim();
+    if (!part) continue;
+    if (current && (current.length + part.length + 1 > 2400)) {
+      chunks.push(current);
+      current = part;
+    } else {
+      current = current ? `${current} ${part}` : part;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 export const AIAssistantScreen: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
   const { user } = useAuth();
@@ -154,15 +183,24 @@ export const AIAssistantScreen: React.FC = () => {
       return;
     }
     await Speech.stop();
+    const chunks = splitSpeechText(text);
+    if (!chunks.length) return;
     setSpeakingMessageId(messageId);
-    Speech.speak(text, {
-      language: speechLocale,
-      rate: 0.94,
-      pitch: 1,
-      onDone: () => setSpeakingMessageId((current) => current === messageId ? null : current),
-      onStopped: () => setSpeakingMessageId((current) => current === messageId ? null : current),
-      onError: () => setSpeakingMessageId((current) => current === messageId ? null : current),
-    });
+    const speakChunk = (index: number) => {
+      if (index >= chunks.length) {
+        setSpeakingMessageId((current) => current === messageId ? null : current);
+        return;
+      }
+      Speech.speak(chunks[index], {
+        language: speechLocale,
+        rate: 0.94,
+        pitch: 1,
+        onDone: () => speakChunk(index + 1),
+        onStopped: () => setSpeakingMessageId((current) => current === messageId ? null : current),
+        onError: () => setSpeakingMessageId((current) => current === messageId ? null : current),
+      });
+    };
+    speakChunk(0);
   };
 
   // The welcome bubble is derived at render time (not stored) so switching
