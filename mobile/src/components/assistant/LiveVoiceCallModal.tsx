@@ -79,6 +79,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const [level, setLevel] = useState(0);
   const [error, setError] = useState("");
   const sessionRef = useRef<LiveVoiceSession | null>(null);
+  const levelRef = useRef(0);
   const copyText = copy(language);
   const isRtl = language === "ar";
 
@@ -88,6 +89,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
       sessionRef.current = null;
       setState("ready");
       setLevel(0);
+      levelRef.current = 0;
       setError("");
     }
   }, [visible]);
@@ -102,7 +104,12 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
     setState("connecting");
     const session = new LiveVoiceSession({
       onState: setState,
-      onLevel: (nextLevel) => setLevel((previous) => previous * 0.35 + nextLevel * 0.65),
+      onLevel: (nextLevel) => {
+        if (Math.abs(nextLevel - levelRef.current) > 0.07) {
+          levelRef.current = nextLevel;
+          setLevel(nextLevel);
+        }
+      },
       onError: setError,
     });
     sessionRef.current = session;
@@ -121,6 +128,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
     sessionRef.current = null;
     setState("ended");
     setLevel(0);
+    levelRef.current = 0;
   };
 
   const statusText = state === "ready" ? copyText.ready
