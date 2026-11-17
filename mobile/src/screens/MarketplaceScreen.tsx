@@ -23,8 +23,8 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
-import { AgriculturalCatalogProduct, AgriculturalInputPrice, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
+import { createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
 
@@ -42,6 +42,7 @@ export const MarketplaceScreen: React.FC = () => {
   const [marketIntelligenceUnavailable, setMarketIntelligenceUnavailable] = useState(false);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
+  const [myPesticideOffers, setMyPesticideOffers] = useState<PesticideSellerOffer[]>([]);
   const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
   const [activeInquiryListing, setActiveInquiryListing] = useState<string | null>(null);
   const [inquiryMessage, setInquiryMessage] = useState('');
@@ -91,12 +92,13 @@ export const MarketplaceScreen: React.FC = () => {
   const loadPrices = useCallback(async () => {
     // Prices and seller listings are separate backend capabilities. A failure
     // in one must not suppress useful data returned by the other.
-    const [priceOutcome, listingsOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
+    const [priceOutcome, listingsOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, pesticideOffersOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalCatalog().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalInputPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMyMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMyPesticideSellerOffers().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceInquiries().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketIntelligence(30).then((data) => ({ data })).catch((error: unknown) => ({ error })), 
     ]);
@@ -136,6 +138,7 @@ export const MarketplaceScreen: React.FC = () => {
       setInputPricesUnavailable(true);
     }
     setMyListings('data' in myListingsOutcome ? myListingsOutcome.data.data : []);
+    setMyPesticideOffers('data' in pesticideOffersOutcome ? pesticideOffersOutcome.data.data : []);
     setInquiries('data' in inquiriesOutcome ? inquiriesOutcome.data.data : []);
     if ('data' in intelligenceOutcome) {
       setMarketIntelligence(intelligenceOutcome.data.data);
@@ -423,7 +426,7 @@ export const MarketplaceScreen: React.FC = () => {
         <View style={styles.marketCategoryGrid}>
           {([
             { id: 'inquiries', icon: 'message-text-outline', ar: 'طلبات التواصل', fr: 'Demandes de contact', en: 'Contact requests', count: inquiries.length },
-            { id: 'myListings', icon: 'clipboard-list-outline', ar: 'عروضي للبيع', fr: 'Mes annonces', en: 'My sale offers', count: myListings.length },
+            { id: 'myListings', icon: 'clipboard-list-outline', ar: 'عروضي للبيع', fr: 'Mes annonces', en: 'My sale offers', count: myListings.length + myPesticideOffers.length },
             { id: 'catalog', icon: 'book-open-variant', ar: 'دليل الأدوية والأسمدة', fr: 'Guide des intrants', en: 'Agricultural inputs guide', count: catalog.length },
             { id: 'inputPrices', icon: 'tag-multiple-outline', ar: 'أسعار الأدوية والأسمدة', fr: 'Prix des intrants', en: 'Input prices', count: inputPrices.length },
             { id: 'harvest', icon: 'calendar-clock', ar: 'محاصيل قادمة للحصاد', fr: 'Récoltes à venir', en: 'Upcoming harvests', count: futureHarvests.length },
@@ -904,7 +907,7 @@ export const MarketplaceScreen: React.FC = () => {
             {language === 'ar' ? 'عروضي للبيع' : language === 'fr' ? 'Mes annonces' : 'My listings'}
           </Text>
         </View>
-        {myListings.length === 0 ? (
+        {myListings.length === 0 && myPesticideOffers.length === 0 ? (
           <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
             {language === 'ar' ? 'سجّل الدخول لعرض وإدارة إعلاناتك.' : language === 'fr' ? 'Connectez-vous pour gérer vos annonces.' : 'Sign in to view and manage your listings.'}
           </Text>
@@ -932,6 +935,28 @@ export const MarketplaceScreen: React.FC = () => {
             ))}
           </View>
         )}
+        {myPesticideOffers.length > 0 ? (
+          <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>
+              {language === 'ar' ? 'عروض المبيدات قيد المراجعة / المنشورة' : language === 'fr' ? 'Mes offres de pesticides' : 'My pesticide offers'}
+            </Text>
+            {myPesticideOffers.map(offer => (
+              <View key={offer.id} style={{ paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 4 }}>
+                <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{offer.tradeName}</Text>
+                <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                  {offer.packageSize + ' ' + offer.packageUnit + ' · ' + offer.price.toFixed(3) + ' TND · ' + offer.quantity + ' ' + offer.quantityUnit}
+                </Text>
+                <Badge label={
+                  offer.status === 'approved' ? (language === 'ar' ? 'مقبول ومنشور' : language === 'fr' ? 'Approuvé' : 'Approved')
+                    : offer.status === 'rejected' ? (language === 'ar' ? 'مرفوض' : language === 'fr' ? 'Refusé' : 'Rejected')
+                      : offer.status === 'archived' ? (language === 'ar' ? 'مؤرشف' : language === 'fr' ? 'Archivé' : 'Archived')
+                        : (language === 'ar' ? 'في انتظار التثبت' : language === 'fr' ? 'En attente de vérification' : 'Pending review')
+                } variant={offer.status === 'approved' ? 'success' : offer.status === 'rejected' ? 'danger' : 'warning'} size="sm" />
+                {offer.reviewNote ? <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{offer.reviewNote}</Text> : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
         {editingListingId ? (
           <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
             <TextInput value={editListingTitle} onChangeText={setEditListingTitle}
