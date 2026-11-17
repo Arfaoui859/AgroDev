@@ -583,6 +583,7 @@ export const MarketplaceScreen: React.FC = () => {
               (selectedMarketCategory === 'equipment' && listing.listingType === 'equipment') ||
               (selectedMarketCategory === 'produce' && listing.listingType === 'agricultural_product')).map((listing) => (
               <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
+                {listing.imageUrl ? <Image source={{ uri: listing.imageUrl }} style={styles.listingThumb} resizeMode="cover" /> : null}
                 <View style={styles.listingText}>
                   <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
                   <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
