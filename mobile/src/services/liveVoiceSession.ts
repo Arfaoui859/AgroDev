@@ -23,8 +23,6 @@ const FRAME_SAMPLES = (INPUT_RATE * FRAME_MS) / 1000;
 const SPEECH_RMS_THRESHOLD = 0.012;
 const END_SILENCE_MS = 650;
 
-
-
 function resample(input: Float32Array, fromRate: number, toRate: number): Float32Array {
   if (fromRate === toRate) return input;
   const outputLength = Math.max(1, Math.floor(input.length * toRate / fromRate));
