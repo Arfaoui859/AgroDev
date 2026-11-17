@@ -138,7 +138,6 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
   res.setHeader("Pragma", "no-cache");
 
-  const farmContext = await loadVerifiedFarmContext(_req);
   const apiKey = geminiApiKey();
 
   if (!apiKey) {
@@ -149,6 +148,8 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
     });
     return;
   }
+
+  const farmContext = await loadVerifiedFarmContext(_req);
 
   try {
     const now = Date.now();
