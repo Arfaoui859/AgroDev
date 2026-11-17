@@ -1486,7 +1486,7 @@ export async function getMarketPrices(params: { crop?: string; market?: string }
     pricePerKg: p.price_average == null ? null : Number(p.price_average),
     previousPricePerKg: p.previous_year_price == null ? null : Number(p.previous_year_price),
     changePercent: p.price_change_percent == null ? null : Number(p.price_change_percent),
-    trend: p.price_change_percent > 0 ? 'rising' : p.price_change_percent < 0 ? 'falling' : p.price_change_percent === 0 ? 'stable' : 'unknown',
+    trend: (p.price_change_percent > 0 ? 'rising' : p.price_change_percent < 0 ? 'falling' : p.price_change_percent === 0 ? 'stable' : 'unknown') as MarketPriceItem['trend'],
     marketLocation: p.market_location, marketLocationAr: p.market_location, qualityGrade: p.quality_grade ?? '—',
     lastUpdated: p.observed_on,
     sourceName: p.source_name ?? null, sourceUrl: p.source_url ?? null,
