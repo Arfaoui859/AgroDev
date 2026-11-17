@@ -1,36 +1,35 @@
 import { deriveProjectTasks } from '../../src/utils/projectTasks';
 import { SoilReport } from '../../src/types';
 
-const emptyReport = (overrides: Partial<SoilReport> = {}): SoilReport => ({
-  recommendations: [],
-  dataQuality: {
-    providedMeasurements: [],
-    missingMeasurements: [],
-    limitations: [],
-    consistencyChecks: [],
-  },
-  fertilizationPlan: {
-    status: 'guidance_only',
-    stages: [],
-    organicOptions: [],
-    withheldDosesReason: 'Lab values required',
-  },
-  waterAndIrrigation: {
-    status: 'not_assessed',
-    method: '',
-    frequency: '',
-    amount: '',
-    waterQuality: '',
-    salinityAndLeaching: '',
-    drainage: '',
-    limitations: [],
-  },
-  riskAlerts: [],
-  followUpPlan: [],
-  twelveWeekCalendar: [],
-  ...({} as SoilReport),
-  ...overrides,
-});
+const emptyReport = (overrides: Partial<SoilReport> = {}): SoilReport =>
+  Object.assign({
+    recommendations: [],
+    dataQuality: {
+      providedMeasurements: [],
+      missingMeasurements: [],
+      limitations: [],
+      consistencyChecks: [],
+    },
+    fertilizationPlan: {
+      status: 'guidance_only',
+      stages: [],
+      organicOptions: [],
+      withheldDosesReason: 'Lab values required',
+    },
+    waterAndIrrigation: {
+      status: 'not_assessed',
+      method: '',
+      frequency: '',
+      amount: '',
+      waterQuality: '',
+      salinityAndLeaching: '',
+      drainage: '',
+      limitations: [],
+    },
+    riskAlerts: [],
+    followUpPlan: [],
+    twelveWeekCalendar: [],
+  }, overrides) as SoilReport;
 
 describe('deriveProjectTasks', () => {
   it('labels the fallback lifecycle as generic when no report exists', () => {
