@@ -1,9 +1,10 @@
 /**
  * Production configuration guards.
  *
- * These lock in the integration contract: the app ships with the deployed
- * Express gateway as its production default, the Supabase project is the
- * production one, and no privileged secret is ever embedded in the bundle.
+ * These lock in the integration contract: Expo Go and release builds use the
+ * reachable deployed gateway unless a developer explicitly overrides it,
+ * the Supabase project is the production one, and no privileged secret is
+ * embedded in the bundle.
  */
 import {
   DEFAULT_API_BASE_URL,
@@ -14,15 +15,15 @@ import {
 } from '../../src/config';
 
 describe('production configuration', () => {
-  it('resolves the production gateway for a release build', () => {
+  it('uses the deployed gateway by default in both development and release builds', () => {
     expect(PRODUCTION_API_BASE_URL).toBe('https://agrodev-3.onrender.com');
     expect(resolveApiBaseUrl({ dev: false, platform: 'ios' })).toBe('https://agrodev-3.onrender.com');
     expect(resolveApiBaseUrl({ dev: false, platform: 'android' })).toBe('https://agrodev-3.onrender.com');
   });
 
-  it('uses the local dev server only in debug builds', () => {
-    expect(resolveApiBaseUrl({ dev: true, platform: 'android' })).toBe('http://10.0.2.2:5000');
-    expect(resolveApiBaseUrl({ dev: true, platform: 'ios' })).toBe('http://localhost:5000');
+  it('does not assume an Android development client is an emulator', () => {
+    expect(resolveApiBaseUrl({ dev: true, platform: 'android' })).toBe('https://agrodev-3.onrender.com');
+    expect(resolveApiBaseUrl({ dev: true, platform: 'ios' })).toBe('https://agrodev-3.onrender.com');
   });
 
   it('lets an explicit override win in any build', () => {
