@@ -159,17 +159,9 @@ export class LiveVoiceSession {
     const input = event.inputBuffer.getChannelData(0);
     if (!input.length || !this.audioContext) return;
 
-    // Never treat the assistant's own speaker output as a user interruption.
-    // Keep the mic stream out of Gemini while response audio is queued/playing.
-    // nextPlaybackTime also covers short gaps between streamed audio chunks.
-    if (
-      this.playbackSources.size > 0 ||
-      this.audioContext.currentTime + 0.01 < this.nextPlaybackTime
-    ) {
-      this.speechActive = false;
-      this.silenceMs = 0;
-      return;
-    }
+    // Keep microphone capture active during assistant playback so the user can
+    // barge in at any time. getUserMedia requests echo cancellation above;
+    // local VAD detects the user's voice and interruptPlayback stops queued audio.
 
     // Use the same explicit local voice-activity boundaries as native.
     // This prevents room noise / speaker echo during silence from opening turns.
