@@ -35,7 +35,7 @@ const copy = (language: string) => {
       ended: "Conversation terminée",
       error: "La connexion a échoué",
       retry: "Réessayer",
-      privacy: "Conversation vocale en direct. Aucun texte de transcription n'est affiché.",
+      privacy: "Votre audio et les données agricoles pertinentes sont traités par Google Gemini. Aucune transcription n'est affichée.",
       close: "Fermer",
       background: "L’appel a été arrêté lorsque l’application est passée en arrière-plan.",
     };
@@ -54,7 +54,7 @@ const copy = (language: string) => {
       ended: "Conversation ended",
       error: "Connection failed",
       retry: "Try again",
-      privacy: "Live voice conversation. No speech transcript is displayed.",
+      privacy: "Your voice and relevant farm records are processed by Google Gemini to generate replies. No speech transcript is displayed.",
       close: "Close",
       background: "The call ended when the app went into the background.",
     };
@@ -72,7 +72,7 @@ const copy = (language: string) => {
     ended: "وفات المحادثة",
     error: "تعذّر الاتصال",
     retry: "عاود حاول",
-    privacy: "محادثة صوتية مباشرة، من غير ما نعرضوا تحويل الكلام إلى نص.",
+    privacy: "صوتك والبيانات الفلاحية المرتبطة بحسابك تتعالج عبر Gemini. ما نعرضوش تفريغ كلامك كنص.",
     close: "إغلاق",
     background: "وفّينا المكالمة كي خرج التطبيق للخلفية.",
   };
