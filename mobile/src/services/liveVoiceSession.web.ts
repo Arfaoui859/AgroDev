@@ -85,6 +85,7 @@ export class LiveVoiceSession {
   private silenceMs = 0;
   private lastReplyId = 0;
   private apiToken: string | null = null;
+  private personalMemoryContext = "";
   private websocketUrl: string | null = null;
   private model: string | null = null;
   private sessionHandle: string | null = null;
@@ -126,6 +127,12 @@ export class LiveVoiceSession {
     this.apiToken = tokenResult.data?.token ?? null;
     this.websocketUrl = tokenResult.data?.websocketUrl ?? null;
     this.model = tokenResult.data?.model ?? null;
+    // Load only the authenticated caller's saved preferences; memory is optional.
+    const memoryResult = await apiRequest<any>("/api/assistant/memory", { method: "GET" });
+    const savedMemories = Array.isArray(memoryResult.data?.data) ? memoryResult.data.data : [];
+    this.personalMemoryContext = savedMemories.map((item: any) =>
+      `- ${String(item.category)}: ${String(item.memory_key)} = ${String(item.memory_value)}`
+    ).join("\\n").slice(0, 4500);
     if (this.stopped) return;
     if (tokenResult.error || !this.apiToken || !this.websocketUrl || !this.model) {
       throw new Error(tokenResult.error || "تعذّر بدء المكالمة الصوتية. حاول مجدداً.");
@@ -205,10 +212,23 @@ export class LiveVoiceSession {
       setup: {
         model: this.model,
         systemInstruction: {
-          parts: [{ text: AGROVIBE_LIVE_SYSTEM_INSTRUCTION }],
+          parts: [{ text: AGROVIBE_LIVE_SYSTEM_INSTRUCTION + (this.personalMemoryContext ? "\\n\\nذاكرة المستخدم المحفوظة من حسابه (استعملها عند الحاجة، وهي ليست بيانات مباشرة):\\n" + this.personalMemoryContext : "") }],
         },
         tools: [{
           functionDeclarations: [
+            {
+              name: "remember_user_memory",
+              description: "Save a durable fact or communication preference ONLY when the user explicitly states or clearly confirms it. Do not save guesses, temporary details, sensitive personal data, health data, passwords, secrets, or political/religious beliefs. Use this to remember how the user likes to communicate, stable farm context, recurring goals, or ongoing work so they do not need to repeat it. Confirm success only if the API returns persisted=true.",
+              parameters: {
+                type: "OBJECT",
+                properties: {
+                  memory_key: { type: "STRING", description: "Stable lowercase key such as communication.language, communication.answer_style, farm.primary_crop, or work.current_project." },
+                  category: { type: "STRING", enum: ["profile", "preference", "farm_context", "work_context", "communication", "ongoing_task"] },
+                  memory_value: { type: "STRING", description: "One concise fact in the user's language, maximum 1200 characters." },
+                },
+                required: ["memory_key", "category", "memory_value"],
+              },
+            },
             {
               name: "get_weather",
             description: "Fetch verified live weather conditions and a short forecast for a Tunisian governorate. Use this whenever the user asks about current weather, today's weather, forecast, rain, temperature, wind, or weather-related farm advice. If the governorate is not known from verified farm context or the conversation, ask the user which governorate before calling.",
@@ -508,6 +528,24 @@ export class LiveVoiceSession {
     if (!Array.isArray(calls) || !calls.length) return;
 
     for (const call of calls) {
+      if (call.name === "remember_user_memory") {
+        const args = call.args ?? {};
+        const key = typeof args.memory_key === "string" ? args.memory_key.trim().toLowerCase() : "";
+        const value = typeof args.memory_value === "string" ? args.memory_value.trim() : "";
+        const categories = ["profile", "preference", "farm_context", "work_context", "communication", "ongoing_task"];
+        const category = categories.includes(args.category) ? args.category : "";
+        const validKey = /^[a-z0-9_.-]{2,100}$/.test(key);
+        const validValue = value.length > 0 && value.length <= 1200;
+        const result = validKey && validValue && category
+          ? await apiRequest<any>("/api/assistant/memory", { method: "POST", body: JSON.stringify({ memory_key: key, category, memory_value: value, confidence: 0.85, source: "explicit_user_statement" }) })
+          : { data: null, error: "invalid memory input" };
+        const payload = result.data;
+        const response = result.error || payload?.success !== true || payload?.provenance?.persisted !== true
+          ? { success: false, persisted: false, error: "ما نجّمتش نحفظ المعلومة في الذاكرة. ما تقولش للمستخدم إنها تحفّظت." }
+          : { success: true, persisted: true, memory: payload.data, instruction: "The fact is now saved to this user's private memory. Acknowledge briefly and naturally; do not repeat sensitive information." };
+        if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+        continue;
+      }
       if (call.name === "get_supported_crops" || call.name === "get_supported_diseases") {
         const isCropCatalogue = call.name === "get_supported_crops";
         const endpoint = isCropCatalogue ? "/api/ai/crops/supported" : "/api/ai/images/supported-diseases";
