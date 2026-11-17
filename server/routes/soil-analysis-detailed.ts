@@ -87,8 +87,21 @@ function validateSoilData(data: RawSoilData): string[] {
   if (data.sampleDepth !== undefined && (!Number.isFinite(data.sampleDepth) || !Number.isInteger(data.sampleDepth) || data.sampleDepth <= 0 || data.sampleDepth > 300)) errors.push("sampleDepth must be a whole number of centimeters greater than 0 and no more than 300 cm");
   if (data.electricalConductivity !== undefined && !data.electricalConductivityUnit?.trim()) errors.push("electricalConductivityUnit is required when electrical conductivity is supplied");
   if (data.waterElectricalConductivity !== undefined && !data.waterElectricalConductivityUnit?.trim()) errors.push("waterElectricalConductivityUnit is required when irrigation water EC is supplied");
-  if (!Number.isFinite(data.ph) || data.ph < 0 || data.ph > 14) errors.push("pH must be a finite number between 0 and 14");
-  if (!Number.isFinite(data.moisture) || data.moisture < 0 || data.moisture > 100) errors.push("moisture must be a finite percentage between 0 and 100");
+  // pH and moisture are optional measurements. A partial laboratory report
+  // is valid: absent values stay absent and are disclosed as missing to the AI.
+  if (data.ph !== undefined && (!Number.isFinite(data.ph) || data.ph < 0 || data.ph > 14)) errors.push("pH must be a finite number between 0 and 14");
+  if (data.moisture !== undefined && (!Number.isFinite(data.moisture) || data.moisture < 0 || data.moisture > 100)) errors.push("moisture must be a finite percentage between 0 and 100");
+  const measuredKeys: Array<keyof RawSoilData> = [
+    "ph", "moisture", "organicMatter", "nitrogen", "phosphorus", "potassium",
+    "calcium", "magnesium", "sulfur", "iron", "zinc", "manganese", "copper", "boron",
+    "electricalConductivity", "sandPercent", "siltPercent", "clayPercent",
+    "calciumCarbonateTotal", "calciumCarbonateActive", "cec", "sodium",
+    "sodiumAdsorptionRatio", "exchangeableSodiumPercentage",
+    "waterElectricalConductivity", "waterPh",
+  ];
+  if (!measuredKeys.some((key) => data[key] !== undefined)) {
+    errors.push("At least one soil measurement must be supplied");
+  }
   const optional: Array<[keyof RawSoilData, number, number]> = [
     ["organicMatter",0,100],["electricalConductivity",0,100],
     ["nitrogen",0,1000000],["phosphorus",0,1000000],["potassium",0,1000000],
