@@ -202,6 +202,136 @@ router.get("/products", async (req,res) => {
   } catch(e:any) { console.error("[agro-market] catalog read failed",e?.message); res.status(503).json({success:false,code:"CATALOG_READ_FAILED"}); }
 });
 
+
+/* Agricultural pesticide prices and regulated seller offers. */
+router.get("/input-prices", async (req,res) => {
+  const db=publicDb(res); if(!db) return;
+  try {
+    const q=text(req.query.q,120), limit=Math.min(200,Math.max(1,Number(req.query.limit)||100));
+    let query=db.from("agricultural_input_price_observations")
+      .select("id,product_name,product_type,active_ingredient,package_size,package_unit,price,currency,source_name,source_url,source_type,observed_on,verification_status")
+      .order("observed_on",{ascending:false}).limit(limit);
+    if(q) query=query.ilike("product_name","%"+q+"%");
+    const {data,error}=await query;
+    if(error) throw error;
+    res.json({success:true,data:data??[],meta:{provenance:"sourced-input-price-observations",isRealData:(data??[]).length>0,
+      disclaimer:"السعر مرجعي حسب المصدر والتاريخ، وليس عرض بيع مضموناً أو سعراً رسمياً موحّداً."}});
+  } catch(e:any) {
+    console.error("[agro-market] input price read failed",e?.message);
+    res.status(503).json({success:false,code:"INPUT_PRICE_READ_FAILED"});
+  }
+});
+
+router.post("/ingest/input-prices", requireAdminAccess, async (req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const sourceKey=text(req.body?.source_key,80), sourceName=text(req.body?.source_name,160);
+  const sourceUrl=text(req.body?.source_url,1000), rows=req.body?.prices;
+  const sourceType=text(req.body?.source_type,40)||"official_open_data";
+  const verificationStatus=text(req.body?.verification_status,30)||"unverified";
+  if(!sourceKey||!sourceName||!/^https:\/\//i.test(sourceUrl)||!Array.isArray(rows)||rows.length>1000||
+    !SOURCE_TYPES.has(sourceType)||!VERIFICATION_STATES.has(verificationStatus))
+    return res.status(400).json({success:false,code:"INVALID_INGEST_PAYLOAD"});
+  const records:any[]=[];
+  for(const row of rows) {
+    const productName=text(row?.product_name,180), price=positive(row?.price);
+    const observedOn=text(row?.observed_on,10), packageSize=positive(row?.package_size);
+    const rowSourceUrl=text(row?.source_url,1000);
+    const externalId=text(row?.external_id,180)||hash({productName,packageSize,packageUnit:row?.package_unit,price,observedOn});
+    if(!productName||price===null||Number.isNaN(price)||price<=0||
+      (packageSize!==null&&(Number.isNaN(packageSize)||packageSize<=0))||
+      !/^\d{4}-\d{2}-\d{2}$/.test(observedOn))
+      return res.status(400).json({success:false,code:"INVALID_INPUT_PRICE_ROW",row:records.length});
+    records.push({product_name:productName,product_type:PRODUCT_TYPES.has(text(row?.product_type,40))?text(row.product_type,40):"pesticide",
+      active_ingredient:text(row?.active_ingredient,250)||null,package_size:packageSize,
+      package_unit:text(row?.package_unit,30)||null,price,currency:text(row?.currency,3)||"TND",
+      source_name:sourceName,source_url:/^https:\/\//i.test(rowSourceUrl)?rowSourceUrl:sourceUrl,
+      source_type:sourceType,source_key:sourceKey,external_id:externalId,observed_on:observedOn,
+      verification_status:verificationStatus,collected_at:new Date().toISOString()});
+  }
+  const {data,error}=await db.from("agricultural_input_price_observations")
+    .upsert(records,{onConflict:"source_key,external_id"}).select("id");
+  if(error) {
+    console.error("[agro-market] input price ingest failed",error.message);
+    return res.status(503).json({success:false,code:"INPUT_PRICE_INGEST_FAILED"});
+  }
+  res.json({success:true,insertedOrUpdated:data?.length??records.length,sourceKey});
+});
+
+router.get("/pesticide-offers", async (_req,res) => {
+  const db=publicDb(res); if(!db) return;
+  const {data,error}=await db.from("pesticide_seller_offers")
+    .select("id,trade_name,active_ingredient,registration_number,package_size,package_unit,price,currency,quantity,quantity_unit,location,governorate,image_urls,created_at,seller_id")
+    .eq("status","approved").order("created_at",{ascending:false}).limit(100);
+  if(error) return res.status(503).json({success:false,code:"PESTICIDE_OFFERS_UNAVAILABLE"});
+  res.json({success:true,data:data??[],meta:{provenance:"admin-approved-seller-offers",isRealData:true}});
+});
+
+router.get("/my-pesticide-offers", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const {data,error}=await db.from("pesticide_seller_offers").select("*")
+    .eq("seller_id",req.userId).order("created_at",{ascending:false}).limit(100);
+  if(error) return res.status(503).json({success:false,code:"SELLER_PESTICIDE_OFFERS_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.post("/pesticide-offers", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const b=req.body??{};
+  const tradeName=text(b.trade_name,180), registrationNumber=text(b.registration_number,100);
+  const registrationEvidenceUrl=text(b.product_registration_evidence_url,1000);
+  const authorizationNumber=text(b.seller_authorization_number,100);
+  const authorizationDocumentUrl=text(b.seller_authorization_document_url,1000);
+  const packageSize=positive(b.package_size), price=positive(b.price), quantity=positive(b.quantity);
+  const imageUrls=b.image_urls??[];
+  if(tradeName.length<2||!registrationNumber||!/^https:\/\//i.test(registrationEvidenceUrl)||
+    !authorizationNumber||!/^https:\/\//i.test(authorizationDocumentUrl)||
+    packageSize===null||Number.isNaN(packageSize)||packageSize<=0||
+    price===null||Number.isNaN(price)||price<=0||quantity===null||Number.isNaN(quantity)||quantity<=0||
+    !text(b.package_unit,30)||!Array.isArray(imageUrls)||imageUrls.length>8||
+    !imageUrls.every((u:unknown)=>typeof u==="string"&&/^https:\/\//i.test(u)))
+    return res.status(400).json({success:false,code:"PESTICIDE_OFFER_DOCUMENTS_AND_DETAILS_REQUIRED"});
+  const payload={seller_id:req.userId,trade_name:tradeName,active_ingredient:text(b.active_ingredient,250)||null,
+    registration_number:registrationNumber,product_registration_evidence_url:registrationEvidenceUrl,
+    seller_authorization_number:authorizationNumber,seller_authorization_document_url:authorizationDocumentUrl,
+    package_size:packageSize,package_unit:text(b.package_unit,30),price,currency:text(b.currency,3)||"TND",
+    quantity,quantity_unit:text(b.quantity_unit,30)||"packages",location:text(b.location,160)||null,
+    governorate:text(b.governorate,80)||null,image_urls:imageUrls,status:"pending_review"};
+  const {data,error}=await db.from("pesticide_seller_offers").insert(payload).select("*").single();
+  if(error) {
+    console.error("[agro-market] pesticide offer create failed",error.message);
+    return res.status(503).json({success:false,code:"PESTICIDE_OFFER_CREATE_FAILED"});
+  }
+  res.status(201).json({success:true,data,meta:{provenance:"seller-submission-pending-human-review",isRealData:true},
+    message:"تم استلام العرض. لن يظهر للعموم قبل التثبت الإداري من وثائق المنتج والبائع."});
+});
+
+router.get("/admin/pesticide-offers", requireAdminAccess, async (_req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const {data,error}=await db.from("pesticide_seller_offers").select("*")
+    .eq("status","pending_review").order("created_at",{ascending:true}).limit(200);
+  if(error) return res.status(503).json({success:false,code:"PENDING_PESTICIDE_OFFERS_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.patch("/admin/pesticide-offers/:id/review", requireAdminAccess, async (req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const status=text(req.body?.status,20), reviewNote=text(req.body?.review_note,1000)||null;
+  if(!["approved","rejected"].includes(status))
+    return res.status(400).json({success:false,code:"INVALID_REVIEW_STATUS"});
+  const {data:existing,error:lookupError}=await db.from("pesticide_seller_offers").select("*")
+    .eq("id",req.params.id).maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"PESTICIDE_OFFER_LOOKUP_FAILED"});
+  if(!existing) return res.status(404).json({success:false,code:"PESTICIDE_OFFER_NOT_FOUND"});
+  if(status==="approved"&&(!existing.registration_number||!/^https:\/\//i.test(existing.product_registration_evidence_url??"")||
+    !existing.seller_authorization_number||!/^https:\/\//i.test(existing.seller_authorization_document_url??"")))
+    return res.status(400).json({success:false,code:"REGISTRATION_AND_SELLER_PERMIT_EVIDENCE_REQUIRED"});
+  const {data,error}=await db.from("pesticide_seller_offers").update({status,review_note:reviewNote,
+    reviewed_at:new Date().toISOString(),reviewed_by:req.userId??null,updated_at:new Date().toISOString()})
+    .eq("id",req.params.id).select("*").single();
+  if(error) return res.status(503).json({success:false,code:"PESTICIDE_OFFER_REVIEW_FAILED"});
+  res.json({success:true,data});
+});
+
 router.get("/intelligence", async (req,res) => {
   const db = publicDb(res); if (!db) return;
   try {
