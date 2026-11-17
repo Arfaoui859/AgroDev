@@ -216,8 +216,7 @@ export class LiveVoiceSession {
           settled = true;
           if (resume) {
             this.reconnecting = false;
-            this.reconnectAttempts = 0;
-            this.callbacks.onState(this.speechActive ? "listening" : "listening");
+            this.callbacks.onState("listening");
             resolve();
           } else {
             this.active = true;
@@ -406,6 +405,12 @@ export class LiveVoiceSession {
     this.queueStarted = false;
     if (this.audioContext) await this.audioContext.close().catch(() => undefined);
     this.audioContext = null;
+    this.apiToken = null;
+    this.websocketUrl = null;
+    this.model = null;
+    this.sessionHandle = null;
+    this.reconnecting = false;
+    this.reconnectAttempts = 0;
     await AudioManager.setAudioSessionActivity(false).catch(() => undefined);
     this.callbacks.onState("ended");
   }
