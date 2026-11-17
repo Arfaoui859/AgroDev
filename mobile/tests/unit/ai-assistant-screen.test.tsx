@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Speech from 'expo-speech';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { render, screen, waitFor, userEvent } from '@testing-library/react-native';
 import { LanguageProvider } from '../../src/context/LanguageContext';
@@ -9,6 +10,21 @@ jest.mock('../../src/context/AuthContext', () => ({
 }));
 
 const mockChat = jest.fn();
+
+jest.mock('expo-speech', () => ({
+  speak: jest.fn(),
+  stop: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('expo-speech-recognition', () => ({
+  ExpoSpeechRecognitionModule: {
+    isRecognitionAvailable: () => false,
+    requestPermissionsAsync: jest.fn(),
+    start: jest.fn(),
+    stop: jest.fn(),
+  },
+  useSpeechRecognitionEvent: jest.fn(),
+}));
 
 jest.mock('../../src/api/client', () => ({
   chatWithAIAssistant: (...args: any[]) => mockChat(...args),
@@ -25,6 +41,24 @@ describe('AIAssistantScreen', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     await AsyncStorage.clear();
+  });
+
+  it('exposes voice input and can speak an assistant answer', async () => {
+    await AsyncStorage.setItem('agrogrowth.assistant.assistant-test-user', JSON.stringify({
+      conversationId: null,
+      messages: [{ id: 'voice-answer', sender: 'assistant', text: 'راقب رطوبة التربة قبل الري.', timestamp: '10:00' }],
+    }));
+
+    const user = userEvent.setup();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('راقب رطوبة التربة قبل الري.')).toBeTruthy());
+
+    expect(screen.getByLabelText('تحدّث')).toBeTruthy();
+    await user.press(screen.getByLabelText('استمع للإجابة'));
+    expect(Speech.speak).toHaveBeenCalledWith(
+      'راقب رطوبة التربة قبل الري.',
+      expect.objectContaining({ language: 'ar-SA', rate: 0.94 }),
+    );
   });
 
   it('restores and persists the signed-in user conversation locally', async () => {
