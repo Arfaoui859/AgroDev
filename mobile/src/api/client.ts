@@ -236,8 +236,10 @@ export async function apiRequest<T = unknown>(
       data: null,
       error: isTimeout
         ? msg('apiTimeout')
-        : exposeNetworkError && error instanceof Error
-          ? error.message
+        : exposeNetworkError
+          ? (typeof error?.message === 'string' && error.message.trim()
+              ? error.message
+              : String(error || msg('apiOffline')))
           : msg('apiOffline'),
       isOnline: false,
       fromCache: false,
