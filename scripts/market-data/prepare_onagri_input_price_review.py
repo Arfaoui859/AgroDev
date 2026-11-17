@@ -69,9 +69,9 @@ def parse_number(value):
     if isinstance(value, (int, float, Decimal)):
         number = Decimal(str(value))
     else:
-        raw = clean(value).replace("\\u00a0", " ").replace("TND", "").replace("DT", "").replace("د.ت", "")
+        raw = clean(value).replace("\u00a0", " ").replace("TND", "").replace("DT", "").replace("د.ت", "")
         raw = raw.replace(" ", "").replace(",", ".")
-        raw = re.sub(r"[^0-9.\\-]", "", raw)
+        raw = re.sub(r"[^0-9.-]", "", raw)
         if not raw or raw in {".", "-", "-."}:
             return None
         try:
