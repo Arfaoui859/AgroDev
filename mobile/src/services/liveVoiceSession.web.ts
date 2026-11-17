@@ -208,8 +208,9 @@ export class LiveVoiceSession {
               },
               required: ["governorate"],
             },
-          {
-            name: "get_news",
+            },
+            {
+              name: "get_news",
             description: "Fetch recent real Tunisian agricultural news from publisher RSS feeds. Use when the user asks for latest agricultural news, updates, olive oil/cereal/harvest/export news or what is happening in Tunisian agriculture. Never invent headlines. Default to Arabic unless the user is clearly speaking French or English.",
             parameters: {
               type: "OBJECT",
