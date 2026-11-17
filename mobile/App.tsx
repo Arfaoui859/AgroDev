@@ -132,9 +132,7 @@ const MainAppContent: React.FC = () => {
           return { title: t.multiAgentAiName };
         case 'agri_news':
           return { title: t.agriNewsName };
-        case 'community':
-        return <CommunityScreen onBack={() => setActiveService(null)} onOpenProfile={() => { setActiveService(null); setActiveTab('profile'); }} />;
-      case 'learning':
+        case 'learning':
           return { title: t.homeLearningTitle };
         case 'recent_analyses':
           return { title: x.recentAnalysesTitle };
