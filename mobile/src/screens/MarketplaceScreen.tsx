@@ -71,7 +71,7 @@ export const MarketplaceScreen: React.FC = () => {
   const [sellerAuthorizationNumber, setSellerAuthorizationNumber] = useState('');
   const [sellerAuthorizationDocumentUrl, setSellerAuthorizationDocumentUrl] = useState('');
   const isPesticideOffer = sellerType === 'agricultural_input' &&
-    /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|مبيد|مبيدات|دواء\\s*فلاحي|أدوية\\s*فلاحية|ادوية\\s*فلاحية/i.test(sellerTitle + ' ' + sellerCategory);
+    /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|مبيد|مبيدات|دواء\s*فلاحي|أدوية\s*فلاحية|ادوية\s*فلاحية/i.test(sellerTitle + ' ' + sellerCategory);
   const [harvestCrop, setHarvestCrop] = useState('');
   const [harvestDate, setHarvestDate] = useState('');
   const [sellerImage, setSellerImage] = useState<{ uri: string; mimeType?: string } | null>(null);
@@ -174,6 +174,16 @@ export const MarketplaceScreen: React.FC = () => {
     }
     if (sellerPrice.trim() && (!Number.isFinite(Number(sellerPrice)) || Number(sellerPrice) < 0)) {
       Alert.alert(language === 'ar' ? 'السعر غير صحيح' : language === 'fr' ? 'Prix invalide' : 'Invalid price');
+      return;
+    }
+    if (isPesticideOffer && (
+      !sellerRegistrationNumber.trim() || !/^https:\/\//i.test(sellerRegistrationEvidenceUrl.trim()) ||
+      !sellerAuthorizationNumber.trim() || !/^https:\/\//i.test(sellerAuthorizationDocumentUrl.trim()) ||
+      !Number.isFinite(Number(sellerPackageSize)) || Number(sellerPackageSize) <= 0 ||
+      !sellerPrice.trim() || !sellerQuantity.trim() || !Number.isFinite(Number(sellerPrice)) || Number(sellerPrice) <= 0 ||
+      !Number.isFinite(Number(sellerQuantity)) || Number(sellerQuantity) <= 0
+    )) {
+      Alert.alert(language === 'ar' ? 'بيانات وترخيص المبيد مطلوبة' : language === 'fr' ? 'Informations et autorisations requises' : 'Pesticide details and permits are required');
       return;
     }
     if (sellerType === 'harvest' && (!harvestCrop.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(harvestDate))) {
