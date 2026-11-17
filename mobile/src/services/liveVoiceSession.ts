@@ -92,6 +92,13 @@ export class LiveVoiceSession {
     if (this.active) return;
     this.callbacks.onState("connecting");
 
+    const permission = await AudioManager.requestRecordingPermissions();
+    if (permission !== "Granted") {
+      throw new Error("يلزم السماح باستخدام الميكروفون لإجراء المحادثة الصوتية.");
+    }
+
+    // Mint the one-use token only after permission is granted, because its
+    // new-session window is intentionally short.
     const tokenResult = await apiRequest<LiveTokenResponse>("/api/ai/assistant/live-token", {
       method: "POST",
       body: JSON.stringify({}),
@@ -101,11 +108,6 @@ export class LiveVoiceSession {
     const model = tokenResult.data?.model;
     if (tokenResult.error || !token || !websocketUrl || !model) {
       throw new Error(tokenResult.error || "تعذّر بدء المكالمة الصوتية. حاول مجدداً.");
-    }
-
-    const permission = await AudioManager.requestRecordingPermissions();
-    if (permission !== "Granted") {
-      throw new Error("يلزم السماح باستخدام الميكروفون لإجراء المحادثة الصوتية.");
     }
 
     AudioManager.setSystemOptions({
@@ -152,6 +154,12 @@ export class LiveVoiceSession {
         try {
           message = JSON.parse(typeof event.data === "string" ? event.data : "");
         } catch {
+          return;
+        }
+        if (message.error) {
+          clearTimeout(timeout);
+          const providerMessage = typeof message.error.message === "string" ? message.error.message : "";
+          reject(new Error(providerMessage ? `Gemini Live: ${providerMessage}` : "رفضت خدمة الصوت إعداد الجلسة."));
           return;
         }
         if (message.setupComplete) {
