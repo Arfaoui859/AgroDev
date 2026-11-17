@@ -125,7 +125,7 @@ export function projectStatusLabel(status: string, p: ProjectTranslations): stri
 /** Map persisted growth-stage tokens to localised labels; unknown values never leak raw API strings. */
 export function growthStageLabel(stage: string | null | undefined, p: ProjectTranslations): string {
   if (!stage || !stage.trim()) return p.noStage;
-  const value = stage.trim().toLowerCase().replace(/[\\s-]+/g, '_');
+  const value = stage.trim().toLowerCase().replace(/[\s-]+/g, '_');
   switch (value) {
     case 'germination':
     case 'emergence': return p.stageGermination;
