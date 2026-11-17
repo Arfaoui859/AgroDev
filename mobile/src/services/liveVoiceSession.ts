@@ -1,7 +1,7 @@
 import { AudioContext, AudioManager, AudioRecorder } from "react-native-audio-api";
 import { apiRequest } from "../api/client";
 
-export type LiveVoiceState = "connecting" | "listening" | "speaking" | "error" | "ended";
+export type LiveVoiceState = "connecting" | "listening" | "thinking" | "speaking" | "error" | "ended";
 
 type LiveTokenResponse = {
   success: boolean;
