@@ -1047,8 +1047,8 @@ const styles = StyleSheet.create({
   listingThumb: { width: 76, height: 76, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
 
   listingText: { width: '100%', minWidth: 0, gap: 4 },
-  listingName: { ...labelSemibold, color: colors.text, lineHeight: typography.lineHeights.md },
-  listingMeta: { ...subtleCaption, lineHeight: typography.lineHeights.md, flexShrink: 1 },
+  listingName: { ...labelSemibold, color: colors.text, lineHeight: typography.lineHeights.base },
+  listingMeta: { ...subtleCaption, lineHeight: typography.lineHeights.base, flexShrink: 1 },
   listingPrice: { ...labelSemibold, color: colors.primaryDark, width: '100%', textAlign: 'right' },
   priceSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 2 },
   priceSummaryIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
