@@ -143,15 +143,15 @@ async function refreshSessionToken(): Promise<boolean> {
 
 
 /**
- * Upload a local native image with Expo's native multipart transport.
+ * Upload a local native image with Expo SDK's native multipart transport.
  * React Native's fetch/FormData file-object bridge is intentionally bypassed
- * on Android/iOS; Expo's legacy uploadAsync native bridge reads the prepared
- * cache file and creates the multipart boundary itself.
+ * on Android/iOS; Expo File.upload reads the prepared cache file and creates
+ * the multipart boundary itself.
  */
 async function uploadNativeImage(
   options: ImageUploadOptions,
 ): Promise<ApiResult<any>> {
-  const endpoint = '/api/ai/plant-disease-detection';
+  const endpoint = '/api/ai/images/detect-disease';
   const url = `${API_BASE_URL}${endpoint}`;
   const parameters: Record<string, string> = {};
   if (options.cropType) parameters.plant_type = options.cropType;
@@ -593,7 +593,7 @@ export async function diagnosePlantDisease(
 ): Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }> {
   try {
     const res = Platform.OS === 'web'
-      ? await apiRequest<any>('/api/ai/plant-disease-detection', {
+      ? await apiRequest<any>('/api/ai/images/detect-disease', {
           method: 'POST',
           body: await buildImageForm(options),
           multipart: true,
