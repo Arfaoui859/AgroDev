@@ -414,13 +414,25 @@ export const MarketplaceScreen: React.FC = () => {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <View style={{ flex: 1, minWidth: 110, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
                   <Text style={styles.listingMeta}>{language === 'ar' ? 'اتجاه السوق' : language === 'fr' ? 'Tendance' : 'Trend'}</Text>
-                  <Text style={[styles.listingName, { marginTop: 4 }]}>{marketIntelligence.trends?.overallTrend || (language === 'ar' ? 'غير معروف' : 'Unknown')}</Text>
+                  <Text style={[styles.listingName, { marginTop: 4 }]}>
+                    {marketIntelligence.trends?.overallTrend === 'rising' ? (language === 'ar' ? 'صاعد' : language === 'fr' ? 'En hausse' : 'Rising')
+                      : marketIntelligence.trends?.overallTrend === 'falling' ? (language === 'ar' ? 'هابط' : language === 'fr' ? 'En baisse' : 'Falling')
+                        : marketIntelligence.trends?.overallTrend === 'stable' ? (language === 'ar' ? 'مستقر' : language === 'fr' ? 'Stable' : 'Stable')
+                          : (language === 'ar' ? 'غير معروف' : language === 'fr' ? 'Indéterminé' : 'Unknown')}
+                  </Text>
                 </View>
                 <View style={{ flex: 1, minWidth: 110, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
                   <Text style={styles.listingMeta}>{language === 'ar' ? 'عدد التسجيلات' : language === 'fr' ? 'Observations' : 'Observations'}</Text>
                   <Text style={[styles.listingName, { marginTop: 4 }]}>{marketIntelligence.sampleSize ?? 0}</Text>
                 </View>
               </View>
+              <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'اتجاهات حسب المنتوج' : language === 'fr' ? 'Tendances par produit' : 'Trends by product'}</Text>
+              {(Array.isArray(marketIntelligence.trends?.crops) ? marketIntelligence.trends.crops.slice(0, 8) : []).map((item: any, index: number) => (
+                <View key={item.crop + index} style={{ flexDirection: isRtl ? 'row-reverse' : 'row', justifyContent: 'space-between', gap: spacing.sm, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <Text style={[styles.listingMeta, { flex: 1 }, isRtl && rtlStyles.rtlText]}>{item.crop}</Text>
+                  <Text style={styles.listingMeta}>{item.changePercent == null ? (language === 'ar' ? 'بيانات غير كافية' : language === 'fr' ? 'Données insuffisantes' : 'Insufficient data') : (Number(item.changePercent) > 0 ? '+' : '') + Number(item.changePercent).toFixed(1) + '%'}</Text>
+                </View>
+              ))}
               <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'مؤشرات السوق' : language === 'fr' ? 'Indicateurs' : 'Insights'}</Text>
               {(Array.isArray(marketIntelligence.insights) ? marketIntelligence.insights : []).map((item: string, index: number) => <Text key={index} style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>• {item}</Text>)}
               <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'التوصيات' : language === 'fr' ? 'Recommandations' : 'Recommendations'}</Text>
