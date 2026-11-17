@@ -166,23 +166,13 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // CreateAuthTokenRequest requires the AuthToken payload under
-        // the authToken field (REST JSON uses lowerCamelCase).
-        authToken: {
-          // Allow a few reconnect attempts with the same short-lived credential.
-          uses: 5,
-          expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
-          newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
-          liveConnectConstraints: {
-            model: GEMINI_LIVE_MODEL,
-            config: {
-              responseModalities: ["AUDIO"],
-              systemInstruction: {
-                parts: [{ text: liveSystemInstruction(farmContext) }],
-              },
-            },
-          },
-        },
+        // Gemini REST CreateAuthTokenRequest accepts AuthToken fields directly
+        // at the request root. Do not wrap them in "authToken".
+        // Keep token creation un-constrained for compatibility with the
+        // currently exposed v1alpha REST schema; Live config is sent at connect.
+        uses: 5,
+        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+        newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
       }),
       signal: AbortSignal.timeout(15000),
     });
