@@ -88,14 +88,10 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const isRtl = language === "ar";
 
   useEffect(() => {
-    if (!visible) {
-      void sessionRef.current?.stop();
-      sessionRef.current = null;
-      setState("ready");
-      setLevel(0);
-      levelRef.current = 0;
-      setError("");
-    }
+    if (visible) return;
+    const session = sessionRef.current;
+    sessionRef.current = null;
+    if (session) void session.stop();
   }, [visible]);
 
   useEffect(() => () => {
@@ -122,6 +118,8 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
 
   const start = async () => {
     setError("");
+    setLevel(0);
+    levelRef.current = 0;
     setState("connecting");
     const session = new LiveVoiceSession({
       onState: setState,
