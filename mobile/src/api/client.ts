@@ -151,7 +151,7 @@ async function refreshSessionToken(): Promise<boolean> {
 async function uploadNativeImage(
   options: ImageUploadOptions,
 ): Promise<ApiResult<any>> {
-  const endpoint = '/api/ai/images/detect-disease';
+  const endpoint = '/api/ai/plant-disease-detection';
   const url = `${API_BASE_URL}${endpoint}`;
   const parameters: Record<string, string> = {};
   if (options.cropType) parameters.plant_type = options.cropType;
@@ -593,7 +593,7 @@ export async function diagnosePlantDisease(
 ): Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }> {
   try {
     const res = Platform.OS === 'web'
-      ? await apiRequest<any>('/api/ai/images/detect-disease', {
+      ? await apiRequest<any>('/api/ai/plant-disease-detection', {
           method: 'POST',
           body: await buildImageForm(options),
           multipart: true,
