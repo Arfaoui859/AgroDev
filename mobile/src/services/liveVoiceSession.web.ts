@@ -506,7 +506,7 @@ export class LiveVoiceSession {
           if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
           continue;
         }
-        const result = await apiRequest<any>("/api/soil-analysis/analyze", { method: "POST", body });
+        const result = await apiRequest<any>("/api/soil-analysis/analyze", { method: "POST", body: JSON.stringify(body) });
         const payload = result.data;
         const response = result.error || payload?.success !== true || !payload?.data
           ? {
