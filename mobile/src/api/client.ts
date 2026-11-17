@@ -104,6 +104,8 @@ export interface RequestOptions extends RequestInit {
   anonymous?: boolean;
   /** Include the underlying transport error in the result for targeted diagnostics. */
   exposeNetworkError?: boolean;
+  /** Explicitly mark multipart uploads so native FormData never gets a JSON content type. */
+  multipart?: boolean;
 }
 
 /** Attach the freshest access token we can obtain without blocking the request. */
@@ -152,24 +154,16 @@ export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestOptions = {},
 ): Promise<ApiResult<T>> {
-  const { cacheKey, anonymous, exposeNetworkError, ...init } = options;
+  const { cacheKey, anonymous, exposeNetworkError, multipart, ...init } = options;
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   const buildHeaders = async () => {
     const headers = anonymous ? new Headers(init.headers) : await authHeaders(init.headers);
-    // React Native 0.88's FormData is a native-compatible polyfill. On
-    // Android, instanceof can be unreliable across the Expo runtime boundary;
-    // misclassifying it adds application/json and breaks multipart uploads.
-    const body = init.body as any;
-    const isFormData =
-      (typeof FormData !== 'undefined' && body instanceof FormData) ||
-      Boolean(
-        body &&
-        typeof body === 'object' &&
-        typeof body.append === 'function' &&
-        (typeof body.getParts === 'function' || Object.prototype.toString.call(body) === '[object FormData]'),
-      );
-    if (!headers.has('Content-Type') && init.body && !isFormData) {
+    // Multipart is declared by the caller, not inferred from a FormData
+    // polyfill: React Native/Expo may wrap FormData across runtime boundaries.
+    // Let fetch generate the boundary; manually setting this header breaks
+    // Android file uploads.
+    if (!headers.has('Content-Type') && init.body && !multipart) {
       headers.set('Content-Type', 'application/json');
     }
     return headers;
@@ -511,8 +505,11 @@ export async function diagnosePlantDisease(
     const res = await apiRequest<any>('/api/ai/images/detect-disease', {
       method: 'POST',
       body: form,
-      // Expo Go previously collapsed all native fetch/file errors into the
-      // same generic offline message. Keep the original transport reason here.
+      // Never infer FormData from its runtime identity: React Native's native
+      // multipart body can cross Expo runtime boundaries. The fetch adapter
+      // must leave Content-Type unset so Android supplies its own boundary.
+      multipart: true,
+      // Keep the underlying transport reason visible on native devices.
       exposeNetworkError: true,
     });
 
