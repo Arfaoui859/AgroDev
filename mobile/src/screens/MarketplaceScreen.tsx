@@ -71,7 +71,7 @@ export const MarketplaceScreen: React.FC = () => {
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'all' | 'prices' | 'inputs' | 'equipment' | 'produce' | 'harvest'>('all');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'all' | 'prices' | 'inputs' | 'equipment' | 'produce' | 'harvest'>('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -342,12 +342,14 @@ export const MarketplaceScreen: React.FC = () => {
     >
       <ScreenHeading title={t.marketTitle} subtitle={t.marketSubtitle} />
 
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder={t.searchCrop}
-        clearLabel={x.clearSearch}
-      />
+      {selectedMarketCategory !== 'home' ? (
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={t.searchCrop}
+          clearLabel={x.clearSearch}
+        />
+      ) : null}
 
       <View style={styles.marketCategorySection}>
         <Text style={[styles.marketCategoryHeading, isRtl && rtlStyles.rtlText]}>
@@ -378,6 +380,7 @@ export const MarketplaceScreen: React.FC = () => {
           })}
         </View>
       </View>
+      {selectedMarketCategory !== 'home' ? (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="store-plus-outline" size={21} color={colors.primary} />
@@ -385,7 +388,7 @@ export const MarketplaceScreen: React.FC = () => {
             {language === 'ar' ? 'بيع منتوجك على AgroGrowth' : language === 'fr' ? 'Vendre sur AgroGrowth' : 'Sell on AgroGrowth'}
           </Text>
         </View>
-        <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+        <Text style={[styles.listingMeta, { textAlign: isRtl ? 'right' : 'left' }]}>
           {language === 'ar' ? 'انشر منتوج فلاحي أو معدات أو محصولك القادم. يلزم تسجيل الدخول.' : language === 'fr' ? 'Publiez un intrant, un équipement ou une récolte à venir. Connexion requise.' : 'Publish agricultural inputs, equipment or an upcoming harvest. Sign-in required.'}
         </Text>
         <Button title={sellerFormOpen
@@ -448,6 +451,14 @@ export const MarketplaceScreen: React.FC = () => {
           </View>
         ) : null}
       </Card>
+      ) : (
+        <View style={styles.marketHomeHint}>
+          <MaterialCommunityIcons name="gesture-tap" size={18} color={colors.primary} />
+          <Text style={[styles.marketHomeHintText, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'اختار قسم باش تشوف المنتوجات والأسعار متاعو.' : language === 'fr' ? 'Choisissez une catégorie pour afficher ses produits et ses prix.' : 'Choose a category to explore its products and prices.'}
+          </Text>
+        </View>
+      )}
 
       {(selectedMarketCategory === 'all' || selectedMarketCategory === 'prices') && (
       <>
@@ -585,7 +596,7 @@ export const MarketplaceScreen: React.FC = () => {
               <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
                 {listing.imageUrl ? <Image source={{ uri: listing.imageUrl }} style={styles.listingThumb} resizeMode="cover" /> : null}
                 <View style={styles.listingText}>
-                  <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
+                  <Text style={[styles.listingName, { textAlign: isRtl ? 'right' : 'left' }]}>{listing.title}</Text>
                   <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
                     {[listing.category, listing.sellerName, listing.location].filter(Boolean).join(' • ')}
                   </Text>
@@ -867,7 +878,9 @@ const styles = StyleSheet.create({
   marketCategorySection: { marginTop: spacing.md, marginBottom: spacing.lg, gap: spacing.sm },
   marketCategoryHeading: { ...titleBase, color: colors.text, marginBottom: 2 },
   marketCategoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: spacing.sm },
-  marketCategoryTile: { width: '48.5%', minHeight: 126, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, gap: spacing.xs },
+  marketCategoryTile: { width: '48%', minHeight: 132, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, gap: spacing.xs, justifyContent: 'space-between' },
+  marketHomeHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, marginBottom: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
+  marketHomeHintText: { flex: 1, color: colors.textSecondary, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.md },
   marketCategoryTileActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   marketCategoryIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSubtle },
   marketCategoryIconActive: { backgroundColor: colors.surface },
@@ -881,9 +894,9 @@ const styles = StyleSheet.create({
   listingThumb: { width: 76, height: 76, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
 
   listingText: { flex: 1, minWidth: 0, gap: 4 },
-  listingName: { ...labelSemibold, color: colors.text },
-  listingMeta: subtleCaption,
-  listingPrice: { ...labelSemibold, color: colors.primaryDark, textAlign: 'left', width: '100%' },
+  listingName: { ...labelSemibold, color: colors.text, lineHeight: typography.lineHeights.md },
+  listingMeta: { ...subtleCaption, lineHeight: typography.lineHeights.md, flexShrink: 1 },
+  listingPrice: { ...labelSemibold, color: colors.primaryDark, width: '100%', textAlign: 'left' },
   priceSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 2 },
   priceSummaryIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   priceSummaryText: { flex: 1, gap: 2 },
