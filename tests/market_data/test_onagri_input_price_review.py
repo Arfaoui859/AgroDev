@@ -1,9 +1,17 @@
+import importlib.util
 import io
+from pathlib import Path
 import unittest
 from datetime import date
 from openpyxl import Workbook
 
-from scripts.market_data.prepare_onagri_input_price_review import parse_workbook, parse_number, parse_date
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "market-data" / "prepare_onagri_input_price_review.py"
+SPEC = importlib.util.spec_from_file_location("onagri_input_price_review", SCRIPT)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+parse_workbook = MODULE.parse_workbook
+parse_number = MODULE.parse_number
+parse_date = MODULE.parse_date
 
 
 class OnagriInputPriceReviewTests(unittest.TestCase):
