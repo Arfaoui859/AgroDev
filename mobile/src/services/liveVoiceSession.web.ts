@@ -159,6 +159,18 @@ export class LiveVoiceSession {
     const input = event.inputBuffer.getChannelData(0);
     if (!input.length || !this.audioContext) return;
 
+    // Never treat the assistant's own speaker output as a user interruption.
+    // Keep the mic stream out of Gemini while response audio is queued/playing.
+    // nextPlaybackTime also covers short gaps between streamed audio chunks.
+    if (
+      this.playbackSources.size > 0 ||
+      this.audioContext.currentTime + 0.01 < this.nextPlaybackTime
+    ) {
+      this.speechActive = false;
+      this.silenceMs = 0;
+      return;
+    }
+
     // Use the same explicit local voice-activity boundaries as native.
     // This prevents room noise / speaker echo during silence from opening turns.
     let energy = 0;
