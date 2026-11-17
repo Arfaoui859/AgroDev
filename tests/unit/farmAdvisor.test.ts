@@ -104,6 +104,9 @@ describe("answerAgriculturalQuestion", () => {
     expect(systemPrompt).toContain("never prescribe an exact water volume");
     expect(systemPrompt).toContain("never assume NPK units");
     expect(systemPrompt).toContain("price prediction");
+    expect(systemPrompt).toContain("direct conclusion");
+    expect(systemPrompt).toContain("confidence limits");
+    expect(systemPrompt).toContain("confirmed measurements");
   });
 
   test("falls back to rule-based and explains why when the LLM fails", async () => {
