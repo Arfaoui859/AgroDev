@@ -10,7 +10,7 @@ const text = (v: unknown, max = 500) => typeof v === "string" ? v.trim().slice(0
 const positive = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN;
 const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
 const positiveSigned = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) ? Number(v) : NaN;
-const REGULATED_PESTICIDE_TERMS = /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|produit\\s+phyto|مبيد|مبيدات|دواء\\s+فلاحي|أدوية\\s+فلاحية|ادوية\\s+فلاحية/i;
+const REGULATED_PESTICIDE_TERMS = /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|produit\s+phyto|مبيد|مبيدات|دواء\s+فلاحي|أدوية\s+فلاحية|ادوية\s+فلاحية/i;
 const isRegulatedPesticideText = (...values: unknown[]) =>
   values.some(value => typeof value === "string" && REGULATED_PESTICIDE_TERMS.test(value));
 
