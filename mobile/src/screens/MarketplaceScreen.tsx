@@ -359,6 +359,7 @@ export const MarketplaceScreen: React.FC = () => {
         />
       ) : null}
 
+      {selectedMarketCategory === 'home' ? (
       <View style={styles.marketCategorySection}>
         <Text style={[styles.marketCategoryHeading, isRtl && rtlStyles.rtlText]}>
           {language === 'ar' ? 'شنوّة تحب تلقى؟' : language === 'fr' ? 'Que recherchez-vous ?' : 'What are you looking for?'}
@@ -388,6 +389,7 @@ export const MarketplaceScreen: React.FC = () => {
           })}
         </View>
       </View>
+      ) : null}
       {selectedMarketCategory === 'listings' ? (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
@@ -655,7 +657,7 @@ export const MarketplaceScreen: React.FC = () => {
       </Card>
       )}
 
-      {activeInquiryListing ? (
+      {selectedMarketCategory === 'listings' && activeInquiryListing ? (
         <Card variant="outlined" style={styles.listingsCard}>
           <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
             {language === 'ar' ? 'إرسال طلب للبائع' : language === 'fr' ? 'Contacter le vendeur' : 'Send an inquiry'}
@@ -826,37 +828,7 @@ export const MarketplaceScreen: React.FC = () => {
       ) : null}
 
 
-              </View>
-            ))}
-          </View>
-        )}
-      </Card>
 
-      {/* Market intelligence — honest availability of forecast & supply/demand */}
-      <Card variant="outlined" style={styles.intelCard}>
-        <View style={[styles.tipRow, isRtl && rtlStyles.rtlRow]}>
-          <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={colors.primary} />
-          <View style={styles.tipTextContent}>
-            <Text style={[styles.tipTitle, isRtl && rtlStyles.rtlText]}>{x.marketIntelTitle}</Text>
-            <Text style={[styles.tipBody, isRtl && rtlStyles.rtlText]}>{x.marketIntelNote}</Text>
-          </View>
-        </View>
-        <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
-          <MarketIntelRow label={x.marketIntelForecast} capability={capabilities['market-forecast']} x={x} isRtl={isRtl} />
-          <MarketIntelRow label={x.marketIntelSupplyDemand} capability={capabilities['supply-demand']} x={x} isRtl={isRtl} />
-        </View>
-      </Card>
-
-      <Card variant="outlined" style={styles.tipCard}>
-        <View style={[styles.tipRow, isRtl && rtlStyles.rtlRow]}>
-          <MaterialCommunityIcons name="information" size={22} color={colors.secondary} />
-          <View style={styles.tipTextContent}>
-            <Text style={[styles.tipTitle, isRtl && rtlStyles.rtlText]}>{x.marketAboutTitle}</Text>
-            <Text style={[styles.tipBody, isRtl && rtlStyles.rtlText]}>{x.marketAboutBody}</Text>
-          </View>
-        </View>
-      </Card>
-      ) : null}
 
     </ScrollView>
   );
