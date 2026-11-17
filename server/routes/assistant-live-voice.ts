@@ -166,18 +166,20 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // The auth_tokens endpoint accepts CreateAuthTokenRequest fields at
-        // the top level. Wrapping these fields in "authToken" is invalid.
-        // Allow a few reconnect attempts with the same short-lived credential.
-        uses: 5,
-        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
-        newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
-        liveConnectConstraints: {
-          model: GEMINI_LIVE_MODEL,
-          config: {
-            responseModalities: ["AUDIO"],
-            systemInstruction: {
-              parts: [{ text: liveSystemInstruction(farmContext) }],
+        // CreateAuthTokenRequest requires the AuthToken payload under
+        // the authToken field (REST JSON uses lowerCamelCase).
+        authToken: {
+          // Allow a few reconnect attempts with the same short-lived credential.
+          uses: 5,
+          expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+          newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
+          liveConnectConstraints: {
+            model: GEMINI_LIVE_MODEL,
+            config: {
+              responseModalities: ["AUDIO"],
+              systemInstruction: {
+                parts: [{ text: liveSystemInstruction(farmContext) }],
+              },
             },
           },
         },
