@@ -526,6 +526,41 @@ export interface AgriculturalCatalogProduct {
   sourceUrl?: string | null;
 }
 
+export interface PesticideSellerOffer {
+  id: string;
+  tradeName: string;
+  activeIngredient?: string | null;
+  registrationNumber: string;
+  packageSize: number;
+  packageUnit: string;
+  price: number;
+  currency: string;
+  quantity: number;
+  quantityUnit: string;
+  location?: string | null;
+  governorate?: string | null;
+  imageUrls: string[];
+  status: 'pending_review' | 'approved' | 'rejected' | 'archived';
+  reviewNote?: string | null;
+  createdAt: string;
+}
+
+export interface AgriculturalInputPrice {
+  id: string;
+  productName: string;
+  productType: string;
+  activeIngredient?: string | null;
+  packageSize?: number | null;
+  packageUnit?: string | null;
+  price: number;
+  currency: string;
+  sourceName: string;
+  sourceUrl: string;
+  sourceType: string;
+  observedOn: string;
+  verificationStatus: 'unverified' | 'source-checked' | 'official-source' | 'rejected';
+}
+
 export interface MarketplaceInquiry {
   id: string;
   listingId: string;
