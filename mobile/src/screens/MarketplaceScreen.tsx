@@ -3,6 +3,7 @@ import { rtlStyles } from '../theme/rtl';
 import {
   View,
   Text,
+  Image,
   Linking,
   ScrollView,
   StyleSheet,
@@ -70,6 +71,7 @@ export const MarketplaceScreen: React.FC = () => {
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'all' | 'prices' | 'inputs' | 'equipment' | 'produce' | 'harvest'>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -346,6 +348,36 @@ export const MarketplaceScreen: React.FC = () => {
         placeholder={t.searchCrop}
         clearLabel={x.clearSearch}
       />
+
+      <View style={styles.marketCategorySection}>
+        <Text style={[styles.marketCategoryHeading, isRtl && rtlStyles.rtlText]}>
+          {language === 'ar' ? 'شنوّة تحب تلقى؟' : language === 'fr' ? 'Que recherchez-vous ?' : 'What are you looking for?'}
+        </Text>
+        <View style={styles.marketCategoryGrid}>
+          {([
+            { id: 'all', icon: 'view-grid-outline', ar: 'كل السوق', fr: 'Tout le marché', en: 'All market', count: listings.length + latestPrices.length },
+            { id: 'prices', icon: 'currency-usd', ar: 'أسعار الخضرة والغلة', fr: 'Prix fruits & légumes', en: 'Fruit & vegetable prices', count: latestPrices.length },
+            { id: 'inputs', icon: 'sprout-outline', ar: 'أدوية وأسمدة وبذور', fr: 'Intrants agricoles', en: 'Inputs & seeds', count: sellerListings.filter(v => v.listingType === 'agricultural_input').length + catalog.length },
+            { id: 'equipment', icon: 'tractor', ar: 'معدات فلاحية', fr: 'Matériel agricole', en: 'Farm equipment', count: sellerListings.filter(v => v.listingType === 'equipment').length },
+            { id: 'produce', icon: 'basket-outline', ar: 'منتوجات فلاحية للبيع', fr: 'Produits agricoles', en: 'Farm products for sale', count: sellerListings.filter(v => v.listingType === 'agricultural_product').length },
+            { id: 'harvest', icon: 'calendar-check-outline', ar: 'صابة ومحاصيل جاية', fr: 'Récoltes à venir', en: 'Upcoming harvests', count: futureHarvests.length },
+          ] as const).map((category) => {
+            const active = selectedMarketCategory === category.id;
+            return (
+              <Pressable key={category.id} onPress={() => setSelectedMarketCategory(category.id)}
+                style={[styles.marketCategoryTile, active && styles.marketCategoryTileActive]}>
+                <View style={[styles.marketCategoryIcon, active && styles.marketCategoryIconActive]}>
+                  <MaterialCommunityIcons name={category.icon as any} size={23} color={active ? colors.primaryDark : colors.primary} />
+                </View>
+                <Text style={[styles.marketCategoryName, isRtl && rtlStyles.rtlText, active && styles.marketCategoryNameActive]}>
+                  {language === 'ar' ? category.ar : language === 'fr' ? category.fr : category.en}
+                </Text>
+                <Text style={styles.marketCategoryCount}>{category.count} {language === 'ar' ? 'عرض' : language === 'fr' ? 'annonces' : 'items'}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="store-plus-outline" size={21} color={colors.primary} />
@@ -417,6 +449,8 @@ export const MarketplaceScreen: React.FC = () => {
         ) : null}
       </Card>
 
+      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'prices') && (
+      <>
       {loading ? (
         <StateCard kind="loading" title={x.stateLoading} compact />
       ) : error && prices.length === 0 ? (
@@ -529,7 +563,10 @@ export const MarketplaceScreen: React.FC = () => {
           </View>
         </>
       )}
+      </>
+      )}
 
+      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'inputs' || selectedMarketCategory === 'equipment' || selectedMarketCategory === 'produce') && (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="storefront-outline" size={21} color={colors.primary} />
@@ -541,7 +578,10 @@ export const MarketplaceScreen: React.FC = () => {
           <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
         ) : (
           <View style={styles.listingRows}>
-            {sellerListings.map((listing) => (
+            {sellerListings.filter(listing => selectedMarketCategory === 'all' ||
+              (selectedMarketCategory === 'inputs' && listing.listingType === 'agricultural_input') ||
+              (selectedMarketCategory === 'equipment' && listing.listingType === 'equipment') ||
+              (selectedMarketCategory === 'produce' && listing.listingType === 'agricultural_product')).map((listing) => (
               <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
                 <View style={styles.listingText}>
                   <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
@@ -559,7 +599,9 @@ export const MarketplaceScreen: React.FC = () => {
           </View>
         )}
       </Card>
+      )}
 
+      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'harvest') && (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="sprout" size={21} color={colors.primary} />
@@ -594,6 +636,7 @@ export const MarketplaceScreen: React.FC = () => {
           </View>
         )}
       </Card>
+      )}
 
       {activeInquiryListing ? (
         <Card variant="outlined" style={styles.listingsCard}>
@@ -612,6 +655,7 @@ export const MarketplaceScreen: React.FC = () => {
         </Card>
       ) : null}
 
+      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'inputs') && (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="flask-outline" size={21} color={colors.primary} />
@@ -671,6 +715,7 @@ export const MarketplaceScreen: React.FC = () => {
           {language === 'ar' ? 'حالة التسجيل ومصدر البيانات ظاهرين لكل منتج. وجود المنتج في الكتالوج لا يثبت وحده صلاحيته للاستعمال.' : language === 'fr' ? 'Le statut et la source sont affichés. Une fiche ne remplace pas la vérification de l’étiquette.' : 'Registration status and source are shown. A catalog record alone does not authorize product use.'}
         </Text>
       </Card>
+      )}
 
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
@@ -818,14 +863,26 @@ const styles = StyleSheet.create({
   intelState: xsSemibold,
   provBar: stackSm,
   listingsCard: { marginBottom: spacing.lg, padding: spacing.md },
+  marketCategorySection: { marginTop: spacing.md, marginBottom: spacing.lg, gap: spacing.sm },
+  marketCategoryHeading: { ...titleBase, color: colors.text, marginBottom: 2 },
+  marketCategoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: spacing.sm },
+  marketCategoryTile: { width: '48.5%', minHeight: 126, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, gap: spacing.xs },
+  marketCategoryTileActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  marketCategoryIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSubtle },
+  marketCategoryIconActive: { backgroundColor: colors.surface },
+  marketCategoryName: { color: colors.text, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.semibold },
+  marketCategoryNameActive: { color: colors.primaryDark },
+  marketCategoryCount: { color: colors.textMuted, fontSize: typography.fontSizes.xs },
   listingsHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   listingsTitle: { ...titleBase, color: colors.text },
   listingRows: { gap: spacing.sm },
-  listingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingVertical: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border },
-  listingText: { flex: 1, gap: 2 },
+  listingRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  listingThumb: { width: 76, height: 76, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
+
+  listingText: { flex: 1, minWidth: 0, gap: 4 },
   listingName: { ...labelSemibold, color: colors.text },
   listingMeta: subtleCaption,
-  listingPrice: { ...labelSemibold, color: colors.primaryDark, textAlign: 'right' },
+  listingPrice: { ...labelSemibold, color: colors.primaryDark, textAlign: 'left', width: '100%' },
   priceSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 2 },
   priceSummaryIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   priceSummaryText: { flex: 1, gap: 2 },
