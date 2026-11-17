@@ -11,10 +11,10 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { badgePill, cardBottomRow, cardPad, flex1, screenStyles, spaceBetween, spaceBetweenSm, stackSm, stackTopMd } from '../theme/layout';
+import { cardPad, flex1, screenStyles, spaceBetween, stackSm, stackTopMd } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography } from '../theme/colors';
-import { labelSemibold, mutedCaption, subtleCaption, titleBase, xsSemibold } from '../theme/typographyStyles';
+import { labelSemibold, subtleCaption, titleBase, xsSemibold } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
