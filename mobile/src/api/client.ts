@@ -1429,7 +1429,17 @@ export async function getMarketPrices(params: { crop?: string; market?: string }
     supplyQuantityTons: p.supply_quantity_tons == null ? null : Number(p.supply_quantity_tons),
     supplyChangePercent: p.supply_change_percent == null ? null : Number(p.supply_change_percent),
     observationDays: p.observation_days == null ? null : Number(p.observation_days),
-  }));
+  })).sort((a, b) => {
+    // Keep the newest observation at the top, even when the API serves cached rows.
+    const dateA = a.lastUpdated ? Date.parse(a.lastUpdated) : Number.NaN;
+    const dateB = b.lastUpdated ? Date.parse(b.lastUpdated) : Number.NaN;
+    const validA = Number.isFinite(dateA);
+    const validB = Number.isFinite(dateB);
+    if (validA && validB) return dateB - dateA;
+    if (validA) return -1;
+    if (validB) return 1;
+    return 0;
+  });
   return {
     data: { prices, meta: metaFrom(res.data?.meta, 'database', 'market-price-observations') },
     error: res.error,
