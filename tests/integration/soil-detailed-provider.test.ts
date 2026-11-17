@@ -64,6 +64,35 @@ describe("Detailed soil analysis with a configured provider",()=>{
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  test("accepts a partial soil sample without inventing pH or moisture",async()=>{
+    stubProviderJson(validReport);
+    const res = await request(app).post("/api/soil-analysis/analyze")
+      .send({ph:6.9})
+      .expect(200);
+    expect(res.body.data.dataQuality.providedMeasurements).toEqual([
+      {name:"pH",value:6.9,unit:"unitless",source:"user-entered-unverified"},
+    ]);
+    expect(JSON.stringify(res.body.data.dataQuality.providedMeasurements)).not.toContain("رطوبة التربة");
+  });
+
+  test("accepts a nutrient-only soil sample when pH and moisture are absent",async()=>{
+    stubProviderJson(validReport);
+    const res = await request(app).post("/api/soil-analysis/analyze")
+      .send({nitrogen:18,nutrientUnit:"mg/kg"})
+      .expect(200);
+    expect(res.body.data.dataQuality.providedMeasurements).toEqual([
+      {name:"النيتروجين (N)",value:18,unit:"mg/kg",source:"user-entered-unverified"},
+    ]);
+  });
+
+  test("rejects a request that contains no actual soil measurements",async()=>{
+    const res = await request(app).post("/api/soil-analysis/analyze")
+      .send({fieldId:"field-1",sampleDepth:30})
+      .expect(400);
+    expect(res.body.error).toBe("INVALID_SOIL_INPUT");
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   test("server rebuilds the provided-measurements evidence from the submitted sample",async()=>{
     const untrustedReport = {
       ...validReport,
