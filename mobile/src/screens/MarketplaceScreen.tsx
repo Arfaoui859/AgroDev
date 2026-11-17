@@ -287,11 +287,49 @@ export const MarketplaceScreen: React.FC = () => {
   const sellerListings = listings.filter((item) => item.listingType !== 'harvest');
   const futureHarvests = listings.filter((item) => item.listingType === 'harvest');
 
-  const filteredPrices = prices.filter((item) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return item.cropNameAr.toLowerCase().includes(q) || item.cropName.toLowerCase().includes(q);
+  // Keep one latest observation per crop in the current-price view.
+  // All historical observations remain untouched in the database.
+  const latestPriceByCrop = new Map<string, MarketPriceItem>();
+  prices.forEach((item) => {
+    const cropKey = (item.cropNameAr || item.cropName || item.id)
+      .normalize('NFC')
+      .replace(/\u0640/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLocaleLowerCase();
+    if (!cropKey) return;
+    const existing = latestPriceByCrop.get(cropKey);
+    const itemDate = Date.parse(item.periodEnd || item.lastUpdated || item.periodStart || '');
+    const existingDate = existing ? Date.parse(existing.periodEnd || existing.lastUpdated || existing.periodStart || '') : Number.NEGATIVE_INFINITY;
+    if (!existing || (Number.isFinite(itemDate) ? itemDate : Number.NEGATIVE_INFINITY) >
+      (Number.isFinite(existingDate) ? existingDate : Number.NEGATIVE_INFINITY)) {
+      latestPriceByCrop.set(cropKey, item);
+    }
   });
+
+  const latestPrices = Array.from(latestPriceByCrop.values()).sort((a, b) => {
+    const aDate = Date.parse(a.periodEnd || a.lastUpdated || a.periodStart || '');
+    const bDate = Date.parse(b.periodEnd || b.lastUpdated || b.periodStart || '');
+    return (Number.isFinite(bDate) ? bDate : 0) - (Number.isFinite(aDate) ? aDate : 0);
+  });
+
+  const filteredPrices = latestPrices.filter((item) => {
+    const q = searchQuery.trim().toLocaleLowerCase();
+    if (!q) return true;
+    return item.cropNameAr.toLocaleLowerCase().includes(q) || item.cropName.toLocaleLowerCase().includes(q);
+  });
+
+  const formatMarketDate = (value?: string | null) => {
+    if (!value) return '—';
+    const datePart = value.slice(0, 10);
+    const date = /^\\d{4}-\\d{2}-\\d{2}$/.test(datePart)
+      ? new Date(datePart + 'T12:00:00')
+      : new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-TN' : 'en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    }).format(date);
+  };
 
   return (
     <ScrollView
@@ -401,91 +439,92 @@ export const MarketplaceScreen: React.FC = () => {
         <>
           <ProvenanceBar meta={meta} detailed cached={fromCache} style={styles.provBar} />
 
+          <View style={styles.priceSummaryRow}>
+            <View style={styles.priceSummaryIcon}>
+              <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.priceSummaryText}>
+              <Text style={[styles.priceSummaryTitle, isRtl && rtlStyles.rtlText]}>
+                {language === 'ar' ? 'آخر الأسعار المتوفرة' : language === 'fr' ? 'Derniers prix disponibles' : 'Latest available prices'}
+              </Text>
+              <Text style={[styles.priceSummaryCaption, isRtl && rtlStyles.rtlText]}>
+                {language === 'ar' ? 'كل محصول يظهر مرة واحدة حسب أحدث تاريخ' : language === 'fr' ? 'Un seul prix par culture, selon la date la plus récente' : 'One entry per crop, selected by the latest observation date'}
+              </Text>
+            </View>
+            <Badge label={String(latestPrices.length)} variant="primary" size="md" />
+          </View>
+
           <View style={styles.priceList}>
             {filteredPrices.length === 0 ? (
               <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
             ) : (
-              filteredPrices.map((item) => (
-              <Card key={item.id} variant="elevated" style={styles.priceCard}>
-                <View style={[styles.cardHeader, isRtl && rtlStyles.rtlRow]}>
-                  <View style={styles.cropInfo}>
-                    <Text style={[styles.cropName, isRtl && rtlStyles.rtlText]}>
-                      {language === 'ar' ? item.cropNameAr : item.cropName}
-                    </Text>
-                    {item.marketLocation && item.marketLocation !== '—' ? (
-                      <View style={[styles.locationRow, isRtl && rtlStyles.rtlRow]}>
-                        <MaterialCommunityIcons name="map-marker" size={13} color={colors.textMuted} />
-                        <Text style={styles.marketLocation}>{item.marketLocation}</Text>
-                      {item.sourceName ? <Text style={styles.marketLocation}>{item.sourceName} · {item.priceKind === 'retail' ? (language === 'ar' ? 'تفصيل' : language === 'fr' ? 'Détail' : 'Retail') : (language === 'ar' ? 'جملة' : language === 'fr' ? 'Gros' : 'Wholesale')} · {item.verificationStatus === 'official-source' ? (language === 'ar' ? 'مصدر رسمي' : language === 'fr' ? 'Source officielle' : 'Official source') : (language === 'ar' ? 'غير متحقق' : language === 'fr' ? 'Non vérifié' : 'Unverified')}</Text> : null}
+              filteredPrices.map((item) => {
+                const priceText = item.pricePerKg !== null
+                  ? item.pricePerKg.toFixed(2)
+                  : item.priceMin != null && item.priceMax != null
+                    ? `${item.priceMin.toFixed(2)} – ${item.priceMax.toFixed(2)}`
+                    : item.priceMin != null ? item.priceMin.toFixed(2)
+                      : item.priceMax != null ? item.priceMax.toFixed(2) : '—';
+                const dateLabel = item.aggregationPeriod === 'monthly'
+                  ? (language === 'ar' ? 'فترة السعر' : language === 'fr' ? 'Période du prix' : 'Price period')
+                  : (language === 'ar' ? 'تاريخ آخر سعر' : language === 'fr' ? 'Date du dernier prix' : 'Latest price date');
+                const dateValue = item.periodStart && item.periodEnd && item.periodStart !== item.periodEnd
+                  ? `${formatMarketDate(item.periodStart)} – ${formatMarketDate(item.periodEnd)}`
+                  : formatMarketDate(item.periodEnd || item.lastUpdated || item.periodStart);
+                return (
+                  <Card key={item.id} variant="elevated" style={styles.priceCard}>
+                    <View style={[styles.priceCardTop, isRtl && rtlStyles.rtlRow]}>
+                      <View style={styles.cropInfo}>
+                        <Text style={[styles.cropName, isRtl && rtlStyles.rtlText]} numberOfLines={2}>
+                          {language === 'ar' ? item.cropNameAr : item.cropName}
+                        </Text>
+                        <View style={[styles.locationRow, isRtl && rtlStyles.rtlRow]}>
+                          <MaterialCommunityIcons name="map-marker-outline" size={14} color={colors.textMuted} />
+                          <Text style={styles.marketLocation}>
+                            {item.marketLocation && item.marketLocation !== '—' ? item.marketLocation : (language === 'ar' ? 'سوق الجملة' : language === 'fr' ? 'Marché de gros' : 'Wholesale market')}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.priceDisplay}>
+                        <Text style={styles.priceValue}>{priceText}</Text>
+                        <Text style={styles.currencyLabel}>
+                          {item.currency === 'TND' && item.unit === 'kg' ? t.currencyPerKg : `${item.currency || 'TND'} / ${item.unit || 'kg'}`}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={[styles.priceDatePanel, isRtl && rtlStyles.rtlRow]}>
+                      <View style={styles.priceDateIcon}>
+                        <MaterialCommunityIcons name="calendar-clock" size={17} color={colors.primary} />
+                      </View>
+                      <View style={styles.priceDateText}>
+                        <Text style={[styles.priceDateLabel, isRtl && rtlStyles.rtlText]}>{dateLabel}</Text>
+                        <Text style={[styles.priceDateValue, isRtl && rtlStyles.rtlText]}>{dateValue}</Text>
+                      </View>
                       {item.aggregationPeriod === 'monthly' ? (
+                        <Badge label={language === 'ar' ? 'معدل شهري' : language === 'fr' ? 'Moyenne mensuelle' : 'Monthly average'} variant="secondary" size="sm" />
+                      ) : null}
+                    </View>
+
+                    <View style={[styles.priceMetaRow, isRtl && rtlStyles.rtlRow]}>
+                      {item.sourceName ? (
+                        <View style={[styles.priceMetaItem, isRtl && rtlStyles.rtlRow]}>
+                          <MaterialCommunityIcons name="database-check-outline" size={13} color={colors.textMuted} />
+                          <Text style={styles.marketLocation}>{item.sourceName}</Text>
+                        </View>
+                      ) : null}
+                      {item.qualityGrade && item.qualityGrade !== '—' ? (
+                        <Badge label={item.qualityGrade} variant="secondary" size="sm" />
+                      ) : null}
+                      {item.changePercent != null && item.aggregationPeriod === 'monthly' ? (
                         <Text style={styles.marketLocation}>
-                          {language === 'ar' ? 'معدل شهري' : language === 'fr' ? 'Moyenne mensuelle' : 'Monthly average'}
-                          {item.supplyQuantityTons != null ? ' · ' + (language === 'ar' ? 'التزويد' : language === 'fr' ? 'Approvisionnement' : 'Supply') + ': ' + item.supplyQuantityTons.toLocaleString() + ' t' : ''}
-                          {item.observationDays != null ? ' · ' + item.observationDays + (language === 'ar' ? ' يوم رصد' : language === 'fr' ? ' jours observés' : ' observation days') : ''}
-                          {item.supplyChangePercent != null ? ' · ' + (language === 'ar' ? 'تغير التزويد' : language === 'fr' ? 'Variation offre' : 'Supply change') + ': ' + (item.supplyChangePercent > 0 ? '+' : '') + item.supplyChangePercent.toFixed(1) + '%' : ''}
-                          {item.changePercent != null ? ' · ' + (language === 'ar' ? 'مقارنة بالعام السابق' : language === 'fr' ? 'vs année précédente' : 'vs previous year') : ''}
+                          {language === 'ar' ? 'مقارنة بالعام السابق' : language === 'fr' ? 'vs année précédente' : 'vs previous year'}: {item.changePercent > 0 ? '+' : ''}{item.changePercent.toFixed(1)}%
                         </Text>
                       ) : null}
-                      </View>
-                    ) : null}
-                  </View>
-
-                  <View style={styles.priceDisplay}>
-                    <Text style={styles.priceValue}>
-                      {item.pricePerKg !== null ? item.pricePerKg.toFixed(2) :
-                        item.priceMin !== null && item.priceMin !== undefined && item.priceMax !== null && item.priceMax !== undefined
-                          ? `${item.priceMin.toFixed(2)}–${item.priceMax.toFixed(2)}`
-                          : item.priceMin != null ? item.priceMin.toFixed(2) : item.priceMax != null ? item.priceMax.toFixed(2) : '—'}
-                    </Text>
-                    <Text style={styles.currencyLabel}>{item.currency === 'TND' && item.unit === 'kg' ? t.currencyPerKg : `${item.currency || 'TND'} / ${item.unit || 'kg'}`}</Text>
-                  </View>
-                </View>
-
-                <View style={[cardBottomRow, isRtl && rtlStyles.rtlRow]}>
-                  {item.qualityGrade && item.qualityGrade !== '—' ? (
-                    <Badge label={item.qualityGrade} variant="secondary" size="sm" />
-                  ) : (
-                    <View />
-                  )}
-
-                  {item.changePercent !== null ? (
-                    <View
-                      style={[
-                        styles.trendBadge,
-                        {
-                          backgroundColor:
-                            item.changePercent > 0
-                              ? colors.successLight
-                              : item.changePercent < 0
-                                ? colors.dangerLight
-                                : colors.surfaceSubtle,
-                        },
-                        isRtl && rtlStyles.rtlRow,
-                      ]}
-                    >
-                      <MaterialCommunityIcons
-                        name={item.changePercent > 0 ? 'trending-up' : item.changePercent < 0 ? 'trending-down' : 'trending-neutral'}
-                        size={16}
-                        color={item.changePercent > 0 ? colors.success : item.changePercent < 0 ? colors.danger : colors.textMuted}
-                      />
-                      <Text
-                        style={[
-                          styles.trendText,
-                          {
-                            color:
-                              item.changePercent > 0 ? colors.success : item.changePercent < 0 ? colors.danger : colors.textSecondary,
-                          },
-                        ]}
-                      >
-                        {`${item.changePercent > 0 ? '+' : ''}${item.changePercent.toFixed(1)}%`}
-                      </Text>
                     </View>
-                  ) : (
-                    <Text style={styles.noTrend}>{item.lastUpdated ? item.lastUpdated : '—'}</Text>
-                  )}
-                </View>
-              </Card>
-              ))
+                  </Card>
+                );
+              })
             )}
           </View>
         </>
@@ -787,25 +826,28 @@ const styles = StyleSheet.create({
   listingName: { ...labelSemibold, color: colors.text },
   listingMeta: subtleCaption,
   listingPrice: { ...labelSemibold, color: colors.primaryDark, textAlign: 'right' },
+  priceSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 2 },
+  priceSummaryIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  priceSummaryText: { flex: 1, gap: 2 },
+  priceSummaryTitle: labelSemibold,
+  priceSummaryCaption: subtleCaption,
   priceList: { gap: spacing.sm, marginBottom: spacing.lg },
-  priceCard: cardPad,
-  cardHeader: spaceBetweenSm,
+  priceCard: { ...cardPad, gap: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  priceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   cropInfo: flex1,
   cropName: titleBase,
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
   marketLocation: subtleCaption,
-  priceDisplay: {
-    alignItems: 'flex-end',
-    backgroundColor: colors.surfaceSubtle,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-  },
-  priceValue: { fontSize: typography.fontSizes.lg, lineHeight: typography.lineHeights.lg, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
+  priceDisplay: { alignItems: 'flex-end', backgroundColor: colors.primaryLight, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, minWidth: 104 },
+  priceValue: { fontSize: typography.fontSizes.xl, lineHeight: typography.lineHeights.xl, fontWeight: typography.fontWeights.bold, color: colors.primaryDark },
   currencyLabel: { fontSize: typography.fontSizes.xs, color: colors.textSecondary, fontWeight: typography.fontWeights.medium, lineHeight: typography.lineHeights.xs },
-  trendBadge: badgePill,
-  trendText: labelSemibold,
-  noTrend: mutedCaption,
+  priceDatePanel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surfaceSubtle, borderRadius: radius.md, padding: spacing.sm },
+  priceDateIcon: { width: 34, height: 34, borderRadius: radius.md, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  priceDateText: { flex: 1, gap: 2 },
+  priceDateLabel: subtleCaption,
+  priceDateValue: { fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm, fontWeight: typography.fontWeights.bold, color: colors.text },
+  priceMetaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
+  priceMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tipCard: { backgroundColor: colors.secondaryLight, borderColor: colors.secondary, padding: spacing.md },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   tipTextContent: flex1,
