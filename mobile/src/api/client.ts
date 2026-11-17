@@ -1437,6 +1437,30 @@ export async function getMarketPrices(params: { crop?: string; market?: string }
   };
 }
 
+/**
+ * Market intelligence is calculated by the existing Express market-trends route.
+ * It only reports insights when the platform database contains enough dated
+ * price observations; the caller must preserve the server's provenance flags.
+ */
+export async function getMarketIntelligence(period = 30): Promise<{
+  data: any | null;
+  error: string | null;
+  unavailable: boolean;
+  fromCache: boolean;
+}> {
+  const safePeriod = Math.max(1, Math.min(365, Math.floor(period)));
+  const res = await apiRequest<any>(`/api/market/trends?period=${safePeriod}`, {
+    cacheKey: `market:intelligence:${safePeriod}`,
+  });
+  const payload = res.data?.data ?? null;
+  return {
+    data: payload,
+    error: payload ? null : (res.error || res.data?.message || 'Market intelligence data is unavailable'),
+    unavailable: !payload && (res.status === 503 || res.data?.status === 'unavailable'),
+    fromCache: res.fromCache,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Pest control — rule-based symptom matcher (honest, never guesses)
 // ---------------------------------------------------------------------------
