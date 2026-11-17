@@ -230,6 +230,13 @@ export class LiveVoiceSession {
               },
             },
             {
+              name: "forget_user_memory",
+              description: "Delete one saved personal memory only when the user explicitly asks you to forget or remove that fact. Never delete memories merely because they seem outdated; ask the user if unclear.",
+              parameters: { type: "OBJECT", properties: {
+                memory_key: { type: "STRING", description: "Exact memory key to forget, such as communication.answer_style." },
+              }, required: ["memory_key"] },
+            },
+            {
               name: "get_weather",
             description: "Fetch verified live weather conditions and a short forecast for a Tunisian governorate. Use this whenever the user asks about current weather, today's weather, forecast, rain, temperature, wind, or weather-related farm advice. If the governorate is not known from verified farm context or the conversation, ask the user which governorate before calling.",
             parameters: {
@@ -546,6 +553,18 @@ export class LiveVoiceSession {
         if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
         continue;
       }
+      if (call.name === "forget_user_memory") {
+        const key = typeof call.args?.memory_key === "string" ? call.args.memory_key.trim().toLowerCase() : "";
+        const validKey = /^[a-z0-9_.-]{2,100}$/.test(key);
+        const result = validKey ? await apiRequest<any>(`/api/assistant/memory/${encodeURIComponent(key)}`, { method: "DELETE" }) : { data: null, error: "invalid key" };
+        const payload = result.data;
+        const response = result.error || payload?.success !== true
+          ? { success: false, deleted: false, error: "ما نجّمتش نحذف المعلومة من الذاكرة." }
+          : { success: true, deleted: true, memoryKey: payload.deleted, instruction: "Confirm briefly that this specific memory was deleted." };
+        if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+        continue;
+      }
+
       if (call.name === "get_supported_crops" || call.name === "get_supported_diseases") {
         const isCropCatalogue = call.name === "get_supported_crops";
         const endpoint = isCropCatalogue ? "/api/ai/crops/supported" : "/api/ai/images/supported-diseases";
