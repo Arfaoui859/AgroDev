@@ -25,6 +25,7 @@ type OverviewState = {
 
 export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms, onOpenProjects, refreshKey = 0 }) => {
   const { isAuthenticated, user } = useAuth();
+  const userRole = user?.role;
   const { language, isRtl } = useLanguage();
   const [data, setData] = useState<OverviewState>({ farms: [], cultivations: [], tasks: [], error: false });
   const [loading, setLoading] = useState(true);
@@ -37,11 +38,9 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
 
   const load = useCallback(async () => {
     if (!isAuthenticated) return;
-    await Promise.resolve();
-    setLoading(true);
     try {
       const [farmsResult, cropsResult] = await Promise.all([getFarms(), getCultivations()]);
-      const tasksResult = user?.role === 'farmer' ? await getProjectTasks() : null;
+      const tasksResult = userRole === 'farmer' ? await getProjectTasks() : null;
       setData({
         farms: farmsResult.data,
         cultivations: cropsResult.data,
@@ -53,7 +52,7 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user?.role]);
+  }, [isAuthenticated, userRole]);
 
   useEffect(() => { void load(); }, [load, refreshKey]);
 
@@ -85,7 +84,7 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
         <Card variant="outlined" style={styles.empty}>
           <MaterialCommunityIcons name="cloud-alert-outline" size={24} color={colors.textMuted} />
           <Text style={[styles.emptyText, isRtl && rtlStyles.rtlText]}>{labels.retry}</Text>
-          <TouchableOpacity onPress={() => void load()} accessibilityRole="button"><Text style={styles.link}>{language === 'ar' ? 'إعادة المحاولة' : language === 'fr' ? 'Réessayer' : 'Try again'}</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => { setLoading(true); void load(); }} accessibilityRole="button"><Text style={styles.link}>{language === 'ar' ? 'إعادة المحاولة' : language === 'fr' ? 'Réessayer' : 'Try again'}</Text></TouchableOpacity>
         </Card>
       ) : data.farms.length === 0 && data.cultivations.length === 0 ? (
         <Card variant="outlined" style={styles.empty}>
