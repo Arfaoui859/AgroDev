@@ -48,6 +48,20 @@ Example payload (illustrative schema only; these are not real prices):
 
 Replace the illustrative row with values parsed from the actual source file. Never mark a row `official-source` unless the source itself supports that claim. The ingest endpoint is idempotent on `source_key + external_id`.
 
+An ONAGRI workbook review collector is included:
+
+- Script: `scripts/market-data/prepare_onagri_input_price_review.py`
+- Scheduled/manual workflow: `.github/workflows/onagri-input-price-review.yml`
+- It inspects the ONAGRI pesticide and agricultural-input price workbooks, extracts only explicit product-name and price columns, and writes unapproved candidates plus diagnostics to a GitHub Actions artifact.
+- If a workbook has no recognizable price/date columns, it reports a manual-mapping diagnostic instead of guessing.
+- After reviewing the artifact and confirming the unit, package size, price and observation date, set `approved=true` only on valid rows. Upload the reviewed file from a trusted operator environment with `AGROGROWTH_API_URL` and `AGROGROWTH_ADMIN_TOKEN` set:
+
+```bash
+python scripts/market-data/prepare_onagri_input_price_review.py --upload-reviewed onagri-input-price-review.json
+```
+
+The workflow does not automatically publish candidate prices.
+
 Public read endpoint:
 
 `GET /api/agro-market/input-prices?q=&limit=100`
