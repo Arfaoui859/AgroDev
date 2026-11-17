@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { flex1, screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Speech from 'expo-speech';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { subtleCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
@@ -33,35 +32,6 @@ function nextMessageId(): string {
   return `${Date.now()}-${messageSeq}`;
 }
 
-/** Clean markdown and split long replies into device-safe speech chunks. */
-function splitSpeechText(value: string): string[] {
-  const clean = value
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/https?:\/\/\S+/g, '')
-    .replace(/^\s{0,3}#{1,6}\s/gm, '')
-    .replace(/^\s*[-•*]\s+/gm, '')
-    .replace(/[|*_~`]/g, '')
-    .replace(/\n+/g, '. ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!clean) return [];
-  const sentences = clean.match(/[^.!?؟。]+[.!?؟。]?/gu) ?? [clean];
-  const chunks: string[] = [];
-  let current = '';
-  for (const sentence of sentences) {
-    const part = sentence.trim();
-    if (!part) continue;
-    if (current && (current.length + part.length + 1 > 2400)) {
-      chunks.push(current);
-      current = part;
-    } else {
-      current = current ? `${current} ${part}` : part;
-    }
-  }
-  if (current) chunks.push(current);
-  return chunks;
-}
-
 export const AIAssistantScreen: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
   const { user } = useAuth();
@@ -69,7 +39,6 @@ export const AIAssistantScreen: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [liveVoiceVisible, setLiveVoiceVisible] = useState(false);
-  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   // The persisted thread id returned by the gateway for a verified session.
   // Threaded back so the server keeps one conversation instead of creating a
   // new one per turn; it stays null for anonymous (unverified) callers.
@@ -125,37 +94,6 @@ export const AIAssistantScreen: React.FC = () => {
   // account's local thread is still loading.
   const messagesReady = threadStorageKey ? threadReadyKey === threadStorageKey : threadReadyKey === 'anonymous';
 
-  const speechLocale = language === 'ar' ? 'ar-SA' : language === 'fr' ? 'fr-FR' : 'en-US';
-
-  useEffect(() => () => { void Speech.stop(); }, []);
-
-  const handleSpeak = async (messageId: string, text: string) => {
-    if (speakingMessageId === messageId) {
-      await Speech.stop();
-      setSpeakingMessageId(null);
-      return;
-    }
-    await Speech.stop();
-    const chunks = splitSpeechText(text);
-    if (!chunks.length) return;
-    setSpeakingMessageId(messageId);
-    const speakChunk = (index: number) => {
-      if (index >= chunks.length) {
-        setSpeakingMessageId((current) => current === messageId ? null : current);
-        return;
-      }
-      Speech.speak(chunks[index], {
-        language: speechLocale,
-        rate: 0.94,
-        pitch: 1,
-        onDone: () => speakChunk(index + 1),
-        onStopped: () => setSpeakingMessageId((current) => current === messageId ? null : current),
-        onError: () => setSpeakingMessageId((current) => current === messageId ? null : current),
-      });
-    };
-    speakChunk(0);
-  };
-
   // The welcome bubble is derived at render time (not stored) so switching
   // language updates it immediately instead of leaving it in the old language.
   const displayMessages: ChatMessage[] = [
@@ -182,7 +120,6 @@ export const AIAssistantScreen: React.FC = () => {
       timestamp: formatTime(new Date(), language),
     };
 
-    void Speech.stop();
     setSpeakingMessageId(null);
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
@@ -332,24 +269,6 @@ export const AIAssistantScreen: React.FC = () => {
                 >
                   {msg.text}
                 </Text>
-                {!isUser && msg.id !== 'welcome' ? (
-                  <TouchableOpacity
-                    activeOpacity={0.75}
-                    onPress={() => void handleSpeak(msg.id, msg.text)}
-                    accessibilityRole="button"
-                    accessibilityLabel={speakingMessageId === msg.id ? x.stopSpeaking : x.speakAnswer}
-                    style={[styles.speakButton, isRtl && rtlStyles.rtlRow]}
-                  >
-                    <MaterialCommunityIcons
-                      name={speakingMessageId === msg.id ? 'stop-circle-outline' : 'volume-high'}
-                      size={18}
-                      color={colors.primary}
-                    />
-                    <Text style={styles.speakButtonText}>
-                      {speakingMessageId === msg.id ? x.stopSpeaking : x.speakAnswer}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
                 <Text
                   style={[
                     styles.messageTime,
@@ -574,22 +493,8 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     color: colors.text,
   },
-  speakButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    marginTop: spacing.sm,
-    paddingVertical: 5,
-    paddingHorizontal: 9,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceSubtle,
-  },
-  speakButtonText: {
-    color: colors.primary,
-    fontSize: typography.fontSizes.xs,
-    fontWeight: '600',
-  },
+
+
   sendButton: {
     width: 48,
     height: 48,
