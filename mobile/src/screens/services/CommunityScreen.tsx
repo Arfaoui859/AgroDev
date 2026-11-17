@@ -12,7 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
-import { colors, radius, shadows, spacing, typography } from '../../theme/colors';
+import { colors, radius, spacing, typography } from '../../theme/colors';
 import { rtlStyles } from '../../theme/rtl';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -131,9 +131,6 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpen
   useEffect(() => {
     let active = true;
     if (!isAuthenticated) {
-      setPosts([]);
-      setError(null);
-      setLoading(false);
       return () => { active = false; };
     }
     void Promise.resolve().then(() => {
