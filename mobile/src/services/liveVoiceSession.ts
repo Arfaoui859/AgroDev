@@ -81,6 +81,7 @@ export class LiveVoiceSession {
   private active = false;
   private speechActive = false;
   private silenceMs = 0;
+  private queueStarted = false;
   private decodeChain: Promise<void> = Promise.resolve();
   private lastReplyId = 0;
 
@@ -123,7 +124,6 @@ export class LiveVoiceSession {
     this.playbackQueue = this.audioContext.createBufferQueueSource();
     this.playbackQueue.connect(this.audioContext.destination);
     if (this.audioContext.state === "suspended") await this.audioContext.resume();
-    this.playbackQueue.start();
 
     const url = `${websocketUrl}?access_token=${encodeURIComponent(token)}`;
     await new Promise<void>((resolve, reject) => {
@@ -283,7 +283,13 @@ export class LiveVoiceSession {
     this.decodeChain = this.decodeChain.then(async () => {
       if (!this.audioContext || !this.playbackQueue || replyId !== this.lastReplyId) return;
       const buffer = await this.audioContext.decodePCMInBase64(base64Audio, OUTPUT_RATE, 1);
-      if (replyId === this.lastReplyId) this.playbackQueue.enqueueBuffer(buffer);
+      if (replyId === this.lastReplyId) {
+        this.playbackQueue.enqueueBuffer(buffer);
+        if (!this.queueStarted) {
+          this.playbackQueue.start();
+          this.queueStarted = true;
+        }
+      }
     }).catch((error) => {
       this.callbacks.onError?.(error instanceof Error ? error.message : "تعذّر تشغيل الرد الصوتي.");
     });
@@ -300,6 +306,7 @@ export class LiveVoiceSession {
     this.socket = null;
     this.playbackQueue?.clearBuffers();
     this.playbackQueue = null;
+    this.queueStarted = false;
     if (this.audioContext) await this.audioContext.close().catch(() => undefined);
     this.audioContext = null;
     await AudioManager.setAudioSessionActivity(false).catch(() => undefined);
