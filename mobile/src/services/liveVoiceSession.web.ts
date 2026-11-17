@@ -427,7 +427,7 @@ export class LiveVoiceSession {
             dataSource: weather.source?.provider ?? "WeatherAPI.com",
             observationTime: weather.source?.observationTime ?? null,
             isRealData: weather.source?.isRealData === true,
-            location: weather.location?.name ?? city || governorate,
+            location: weather.location?.name ?? (city || governorate),
             current: {
               temperatureC: weather.current.temperature,
               humidityPercent: weather.current.humidity,
