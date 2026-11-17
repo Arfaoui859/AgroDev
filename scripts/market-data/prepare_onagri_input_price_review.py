@@ -42,7 +42,7 @@ PACKAGE_UNIT_ALIASES = {"unite", "unité", "unit", "unite de vente", "unité de 
 
 
 def clean(value) -> str:
-    return re.sub(r"\\s+", " ", str(value)).strip() if value is not None else ""
+    return re.sub(r"\s+", " ", str(value)).strip() if value is not None else ""
 
 
 def norm(value) -> str:
@@ -181,7 +181,7 @@ def parse_workbook(content: bytes, resource: dict, package_title: str):
             candidates.append({
                 "external_id": stable_id(resource_id, product_name, price, observed_on, package_label),
                 "product_name": product_name[:180],
-                "product_type": "pesticide" if "pestic" in norm(package_title + " " + resource_title + " " + sheet.title) else "other",
+                "product_type": "pesticide" if "pestic" in norm(package_title + " " + resource_title + " " + sheet.title) else ("fertilizer" if any(term in norm(package_title + " " + resource_title + " " + sheet.title) for term in ("engrais", "fertilizer", "fertilisant")) else "other"),
                 "active_ingredient": clean(at("active"))[:250] or None,
                 "package_size": package_size,
                 "package_unit": package_unit,
