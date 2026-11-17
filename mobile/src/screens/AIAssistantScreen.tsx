@@ -11,12 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { flex1, screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { subtleCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
@@ -71,7 +69,6 @@ export const AIAssistantScreen: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [liveVoiceVisible, setLiveVoiceVisible] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   // The persisted thread id returned by the gateway for a verified session.
   // Threaded back so the server keeps one conversation instead of creating a
@@ -128,55 +125,9 @@ export const AIAssistantScreen: React.FC = () => {
   // account's local thread is still loading.
   const messagesReady = threadStorageKey ? threadReadyKey === threadStorageKey : threadReadyKey === 'anonymous';
 
-  const recognitionLocale = language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-FR' : 'en-US';
   const speechLocale = language === 'ar' ? 'ar-SA' : language === 'fr' ? 'fr-FR' : 'en-US';
 
-  useSpeechRecognitionEvent('start', () => setIsListening(true));
-  useSpeechRecognitionEvent('end', () => setIsListening(false));
-  useSpeechRecognitionEvent('result', (event) => {
-    const transcript = event.results?.[0]?.transcript;
-    if (typeof transcript === 'string' && transcript.trim()) {
-      setInputText(transcript.trim());
-    }
-  });
-  useSpeechRecognitionEvent('error', (event) => {
-    setIsListening(false);
-    if (event.error !== 'aborted') {
-      const message = event.error === 'not-allowed' ? x.voicePermissionDenied : x.voiceUnavailable;
-      Alert.alert(t.assistantTitle, message);
-    }
-  });
-
   useEffect(() => () => { void Speech.stop(); }, []);
-
-  const handleVoiceInput = async () => {
-    if (isListening) {
-      ExpoSpeechRecognitionModule.stop();
-      return;
-    }
-    try {
-      if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
-        Alert.alert(t.assistantTitle, x.voiceUnavailable);
-        return;
-      }
-      const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert(t.assistantTitle, x.voicePermissionDenied);
-        return;
-      }
-      setInputText('');
-      ExpoSpeechRecognitionModule.start({
-        lang: recognitionLocale,
-        interimResults: true,
-        continuous: false,
-        maxAlternatives: 1,
-        addsPunctuation: true,
-      });
-    } catch {
-      setIsListening(false);
-      Alert.alert(t.assistantTitle, x.voiceUnavailable);
-    }
-  };
 
   const handleSpeak = async (messageId: string, text: string) => {
     if (speakingMessageId === messageId) {
@@ -449,7 +400,6 @@ export const AIAssistantScreen: React.FC = () => {
           onPress={() => setLiveVoiceVisible(true)}
           accessibilityRole="button"
           accessibilityLabel={language === 'fr' ? 'Conversation vocale en direct' : language === 'en' ? 'Live voice conversation' : 'محادثة صوتية مباشرة'}
-          accessibilityState={{ selected: isListening }}
           style={styles.liveMicButton}
         >
           <MaterialCommunityIcons
