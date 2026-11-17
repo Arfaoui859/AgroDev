@@ -23,8 +23,8 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
-import { AgriculturalCatalogProduct, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
+import { createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { AgriculturalCatalogProduct, AgriculturalInputPrice, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
 
@@ -53,6 +53,8 @@ export const MarketplaceScreen: React.FC = () => {
   const [editListingSaving, setEditListingSaving] = useState(false);
   const [catalog, setCatalog] = useState<AgriculturalCatalogProduct[]>([]);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
+  const [inputPrices, setInputPrices] = useState<AgriculturalInputPrice[]>([]);
+  const [inputPricesUnavailable, setInputPricesUnavailable] = useState(false);
   const [sellerFormOpen, setSellerFormOpen] = useState(false);
   const [sellerSubmitting, setSellerSubmitting] = useState(false);
   const [sellerType, setSellerType] = useState<NonNullable<MarketplaceListing['listingType']>>('agricultural_input');
@@ -80,7 +82,7 @@ export const MarketplaceScreen: React.FC = () => {
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices' | 'marketIntel'>('home');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices' | 'inputPrices' | 'marketIntel'>('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,10 +91,11 @@ export const MarketplaceScreen: React.FC = () => {
   const loadPrices = useCallback(async () => {
     // Prices and seller listings are separate backend capabilities. A failure
     // in one must not suppress useful data returned by the other.
-    const [priceOutcome, listingsOutcome, catalogOutcome, myListingsOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
+    const [priceOutcome, listingsOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalCatalog().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getAgriculturalInputPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMyMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceInquiries().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketIntelligence(30).then((data) => ({ data })).catch((error: unknown) => ({ error })), 
@@ -124,6 +127,13 @@ export const MarketplaceScreen: React.FC = () => {
     } else {
       setCatalog([]);
       setCatalogUnavailable(true);
+    }
+    if ('data' in inputPricesOutcome) {
+      setInputPrices([...inputPricesOutcome.data.data].sort((a,b) => b.observedOn.localeCompare(a.observedOn)));
+      setInputPricesUnavailable(Boolean(inputPricesOutcome.data.error));
+    } else {
+      setInputPrices([]);
+      setInputPricesUnavailable(true);
     }
     setMyListings('data' in myListingsOutcome ? myListingsOutcome.data.data : []);
     setInquiries('data' in inquiriesOutcome ? inquiriesOutcome.data.data : []);
@@ -415,6 +425,7 @@ export const MarketplaceScreen: React.FC = () => {
             { id: 'inquiries', icon: 'message-text-outline', ar: 'طلبات التواصل', fr: 'Demandes de contact', en: 'Contact requests', count: inquiries.length },
             { id: 'myListings', icon: 'clipboard-list-outline', ar: 'عروضي للبيع', fr: 'Mes annonces', en: 'My sale offers', count: myListings.length },
             { id: 'catalog', icon: 'book-open-variant', ar: 'دليل الأدوية والأسمدة', fr: 'Guide des intrants', en: 'Agricultural inputs guide', count: catalog.length },
+            { id: 'inputPrices', icon: 'tag-multiple-outline', ar: 'أسعار الأدوية والأسمدة', fr: 'Prix des intrants', en: 'Input prices', count: inputPrices.length },
             { id: 'harvest', icon: 'calendar-clock', ar: 'محاصيل قادمة للحصاد', fr: 'Récoltes à venir', en: 'Upcoming harvests', count: futureHarvests.length },
             { id: 'listings', icon: 'storefront-outline', ar: 'عروض البيع والشراء', fr: 'Offres achat & vente', en: 'Buy & sell offers', count: sellerListings.length },
             { id: 'prices', icon: 'chart-line', ar: 'أسعار السوق', fr: 'Prix du marché', en: 'Market prices', count: latestPrices.length },
@@ -841,6 +852,49 @@ export const MarketplaceScreen: React.FC = () => {
         </Text>
       </Card>
       )}
+
+      {selectedMarketCategory === 'inputPrices' ? (
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="tag-multiple-outline" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+            {language === 'ar' ? 'أسعار الأدوية والمدخلات الفلاحية' : language === 'fr' ? 'Prix des produits phytosanitaires et intrants' : 'Pesticide and agricultural input prices'}
+          </Text>
+        </View>
+        <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+          {language === 'ar' ? 'مرتّبة من أحدث تاريخ إلى الأقدم. كل سعر مرتبط بالمصدر وتاريخ الملاحظة؛ الأسعار التجارية ليست أسعاراً رسمية.' : language === 'fr' ? 'Du plus récent au plus ancien. Chaque prix indique sa source et sa date ; les prix commerciaux ne sont pas des tarifs officiels.' : 'Newest observation first. Every price shows its source and observation date; commercial prices are not official tariffs.'}
+        </Text>
+        {inputPricesUnavailable ? (
+          <StateCard kind="unavailable" title={language === 'ar' ? 'الأسعار غير متاحة' : language === 'fr' ? 'Prix indisponibles' : 'Prices unavailable'}
+            message={language === 'ar' ? 'لم يتم ربط مصدر أسعار المدخلات بعد.' : language === 'fr' ? 'Aucune source de prix n’est encore connectée.' : 'No input-price source has been connected yet.'} compact />
+        ) : inputPrices.length === 0 ? (
+          <StateCard kind="empty" title={x.stateEmpty}
+            message={language === 'ar' ? 'لم يتم استيراد أسعار موثوقة بعد. لن نعرض أسعاراً مخمّنة.' : language === 'fr' ? 'Aucun prix source importé pour le moment.' : 'No sourced input prices have been imported yet.'} compact />
+        ) : (
+          <View style={styles.listingRows}>
+            {inputPrices.map(item => (
+              <View key={item.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
+                <View style={styles.listingText}>
+                  <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{item.productName}</Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {(item.packageSize == null ? '' : item.packageSize + ' ' + (item.packageUnit || '')) + (item.activeIngredient ? ' • ' + item.activeIngredient : '')}
+                  </Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {item.sourceName + ' • ' + item.observedOn}
+                  </Text>
+                  {item.sourceUrl ? <Pressable onPress={() => { void Linking.openURL(item.sourceUrl).catch(() => Alert.alert(language === 'ar' ? 'تعذر فتح المصدر' : 'Could not open source')); }}>
+                    <Text style={[styles.listingMeta, { color: colors.primary, textDecorationLine: 'underline' }, isRtl && rtlStyles.rtlText]}>
+                      {language === 'ar' ? 'المصدر' : language === 'fr' ? 'Source' : 'Source'}
+                    </Text>
+                  </Pressable> : null}
+                </View>
+                <Badge label={item.price.toFixed(3) + ' ' + item.currency} variant="primary" size="sm" />
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
+      ) : null}
 
       {selectedMarketCategory === 'myListings' ? (
       <Card variant="outlined" style={styles.listingsCard}>
