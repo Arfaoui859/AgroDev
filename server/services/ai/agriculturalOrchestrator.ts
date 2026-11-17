@@ -361,7 +361,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "weather",
     title: TITLES.weather,
     dependsOn: [],
-    keywords: /(طقس|مطر|حرارة|ري|weather|météo|irrigation|arrosage|meteo|matar|skhouna|bard|jaw|ri7|nrawi|ndvi|قمر صناعي)/i,
+    keywords: /(طقس|توقعات|مطر|امطار|أمطار|حرارة|سخانة|برد|ري|weather|météo|irrigation|arrosage|meteo|matar|mtar|ta9s|ta9es|t9s|skhouna|s5ana|bard|berd|jaw|jew|ri7|rri7|nrawi|ndvi|قمر صناعي)/i,
     run: (ctx) => {
       const hasLive = weatherRecords(ctx).some((r) => /^LIVE WEATHER FROM OPEN-METEO/.test(r));
       if (ctx.temperature === undefined && ctx.rainfall === undefined && weatherRecords(ctx).length === 0) {
@@ -528,7 +528,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     title: TITLES.agri_news,
     dependsOn: [],
     keywords:
-      /(أخبار|الأخبار|خبر|مستجدات|صحافة|news|actualit|presse|akhbar|khabar|newspaper)/i,
+      /(أخبار|الأخبار|اخبار|الاخبار|اخر الاخبار|آخر الأخبار|خبر|مستجدات|صحافة|شنوة صاير|شنية صاير|news|actualit|presse|akhbar|a5bar|khabar|newspaper)/i,
     run: (ctx) => {
       const records = newsRecords(ctx);
       if (records.length === 0) {
