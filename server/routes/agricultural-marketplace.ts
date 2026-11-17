@@ -10,6 +10,9 @@ const text = (v: unknown, max = 500) => typeof v === "string" ? v.trim().slice(0
 const positive = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN;
 const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
 const positiveSigned = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) ? Number(v) : NaN;
+const REGULATED_PESTICIDE_TERMS = /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|produit\\s+phyto|مبيد|مبيدات|دواء\\s+فلاحي|أدوية\\s+فلاحية|ادوية\\s+فلاحية/i;
+const isRegulatedPesticideText = (...values: unknown[]) =>
+  values.some(value => typeof value === "string" && REGULATED_PESTICIDE_TERMS.test(value));
 
 const SOURCE_TYPES = new Set(["official_open_data","api","csv","rss","permitted_scrape","seller_feed","manual"]);
 const VERIFICATION_STATES = new Set(["unverified","source-checked","official-source","rejected"]);
@@ -79,6 +82,10 @@ router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,re
   const category = text(b.category,80);
   const price = positive(b.price);
   const quantity = positive(b.quantity);
+  if (listingType === "agricultural_input" && isRegulatedPesticideText(title, category)) {
+    return res.status(400).json({success:false,code:"USE_REGULATED_PESTICIDE_OFFER_FLOW",
+      message:"عروض المبيدات والأدوية الفلاحية تتطلب مسار التثبت من ترخيص المنتج وترخيص البائع."});
+  }
   if (!LISTING_TYPES.has(listingType) || title.length < 3 || !category ||
       Number.isNaN(price) || Number.isNaN(quantity) ||
       !Array.isArray(b.image_urls ?? []) || (b.image_urls ?? []).length > 8 ||
@@ -114,6 +121,14 @@ router.patch("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Reque
   if (!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
   const allowed = ["title","description","category","price","currency","unit","quantity","location","governorate","image_urls","status","harvest_crop","expected_harvest_date","harvest_window_end","quality_notes"];
   const patch:Record<string,unknown> = {};
+  const {data:currentListing,error:currentListingError}=await db.from("marketplace_listings")
+    .select("listing_type,title,category").eq("id",req.params.id).eq("seller_id",sellerId).maybeSingle();
+  if(currentListingError) return res.status(503).json({success:false,code:"LISTING_LOOKUP_FAILED"});
+  if(!currentListing) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
+  if(currentListing.listing_type==="agricultural_input" &&
+    isRegulatedPesticideText(req.body?.title ?? currentListing.title,req.body?.category ?? currentListing.category)) {
+    return res.status(400).json({success:false,code:"USE_REGULATED_PESTICIDE_OFFER_FLOW"});
+  }
   for (const k of allowed) if (req.body?.[k] !== undefined) patch[k] = req.body[k];
   if (patch.price !== undefined && Number.isNaN(positive(patch.price))) return res.status(400).json({success:false,code:"INVALID_PRICE"});
   if (patch.quantity !== undefined && Number.isNaN(positive(patch.quantity))) return res.status(400).json({success:false,code:"INVALID_QUANTITY"});
