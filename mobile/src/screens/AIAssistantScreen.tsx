@@ -446,16 +446,16 @@ export const AIAssistantScreen: React.FC = () => {
         />
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => void handleVoiceInput()}
+          onPress={() => setLiveVoiceVisible(true)}
           accessibilityRole="button"
-          accessibilityLabel={isListening ? x.listening : x.voiceInput}
+          accessibilityLabel={language === 'fr' ? 'Conversation vocale en direct' : language === 'en' ? 'Live voice conversation' : 'محادثة صوتية مباشرة'}
           accessibilityState={{ selected: isListening }}
-          style={[styles.micButton, isListening && styles.micButtonActive]}
+          style={styles.liveMicButton}
         >
           <MaterialCommunityIcons
-            name={isListening ? 'stop' : 'microphone'}
+            name="phone-in-talk"
             size={21}
-            color={isListening ? colors.textInverse : colors.primary}
+            color={colors.textInverse}
           />
         </TouchableOpacity>
         <TouchableOpacity
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     color: colors.text,
   },
-  micButton: {
+  liveMicButton: {
     width: 46,
     height: 46,
     borderRadius: radius.full,
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  micButtonActive: {
+  liveMicButtonActive: {
     backgroundColor: colors.danger,
     borderColor: colors.danger,
   },
