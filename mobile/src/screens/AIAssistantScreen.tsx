@@ -120,7 +120,6 @@ export const AIAssistantScreen: React.FC = () => {
       timestamp: formatTime(new Date(), language),
     };
 
-    setSpeakingMessageId(null);
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setLoading(true);
