@@ -24,8 +24,7 @@ import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
 import { createMarketplaceInquiry, createMarketplaceListing, deleteMarketplaceListing, getAgriculturalCatalog, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
-import { AICapability, AgriculturalCatalogProduct, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
-import { useAICapabilities } from '../hooks/useAICapabilities';
+import { AgriculturalCatalogProduct, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
 
@@ -37,7 +36,6 @@ import { Button } from '../components/ui/Button';
  */
 export const MarketplaceScreen: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
-  const { byId: capabilities } = useAICapabilities();
   const [prices, setPrices] = useState<MarketPriceItem[]>([]);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
@@ -831,30 +829,6 @@ export const MarketplaceScreen: React.FC = () => {
 
 
     </ScrollView>
-  );
-};
-
-const MarketIntelRow: React.FC<{
-  label: string;
-  capability?: AICapability;
-  x: ReturnType<typeof useLanguage>['x'];
-  isRtl: boolean;
-}> = ({ label, capability, x, isRtl }) => {
-  const available = Boolean(capability) && capability!.engine !== 'unavailable' && capability!.available !== false;
-  return (
-    <View style={[styles.intelRow, isRtl && rtlStyles.rtlRow]}>
-      <View style={[styles.intelLeft, isRtl && rtlStyles.rtlRow]}>
-        <MaterialCommunityIcons
-          name={available ? 'check-circle' : 'minus-circle-outline'}
-          size={16}
-          color={available ? colors.success : colors.textMuted}
-        />
-        <Text style={[styles.intelLabel, isRtl && rtlStyles.rtlText]}>{label}</Text>
-      </View>
-      <Text style={[styles.intelState, { color: available ? colors.success : colors.textMuted }]}>
-        {available ? x.aiAvailable : x.aiNotConfigured}
-      </Text>
-    </View>
   );
 };
 
