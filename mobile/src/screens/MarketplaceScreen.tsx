@@ -83,7 +83,7 @@ export const MarketplaceScreen: React.FC = () => {
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices' | 'inputPrices' | 'marketIntel'>('home');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices' | 'marketIntel'>('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -427,8 +427,7 @@ export const MarketplaceScreen: React.FC = () => {
           {([
             { id: 'inquiries', icon: 'message-text-outline', ar: 'طلبات التواصل', fr: 'Demandes de contact', en: 'Contact requests', count: inquiries.length },
             { id: 'myListings', icon: 'clipboard-list-outline', ar: 'عروضي للبيع', fr: 'Mes annonces', en: 'My sale offers', count: myListings.length + myPesticideOffers.length },
-            { id: 'catalog', icon: 'book-open-variant', ar: 'دليل الأدوية والأسمدة', fr: 'Guide des intrants', en: 'Agricultural inputs guide', count: catalog.length },
-            { id: 'inputPrices', icon: 'tag-multiple-outline', ar: 'أسعار الأدوية والأسمدة', fr: 'Prix des intrants', en: 'Input prices', count: inputPrices.length },
+            { id: 'catalog', icon: 'book-open-variant', ar: 'دليل وأسعار الأدوية والأسمدة', fr: 'Guide et prix des intrants', en: 'Inputs guide & prices', count: catalog.length + inputPrices.length },
             { id: 'harvest', icon: 'calendar-clock', ar: 'محاصيل قادمة للحصاد', fr: 'Récoltes à venir', en: 'Upcoming harvests', count: futureHarvests.length },
             { id: 'listings', icon: 'storefront-outline', ar: 'عروض البيع والشراء', fr: 'Offres achat & vente', en: 'Buy & sell offers', count: sellerListings.length },
             { id: 'prices', icon: 'chart-line', ar: 'أسعار السوق', fr: 'Prix du marché', en: 'Market prices', count: latestPrices.length },
@@ -856,7 +855,7 @@ export const MarketplaceScreen: React.FC = () => {
       </Card>
       )}
 
-      {selectedMarketCategory === 'inputPrices' ? (
+      {selectedMarketCategory === 'catalog' ? (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="tag-multiple-outline" size={21} color={colors.primary} />
