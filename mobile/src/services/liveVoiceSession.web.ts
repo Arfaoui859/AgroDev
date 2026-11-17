@@ -212,7 +212,7 @@ export class LiveVoiceSession {
       setup: {
         model: this.model,
         systemInstruction: {
-          parts: [{ text: AGROVIBE_LIVE_SYSTEM_INSTRUCTION + (this.personalMemoryContext ? "\\n\\nذاكرة المستخدم المحفوظة من حسابه (استعملها عند الحاجة، وهي ليست بيانات مباشرة):\\n" + this.personalMemoryContext : "") }],
+          parts: [{ text: AGROVIBE_LIVE_SYSTEM_INSTRUCTION + (this.personalMemoryContext ? "\\n\\nذاكرة المستخدم المحفوظة من حسابه (استعملها عند الحاجة، وهي ليست بيانات مباشرة). إذا صرّح المستخدم بمعلومة ثابتة أو تفضيل تواصل بوضوح، احفظها عبر remember_user_memory من غير تخمين. لا تحفظ بيانات حساسة أو مؤقتة. إذا طلب نسيان معلومة، استعمل forget_user_memory. لا تقل إنك حفظت أو نسيت إلا بعد نجاح الأداة:\\n" + this.personalMemoryContext : "") }],
         },
         tools: [{
           functionDeclarations: [
