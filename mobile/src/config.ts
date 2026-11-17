@@ -47,16 +47,16 @@ export const PRODUCTION_API_BASE_URL = 'https://agrodev-3.onrender.com';
 /**
  * Default Express API base URL.
  *
- * A production build must reach the deployed gateway, so it defaults to the
- * Render URL above. In development (`__DEV__`) the local server is far more
- * convenient, so the emulator/simulator host is used instead:
- * - Android emulator reaches the host machine through 10.0.2.2.
- * - iOS simulator and web use localhost.
- * - A physical device must be given the host LAN IP via
- *   `EXPO_PUBLIC_API_BASE_URL`.
+ * The deployed Render gateway is the safe default in both Expo Go and
+ * production. A physical Android device cannot reach the special Android
+ * emulator address (10.0.2.2), and localhost on a phone points back to the
+ * phone itself. Use EXPO_PUBLIC_API_BASE_URL explicitly when developing
+ * against a local server:
+ * - Android emulator: http://10.0.2.2:5000
+ * - Physical device:  http://<computer-LAN-IP>:5000
+ * - iOS simulator/web: http://localhost:5000
  *
- * `EXPO_PUBLIC_API_BASE_URL` always wins when set, so a device build can point
- * at a LAN server without editing this file.
+ * EXPO_PUBLIC_API_BASE_URL always wins when set.
  */
 export function resolveApiBaseUrl(opts: {
   dev: boolean;
@@ -65,8 +65,10 @@ export function resolveApiBaseUrl(opts: {
 }): string {
   const override = firstNonEmpty(opts.override);
   if (override) return override;
-  if (!opts.dev) return PRODUCTION_API_BASE_URL;
-  return opts.platform === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
+  // Do not infer that an Android development client is an emulator: Expo Go
+  // commonly runs on a physical phone, where 10.0.2.2 is not reachable.
+  // Local development servers must be opted into explicitly via the override.
+  return PRODUCTION_API_BASE_URL;
 }
 
 export const DEFAULT_API_BASE_URL = resolveApiBaseUrl({
