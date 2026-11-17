@@ -296,6 +296,7 @@ import { analyzeFarmSatelliteNdvi } from "./routes/assistant-satellite";
 import agriculturalMarketplaceRoutes from "./routes/agricultural-marketplace";
 import { getAutonomousAgentStatus, updateAutonomousAgentSettings, runAutonomousAgentNow, runScheduledAutonomousAgent } from "./routes/autonomous-farm-agent";
 import { listAgentConversations, createAgentConversation, listAgentConversationMessages, addAgentConversationMessage, deleteAgentConversation } from "./routes/assistant-conversations";
+import { listAssistantMemory, rememberAssistantFact, forgetAssistantFact } from "./routes/assistant-memory";
 import { confirmUnconfirmedUsers } from "./routes/confirm-unconfirmed";
 import { adminSetPassword } from "./routes/admin-set-password";
 import { adminCreateUser } from "./routes/admin-create-user";
@@ -498,6 +499,11 @@ export function createServer() {
   app.get("/api/assistant/conversations/:conversationId/messages", requireAuth, requireVerifiedAuth, listAgentConversationMessages);
   app.post("/api/assistant/conversations/:conversationId/messages", requireAuth, requireVerifiedAuth, addAgentConversationMessage);
   app.delete("/api/assistant/conversations/:conversationId", requireAuth, requireVerifiedAuth, deleteAgentConversation);
+  
+  // Per-user adaptive memory: facts are stored only in the authenticated caller's RLS scope.
+  app.get("/api/assistant/memory", requireAuth, requireVerifiedAuth, listAssistantMemory);
+  app.post("/api/assistant/memory", requireAuth, requireVerifiedAuth, rememberAssistantFact);
+  app.delete("/api/assistant/memory/:memoryKey", requireAuth, requireVerifiedAuth, forgetAssistantFact);
 
   // Assistant actions are always explicit, authenticated, and persisted.
   app.get("/api/assistant/farms", requireAuth, listAssistantFarms);
