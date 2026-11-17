@@ -33,7 +33,8 @@ export function buildSoilInput(
     }
     if (parsed !== undefined) {
       (input as Record<string, number>)[def.key] = parsed;
-      measurementCount += 1;
+      // Sample depth is contextual metadata, not a soil measurement.
+      if (def.key !== 'sampleDepth') measurementCount += 1;
     }
   }
 
