@@ -27,6 +27,7 @@ import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { OrchestrationTraceView } from '../components/ui/OrchestrationTraceView';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { formatTime } from '../utils/date';
+import { LiveVoiceCallModal } from '../components/assistant/LiveVoiceCallModal';
 
 let messageSeq = 0;
 function nextMessageId(): string {
@@ -69,6 +70,7 @@ export const AIAssistantScreen: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [liveVoiceVisible, setLiveVoiceVisible] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   // The persisted thread id returned by the gateway for a verified session.
@@ -296,7 +298,25 @@ export const AIAssistantScreen: React.FC = () => {
             </View>
           }
         />
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setLiveVoiceVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={language === 'fr' ? 'Démarrer une conversation vocale en direct' : language === 'en' ? 'Start a live voice conversation' : 'ابدأ محادثة صوتية مباشرة'}
+          style={[styles.liveCallButton, isRtl && rtlStyles.rtlRow]}
+        >
+          <MaterialCommunityIcons name="phone-in-talk" size={19} color={colors.textInverse} />
+          <Text style={styles.liveCallButtonText}>
+            {language === 'fr' ? 'Conversation vocale' : language === 'en' ? 'Live voice conversation' : 'محادثة صوتية مباشرة'}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      <LiveVoiceCallModal
+        visible={liveVoiceVisible}
+        language={language}
+        onClose={() => setLiveVoiceVisible(false)}
+      />
 
       {/* Suggested Quick Prompt Chips */}
       <View style={styles.chipsSection}>
@@ -471,6 +491,22 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headingFlush: { marginBottom: 0 },
+  liveCallButton: {
+    minHeight: 44,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  liveCallButtonText: {
+    color: colors.textInverse,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: '700',
+  },
   assistantAvatar: {
     width: 40,
     height: 40,
