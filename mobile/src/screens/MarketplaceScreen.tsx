@@ -23,7 +23,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { createMarketplaceInquiry, createMarketplaceListing, deleteMarketplaceListing, getAgriculturalCatalog, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
 import { AgriculturalCatalogProduct, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
@@ -64,6 +64,14 @@ export const MarketplaceScreen: React.FC = () => {
   const [sellerUnit, setSellerUnit] = useState('kg');
   const [sellerLocation, setSellerLocation] = useState('');
   const [sellerGovernorate, setSellerGovernorate] = useState('');
+  const [sellerPackageSize, setSellerPackageSize] = useState('');
+  const [sellerPackageUnit, setSellerPackageUnit] = useState('L');
+  const [sellerRegistrationNumber, setSellerRegistrationNumber] = useState('');
+  const [sellerRegistrationEvidenceUrl, setSellerRegistrationEvidenceUrl] = useState('');
+  const [sellerAuthorizationNumber, setSellerAuthorizationNumber] = useState('');
+  const [sellerAuthorizationDocumentUrl, setSellerAuthorizationDocumentUrl] = useState('');
+  const isPesticideOffer = sellerType === 'agricultural_input' &&
+    /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|مبيد|مبيدات|دواء\\s*فلاحي|أدوية\\s*فلاحية|ادوية\\s*فلاحية/i.test(sellerTitle + ' ' + sellerCategory);
   const [harvestCrop, setHarvestCrop] = useState('');
   const [harvestDate, setHarvestDate] = useState('');
   const [sellerImage, setSellerImage] = useState<{ uri: string; mimeType?: string } | null>(null);
@@ -180,7 +188,19 @@ export const MarketplaceScreen: React.FC = () => {
         if (!uploaded.url) throw new Error(uploaded.error || 'Image upload failed');
         imageUrls = [uploaded.url];
       }
-      const result = await createMarketplaceListing({
+      const result = isPesticideOffer
+        ? await createPesticideSellerOffer({
+            trade_name: sellerTitle.trim(), active_ingredient: undefined,
+            registration_number: sellerRegistrationNumber.trim(),
+            product_registration_evidence_url: sellerRegistrationEvidenceUrl.trim(),
+            seller_authorization_number: sellerAuthorizationNumber.trim(),
+            seller_authorization_document_url: sellerAuthorizationDocumentUrl.trim(),
+            package_size: Number(sellerPackageSize), package_unit: sellerPackageUnit.trim(),
+            price: Number(sellerPrice), quantity: Number(sellerQuantity),
+            quantity_unit: 'packages', location: sellerLocation.trim() || undefined,
+            governorate: sellerGovernorate.trim() || undefined, image_urls: imageUrls,
+          })
+        : await createMarketplaceListing({
         listing_type: sellerType, title: sellerTitle.trim(), category: sellerCategory.trim(),
         description: sellerDescription.trim() || undefined,
         price: sellerPrice.trim() ? Number(sellerPrice) : null,
@@ -195,7 +215,12 @@ export const MarketplaceScreen: React.FC = () => {
       setSellerTitle(''); setSellerCategory(''); setSellerDescription(''); setSellerPrice('');
       setSellerQuantity(''); setSellerLocation(''); setSellerGovernorate(''); setHarvestCrop('');
       setHarvestDate(''); setSellerImage(null); setSellerFormOpen(false);
-      Alert.alert(language === 'ar' ? 'تم نشر العرض' : language === 'fr' ? 'Annonce publiée' : 'Listing published');
+      setSellerPackageSize(''); setSellerRegistrationNumber(''); setSellerRegistrationEvidenceUrl('');
+      setSellerAuthorizationNumber(''); setSellerAuthorizationDocumentUrl('');
+      Alert.alert(isPesticideOffer
+        ? (language === 'ar' ? 'تم إرسال العرض للمراجعة' : language === 'fr' ? 'Annonce envoyée pour vérification' : 'Offer submitted for review')
+        : (language === 'ar' ? 'تم نشر العرض' : language === 'fr' ? 'Annonce publiée' : 'Listing published'),
+        isPesticideOffer ? (language === 'ar' ? 'لن يظهر العرض حتى يتم التثبت من وثائق المنتج والبائع.' : language === 'fr' ? 'L’offre sera visible après vérification des documents du produit et du vendeur.' : 'The offer will appear after the product and seller documents are reviewed.') : undefined);
       await loadPrices();
     } catch (e) {
       Alert.alert(language === 'ar' ? 'تعذر نشر العرض' : language === 'fr' ? 'Publication impossible' : 'Could not publish listing',
@@ -493,6 +518,26 @@ export const MarketplaceScreen: React.FC = () => {
                   keyboardType={field.keyboard || 'default'} style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }} />
               </View>
             ))}
+            {isPesticideOffer ? (
+              <View style={{ gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
+                <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'بيانات إلزامية لمراجعة عرض المبيد' : language === 'fr' ? 'Documents obligatoires pour vérifier le pesticide' : 'Required pesticide verification details'}</Text>
+                <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'العرض يبقى مخفياً حتى يراجع المسؤول وثائق تسجيل المنتج وترخيص البيع.' : language === 'fr' ? 'L’annonce reste masquée jusqu’à la vérification administrative.' : 'The offer stays hidden until an administrator reviews the product registration and seller permit.'}</Text>
+                {[
+                  { label: language === 'ar' ? 'حجم العبوة' : language === 'fr' ? 'Taille du conditionnement' : 'Package size', value: sellerPackageSize, set: setSellerPackageSize, keyboard: 'decimal-pad' as const },
+                  { label: language === 'ar' ? 'وحدة العبوة (L / kg / ml)' : language === 'fr' ? 'Unité (L / kg / ml)' : 'Package unit (L / kg / ml)', value: sellerPackageUnit, set: setSellerPackageUnit },
+                  { label: language === 'ar' ? 'رقم تسجيل المبيد في تونس' : language === 'fr' ? 'Numéro d’homologation en Tunisie' : 'Tunisian product registration number', value: sellerRegistrationNumber, set: setSellerRegistrationNumber },
+                  { label: language === 'ar' ? 'رابط وثيقة تسجيل المنتج (PDF أو رابط آمن)' : language === 'fr' ? 'Lien vers la preuve d’homologation' : 'Product registration evidence URL', value: sellerRegistrationEvidenceUrl, set: setSellerRegistrationEvidenceUrl },
+                  { label: language === 'ar' ? 'رقم ترخيص البائع للتوزيع' : language === 'fr' ? 'Numéro d’autorisation du vendeur' : 'Seller distribution authorization number', value: sellerAuthorizationNumber, set: setSellerAuthorizationNumber },
+                  { label: language === 'ar' ? 'رابط وثيقة ترخيص البائع' : language === 'fr' ? 'Lien vers le permis du vendeur' : 'Seller authorization document URL', value: sellerAuthorizationDocumentUrl, set: setSellerAuthorizationDocumentUrl },
+                ].map(field => (
+                  <View key={field.label} style={{ gap: 4 }}>
+                    <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{field.label}</Text>
+                    <TextInput value={field.value} onChangeText={field.set} keyboardType={field.keyboard || 'default'}
+                      autoCapitalize="none" style={{ minHeight: 46, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }} />
+                  </View>
+                ))}
+              </View>
+            ) : null}
             <View style={{ gap: 4 }}>
               <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'الوصف' : language === 'fr' ? 'Description' : 'Description'}</Text>
               <TextInput value={sellerDescription} onChangeText={setSellerDescription} multiline
