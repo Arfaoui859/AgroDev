@@ -106,7 +106,8 @@ const copy = (language: string) => ({
 export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpenProfile }) => {
   const { language, isRtl } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const text = copy(language);
+  const translations = copy(language);
+  const text = translations[language as keyof typeof translations] ?? translations.en;
   const [category, setCategory] = useState<CommunityCategory>('all');
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
