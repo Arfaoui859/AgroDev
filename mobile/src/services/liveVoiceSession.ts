@@ -80,7 +80,6 @@ export class LiveVoiceSession {
   private active = false;
   private speechActive = false;
   private silenceMs = 0;
-  private queueStarted = false;
   private decodeChain: Promise<void> = Promise.resolve();
   private lastReplyId = 0;
 
@@ -122,7 +121,6 @@ export class LiveVoiceSession {
     this.playbackQueue.connect(this.audioContext.destination);
     if (this.audioContext.state === "suspended") await this.audioContext.resume();
     this.playbackQueue.start();
-    this.queueStarted = true;
 
     const url = `${websocketUrl}?access_token=${encodeURIComponent(token)}`;
     await new Promise<void>((resolve, reject) => {
@@ -147,7 +145,7 @@ export class LiveVoiceSession {
           },
         }));
       };
-      socket.onmessage = (event) => {
+      socket.onmessage = async (event) => {
         let message: any;
         try {
           message = JSON.parse(typeof event.data === "string" ? event.data : "");
@@ -157,8 +155,13 @@ export class LiveVoiceSession {
         if (message.setupComplete) {
           clearTimeout(timeout);
           this.active = true;
-          void this.startMicrophone();
-          resolve();
+          try {
+            await this.startMicrophone();
+            resolve();
+          } catch (error) {
+            reject(error instanceof Error ? error : new Error("تعذّر تشغيل الميكروفون."));
+            void this.stop();
+          }
           return;
         }
         this.handleServerMessage(message);
@@ -283,7 +286,6 @@ export class LiveVoiceSession {
     this.playbackQueue = null;
     if (this.audioContext) await this.audioContext.close().catch(() => undefined);
     this.audioContext = null;
-    this.queueStarted = false;
     await AudioManager.setAudioSessionActivity(false).catch(() => undefined);
     this.callbacks.onState("ended");
   }
