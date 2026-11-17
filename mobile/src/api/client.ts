@@ -102,6 +102,8 @@ export interface RequestOptions extends RequestInit {
   cacheKey?: string;
   /** Skip the Authorization header (used by the public health probe). */
   anonymous?: boolean;
+  /** Include the underlying transport error in the result for targeted diagnostics. */
+  exposeNetworkError?: boolean;
 }
 
 /** Attach the freshest access token we can obtain without blocking the request. */
@@ -150,7 +152,7 @@ export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestOptions = {},
 ): Promise<ApiResult<T>> {
-  const { cacheKey, anonymous, ...init } = options;
+  const { cacheKey, anonymous, exposeNetworkError, ...init } = options;
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   const buildHeaders = async () => {
@@ -232,7 +234,11 @@ export async function apiRequest<T = unknown>(
 
     return {
       data: null,
-      error: isTimeout ? msg('apiTimeout') : msg('apiOffline'),
+      error: isTimeout
+        ? msg('apiTimeout')
+        : exposeNetworkError && error instanceof Error
+          ? error.message
+          : msg('apiOffline'),
       isOnline: false,
       fromCache: false,
       status: null,
@@ -492,6 +498,9 @@ export async function diagnosePlantDisease(
     const res = await apiRequest<any>('/api/ai/images/detect-disease', {
       method: 'POST',
       body: form,
+      // Expo Go previously collapsed all native fetch/file errors into the
+      // same generic offline message. Keep the original transport reason here.
+      exposeNetworkError: true,
     });
 
     // Preserve the gateway's actionable response (429/502/503/validation).
