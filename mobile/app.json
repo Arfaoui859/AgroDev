@@ -14,7 +14,7 @@
         "NSCameraUsageDescription": "يطلب التطبيق استخدام الكاميرا لالتقاط صور أوراق النباتات وتشخيص الأمراض الفطرية والآفات بالذكاء الاصطناعي.",
         "NSPhotoLibraryUsageDescription": "يطلب التطبيق الوصول لمعرض الصور لاختيار صور المحاصيل وتشخيصها.",
         "NSLocationWhenInUseUsageDescription": "يطلب التطبيق تحديد الموقع للحصول على بيانات الطقس الزراعي الدقيقة لحقلك من محطات الرصد التونسية.",
-        "NSMicrophoneUsageDescription": "يستخدم AgriVibe الميكروفون لتحويل أسئلتك الزراعية المنطوقة إلى نص بعد موافقتك.",
+        "NSMicrophoneUsageDescription": "AgriVibe uses the microphone for a live, two-way voice conversation with the agricultural assistant.",
         "NSSpeechRecognitionUsageDescription": "يستخدم AgriVibe التعرّف على الكلام لفهم أسئلتك الزراعية المنطوقة."
       }
     },
@@ -31,7 +31,8 @@
         "READ_MEDIA_IMAGES",
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -39,6 +40,16 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "react-native-audio-api",
+        {
+          "iosMicrophonePermission": "يسمح AgriVibe باستخدام الميكروفون لإجراء محادثة صوتية مباشرة مع المستشار الفلاحي.",
+          "androidPermissions": [
+            "android.permission.RECORD_AUDIO",
+            "android.permission.MODIFY_AUDIO_SETTINGS"
+          ]
+        }
+      ],
       "expo-secure-store",
       [
         "expo-speech-recognition",
