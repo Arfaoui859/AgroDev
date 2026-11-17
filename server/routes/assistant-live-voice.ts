@@ -166,7 +166,9 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       },
       body: JSON.stringify({
         authToken: {
-          uses: 1,
+          // Allow a few reconnect attempts with the same ephemeral credential.
+          // The token remains short-lived and constrained to this Live model/config.
+          uses: 5,
           expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
           newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
           liveConnectConstraints: {
@@ -207,7 +209,8 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       model: GEMINI_LIVE_MODEL,
       websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained",
       expiresInSeconds: 1800,
-      singleUse: true,
+      singleUse: false,
+      maxConnections: 5,
     });
   } catch (error) {
     console.error("[assistant-live] Token service unavailable:", {
