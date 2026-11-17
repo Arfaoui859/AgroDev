@@ -818,19 +818,30 @@ export class LiveVoiceSession {
       }
 
       if (call.name === "get_ai_services_status") {
-        const result = await apiRequest<any>("/api/ai/health?force=true", { method: "GET" });
+        const [result, newsResult, weatherResult] = await Promise.all([
+          apiRequest<any>("/api/ai/health?force=true", { method: "GET" }),
+          apiRequest<any>("/api/news/sources", { method: "GET" }),
+          // A real provider request used only as a connectivity probe; values are not reported as the user's weather.
+          apiRequest<any>("/api/weather/location?governorate=Monastir", { method: "GET" }),
+        ]);
         const health = result.data;
         const services = Array.isArray(health?.services) ? health.services : [];
-        const response = result.error || !health?.overview
+        const newsSources = Array.isArray(newsResult.data?.sources) ? newsResult.data.sources : [];
+        const weather = weatherResult.data;
+        const response = !health?.overview && result.error
           ? {
               success: false,
               dataAvailable: false,
               error: "تعذّر فحص خدمات AgroGrowth حالياً. ما تعطيش حالة من الذاكرة أو بالتخمين.",
+              integrations: {
+                news: { status: newsResult.error ? "unavailable" : "available", sources: newsSources },
+                weather: { status: weatherResult.error || !weather?.current ? "unavailable" : "available", probeLocation: "Monastir" },
+              },
             }
           : {
               success: true,
-              checkedAt: health.overview.lastUpdated ?? null,
-              overview: health.overview,
+              checkedAt: health?.overview?.lastUpdated ?? new Date().toISOString(),
+              overview: health?.overview ?? null,
               services: services.map((service: any) => ({
                 name: service.nameAr ?? service.name ?? service.key,
                 status: service.status,
@@ -839,8 +850,21 @@ export class LiveVoiceSession {
                 responseTimeMs: service.responseTime ?? null,
                 error: service.error ?? null,
               })),
-              llm: health.llm ?? null,
-              instruction: "This is a live health snapshot. Explain each status accurately: available means /health responded, not that output quality is validated; rate_limited means host responded but service health is unverified; unavailable/not_configured means do not claim the capability works. Rule-based is not trained ML. Never expose internal service URLs or secrets.",
+              integrations: {
+                news: {
+                  status: newsResult.error ? "unavailable" : newsSources.some((source: any) => source.available) ? "available" : "degraded",
+                  availableSources: newsSources.filter((source: any) => source.available).map((source: any) => ({ name: source.name, language: source.language, itemCount: source.itemCount })),
+                  unavailableSources: newsSources.filter((source: any) => !source.available).map((source: any) => ({ name: source.name, error: source.error ?? null })),
+                },
+                weather: {
+                  status: weatherResult.error || !weather?.current ? "unavailable" : "available",
+                  provider: weather?.source?.provider ?? null,
+                  probeLocation: "Monastir",
+                  error: weatherResult.error ?? weather?.message ?? null,
+                },
+              },
+              llm: health?.llm ?? null,
+              instruction: "This is a live health snapshot. Explain each status accurately: available means /health responded, not that output quality is validated; rate_limited means host responded but service health is unverified; unavailable/not_configured means do not claim the capability works. Rule-based is not trained ML. News status is based on real RSS feed probes. Weather status is a real connectivity request for Monastir only, not the user's local forecast. Never expose service URLs or secrets.",
             };
         if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({
           toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] },
