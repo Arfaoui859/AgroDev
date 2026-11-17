@@ -11,9 +11,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { flex1, screenStyles } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Speech from 'expo-speech';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import { colors, radius, spacing, typography, shadows } from '../theme/colors';
 import { subtleCaption } from '../theme/typographyStyles';
 import { useLanguage } from '../context/LanguageContext';
@@ -37,6 +40,8 @@ export const AIAssistantScreen: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   // The persisted thread id returned by the gateway for a verified session.
   // Threaded back so the server keeps one conversation instead of creating a
   // new one per turn; it stays null for anonymous (unverified) callers.
@@ -92,6 +97,74 @@ export const AIAssistantScreen: React.FC = () => {
   // account's local thread is still loading.
   const messagesReady = threadStorageKey ? threadReadyKey === threadStorageKey : threadReadyKey === 'anonymous';
 
+  const recognitionLocale = language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-FR' : 'en-US';
+  const speechLocale = language === 'ar' ? 'ar-SA' : language === 'fr' ? 'fr-FR' : 'en-US';
+
+  useSpeechRecognitionEvent('start', () => setIsListening(true));
+  useSpeechRecognitionEvent('end', () => setIsListening(false));
+  useSpeechRecognitionEvent('result', (event) => {
+    const transcript = event.results?.[0]?.transcript;
+    if (typeof transcript === 'string' && transcript.trim()) {
+      setInputText(transcript.trim());
+    }
+  });
+  useSpeechRecognitionEvent('error', (event) => {
+    setIsListening(false);
+    if (event.error !== 'aborted') {
+      const message = event.error === 'not-allowed' ? x.voicePermissionDenied : x.voiceUnavailable;
+      Alert.alert(t.assistantTitle, message);
+    }
+  });
+
+  useEffect(() => () => { void Speech.stop(); }, []);
+
+  const handleVoiceInput = async () => {
+    if (isListening) {
+      ExpoSpeechRecognitionModule.stop();
+      return;
+    }
+    try {
+      if (!ExpoSpeechRecognitionModule.isRecognitionAvailable()) {
+        Alert.alert(t.assistantTitle, x.voiceUnavailable);
+        return;
+      }
+      const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(t.assistantTitle, x.voicePermissionDenied);
+        return;
+      }
+      setInputText('');
+      ExpoSpeechRecognitionModule.start({
+        lang: recognitionLocale,
+        interimResults: true,
+        continuous: false,
+        maxAlternatives: 1,
+        addsPunctuation: true,
+      });
+    } catch {
+      setIsListening(false);
+      Alert.alert(t.assistantTitle, x.voiceUnavailable);
+    }
+  };
+
+  const handleSpeak = async (messageId: string, text: string) => {
+    if (speakingMessageId === messageId) {
+      await Speech.stop();
+      setSpeakingMessageId(null);
+      return;
+    }
+    await Speech.stop();
+    setSpeakingMessageId(messageId);
+    Speech.speak(text, {
+      language: speechLocale,
+      rate: 0.94,
+      pitch: 1,
+      onDone: () => setSpeakingMessageId((current) => current === messageId ? null : current),
+      onStopped: () => setSpeakingMessageId((current) => current === messageId ? null : current),
+      onError: () => setSpeakingMessageId((current) => current === messageId ? null : current),
+    });
+  };
+
   // The welcome bubble is derived at render time (not stored) so switching
   // language updates it immediately instead of leaving it in the old language.
   const displayMessages: ChatMessage[] = [
@@ -118,6 +191,8 @@ export const AIAssistantScreen: React.FC = () => {
       timestamp: formatTime(new Date(), language),
     };
 
+    void Speech.stop();
+    setSpeakingMessageId(null);
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setLoading(true);
@@ -248,6 +323,24 @@ export const AIAssistantScreen: React.FC = () => {
                 >
                   {msg.text}
                 </Text>
+                {!isUser && msg.id !== 'welcome' ? (
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    onPress={() => void handleSpeak(msg.id, msg.text)}
+                    accessibilityRole="button"
+                    accessibilityLabel={speakingMessageId === msg.id ? x.stopSpeaking : x.speakAnswer}
+                    style={[styles.speakButton, isRtl && rtlStyles.rtlRow]}
+                  >
+                    <MaterialCommunityIcons
+                      name={speakingMessageId === msg.id ? 'stop-circle-outline' : 'volume-high'}
+                      size={18}
+                      color={colors.primary}
+                    />
+                    <Text style={styles.speakButtonText}>
+                      {speakingMessageId === msg.id ? x.stopSpeaking : x.speakAnswer}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
                 <Text
                   style={[
                     styles.messageTime,
@@ -293,6 +386,20 @@ export const AIAssistantScreen: React.FC = () => {
           maxLength={500}
           accessibilityLabel={t.typeYourMessage}
         />
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => void handleVoiceInput()}
+          accessibilityRole="button"
+          accessibilityLabel={isListening ? x.listening : x.voiceInput}
+          accessibilityState={{ selected: isListening }}
+          style={[styles.micButton, isListening && styles.micButtonActive]}
+        >
+          <MaterialCommunityIcons
+            name={isListening ? 'stop' : 'microphone'}
+            size={21}
+            color={isListening ? colors.textInverse : colors.primary}
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => handleSend()}
@@ -455,6 +562,36 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.sm,
     color: colors.text,
+  },
+  micButton: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  micButtonActive: {
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
+  },
+  speakButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  speakButtonText: {
+    color: colors.primary,
+    fontSize: typography.fontSizes.xs,
+    fontWeight: '600',
   },
   sendButton: {
     width: 48,
