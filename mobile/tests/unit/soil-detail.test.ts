@@ -47,6 +47,14 @@ describe('buildSoilInput', () => {
     expect(measurementCount).toBe(1);
   });
 
+  it('does not treat sample depth alone as a soil measurement', () => {
+    const { input, measurementCount } = buildSoilInput(
+      baseValues({ values: { sampleDepth: '30' } }),
+    );
+    expect(input.sampleDepth).toBe(30);
+    expect(measurementCount).toBe(0);
+  });
+
   it('flags non-numeric text instead of dropping it silently', () => {
     const { hasInvalid, measurementCount } = buildSoilInput(baseValues({ values: { ph: 'abc', nitrogen: '12' } }));
     expect(hasInvalid).toBe(true);
