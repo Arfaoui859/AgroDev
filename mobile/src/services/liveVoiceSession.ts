@@ -84,6 +84,12 @@ export class LiveVoiceSession {
   private queueStarted = false;
   private decodeChain: Promise<void> = Promise.resolve();
   private lastReplyId = 0;
+  private apiToken: string | null = null;
+  private websocketUrl: string | null = null;
+  private model: string | null = null;
+  private sessionHandle: string | null = null;
+  private reconnecting = false;
+  private reconnectAttempts = 0;
 
   constructor(callbacks: VoiceCallbacks) {
     this.callbacks = callbacks;
@@ -104,10 +110,10 @@ export class LiveVoiceSession {
       method: "POST",
       body: JSON.stringify({}),
     });
-    const token = tokenResult.data?.token;
-    const websocketUrl = tokenResult.data?.websocketUrl;
-    const model = tokenResult.data?.model;
-    if (tokenResult.error || !token || !websocketUrl || !model) {
+    this.apiToken = tokenResult.data?.token ?? null;
+    this.websocketUrl = tokenResult.data?.websocketUrl ?? null;
+    this.model = tokenResult.data?.model ?? null;
+    if (tokenResult.error || !this.apiToken || !this.websocketUrl || !this.model) {
       throw new Error(tokenResult.error || "تعذّر بدء المكالمة الصوتية. حاول مجدداً.");
     }
 
@@ -125,30 +131,66 @@ export class LiveVoiceSession {
     this.playbackQueue.connect(this.audioContext.destination);
     if (this.audioContext.state === "suspended") await this.audioContext.resume();
 
-    const url = `${websocketUrl}?access_token=${encodeURIComponent(token)}`;
+    this.sessionHandle = null;
+    this.reconnectAttempts = 0;
+    await this.connectSocket(false);
+  }
+
+  private sendSetup(socket: WebSocket, resumeHandle?: string): void {
+    if (!this.model) throw new Error("Gemini Live model is not configured.");
+    socket.send(JSON.stringify({
+      setup: {
+        model: this.model,
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
+        },
+        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        realtimeInputConfig: {
+          automaticActivityDetection: { disabled: true },
+          activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
+        },
+        sessionResumption: resumeHandle ? { handle: resumeHandle } : {},
+        contextWindowCompression: { slidingWindow: {} },
+      },
+    }));
+  }
+
+  private async connectSocket(resume: boolean): Promise<void> {
+    if (!this.apiToken || !this.websocketUrl) {
+      throw new Error("بيانات الاتصال الصوتي غير متوفرة.");
+    }
+
     await new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket(url);
+      const socket = new WebSocket(
+        `${this.websocketUrl}?access_token=${encodeURIComponent(this.apiToken as string)}`,
+      );
       this.socket = socket;
       let setupComplete = false;
-      const timeout = setTimeout(() => reject(new Error("انتهت مهلة الاتصال بالخدمة الصوتية.")), 15000);
-      socket.onopen = () => {
-        socket.send(JSON.stringify({
-          setup: {
-            model,
-            generationConfig: {
-              responseModalities: ["AUDIO"],
-              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
-            },
-            systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-            realtimeInputConfig: {
-              automaticActivityDetection: { disabled: true },
-              activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
-            },
-            sessionResumption: {},
-            contextWindowCompression: { slidingWindow: {} },
-          },
-        }));
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error("انتهت مهلة الاتصال بالخدمة الصوتية."));
+        socket.close();
+      }, 15000);
+
+      const fail = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        reject(error);
       };
+
+      socket.onopen = () => {
+        try {
+          this.sendSetup(socket, resume ? this.sessionHandle ?? undefined : undefined);
+        } catch (error) {
+          fail(error instanceof Error ? error : new Error("تعذّر إعداد الاتصال الصوتي."));
+          socket.close();
+        }
+      };
+
       socket.onmessage = async (event) => {
         let message: any;
         try {
@@ -156,45 +198,100 @@ export class LiveVoiceSession {
         } catch {
           return;
         }
+
         if (message.error) {
-          clearTimeout(timeout);
           const providerMessage = typeof message.error.message === "string" ? message.error.message : "";
-          reject(new Error(providerMessage ? `Gemini Live: ${providerMessage}` : "رفضت خدمة الصوت إعداد الجلسة."));
+          fail(new Error(providerMessage ? `Gemini Live: ${providerMessage}` : "رفضت خدمة الصوت إعداد الجلسة."));
           return;
         }
+
+        const resumption = message.sessionResumptionUpdate;
+        if (resumption?.resumable && typeof resumption.newHandle === "string" && resumption.newHandle) {
+          this.sessionHandle = resumption.newHandle;
+        }
+
         if (message.setupComplete) {
           setupComplete = true;
           clearTimeout(timeout);
-          this.active = true;
-          try {
-            await this.startMicrophone();
+          settled = true;
+          if (resume) {
+            this.reconnecting = false;
+            this.reconnectAttempts = 0;
+            this.callbacks.onState(this.speechActive ? "listening" : "listening");
             resolve();
-          } catch (error) {
-            reject(error instanceof Error ? error : new Error("تعذّر تشغيل الميكروفون."));
-            void this.stop();
+          } else {
+            this.active = true;
+            try {
+              await this.startMicrophone();
+              resolve();
+            } catch (error) {
+              reject(error instanceof Error ? error : new Error("تعذّر تشغيل الميكروفون."));
+              void this.stop();
+            }
           }
           return;
         }
+
+        if (message.goAway) {
+          void this.reconnectSession();
+          return;
+        }
+
         this.handleServerMessage(message);
       };
+
       socket.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error("تعذّر الاتصال بخدمة الصوت المباشر."));
+        fail(new Error("تعذّر الاتصال بخدمة الصوت المباشر."));
       };
+
       socket.onclose = (event) => {
         clearTimeout(timeout);
         if (!setupComplete) {
-          reject(new Error("تم إغلاق الاتصال قبل بدء المحادثة الصوتية."));
+          fail(new Error("تم إغلاق الاتصال قبل بدء المحادثة الصوتية."));
           return;
         }
-        if (this.active) {
-          this.active = false;
-          this.callbacks.onState("ended");
-          if (event.code !== 1000) this.callbacks.onError?.("انقطع الاتصال الصوتي. أعد تشغيل المكالمة.");
-          void this.stop();
+        if (this.socket !== socket || !this.active || this.reconnecting) return;
+
+        if (this.sessionHandle) {
+          void this.reconnectSession();
+          return;
         }
+
+        this.active = false;
+        this.callbacks.onState("ended");
+        if (event.code !== 1000) this.callbacks.onError?.("انقطع الاتصال الصوتي. أعد تشغيل المكالمة.");
+        void this.stop();
       };
     });
+  }
+
+  private async reconnectSession(): Promise<void> {
+    if (
+      !this.active ||
+      this.reconnecting ||
+      !this.sessionHandle ||
+      !this.apiToken ||
+      !this.websocketUrl
+    ) return;
+
+    this.reconnecting = true;
+    this.callbacks.onState("connecting");
+    try {
+      await this.connectSocket(true);
+    } catch (error) {
+      this.reconnecting = false;
+      if (!this.active) return;
+      this.reconnectAttempts += 1;
+      if (this.reconnectAttempts <= 3) {
+        const delay = Math.min(1000 * (2 ** (this.reconnectAttempts - 1)), 5000);
+        setTimeout(() => void this.reconnectSession(), delay);
+        return;
+      }
+      this.callbacks.onError?.(
+        error instanceof Error ? error.message : "تعذّرت استعادة الاتصال الصوتي.",
+      );
+      void this.stop();
+    }
   }
 
   private async startMicrophone(): Promise<void> {
