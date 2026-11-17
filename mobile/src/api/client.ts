@@ -14,6 +14,8 @@ import {
   AICapabilitiesResponse,
   AICapability,
   AgriculturalCatalogProduct,
+  AgriculturalInputPrice,
+  PesticideSellerOffer,
   AssistantReply,
   CropRecommendation,
   CropRecommendationResult,
@@ -1374,6 +1376,74 @@ export async function updateMarketplaceListingStatus(id: string, status: NonNull
     method: 'PATCH', body: JSON.stringify({ status }),
   });
   return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'LISTING_UPDATE_FAILED' };
+}
+
+export async function createPesticideSellerOffer(input: {
+  trade_name: string;
+  active_ingredient?: string;
+  registration_number: string;
+  product_registration_evidence_url: string;
+  seller_authorization_number: string;
+  seller_authorization_document_url: string;
+  package_size: number;
+  package_unit: string;
+  price: number;
+  quantity: number;
+  quantity_unit?: string;
+  location?: string;
+  governorate?: string;
+  image_urls?: string[];
+}): Promise<{ data: PesticideSellerOffer | null; error: string | null }> {
+  const res = await apiRequest<any>('/api/agro-market/pesticide-offers', {
+    method: 'POST', body: JSON.stringify(input),
+  });
+  if (!res.data?.success || !res.data?.data) return { data: null, error: res.error || res.data?.code || 'PESTICIDE_OFFER_CREATE_FAILED' };
+  const p = res.data.data;
+  return { data: {
+    id: String(p.id), tradeName: p.trade_name, activeIngredient: p.active_ingredient ?? null,
+    registrationNumber: p.registration_number, packageSize: Number(p.package_size),
+    packageUnit: p.package_unit, price: Number(p.price), currency: p.currency ?? 'TND',
+    quantity: Number(p.quantity), quantityUnit: p.quantity_unit ?? 'packages',
+    location: p.location ?? null, governorate: p.governorate ?? null,
+    imageUrls: Array.isArray(p.image_urls) ? p.image_urls : [], status: p.status,
+    reviewNote: p.review_note ?? null, createdAt: p.created_at,
+  }, error: null };
+}
+
+export async function getMyPesticideSellerOffers(): Promise<{ data: PesticideSellerOffer[]; error: string | null }> {
+  const res = await apiRequest<any>('/api/agro-market/my-pesticide-offers');
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return { data: rows.map(p => ({
+    id: String(p.id), tradeName: p.trade_name, activeIngredient: p.active_ingredient ?? null,
+    registrationNumber: p.registration_number, packageSize: Number(p.package_size),
+    packageUnit: p.package_unit, price: Number(p.price), currency: p.currency ?? 'TND',
+    quantity: Number(p.quantity), quantityUnit: p.quantity_unit ?? 'packages',
+    location: p.location ?? null, governorate: p.governorate ?? null,
+    imageUrls: Array.isArray(p.image_urls) ? p.image_urls : [], status: p.status,
+    reviewNote: p.review_note ?? null, createdAt: p.created_at,
+  })), error: res.error };
+}
+
+export async function getAgriculturalInputPrices(params: { q?: string; limit?: number } = {}): Promise<{
+  data: AgriculturalInputPrice[];
+  error: string | null;
+}> {
+  const query = new URLSearchParams();
+  if (params.q) query.set('q', params.q);
+  if (params.limit) query.set('limit', String(params.limit));
+  const suffix = query.toString() ? '?' + query.toString() : '';
+  const res = await apiRequest<any>('/api/agro-market/input-prices' + suffix, {
+    cacheKey: 'agricultural-input-prices:' + (params.q || 'all') + ':' + (params.limit || 100),
+  });
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return { data: rows.map(p => ({
+    id: String(p.id), productName: p.product_name, productType: p.product_type,
+    activeIngredient: p.active_ingredient ?? null,
+    packageSize: p.package_size == null ? null : Number(p.package_size),
+    packageUnit: p.package_unit ?? null, price: Number(p.price), currency: p.currency ?? 'TND',
+    sourceName: p.source_name, sourceUrl: p.source_url, sourceType: p.source_type,
+    observedOn: p.observed_on, verificationStatus: p.verification_status,
+  })), error: res.error };
 }
 
 export async function getAgriculturalCatalog(params: { q?: string; type?: AgriculturalCatalogProduct['productType'] } = {}): Promise<{
