@@ -157,7 +157,18 @@ export async function apiRequest<T = unknown>(
 
   const buildHeaders = async () => {
     const headers = anonymous ? new Headers(init.headers) : await authHeaders(init.headers);
-    const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData;
+    // React Native 0.88's FormData is a native-compatible polyfill. On
+    // Android, instanceof can be unreliable across the Expo runtime boundary;
+    // misclassifying it adds application/json and breaks multipart uploads.
+    const body = init.body as any;
+    const isFormData =
+      (typeof FormData !== 'undefined' && body instanceof FormData) ||
+      Boolean(
+        body &&
+        typeof body === 'object' &&
+        typeof body.append === 'function' &&
+        (typeof body.getParts === 'function' || Object.prototype.toString.call(body) === '[object FormData]'),
+      );
     if (!headers.has('Content-Type') && init.body && !isFormData) {
       headers.set('Content-Type', 'application/json');
     }
