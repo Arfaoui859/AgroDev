@@ -145,8 +145,8 @@ async function refreshSessionToken(): Promise<boolean> {
 /**
  * Upload a local native image with Expo's native multipart transport.
  * React Native's fetch/FormData file-object bridge is intentionally bypassed
- * on Android/iOS; Expo File.upload reads the cache file natively and creates
- * the multipart boundary itself.
+ * on Android/iOS; Expo's legacy uploadAsync native bridge reads the prepared
+ * cache file and creates the multipart boundary itself.
  */
 async function uploadNativeImage(
   options: ImageUploadOptions,
