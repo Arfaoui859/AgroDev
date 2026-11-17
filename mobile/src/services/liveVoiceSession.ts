@@ -79,6 +79,7 @@ export class LiveVoiceSession {
   private socket: WebSocket | null = null;
   private callbacks: VoiceCallbacks;
   private active = false;
+  private stopped = false;
   private speechActive = false;
   private silenceMs = 0;
   private queueStarted = false;
@@ -97,9 +98,11 @@ export class LiveVoiceSession {
 
   async start(): Promise<void> {
     if (this.active) return;
+    this.stopped = false;
     this.callbacks.onState("connecting");
 
     const permission = await AudioManager.requestRecordingPermissions();
+    if (this.stopped) return;
     if (permission !== "Granted") {
       throw new Error("يلزم السماح باستخدام الميكروفون لإجراء المحادثة الصوتية.");
     }
@@ -113,6 +116,7 @@ export class LiveVoiceSession {
     this.apiToken = tokenResult.data?.token ?? null;
     this.websocketUrl = tokenResult.data?.websocketUrl ?? null;
     this.model = tokenResult.data?.model ?? null;
+    if (this.stopped) return;
     if (tokenResult.error || !this.apiToken || !this.websocketUrl || !this.model) {
       throw new Error(tokenResult.error || "تعذّر بدء المكالمة الصوتية. حاول مجدداً.");
     }
@@ -122,6 +126,10 @@ export class LiveVoiceSession {
       android: { mode: "inCommunication", communicationDevice: "speaker" },
     });
     await AudioManager.setAudioSessionActivity(true);
+    if (this.stopped) {
+      await AudioManager.setAudioSessionActivity(false).catch(() => undefined);
+      return;
+    }
 
     this.audioContext = new AudioContext({
       sampleRate: OUTPUT_RATE,
@@ -130,6 +138,7 @@ export class LiveVoiceSession {
     this.playbackQueue = this.audioContext.createBufferQueueSource();
     this.playbackQueue.connect(this.audioContext.destination);
     if (this.audioContext.state === "suspended") await this.audioContext.resume();
+    if (this.stopped) return;
 
     this.sessionHandle = null;
     this.reconnectAttempts = 0;
@@ -392,6 +401,7 @@ export class LiveVoiceSession {
   }
 
   async stop(): Promise<void> {
+    this.stopped = true;
     this.active = false;
     this.speechActive = false;
     this.lastReplyId += 1;
