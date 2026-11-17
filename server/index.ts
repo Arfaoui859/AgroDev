@@ -752,6 +752,7 @@ export function createServer() {
     "/api/ai/assistant/live-token",
     requireAuth,
     requireVerifiedAuth,
+    aiRateLimiter(),
     createAssistantLiveToken,
   );
   app.post("/api/ai/assistant/chat", chatWithAIAssistant); // Public general chat; persistence is enabled only for a verified JWT.
