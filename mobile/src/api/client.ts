@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
+import { File, UploadType } from 'expo-file-system';
 import { supabase } from './supabase';
 import { readCache, writeCache } from './cache';
 import { API_TIMEOUT_MS, DEFAULT_API_BASE_URL } from '../config';
@@ -165,17 +165,24 @@ async function uploadNativeImage(
       headers.Authorization = `Bearer ${session.access_token}`;
     }
 
-    // Use Expo's stable native uploadAsync bridge on Android/iOS. It streams
-    // the prepared cache file as multipart/form-data and lets the native
-    // networking layer generate the boundary (unlike JS FormData shims).
-    return FileSystem.uploadAsync(url, options.imageUri, {
-      httpMethod: 'POST',
-      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      fieldName: 'file',
-      mimeType: options.mimeType || 'image/jpeg',
-      headers,
-      parameters,
-    });
+    // Use the SDK 58 File upload API. It reads the local file natively and
+    // creates the multipart boundary; React Native fetch/FormData is not used.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), Math.max(API_TIMEOUT_MS, 90000));
+    try {
+      const file = new File(options.imageUri);
+      return await file.upload(url, {
+        httpMethod: 'POST',
+        uploadType: UploadType.MULTIPART,
+        fieldName: 'file',
+        mimeType: options.mimeType || 'image/jpeg',
+        headers,
+        parameters,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
   };
 
   try {
@@ -196,11 +203,11 @@ async function uploadNativeImage(
 
     if (response.status < 200 || response.status >= 300) {
       const raw =
-        (parsed && (parsed.message || parsed.error)) ||
+        (parsed && (parsed.message || parsed.error || parsed.detail)) ||
         (response.status === 503 ? msg('apiUnavailable') : `HTTP ${response.status}`);
       return {
         data: null,
-        error: typeof raw === 'string' ? localizeServerError(raw, response.status) : `HTTP ${response.status}`,
+        error: typeof raw === 'string' ? localizeServerError(raw, response.status) : JSON.stringify(raw),
         isOnline: true,
         fromCache: false,
         status: response.status,
@@ -216,12 +223,15 @@ async function uploadNativeImage(
       status: response.status,
     };
   } catch (error: any) {
+    const detail =
+      error?.name === 'AbortError'
+        ? 'Image upload timed out. Please retry when the connection is stable.'
+        : typeof error?.message === 'string' && error.message.trim()
+          ? error.message
+          : String(error || msg('apiOffline'));
     return {
       data: null,
-      error:
-        typeof error?.message === 'string' && error.message.trim()
-          ? error.message
-          : String(error || msg('apiOffline')),
+      error: detail,
       isOnline: false,
       fromCache: false,
       status: null,
