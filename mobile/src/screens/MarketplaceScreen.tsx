@@ -71,7 +71,7 @@ export const MarketplaceScreen: React.FC = () => {
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'all' | 'prices' | 'inputs' | 'equipment' | 'produce' | 'harvest'>('home');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices'>('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -343,6 +343,14 @@ export const MarketplaceScreen: React.FC = () => {
       <ScreenHeading title={t.marketTitle} subtitle={t.marketSubtitle} />
 
       {selectedMarketCategory !== 'home' ? (
+        <View style={{ flexDirection: isRtl ? 'row-reverse' : 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Pressable onPress={() => { setSelectedMarketCategory('home'); setSearchQuery(''); setSellerFormOpen(false); setActiveInquiryListing(null); }} style={styles.marketBackButton}>
+            <MaterialCommunityIcons name={isRtl ? 'arrow-right' : 'arrow-left'} size={20} color={colors.primary} />
+            <Text style={styles.marketBackText}>{language === 'ar' ? 'رجوع للأقسام' : language === 'fr' ? 'Retour aux catégories' : 'Back to categories'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {selectedMarketCategory !== 'home' ? (
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -357,12 +365,12 @@ export const MarketplaceScreen: React.FC = () => {
         </Text>
         <View style={styles.marketCategoryGrid}>
           {([
-            { id: 'all', icon: 'view-grid-outline', ar: 'كل السوق', fr: 'Tout le marché', en: 'All market', count: listings.length + latestPrices.length },
-            { id: 'prices', icon: 'currency-usd', ar: 'أسعار الخضرة والغلة', fr: 'Prix fruits & légumes', en: 'Fruit & vegetable prices', count: latestPrices.length },
-            { id: 'inputs', icon: 'sprout-outline', ar: 'أدوية وأسمدة وبذور', fr: 'Intrants agricoles', en: 'Inputs & seeds', count: sellerListings.filter(v => v.listingType === 'agricultural_input').length + catalog.length },
-            { id: 'equipment', icon: 'tractor', ar: 'معدات فلاحية', fr: 'Matériel agricole', en: 'Farm equipment', count: sellerListings.filter(v => v.listingType === 'equipment').length },
-            { id: 'produce', icon: 'basket-outline', ar: 'منتوجات فلاحية للبيع', fr: 'Produits agricoles', en: 'Farm products for sale', count: sellerListings.filter(v => v.listingType === 'agricultural_product').length },
-            { id: 'harvest', icon: 'calendar-check-outline', ar: 'صابة ومحاصيل جاية', fr: 'Récoltes à venir', en: 'Upcoming harvests', count: futureHarvests.length },
+            { id: 'inquiries', icon: 'message-text-outline', ar: 'طلبات التواصل', fr: 'Demandes de contact', en: 'Contact requests', count: inquiries.length },
+            { id: 'myListings', icon: 'clipboard-list-outline', ar: 'عروضي للبيع', fr: 'Mes annonces', en: 'My sale offers', count: myListings.length },
+            { id: 'catalog', icon: 'book-open-variant', ar: 'دليل الأدوية والأسمدة', fr: 'Guide des intrants', en: 'Agricultural inputs guide', count: catalog.length },
+            { id: 'harvest', icon: 'calendar-clock', ar: 'محاصيل قادمة للحصاد', fr: 'Récoltes à venir', en: 'Upcoming harvests', count: futureHarvests.length },
+            { id: 'listings', icon: 'storefront-outline', ar: 'عروض البيع والشراء', fr: 'Offres achat & vente', en: 'Buy & sell offers', count: sellerListings.length },
+            { id: 'prices', icon: 'chart-line', ar: 'أسعار السوق', fr: 'Prix du marché', en: 'Market prices', count: latestPrices.length },
           ] as const).map((category) => {
             const active = selectedMarketCategory === category.id;
             return (
@@ -380,7 +388,7 @@ export const MarketplaceScreen: React.FC = () => {
           })}
         </View>
       </View>
-      {selectedMarketCategory !== 'home' ? (
+      {selectedMarketCategory === 'listings' ? (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="store-plus-outline" size={21} color={colors.primary} />
@@ -460,7 +468,7 @@ export const MarketplaceScreen: React.FC = () => {
         </View>
       )}
 
-      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'prices') && (
+      {selectedMarketCategory === 'prices' && (
       <>
       {loading ? (
         <StateCard kind="loading" title={x.stateLoading} compact />
@@ -577,7 +585,7 @@ export const MarketplaceScreen: React.FC = () => {
       </>
       )}
 
-      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'inputs' || selectedMarketCategory === 'equipment' || selectedMarketCategory === 'produce') && (
+      {selectedMarketCategory === 'listings' && (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="storefront-outline" size={21} color={colors.primary} />
@@ -589,10 +597,7 @@ export const MarketplaceScreen: React.FC = () => {
           <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
         ) : (
           <View style={styles.listingRows}>
-            {sellerListings.filter(listing => selectedMarketCategory === 'all' ||
-              (selectedMarketCategory === 'inputs' && listing.listingType === 'agricultural_input') ||
-              (selectedMarketCategory === 'equipment' && listing.listingType === 'equipment') ||
-              (selectedMarketCategory === 'produce' && listing.listingType === 'agricultural_product')).map((listing) => (
+            {sellerListings.map((listing) => (
               <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
                 {listing.imageUrl ? <Image source={{ uri: listing.imageUrl }} style={styles.listingThumb} resizeMode="cover" /> : null}
                 <View style={styles.listingText}>
@@ -613,7 +618,7 @@ export const MarketplaceScreen: React.FC = () => {
       </Card>
       )}
 
-      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'harvest') && (
+      {selectedMarketCategory === 'harvest' && (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="sprout" size={21} color={colors.primary} />
@@ -667,7 +672,7 @@ export const MarketplaceScreen: React.FC = () => {
         </Card>
       ) : null}
 
-      {(selectedMarketCategory === 'all' || selectedMarketCategory === 'inputs') && (
+      {selectedMarketCategory === 'catalog' && (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="flask-outline" size={21} color={colors.primary} />
@@ -729,7 +734,7 @@ export const MarketplaceScreen: React.FC = () => {
       </Card>
       )}
 
-      {selectedMarketCategory === 'all' ? (
+      {selectedMarketCategory === 'myListings' ? (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="clipboard-list-outline" size={21} color={colors.primary} />
@@ -786,6 +791,9 @@ export const MarketplaceScreen: React.FC = () => {
         ) : null}
       </Card>
 
+      ) : null}
+
+      {selectedMarketCategory === 'inquiries' ? (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="message-text-outline" size={21} color={colors.primary} />
@@ -810,6 +818,14 @@ export const MarketplaceScreen: React.FC = () => {
                   <Button title={language === 'ar' ? 'قبول الطلب' : language === 'fr' ? 'Accepter' : 'Accept inquiry'}
                     onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
                 ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
+      ) : null}
+
+
               </View>
             ))}
           </View>
@@ -878,6 +894,8 @@ const styles = StyleSheet.create({
   intelState: xsSemibold,
   provBar: stackSm,
   listingsCard: { marginBottom: spacing.lg, padding: spacing.md },
+  marketBackButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
+  marketBackText: { color: colors.primary, fontSize: typography.fontSizes.sm, fontWeight: '600' },
   marketCategorySection: { marginTop: spacing.md, marginBottom: spacing.lg, gap: spacing.sm },
   marketCategoryHeading: { ...titleBase, color: colors.text, marginBottom: 2 },
   marketCategoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: spacing.sm },
