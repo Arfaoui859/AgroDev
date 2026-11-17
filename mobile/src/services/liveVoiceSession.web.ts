@@ -243,8 +243,27 @@ export class LiveVoiceSession {
       socket.onmessage = async (event) => {
         let message: any;
         try {
-          message = JSON.parse(typeof event.data === "string" ? event.data : "");
-        } catch {
+          // Gemini Live can deliver WebSocket payloads as text, Blob, or
+          // ArrayBuffer depending on the browser/runtime. Ignoring binary
+          // event.data silently drops setupComplete and leaves the UI stuck
+          // forever on "Connecting".
+          let payload: string;
+          if (typeof event.data === "string") {
+            payload = event.data;
+          } else if (event.data instanceof Blob) {
+            payload = await event.data.text();
+          } else if (event.data instanceof ArrayBuffer) {
+            payload = new TextDecoder().decode(event.data);
+          } else if (ArrayBuffer.isView(event.data)) {
+            payload = new TextDecoder().decode(event.data as ArrayBufferView);
+          } else {
+            throw new Error("صيغة رسالة Gemini Live غير مدعومة.");
+          }
+          message = JSON.parse(payload);
+        } catch (error) {
+          const detail = error instanceof Error ? error.message : "Invalid server message";
+          this.callbacks.onError?.(`تعذّرت قراءة ردّ Gemini Live: ${detail}`);
+          fail(new Error("وصل ردّ غير مفهوم من خدمة الصوت المباشر."));
           return;
         }
 
