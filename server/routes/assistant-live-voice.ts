@@ -131,8 +131,9 @@ async function loadVerifiedFarmContext(req: Request): Promise<string | null> {
 }
 
 /**
- * Issues a one-use, short-lived Gemini Live token. The permanent Gemini API
- * key remains server-side and is never returned to the mobile application.
+ * Issues a short-lived Gemini Live token with a bounded reconnect allowance.
+ * The permanent Gemini API key remains server-side and is never returned to
+ * the mobile application.
  */
 export async function createAssistantLiveToken(_req: Request, res: Response): Promise<void> {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
@@ -165,19 +166,18 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        authToken: {
-          // Allow a few reconnect attempts with the same ephemeral credential.
-          // The token remains short-lived and constrained to this Live model/config.
-          uses: 5,
-          expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
-          newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
-          liveConnectConstraints: {
-            model: GEMINI_LIVE_MODEL,
-            config: {
-              responseModalities: ["AUDIO"],
-              systemInstruction: {
-                parts: [{ text: liveSystemInstruction(farmContext) }],
-              },
+        // The auth_tokens endpoint accepts CreateAuthTokenRequest fields at
+        // the top level. Wrapping these fields in "authToken" is invalid.
+        // Allow a few reconnect attempts with the same short-lived credential.
+        uses: 5,
+        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+        newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
+        liveConnectConstraints: {
+          model: GEMINI_LIVE_MODEL,
+          config: {
+            responseModalities: ["AUDIO"],
+            systemInstruction: {
+              parts: [{ text: liveSystemInstruction(farmContext) }],
             },
           },
         },
