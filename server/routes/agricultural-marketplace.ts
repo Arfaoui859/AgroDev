@@ -57,7 +57,7 @@ router.get("/listings", async (req, res) => {
     if (q) query = query.ilike("title", `%${q}%`);
     const {data,error} = await query;
     if (error) throw error;
-    const rows = data ?? [];
+    const rows = (data ?? []).filter((r:any) => !(r.listing_type === "agricultural_input" && isRegulatedPesticideText(r.title,r.category)));
     let sellers: Record<string,string> = {};
     if (supabaseAdmin && rows.length) {
       const ids = [...new Set(rows.map((r:any)=>r.seller_id))];
@@ -82,7 +82,7 @@ router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,re
   const category = text(b.category,80);
   const price = positive(b.price);
   const quantity = positive(b.quantity);
-  if (listingType === "agricultural_input" && isRegulatedPesticideText(title, category)) {
+  if (isRegulatedPesticideText(title, category)) {
     return res.status(400).json({success:false,code:"USE_REGULATED_PESTICIDE_OFFER_FLOW",
       message:"عروض المبيدات والأدوية الفلاحية تتطلب مسار التثبت من ترخيص المنتج وترخيص البائع."});
   }
@@ -125,8 +125,7 @@ router.patch("/listings/:id", requireAuth, requireVerifiedAuth, async (req:Reque
     .select("listing_type,title,category").eq("id",req.params.id).eq("seller_id",sellerId).maybeSingle();
   if(currentListingError) return res.status(503).json({success:false,code:"LISTING_LOOKUP_FAILED"});
   if(!currentListing) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
-  if(currentListing.listing_type==="agricultural_input" &&
-    isRegulatedPesticideText(req.body?.title ?? currentListing.title,req.body?.category ?? currentListing.category)) {
+  if(isRegulatedPesticideText(req.body?.title ?? currentListing.title,req.body?.category ?? currentListing.category)) {
     return res.status(400).json({success:false,code:"USE_REGULATED_PESTICIDE_OFFER_FLOW"});
   }
   for (const k of allowed) if (req.body?.[k] !== undefined) patch[k] = req.body[k];
