@@ -435,7 +435,7 @@ export class LiveVoiceSession {
         const result = await apiRequest<any>(`/api/news?${query.toString()}`, { method: "GET" });
         const news = result.data;
         const articles = Array.isArray(news?.articles) ? news.articles : [];
-        const response = result.error || news?.isRealData !== true || news?.dataSource !== "rss-feeds"
+        const response = result.error || news?.isRealData !== true || news?.dataSource !== "rss-feeds" || articles.length === 0
           ? {
               success: false,
               isRealData: false,
