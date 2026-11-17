@@ -225,7 +225,7 @@ export class LiveVoiceSession {
               parameters: {
                 type: "OBJECT",
                 properties: {
-                  period: { type: "INTEGER", enum: [7, 30, 90], description: "Lookback period in days. Default 30." },
+                  period: { type: "INTEGER", minimum: 7, maximum: 90, description: "Lookback period in days. Use exactly 7, 30, or 90. Default 30." },
                 },
               },
             },            {
