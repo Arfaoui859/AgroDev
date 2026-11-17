@@ -729,6 +729,7 @@ export const MarketplaceScreen: React.FC = () => {
       </Card>
       )}
 
+      {selectedMarketCategory === 'all' ? (
       <Card variant="outlined" style={styles.listingsCard}>
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="clipboard-list-outline" size={21} color={colors.primary} />
@@ -839,6 +840,8 @@ export const MarketplaceScreen: React.FC = () => {
           </View>
         </View>
       </Card>
+      ) : null}
+
     </ScrollView>
   );
 };
@@ -877,7 +880,7 @@ const styles = StyleSheet.create({
   listingsCard: { marginBottom: spacing.lg, padding: spacing.md },
   marketCategorySection: { marginTop: spacing.md, marginBottom: spacing.lg, gap: spacing.sm },
   marketCategoryHeading: { ...titleBase, color: colors.text, marginBottom: 2 },
-  marketCategoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: spacing.sm },
+  marketCategoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: spacing.sm },
   marketCategoryTile: { width: '48%', minHeight: 132, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, gap: spacing.xs, justifyContent: 'space-between' },
   marketHomeHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, marginBottom: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
   marketHomeHintText: { flex: 1, color: colors.textSecondary, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.md },
@@ -890,13 +893,13 @@ const styles = StyleSheet.create({
   listingsHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   listingsTitle: { ...titleBase, color: colors.text },
   listingRows: { gap: spacing.sm },
-  listingRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  listingRow: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.sm, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   listingThumb: { width: 76, height: 76, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
 
-  listingText: { flex: 1, minWidth: 0, gap: 4 },
+  listingText: { width: '100%', minWidth: 0, gap: 4 },
   listingName: { ...labelSemibold, color: colors.text, lineHeight: typography.lineHeights.md },
   listingMeta: { ...subtleCaption, lineHeight: typography.lineHeights.md, flexShrink: 1 },
-  listingPrice: { ...labelSemibold, color: colors.primaryDark, width: '100%', textAlign: 'left' },
+  listingPrice: { ...labelSemibold, color: colors.primaryDark, width: '100%', textAlign: 'right' },
   priceSummaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: 2 },
   priceSummaryIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   priceSummaryText: { flex: 1, gap: 2 },
