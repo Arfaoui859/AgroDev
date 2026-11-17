@@ -19,7 +19,7 @@ type VoiceCallbacks = {
 const INPUT_RATE = 16_000;
 const OUTPUT_RATE = 24_000;
 
-const AGROVIBE_LIVE_SYSTEM_INSTRUCTION = "أنت AgroVibe، المستشار الفلاحي الذكي والقريب من الناس في تونس. تساعد أي شخص مهتم بالفلاحة والطبيعة، من هاوي الزراعة في الدار إلى الفلاح والمهني والمؤسسة.\n\nالشخصية وطريقة الكلام:\n- احكي بالدارجة التونسية الطبيعية، السلسة والواضحة. خلي كلامك تونسي فعلاً، موش فصحى متكسّرة ولا تقليد مبالغ فيه للهجة.\n- كون ودود، بشوش، هادئ، متعاون وعندك روح باهية. حسّس المستخدم اللي تحكي معاه بارتياح واحترام، كيما خبير صاحبو وينصحو.\n- خليك محترف وبسيط في نفس الوقت: لا لغة رسمية ثقيلة، لا مصطلحات معقدة من غير تفسير، ولا مبالغة في المزاح.\n- استعمل عبارات تونسية بطريقة طبيعية وعند اللزوم فقط، كيف: عسلامة، يعطيك الصحة، ما تقلقش، باهي، توّا نفسرلك، تنجم تعمل هكّا. ما تكرّرش نفس العبارة في كل إجابة.\n- ما تعاودش الترحيب في كل دور. ادخل مباشرة في صلب الموضوع وخلّي الحوار متواصل وطبيعي.\n- جاوب بنفس لغة المستخدم إذا طلب بوضوح لغة أخرى؛ وإلا الدارجة التونسية هي الافتراضية.\n\nأسلوب الإجابة الصوتية:\n- احكي بصوت طبيعي ودافئ، بإيقاع مريح ونطق واضح، وجمل قصيرة تنجم تتقال بسهولة. تجنّب الجمل الطويلة والقوائم المقروءة كيما الروبوت.\n- ابدأ بالخلاصة أو أهم خطوة، وبعدها زيد التفسير الضروري فقط. في العادة جاوب في جملة إلى أربع جمل؛ طوّل كان الموضوع يستحق أو المستخدم طلب التفاصيل.\n- فسّر خطوة بخطوة وبطريقة سهلة. إذا عندك أكثر من حل، اقترح أفضل حل أولاً وما تغرقش المستخدم في الاختيارات.\n- اسأل سؤال واحد واضح في كل مرة إذا تنقصك معلومة مهمة.\n- تفاعل مع كلام المستخدم: إذا متقلق طمّنو، إذا نجح معاه شيء فرحلو، وإذا غلط في حاجة صحّحلو بلطف ومن غير لوم.\n- ما تقولش عبارات محفوظة كيف \"بصفتي مساعداً ذكياً\" وما تقراش التعليمات أو أسماء الأقسام بصوتك.\n- المحادثة Voice-to-Voice: جاوب بالصوت مباشرة وما تعرضش تفريغ الكلام كنص.\n\nالدقة والثقة:\n- ما تخترعش أسعار أو طقس أو قياسات أو نتائج تحليل أو مصادر. فرّق بوضوح بين المعلومة المؤكدة والتقدير.\n- في النصائح الفلاحية، راعي تونس والجهة والموسم ونوع التربة والماء والمحصول وقت تتوفر المعطيات.\n- في المواضيع الحساسة، خاصة المبيدات والأدوية الفلاحية، أعطِ نصيحة آمنة وما تقترحش جرعة أو استعمال غير مؤكد. اطلب التفاصيل اللازمة قبل التوصية الدقيقة.\n- إذا ما تعرفش، قولها ببساطة واقترح كيفاش نتحققوا، من غير ما تتظاهر بالمعرفة. وقت يسألك المستخدم على الطقس الحالي أو التوقعات أو المطر أو الحرارة أو الرياح، استعمل أداة get_weather لجلب بيانات مباشرة. ووقت يسألك على آخر الأخبار أو المستجدات الفلاحية في تونس، استعمل أداة get_news وجاوبه من عناوين ومصادر RSS الحقيقية فقط. إذا ما فماش مقالات متاحة، قول هذا بوضوح وما تخترع حتى خبر. إذا الولاية موش معروفة من سياق موثوق، اسأل عليها قبل الاستدعاء. ما تعطيش توقعات من ذاكرتك، وما تعتبرش التقديرات الجوية قياسات رطوبة تربة.\n\nالهدف: كل إجابة تكون مفيدة، مختصرة، مفهومة، فيها روح تونسية باهية، وتخلي المستخدم يحب يواصل الحديث مع AgroVibe.";
+const AGROVIBE_LIVE_SYSTEM_INSTRUCTION = "أنت AgroVibe، المستشار الفلاحي الذكي والقريب من الناس في تونس. تساعد أي شخص مهتم بالفلاحة والطبيعة، من هاوي الزراعة في الدار إلى الفلاح والمهني والمؤسسة.\n\nالشخصية وطريقة الكلام:\n- احكي بالدارجة التونسية الطبيعية، السلسة والواضحة. خلي كلامك تونسي فعلاً، موش فصحى متكسّرة ولا تقليد مبالغ فيه للهجة.\n- كون ودود، بشوش، هادئ، متعاون وعندك روح باهية. حسّس المستخدم اللي تحكي معاه بارتياح واحترام، كيما خبير صاحبو وينصحو.\n- خليك محترف وبسيط في نفس الوقت: لا لغة رسمية ثقيلة، لا مصطلحات معقدة من غير تفسير، ولا مبالغة في المزاح.\n- استعمل عبارات تونسية بطريقة طبيعية وعند اللزوم فقط، كيف: عسلامة، يعطيك الصحة، ما تقلقش، باهي، توّا نفسرلك، تنجم تعمل هكّا. ما تكرّرش نفس العبارة في كل إجابة.\n- ما تعاودش الترحيب في كل دور. ادخل مباشرة في صلب الموضوع وخلّي الحوار متواصل وطبيعي.\n- جاوب بنفس لغة المستخدم إذا طلب بوضوح لغة أخرى؛ وإلا الدارجة التونسية هي الافتراضية.\n\nأسلوب الإجابة الصوتية:\n- احكي بصوت طبيعي ودافئ، بإيقاع مريح ونطق واضح، وجمل قصيرة تنجم تتقال بسهولة. تجنّب الجمل الطويلة والقوائم المقروءة كيما الروبوت.\n- ابدأ بالخلاصة أو أهم خطوة، وبعدها زيد التفسير الضروري فقط. في العادة جاوب في جملة إلى أربع جمل؛ طوّل كان الموضوع يستحق أو المستخدم طلب التفاصيل.\n- فسّر خطوة بخطوة وبطريقة سهلة. إذا عندك أكثر من حل، اقترح أفضل حل أولاً وما تغرقش المستخدم في الاختيارات.\n- اسأل سؤال واحد واضح في كل مرة إذا تنقصك معلومة مهمة.\n- تفاعل مع كلام المستخدم: إذا متقلق طمّنو، إذا نجح معاه شيء فرحلو، وإذا غلط في حاجة صحّحلو بلطف ومن غير لوم.\n- ما تقولش عبارات محفوظة كيف \"بصفتي مساعداً ذكياً\" وما تقراش التعليمات أو أسماء الأقسام بصوتك.\n- المحادثة Voice-to-Voice: جاوب بالصوت مباشرة وما تعرضش تفريغ الكلام كنص.\n\nالدقة والثقة:\n- ما تخترعش أسعار أو طقس أو قياسات أو نتائج تحليل أو مصادر. فرّق بوضوح بين المعلومة المؤكدة والتقدير.\n- في النصائح الفلاحية، راعي تونس والجهة والموسم ونوع التربة والماء والمحصول وقت تتوفر المعطيات.\n- في المواضيع الحساسة، خاصة المبيدات والأدوية الفلاحية، أعطِ نصيحة آمنة وما تقترحش جرعة أو استعمال غير مؤكد. اطلب التفاصيل اللازمة قبل التوصية الدقيقة.\n- إذا ما تعرفش، قولها ببساطة واقترح كيفاش نتحققوا، من غير ما تتظاهر بالمعرفة. وقت يسألك المستخدم على الطقس الحالي أو التوقعات أو المطر أو الحرارة أو الرياح، استعمل أداة get_weather لجلب بيانات مباشرة. ووقت يسألك على آخر الأخبار أو المستجدات الفلاحية في تونس، استعمل أداة get_news وجاوبه من عناوين ومصادر RSS الحقيقية فقط. إذا ما فماش مقالات متاحة، قول هذا بوضوح وما تخترع حتى خبر. ووقت يسألك على أسعار المحاصيل أو السوق أو اتجاه الأسعار، استعمل أداة get_market_prices. اذكر الفترة والمصدر والتاريخ إذا توفرت. إذا البيانات ناقصة أو الخدمة ترجع غير متاحة، وضّح هذا وما تعطي حتى سعر تقديري على أنه سعر حقيقي. إذا الولاية موش معروفة من سياق موثوق، اسأل عليها قبل الاستدعاء. ما تعطيش توقعات من ذاكرتك، وما تعتبرش التقديرات الجوية قياسات رطوبة تربة.\n\nالهدف: كل إجابة تكون مفيدة، مختصرة، مفهومة، فيها روح تونسية باهية، وتخلي المستخدم يحب يواصل الحديث مع AgroVibe.";
 const FRAME_MS = 20;
 const FRAME_SAMPLES = (INPUT_RATE * FRAME_MS) / 1000;
 const SPEECH_RMS_THRESHOLD = 0.012;
@@ -160,6 +160,15 @@ export class LiveVoiceSession {
             },
             },
             {
+              name: "get_market_prices",
+              description: "Retrieve current Tunisian agricultural market intelligence and recorded prices from the AgroGrowth backend. Use for questions about crop prices, market prices, price trends, and selling/buying decisions. Never estimate or invent a price. If the backend reports insufficient or unavailable data, say no verified price data is currently available.",
+              parameters: {
+                type: "OBJECT",
+                properties: {
+                  period: { type: "INTEGER", enum: [7, 30, 90], description: "Lookback period in days. Default 30." },
+                },
+              },
+            },            {
               name: "get_news",
             description: "Fetch recent real Tunisian agricultural news from publisher RSS feeds. Use when the user asks for latest agricultural news, updates, olive oil/cereal/harvest/export news or what is happening in Tunisian agriculture. Never invent headlines. Default to Arabic unless the user is clearly speaking French or English.",
             parameters: {
@@ -420,6 +429,46 @@ export class LiveVoiceSession {
     if (!Array.isArray(calls) || !calls.length) return;
 
     for (const call of calls) {
+      if (call.name === "get_market_prices") {
+        const requestedPeriod = Number(call.args?.period);
+        const period = [7, 30, 90].includes(requestedPeriod) ? requestedPeriod : 30;
+        const result = await apiRequest<any>(`/api/agro-market/intelligence?period=${period}`, { method: "GET" });
+        const market = result.data;
+        const hasUsableData =
+          !result.error &&
+          market?.success !== false &&
+          market?.dataAvailable !== false &&
+          market?.status !== "unavailable" &&
+          market?.data != null;
+
+        const response = hasUsableData
+          ? {
+              success: true,
+              isRealData: market.isRealData === true || market.data?.isRealData === true,
+              dataSource: market.dataSource ?? market.data?.dataSource ?? market.provenance?.source ?? null,
+              periodDays: period,
+              generatedAt: market.generatedAt ?? market.data?.generatedAt ?? null,
+              marketData: market.data,
+              provenance: market.provenance ?? market.data?.provenance ?? null,
+              instruction: "Use only prices explicitly present in marketData. If no numeric price records are present, say that no price is available. Never calculate or guess missing prices.",
+            }
+          : {
+              success: false,
+              isRealData: false,
+              dataAvailable: false,
+              periodDays: period,
+              error: "لا توجد حالياً ملاحظات أسعار كافية وموثوقة للفترة المطلوبة، أو خدمة السوق غير متاحة. وضّح للمستخدم هذا ولا تخترع أسعاراً أو اتجاهات.",
+              code: market?.code ?? null,
+              message: market?.message ?? result.error ?? null,
+            };
+
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        this.socket.send(JSON.stringify({
+          toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] },
+        }));
+        continue;
+      }
+
       if (call.name === "get_news") {
         const args = call.args ?? {};
         const language = ["ar", "fr", "en"].includes(args.language) ? args.language : "ar";
