@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { File, UploadType } from 'expo-file-system';
 import { supabase } from './supabase';
 import { readCache, writeCache } from './cache';
 import { API_TIMEOUT_MS, DEFAULT_API_BASE_URL } from '../config';
@@ -137,6 +138,100 @@ async function refreshSessionToken(): Promise<boolean> {
   } catch (error) {
     console.warn('session refresh failed:', error);
     return false;
+  }
+}
+
+
+/**
+ * Upload a local native image with Expo's native multipart transport.
+ * React Native's fetch/FormData file-object bridge is intentionally bypassed
+ * on Android/iOS; Expo File.upload reads the cache file natively and creates
+ * the multipart boundary itself.
+ */
+async function uploadNativeImage(
+  options: ImageUploadOptions,
+): Promise<ApiResult<any>> {
+  const endpoint = '/api/ai/images/detect-disease';
+  const url = `${API_BASE_URL}${endpoint}`;
+  const file = new File(options.imageUri);
+  const parameters: Record<string, string> = {};
+  if (options.cropType) parameters.plant_type = options.cropType;
+  if (options.plantPart) parameters.plant_part = options.plantPart;
+  if (options.symptoms) parameters.symptoms = options.symptoms;
+
+  const send = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      return await file.upload(url, {
+        httpMethod: 'POST',
+        uploadType: UploadType.MULTIPART,
+        fieldName: 'file',
+        mimeType: options.mimeType || 'image/jpeg',
+        headers,
+        parameters,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
+  try {
+    let response = await send();
+    if (response.status === 401) {
+      const refreshed = await refreshSessionToken();
+      if (refreshed) response = await send();
+    }
+
+    let parsed: any = null;
+    if (response.body) {
+      try {
+        parsed = JSON.parse(response.body);
+      } catch {
+        parsed = null;
+      }
+    }
+
+    if (response.status < 200 || response.status >= 300) {
+      const raw =
+        (parsed && (parsed.message || parsed.error)) ||
+        (response.status === 503 ? msg('apiUnavailable') : `HTTP ${response.status}`);
+      return {
+        data: null,
+        error: typeof raw === 'string' ? localizeServerError(raw, response.status) : `HTTP ${response.status}`,
+        isOnline: true,
+        fromCache: false,
+        status: response.status,
+        errorBody: parsed,
+      };
+    }
+
+    return {
+      data: parsed,
+      error: null,
+      isOnline: true,
+      fromCache: false,
+      status: response.status,
+    };
+  } catch (error: any) {
+    const isTimeout = error?.name === 'AbortError';
+    return {
+      data: null,
+      error: isTimeout
+        ? msg('apiTimeout')
+        : (typeof error?.message === 'string' && error.message.trim()
+            ? error.message
+            : String(error || msg('apiOffline'))),
+      isOnline: false,
+      fromCache: false,
+      status: null,
+    };
   }
 }
 
@@ -457,11 +552,14 @@ interface ImageUploadOptions {
 }
 
 async function buildImageForm(options: ImageUploadOptions): Promise<FormData> {
+  if (Platform.OS !== 'web') {
+    throw new Error('Native image uploads must use the Expo FileSystem transport.');
+  }
   const form = new FormData();
   const name = options.fileName || `plant_${Date.now()}.jpg`;
   const type = options.mimeType || 'image/jpeg';
 
-  if (Platform.OS === 'web') {
+  {
     // React Native's { uri, name, type } upload object is not understood by
     // browser FormData. Expo Web must send a real Blob/File or Multer receives
     // "[object Object]" instead of an image and rejects the request.
@@ -473,15 +571,6 @@ async function buildImageForm(options: ImageUploadOptions): Promise<FormData> {
       throw new Error('The selected file is not a supported image');
     }
     form.append('file', uploadBlob, name);
-  } else {
-    // Keep the file:// URI produced by expo-image-manipulator. On Android,
-    // preparation converts picker content:// assets into a cache file URI;
-    // React Native's multipart transport reads that local file.
-    form.append('file', {
-      uri: options.imageUri,
-      name,
-      type,
-    } as any);
   }
 
   if (options.cropType) form.append('plant_type', options.cropType);
@@ -501,17 +590,14 @@ export async function diagnosePlantDisease(
   options: ImageUploadOptions,
 ): Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }> {
   try {
-    const form = await buildImageForm(options);
-    const res = await apiRequest<any>('/api/ai/images/detect-disease', {
-      method: 'POST',
-      body: form,
-      // Never infer FormData from its runtime identity: React Native's native
-      // multipart body can cross Expo runtime boundaries. The fetch adapter
-      // must leave Content-Type unset so Android supplies its own boundary.
-      multipart: true,
-      // Keep the underlying transport reason visible on native devices.
-      exposeNetworkError: true,
-    });
+    const res = Platform.OS === 'web'
+      ? await apiRequest<any>('/api/ai/images/detect-disease', {
+          method: 'POST',
+          body: await buildImageForm(options),
+          multipart: true,
+          exposeNetworkError: true,
+        })
+      : await uploadNativeImage(options);
 
     // Preserve the gateway's actionable response (429/502/503/validation).
     // A generic "unconfigured" message hid the real reason on native devices.
