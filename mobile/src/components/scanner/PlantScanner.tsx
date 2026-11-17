@@ -135,8 +135,10 @@ export const PlantScanner: React.FC<PlantScannerProps> = ({ onSubmit, onClose })
       }
       setResult(response.data);
       setPhase('result');
-    } catch {
-      setErrorMsg(x.scannerAnalysisFailed);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : x.scannerAnalysisFailed;
+      console.warn('plant scanner submission failed:', detail);
+      setErrorMsg(detail || x.scannerAnalysisFailed);
       setPhase('error');
     }
   };
