@@ -196,6 +196,11 @@ export class LiveVoiceSession {
                 },
               },
             },            {
+              name: "get_my_soil_reports",
+              description: "Retrieve the authenticated user's own recent soil analysis reports from AgroGrowth. Use when they ask what their previous soil analysis showed, to recall saved soil reports, or to compare with their last report. Never claim a report exists unless returned by the API. Do not expose another user's data.",
+              parameters: { type: "OBJECT", properties: { limit: { type: "INTEGER", description: "Number of recent reports, from 1 to 10. Default 5." } } },
+            },
+            {
               name: "get_market_prices",
               description: "Retrieve current Tunisian agricultural market intelligence and recorded prices from the AgroGrowth backend. Use for questions about crop prices, market prices, price trends, and selling/buying decisions. Never estimate or invent a price. If the backend reports insufficient or unavailable data, say no verified price data is currently available.",
               parameters: {
@@ -538,6 +543,41 @@ export class LiveVoiceSession {
               instruction: "Explain this as an AI-generated advisory based on user-provided measurements, not a lab result or trained ML prediction. Do not add values absent from the report.",
             };
         if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+        continue;
+      }
+
+      if (call.name === "get_my_soil_reports") {
+        const requestedLimit = Number(call.args?.limit);
+        const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 10) : 5;
+        const result = await apiRequest<any>(`/api/soil-analysis/reports?limit=${limit}`, { method: "GET" });
+        const payload = result.data;
+        const reports = Array.isArray(payload?.data) ? payload.data : [];
+        const response = result.error || payload?.success !== true
+          ? {
+              success: false,
+              dataAvailable: false,
+              error: "تعذّر تحميل تقارير التربة الخاصة بالمستخدم. قل له إن السجل غير متاح حالياً، وما تخترع حتى تقرير.",
+              code: payload?.error ?? null,
+              message: payload?.message ?? result.error ?? null,
+            }
+          : {
+              success: true,
+              dataAvailable: reports.length > 0,
+              reportCount: reports.length,
+              reports: reports.map((report: any) => ({
+                analysisId: report.analysisId,
+                analyzedAt: report.analyzedAt ?? report.createdAt ?? null,
+                analysisType: report.analysisType ?? null,
+                fieldId: report.fieldId ?? null,
+                measurements: report.input && typeof report.input === "object" ? report.input : null,
+                executiveSummary: report.executiveSummary ?? null,
+              })),
+              instruction: reports.length
+                ? "These are the authenticated user's saved reports. Distinguish stored measurements from AI-generated summaries. Use only returned fields; do not infer missing results."
+                : "No saved soil reports were returned. Tell the user their history is empty; do not invent a previous analysis.",
+            };
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
         continue;
       }
 
