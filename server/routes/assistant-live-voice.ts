@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { geminiApiKey } from "../services/providers/gemini";
 
 const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "models/gemini-3.8-live";
 
@@ -23,10 +24,7 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
   res.setHeader("Pragma", "no-cache");
 
-  const apiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    (process.env.AI_PROVIDER?.toLowerCase() === "gemini" ? process.env.AI_API_KEY : undefined);
+  const apiKey = geminiApiKey();
 
   if (!apiKey) {
     res.status(503).json({
