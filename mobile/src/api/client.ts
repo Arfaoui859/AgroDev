@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { File, UploadType } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
 import { readCache, writeCache } from './cache';
 import { API_TIMEOUT_MS, DEFAULT_API_BASE_URL } from '../config';
@@ -153,33 +153,29 @@ async function uploadNativeImage(
 ): Promise<ApiResult<any>> {
   const endpoint = '/api/ai/images/detect-disease';
   const url = `${API_BASE_URL}${endpoint}`;
-  const file = new File(options.imageUri);
   const parameters: Record<string, string> = {};
   if (options.cropType) parameters.plant_type = options.cropType;
   if (options.plantPart) parameters.plant_part = options.plantPart;
   if (options.symptoms) parameters.symptoms = options.symptoms;
 
   const send = async () => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-    try {
-      const headers: Record<string, string> = { Accept: 'application/json' };
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-      return await file.upload(url, {
-        httpMethod: 'POST',
-        uploadType: UploadType.MULTIPART,
-        fieldName: 'file',
-        mimeType: options.mimeType || 'image/jpeg',
-        headers,
-        parameters,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeoutId);
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
     }
+
+    // Use Expo's stable native uploadAsync bridge on Android/iOS. It streams
+    // the prepared cache file as multipart/form-data and lets the native
+    // networking layer generate the boundary (unlike JS FormData shims).
+    return FileSystem.uploadAsync(url, options.imageUri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      fieldName: 'file',
+      mimeType: options.mimeType || 'image/jpeg',
+      headers,
+      parameters,
+    });
   };
 
   try {
@@ -220,14 +216,12 @@ async function uploadNativeImage(
       status: response.status,
     };
   } catch (error: any) {
-    const isTimeout = error?.name === 'AbortError';
     return {
       data: null,
-      error: isTimeout
-        ? msg('apiTimeout')
-        : (typeof error?.message === 'string' && error.message.trim()
-            ? error.message
-            : String(error || msg('apiOffline'))),
+      error:
+        typeof error?.message === 'string' && error.message.trim()
+          ? error.message
+          : String(error || msg('apiOffline')),
       isOnline: false,
       fromCache: false,
       status: null,
