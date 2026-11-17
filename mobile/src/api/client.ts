@@ -461,8 +461,11 @@ async function buildImageForm(options: ImageUploadOptions): Promise<FormData> {
     }
     form.append('file', uploadBlob, name);
   } else {
+    // Keep the file:// URI produced by expo-image-manipulator. On Android,
+    // preparation converts picker content:// assets into a cache file URI;
+    // React Native's multipart transport reads that local file.
     form.append('file', {
-      uri: Platform.OS === 'ios' ? options.imageUri.replace('file://', '') : options.imageUri,
+      uri: options.imageUri,
       name,
       type,
     } as any);
