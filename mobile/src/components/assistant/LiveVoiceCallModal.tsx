@@ -165,7 +165,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor="#082b1a" />
+        <StatusBar barStyle="light-content" />
         <View style={styles.container}>
           <View style={[styles.topBar, isRtl && styles.rtl]}>
             <TouchableOpacity onPress={onClose} accessibilityRole="button" accessibilityLabel={copyText.close} style={styles.closeButton}>
