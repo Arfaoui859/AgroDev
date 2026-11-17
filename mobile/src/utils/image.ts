@@ -1,4 +1,4 @@
-import { Image, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { IMAGE_COMPRESS_QUALITY, IMAGE_MAX_EDGE } from '../config';
 
@@ -9,12 +9,11 @@ export interface PreparedImage {
 }
 
 /**
- * Decode the selected asset, resize its longest edge and re-encode it as a
- * JPEG in the app cache before upload.
+ * Resolve the selected asset (including Android content:// picker URIs) into
+ * a compressed JPEG in the app cache before it reaches React Native FormData.
  *
- * Android's photo picker can return a content:// URI. That URI is valid for
- * preview, but passing it directly to React Native FormData is unreliable.
- * ImageManipulator resolves it and writes a normal cache file URI.
+ * Never fall back to the original picker URI: if native decoding fails, stop
+ * here with a visible preparation error instead of attempting a broken upload.
  */
 export async function prepareImageForUpload(sourceUri: string): Promise<PreparedImage> {
   if (!sourceUri) {
@@ -22,24 +21,10 @@ export async function prepareImageForUpload(sourceUri: string): Promise<Prepared
   }
 
   try {
-    const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
-      Image.getSize(
-        sourceUri,
-        (width, height) => resolve({ width, height }),
-        () => reject(new Error('Unable to read the selected photo on this device. Please choose it again.')),
-      );
+    const context = ImageManipulator.manipulate(sourceUri, {
+      maxWidth: IMAGE_MAX_EDGE,
+      maxHeight: IMAGE_MAX_EDGE,
     });
-
-    const scale = Math.min(1, IMAGE_MAX_EDGE / Math.max(dimensions.width, dimensions.height));
-    const context = ImageManipulator.manipulate(sourceUri);
-
-    if (scale < 1) {
-      context.resize({
-        width: Math.max(1, Math.round(dimensions.width * scale)),
-        height: Math.max(1, Math.round(dimensions.height * scale)),
-      });
-    }
-
     const image = await context.renderAsync();
     const result = await image.saveAsync({
       compress: IMAGE_COMPRESS_QUALITY,
@@ -56,8 +41,6 @@ export async function prepareImageForUpload(sourceUri: string): Promise<Prepared
       fileName: `plant_${Date.now()}.jpg`,
     };
   } catch (error) {
-    // Do not fall back to the original content:// URI on Android: that can
-    // reproduce the upload failure while making the UI appear to proceed.
     console.warn('image preparation failed:', {
       platform: Platform.OS,
       uriScheme: sourceUri.split(':')[0] || 'unknown',
