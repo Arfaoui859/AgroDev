@@ -105,8 +105,10 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
       } else {
         setError(res.error || x.stateError);
       }
-    } catch {
-      setError(x.stateError);
+    } catch (cause) {
+      const detail = cause instanceof Error ? cause.message : String(cause);
+      console.warn('[disease-screen] image analysis failed:', detail);
+      setError(detail || x.stateError);
     } finally {
       setLoading(false);
     }
@@ -137,8 +139,10 @@ export const DiseaseDetectionScreen: React.FC<DiseaseDetectionScreenProps> = ({ 
               });
             }
             return res;
-          } catch {
-            return { data: null, error: x.stateError, unavailable: false };
+          } catch (cause) {
+            const detail = cause instanceof Error ? cause.message : String(cause);
+            console.warn('[disease-scanner] diagnosis callback failed:', detail);
+            return { data: null, error: detail || x.stateError, unavailable: false };
           }
         }}
       />);
