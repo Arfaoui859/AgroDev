@@ -828,7 +828,7 @@ export class LiveVoiceSession {
         const services = Array.isArray(health?.services) ? health.services : [];
         const newsSources = Array.isArray(newsResult.data?.sources) ? newsResult.data.sources : [];
         const weather = weatherResult.data;
-        const response = !health?.overview && result.error
+        const response = !health?.overview
           ? {
               success: false,
               dataAvailable: false,
