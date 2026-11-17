@@ -260,7 +260,7 @@ router.get("/alerts/:farmLocation", async (req, res) => {
       currentConditions: currentWeather,
       activeAlerts: currentAlerts.filter((alert) => alert.isActive),
       upcomingAlerts: upcoming,
-      recommendations: generateImmediateRecommendations(currentWeather, alerts),
+      recommendations: generateImmediateRecommendations(currentWeather, alertTypes),
       dataSource: adapted.weather.source.provider,
       isRealData: true,
       isStale: Boolean(adapted.weather.source.isStale),
