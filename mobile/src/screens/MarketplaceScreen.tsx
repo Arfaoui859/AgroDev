@@ -433,7 +433,7 @@ export const MarketplaceScreen: React.FC = () => {
             { id: 'prices', icon: 'chart-line', ar: 'أسعار السوق', fr: 'Prix du marché', en: 'Market prices', count: latestPrices.length },
             { id: 'marketIntel', icon: 'chart-box-outline', ar: 'ذكاء السوق والتحليل', fr: 'Intelligence du marché', en: 'Market intelligence', count: marketIntelligence?.sampleSize ?? 0 },
           ] as const).map((category) => {
-            const active = selectedMarketCategory === category.id;
+            const active = false;
             return (
               <Pressable key={category.id} onPress={() => setSelectedMarketCategory(category.id)}
                 style={[styles.marketCategoryTile, active && styles.marketCategoryTileActive]}>
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
   marketCategoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: spacing.sm },
   marketCategoryTile: { width: '48%', minHeight: 132, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, gap: spacing.xs, justifyContent: 'space-between' },
   marketHomeHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, marginBottom: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle },
-  marketHomeHintText: { flex: 1, color: colors.textSecondary, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.md },
+  marketHomeHintText: { flex: 1, color: colors.textSecondary, fontSize: typography.fontSizes.sm, lineHeight: typography.lineHeights.base },
   marketCategoryTileActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   marketCategoryIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSubtle },
   marketCategoryIconActive: { backgroundColor: colors.surface },
