@@ -68,6 +68,7 @@ export class LiveVoiceSession {
   private socket: WebSocket | null = null;
   private callbacks: VoiceCallbacks;
   private active = false;
+  private socketReady = false;
   private stopped = false;
   private speechActive = false;
   private silenceMs = 0;
@@ -163,6 +164,9 @@ export class LiveVoiceSession {
         `${this.websocketUrl}?access_token=${encodeURIComponent(this.apiToken as string)}`,
       );
       this.socket = socket;
+      this.socketReady = false;
+      this.speechActive = false;
+      this.silenceMs = 0;
       let setupComplete = false;
       let settled = false;
       const timeout = setTimeout(() => {
@@ -211,8 +215,10 @@ export class LiveVoiceSession {
           setupComplete = true;
           clearTimeout(timeout);
           settled = true;
+          this.socketReady = true;
           if (resume) {
             this.reconnecting = false;
+            this.reconnectAttempts = 0;
             this.callbacks.onState("listening");
             resolve();
           } else {
@@ -246,7 +252,9 @@ export class LiveVoiceSession {
           fail(new Error("تم إغلاق الاتصال قبل بدء المحادثة الصوتية."));
           return;
         }
-        if (this.socket !== socket || !this.active || this.reconnecting) return;
+        if (this.socket !== socket) return;
+        this.socketReady = false;
+        if (!this.active || this.reconnecting) return;
 
         if (this.sessionHandle) {
           void this.reconnectSession();
@@ -299,7 +307,7 @@ export class LiveVoiceSession {
     const callback = recorder.onAudioReady(
       { sampleRate: INPUT_RATE, bufferLength: FRAME_SAMPLES, channelCount: 1 },
       ({ buffer, numFrames }) => {
-        if (!this.active || this.socket?.readyState !== WebSocket.OPEN) return;
+        if (!this.active || !this.socketReady || this.socket?.readyState !== WebSocket.OPEN) return;
         const raw = buffer.getChannelData(0).subarray(0, numFrames);
         if (!raw.length) return;
 
@@ -390,6 +398,7 @@ export class LiveVoiceSession {
   async stop(): Promise<void> {
     this.stopped = true;
     this.active = false;
+    this.socketReady = false;
     this.speechActive = false;
     this.lastReplyId += 1;
     this.recorder?.clearOnAudioReady();
