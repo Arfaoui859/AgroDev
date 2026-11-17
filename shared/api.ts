@@ -9,8 +9,8 @@ export interface RawSoilData {
   location?: string;
   samplingDate?: string;
   sampleDepth?: number;
-  ph: number;
-  moisture: number;
+  ph?: number;
+  moisture?: number;
   organicMatter?: number;
   nitrogen?: number;
   phosphorus?: number;
