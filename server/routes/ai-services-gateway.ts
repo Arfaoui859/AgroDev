@@ -1061,6 +1061,12 @@ export const getSupportedDiseases = async (req: Request, res: Response) => {
   }
 };
 
+// Shared health-probe cache: avoid hammering free Render services whenever
+// multiple dashboard widgets mount or users refresh the status screen.
+const AI_SERVICE_HEALTH_CACHE_TTL_MS = 30_000;
+let aiServiceHealthCache: { expiresAt: number; results: any[] } | null = null;
+let aiServiceHealthInFlight: Promise<any[]> | null = null;
+
 export const getAIServicesHealth = async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
@@ -1117,80 +1123,74 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
       }
     ];
 
-    // Use a shorter timeout to avoid long delays when services are down
-    const healthChecks = await Promise.allSettled(
-      services.map(async (service) => {
-        const checkStart = Date.now();
-        try {
-          const response = await axios.get(`${service.url}/health`, { timeout: 3000 });
-          // A reachable service is not evidence of a trained model: the bundled
-          // services self-report "synthetic-demo"/"heuristic-demo" in their own
-          // /health payload. Surface that so the monitoring view does not
-          // present synthetic inference as production model output.
-          const declared =
-            response.data?.model_source ?? response.data?.modelSource ?? null;
-          const modelSource = typeof declared === "string" ? declared : null;
-          const advisoryDeclared =
-            response.data?.advisory_model_source ?? response.data?.advisoryModelSource ?? null;
-          const advisoryModelSource =
-            typeof advisoryDeclared === "string" ? advisoryDeclared : null;
-          const advisoryConfigured =
-            Boolean(advisoryModelSource) ||
-            response.data?.advisory_configured === true ||
-            response.data?.advisoryConfigured === true;
-          const nonMl =
-            modelSource !== null && NON_ML_MODEL_SOURCE_RE.test(modelSource);
-          const synthetic =
-            modelSource !== null && SYNTHETIC_MODEL_SOURCE_RE.test(modelSource);
-          return {
-            ...service,
-            status: "available",
-            modelSource,
-            advisoryModelSource,
-            advisoryConfigured,
-            isRealModel: modelSource !== null && !nonMl,
-            modelTrainedOnSyntheticData: synthetic,
-            responseTime: Date.now() - checkStart,
-            lastChecked: new Date().toISOString()
-          };
-        } catch (error) {
-          return {
-            ...service,
-            status: "unavailable",
-            responseTime: Date.now() - checkStart,
-            lastChecked: new Date().toISOString(),
-            error: error.message
-          };
-        }
-      })
-    );
-
-    const serviceResults = healthChecks.map((check, index) => {
-      if (check.status === "fulfilled") {
-        return check.value;
-      } else {
-        return {
-          ...services[index],
-          status: "unavailable",
-          responseTime: undefined,
-          lastChecked: new Date().toISOString(),
-          error: "Connection failed"
-        };
+    // Cache successful snapshots and share one in-flight probe across callers.
+    // HTTP 429 proves the host responded; it does NOT prove inference works.
+    let serviceResults: any[];
+    if (aiServiceHealthCache && aiServiceHealthCache.expiresAt > Date.now()) {
+      serviceResults = aiServiceHealthCache.results;
+    } else {
+      if (!aiServiceHealthInFlight) {
+        aiServiceHealthInFlight = Promise.all(services.map(async (service) => {
+          const checkStart = Date.now();
+          try {
+            const response = await axios.get(`${service.url}/health`, { timeout: 3000 });
+            const declared = response.data?.model_source ?? response.data?.modelSource ?? null;
+            const modelSource = typeof declared === "string" ? declared : null;
+            const advisoryDeclared = response.data?.advisory_model_source ?? response.data?.advisoryModelSource ?? null;
+            const advisoryModelSource = typeof advisoryDeclared === "string" ? advisoryDeclared : null;
+            const advisoryConfigured = Boolean(advisoryModelSource) || response.data?.advisory_configured === true || response.data?.advisoryConfigured === true;
+            const nonMl = modelSource !== null && NON_ML_MODEL_SOURCE_RE.test(modelSource);
+            const synthetic = modelSource !== null && SYNTHETIC_MODEL_SOURCE_RE.test(modelSource);
+            return {
+              ...service, status: "available", reachable: true,
+              modelSource, advisoryModelSource, advisoryConfigured,
+              isRealModel: modelSource !== null && !nonMl,
+              modelTrainedOnSyntheticData: synthetic,
+              responseTime: Date.now() - checkStart,
+              lastChecked: new Date().toISOString(),
+            };
+          } catch (error) {
+            const statusCode = (error as AxiosError).response?.status;
+            const retryAfter = (error as AxiosError).response?.headers?.["retry-after"];
+            const retryAfterSeconds = typeof retryAfter === "string" ? Number(retryAfter) : NaN;
+            const retryAfterMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0
+              ? retryAfterSeconds * 1000 : null;
+            const hostResponded = typeof statusCode === "number";
+            return {
+              ...service,
+              status: statusCode === 429 ? "rate_limited" : "unavailable",
+              reachable: hostResponded,
+              retryAfterMs: statusCode === 429 ? retryAfterMs : null,
+              responseTime: Date.now() - checkStart,
+              lastChecked: new Date().toISOString(),
+              error: statusCode === 429
+                ? "Health endpoint rate-limited; inference availability remains unverified"
+                : statusCode ? `HTTP ${statusCode}` : "probe_failed",
+            };
+          }
+        }));
       }
-    });
+      try {
+        serviceResults = await aiServiceHealthInFlight;
+        aiServiceHealthCache = { results: serviceResults, expiresAt: Date.now() + AI_SERVICE_HEALTH_CACHE_TTL_MS };
+      } finally {
+        aiServiceHealthInFlight = null;
+      }
+    }
 
-    const availableCount = serviceResults.filter(s => s.status === "available").length;
-    const unavailableCount = serviceResults.length - availableCount;
-    // Services that answer /health but self-declare synthetic/heuristic models.
-    const syntheticCount = serviceResults.filter(
-      (s: any) => s.modelTrainedOnSyntheticData === true,
-    ).length;
+    const availableCount = serviceResults.filter((s) => s.status === "available").length;
+    const rateLimitedCount = serviceResults.filter((s) => s.status === "rate_limited").length;
+    const reachableCount = serviceResults.filter((s) => s.reachable === true).length;
+    const unavailableCount = serviceResults.filter((s) => s.status === "unavailable").length;
+    const syntheticCount = serviceResults.filter((s) => s.modelTrainedOnSyntheticData === true).length;
 
     const results = {
       overview: {
         totalServices: serviceResults.length,
         availableServices: availableCount,
+        reachableServices: reachableCount,
         unavailableServices: unavailableCount,
+        rateLimitedServices: rateLimitedCount,
         /** Reachable services whose own /health reports a synthetic/heuristic model. */
         syntheticModelServices: syntheticCount,
         lastUpdated: new Date().toISOString(),
@@ -1205,7 +1205,9 @@ export const getAIServicesHealth = async (req: Request, res: Response) => {
           "محرك قواعد زراعية محلي يوفر تحليلاً بديلاً عند تعذّر الخدمات (بدون تقديم نتائج كنموذج ذكاء اصطناعي).",
       },
       note:
-        unavailableCount > 0
+        rateLimitedCount > 0
+          ? "بعض الخدمات أجابت بـ HTTP 429؛ الوصول إلى الخادم مؤكد لكن توفر التحليل الفعلي غير مثبت."
+          : unavailableCount > 0
           ? "بعض خدمات الذكاء الاصطناعي غير متاحة؛ يتم استخدام محرك القواعد الزراعية كبديل شفاف."
           : syntheticCount > 0
             ? "جميع الخدمات تعمل، لكن بعضها مصرّح بأنه مدرّب على بيانات اصطناعية (model_source: synthetic-demo) وليس على بيانات حقلية موثّقة."
