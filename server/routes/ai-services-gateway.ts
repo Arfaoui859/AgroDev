@@ -1272,7 +1272,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             };
             farmContextStatus = "linked";
 
-            const wantsLiveWeather = /(weather|météo|meteo|طقس|مطر|حرارة|ري|irrigation|arrosage|ns9i|s9i|matar|skhouna|bard|jaw|jew|ri7|rri7|nrawi|crop|plant|sow|grow|planting|محصول|زراعة|نزرع|نغرس|nzra3|ghars|zra3a)/i.test(userMessage);
+            const wantsLiveWeather = /(weather|météo|meteo|طقس|طقس|توقعات|مطر|امطار|أمطار|حرارة|سخانة|برد|ري|irrigation|arrosage|ns9i|s9i|matar|mtar|ta9s|ta9es|t9s|skhouna|s5ana|bard|berd|jaw|jew|ri7|rri7|nrawi|crop|plant|sow|grow|planting|محصول|زراعة|نزرع|نغرس|nzra3|ghars|zra3a)/i.test(userMessage);
             if (wantsLiveWeather) {
               if (!selectedFarm) {
                 platformRecords.push("Live farm-specific weather was not fetched because no unique farm was selected. The account has " + farms.length + " farms. Ask the user to mention one exact saved farm name before fetching its forecast.");
@@ -1317,7 +1317,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     // The text agent can report actual service state on demand instead of
     // relying on a stale capability list or guessing which microservices work.
     const asksServiceStatus =
-      /(شنية الخدمات|شنوّة الخدمات|شنو الخدمات|شنية تنجم|شنو تنجم|شنو يخدم|شنوّة يخدم|شنو طايح|الخدمات المتاحة|حالة الخدمات|خدمات الذكاء|service status|services available|which services|what services|health check|microservices)/i.test(userMessage);
+      /(شنية الخدمات|شنوّة الخدمات|شنو الخدمات|شنية تنجم|شنو تنجم|شنوّة تنجم تعمل|شنية تعمل|شنو يخدم|شنوّة يخدم|شنو طايح|الخدمات المتاحة|حالة الخدمات|خدمات الذكاء|les services|les agents|services?|service status|services available|which services|what services|health check|microservices)/i.test(userMessage);
     if (asksServiceStatus) {
       try {
         const statusFacts = await getAssistantServiceHealthFacts();
@@ -1336,7 +1336,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
     // stall the chat; a timed-out or failed fetch simply injects nothing and the
     // specialist reports `unavailable` rather than inventing a headline.
     const wantsNews =
-      /(أخبار|الأخبار|خبر|مستجدات|صحافة|news|actualit|presse|akhbar|khabar|newspaper)/i.test(userMessage);
+      /(أخبار|الأخبار|اخبار|الاخبار|اخر الاخبار|آخر الأخبار|خبر|مستجدات|صحافة|شنوة صاير|شنية صاير|news|actualit|presse|akhbar|a5bar|khabar|newspaper)/i.test(userMessage);
     if (wantsNews) {
       try {
         const news = await Promise.race([
