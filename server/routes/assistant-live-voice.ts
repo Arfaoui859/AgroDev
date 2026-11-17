@@ -159,7 +159,7 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
 
   try {
     const now = Date.now();
-    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/auth_tokens", {
+    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1alpha/auth_tokens", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
