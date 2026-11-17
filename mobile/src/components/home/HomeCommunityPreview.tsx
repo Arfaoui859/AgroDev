@@ -24,12 +24,12 @@ export const HomeCommunityPreview: React.FC<HomeCommunityPreviewProps> = ({ onOp
   useEffect(() => {
     let active = true;
     if (!isAuthenticated) {
-      setPosts([]);
-      setUnavailable(false);
       return () => { active = false; };
     }
-    setLoading(true);
-    getCommunityPosts().then((result) => {
+    void Promise.resolve().then(() => {
+      if (active) setLoading(true);
+      return getCommunityPosts();
+    }).then((result) => {
       if (active) {
         setPosts(result.data.slice(0, 2));
         setUnavailable(Boolean(result.error));
