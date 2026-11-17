@@ -425,11 +425,24 @@ export class LiveVoiceSession {
         this.handleServerMessage(message);
       };
 
-      socket.onerror = () => fail(new Error("تعذّر الاتصال بخدمة الصوت المباشر."));
+      socket.onerror = () => {
+        if (!setupComplete) {
+          fail(new Error("فشل WebSocket مع Gemini Live قبل اكتمال الإعداد. راجع سجلّات assistant-live في Render لمعرفة سبب الرفض."));
+          return;
+        }
+        this.callbacks.onError?.("صار خطأ في اتصال الصوت المباشر.");
+      };
       socket.onclose = (event) => {
         window.clearTimeout(timeout);
         if (!setupComplete) {
-          fail(new Error("تم إغلاق الاتصال قبل بدء المحادثة الصوتية."));
+          const closeReason = typeof event.reason === "string" && event.reason.trim()
+            ? event.reason.trim().slice(0, 240)
+            : "بدون تفاصيل من الخادم";
+          const closeCode = Number.isFinite(event.code) ? event.code : 0;
+          fail(new Error(
+            `Gemini Live أغلق الاتصال قبل اكتمال الإعداد (code ${closeCode}): ${closeReason}. ` +
+            "تحقّق من صلاحية Gemini API والموديل وإعدادات Live API في Render."
+          ));
           return;
         }
         if (this.socket !== socket) return;
