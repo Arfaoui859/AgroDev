@@ -114,7 +114,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
     });
     sessionRef.current = session;
     try {
-      await session.start(language);
+      await session.start();
     } catch (reason) {
       setState("error");
       setError(reason instanceof Error ? reason.message : copyText.error);
