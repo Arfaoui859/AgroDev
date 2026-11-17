@@ -345,7 +345,6 @@ export class LiveVoiceSession {
               audio: { mimeType: "audio/pcm;rate=16000", data: floatToBase64(pcm) },
             },
           }));
-          this.callbacks.onState("listening");
         }
       },
     );
