@@ -70,6 +70,12 @@ export interface Translations {
   assistantGreeting: string;
   typeYourMessage: string;
   send: string;
+  voiceInput: string;
+  listening: string;
+  voiceUnavailable: string;
+  voicePermissionDenied: string;
+  speakAnswer: string;
+  stopSpeaking: string;
   promptIrrigation: string;
   promptPest: string;
   promptSoil: string;
@@ -205,6 +211,12 @@ const ar: Translations = {
   assistantGreeting: 'مرحباً بك! أنا مستشارك الزراعي الذكي في AgriVibe. كيف أستطيع مساعدتك اليوم في مزرعتك؟',
   typeYourMessage: 'اكتب سؤالك هنا بالعامية التونسية أو الفصحى...',
   send: 'إرسال',
+  voiceInput: 'تحدّث',
+  listening: 'جاري الاستماع… اضغط للإيقاف',
+  voiceUnavailable: 'التعرّف على الصوت غير متاح على هذا الجهاز أو لهذه اللغة. يمكنك الكتابة بدلاً من ذلك.',
+  voicePermissionDenied: 'يلزم السماح باستخدام الميكروفون والتعرّف على الكلام من إعدادات الجهاز.',
+  speakAnswer: 'استمع للإجابة',
+  stopSpeaking: 'إيقاف الصوت',
   promptIrrigation: 'متى أفضل وقت لري أشجار الزيتون في هذا الفصل؟',
   promptPest: 'عندي بقع بنية وصفراء على أوراق الطماطم، ما العلاج؟',
   promptSoil: 'تربتي تميل للملوحة، ما هي الأسمدة والمحاصيل المناسبة؟',
@@ -334,6 +346,12 @@ const fr: Translations = {
   assistantGreeting: 'Bonjour ! Je suis votre conseiller AgriVibe. Comment puis-je vous aider aujourd’hui ?',
   typeYourMessage: 'Posez votre question ici...',
   send: 'Envoyer',
+  voiceInput: 'Parler',
+  listening: 'Écoute en cours… appuyez pour arrêter',
+  voiceUnavailable: 'La reconnaissance vocale est indisponible sur cet appareil ou pour cette langue. Vous pouvez écrire votre question.',
+  voicePermissionDenied: 'Autorisez l’accès au microphone et à la reconnaissance vocale dans les réglages.',
+  speakAnswer: 'Écouter la réponse',
+  stopSpeaking: 'Arrêter la lecture',
   promptIrrigation: 'Quel est le meilleur moment pour irriguer mes oliviers ?',
   promptPest: 'Feuilles de tomates tachées de jaune et brun, que faire ?',
   promptSoil: 'Mon sol est calcaire, quelles cultures privilégier ?',
@@ -463,6 +481,12 @@ const en: Translations = {
   assistantGreeting: 'Welcome! I am your AgriVibe assistant. What can I help you with on your farm today?',
   typeYourMessage: 'Type your question here (Arabic, French, or English)...',
   send: 'Send',
+  voiceInput: 'Speak',
+  listening: 'Listening… tap to stop',
+  voiceUnavailable: 'Speech recognition is unavailable on this device or for this language. You can type your question instead.',
+  voicePermissionDenied: 'Allow microphone and speech-recognition access in your device settings.',
+  speakAnswer: 'Listen to answer',
+  stopSpeaking: 'Stop audio',
   promptIrrigation: 'When is the best time to irrigate olive trees this month?',
   promptPest: 'My tomato leaves have yellow spots with brown borders. What is it?',
   promptSoil: 'My soil has high salinity, what crops and amendments work best?',
