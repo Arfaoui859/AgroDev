@@ -484,70 +484,86 @@ async function buildImageForm(options: ImageUploadOptions): Promise<FormData> {
 export async function diagnosePlantDisease(
   options: ImageUploadOptions,
 ): Promise<{ data: DiseaseDiagnosisResult | null; error: string | null; unavailable: boolean }> {
-  const form = await buildImageForm(options);
-  const res = await apiRequest<any>('/api/ai/images/detect-disease', {
-    method: 'POST',
-    body: form,
-  });
+  try {
+    const form = await buildImageForm(options);
+    const res = await apiRequest<any>('/api/ai/images/detect-disease', {
+      method: 'POST',
+      body: form,
+    });
 
-  // 503 = no vision back-end configured; 502 = the back-end was reached but
-  // failed. Both are honest "no diagnosis produced" states — surface our own
-  // localised copy rather than the server's English message.
-  if (res.status === 503 || res.status === 502) {
-    return { data: null, error: msg('diseaseServiceUnconfigured'), unavailable: true };
+    // Preserve the gateway's actionable response (429/502/503/validation).
+    // A generic "unconfigured" message hid the real reason on native devices.
+    if (res.status === 503 || res.status === 502) {
+      return {
+        data: null,
+        error: res.error || msg('diseaseServiceUnconfigured'),
+        unavailable: true,
+      };
+    }
+    if (!res.data) {
+      return {
+        data: null,
+        error: res.error || msg('diseaseAnalysisFailed'),
+        unavailable: false,
+      };
+    }
+
+    const d = res.data;
+    const primary =
+      d.disease_detection?.primary_disease ??
+      d.diagnosis ??
+      d.result?.primary_disease ??
+      {};
+
+    const meta = metaFrom(d, 'vision-model');
+    const confidenceRaw = primary.probability ?? primary.confidence ?? d.confidence;
+    const confidence =
+      typeof confidenceRaw === 'number'
+        ? confidenceRaw <= 1
+          ? Math.round(confidenceRaw * 100)
+          : Math.round(confidenceRaw)
+        : null;
+
+    const arName =
+      typeof primary.disease_name_ar === 'string' && !isMachineSlug(primary.disease_name_ar)
+        ? primary.disease_name_ar.trim()
+        : '';
+    const diseaseName = humanDiseaseName(primary, arName, msg('diseaseUnknownName'));
+    const diseaseNameAr = arName || diseaseName || msg('diseaseUnknownName');
+
+    return {
+      data: {
+        id: String(d.id ?? Date.now()),
+        diseaseName,
+        diseaseNameAr,
+        confidence,
+        severity: (d.severity_assessment?.severity_level || primary.severity_level || 'unknown') as any,
+        descriptionAr: primary.description || msg('diseaseGenericDescription'),
+        symptoms: Array.isArray(primary.symptoms) ? primary.symptoms : [],
+        treatment: Array.isArray(d.treatment_plan?.immediate_treatment)
+          ? d.treatment_plan.immediate_treatment
+          : [],
+        prevention: Array.isArray(d.treatment_plan?.prevention_measures)
+          ? d.treatment_plan.prevention_measures
+          : [],
+        meta,
+        imageUri: options.imageUri,
+        plantType: options.cropType,
+        processedAt: formatDateTime(new Date().toISOString(), getActiveLanguage()),
+      },
+      error: null,
+      unavailable: false,
+    };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.warn('plant image diagnosis failed:', detail);
+    return {
+      data: null,
+      error: detail || msg('diseaseAnalysisFailed'),
+      unavailable: false,
+    };
   }
-  if (!res.data) {
-    return { data: null, error: msg('diseaseAnalysisFailed'), unavailable: false };
-  }
-
-  const d = res.data;
-  const primary =
-    d.disease_detection?.primary_disease ??
-    d.diagnosis ??
-    d.result?.primary_disease ??
-    {};
-
-  const meta = metaFrom(d, 'vision-model');
-  const confidenceRaw = primary.probability ?? primary.confidence ?? d.confidence;
-  const confidence =
-    typeof confidenceRaw === 'number'
-      ? confidenceRaw <= 1
-        ? Math.round(confidenceRaw * 100)
-        : Math.round(confidenceRaw)
-      : null;
-
-  const arName =
-    typeof primary.disease_name_ar === 'string' && !isMachineSlug(primary.disease_name_ar)
-      ? primary.disease_name_ar.trim()
-      : '';
-  const diseaseName = humanDiseaseName(primary, arName, msg('diseaseUnknownName'));
-  const diseaseNameAr = arName || diseaseName || msg('diseaseUnknownName');
-
-  return {
-    data: {
-      id: String(d.id ?? Date.now()),
-      diseaseName,
-      diseaseNameAr,
-      confidence,
-      severity: (d.severity_assessment?.severity_level || primary.severity_level || 'unknown') as any,
-      descriptionAr: primary.description || msg('diseaseGenericDescription'),
-      symptoms: Array.isArray(primary.symptoms) ? primary.symptoms : [],
-      treatment: Array.isArray(d.treatment_plan?.immediate_treatment)
-        ? d.treatment_plan.immediate_treatment
-        : [],
-      prevention: Array.isArray(d.treatment_plan?.prevention_measures)
-        ? d.treatment_plan.prevention_measures
-        : [],
-      meta,
-      imageUri: options.imageUri,
-      plantType: options.cropType,
-      processedAt: formatDateTime(new Date().toISOString(), getActiveLanguage()),
-    },
-    error: null,
-    unavailable: false,
-  };
 }
-
 // ---------------------------------------------------------------------------
 // Soil analysis — rule-based in-process engine
 // ---------------------------------------------------------------------------
