@@ -155,39 +155,34 @@ export class LiveVoiceSession {
   private handleMicrophoneFrame(event: AudioProcessingEvent): void {
     if (!this.active || !this.socketReady || this.socket?.readyState !== WebSocket.OPEN) return;
     const input = event.inputBuffer.getChannelData(0);
-    if (!input.length) return;
+    if (!input.length || !this.audioContext) return;
 
+    // Gemini Live's browser session uses server-side VAD. Stream every PCM
+    // frame (including silence) instead of client-side activityStart/activityEnd:
+    // manual endpointing is not supported by the constrained Live endpoint.
     let energy = 0;
     for (let i = 0; i < input.length; i += 1) energy += input[i] * input[i];
     const rms = Math.sqrt(energy / input.length);
     this.callbacks.onLevel?.(Math.min(1, rms * 9));
 
     if (rms >= SPEECH_RMS_THRESHOLD) {
-      this.silenceMs = 0;
-      if (!this.speechActive) {
-        this.speechActive = true;
-        this.interruptPlayback();
-        this.socket.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
-      }
+      if (!this.speechActive) this.interruptPlayback();
+      this.speechActive = true;
+      this.callbacks.onState("listening");
     } else if (this.speechActive) {
-      this.silenceMs += (input.length / this.audioContext!.sampleRate) * 1000;
+      this.silenceMs += (input.length / this.audioContext.sampleRate) * 1000;
       if (this.silenceMs >= END_SILENCE_MS) {
         this.speechActive = false;
         this.silenceMs = 0;
-        this.socket.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
-        this.callbacks.onState("thinking");
-        return;
       }
     }
 
-    if (this.speechActive) {
-      const pcm = resample(input, this.audioContext!.sampleRate, INPUT_RATE);
-      this.socket.send(JSON.stringify({
-        realtimeInput: {
-          audio: { mimeType: "audio/pcm;rate=16000", data: floatToBase64(pcm) },
-        },
-      }));
-    }
+    const pcm = resample(input, this.audioContext.sampleRate, INPUT_RATE);
+    this.socket.send(JSON.stringify({
+      realtimeInput: {
+        audio: { mimeType: "audio/pcm;rate=16000", data: floatToBase64(pcm) },
+      },
+    }));
   }
 
   private sendSetup(socket: WebSocket, resumeHandle?: string): void {
@@ -200,7 +195,7 @@ export class LiveVoiceSession {
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
         },
         realtimeInputConfig: {
-          automaticActivityDetection: { disabled: true },
+          automaticActivityDetection: { disabled: false },
           activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
         },
         sessionResumption: resumeHandle ? { handle: resumeHandle } : {},
