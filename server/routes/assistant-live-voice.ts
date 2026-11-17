@@ -149,7 +149,12 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
     return;
   }
 
-  const farmContext = await loadVerifiedFarmContext(_req);
+  let farmContext: string | null = null;
+  try {
+    farmContext = await loadVerifiedFarmContext(_req);
+  } catch (error) {
+    console.error("[assistant-live] Farm context unavailable:", error instanceof Error ? error.message : "Unknown error");
+  }
 
   try {
     const now = Date.now();
