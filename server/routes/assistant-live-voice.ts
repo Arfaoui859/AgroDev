@@ -199,7 +199,7 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       success: true,
       token: payload.name,
       model: GEMINI_LIVE_MODEL,
-      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained",
+      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained",
       expiresInSeconds: 1800,
       singleUse: false,
       maxConnections: 5,
