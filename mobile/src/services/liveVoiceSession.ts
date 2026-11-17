@@ -20,7 +20,7 @@ const INPUT_RATE = 16_000;
 const OUTPUT_RATE = 24_000;
 const FRAME_MS = 20;
 const FRAME_SAMPLES = (INPUT_RATE * FRAME_MS) / 1000;
-const SPEECH_RMS_THRESHOLD = 0.018;
+const SPEECH_RMS_THRESHOLD = 0.012;
 const END_SILENCE_MS = 650;
 
 const SYSTEM_INSTRUCTION = [
@@ -127,6 +127,7 @@ export class LiveVoiceSession {
     await new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(url);
       this.socket = socket;
+      let setupComplete = false;
       const timeout = setTimeout(() => reject(new Error("انتهت مهلة الاتصال بالخدمة الصوتية.")), 15000);
       socket.onopen = () => {
         socket.send(JSON.stringify({
@@ -154,6 +155,7 @@ export class LiveVoiceSession {
           return;
         }
         if (message.setupComplete) {
+          setupComplete = true;
           clearTimeout(timeout);
           this.active = true;
           try {
@@ -173,6 +175,10 @@ export class LiveVoiceSession {
       };
       socket.onclose = (event) => {
         clearTimeout(timeout);
+        if (!setupComplete) {
+          reject(new Error("تم إغلاق الاتصال قبل بدء المحادثة الصوتية."));
+          return;
+        }
         if (this.active) {
           this.active = false;
           this.callbacks.onState("ended");
