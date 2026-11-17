@@ -202,6 +202,71 @@ router.get("/products", async (req,res) => {
   } catch(e:any) { console.error("[agro-market] catalog read failed",e?.message); res.status(503).json({success:false,code:"CATALOG_READ_FAILED"}); }
 });
 
+router.get("/intelligence", async (req,res) => {
+  const db = publicDb(res); if (!db) return;
+  try {
+    const period = Math.min(365, Math.max(7, Number(req.query.period) || 30));
+    const since = new Date(Date.now() - period * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+    const {data,error} = await db.from("market_price_observations")
+      .select("commodity_name,market_location,price_average,observed_on,unit,currency,source_name,source_url,verification_status,price_kind")
+      .gte("observed_on", since).order("observed_on",{ascending:true}).limit(1000);
+    if (error) throw error;
+    const rows = (data ?? []).filter((r:any) => Number.isFinite(Number(r.price_average)) && r.price_average !== null);
+    if (!rows.length) return res.status(503).json({success:false,code:"MARKET_INTELLIGENCE_DATA_UNAVAILABLE",
+      message:"لا توجد ملاحظات أسعار كافية للفترة المطلوبة.",dataAvailable:false});
+    const grouped = new Map<string, any[]>();
+    for (const row of rows) {
+      const key = String(row.commodity_name || "غير محدد");
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(row);
+    }
+    const cropTrends = Array.from(grouped.entries()).map(([crop, observations]) => {
+      const byDay = new Map<string, number[]>();
+      for (const item of observations) {
+        const day = String(item.observed_on).slice(0,10);
+        if (!byDay.has(day)) byDay.set(day, []);
+        byDay.get(day)!.push(Number(item.price_average));
+      }
+      const daily = Array.from(byDay.entries()).map(([date, values]) => ({
+        date, averagePrice: values.reduce((sum,v)=>sum+v,0)/values.length
+      })).sort((a,b)=>a.date.localeCompare(b.date));
+      const first = daily.slice(0, Math.min(7,daily.length));
+      const last = daily.slice(-Math.min(7,daily.length));
+      const firstAvg = first.reduce((sum,v)=>sum+v.averagePrice,0)/first.length;
+      const lastAvg = last.reduce((sum,v)=>sum+v.averagePrice,0)/last.length;
+      const changePercent = daily.length < 2 || firstAvg === 0 ? null : ((lastAvg-firstAvg)/firstAvg)*100;
+      return {crop, observations:observations.length, days:daily.length,
+        latestPrice:daily[daily.length-1]?.averagePrice ?? null,
+        changePercent, trend:changePercent === null ? "unknown" : changePercent > 2 ? "rising" : changePercent < -2 ? "falling" : "stable",
+        unit:observations[observations.length-1]?.unit ?? "kg",
+        currency:observations[observations.length-1]?.currency ?? "TND"};
+    });
+    const measuredChanges = cropTrends.map(x=>x.changePercent).filter((x:any)=>typeof x==="number" && Number.isFinite(x));
+    const overallChange = measuredChanges.length ? measuredChanges.reduce((sum:number,v:number)=>sum+v,0)/measuredChanges.length : null;
+    const overallTrend = overallChange === null ? "unknown" : overallChange > 2 ? "rising" : overallChange < -2 ? "falling" : "stable";
+    const insights = overallTrend === "rising"
+      ? ["متوسط اتجاه الأسعار المسجّل يميل إلى الارتفاع.", "تختلف حركة الأسعار حسب المنتوج والسوق؛ راجع تفاصيل كل منتوج."]
+      : overallTrend === "falling"
+        ? ["متوسط اتجاه الأسعار المسجّل يميل إلى الانخفاض.", "قارن الأسعار حسب المنتوج والسوق قبل اتخاذ القرار."]
+        : overallTrend === "stable"
+          ? ["الأسعار المسجّلة مستقرة نسبياً خلال الفترة المحلّلة."]
+          : ["البيانات الحالية لا تكفي لاستخلاص اتجاه زمني موثوق."];
+    const recommendations = overallTrend === "unknown"
+      ? ["اجمع ملاحظات أسعار مؤرخة إضافية قبل اعتماد أي قرار."]
+      : ["قارن السعر حسب السوق والتاريخ ونوع السعر (جملة أو تفصيل).", "تحقق من المصدر وحالة التثبت قبل اتخاذ قرار تجاري."];
+    const sources = Array.from(new Set(rows.map((r:any)=>r.source_name).filter(Boolean)));
+    const allVerified = rows.every((r:any)=>r.verification_status === "official-source");
+    res.json({success:true,data:{periodDays:period,sampleSize:rows.length,commodityCount:cropTrends.length,
+      trends:{overallTrend,averageChangePercent:overallChange,crops:cropTrends},
+      insights,recommendations,sources,sourceVerified:allVerified,isRealData:true,
+      dataSource:"market_price_observations",lastUpdated:new Date().toISOString(),
+      disclaimer:"التحليل محسوب من ملاحظات الأسعار المخزّنة في المنصة. لا يعني ذلك أن كل الأسعار متحقق منها رسمياً؛ راجع المصدر وحالة التثبت."}});
+  } catch (e:any) {
+    console.error("[agro-market] intelligence read failed",e?.message);
+    res.status(503).json({success:false,code:"MARKET_INTELLIGENCE_READ_FAILED"});
+  }
+});
+
 router.get("/prices", async (req,res) => {
   const db = publicDb(res); if (!db) return;
   try {
