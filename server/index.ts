@@ -746,9 +746,14 @@ export function createServer() {
   app.post("/api/ai/market/forecast-prices", forecastMarketPrices);
   app.post("/api/ai/market/supply-demand", analyzeSupplyDemand);
 
-  // 🧠 Smart Assistant AI Service (Future)
+  // 🧠 Smart Assistant AI Service
   // Secure one-use token for direct, bidirectional voice sessions.
-  app.post("/api/ai/assistant/live-token", requireAuth, requireVerifiedAuth, createAssistantLiveToken);
+  app.post(
+    "/api/ai/assistant/live-token",
+    requireAuth,
+    requireVerifiedAuth,
+    createAssistantLiveToken,
+  );
   app.post("/api/ai/assistant/chat", chatWithAIAssistant); // Public general chat; persistence is enabled only for a verified JWT.
   app.post("/api/ai/assistant/generate-tasks", generateFarmingTasks);
   app.get("/api/ai/assistant/alerts", getSmartAlerts);
