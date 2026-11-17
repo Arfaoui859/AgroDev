@@ -288,6 +288,7 @@ import {
   updateFarmerProfile,
 } from "./routes/farmer-segmentation";
 import { listCommunityPosts, createCommunityPost, listCommunityComments, createCommunityComment, toggleCommunityLike } from "./routes/community-social";
+import { createAssistantLiveToken } from "./routes/assistant-live-voice";
 import { testSupabaseConnection } from "./routes/test-supabase";
 import { listAssistantFarms, createAssistantCultivation, listAssistantCultivations } from "./routes/assistant-actions";
 import { createAssistantDiseaseDetection, getAssistantDiseaseEvidenceUrl } from "./routes/assistant-disease-records";
@@ -746,6 +747,8 @@ export function createServer() {
   app.post("/api/ai/market/supply-demand", analyzeSupplyDemand);
 
   // 🧠 Smart Assistant AI Service (Future)
+  // Secure one-use token for direct, bidirectional voice sessions.
+  app.post("/api/ai/assistant/live-token", requireAuth, requireVerifiedAuth, createAssistantLiveToken);
   app.post("/api/ai/assistant/chat", chatWithAIAssistant); // Public general chat; persistence is enabled only for a verified JWT.
   app.post("/api/ai/assistant/generate-tasks", generateFarmingTasks);
   app.get("/api/ai/assistant/alerts", getSmartAlerts);
