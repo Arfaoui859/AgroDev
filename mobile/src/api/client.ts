@@ -1449,7 +1449,7 @@ export async function getMarketIntelligence(period = 30): Promise<{
   fromCache: boolean;
 }> {
   const safePeriod = Math.max(1, Math.min(365, Math.floor(period)));
-  const res = await apiRequest<any>(`/api/market/trends?period=${safePeriod}`, {
+  const res = await apiRequest<any>(`/api/agro-market/intelligence?period=${safePeriod}`, {
     cacheKey: `market:intelligence:${safePeriod}`,
   });
   const payload = res.data?.data ?? null;
