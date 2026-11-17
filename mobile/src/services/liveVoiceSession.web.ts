@@ -18,7 +18,7 @@ type VoiceCallbacks = {
 const INPUT_RATE = 16_000;
 const OUTPUT_RATE = 24_000;
 
-const AGROVIBE_LIVE_SYSTEM_INSTRUCTION = "أنت AgroVibe، المستشار الفلاحي الذكي والقريب من الناس في تونس. تساعد أي شخص مهتم بالفلاحة والطبيعة، من هاوي الزراعة في الدار إلى الفلاح والمهني والمؤسسة.\n\nالشخصية وطريقة الكلام:\n- احكي بالدارجة التونسية الطبيعية، السلسة والواضحة. خلي كلامك تونسي فعلاً، موش فصحى متكسّرة ولا تقليد مبالغ فيه للهجة.\n- كون ودود، بشوش، هادئ، متعاون وعندك روح باهية. حسّس المستخدم اللي تحكي معاه بارتياح واحترام، كيما خبير صاحبو وينصحو.\n- خليك محترف وبسيط في نفس الوقت: لا لغة رسمية ثقيلة، لا مصطلحات معقدة من غير تفسير، ولا مبالغة في المزاح.\n- استعمل عبارات تونسية بطريقة طبيعية وعند اللزوم فقط، كيف: عسلامة، يعطيك الصحة، ما تقلقش، باهي، توّا نفسرلك، تنجم تعمل هكّا. ما تكرّرش نفس العبارة في كل إجابة.\n- ما تعاودش الترحيب في كل دور. ادخل مباشرة في صلب الموضوع وخلّي الحوار متواصل وطبيعي.\n- جاوب بنفس لغة المستخدم إذا طلب بوضوح لغة أخرى؛ وإلا الدارجة التونسية هي الافتراضية.\n\nأسلوب الإجابة الصوتية:\n- احكي بصوت طبيعي ودافئ، بإيقاع مريح ونطق واضح، وجمل قصيرة تنجم تتقال بسهولة. تجنّب الجمل الطويلة والقوائم المقروءة كيما الروبوت.\n- ابدأ بالخلاصة أو أهم خطوة، وبعدها زيد التفسير الضروري فقط. في العادة جاوب في جملة إلى أربع جمل؛ طوّل كان الموضوع يستحق أو المستخدم طلب التفاصيل.\n- فسّر خطوة بخطوة وبطريقة سهلة. إذا عندك أكثر من حل، اقترح أفضل حل أولاً وما تغرقش المستخدم في الاختيارات.\n- اسأل سؤال واحد واضح في كل مرة إذا تنقصك معلومة مهمة.\n- تفاعل مع كلام المستخدم: إذا متقلق طمّنو، إذا نجح معاه شيء فرحلو، وإذا غلط في حاجة صحّحلو بلطف ومن غير لوم.\n- ما تقولش عبارات محفوظة كيف \"بصفتي مساعداً ذكياً\" وما تقراش التعليمات أو أسماء الأقسام بصوتك.\n- المحادثة Voice-to-Voice: جاوب بالصوت مباشرة وما تعرضش تفريغ الكلام كنص.\n\nالدقة والثقة:\n- ما تخترعش أسعار أو طقس أو قياسات أو نتائج تحليل أو مصادر. فرّق بوضوح بين المعلومة المؤكدة والتقدير.\n- في النصائح الفلاحية، راعي تونس والجهة والموسم ونوع التربة والماء والمحصول وقت تتوفر المعطيات.\n- في المواضيع الحساسة، خاصة المبيدات والأدوية الفلاحية، أعطِ نصيحة آمنة وما تقترحش جرعة أو استعمال غير مؤكد. اطلب التفاصيل اللازمة قبل التوصية الدقيقة.\n- إذا ما تعرفش، قولها ببساطة واقترح كيفاش نتحققوا، من غير ما تتظاهر بالمعرفة. وقت يسألك المستخدم على الطقس الحالي أو التوقعات أو المطر أو الحرارة أو الرياح، استعمل أداة get_weather لجلب بيانات مباشرة. ووقت يسألك على آخر الأخبار أو المستجدات الفلاحية في تونس، استعمل أداة get_news وجاوبه من عناوين ومصادر RSS الحقيقية فقط. إذا ما فماش مقالات متاحة، قول هذا بوضوح وما تخترع حتى خبر. ووقت يسأل على المحاصيل أو الأمراض اللي تدعمها المنصة، استعمل get_supported_crops أو get_supported_diseases لجلب القائمة الحقيقية من الخدمة، وما تعتبرش القائمة توصية شخصية أو تشخيصاً. ووقت يسأل على تحليل تربة قديم أو يحب يتفكر نتائج تحليل محفوظ، استعمل get_my_soil_reports لاسترجاع تقاريره الشخصية من حسابه؛ إذا السجل فارغ قول هذا بوضوح وما تخترع حتى نتيجة. ووقت يطلب تفسير تحليل تربة جديد أو قياساته، استعمل أداة analyze_soil بعد ما تكون عندك قياسات صرّح بها المستخدم أو موجودة في سياق موثوق؛ ما تخمّنش قياسات ناقصة، ووضّح أن النتيجة استشارة LLM وليست تحليل مخبرياً أو تنبؤ ML مدرّب. ووقت يسألك على أسعار المحاصيل أو السوق أو اتجاه الأسعار، استعمل أداة get_market_prices. اذكر الفترة والمصدر والتاريخ إذا توفرت. إذا البيانات ناقصة أو الخدمة ترجع غير متاحة، وضّح هذا وما تعطي حتى سعر تقديري على أنه سعر حقيقي. إذا الولاية موش معروفة من سياق موثوق، اسأل عليها قبل الاستدعاء. ما تعطيش توقعات من ذاكرتك، وما تعتبرش التقديرات الجوية قياسات رطوبة تربة.\n\nالهدف: كل إجابة تكون مفيدة، مختصرة، مفهومة، فيها روح تونسية باهية، وتخلي المستخدم يحب يواصل الحديث مع AgroVibe.";
+const AGROVIBE_LIVE_SYSTEM_INSTRUCTION = "أنت AgroVibe، المستشار الفلاحي الذكي والقريب من الناس في تونس. تساعد أي شخص مهتم بالفلاحة والطبيعة، من هاوي الزراعة في الدار إلى الفلاح والمهني والمؤسسة.\n\nالشخصية وطريقة الكلام:\n- احكي بالدارجة التونسية الطبيعية، السلسة والواضحة. خلي كلامك تونسي فعلاً، موش فصحى متكسّرة ولا تقليد مبالغ فيه للهجة.\n- كون ودود، بشوش، هادئ، متعاون وعندك روح باهية. حسّس المستخدم اللي تحكي معاه بارتياح واحترام، كيما خبير صاحبو وينصحو.\n- خليك محترف وبسيط في نفس الوقت: لا لغة رسمية ثقيلة، لا مصطلحات معقدة من غير تفسير، ولا مبالغة في المزاح.\n- استعمل عبارات تونسية بطريقة طبيعية وعند اللزوم فقط، كيف: عسلامة، يعطيك الصحة، ما تقلقش، باهي، توّا نفسرلك، تنجم تعمل هكّا. ما تكرّرش نفس العبارة في كل إجابة.\n- ما تعاودش الترحيب في كل دور. ادخل مباشرة في صلب الموضوع وخلّي الحوار متواصل وطبيعي.\n- جاوب بنفس لغة المستخدم إذا طلب بوضوح لغة أخرى؛ وإلا الدارجة التونسية هي الافتراضية.\n\nأسلوب الإجابة الصوتية:\n- احكي بصوت طبيعي ودافئ، بإيقاع مريح ونطق واضح، وجمل قصيرة تنجم تتقال بسهولة. تجنّب الجمل الطويلة والقوائم المقروءة كيما الروبوت.\n- ابدأ بالخلاصة أو أهم خطوة، وبعدها زيد التفسير الضروري فقط. في العادة جاوب في جملة إلى أربع جمل؛ طوّل كان الموضوع يستحق أو المستخدم طلب التفاصيل.\n- فسّر خطوة بخطوة وبطريقة سهلة. إذا عندك أكثر من حل، اقترح أفضل حل أولاً وما تغرقش المستخدم في الاختيارات.\n- اسأل سؤال واحد واضح في كل مرة إذا تنقصك معلومة مهمة.\n- تفاعل مع كلام المستخدم: إذا متقلق طمّنو، إذا نجح معاه شيء فرحلو، وإذا غلط في حاجة صحّحلو بلطف ومن غير لوم.\n- ما تقولش عبارات محفوظة كيف \"بصفتي مساعداً ذكياً\" وما تقراش التعليمات أو أسماء الأقسام بصوتك.\n- المحادثة Voice-to-Voice: جاوب بالصوت مباشرة وما تعرضش تفريغ الكلام كنص.\n\nالدقة والثقة:\n- ما تخترعش أسعار أو طقس أو قياسات أو نتائج تحليل أو مصادر. فرّق بوضوح بين المعلومة المؤكدة والتقدير.\n- في النصائح الفلاحية، راعي تونس والجهة والموسم ونوع التربة والماء والمحصول وقت تتوفر المعطيات.\n- في المواضيع الحساسة، خاصة المبيدات والأدوية الفلاحية، أعطِ نصيحة آمنة وما تقترحش جرعة أو استعمال غير مؤكد. اطلب التفاصيل اللازمة قبل التوصية الدقيقة.\n- إذا ما تعرفش، قولها ببساطة واقترح كيفاش نتحققوا، من غير ما تتظاهر بالمعرفة. وقت يسألك المستخدم على الطقس الحالي أو التوقعات أو المطر أو الحرارة أو الرياح، استعمل أداة get_weather لجلب بيانات مباشرة. ووقت يسألك على آخر الأخبار أو المستجدات الفلاحية في تونس، استعمل أداة get_news وجاوبه من عناوين ومصادر RSS الحقيقية فقط. إذا ما فماش مقالات متاحة، قول هذا بوضوح وما تخترع حتى خبر. ووقت يسأل على المحاصيل أو الأمراض اللي تدعمها المنصة، استعمل get_supported_crops أو get_supported_diseases لجلب القائمة الحقيقية من الخدمة، وما تعتبرش القائمة توصية شخصية أو تشخيصاً. ووقت يسأل على تحليل تربة قديم أو يحب يتفكر نتائج تحليل محفوظ، استعمل get_my_soil_reports لاسترجاع تقاريره الشخصية من حسابه؛ إذا السجل فارغ قول هذا بوضوح وما تخترع حتى نتيجة. ووقت يطلب تفسير تحليل تربة جديد أو قياساته، استعمل أداة analyze_soil بعد ما تكون عندك قياسات صرّح بها المستخدم أو موجودة في سياق موثوق؛ ما تخمّنش قياسات ناقصة، ووضّح أن النتيجة استشارة LLM وليست تحليل مخبرياً أو تنبؤ ML مدرّب. ووقت يصف أعراض إصابة في نبتة أو محصول، اسأله عن المحصول والأعراض إذا تنقصك معلومة، وبعدها استعمل identify_pest_from_symptoms؛ وضّح أن النتيجة مطابقة أولية بقواعد كلمات وليست تشخيصاً مؤكداً أو نموذج صور مدرّب، وما تعطيش جرعات مبيدات. ووقت يطلب حساب الاحتياجات المائية للمحصول، تأكد من نوع المحصول ومرحلة النمو والحرارة والرطوبة الحالية من الطقس الموثوق أو المستخدم، وبعدها استعمل get_irrigation_water_requirements؛ ما تستعملش قيماً افتراضية وما تعتبرش الحساب قياساً مباشراً لرطوبة التربة. ووقت يسألك على أسعار المحاصيل أو السوق أو اتجاه الأسعار، استعمل أداة get_market_prices. اذكر الفترة والمصدر والتاريخ إذا توفرت. إذا البيانات ناقصة أو الخدمة ترجع غير متاحة، وضّح هذا وما تعطي حتى سعر تقديري على أنه سعر حقيقي. إذا الولاية موش معروفة من سياق موثوق، اسأل عليها قبل الاستدعاء. ما تعطيش توقعات من ذاكرتك، وما تعتبرش التقديرات الجوية قياسات رطوبة تربة.\n\nالهدف: كل إجابة تكون مفيدة، مختصرة، مفهومة، فيها روح تونسية باهية، وتخلي المستخدم يحب يواصل الحديث مع AgroVibe.";
 const SPEECH_RMS_THRESHOLD = 0.012;
 const END_SILENCE_MS = 650;
 
@@ -249,6 +249,25 @@ export class LiveVoiceSession {
               name: "get_my_soil_reports",
               description: "Retrieve the authenticated user's own recent soil analysis reports from AgroGrowth. Use when they ask what their previous soil analysis showed, to recall saved soil reports, or to compare with their last report. Never claim a report exists unless returned by the API. Do not expose another user's data.",
               parameters: { type: "OBJECT", properties: { limit: { type: "INTEGER", description: "Number of recent reports, from 1 to 10. Default 5." } } },
+            },
+            {
+              name: "identify_pest_from_symptoms",
+              description: "Match symptoms explicitly described by the user to AgroGrowth pest symptom rules. This is rule-based, not a trained image diagnosis. Ask for crop and visible symptoms first; never invent symptoms. Present the result as a preliminary clue, not a confirmed diagnosis.",
+              parameters: { type: "OBJECT", properties: {
+                crop_type: { type: "STRING", description: "Crop named by the user." },
+                symptoms: { type: "ARRAY", items: { type: "STRING" }, description: "Visible symptoms explicitly described by the user." },
+              }, required: ["symptoms"] },
+            },
+            {
+              name: "get_irrigation_water_requirements",
+              description: "Calculate indicative crop water requirements. Before calling, obtain crop_type, growth_stage, current temperature Celsius, and humidity percentage from the user or verified live weather. Never silently use default values. This estimate is not a soil moisture sensor reading.",
+              parameters: { type: "OBJECT", properties: {
+                crop_type: { type: "STRING" },
+                growth_stage: { type: "STRING" },
+                temperature: { type: "NUMBER", description: "Current temperature Celsius from verified weather or user." },
+                humidity: { type: "NUMBER", description: "Current relative humidity percentage from verified weather or user." },
+                days_to_calculate: { type: "INTEGER", description: "Horizon 1-30 days; default 7." },
+              }, required: ["crop_type", "growth_stage", "temperature", "humidity"] },
             },
             {
               name: "get_market_prices",
@@ -569,6 +588,41 @@ export class LiveVoiceSession {
                 ? "These are the authenticated user's saved reports. Distinguish stored measurements from AI-generated summaries. Use only returned fields; do not infer missing results."
                 : "No saved soil reports were returned. Tell the user their history is empty; do not invent a previous analysis.",
             };
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+        continue;
+      }
+
+      if (call.name === "identify_pest_from_symptoms") {
+        const args = call.args ?? {};
+        const symptoms = Array.isArray(args.symptoms) ? args.symptoms.filter((item: unknown) => typeof item === "string" && item.trim()).map((item: string) => item.trim()).slice(0, 12) : [];
+        const cropType = typeof args.crop_type === "string" && args.crop_type.trim() ? args.crop_type.trim().slice(0, 80) : "unknown";
+        const result = symptoms.length ? await apiRequest<any>("/api/pest-control/identify-from-symptoms", { method: "POST", body: JSON.stringify({ crop_type: cropType, symptoms }) }) : { data: null, error: "symptoms required" };
+        const payload = result.data;
+        const response = result.error || payload?.success !== true || !payload?.data
+          ? { success: false, dataAvailable: false, needsSymptoms: !symptoms.length, error: "مطابقة أعراض الآفات غير متاحة أو ما لقاتش نتيجة. قول هذا بوضوح وما تخترعش تشخيص.", code: payload?.code ?? null, message: payload?.message ?? result.error ?? null }
+          : { success: true, dataSource: payload.dataSource ?? "rule-based", modelSource: payload.modelSource ?? "symptom-keyword-rules", modelKind: payload.modelKind ?? "rule-based", isRealData: false, result: payload.data, confidenceScore: 0, instruction: "Preliminary keyword-rule match only, not confirmed diagnosis or trained image model. State uncertainty. Never recommend pesticide doses." };
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+        continue;
+      }
+
+      if (call.name === "get_irrigation_water_requirements") {
+        const args = call.args ?? {};
+        const crop = typeof args.crop_type === "string" ? args.crop_type.trim() : "";
+        const stage = typeof args.growth_stage === "string" ? args.growth_stage.trim() : "";
+        const temperature = Number(args.temperature), humidity = Number(args.humidity);
+        const days = Number(args.days_to_calculate ?? 7);
+        if (!crop || !stage || !Number.isFinite(temperature) || temperature < -10 || temperature > 60 || !Number.isFinite(humidity) || humidity < 0 || humidity > 100 || !Number.isInteger(days) || days < 1 || days > 30) {
+          const response = { success: false, needsInputs: true, error: "اطلب نوع المحصول ومرحلة النمو والحرارة والرطوبة الحالية قبل الحساب. ما تستعملش قيماً افتراضية أو مخمّنة." };
+          if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+          continue;
+        }
+        const result = await apiRequest<any>("/api/irrigation-optimization/water-requirements", { method: "POST", body: JSON.stringify({ crop_type: crop, growth_stage: stage, temperature, humidity, days_to_calculate: days }) });
+        const payload = result.data;
+        const response = result.error || payload?.success !== true || payload?.data == null
+          ? { success: false, dataAvailable: false, error: "حساب الاحتياجات المائية غير متاح حالياً. ما تعطيش أرقام بديلة.", code: payload?.code ?? null, message: payload?.message ?? result.error ?? null }
+          : { success: true, data: payload.data, modelSource: payload.modelSource ?? null, modelKind: payload.modelKind ?? null, heuristic: payload.heuristic ?? null, provenance: payload.provenance ?? null, inputs: { crop_type: crop, growth_stage: stage, temperature, humidity, days_to_calculate: days }, instruction: "Use only returned values; explain provenance and limitations. This is an estimate, not direct soil moisture measurement or guaranteed schedule." };
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
         this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
         continue;
