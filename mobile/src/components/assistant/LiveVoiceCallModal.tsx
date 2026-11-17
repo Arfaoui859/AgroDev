@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Modal,
   SafeAreaView,
   StatusBar,
@@ -36,6 +37,7 @@ const copy = (language: string) => {
       retry: "Réessayer",
       privacy: "Conversation vocale en direct. Aucun texte de transcription n'est affiché.",
       close: "Fermer",
+      background: "L’appel a été arrêté lorsque l’application est passée en arrière-plan.",
     };
   }
   if (language === "en") {
@@ -54,6 +56,7 @@ const copy = (language: string) => {
       retry: "Try again",
       privacy: "Live voice conversation. No speech transcript is displayed.",
       close: "Close",
+      background: "The call ended when the app went into the background.",
     };
   }
   return {
@@ -71,6 +74,7 @@ const copy = (language: string) => {
     retry: "عاود حاول",
     privacy: "محادثة صوتية مباشرة، من غير ما نعرضوا تحويل الكلام إلى نص.",
     close: "إغلاق",
+    background: "وفّينا المكالمة كي خرج التطبيق للخلفية.",
   };
 };
 
@@ -98,6 +102,23 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
     void sessionRef.current?.stop();
     sessionRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if ((nextState === "background" || nextState === "inactive") && sessionRef.current) {
+        const activeSession = sessionRef.current;
+        sessionRef.current = null;
+        void activeSession.stop().finally(() => {
+          setState("ended");
+          setLevel(0);
+          levelRef.current = 0;
+          setError(copy(language).background);
+        });
+      }
+    });
+    return () => subscription.remove();
+  }, [visible, language]);
 
   const start = async () => {
     setError("");
