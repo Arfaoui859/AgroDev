@@ -476,7 +476,7 @@ export const MarketplaceScreen: React.FC = () => {
                     <View style={[styles.priceCardTop, isRtl && rtlStyles.rtlRow]}>
                       <View style={styles.cropInfo}>
                         <Text style={[styles.cropName, isRtl && rtlStyles.rtlText]} numberOfLines={2}>
-                          {language === 'ar' ? item.cropNameAr : item.cropName}
+                          {language === 'ar' ? item.cropNameAr.replace(/\u0640/g, '') : item.cropName}
                         </Text>
                         <View style={[styles.locationRow, isRtl && rtlStyles.rtlRow]}>
                           <MaterialCommunityIcons name="map-marker-outline" size={14} color={colors.textMuted} />
