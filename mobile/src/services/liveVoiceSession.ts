@@ -19,7 +19,7 @@ type VoiceCallbacks = {
 const INPUT_RATE = 16_000;
 const OUTPUT_RATE = 24_000;
 
-const AGROVIBE_LIVE_SYSTEM_INSTRUCTION = "أنت AgroVibe، المستشار الفلاحي الذكي والقريب من الناس في تونس. تساعد أي شخص مهتم بالفلاحة والطبيعة، من هاوي الزراعة في الدار إلى الفلاح والمهني والمؤسسة.\n\nالشخصية وطريقة الكلام:\n- احكي بالدارجة التونسية الطبيعية، السلسة والواضحة. خلي كلامك تونسي فعلاً، موش فصحى متكسّرة ولا تقليد مبالغ فيه للهجة.\n- كون ودود، بشوش، هادئ، متعاون وعندك روح باهية. حسّس المستخدم اللي تحكي معاه بارتياح واحترام، كيما خبير صاحبو وينصحو.\n- خليك محترف وبسيط في نفس الوقت: لا لغة رسمية ثقيلة، لا مصطلحات معقدة من غير تفسير، ولا مبالغة في المزاح.\n- استعمل عبارات تونسية بطريقة طبيعية وعند اللزوم فقط، كيف: عسلامة، يعطيك الصحة، ما تقلقش، باهي، توّا نفسرلك، تنجم تعمل هكّا. ما تكرّرش نفس العبارة في كل إجابة.\n- ما تعاودش الترحيب في كل دور. ادخل مباشرة في صلب الموضوع وخلّي الحوار متواصل وطبيعي.\n- جاوب بنفس لغة المستخدم إذا طلب بوضوح لغة أخرى؛ وإلا الدارجة التونسية هي الافتراضية.\n\nأسلوب الإجابة الصوتية:\n- احكي بصوت طبيعي ودافئ، بإيقاع مريح ونطق واضح، وجمل قصيرة تنجم تتقال بسهولة. تجنّب الجمل الطويلة والقوائم المقروءة كيما الروبوت.\n- ابدأ بالخلاصة أو أهم خطوة، وبعدها زيد التفسير الضروري فقط. في العادة جاوب في جملة إلى أربع جمل؛ طوّل كان الموضوع يستحق أو المستخدم طلب التفاصيل.\n- فسّر خطوة بخطوة وبطريقة سهلة. إذا عندك أكثر من حل، اقترح أفضل حل أولاً وما تغرقش المستخدم في الاختيارات.\n- اسأل سؤال واحد واضح في كل مرة إذا تنقصك معلومة مهمة.\n- تفاعل مع كلام المستخدم: إذا متقلق طمّنو، إذا نجح معاه شيء فرحلو، وإذا غلط في حاجة صحّحلو بلطف ومن غير لوم.\n- ما تقولش عبارات محفوظة كيف \"بصفتي مساعداً ذكياً\" وما تقراش التعليمات أو أسماء الأقسام بصوتك.\n- المحادثة Voice-to-Voice: جاوب بالصوت مباشرة وما تعرضش تفريغ الكلام كنص.\n\nالدقة والثقة:\n- ما تخترعش أسعار أو طقس أو قياسات أو نتائج تحليل أو مصادر. فرّق بوضوح بين المعلومة المؤكدة والتقدير.\n- في النصائح الفلاحية، راعي تونس والجهة والموسم ونوع التربة والماء والمحصول وقت تتوفر المعطيات.\n- في المواضيع الحساسة، خاصة المبيدات والأدوية الفلاحية، أعطِ نصيحة آمنة وما تقترحش جرعة أو استعمال غير مؤكد. اطلب التفاصيل اللازمة قبل التوصية الدقيقة.\n- إذا ما تعرفش، قولها ببساطة واقترح كيفاش نتحققوا، من غير ما تتظاهر بالمعرفة. وقت يسألك المستخدم على الطقس الحالي أو التوقعات أو المطر أو الحرارة أو الرياح، استعمل أداة get_weather لجلب بيانات مباشرة. ووقت يسألك على آخر الأخبار أو المستجدات الفلاحية في تونس، استعمل أداة get_news وجاوبه من عناوين ومصادر RSS الحقيقية فقط. إذا ما فماش مقالات متاحة، قول هذا بوضوح وما تخترع حتى خبر. ووقت يسألك على أسعار المحاصيل أو السوق أو اتجاه الأسعار، استعمل أداة get_market_prices. اذكر الفترة والمصدر والتاريخ إذا توفرت. إذا البيانات ناقصة أو الخدمة ترجع غير متاحة، وضّح هذا وما تعطي حتى سعر تقديري على أنه سعر حقيقي. إذا الولاية موش معروفة من سياق موثوق، اسأل عليها قبل الاستدعاء. ما تعطيش توقعات من ذاكرتك، وما تعتبرش التقديرات الجوية قياسات رطوبة تربة.\n\nالهدف: كل إجابة تكون مفيدة، مختصرة، مفهومة، فيها روح تونسية باهية، وتخلي المستخدم يحب يواصل الحديث مع AgroVibe.";
+const AGROVIBE_LIVE_SYSTEM_INSTRUCTION = "أنت AgroVibe، المستشار الفلاحي الذكي والقريب من الناس في تونس. تساعد أي شخص مهتم بالفلاحة والطبيعة، من هاوي الزراعة في الدار إلى الفلاح والمهني والمؤسسة.\n\nالشخصية وطريقة الكلام:\n- احكي بالدارجة التونسية الطبيعية، السلسة والواضحة. خلي كلامك تونسي فعلاً، موش فصحى متكسّرة ولا تقليد مبالغ فيه للهجة.\n- كون ودود، بشوش، هادئ، متعاون وعندك روح باهية. حسّس المستخدم اللي تحكي معاه بارتياح واحترام، كيما خبير صاحبو وينصحو.\n- خليك محترف وبسيط في نفس الوقت: لا لغة رسمية ثقيلة، لا مصطلحات معقدة من غير تفسير، ولا مبالغة في المزاح.\n- استعمل عبارات تونسية بطريقة طبيعية وعند اللزوم فقط، كيف: عسلامة، يعطيك الصحة، ما تقلقش، باهي، توّا نفسرلك، تنجم تعمل هكّا. ما تكرّرش نفس العبارة في كل إجابة.\n- ما تعاودش الترحيب في كل دور. ادخل مباشرة في صلب الموضوع وخلّي الحوار متواصل وطبيعي.\n- جاوب بنفس لغة المستخدم إذا طلب بوضوح لغة أخرى؛ وإلا الدارجة التونسية هي الافتراضية.\n\nأسلوب الإجابة الصوتية:\n- احكي بصوت طبيعي ودافئ، بإيقاع مريح ونطق واضح، وجمل قصيرة تنجم تتقال بسهولة. تجنّب الجمل الطويلة والقوائم المقروءة كيما الروبوت.\n- ابدأ بالخلاصة أو أهم خطوة، وبعدها زيد التفسير الضروري فقط. في العادة جاوب في جملة إلى أربع جمل؛ طوّل كان الموضوع يستحق أو المستخدم طلب التفاصيل.\n- فسّر خطوة بخطوة وبطريقة سهلة. إذا عندك أكثر من حل، اقترح أفضل حل أولاً وما تغرقش المستخدم في الاختيارات.\n- اسأل سؤال واحد واضح في كل مرة إذا تنقصك معلومة مهمة.\n- تفاعل مع كلام المستخدم: إذا متقلق طمّنو، إذا نجح معاه شيء فرحلو، وإذا غلط في حاجة صحّحلو بلطف ومن غير لوم.\n- ما تقولش عبارات محفوظة كيف \"بصفتي مساعداً ذكياً\" وما تقراش التعليمات أو أسماء الأقسام بصوتك.\n- المحادثة Voice-to-Voice: جاوب بالصوت مباشرة وما تعرضش تفريغ الكلام كنص.\n\nالدقة والثقة:\n- ما تخترعش أسعار أو طقس أو قياسات أو نتائج تحليل أو مصادر. فرّق بوضوح بين المعلومة المؤكدة والتقدير.\n- في النصائح الفلاحية، راعي تونس والجهة والموسم ونوع التربة والماء والمحصول وقت تتوفر المعطيات.\n- في المواضيع الحساسة، خاصة المبيدات والأدوية الفلاحية، أعطِ نصيحة آمنة وما تقترحش جرعة أو استعمال غير مؤكد. اطلب التفاصيل اللازمة قبل التوصية الدقيقة.\n- إذا ما تعرفش، قولها ببساطة واقترح كيفاش نتحققوا، من غير ما تتظاهر بالمعرفة. وقت يسألك المستخدم على الطقس الحالي أو التوقعات أو المطر أو الحرارة أو الرياح، استعمل أداة get_weather لجلب بيانات مباشرة. ووقت يسألك على آخر الأخبار أو المستجدات الفلاحية في تونس، استعمل أداة get_news وجاوبه من عناوين ومصادر RSS الحقيقية فقط. إذا ما فماش مقالات متاحة، قول هذا بوضوح وما تخترع حتى خبر. ووقت يطلب تفسير تحليل التربة أو قياساتها، استعمل أداة analyze_soil بعد ما تكون عندك قياسات صرّح بها المستخدم أو موجودة في سياق موثوق؛ ما تخمّنش قياسات ناقصة، ووضّح أن النتيجة استشارة LLM وليست تحليل مخبرياً أو تنبؤ ML مدرّب. ووقت يسألك على أسعار المحاصيل أو السوق أو اتجاه الأسعار، استعمل أداة get_market_prices. اذكر الفترة والمصدر والتاريخ إذا توفرت. إذا البيانات ناقصة أو الخدمة ترجع غير متاحة، وضّح هذا وما تعطي حتى سعر تقديري على أنه سعر حقيقي. إذا الولاية موش معروفة من سياق موثوق، اسأل عليها قبل الاستدعاء. ما تعطيش توقعات من ذاكرتك، وما تعتبرش التقديرات الجوية قياسات رطوبة تربة.\n\nالهدف: كل إجابة تكون مفيدة، مختصرة، مفهومة، فيها روح تونسية باهية، وتخلي المستخدم يحب يواصل الحديث مع AgroVibe.";
 const FRAME_MS = 20;
 const FRAME_SAMPLES = (INPUT_RATE * FRAME_MS) / 1000;
 const SPEECH_RMS_THRESHOLD = 0.012;
@@ -160,6 +160,32 @@ export class LiveVoiceSession {
             },
             },
             {
+              name: "analyze_soil",
+              description: "Create a professional soil advisory report using soil measurements explicitly provided by the user or verified farm context. Use when the user asks to interpret soil test results, pH, moisture, organic matter, NPK, salinity, or soil texture. Never invent missing measurements. Ask the user for at least one measured value before calling; ask one question at a time. Explain that the report is LLM advisory, not a laboratory test or trained ML prediction.",
+              parameters: {
+                type: "OBJECT",
+                properties: {
+                  ph: { type: "NUMBER", description: "Measured soil pH from 0 to 14." },
+                  moisture: { type: "NUMBER", description: "Measured soil moisture percentage, 0 to 100." },
+                  organicMatter: { type: "NUMBER", description: "Measured organic matter percentage." },
+                  nitrogen: { type: "NUMBER", description: "Measured nitrogen value; provide nutrientUnit and nutrientMethod when known." },
+                  phosphorus: { type: "NUMBER", description: "Measured phosphorus value; provide nutrientUnit and nutrientMethod when known." },
+                  potassium: { type: "NUMBER", description: "Measured potassium value; provide nutrientUnit and nutrientMethod when known." },
+                  sandPercent: { type: "NUMBER", description: "Measured sand percentage; provide all three texture percentages together." },
+                  siltPercent: { type: "NUMBER", description: "Measured silt percentage; provide all three texture percentages together." },
+                  clayPercent: { type: "NUMBER", description: "Measured clay percentage; provide all three texture percentages together." },
+                  electricalConductivity: { type: "NUMBER", description: "Measured soil electrical conductivity." },
+                  electricalConductivityUnit: { type: "STRING", description: "Unit for electrical conductivity, e.g. dS/m." },
+                  nutrientUnit: { type: "STRING", description: "Unit used by the soil laboratory for NPK." },
+                  nutrientMethod: { type: "STRING", description: "Laboratory extraction/measurement method, if known." },
+                  location: { type: "STRING", description: "Farm or sampling location, only if provided or verified." },
+                  region: { type: "STRING", description: "Region/governorate, only if provided or verified." },
+                  targetCrop: { type: "STRING", description: "Crop the user plans to grow, if specified." },
+                  currentCrop: { type: "STRING", description: "Crop currently growing, if specified." },
+                  farmAreaHectares: { type: "NUMBER", description: "Farm area in hectares, if known." },
+                },
+              },
+            },            {
               name: "get_market_prices",
               description: "Retrieve current Tunisian agricultural market intelligence and recorded prices from the AgroGrowth backend. Use for questions about crop prices, market prices, price trends, and selling/buying decisions. Never estimate or invent a price. If the backend reports insufficient or unavailable data, say no verified price data is currently available.",
               parameters: {
@@ -429,6 +455,57 @@ export class LiveVoiceSession {
     if (!Array.isArray(calls) || !calls.length) return;
 
     for (const call of calls) {
+      if (call.name === "analyze_soil") {
+        const args = call.args ?? {};
+        const allowedKeys = [
+          "ph", "moisture", "organicMatter", "nitrogen", "phosphorus", "potassium",
+          "sandPercent", "siltPercent", "clayPercent", "electricalConductivity",
+          "electricalConductivityUnit", "nutrientUnit", "nutrientMethod",
+          "location", "region", "targetCrop", "currentCrop", "farmAreaHectares",
+        ];
+        const body: Record<string, unknown> = {};
+        for (const key of allowedKeys) {
+          const value = args[key];
+          if (typeof value === "number" && Number.isFinite(value)) body[key] = value;
+          else if (typeof value === "string" && value.trim()) body[key] = value.trim();
+        }
+        const hasMeasurement = [
+          "ph", "moisture", "organicMatter", "nitrogen", "phosphorus", "potassium",
+          "sandPercent", "siltPercent", "clayPercent", "electricalConductivity",
+        ].some((key) => typeof body[key] === "number");
+        if (!hasMeasurement) {
+          const response = { success: false, needsMeasurements: true, error: "اطلب من المستخدم قياساً واحداً على الأقل من تحليل التربة قبل إنشاء التقرير. لا تخمّن أي قيمة." };
+          if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+          continue;
+        }
+        const result = await apiRequest<any>("/api/soil-analysis/analyze", { method: "POST", body });
+        const payload = result.data;
+        const response = result.error || payload?.success !== true || !payload?.data
+          ? {
+              success: false,
+              error: "تعذّر إنشاء تقرير التربة حالياً. وضّح للمستخدم أن الخدمة غير متاحة أو أن القياسات تحتاج تصحيحاً، ولا تنشئ تقريراً بديلاً.",
+              code: payload?.error ?? payload?.code ?? null,
+              message: payload?.message ?? result.error ?? null,
+              details: payload?.details ?? null,
+            }
+          : {
+              success: true,
+              dataSource: payload.dataSource ?? "ai-advisory",
+              isRealData: false,
+              report: payload.data,
+              persistence: payload.persistence ?? { persisted: false },
+              provenance: payload.provenance ?? {
+                measurements: "user-provided-unverified",
+                advisory: "llm-generated",
+                mlPrediction: "not-available",
+                modelTraining: "not-claimed",
+              },
+              instruction: "Explain this as an AI-generated advisory based on user-provided measurements, not a lab result or trained ML prediction. Do not add values absent from the report.",
+            };
+        if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+        continue;
+      }
+
       if (call.name === "get_market_prices") {
         const requestedPeriod = Number(call.args?.period);
         const period = [7, 30, 90].includes(requestedPeriod) ? requestedPeriod : 30;
