@@ -221,11 +221,12 @@ export class LiveVoiceSession {
             },
             {
               name: "get_market_prices",
-              description: "Retrieve current Tunisian agricultural market intelligence and recorded prices from the AgroGrowth backend. Use for questions about crop prices, market prices, price trends, and selling/buying decisions. Never estimate or invent a price. If the backend reports insufficient or unavailable data, say no verified price data is currently available.",
+              description: "Search BOTH real seller-published Marketplace offers and recorded market price observations in AgroGrowth. Use this for any product price question, including olive oil, olives, tomatoes, vegetables, fruit, cereals, and agricultural products. Always pass the product/commodity name in Arabic or the user's language when known. Marketplace seller offers are real current listings, distinct from official market observations. Never invent prices; report seller asking prices separately from market averages and include location, unit, quantity and listing date when available. If no matching offers exist, say so and then report whether recorded observations exist.",
               parameters: {
                 type: "OBJECT",
                 properties: {
-                  period: { type: "INTEGER", minimum: 7, maximum: 90, description: "Lookback period in days. Use exactly 7, 30, or 90. Default 30." },
+                  commodity: { type: "STRING", description: "Product or commodity name to search in Marketplace listing titles, e.g. زيت الزيتون، زيتون، طماطم، قمح. Use the user's exact product." },
+                  period: { type: "INTEGER", minimum: 7, maximum: 90, description: "Lookback period for recorded market observations. Use 7, 30, or 90. Default 30." },
                 },
               },
             },            {
@@ -647,38 +648,60 @@ export class LiveVoiceSession {
       }
 
       if (call.name === "get_market_prices") {
-        const requestedPeriod = Number(call.args?.period);
+        const args = call.args ?? {};
+        const commodity = typeof args.commodity === "string" ? args.commodity.trim().slice(0, 100) : "";
+        const requestedPeriod = Number(args.period);
         const period = [7, 30, 90].includes(requestedPeriod) ? requestedPeriod : 30;
-        const result = await apiRequest<any>(`/api/agro-market/intelligence?period=${period}`, { method: "GET" });
-        const market = result.data;
-        const hasUsableData =
-          !result.error &&
+        const listingQuery = new URLSearchParams({ limit: "50" });
+        if (commodity) listingQuery.set("q", commodity);
+        const [listingResult, marketResult] = await Promise.all([
+          apiRequest<any>(`/api/agro-market/listings?${listingQuery.toString()}`, { method: "GET" }),
+          apiRequest<any>(`/api/agro-market/intelligence?period=${period}`, { method: "GET" }),
+        ]);
+        const listingPayload = listingResult.data;
+        const allListings = Array.isArray(listingPayload?.data?.listings) ? listingPayload.data.listings : [];
+        const productListings = allListings
+          .filter((item: any) =>
+            ["agricultural_product", "harvest"].includes(item.listing_type) &&
+            item.price !== null && item.price !== undefined && Number.isFinite(Number(item.price)) &&
+            (!commodity || String(item.title ?? "").toLocaleLowerCase().includes(commodity.toLocaleLowerCase()))
+          )
+          .slice(0, 15)
+          .map((item: any) => ({
+            title: item.title,
+            price: Number(item.price),
+            currency: item.currency ?? "TND",
+            unit: item.unit ?? null,
+            quantity: item.quantity ?? null,
+            location: item.location ?? null,
+            governorate: item.governorate ?? null,
+            seller: item.seller_name ?? null,
+            listingType: item.listing_type,
+            publishedAt: item.created_at ?? null,
+            source: "AgroGrowth Marketplace seller listing",
+          }));
+        const market = marketResult.data;
+        const hasObservationData =
+          !marketResult.error &&
           market?.success !== false &&
           market?.dataAvailable !== false &&
           market?.status !== "unavailable" &&
           market?.data != null;
-
-        const response = hasUsableData
-          ? {
-              success: true,
-              isRealData: market.isRealData === true || market.data?.isRealData === true,
-              dataSource: market.dataSource ?? market.data?.dataSource ?? market.provenance?.source ?? null,
-              periodDays: period,
-              generatedAt: market.generatedAt ?? market.data?.generatedAt ?? null,
-              marketData: market.data,
-              provenance: market.provenance ?? market.data?.provenance ?? null,
-              instruction: "Use only prices explicitly present in marketData. If no numeric price records are present, say that no price is available. Never calculate or guess missing prices.",
-            }
-          : {
-              success: false,
-              isRealData: false,
-              dataAvailable: false,
-              periodDays: period,
-              error: "لا توجد حالياً ملاحظات أسعار كافية وموثوقة للفترة المطلوبة، أو خدمة السوق غير متاحة. وضّح للمستخدم هذا ولا تخترع أسعاراً أو اتجاهات.",
-              code: market?.code ?? null,
-              message: market?.message ?? result.error ?? null,
-            };
-
+        const response = {
+          success: productListings.length > 0 || hasObservationData,
+          isRealData: productListings.length > 0 || (hasObservationData && (market?.isRealData === true || market?.data?.isRealData === true)),
+          commodity: commodity || null,
+          marketplaceOffers: productListings,
+          marketplaceOffersCount: productListings.length,
+          marketplaceSource: listingPayload?.meta?.provenance ?? "seller-published-listings",
+          recordedMarketObservations: hasObservationData ? market.data : null,
+          marketObservationSource: hasObservationData ? (market.dataSource ?? market.provenance?.source ?? null) : null,
+          periodDays: period,
+          dataAvailable: productListings.length > 0 || hasObservationData,
+          marketplaceError: listingResult.error ?? (listingPayload?.success === false ? listingPayload.code : null),
+          observationError: hasObservationData ? null : (market?.code ?? market?.message ?? marketResult.error ?? "NO_RECORDED_MARKET_OBSERVATIONS"),
+          instruction: "Prioritize matching Marketplace seller offers for the requested product. Clearly label these as seller asking prices, not official market averages. State currency, unit, location and date only when supplied. Then separately summarize recorded market observations if present. If neither source returns matching numeric prices, say no matching prices were found; never guess or infer a price.",
+        };
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
         this.socket.send(JSON.stringify({
           toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] },
