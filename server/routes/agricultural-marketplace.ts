@@ -230,8 +230,9 @@ router.get("/intelligence", async (req,res) => {
       const daily = Array.from(byDay.entries()).map(([date, values]) => ({
         date, averagePrice: values.reduce((sum,v)=>sum+v,0)/values.length
       })).sort((a,b)=>a.date.localeCompare(b.date));
-      const first = daily.slice(0, Math.min(7,daily.length));
-      const last = daily.slice(-Math.min(7,daily.length));
+      const windowSize = Math.max(1, Math.floor(daily.length / 2));
+      const first = daily.slice(0, windowSize);
+      const last = daily.slice(-windowSize);
       const firstAvg = first.reduce((sum,v)=>sum+v.averagePrice,0)/first.length;
       const lastAvg = last.reduce((sum,v)=>sum+v.averagePrice,0)/last.length;
       const changePercent = daily.length < 2 || firstAvg === 0 ? null : ((lastAvg-firstAvg)/firstAvg)*100;
