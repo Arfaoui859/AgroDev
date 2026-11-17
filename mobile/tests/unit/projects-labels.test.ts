@@ -40,6 +40,8 @@ describe('projects i18n', () => {
     expect(expenseCategoryLabel('labor', ar)).toBe('أجرة عمل');
     expect(projectStatusLabel('harvested', en)).toBe('Harvested');
     expect(growthStageLabel('vegetative_growth', en)).toBe('Vegetative growth');
+    expect(growthStageLabel('vegetative growth', en)).toBe('Vegetative growth');
+    expect(growthStageLabel('vegetative-growth', en)).toBe('Vegetative growth');
     expect(growthStageLabel('flowering', ar)).toBe('الإزهار');
     expect(growthStageLabel('future_unknown_stage', en)).toBe(en.noStage);
   });
