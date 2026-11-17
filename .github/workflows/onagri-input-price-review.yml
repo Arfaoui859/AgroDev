@@ -25,7 +25,9 @@ jobs:
       - name: Install workbook reader
         run: python -m pip install --quiet openpyxl
       - name: Test ONAGRI input-price parser
-        run: python -m unittest tests.market_data.test_onagri_input_price_review -v
+        run: |
+          python -m py_compile scripts/market-data/prepare_onagri_input_price_review.py
+          python -m unittest discover -s tests/market_data -p 'test_onagri_input_price_review.py' -v
       - name: Discover source price candidates (no automatic publication)
         run: python scripts/market-data/prepare_onagri_input_price_review.py --output onagri-input-price-review.json
       - name: Upload review artifact
