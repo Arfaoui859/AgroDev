@@ -136,8 +136,10 @@ export const CommunityScreen: React.FC<CommunityScreenProps> = ({ onBack, onOpen
       setLoading(false);
       return () => { active = false; };
     }
-    setLoading(true);
-    getCommunityPosts(category).then((result) => {
+    void Promise.resolve().then(() => {
+      if (active) setLoading(true);
+      return getCommunityPosts(category);
+    }).then((result) => {
       if (!active) return;
       setPosts(result.data);
       setError(result.error);
