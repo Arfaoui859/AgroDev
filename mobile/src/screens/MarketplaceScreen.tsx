@@ -23,7 +23,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { createMarketplaceInquiry, createMarketplaceListing, deleteMarketplaceListing, getAgriculturalCatalog, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { createMarketplaceInquiry, createMarketplaceListing, deleteMarketplaceListing, getAgriculturalCatalog, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
 import { AgriculturalCatalogProduct, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
@@ -37,6 +37,9 @@ import { Button } from '../components/ui/Button';
 export const MarketplaceScreen: React.FC = () => {
   const { t, x, isRtl, language } = useLanguage();
   const [prices, setPrices] = useState<MarketPriceItem[]>([]);
+  const [marketIntelligence, setMarketIntelligence] = useState<any | null>(null);
+  const [marketIntelligenceError, setMarketIntelligenceError] = useState<string | null>(null);
+  const [marketIntelligenceUnavailable, setMarketIntelligenceUnavailable] = useState(false);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
   const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
@@ -69,7 +72,7 @@ export const MarketplaceScreen: React.FC = () => {
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices'>('home');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices' | 'marketIntel'>('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,12 +81,13 @@ export const MarketplaceScreen: React.FC = () => {
   const loadPrices = useCallback(async () => {
     // Prices and seller listings are separate backend capabilities. A failure
     // in one must not suppress useful data returned by the other.
-    const [priceOutcome, listingsOutcome, catalogOutcome, myListingsOutcome, inquiriesOutcome] = await Promise.all([
+    const [priceOutcome, listingsOutcome, catalogOutcome, myListingsOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalCatalog().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMyMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceInquiries().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMarketIntelligence(30).then((data) => ({ data })).catch((error: unknown) => ({ error })), 
     ]);
 
     if ('data' in priceOutcome) {
@@ -115,6 +119,15 @@ export const MarketplaceScreen: React.FC = () => {
     }
     setMyListings('data' in myListingsOutcome ? myListingsOutcome.data.data : []);
     setInquiries('data' in inquiriesOutcome ? inquiriesOutcome.data.data : []);
+    if ('data' in intelligenceOutcome) {
+      setMarketIntelligence(intelligenceOutcome.data.data);
+      setMarketIntelligenceError(intelligenceOutcome.data.error);
+      setMarketIntelligenceUnavailable(intelligenceOutcome.data.unavailable);
+    } else {
+      setMarketIntelligence(null);
+      setMarketIntelligenceError(intelligenceOutcome.error instanceof Error ? intelligenceOutcome.error.message : 'Market intelligence request failed');
+      setMarketIntelligenceUnavailable(true);
+    }
   }, []);
 
   React.useEffect(() => {
@@ -370,6 +383,7 @@ export const MarketplaceScreen: React.FC = () => {
             { id: 'harvest', icon: 'calendar-clock', ar: 'محاصيل قادمة للحصاد', fr: 'Récoltes à venir', en: 'Upcoming harvests', count: futureHarvests.length },
             { id: 'listings', icon: 'storefront-outline', ar: 'عروض البيع والشراء', fr: 'Offres achat & vente', en: 'Buy & sell offers', count: sellerListings.length },
             { id: 'prices', icon: 'chart-line', ar: 'أسعار السوق', fr: 'Prix du marché', en: 'Market prices', count: latestPrices.length },
+            { id: 'marketIntel', icon: 'chart-box-outline', ar: 'ذكاء السوق والتحليل', fr: 'Intelligence du marché', en: 'Market intelligence', count: marketIntelligence?.sampleSize ?? 0 },
           ] as const).map((category) => {
             const active = selectedMarketCategory === category.id;
             return (
@@ -387,6 +401,40 @@ export const MarketplaceScreen: React.FC = () => {
           })}
         </View>
       </View>
+      ) : null}
+      {selectedMarketCategory === 'marketIntel' ? (
+        <Card variant="outlined" style={styles.listingsCard}>
+          <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+            <MaterialCommunityIcons name="chart-box-outline" size={22} color={colors.primary} />
+            <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'ذكاء السوق والتحليل' : language === 'fr' ? 'Intelligence du marché' : 'Market intelligence'}</Text>
+          </View>
+          <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'تحليل اتجاهات الأسعار المسجّلة في قاعدة بيانات المنصة خلال آخر 30 يوماً.' : language === 'fr' ? 'Analyse calculée à partir des observations de prix enregistrées sur les 30 derniers jours.' : 'Analysis calculated from price observations stored in the platform database over the last 30 days.'}</Text>
+          {marketIntelligence ? (
+            <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                <View style={{ flex: 1, minWidth: 110, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
+                  <Text style={styles.listingMeta}>{language === 'ar' ? 'اتجاه السوق' : language === 'fr' ? 'Tendance' : 'Trend'}</Text>
+                  <Text style={[styles.listingName, { marginTop: 4 }]}>{marketIntelligence.trends?.overallTrend || (language === 'ar' ? 'غير معروف' : 'Unknown')}</Text>
+                </View>
+                <View style={{ flex: 1, minWidth: 110, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
+                  <Text style={styles.listingMeta}>{language === 'ar' ? 'عدد التسجيلات' : language === 'fr' ? 'Observations' : 'Observations'}</Text>
+                  <Text style={[styles.listingName, { marginTop: 4 }]}>{marketIntelligence.sampleSize ?? 0}</Text>
+                </View>
+              </View>
+              <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'مؤشرات السوق' : language === 'fr' ? 'Indicateurs' : 'Insights'}</Text>
+              {(Array.isArray(marketIntelligence.insights) ? marketIntelligence.insights : []).map((item: string, index: number) => <Text key={index} style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>• {item}</Text>)}
+              <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'التوصيات' : language === 'fr' ? 'Recommandations' : 'Recommendations'}</Text>
+              {(Array.isArray(marketIntelligence.recommendations) ? marketIntelligence.recommendations : []).map((item: string, index: number) => <Text key={index} style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>• {item}</Text>)}
+              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? (marketIntelligence.disclaimer || 'البيانات مخزّنة في المنصة وغير متحقق منها بشكل مستقل.') : language === 'fr' ? 'Données enregistrées sur la plateforme, non vérifiées indépendamment.' : 'Platform-stored data; not independently verified.'}</Text>
+            </View>
+          ) : (
+            <View style={{ paddingVertical: spacing.md, gap: spacing.xs }}>
+              <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{marketIntelligenceUnavailable ? (language === 'ar' ? 'لا توجد بيانات تاريخية كافية لتحليل السوق حالياً.' : language === 'fr' ? 'Données historiques insuffisantes pour analyser le marché.' : 'Not enough historical data to analyse the market yet.') : (language === 'ar' ? 'تعذّر تحميل تحليل السوق.' : language === 'fr' ? 'Impossible de charger l’analyse.' : 'Could not load market analysis.')}</Text>
+              {marketIntelligenceError ? <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{marketIntelligenceError}</Text> : null}
+              <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'لن نعرض توقعات أو مؤشرات مصطنعة. يلزم توفير بيانات أسعار مؤرخة حتى يصبح التحليل متاحاً.' : language === 'fr' ? 'Aucune prévision fictive : des observations datées sont nécessaires.' : 'No fabricated forecasts: dated price observations are required.'}</Text>
+            </View>
+          )}
+        </Card>
       ) : null}
       {selectedMarketCategory === 'listings' ? (
       <Card variant="outlined" style={styles.listingsCard}>
