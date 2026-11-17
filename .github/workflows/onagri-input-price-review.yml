@@ -1,0 +1,36 @@
+name: ONAGRI agricultural input price review
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 6 1 * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onagri-input-price-review
+  cancel-in-progress: false
+
+jobs:
+  prepare-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install workbook reader
+        run: python -m pip install --quiet openpyxl
+      - name: Test ONAGRI input-price parser
+        run: python -m unittest tests.market_data.test_onagri_input_price_review -v
+      - name: Discover source price candidates (no automatic publication)
+        run: python scripts/market-data/prepare_onagri_input_price_review.py --output onagri-input-price-review.json
+      - name: Upload review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: onagri-input-price-review
+          path: onagri-input-price-review.json
+          retention-days: 30
