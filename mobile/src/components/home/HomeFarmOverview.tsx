@@ -36,11 +36,8 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
       : { title: 'Your agricultural activity', subtitle: 'Overview of your registered farms and crops', farms: 'Farms', area: 'Area', crops: 'Cultivations', harvest: 'Next harvest', noHarvest: 'Not scheduled', nextTask: 'Next task', noTask: 'No open tasks', openFarms: 'Manage farms', openProjects: 'Production plans', emptyTitle: 'Add your first farm', emptyBody: 'Register farms and crops to see your real activity metrics here.', retry: 'Could not load farm data' };
 
   const load = useCallback(async () => {
-    if (!isAuthenticated) {
-      setData({ farms: [], cultivations: [], tasks: [], error: false });
-      setLoading(false);
-      return;
-    }
+    if (!isAuthenticated) return;
+    await Promise.resolve();
     setLoading(true);
     try {
       const [farmsResult, cropsResult] = await Promise.all([getFarms(), getCultivations()]);
