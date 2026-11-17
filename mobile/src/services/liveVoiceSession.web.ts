@@ -67,7 +67,7 @@ function base64ToPcm(base64: string): Float32Array {
  * The native implementation remains in liveVoiceSession.ts.
  */
 export class LiveVoiceSession {
-  private audioContext: window.AudioContext | null = null;
+  private audioContext: AudioContext | null = null;
   private mediaStream: MediaStream | null = null;
   private mediaSource: MediaStreamAudioSourceNode | null = null;
   private processor: ScriptProcessorNode | null = null;
