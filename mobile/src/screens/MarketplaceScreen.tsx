@@ -459,14 +459,7 @@ export const MarketplaceScreen: React.FC = () => {
           </View>
         ) : null}
       </Card>
-      ) : (
-        <View style={styles.marketHomeHint}>
-          <MaterialCommunityIcons name="gesture-tap" size={18} color={colors.primary} />
-          <Text style={[styles.marketHomeHintText, isRtl && rtlStyles.rtlText]}>
-            {language === 'ar' ? 'اختار قسم باش تشوف المنتوجات والأسعار متاعو.' : language === 'fr' ? 'Choisissez une catégorie pour afficher ses produits et ses prix.' : 'Choose a category to explore its products and prices.'}
-          </Text>
-        </View>
-      )}
+      ) : null}
 
       {selectedMarketCategory === 'prices' && (
       <>
