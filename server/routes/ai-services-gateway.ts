@@ -955,6 +955,27 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
 };
 
 // 🧠 SMART ASSISTANT ENDPOINTS
+async function getAssistantServiceHealthFacts(): Promise<string[]> {
+  const services = serviceRegistry();
+  const checks = await Promise.all(services.map(async (service) => {
+    if (!service.url) return service.nameAr + ": not_configured";
+    try {
+      const response = await axios.get(`${service.url}/health`, { timeout: 2500 });
+      const declared = response.data?.model_source ?? response.data?.modelSource ?? null;
+      const kind = classifyModelSource(typeof declared === "string" ? declared : null);
+      return service.nameAr + ": available; model_kind=" + kind + "; response=health_endpoint";
+    } catch (error) {
+      const statusCode = (error as AxiosError)?.response?.status;
+      return service.nameAr + ": " + (statusCode === 429 ? "rate_limited_reachability_unverified" : "unavailable");
+    }
+  }));
+  return [
+    "LIVE AI SERVICE HEALTH SNAPSHOT (checked now; availability means only /health responded, not agronomic validation):",
+    ...checks,
+    "Do not describe rule-based or synthetic services as trained ML models. Never expose service URLs.",
+  ];
+}
+
 export const chatWithAIAssistant = async (req: Request, res: Response) => {
   const { message, question, history, language, conversationId } = req.body ?? {};
   const userMessage: string = (message || question || "").toString();
@@ -1293,6 +1314,22 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
 
     const resolvedLanguage = language || detectLanguage(userMessage);
 
+    // The text agent can report actual service state on demand instead of
+    // relying on a stale capability list or guessing which microservices work.
+    const asksServiceStatus =
+      /(شنية الخدمات|شنوّة الخدمات|شنو الخدمات|شنية تنجم|شنو تنجم|شنو يخدم|شنوّة يخدم|شنو طايح|الخدمات المتاحة|حالة الخدمات|خدمات الذكاء|service status|services available|which services|what services|health check|microservices)/i.test(userMessage);
+    if (asksServiceStatus) {
+      try {
+        const statusFacts = await getAssistantServiceHealthFacts();
+        farmContext = {
+          ...(farmContext ?? {}),
+          platformRecords: [...(farmContext?.platformRecords ?? []), ...statusFacts],
+        };
+      } catch (statusError) {
+        console.warn(`Assistant service health lookup failed [${correlationId}]:`, statusError instanceof Error ? statusError.name : "unknown");
+      }
+    }
+
     // Agricultural news: only when the question actually asks for news, fetch
     // real publisher headlines and inject them as labelled evidence for the
     // `agri_news` specialist. Bounded by a hard timeout so a slow feed can never
@@ -1307,14 +1344,20 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 4500)),
         ]);
         const live = (news?.articles ?? []).slice(0, 6).map((a) =>
-          "AGRI NEWS [publisher=" + a.sourceName + "; date=" + (a.publishedAt || "undated") + "; title=" + a.title.slice(0, 200) + "; link=" + a.link + "]. Real fetched headline from the publisher feed; report as published reporting, not as AgroGrowth's own advice.",
+          "AGRI NEWS [publisher=" + a.sourceName + "; date=" + (a.publishedAt || "undated") + "; title=" + a.title.slice(0, 200) + "; summary=" + a.summary.slice(0, 350) + "; link=" + a.link + "]. Real fetched headline from the publisher feed; report as published reporting, not as AgroGrowth's own advice.",
         );
-        if (live.length) {
-          farmContext = {
-            ...(farmContext ?? {}),
-            platformRecords: [...(farmContext?.platformRecords ?? []), ...live],
-          };
-        }
+        const sourceFacts = (news?.sources ?? []).map((source) =>
+          "NEWS RSS SOURCE STATUS [source=" + source.name + "; language=" + source.language + "; available=" + source.available + "; articles=" + source.itemCount + (source.error ? "; error=" + source.error.slice(0, 100) : "") + "]. Live feed probe result.",
+        );
+        farmContext = {
+          ...(farmContext ?? {}),
+          platformRecords: [
+            ...(farmContext?.platformRecords ?? []),
+            "NEWS FETCH RESULT [source=rss-feeds; fetched_at=" + (news?.generatedAt ?? "unavailable") + "; article_count=" + live.length + "].",
+            ...sourceFacts,
+            ...live,
+          ],
+        };
       } catch (newsError) {
         console.warn(
           `Agricultural news fetch skipped [${correlationId}]:`,
