@@ -506,13 +506,24 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     run: (ctx) => {
       const records = marketRecords(ctx);
       if (records.length === 0) {
+        const sellerOffers = marketplaceRecords(ctx);
+        if (sellerOffers.length > 0) {
+          return {
+            status: "ok",
+            findings: sellerOffers.slice(0, 6),
+            dataSource: "marketplace-seller-listings",
+            isRealData: true,
+            confidence: "medium",
+            note: "These are current published seller asking prices from Marketplace, not official market observations, a market average, or a guaranteed transaction price. State the seller/location/quantity when available.",
+          };
+        }
         return {
           status: "unavailable",
           findings: [],
           dataSource: null,
           isRealData: false,
           confidence: "unknown",
-          note: "No dated, sourced market record for this crop. Prices are never invented.",
+          note: "No dated, sourced market record or matching published seller offer was found. Prices are never invented.",
         };
       }
       return {
@@ -521,7 +532,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         dataSource: "persisted-records",
         isRealData: false,
         confidence: "medium",
-        note: "Historical recorded quotes, not guaranteed live prices.",
+        note: "Historical recorded market quotes, not guaranteed live prices. If seller offers are also available, keep them separate from these market observations.",
       };
     },
   },
