@@ -1086,7 +1086,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       if (!db) {
         farmContextStatus = "unavailable";
       } else {
-        const [userResult, profileResult, farmsResult, publicMarketResult, publicPredictionsResult, assistantMemoryResult, marketplaceListingsResult] = await Promise.all([
+        const [userResult, profileResult, farmsResult, publicMarketResult, publicPredictionsResult, assistantMemoryResult, marketplaceListingsResult, marketplaceInquiriesResult] = await Promise.all([
           db.from("users").select("role,language_preference").eq("id", userId).maybeSingle(),
           db.from("user_profiles").select("experience_years,farming_specializations,preferred_crops,location").eq("user_id", userId).maybeSingle(),
           db.from("farms").select("id,name,location,size_hectares,soil_type,climate_zone,elevation_meters,water_source,irrigation_type,organic_certified").eq("owner_id", userId).limit(20),
@@ -1094,8 +1094,19 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           db.from("market_predictions").select("crop_name,prediction_period,predicted_price_range,confidence_level,valid_from,valid_until,created_at").gte("valid_until", new Date().toISOString().slice(0, 10)).order("valid_from", { ascending: true }).limit(10),
           db.from("assistant_user_memory").select("memory_key,category,memory_value,confidence,updated_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(40),
           db.from("marketplace_listings").select("id,title,listing_type,category,price,currency,unit,quantity,location,governorate,created_at,harvest_crop,expected_harvest_date,quality_notes").eq("status", "published").order("created_at", { ascending: false }).limit(30),
+          db.from("marketplace_inquiries").select("id,listing_id,buyer_id,seller_id,message,quantity,status,created_at,listing:marketplace_listings(title,price,currency,unit)").or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order("created_at", { ascending: false }).limit(30),
         ]);
         const basePlatformRecords: string[] = [];
+        if (marketplaceInquiriesResult.error) {
+          console.warn("[assistant] Marketplace inquiries lookup skipped:", marketplaceInquiriesResult.error.code);
+          basePlatformRecords.push("MARKETPLACE INQUIRY SOURCE STATUS [available=false]. The account's buyer/seller inquiries could not be read; do not claim there are no inquiries.");
+        } else {
+          for (const inquiry of marketplaceInquiriesResult.data ?? []) {
+            const listing = Array.isArray(inquiry.listing) ? inquiry.listing[0] : inquiry.listing;
+            const side = inquiry.buyer_id === userId ? "buyer" : "seller";
+            basePlatformRecords.push("MARKETPLACE INQUIRY [side=" + side + "; status=" + inquiry.status + "; listing_id=" + inquiry.listing_id + "; listing_title=" + (listing?.title || "not available") + "; asking_price=" + (listing?.price ?? "not recorded") + " " + (listing?.currency || "TND") + (listing?.unit ? "/" + listing.unit : "") + "; quantity=" + (inquiry.quantity ?? "not specified") + "; message=" + String(inquiry.message || "").slice(0, 220) + "; created_at=" + inquiry.created_at + "; inquiry_id=" + inquiry.id + "]. Private buyer/seller inquiry; do not expose another party's private details or treat an asking price as a completed sale.");
+          }
+        }
         // Public seller listings are separate from market-price observations:
         // report them as asking prices, never as official/average market prices.
         if (marketplaceListingsResult.error) {
