@@ -502,7 +502,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "market",
     title: TITLES.market,
     dependsOn: [],
-    keywords: /(سعر|سوق|تصدير|price|marché|market|sou9|souq|sou3|prix)/i,
+    keywords: /(سعر|سوق|تصدير|price|marché|market|sou9|souq|sou3|prix|souma|soum|9adeh|9addech|ch7al|b9adeh|b9addeh)/i,
     run: (ctx) => {
       const records = marketRecords(ctx);
       if (records.length === 0) {
@@ -622,7 +622,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "finance",
     title: TITLES.finance,
     dependsOn: [],
-    keywords: /(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|profit|cost|expense|budget|investment|finance|rentabilité|masrouf|rb7)/i,
+    keywords: /(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|profit|cost|expense|budget|investment|finance|rentabilité|masrouf|rb7|rbe7|dakhil|mad5oul|9adeh sarfet|9adeh kallef|kلفة)/i,
     run: (ctx) => {
       const withFigures = cultivationRecords(ctx).filter((r) =>
         /(?:total_cost|revenue|profit)=(-?\d+(?:\.\d+)?)(?:;|\])/i.test(r),
@@ -651,7 +651,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "yield_intel",
     title: TITLES.yield_intel,
     dependsOn: [],
-    keywords: /(مردود|إنتاجية|محصول متوقع|غلّة|yield|rendement|productivité|ghalla|intaijia|mardoud)/i,
+    keywords: /(مردود|إنتاجية|محصول متوقع|غلّة|yield|rendement|productivité|ghalla|intaijia|mardoud|yentj|9adeh ykhrj|ch7al ykhrj|production|intaj)/i,
     run: (ctx) => {
       const records = yieldRecords(ctx);
       if (records.length === 0) {
@@ -705,7 +705,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "marketplace",
     title: TITLES.marketplace,
     dependsOn: [],
-    keywords: /(تسويق|بيع المحصول|شراء محصول|سوق زراعي|مزاد|marketplace|commercialis|vente|achat|fournisseur|acheteur|listing)/i,
+    keywords: /(تسويق|بيع المحصول|شراء محصول|سوق زراعي|مزاد|marketplace|commercialis|vente|achat|fournisseur|acheteur|listing|nbi3|nchri|bii3|chri|3ard|3roud|annonce|vendeur|matloub|bch nbi3|bch nechri)/i,
     run: (ctx) => {
       const records = marketplaceRecords(ctx);
       if (records.length === 0) {
