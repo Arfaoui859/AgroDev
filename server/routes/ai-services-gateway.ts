@@ -960,17 +960,39 @@ async function getAssistantServiceHealthFacts(): Promise<string[]> {
   const checks = await Promise.all(services.map(async (service) => {
     if (!service.url) return service.nameAr + ": not_configured";
     try {
-      const response = await axios.get(`${service.url}/health`, { timeout: 2500 });
-      const declared = response.data?.model_source ?? response.data?.modelSource ?? null;
+      const response = await axios.get(`${service.url}/health`, { timeout: 5000 });
+      const body = response.data && typeof response.data === "object" ? response.data : {};
+      const declared = body.model_source ?? body.modelSource ?? null;
       const kind = classifyModelSource(typeof declared === "string" ? declared : null);
-      return service.nameAr + ": available; model_kind=" + kind + "; response=health_endpoint";
+      const declaredStatus = String(body.status ?? body.state ?? "").toLowerCase();
+      const explicitlyUnhealthy =
+        body.healthy === false ||
+        body.ready === false ||
+        body.ok === false ||
+        ["unhealthy", "failed", "error", "down", "not_ready"].includes(declaredStatus);
+      const degraded =
+        body.degraded === true ||
+        ["degraded", "partial", "warning"].includes(declaredStatus);
+      const serviceState = explicitlyUnhealthy
+        ? "unhealthy"
+        : degraded
+          ? "degraded"
+          : "available";
+      return service.nameAr + ": " + serviceState + "; model_kind=" + kind +
+        "; health_http=" + response.status +
+        (declaredStatus ? "; declared_status=" + declaredStatus : "") +
+        "; response=health_endpoint";
     } catch (error) {
       const statusCode = (error as AxiosError)?.response?.status;
-      return service.nameAr + ": " + (statusCode === 429 ? "rate_limited_reachability_unverified" : "unavailable");
+      return service.nameAr + ": " + (statusCode === 429
+        ? "rate_limited_reachability_unverified"
+        : statusCode
+          ? "health_http_error_" + statusCode
+          : "unavailable");
     }
   }));
   return [
-    "LIVE AI SERVICE HEALTH SNAPSHOT (checked now; availability means only /health responded, not agronomic validation):",
+    "LIVE AI SERVICE HEALTH SNAPSHOT (checked now; available means /health responded and did not declare unhealthy; this does not validate agronomic output quality):",
     ...checks,
     "Do not describe rule-based or synthetic services as trained ML models. Never expose service URLs.",
   ];
