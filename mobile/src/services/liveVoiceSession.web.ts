@@ -508,9 +508,13 @@ export class LiveVoiceSession {
           return;
         }
         this.active = false;
-        this.callbacks.onState("ended");
-        if (event.code !== 1000) this.callbacks.onError?.("انقطع الاتصال الصوتي. أعد تشغيل المكالمة.");
-        void this.stop();
+        const closeReason = typeof event.reason === "string" && event.reason.trim()
+          ? event.reason.trim().slice(0, 180)
+          : "لا يوجد سبب مرسل من الخادم";
+        const closeMessage = `انقطع اتصال Gemini Live أثناء المكالمة (code ${event.code}): ${closeReason}. اضغط إعادة المحاولة.`;
+        this.callbacks.onError?.(closeMessage);
+        // A provider disconnect is a recoverable failure, not a user-ended call.
+        void this.stop("error");
       };
     });
   }
@@ -531,7 +535,7 @@ export class LiveVoiceSession {
         return;
       }
       this.callbacks.onError?.(error instanceof Error ? error.message : "تعذّرت استعادة الاتصال الصوتي.");
-      void this.stop();
+      void this.stop("error");
     }
   }
 
@@ -985,7 +989,7 @@ export class LiveVoiceSession {
     }
   }
 
-  async stop(): Promise<void> {
+  async stop(finalState: "ended" | "error" = "ended"): Promise<void> {
     this.stopped = true;
     this.active = false;
     this.socketReady = false;
@@ -1017,6 +1021,6 @@ export class LiveVoiceSession {
     this.sessionHandle = null;
     this.reconnecting = false;
     this.reconnectAttempts = 0;
-    this.callbacks.onState("ended");
+    this.callbacks.onState(finalState);
   }
 }
