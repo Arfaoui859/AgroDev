@@ -1096,7 +1096,10 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           db.from("marketplace_listings").select("id,title,listing_type,category,price,currency,unit,quantity,location,governorate,created_at,harvest_crop,expected_harvest_date,quality_notes").eq("status", "published").order("created_at", { ascending: false }).limit(30),
           db.from("marketplace_inquiries").select("id,listing_id,buyer_id,seller_id,message,quantity,status,created_at,listing:marketplace_listings(title,price,currency,unit)").or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).order("created_at", { ascending: false }).limit(30),
         ]);
-        const basePlatformRecords: string[] = [];
+        const basePlatformRecords: string[] = [
+          "SUPPLY CHAIN CAPABILITY STATUS [available=false; code=SUPPLY_CHAIN_STORE_NOT_CONNECTED]. Batch-level traceability, transport events and quality-check history are not connected to verified persistence.",
+          "LOGISTICS CAPABILITY STATUS [available=false; code=SIMULATED_DATA_DISABLED]. Verified vehicle, shipment, route and delivery records are not connected; do not invent logistics status or ETAs.",
+        ];
         if (marketplaceInquiriesResult.error) {
           console.warn("[assistant] Marketplace inquiries lookup skipped:", marketplaceInquiriesResult.error.code);
           basePlatformRecords.push("MARKETPLACE INQUIRY SOURCE STATUS [available=false]. The account's buyer/seller inquiries could not be read; do not claim there are no inquiries.");
