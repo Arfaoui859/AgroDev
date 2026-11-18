@@ -964,7 +964,7 @@ let assistantHealthInFlight: Promise<string[]> | null = null;
 
 async function getAssistantServiceHealthFacts(): Promise<string[]> {
   const services = serviceRegistry();
-  const cacheKey = services.map((service) => `${service.id ?? service.nameAr}=${service.url || "not-configured"}`).join("|");
+  const cacheKey = services.map((service) => `${service.nameAr}=${service.url || "not-configured"}`).join("|");
   const now = Date.now();
   if (assistantHealthCache && assistantHealthCache.key === cacheKey && assistantHealthCache.expiresAt > now) {
     return [...assistantHealthCache.facts, "Health snapshot cache age: under 30 seconds."];
