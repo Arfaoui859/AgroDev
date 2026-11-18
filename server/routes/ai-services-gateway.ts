@@ -1293,6 +1293,15 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .limit(8)
             : { data: [], error: null };
           const platformRecords: string[] = [...basePlatformRecords];
+          if (sensorResult.error || sensorReadingsResult.error) {
+            platformRecords.push("SENSOR SOURCE STATUS [available=false]. Sensor registry or readings could not be read; do not claim there are no sensors or measurements.");
+          }
+          if (satelliteResult.error) {
+            platformRecords.push("SATELLITE SOURCE STATUS [available=false]. Satellite observations could not be read; do not claim there are no observations.");
+          }
+          if (diseaseResult.error) {
+            platformRecords.push("PLANT HEALTH SOURCE STATUS [available=false]. Saved plant-health records could not be read; do not claim there are no disease records.");
+          }
           if (alertsResult.error) {
             platformRecords.push("NOTIFICATION SOURCE STATUS [available=false]. User notification records could not be read; do not claim there are no alerts.");
           } else {
