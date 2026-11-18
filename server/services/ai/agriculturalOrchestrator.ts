@@ -637,7 +637,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "finance",
     title: TITLES.finance,
     dependsOn: [],
-    keywords: /(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|profit|cost|expense|budget|investment|finance|rentabilité|masrouf|rb7|rbe7|dakhil|mad5oul|9adeh sarfet|9adeh kallef|kلفة)/i,
+    keywords: /(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|دخل|مدخول|مداخيل|صرفت|صرف|قداش صرفت|قداش دخلت|profit|cost|expense|expenses|revenue|revenues|income|budget|investment|finance|rentabilité|dépense|revenu|masrouf|rb7|rbe7|dakhil|mad5oul|9adeh sarfet|9adeh kallef|9adeh d5al|kلفة)/i,
     run: (ctx) => {
       const cultivationFigures = cultivationRecords(ctx).filter((r) =>
         /(?:total_cost|revenue|profit)=(-?\d+(?:\.\d+)?)(?:;|\])/i.test(r),
