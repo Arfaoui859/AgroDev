@@ -1296,6 +1296,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .limit(8)
             : { data: [], error: null };
           const platformRecords: string[] = [...basePlatformRecords];
+          if (soilResult.error) {
+            platformRecords.push("SOIL ANALYSIS SOURCE STATUS [available=false]. Stored soil analyses and detailed reports could not be read; do not claim that the account has no soil analyses or reports.");
+          }
           if (sensorResult.error || sensorReadingsResult.error) {
             platformRecords.push("SENSOR SOURCE STATUS [available=false]. Sensor registry or readings could not be read; do not claim there are no sensors or measurements.");
           }
