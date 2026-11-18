@@ -92,6 +92,8 @@ export class LiveVoiceSession {
   private apiToken: string | null = null;
   private personalMemoryContext = "";
   private verifiedFarmContext = "";
+  private platformConversationId: string | null = null;
+  private platformConversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
   private websocketUrl: string | null = null;
   private model: string | null = null;
   private sessionHandle: string | null = null;
@@ -105,6 +107,8 @@ export class LiveVoiceSession {
   async start(): Promise<void> {
     if (this.active) return;
     this.stopped = false;
+    this.platformConversationId = null;
+    this.platformConversationHistory = [];
     this.callbacks.onState("connecting");
 
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
@@ -380,6 +384,18 @@ export class LiveVoiceSession {
               },
             },
           },
+            {
+              name: "consult_agrogrowth_platform",
+              description: "Consult AgroGrowth's authenticated, full multi-agent assistant for questions about the user's saved app data and any platform area not covered by a dedicated Live tool: farm tasks, expenses and revenues, equipment, notifications, marketplace listings and inquiries, livestock, monitoring, soil records, and cross-module questions. Use the user's actual question. The backend loads caller-scoped records, runs its specialist agents, and returns a grounded answer with provenance. Do not use this for current weather, latest news, direct soil analysis, or market prices when their dedicated Live tools apply.",
+              parameters: {
+                type: "OBJECT",
+                properties: {
+                  question: { type: "STRING", description: "The user's actual question, maximum 2000 characters. Preserve the requested details; do not add assumptions." },
+                  language: { type: "STRING", enum: ["ar", "fr", "en"], description: "Answer language matching the user." },
+                },
+                required: ["question"],
+              },
+            },
           ],
         }],
         generationConfig: {
@@ -824,6 +840,72 @@ export class LiveVoiceSession {
         this.socket.send(JSON.stringify({
           toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] },
         }));
+        continue;
+      }
+
+      if (call.name === "consult_agrogrowth_platform") {
+        const args = call.args ?? {};
+        const question = typeof args.question === "string" ? args.question.trim().slice(0, 2000) : "";
+        const language = ["ar", "fr", "en"].includes(args.language) ? args.language : "ar";
+        if (!question) {
+          const response = { success: false, error: "اسأل المستخدم عن السؤال أو التفاصيل المطلوبة قبل استدعاء مستشار المنصة." };
+          if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+          continue;
+        }
+
+        const result = await apiRequest<any>("/api/ai/assistant/chat", {
+          method: "POST",
+          body: JSON.stringify({
+            message: question,
+            language,
+            history: this.platformConversationHistory.slice(-8),
+            conversationId: this.platformConversationId ?? undefined,
+          }),
+        });
+        const payload = result.data;
+        const answer = typeof payload?.answer === "string" ? payload.answer : "";
+        if (result.error || !answer) {
+          const response = {
+            success: false,
+            dataAvailable: false,
+            error: "تعذّر على مستشار AgroGrowth إكمال الإجابة من بيانات المنصة حالياً. وضّح للمستخدم أن الخدمة غير متاحة، وما تعوّضش النتيجة بالتخمين.",
+            code: payload?.code ?? null,
+          };
+          if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+          continue;
+        }
+
+        if (typeof payload.conversationId === "string") this.platformConversationId = payload.conversationId;
+        this.platformConversationHistory = [
+          ...this.platformConversationHistory,
+          { role: "user", content: question },
+          { role: "assistant", content: answer.slice(0, 4000) },
+        ].slice(-8);
+        const traceSteps = Array.isArray(payload.orchestrationTrace?.steps)
+          ? payload.orchestrationTrace.steps.slice(0, 12).map((step: any) => ({
+              specialist: step.id,
+              status: step.status,
+              dataSource: step.dataSource ?? null,
+              isRealData: step.isRealData === true,
+              findings: Array.isArray(step.findings) ? step.findings.slice(0, 3) : [],
+            }))
+          : [];
+        const response = {
+          success: true,
+          answer: answer.slice(0, 7000),
+          note: typeof payload.note === "string" ? payload.note.slice(0, 700) : null,
+          provenance: {
+            dataSource: payload.dataSource ?? null,
+            modelSource: payload.modelSource ?? null,
+            farmContextStatus: payload.farmContextStatus ?? "unreported",
+            plannedBy: payload.plannedBy ?? null,
+            usedSpecialists: Array.isArray(payload.usedSpecialists) ? payload.usedSpecialists.slice(0, 12) : [],
+            trainedModelSpecialists: Array.isArray(payload.trainedModelSpecialists) ? payload.trainedModelSpecialists.slice(0, 12) : [],
+            orchestration: traceSteps,
+          },
+          instruction: "This answer came from AgroGrowth's authenticated platform assistant and its multi-agent specialists. Speak the returned answer naturally, preserve its uncertainty and provenance, and do not claim that any write/action was performed: this endpoint is for advice and read-only platform questions.",
+        };
+        if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
         continue;
       }
 
