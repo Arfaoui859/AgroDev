@@ -1205,9 +1205,9 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               .in("farm_id", farmIds).in("analysis_type", ["lab", "laboratory", "sensor", "manual"])
               .order("analyzed_at", { ascending: false }).limit(5),
             db.from("notifications")
-              .select("title,message,priority,created_at,archived_at")
-              .eq("user_id", userId).eq("category", "agrogrowth_agent")
-              .is("archived_at", null).order("created_at", { ascending: false }).limit(8),
+              .select("id,type,title,message,priority,category,read_at,created_at,archived_at")
+              .eq("user_id", userId)
+              .is("archived_at", null).order("created_at", { ascending: false }).limit(20),
             db.from("farm_sections")
               .select("id,farm_id,name,area_hectares,soil_type,current_crop,planted_date,expected_harvest_date")
               .in("farm_id", farmIds).limit(15),
@@ -1267,7 +1267,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             }
             const operationalAlerts = (alertsResult.error ? [] : (alertsResult.data ?? []))
               .filter((alert: any) => typeof alert.title === "string" && typeof alert.message === "string")
-              .map((alert: any) => `[${alert.priority || "normal"}] ${alert.title}: ${alert.message}`);
+              .map((alert: any) => `[${alert.priority || "normal"}; ${alert.read_at ? "read" : "unread"}; category=${alert.category || "general"}] ${alert.title}: ${alert.message}`);
             const marketCropNames = Array.from(new Set((cropResult.data ?? []).map((item: any) => item.crop_name).filter((name: any): name is string => typeof name === "string" && name.length > 0)));
           const marketResult = marketCropNames.length
             ? await db.from("market_prices")
@@ -1293,6 +1293,13 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
                 .limit(8)
             : { data: [], error: null };
           const platformRecords: string[] = [...basePlatformRecords];
+          if (alertsResult.error) {
+            platformRecords.push("NOTIFICATION SOURCE STATUS [available=false]. User notification records could not be read; do not claim there are no alerts.");
+          } else {
+            for (const alert of alertsResult.data ?? []) {
+              platformRecords.push("USER NOTIFICATION [type=" + (alert.type || "notification") + "; category=" + (alert.category || "general") + "; priority=" + (alert.priority || "normal") + "; read=" + (alert.read_at ? "yes" : "no") + "; created_at=" + alert.created_at + "; title=" + String(alert.title || "").slice(0, 180) + "; message=" + String(alert.message || "").slice(0, 400) + "; notification_id=" + alert.id + "]. Persisted user notification; priority is the stored app value, not an independently assessed risk.");
+            }
+          }
           for (const line of livestockLines) platformRecords.push(line);
             if (farms.length > 1 && !selectedFarm) {
               platformRecords.push(
