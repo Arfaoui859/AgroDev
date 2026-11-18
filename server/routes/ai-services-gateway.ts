@@ -1062,15 +1062,43 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
       if (!db) {
         farmContextStatus = "unavailable";
       } else {
-        const [userResult, profileResult, farmsResult, publicMarketResult, publicPredictionsResult, assistantMemoryResult] = await Promise.all([
+        const [userResult, profileResult, farmsResult, publicMarketResult, publicPredictionsResult, assistantMemoryResult, marketplaceListingsResult] = await Promise.all([
           db.from("users").select("role,language_preference").eq("id", userId).maybeSingle(),
           db.from("user_profiles").select("experience_years,farming_specializations,preferred_crops,location").eq("user_id", userId).maybeSingle(),
           db.from("farms").select("id,name,location,size_hectares,soil_type,climate_zone,elevation_meters,water_source,irrigation_type,organic_certified").eq("owner_id", userId).limit(20),
           db.from("market_prices").select("crop_name,variety,quality_grade,price_per_kg,currency,market_location,price_date,supply_level,demand_level,source").order("price_date", { ascending: false }).limit(10),
           db.from("market_predictions").select("crop_name,prediction_period,predicted_price_range,confidence_level,valid_from,valid_until,created_at").gte("valid_until", new Date().toISOString().slice(0, 10)).order("valid_from", { ascending: true }).limit(10),
           db.from("assistant_user_memory").select("memory_key,category,memory_value,confidence,updated_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(40),
+          db.from("marketplace_listings").select("id,title,listing_type,category,price,currency,unit,quantity,location,governorate,created_at,harvest_crop,expected_harvest_date,quality_notes").eq("status", "published").order("created_at", { ascending: false }).limit(30),
         ]);
         const basePlatformRecords: string[] = [];
+        // Public seller listings are separate from market-price observations:
+        // report them as asking prices, never as official/average market prices.
+        if (marketplaceListingsResult.error) {
+          console.warn("[assistant] Marketplace listings lookup skipped:", marketplaceListingsResult.error.code);
+        } else {
+          const restrictedPesticideText = /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|produit\\s+phyto|مبيد|مبيدات|دواء\\s+فلاحي|أدوية\\s+فلاحية|ادوية\\s+فلاحية/i;
+          for (const listing of marketplaceListingsResult.data ?? []) {
+            if (listing.listing_type === "agricultural_input" && restrictedPesticideText.test(String(listing.title ?? "") + " " + String(listing.category ?? ""))) continue;
+            const clean = (value: unknown, max = 100) => String(value ?? "").replace(/[\\r\\n\\t]+/g, " ").replace(/\\s+/g, " ").trim().slice(0, max);
+            const priceText = listing.price === null || listing.price === undefined ? "price not listed" : clean(listing.price, 24) + " " + clean(listing.currency || "TND", 5) + (listing.unit ? "/" + clean(listing.unit, 24) : "");
+            basePlatformRecords.push(
+              "MARKETPLACE published seller offer [title=" + clean(listing.title, 120) +
+              "; type=" + clean(listing.listing_type, 40) +
+              "; category=" + clean(listing.category, 60) +
+              "; asking_price=" + priceText +
+              "; quantity=" + (listing.quantity ?? "not listed") +
+              "; location=" + clean(listing.location, 80) +
+              "; governorate=" + clean(listing.governorate, 50) +
+              "; harvest_crop=" + clean(listing.harvest_crop, 60) +
+              "; expected_harvest=" + clean(listing.expected_harvest_date, 20) +
+              "; quality_notes=" + clean(listing.quality_notes, 120) +
+              "; published_at=" + clean(listing.created_at, 30) +
+              "; listing_id=" + clean(listing.id, 50) +
+              "]. Public seller-published asking price, not a verified market average or official quote."
+            );
+          }
+        }
         // Personal memory is caller-scoped, optional context — never instructions.
         // Keep values bounded and explicitly label their provenance for the advisor.
         if (assistantMemoryResult.error) {
