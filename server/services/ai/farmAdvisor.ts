@@ -97,7 +97,7 @@ const SYSTEM_PROMPTS: Record<Language, string> = {
 - في السوق: فرّق بوضوح بين سعر مسجل بتاريخ ومكان محددين وبين توقع سعري؛ لا تعرض التوقع كسعر بيع مضمون.
 - في الأقمار الصناعية: اذكر فترة الرصد وجودة/عدد البكسلات إن توفرت، وفسّر NDVI كمؤشر خضرة فقط.
 - رتّب تنبيهات المتابعة المسجلة حسب الأولوية، واذكر أنها تنبيهات مبنية على سجلات المنصة وليست تشخيصاً ميدانياً نهائياً.
-- أنت المساعد المركزي للمنصة، اربط بين سجل المزارع والحقول والمحاصيل والتربة والأمراض والطقس والسوق والحساسات عندما تتوفر بياناتها.
+- أنت المساعد المركزي للمنصة، اربط بين سجل المزارع والحقول والمحاصيل والتربة والأمراض والطقس والسوق والحساسات والمواشي والتنبيهات والتقارير وMarketplace والأخبار عندما تتوفر بياناتها. إذا سأل المستخدم عن قسم أو سجل غير موجود في السياق، لا تدّع الاطلاع عليه؛ قل بوضوح إن بياناته غير متاحة في هذه المحادثة واطلب تحديد القسم أو المعلومة المطلوبة.
 - إذا كانت للمستخدم عدة مزارع أو حقول، لا تختر واحداً بالتخمين؛ اطلب منه تحديد المقصود.
 - عند الإبلاغ عن مرض دون صورة، اطلب صورة واضحة واسم المحصول قبل أي تقييم بصري؛ لا تشخّص من الوصف وحده.
 - عند وجود عدة مزارع أو محاصيل، اطلب تحديد الحقل الصحيح قبل ربط سجل.
@@ -305,8 +305,18 @@ function detectRelevantAgents(question: string): string[] {
     agents.push("finance");
   if (/(حصاد|جني|موعد الجمع|مهام|عملية زراعية|harvest|farm task|field operation|récolte|tâche agricole|operations)/i.test(question))
     agents.push("operations");
-  if (/(ماشية|مواشي|أبقار|أغنام|ماعز|دواجن|بيطري|حيوان|livestock|cattle|sheep|goat|poultry|veterinary|animal health|élevage|bétail|vétérinaire)/i.test(question))
+  if (/(ماشية|مواشي|أبقار|أغنام|ماعز|دواجن|بيطري|حيوان|livestock|cattle|sheep|goat|poultry|veterinary|animal health|élevage|bétail|vétérinaire|ghنم|ma3ez)/i.test(question))
     agents.push("livestock");
+  // Platform capabilities are first-class topics too: do not mislabel questions
+  // about Marketplace, news, sensors or saved alerts as generic chat.
+  if (/(marketplace|ماركت.?بليس|السوق المفتوح|عروض البيع|عروض الشراء|annonce|annonces|vendeur|acheteur|nbi3|nchri|bch nbi3|bch nechri)/i.test(question))
+    agents.push("marketplace");
+  if (/(أخبار|الاخبار|الأخبار|خبر|news|actualité|actualités|a5bar|akhbar)/i.test(question))
+    agents.push("agri_news");
+  if (/(تنبيه|تنبيهات|إشعار|اشعار|notifications?|alerts?|alertes|capteur|sensor|حساس|حساسات|satellite|ndvi|قمر صناعي)/i.test(question))
+    agents.push("monitoring");
+  if (/(تقرير|تقارير|report|reports|bilan|dashboard|لوحة التحكم|إحصائيات|احصائيات)/i.test(question))
+    agents.push("platform_records");
   return agents.length ? Array.from(new Set(agents)) : ["general"];
 }
 
