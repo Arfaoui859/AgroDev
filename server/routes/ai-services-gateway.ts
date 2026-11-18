@@ -1339,6 +1339,16 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             }
             // Finance, task and equipment ledgers are real user-entered records.
             // Keep transaction rows separate; never infer missing totals or profit.
+            const tunisianDate = new Intl.DateTimeFormat("en-CA", {
+              timeZone: "Africa/Tunis", year: "numeric", month: "2-digit", day: "2-digit",
+            }).format(new Date());
+            platformRecords.push("AGROGROWTH CONTEXT DATE [timezone=Africa/Tunis; date=" + tunisianDate + "]. Use this date only for interpreting due dates; it is not a measurement.");
+            if (expensesResult.error) platformRecords.push("FARM FINANCE SOURCE STATUS [ledger=expenses; available=false]. Expense table could not be read; absence of rows is not proof that no expenses exist.");
+            if (revenuesResult.error) platformRecords.push("FARM FINANCE SOURCE STATUS [ledger=revenue; available=false]. Revenue table could not be read; absence of rows is not proof that no revenue exists.");
+            if (tasksResult.error) platformRecords.push("FARM TASK SOURCE STATUS [available=false]. Task table could not be read; absence of rows is not proof that no tasks exist.");
+            if (equipmentResult.error) platformRecords.push("FARM EQUIPMENT SOURCE STATUS [available=false]. Equipment table could not be read; absence of rows is not proof that no equipment exists.");
+            if (!expensesResult.error && (expensesResult.data ?? []).length === 30) platformRecords.push("FARM FINANCE COVERAGE [ledger=expenses; rows=30; scope=latest records only]. Do not present as a lifetime total.");
+            if (!revenuesResult.error && (revenuesResult.data ?? []).length === 30) platformRecords.push("FARM FINANCE COVERAGE [ledger=revenue; rows=30; scope=latest records only]. Do not present as a lifetime total.");
             for (const expense of (expensesResult.error ? [] : expensesResult.data ?? [])) {
               platformRecords.push("FARM FINANCE expense [farm_id=" + expense.farm_id + "; category=" + expense.category + "; subcategory=" + (expense.subcategory || "none") + "; amount=" + expense.amount + " " + (expense.currency || "TND") + "; date=" + expense.expense_date + "; crop=" + (expense.crop_related || "not linked") + "; description=" + String(expense.description || "").slice(0, 180) + "; supplier=" + (expense.supplier || "not recorded") + "; payment_method=" + (expense.payment_method || "not recorded") + "; cultivation_id=" + (expense.cultivation_id || "not linked") + "; record_id=" + expense.id + "]. User-entered expense record, not independently audited.");
             }
