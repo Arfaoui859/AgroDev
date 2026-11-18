@@ -109,6 +109,8 @@ export interface RequestOptions extends RequestInit {
   exposeNetworkError?: boolean;
   /** Explicitly mark multipart uploads so native FormData never gets a JSON content type. */
   multipart?: boolean;
+  /** Override the default network timeout for bounded long-running AI workflows. */
+  timeoutMs?: number;
 }
 
 /** Attach the freshest access token we can obtain without blocking the request. */
@@ -255,7 +257,7 @@ export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestOptions = {},
 ): Promise<ApiResult<T>> {
-  const { cacheKey, anonymous, exposeNetworkError, multipart, ...init } = options;
+  const { cacheKey, anonymous, exposeNetworkError, multipart, timeoutMs, ...init } = options;
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   const buildHeaders = async () => {
@@ -273,7 +275,7 @@ export async function apiRequest<T = unknown>(
   /** One network attempt with a fresh abort controller. */
   const send = async (): Promise<Response> => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs ?? API_TIMEOUT_MS);
     try {
       return await fetch(url, { ...init, headers: await buildHeaders(), signal: controller.signal });
     } finally {
