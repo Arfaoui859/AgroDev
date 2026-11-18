@@ -379,8 +379,10 @@ export class LiveVoiceSession {
               this.callbacks.onState("listening");
               resolve();
             } catch (error) {
+              // Let start() reject so the modal can preserve and display the
+              // real microphone-start error instead of being overwritten by
+              // stop()'s normal "ended" state.
               reject(error instanceof Error ? error : new Error("تعذّر تشغيل الميكروفون."));
-              void this.stop();
             }
           }
           return;
@@ -425,9 +427,13 @@ export class LiveVoiceSession {
         }
 
         this.active = false;
-        this.callbacks.onState("ended");
-        if (event.code !== 1000) this.callbacks.onError?.("انقطع الاتصال الصوتي. أعد تشغيل المكالمة.");
-        void this.stop();
+        const closeReason = typeof event.reason === "string" && event.reason.trim()
+          ? event.reason.trim().slice(0, 180) : "لا يوجد سبب مرسل من الخادم";
+        const closeMessage = `انقطع اتصال Gemini Live أثناء المكالمة (code ${event.code}): ${closeReason}. اضغط إعادة المحاولة.`;
+        this.callbacks.onError?.(closeMessage);
+        // An unexpected provider close is a failure, not a user-ended call.
+        // Keep the UI in its retryable error state.
+        void this.stop("error");
       };
     });
   }
@@ -975,7 +981,7 @@ export class LiveVoiceSession {
     });
   }
 
-  async stop(): Promise<void> {
+  async stop(finalState: "ended" | "error" = "ended"): Promise<void> {
     this.stopped = true;
     this.active = false;
     this.socketReady = false;
@@ -998,6 +1004,6 @@ export class LiveVoiceSession {
     this.reconnecting = false;
     this.reconnectAttempts = 0;
     await AudioManager.setAudioSessionActivity(false).catch(() => undefined);
-    this.callbacks.onState("ended");
+    this.callbacks.onState(finalState);
   }
 }
