@@ -1204,7 +1204,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
               .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,irrigation_method,fertilizer_plan,pesticide_plan,area_hectares,estimated_yield,total_cost,revenue,profit,updated_at")
               .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(12),
             db.from("soil_analyses")
-              .select("farm_id,section_id,analysis_type,ph_level,nitrogen_level,phosphorus_level,potassium_level,organic_matter_percent,moisture_percent,temperature_celsius,health_score,fertility_level,sample_depth_cm,analyzed_at")
+              .select("id,farm_id,section_id,analysis_type,ph_level,nitrogen_level,phosphorus_level,potassium_level,organic_matter_percent,moisture_percent,temperature_celsius,health_score,fertility_level,sample_depth_cm,analyzed_at,analysis_result,recommendations")
               .in("farm_id", farmIds).in("analysis_type", ["lab", "laboratory", "sensor", "manual"])
               .order("analyzed_at", { ascending: false }).limit(5),
             db.from("notifications")
@@ -1333,7 +1333,22 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             }
             for (const soilRecord of soilResult.data ?? []) {
               const manualEntry = soilRecord.analysis_type === "manual";
-              platformRecords.push((manualEntry ? "User-entered manual soil analysis (UNVERIFIED; not a lab result)" : "Recorded soil analysis") + " [type=" + soilRecord.analysis_type + "; pH=" + (soilRecord.ph_level ?? "not recorded") + "; N=" + (soilRecord.nitrogen_level ?? "not recorded") + "; P=" + (soilRecord.phosphorus_level ?? "not recorded") + "; K=" + (soilRecord.potassium_level ?? "not recorded") + "; organic matter=" + (soilRecord.organic_matter_percent ?? "not recorded") + "%; moisture=" + (soilRecord.moisture_percent ?? "not recorded") + "%; temperature=" + (soilRecord.temperature_celsius ?? "not recorded") + " C; health_score=" + (soilRecord.health_score ?? "not recorded") + "; fertility=" + (soilRecord.fertility_level || "not recorded") + "; sample_depth_cm=" + (soilRecord.sample_depth_cm ?? "not recorded") + "; analyzed=" + soilRecord.analyzed_at + "]. " + (manualEntry ? "These measurements were manually entered and are unverified; never describe them as lab-confirmed." : "Lab/laboratory records are lab baselines; sensor records are measurements, not laboratory nutrient tests.") + " farm_id=" + soilRecord.farm_id + "; section_id=" + (soilRecord.section_id || "not linked") + ".");
+              const report = soilRecord.analysis_result && typeof soilRecord.analysis_result === "object"
+                ? soilRecord.analysis_result as Record<string, any> : {};
+              const reportSummary = typeof report.executiveSummary === "string"
+                ? report.executiveSummary.slice(0, 900) : "";
+              const findings = Array.isArray(report.findings)
+                ? report.findings.slice(0, 5).map((item: any) => ({
+                    parameter: item?.parameter, observedValue: item?.observedValue,
+                    unit: item?.unit, interpretation: item?.interpretation,
+                    severity: item?.severity,
+                  })) : [];
+              const reportRecommendations = Array.isArray(soilRecord.recommendations)
+                ? soilRecord.recommendations.slice(0, 6) : [];
+              platformRecords.push((manualEntry ? "User-entered manual soil analysis (UNVERIFIED; not a lab result)" : "Recorded soil analysis") + " [analysis_id=" + soilRecord.id + "; type=" + soilRecord.analysis_type + "; pH=" + (soilRecord.ph_level ?? "not recorded") + "; N=" + (soilRecord.nitrogen_level ?? "not recorded") + "; P=" + (soilRecord.phosphorus_level ?? "not recorded") + "; K=" + (soilRecord.potassium_level ?? "not recorded") + "; organic matter=" + (soilRecord.organic_matter_percent ?? "not recorded") + "%; moisture=" + (soilRecord.moisture_percent ?? "not recorded") + "%; temperature=" + (soilRecord.temperature_celsius ?? "not recorded") + " C; health_score=" + (soilRecord.health_score ?? "not recorded") + "; fertility=" + (soilRecord.fertility_level || "not recorded") + "; sample_depth_cm=" + (soilRecord.sample_depth_cm ?? "not recorded") + "; analyzed=" + soilRecord.analyzed_at + "]. " + (manualEntry ? "These measurements were manually entered and are unverified; never describe them as lab-confirmed." : "Lab/laboratory records are lab baselines; sensor records are measurements, not laboratory nutrient tests.") + " farm_id=" + soilRecord.farm_id + "; section_id=" + (soilRecord.section_id || "not linked") + ".");
+              if (reportSummary || findings.length || reportRecommendations.length) {
+                platformRecords.push("Persisted soil report detail [analysis_id=" + soilRecord.id + "; executive_summary=" + reportSummary + "; findings=" + JSON.stringify(findings).slice(0, 1400) + "; recommendations=" + JSON.stringify(reportRecommendations).slice(0, 1400) + "]. This is the stored advisory/report content; distinguish it from measured values and preserve its manual/lab provenance.");
+              }
             }
             for (const detection of diseaseResult.data ?? []) {
               platformRecords.push("Saved plant-health record [method=" + (detection.detection_method || "not recorded") + "; crop=" + (detection.plant_type || "unknown") + "; suspected condition=" + (detection.primary_disease || "not classified") + "; severity=" + (detection.severity_level || "not recorded") + "; affected_area_percent=" + (detection.affected_area_percentage ?? "not recorded") + "; treatment_applied=" + (detection.treatment_applied === true ? "yes" : "no/not recorded") + "; recovery=" + (detection.recovery_status || "pending") + "; confidence=" + (detection.disease_confidence ?? "not reported") + "; detected=" + detection.detected_at + "; farm_id=" + detection.farm_id + "; cultivation_id=" + (detection.cultivation_id || "not linked") + "]. Saved model/inspection result, not a confirmed field diagnosis.");
