@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const nativePath = join(process.cwd(), "src/services/liveVoiceSession.ts");
-const webPath = join(process.cwd(), "src/services/liveVoiceSession.web.ts");
+const nativePath = join(__dirname, "../../src/services/liveVoiceSession.ts");
+const webPath = join(__dirname, "../../src/services/liveVoiceSession.web.ts");
 
 function readSource(path: string): string {
   return readFileSync(path, "utf8");
