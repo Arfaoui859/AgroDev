@@ -41,6 +41,8 @@ export type SpecialistId =
   | "yield_intel"
   | "livestock"
   | "marketplace"
+  | "farm_tasks"
+  | "farm_equipment"
   | "advisor";
 
 export type StepStatus =
@@ -171,6 +173,8 @@ const TITLES: Record<SpecialistId, Record<Language, string>> = {
   yield_intel: { ar: "ذكاء المردود", fr: "Intelligence de rendement", en: "Yield intelligence" },
   livestock: { ar: "المواشي والصحة الحيوانية", fr: "Bétail et santé animale", en: "Livestock & veterinary" },
   marketplace: { ar: "السوق التجاري", fr: "Intelligence commerciale", en: "Marketplace intelligence" },
+  farm_tasks: { ar: "مهام المزرعة", fr: "Tâches de l'exploitation", en: "Farm tasks" },
+  farm_equipment: { ar: "المعدّات والصيانة", fr: "Équipements et maintenance", en: "Farm equipment" },
   advisor: { ar: "المستشار الزراعي العام", fr: "Conseiller agricole général", en: "General agricultural advisor" },
 };
 
@@ -740,6 +744,44 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         isRealData: false,
         confidence: "medium",
         note: "Your own persisted listings/inquiries. Not a verified market price; verify before a commercial commitment.",
+      };
+    },
+  },
+  {
+    id: "farm_tasks",
+    title: TITLES.farm_tasks,
+    dependsOn: [],
+    keywords: /(مهام|مهمة|تاسكات|خدمة اليوم|شنو نعمل|شنوة نعمل|شنية نعمل|متأخرة|متأخر|موعد|جدول الأعمال|task|tasks|to.?do|overdue|deadline|tâche|planning|tache|mahem|mahma|chno na3mel)/i,
+    run: (ctx) => {
+      const records = (ctx.platformRecords ?? []).filter((r) => /^FARM TASK \[/.test(r));
+      if (!records.length) return {
+        status: "unavailable", findings: [], dataSource: null, isRealData: false,
+        confidence: "unknown",
+        note: "No saved farm tasks were available in the verified account context. Do not invent tasks or deadlines.",
+      };
+      return {
+        status: "ok", findings: records.slice(0, 10), dataSource: "persisted-records",
+        isRealData: false, confidence: "high",
+        note: "These are saved task records. Compare due_date with today's date before calling a task overdue; cancelled/completed tasks are not pending work.",
+      };
+    },
+  },
+  {
+    id: "farm_equipment",
+    title: TITLES.farm_equipment,
+    dependsOn: [],
+    keywords: /(معدات|معدّات|جرار|تراكتور|آلة|الات|آلات|مضخة|مضخات|صيانة|عطب|معطبة|équipement|matériel|tracteur|machine|pompe|maintenance|equipment|machinery|tractor|pump|repair|siyena|matériel)/i,
+    run: (ctx) => {
+      const records = (ctx.platformRecords ?? []).filter((r) => /^FARM EQUIPMENT \[/.test(r));
+      if (!records.length) return {
+        status: "unavailable", findings: [], dataSource: null, isRealData: false,
+        confidence: "unknown",
+        note: "No saved farm equipment was available in the verified account context. Do not assume an equipment inventory or maintenance history.",
+      };
+      return {
+        status: "ok", findings: records.slice(0, 10), dataSource: "persisted-records",
+        isRealData: false, confidence: "medium",
+        note: "Equipment condition/status comes from the saved register. The current schema does not provide maintenance history or a service schedule.",
       };
     },
   },
