@@ -25,7 +25,7 @@ describe("Gemini Live voice contract", () => {
 
   it("keeps native and web function declarations in sync", () => {
     expect(declaredTools(nativeSource)).toEqual(declaredTools(webSource));
-    expect(declaredTools(nativeSource)).toHaveLength(12);
+    expect(declaredTools(nativeSource)).toHaveLength(13);
   });
 
   it("has a client handler for every declared tool", () => {
@@ -53,6 +53,8 @@ describe("Gemini Live voice contract", () => {
       expect(source).toContain("personalMemoryContext");
       expect(source).toContain("remember_user_memory");
       expect(source).toContain("forget_user_memory");
+      expect(source).toContain("consult_agrogrowth_platform");
+      expect(source).toContain("/api/ai/assistant/chat");
       expect(source).toContain("لا تستنتج قيماً ناقصة");
     }
   });
