@@ -855,6 +855,7 @@ export class LiveVoiceSession {
 
         const result = await apiRequest<any>("/api/ai/assistant/chat", {
           method: "POST",
+          timeoutMs: 90_000,
           body: JSON.stringify({
             message: question,
             language,
