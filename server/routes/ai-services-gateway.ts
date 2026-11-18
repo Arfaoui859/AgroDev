@@ -1184,7 +1184,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
           const selectedFarm = farms.length === 1
             ? farms[0]
             : namedFarmMatches.length === 1 ? namedFarmMatches[0] : null;
-          const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, forecastResult, sensorResult, satelliteResult] = await Promise.all([
+          const [cropResult, soilResult, alertsResult, sectionsResult, diseaseResult, weatherResult, forecastResult, sensorResult, satelliteResult, expensesResult, revenuesResult, tasksResult, equipmentResult] = await Promise.all([
             db.from("crop_cultivations")
               .select("id,farm_id,section_id,crop_name,crop_variety,status,planting_date,expected_harvest_date,current_growth_stage,irrigation_method,fertilizer_plan,pesticide_plan,area_hectares,estimated_yield,total_cost,revenue,profit,updated_at")
               .in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(12),
@@ -1214,6 +1214,10 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             db.from("satellite_observations")
               .select("farm_id,index_name,mean_value,min_value,max_value,observed_from,observed_to,provider,sample_count,no_data_count")
               .in("farm_id", farmIds).order("observed_to", { ascending: false }).limit(10),
+            db.from("farm_expenses").select("id,farm_id,cultivation_id,category,subcategory,amount,currency,expense_date,description,crop_related,payment_method,supplier").eq("user_id", userId).in("farm_id", farmIds).order("expense_date", { ascending: false }).limit(30),
+            db.from("farm_revenues").select("id,farm_id,cultivation_id,crop_related,amount,currency,revenue_date,description,quantity,unit,buyer,payment_status,variety_name,unit_price,quality_grade,harvest_date,transportation_cost,marketing_cost").eq("user_id", userId).in("farm_id", farmIds).order("revenue_date", { ascending: false }).limit(30),
+            db.from("farm_tasks").select("id,farm_id,title,description,task_type,priority,status,due_date,completed_at,created_at").in("farm_id", farmIds).order("due_date", { ascending: true }).limit(30),
+            db.from("farm_equipment").select("id,farm_id,name,category,brand,model,condition,status,updated_at").in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(20),
           ]);
           const sensorIds = (sensorResult.data ?? []).map((sensor: any) => sensor.id).filter(Boolean);
           const sensorReadingsResult = sensorIds.length
@@ -1332,6 +1336,20 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             for (const reading of (sensorReadingsResult.error ? [] : sensorReadingsResult.data ?? [])) {
               const device = (sensorResult.data ?? []).find((item: any) => item.id === reading.device_id);
               platformRecords.push("Stored sensor reading [sensor_type=" + (device?.device_type || "unknown") + "; reading=" + reading.reading_type + "; value=" + reading.value + " " + reading.unit + "; quality=" + (reading.quality_indicator || "unreported") + "; recorded_at=" + reading.recorded_at + "; farm_id=" + (device?.farm_id || "unknown") + "; section_id=" + (device?.section_id || "unlinked") + "]. Stored telemetry record; not necessarily current.");
+            }
+            // Finance, task and equipment ledgers are real user-entered records.
+            // Keep transaction rows separate; never infer missing totals or profit.
+            for (const expense of (expensesResult.error ? [] : expensesResult.data ?? [])) {
+              platformRecords.push("FARM FINANCE expense [farm_id=" + expense.farm_id + "; category=" + expense.category + "; subcategory=" + (expense.subcategory || "none") + "; amount=" + expense.amount + " " + (expense.currency || "TND") + "; date=" + expense.expense_date + "; crop=" + (expense.crop_related || "not linked") + "; description=" + String(expense.description || "").slice(0, 180) + "; supplier=" + (expense.supplier || "not recorded") + "; payment_method=" + (expense.payment_method || "not recorded") + "; cultivation_id=" + (expense.cultivation_id || "not linked") + "; record_id=" + expense.id + "]. User-entered expense record, not independently audited.");
+            }
+            for (const revenue of (revenuesResult.error ? [] : revenuesResult.data ?? [])) {
+              platformRecords.push("FARM FINANCE revenue [farm_id=" + revenue.farm_id + "; crop=" + (revenue.crop_related || "not linked") + "; amount=" + revenue.amount + " " + (revenue.currency || "TND") + "; date=" + revenue.revenue_date + "; quantity=" + (revenue.quantity ?? "not recorded") + " " + (revenue.unit || "") + "; unit_price=" + (revenue.unit_price ?? "not recorded") + "; buyer=" + (revenue.buyer || "not recorded") + "; payment_status=" + (revenue.payment_status || "not recorded") + "; transport_cost=" + (revenue.transportation_cost ?? 0) + "; marketing_cost=" + (revenue.marketing_cost ?? 0) + "; harvest_date=" + (revenue.harvest_date || "not recorded") + "; cultivation_id=" + (revenue.cultivation_id || "not linked") + "; record_id=" + revenue.id + "]. User-entered revenue record; distinguish received from pending payments.");
+            }
+            for (const task of (tasksResult.error ? [] : tasksResult.data ?? [])) {
+              platformRecords.push("FARM TASK [farm_id=" + task.farm_id + "; title=" + task.title + "; type=" + task.task_type + "; priority=" + task.priority + "; status=" + task.status + "; due_date=" + (task.due_date || "not scheduled") + "; completed_at=" + (task.completed_at || "not completed") + "; description=" + String(task.description || "").slice(0, 160) + "; task_id=" + task.id + "]. Persisted farm task; determine overdue only relative to current date.");
+            }
+            for (const item of (equipmentResult.error ? [] : equipmentResult.data ?? [])) {
+              platformRecords.push("FARM EQUIPMENT [farm_id=" + item.farm_id + "; name=" + item.name + "; category=" + item.category + "; brand=" + (item.brand || "not recorded") + "; model=" + (item.model || "not recorded") + "; condition=" + item.condition + "; status=" + item.status + "; updated_at=" + item.updated_at + "; equipment_id=" + item.id + "]. User equipment register; maintenance dates are not stored in this schema.");
             }
             const activeCultivations = (cropResult.data ?? []).filter((item: any) => item.status === "active" && (selectedFarm ? item.farm_id === selectedFarm.id : farms.length === 1));
             farmContext = {
