@@ -7,6 +7,7 @@ type LiveTokenResponse = {
   token: string;
   model: string;
   websocketUrl: string;
+  verifiedFarmContext?: string | null;
 };
 
 type VoiceCallbacks = {
@@ -90,6 +91,7 @@ export class LiveVoiceSession {
   private lastReplyId = 0;
   private apiToken: string | null = null;
   private personalMemoryContext = "";
+  private verifiedFarmContext = "";
   private websocketUrl: string | null = null;
   private model: string | null = null;
   private sessionHandle: string | null = null;
@@ -131,6 +133,9 @@ export class LiveVoiceSession {
     this.apiToken = tokenResult.data?.token ?? null;
     this.websocketUrl = tokenResult.data?.websocketUrl ?? null;
     this.model = tokenResult.data?.model ?? null;
+    this.verifiedFarmContext = typeof tokenResult.data?.verifiedFarmContext === "string"
+      ? tokenResult.data.verifiedFarmContext.slice(0, 3500)
+      : "";
     if (this.stopped) return;
     // Fail fast on token errors. Personal memory is optional and must never
     // delay the real-time voice handshake or consume the short token window.
@@ -242,7 +247,9 @@ export class LiveVoiceSession {
       setup: {
         model: this.model,
         systemInstruction: {
-          parts: [{ text: AGROVIBE_LIVE_SYSTEM_INSTRUCTION + (this.personalMemoryContext ? "\n\nذاكرة المستخدم المحفوظة من حسابه (استعملها عند الحاجة، وهي ليست بيانات مباشرة). إذا صرّح المستخدم بمعلومة ثابتة أو تفضيل تواصل بوضوح، احفظها عبر remember_user_memory من غير تخمين. لا تحفظ بيانات حساسة أو مؤقتة. إذا طلب نسيان معلومة، استعمل forget_user_memory. لا تقل إنك حفظت أو نسيت إلا بعد نجاح الأداة:\n" + this.personalMemoryContext : "") }],
+          parts: [{ text: AGROVIBE_LIVE_SYSTEM_INSTRUCTION
+            + (this.verifiedFarmContext ? "\n\nسياق فلاحي موثّق من حساب المستخدم الحالي، محمّل من الخادم بعد التحقق من هويته ومقيّد بمزارعه فقط. استعمله للإجابة عن أسئلة المزارع والحقول والزراعات ونتائج التربة، وميّز السجلات القديمة عن الظروف الحالية. هذه بيانات محفوظة وليست قياسات مباشرة. إذا تعددت المزارع أو الحقول اسأل أيّها يقصد. لا تستنتج قيماً ناقصة.\n" + this.verifiedFarmContext : "")
+            + (this.personalMemoryContext ? "\n\nذاكرة المستخدم المحفوظة من حسابه (استعملها عند الحاجة، وهي ليست بيانات مباشرة). إذا صرّح المستخدم بمعلومة ثابتة أو تفضيل تواصل بوضوح، احفظها عبر remember_user_memory من غير تخمين. لا تحفظ بيانات حساسة أو مؤقتة. إذا طلب نسيان معلومة، استعمل forget_user_memory. لا تقل إنك حفظت أو نسيت إلا بعد نجاح الأداة:\n" + this.personalMemoryContext : "") }],
         },
         tools: [{
           functionDeclarations: [
