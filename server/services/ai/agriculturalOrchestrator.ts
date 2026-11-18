@@ -635,9 +635,13 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     dependsOn: [],
     keywords: /(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|profit|cost|expense|budget|investment|finance|rentabilité|masrouf|rb7|rbe7|dakhil|mad5oul|9adeh sarfet|9adeh kallef|kلفة)/i,
     run: (ctx) => {
-      const withFigures = cultivationRecords(ctx).filter((r) =>
+      const cultivationFigures = cultivationRecords(ctx).filter((r) =>
         /(?:total_cost|revenue|profit)=(-?\d+(?:\.\d+)?)(?:;|\])/i.test(r),
       );
+      const ledgerFigures = (ctx.platformRecords ?? []).filter((r) =>
+        /^FARM FINANCE (?:expense|revenue) \[/.test(r),
+      );
+      const withFigures = [...ledgerFigures, ...cultivationFigures];
       if (withFigures.length === 0) {
         return {
           status: "unavailable",
@@ -645,7 +649,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
           dataSource: null,
           isRealData: false,
           confidence: "unknown",
-          note: "No numeric cost/revenue/profit records in context; figures are never invented.",
+          note: "No numeric finance ledger or cultivation records in context; figures are never invented.",
         };
       }
       return {
@@ -654,7 +658,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         dataSource: "persisted-records",
         isRealData: false,
         confidence: "medium",
-        note: "Figures come from user records; verify currency, period and method before an investment decision.",
+        note: "Figures come from saved user ledger/cultivation records. Expense and revenue transactions are distinct; pending revenue is not cash received. Verify period, currency and completeness before calculating profit or making an investment decision.",
       };
     },
   },
