@@ -1111,6 +1111,7 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         // report them as asking prices, never as official/average market prices.
         if (marketplaceListingsResult.error) {
           console.warn("[assistant] Marketplace listings lookup skipped:", marketplaceListingsResult.error.code);
+          basePlatformRecords.push("MARKETPLACE LISTING SOURCE STATUS [available=false]. Public listings could not be read; do not claim the marketplace has no offers.");
         } else {
           const restrictedPesticideText = /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|produit\s+phyto|مبيد|مبيدات|دواء\s+فلاحي|أدوية\s+فلاحية|ادوية\s+فلاحية/i;
           for (const listing of marketplaceListingsResult.data ?? []) {
