@@ -955,47 +955,71 @@ export const analyzeSupplyDemand = async (req: Request, res: Response) => {
 };
 
 // 🧠 SMART ASSISTANT ENDPOINTS
+// Health checks are shared across concurrent assistant requests and cached briefly.
+// This avoids waking all Render services on every chat turn while still refreshing
+// often enough for the agent's "what is working now?" questions.
+const ASSISTANT_HEALTH_CACHE_TTL_MS = 30_000;
+let assistantHealthCache: { key: string; expiresAt: number; facts: string[] } | null = null;
+let assistantHealthInFlight: Promise<string[]> | null = null;
+
 async function getAssistantServiceHealthFacts(): Promise<string[]> {
   const services = serviceRegistry();
-  const checks = await Promise.all(services.map(async (service) => {
-    if (!service.url) return service.nameAr + ": not_configured";
-    try {
-      const response = await axios.get(`${service.url}/health`, { timeout: 5000 });
-      const body = response.data && typeof response.data === "object" ? response.data : {};
-      const declared = body.model_source ?? body.modelSource ?? null;
-      const kind = classifyModelSource(typeof declared === "string" ? declared : null);
-      const declaredStatus = String(body.status ?? body.state ?? "").toLowerCase();
-      const explicitlyUnhealthy =
-        body.healthy === false ||
-        body.ready === false ||
-        body.ok === false ||
-        ["unhealthy", "failed", "error", "down", "not_ready"].includes(declaredStatus);
-      const degraded =
-        body.degraded === true ||
-        ["degraded", "partial", "warning"].includes(declaredStatus);
-      const serviceState = explicitlyUnhealthy
-        ? "unhealthy"
-        : degraded
-          ? "degraded"
-          : "available";
-      return service.nameAr + ": " + serviceState + "; model_kind=" + kind +
-        "; health_http=" + response.status +
-        (declaredStatus ? "; declared_status=" + declaredStatus : "") +
-        "; response=health_endpoint";
-    } catch (error) {
-      const statusCode = (error as AxiosError)?.response?.status;
-      return service.nameAr + ": " + (statusCode === 429
-        ? "rate_limited_reachability_unverified"
-        : statusCode
-          ? "health_http_error_" + statusCode
-          : "unavailable");
-    }
-  }));
-  return [
-    "LIVE AI SERVICE HEALTH SNAPSHOT (checked now; available means /health responded and did not declare unhealthy; this does not validate agronomic output quality):",
-    ...checks,
-    "Do not describe rule-based or synthetic services as trained ML models. Never expose service URLs.",
-  ];
+  const cacheKey = services.map((service) => `${service.id ?? service.nameAr}=${service.url || "not-configured"}`).join("|");
+  const now = Date.now();
+  if (assistantHealthCache && assistantHealthCache.key === cacheKey && assistantHealthCache.expiresAt > now) {
+    return [...assistantHealthCache.facts, "Health snapshot cache age: under 30 seconds."];
+  }
+  if (assistantHealthInFlight) return assistantHealthInFlight;
+
+  assistantHealthInFlight = (async () => {
+    const checks = await Promise.all(services.map(async (service) => {
+      if (!service.url) return service.nameAr + ": not_configured";
+      try {
+        const response = await axios.get(`${service.url}/health`, { timeout: 5000 });
+        const body = response.data && typeof response.data === "object" ? response.data : {};
+        const declared = body.model_source ?? body.modelSource ?? null;
+        const kind = classifyModelSource(typeof declared === "string" ? declared : null);
+        const declaredStatus = String(body.status ?? body.state ?? "").toLowerCase();
+        const explicitlyUnhealthy =
+          body.healthy === false ||
+          body.ready === false ||
+          body.ok === false ||
+          ["unhealthy", "failed", "error", "down", "not_ready"].includes(declaredStatus);
+        const degraded =
+          body.degraded === true ||
+          ["degraded", "partial", "warning"].includes(declaredStatus);
+        const serviceState = explicitlyUnhealthy
+          ? "unhealthy"
+          : degraded
+            ? "degraded"
+            : "available";
+        return service.nameAr + ": " + serviceState + "; model_kind=" + kind +
+          "; health_http=" + response.status +
+          (declaredStatus ? "; declared_status=" + declaredStatus : "") +
+          "; response=health_endpoint";
+      } catch (error) {
+        const statusCode = (error as AxiosError)?.response?.status;
+        return service.nameAr + ": " + (statusCode === 429
+          ? "rate_limited_reachability_unverified"
+          : statusCode
+            ? "health_http_error_" + statusCode
+            : "unavailable");
+      }
+    }));
+    return [
+      "LIVE AI SERVICE HEALTH SNAPSHOT (checked within the last 30 seconds; available means /health responded and did not declare unhealthy; this does not validate inference or agronomic output quality):",
+      ...checks,
+      "Do not describe rule-based or synthetic services as trained ML models. Never expose service URLs.",
+    ];
+  })();
+
+  try {
+    const facts = await assistantHealthInFlight;
+    assistantHealthCache = { key: cacheKey, expiresAt: Date.now() + ASSISTANT_HEALTH_CACHE_TTL_MS, facts };
+    return facts;
+  } finally {
+    assistantHealthInFlight = null;
+  }
 }
 
 export const chatWithAIAssistant = async (req: Request, res: Response) => {
