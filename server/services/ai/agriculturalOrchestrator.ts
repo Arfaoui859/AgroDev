@@ -201,7 +201,7 @@ function cultivationRecords(ctx: OrchestratorContext): string[] {
 
 function weatherRecords(ctx: OrchestratorContext): string[] {
   return (ctx.platformRecords ?? []).filter((r) =>
-    /^(LIVE WEATHER FROM OPEN-METEO|Recorded weather|Stored weather forecast)/.test(r),
+    /^(LIVE WEATHER FROM (?:OPEN-METEO|WEATHERAPI\\.COM)|Recorded weather|Stored weather forecast)/i.test(r),
   );
 }
 
@@ -363,7 +363,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     dependsOn: [],
     keywords: /(طقس|توقعات|مطر|امطار|أمطار|حرارة|سخانة|برد|ري|weather|météo|irrigation|arrosage|meteo|matar|mtar|ta9s|ta9es|t9s|skhouna|s5ana|bard|berd|jaw|jew|ri7|rri7|nrawi|ndvi|قمر صناعي)/i,
     run: (ctx) => {
-      const hasLive = weatherRecords(ctx).some((r) => /^LIVE WEATHER FROM OPEN-METEO/.test(r));
+      const hasLive = weatherRecords(ctx).some((r) => /^LIVE WEATHER FROM (?:OPEN-METEO|WEATHERAPI\\.COM)/i.test(r));
       if (ctx.temperature === undefined && ctx.rainfall === undefined && weatherRecords(ctx).length === 0) {
         return {
           status: "insufficient_input",
