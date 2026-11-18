@@ -1214,8 +1214,8 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             db.from("satellite_observations")
               .select("farm_id,index_name,mean_value,min_value,max_value,observed_from,observed_to,provider,sample_count,no_data_count")
               .in("farm_id", farmIds).order("observed_to", { ascending: false }).limit(10),
-            db.from("farm_expenses").select("id,farm_id,cultivation_id,category,subcategory,amount,currency,expense_date,description,crop_related,payment_method,supplier").eq("user_id", userId).in("farm_id", farmIds).order("expense_date", { ascending: false }).limit(30),
-            db.from("farm_revenues").select("id,farm_id,cultivation_id,crop_related,amount,currency,revenue_date,description,quantity,unit,buyer,payment_status,variety_name,unit_price,quality_grade,harvest_date,transportation_cost,marketing_cost").eq("user_id", userId).in("farm_id", farmIds).order("revenue_date", { ascending: false }).limit(30),
+            db.from("farm_expenses").select("id,farm_id,cultivation_id,category,subcategory,amount,currency,expense_date,description,crop_related,payment_method,supplier").eq("user_id", userId).order("expense_date", { ascending: false }).limit(30),
+            db.from("farm_revenues").select("id,farm_id,cultivation_id,crop_related,amount,currency,revenue_date,description,quantity,unit,buyer,payment_status,variety_name,unit_price,quality_grade,harvest_date,transportation_cost,marketing_cost").eq("user_id", userId).order("revenue_date", { ascending: false }).limit(30),
             db.from("farm_tasks").select("id,farm_id,title,description,task_type,priority,status,due_date,completed_at,created_at").in("farm_id", farmIds).order("due_date", { ascending: true }).limit(30),
             db.from("farm_equipment").select("id,farm_id,name,category,brand,model,condition,status,updated_at").in("farm_id", farmIds).order("updated_at", { ascending: false }).limit(20),
           ]);
