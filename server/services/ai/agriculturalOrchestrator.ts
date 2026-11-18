@@ -44,6 +44,8 @@ export type SpecialistId =
   | "farm_tasks"
   | "farm_equipment"
   | "monitoring"
+  | "supply_chain"
+  | "logistics"
   | "advisor";
 
 export type StepStatus =
@@ -177,6 +179,8 @@ const TITLES: Record<SpecialistId, Record<Language, string>> = {
   farm_tasks: { ar: "مهام المزرعة", fr: "Tâches de l'exploitation", en: "Farm tasks" },
   farm_equipment: { ar: "المعدّات والصيانة", fr: "Équipements et maintenance", en: "Farm equipment" },
   monitoring: { ar: "المراقبة والتنبيهات", fr: "Surveillance et alertes", en: "Monitoring & alerts" },
+  supply_chain: { ar: "تتبّع سلسلة التوريد", fr: "Traçabilité de la chaîne d'approvisionnement", en: "Supply-chain traceability" },
+  logistics: { ar: "النقل واللوجستيك", fr: "Transport et logistique", en: "Transport & logistics" },
   advisor: { ar: "المستشار الزراعي العام", fr: "Conseiller agricole général", en: "General agricultural advisor" },
 };
 
@@ -830,6 +834,36 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         dataSource: "persisted-records", isRealData: false,
         confidence: "medium",
         note: "These are saved app records, not a guarantee of live sensor connectivity. Stored priority is not an independently assessed risk; satellite data is periodic, not continuous.",
+      };
+    },
+  },
+  {
+    id: "supply_chain",
+    title: TITLES.supply_chain,
+    dependsOn: [],
+    keywords: /(سلسلة التوريد|سلسلة الإمداد|تتبع الدفعات|تتبع المنتوج|تتبع المنتج|رقم الدفعة|دفعة|batch tracking|traceability|supply.?chain|lot tracking|traçabilité|chaine d.?approvisionnement|chaîne d.?approvisionnement)/i,
+    run: (ctx) => {
+      const status = (ctx.platformRecords ?? []).find((r) => r.startsWith("SUPPLY CHAIN CAPABILITY STATUS"));
+      return {
+        status: "unavailable",
+        findings: status ? [status] : [],
+        dataSource: null, isRealData: false, confidence: "unknown",
+        note: "Batch traceability and verified transport/quality events are not connected to persistent storage. Never invent a batch location, custody event, certificate or delivery status.",
+      };
+    },
+  },
+  {
+    id: "logistics",
+    title: TITLES.logistics,
+    dependsOn: [],
+    keywords: /(لوجستيك|نقل|شحن|توصيل|شاحنة|شاحنات|مركبة|مركبات|مسار التوصيل|موعد الوصول|تتبع الشحنة|logistics|transport|shipment|delivery|truck|vehicle|route optimization|eta|livraison|camion|expédition|expedition)/i,
+    run: (ctx) => {
+      const status = (ctx.platformRecords ?? []).find((r) => r.startsWith("LOGISTICS CAPABILITY STATUS"));
+      return {
+        status: "unavailable",
+        findings: status ? [status] : [],
+        dataSource: null, isRealData: false, confidence: "unknown",
+        note: "Verified vehicle, shipment, route and delivery records are not connected. Never invent vehicle availability, GPS position, route or ETA.",
       };
     },
   },
