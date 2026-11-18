@@ -813,7 +813,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         /^(USER NOTIFICATION|Registered sensor|Stored sensor reading|Saved satellite observation|Saved plant-health record)/.test(r),
       );
       const sourceFailures = (ctx.platformRecords ?? []).filter((r) =>
-        /^(NOTIFICATION|SENSOR|SATELLITE) SOURCE STATUS/.test(r),
+        /^(NOTIFICATION|SENSOR|SATELLITE|PLANT HEALTH) SOURCE STATUS/.test(r),
       );
       if (!records.length && sourceFailures.length) return {
         status: "unavailable", findings: sourceFailures, dataSource: null,
