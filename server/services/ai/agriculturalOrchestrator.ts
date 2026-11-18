@@ -363,7 +363,9 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     dependsOn: [],
     keywords: /(طقس|توقعات|مطر|امطار|أمطار|حرارة|سخانة|برد|ري|weather|météo|irrigation|arrosage|meteo|matar|mtar|ta9s|ta9es|t9s|skhouna|s5ana|bard|berd|jaw|jew|ri7|rri7|nrawi|ndvi|قمر صناعي)/i,
     run: (ctx) => {
-      const hasLive = weatherRecords(ctx).some((r) => /^LIVE WEATHER FROM (?:OPEN-METEO|WEATHERAPI\.COM)/i.test(r));
+      const liveWeatherRecord = weatherRecords(ctx).find((r) => /^LIVE WEATHER FROM (?:OPEN-METEO|WEATHERAPI\.COM)/i.test(r));
+      const hasLive = Boolean(liveWeatherRecord);
+      const liveWeatherProvider = liveWeatherRecord?.match(/^LIVE WEATHER FROM ([^ ]+)/i)?.[1]?.toLowerCase() ?? null;
       if (ctx.temperature === undefined && ctx.rainfall === undefined && weatherRecords(ctx).length === 0) {
         return {
           status: "insufficient_input",
@@ -381,7 +383,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
       return {
         status: "ok",
         findings,
-        dataSource: hasLive ? "open-meteo" : "persisted-records",
+        dataSource: hasLive ? (liveWeatherProvider === "weatherapi.com" ? "weatherapi.com" : "open-meteo") : "persisted-records",
         isRealData: hasLive,
         confidence: hasLive ? "high" : "medium",
       };
