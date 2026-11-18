@@ -969,7 +969,9 @@ export class LiveVoiceSession {
       const samples = base64ToPcm(base64Audio);
       if (!samples.length) return;
       const buffer = this.audioContext.createBuffer(1, samples.length, OUTPUT_RATE);
-      buffer.copyToChannel(samples, 0);
+      const channelSamples = new Float32Array(samples.length);
+      channelSamples.set(samples);
+      buffer.copyToChannel(channelSamples, 0);
       const source = this.audioContext.createBufferSource();
       source.buffer = buffer;
       source.connect(this.audioContext.destination);
