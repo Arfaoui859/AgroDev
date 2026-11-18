@@ -727,9 +727,16 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "marketplace",
     title: TITLES.marketplace,
     dependsOn: [],
-    keywords: /(تسويق|بيع المحصول|شراء محصول|سوق زراعي|مزاد|marketplace|commercialis|vente|achat|fournisseur|acheteur|listing|nbi3|nchri|bii3|chri|3ard|3roud|annonce|vendeur|matloub|bch nbi3|bch nechri)/i,
+    keywords: /(تسويق|بيع المحصول|شراء محصول|سوق زراعي|مزاد|طلب شراء|طلبات الشراء|استفسار|استفسارات|رسالة بائع|رسالة مشتري|وصلني طلب|عندي طلب|نرد على المشتري|marketplace|inquiry|inquiries|buyer request|seller message|commercialis|vente|achat|fournisseur|acheteur|listing|nbi3|nchri|bii3|chri|3ard|3roud|annonce|vendeur|matloub|bch nbi3|bch nechri|talab chra|talab chira|estifsar)/i,
     run: (ctx) => {
       const records = marketplaceRecords(ctx);
+      if (records.some((r) => r.startsWith("MARKETPLACE LISTING SOURCE STATUS") || r.startsWith("MARKETPLACE INQUIRY SOURCE STATUS"))) {
+        return {
+          status: "unavailable", findings: records.filter((r) => r.includes("SOURCE STATUS")),
+          dataSource: null, isRealData: false, confidence: "unknown",
+          note: "One or more Marketplace sources could not be read. Do not interpret missing records as an empty marketplace or an absence of buyer/seller inquiries.",
+        };
+      }
       if (records.length === 0) {
         return {
           status: "unavailable",
