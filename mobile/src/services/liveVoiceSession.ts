@@ -463,7 +463,8 @@ export class LiveVoiceSession {
       this.callbacks.onError?.(
         error instanceof Error ? error.message : "تعذّرت استعادة الاتصال الصوتي.",
       );
-      void this.stop();
+      // Exhausted reconnect attempts must remain retryable, not look user-ended.
+      void this.stop("error");
     }
   }
 
