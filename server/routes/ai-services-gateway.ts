@@ -1077,10 +1077,10 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
         if (marketplaceListingsResult.error) {
           console.warn("[assistant] Marketplace listings lookup skipped:", marketplaceListingsResult.error.code);
         } else {
-          const restrictedPesticideText = /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|produit\\s+phyto|مبيد|مبيدات|دواء\\s+فلاحي|أدوية\\s+فلاحية|ادوية\\s+فلاحية/i;
+          const restrictedPesticideText = /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|produit\s+phyto|مبيد|مبيدات|دواء\s+فلاحي|أدوية\s+فلاحية|ادوية\s+فلاحية/i;
           for (const listing of marketplaceListingsResult.data ?? []) {
             if (listing.listing_type === "agricultural_input" && restrictedPesticideText.test(String(listing.title ?? "") + " " + String(listing.category ?? ""))) continue;
-            const clean = (value: unknown, max = 100) => String(value ?? "").replace(/[\\r\\n\\t]+/g, " ").replace(/\\s+/g, " ").trim().slice(0, max);
+            const clean = (value: unknown, max = 100) => String(value ?? "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
             const priceText = listing.price === null || listing.price === undefined ? "price not listed" : clean(listing.price, 24) + " " + clean(listing.currency || "TND", 5) + (listing.unit ? "/" + clean(listing.unit, 24) : "");
             basePlatformRecords.push(
               "MARKETPLACE published seller offer [title=" + clean(listing.title, 120) +
