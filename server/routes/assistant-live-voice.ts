@@ -200,6 +200,10 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       token: payload.name,
       model: GEMINI_LIVE_MODEL,
       websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained",
+      // Caller-scoped context is loaded only from the verified JWT and is
+      // already wrapped as untrusted data. The client adds it to the Live
+      // system instruction; never return it for anonymous/unverified callers.
+      verifiedFarmContext: _req.identitySource === "jwt" ? farmContext : null,
       expiresInSeconds: 1800,
       singleUse: false,
       maxConnections: 5,
