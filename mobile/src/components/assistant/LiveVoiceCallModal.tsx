@@ -136,10 +136,13 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
       await session.start();
     } catch (reason) {
       if (sessionRef.current !== session || !visible) return;
-      setState("error");
-      setError(reason instanceof Error ? reason.message : copyText.error);
-      await session.stop();
+      const message = reason instanceof Error ? reason.message : copyText.error;
+      await session.stop("error");
       sessionRef.current = null;
+      // stop() performs cleanup; apply the failure state afterwards so its
+      // final callback cannot turn a failed startup into "Conversation ended".
+      setState("error");
+      setError(message);
     }
   };
 
