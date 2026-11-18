@@ -639,6 +639,9 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     dependsOn: [],
     keywords: /(ربح|ربحية|تكلفة|مصاريف|ميزانية|استثمار|تمويل|مردودية|دخل|مدخول|مداخيل|صرفت|صرف|قداش صرفت|قداش دخلت|profit|cost|expense|expenses|revenue|revenues|income|budget|investment|finance|rentabilité|dépense|revenu|masrouf|rb7|rbe7|dakhil|mad5oul|9adeh sarfet|9adeh kallef|9adeh d5al|kلفة)/i,
     run: (ctx) => {
+      if ((ctx.platformRecords ?? []).some((r) => r.startsWith("FARM FINANCE SOURCE STATUS"))) {
+        return { status: "unavailable", findings: [], dataSource: null, isRealData: false, confidence: "unknown", note: "The finance ledger could not be read; no conclusion about missing transactions can be made." };
+      }
       const cultivationFigures = cultivationRecords(ctx).filter((r) =>
         /(?:total_cost|revenue|profit)=(-?\d+(?:\.\d+)?)(?:;|\])/i.test(r),
       );
@@ -753,6 +756,9 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     dependsOn: [],
     keywords: /(مهام|مهمة|تاسكات|خدمة اليوم|شنو نعمل|شنوة نعمل|شنية نعمل|متأخرة|متأخر|موعد|جدول الأعمال|task|tasks|to.?do|overdue|deadline|tâche|planning|tache|mahem|mahma|chno na3mel)/i,
     run: (ctx) => {
+      if ((ctx.platformRecords ?? []).some((r) => r.startsWith("FARM TASK SOURCE STATUS"))) {
+        return { status: "unavailable", findings: [], dataSource: null, isRealData: false, confidence: "unknown", note: "The farm-task table could not be read; do not claim the account has no tasks." };
+      }
       const records = (ctx.platformRecords ?? []).filter((r) => /^FARM TASK \[/.test(r));
       if (!records.length) return {
         status: "unavailable", findings: [], dataSource: null, isRealData: false,
@@ -772,6 +778,9 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     dependsOn: [],
     keywords: /(معدات|معدّات|جرار|تراكتور|آلة|الات|آلات|مضخة|مضخات|صيانة|عطب|معطبة|équipement|matériel|tracteur|machine|pompe|maintenance|equipment|machinery|tractor|pump|repair|siyena|matériel)/i,
     run: (ctx) => {
+      if ((ctx.platformRecords ?? []).some((r) => r.startsWith("FARM EQUIPMENT SOURCE STATUS"))) {
+        return { status: "unavailable", findings: [], dataSource: null, isRealData: false, confidence: "unknown", note: "The equipment register could not be read; do not claim the account has no equipment." };
+      }
       const records = (ctx.platformRecords ?? []).filter((r) => /^FARM EQUIPMENT \[/.test(r));
       if (!records.length) return {
         status: "unavailable", findings: [], dataSource: null, isRealData: false,
