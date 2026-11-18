@@ -108,6 +108,25 @@ export class LiveVoiceSession {
 
     // Mint the one-use token only after permission is granted, because its
     // new-session window is intentionally short.
+    // Load optional personal memory in parallel with token creation. This
+    // removes a serial network round-trip from voice startup while keeping a
+    // strict timeout so a slow memory endpoint cannot block the call.
+    const memoryPromise = (async () => {
+      let memoryTimeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        return await Promise.race([
+          apiRequest<any>("/api/assistant/memory", { method: "GET" })
+            .then((result) => Array.isArray(result.data?.data) ? result.data.data : [])
+            .catch(() => []),
+          new Promise<any[]>((resolve) => {
+            memoryTimeout = setTimeout(() => resolve([]), 2500);
+          }),
+        ]);
+      } finally {
+        if (memoryTimeout) clearTimeout(memoryTimeout);
+      }
+    })();
+
     const tokenResult = await apiRequest<LiveTokenResponse>("/api/ai/assistant/live-token", {
       method: "POST",
       body: JSON.stringify({}),
@@ -119,21 +138,10 @@ export class LiveVoiceSession {
       ? tokenResult.data.verifiedFarmContext.slice(0, 3500)
       : "";
     if (this.stopped) return;
-    // Fail fast on token errors. Personal memory is optional and must never
-    // delay the real-time voice handshake or consume the short token window.
     if (tokenResult.error || !this.apiToken || !this.websocketUrl || !this.model) {
       throw new Error(tokenResult.error || "تعذّر بدء المكالمة الصوتية. حاول مجدداً.");
     }
-    let memoryTimeout: ReturnType<typeof setTimeout> | undefined;
-    const savedMemories = await Promise.race([
-      apiRequest<any>("/api/assistant/memory", { method: "GET" })
-        .then((result) => Array.isArray(result.data?.data) ? result.data.data : [])
-        .catch(() => []),
-      new Promise<any[]>((resolve) => {
-        memoryTimeout = setTimeout(() => resolve([]), 2500);
-      }),
-    ]);
-    if (memoryTimeout) clearTimeout(memoryTimeout);
+    const savedMemories = await memoryPromise;
     this.personalMemoryContext = savedMemories.map((item: any) =>
       `- ${String(item.category)}: ${String(item.memory_key)} = ${String(item.memory_value)}`
     ).join("\n").slice(0, 4500);
