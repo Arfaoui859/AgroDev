@@ -55,6 +55,7 @@ describe("Gemini Live voice contract", () => {
       expect(source).toContain("forget_user_memory");
       expect(source).toContain("consult_agrogrowth_platform");
       expect(source).toContain("/api/ai/assistant/chat");
+      expect(source).toContain("timeoutMs: 90_000");
       expect(source).toContain("لا تستنتج قيماً ناقصة");
     }
   });
