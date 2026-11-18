@@ -43,6 +43,7 @@ export type SpecialistId =
   | "marketplace"
   | "farm_tasks"
   | "farm_equipment"
+  | "monitoring"
   | "advisor";
 
 export type StepStatus =
@@ -175,6 +176,7 @@ const TITLES: Record<SpecialistId, Record<Language, string>> = {
   marketplace: { ar: "السوق التجاري", fr: "Intelligence commerciale", en: "Marketplace intelligence" },
   farm_tasks: { ar: "مهام المزرعة", fr: "Tâches de l'exploitation", en: "Farm tasks" },
   farm_equipment: { ar: "المعدّات والصيانة", fr: "Équipements et maintenance", en: "Farm equipment" },
+  monitoring: { ar: "المراقبة والتنبيهات", fr: "Surveillance et alertes", en: "Monitoring & alerts" },
   advisor: { ar: "المستشار الزراعي العام", fr: "Conseiller agricole général", en: "General agricultural advisor" },
 };
 
@@ -798,6 +800,36 @@ export const SPECIALISTS: SpecialistDefinition[] = [
         status: "ok", findings: records.slice(0, 10), dataSource: "persisted-records",
         isRealData: false, confidence: "medium",
         note: "Equipment condition/status comes from the saved register. The current schema does not provide maintenance history or a service schedule.",
+      };
+    },
+  },
+  {
+    id: "monitoring",
+    title: TITLES.monitoring,
+    dependsOn: [],
+    keywords: /(تنبيه|تنبيهات|إشعار|إشعارات|اشعار|اشعارات|إنذار|انذار|مراقبة|متابعة|حساس|حساسات|مستشعر|مستشعرات|قمر صناعي|ndvi|satellite|sensor|monitoring|alert|alerts|notification|notifications|surveillance|alerte|capteur|a3lem|tanbih|tanbihat)/i,
+    run: (ctx) => {
+      const records = (ctx.platformRecords ?? []).filter((r) =>
+        /^(USER NOTIFICATION|Registered sensor|Stored sensor reading|Saved satellite observation|Saved plant-health record)/.test(r),
+      );
+      const sourceFailures = (ctx.platformRecords ?? []).filter((r) =>
+        /^(NOTIFICATION|SENSOR|SATELLITE) SOURCE STATUS/.test(r),
+      );
+      if (!records.length && sourceFailures.length) return {
+        status: "unavailable", findings: sourceFailures, dataSource: null,
+        isRealData: false, confidence: "unknown",
+        note: "Monitoring data sources could not be read. Do not report that there are no alerts or devices.",
+      };
+      if (!records.length) return {
+        status: "insufficient_input", findings: [], dataSource: null,
+        isRealData: false, confidence: "unknown",
+        note: "No saved notification, sensor, satellite or plant-health records were supplied in the account context.",
+      };
+      return {
+        status: "ok", findings: [...records.slice(0, 12), ...sourceFailures],
+        dataSource: "persisted-records", isRealData: false,
+        confidence: "medium",
+        note: "These are saved app records, not a guarantee of live sensor connectivity. Stored priority is not an independently assessed risk; satellite data is periodic, not continuous.",
       };
     },
   },
