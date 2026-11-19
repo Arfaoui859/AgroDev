@@ -17,6 +17,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 describe("planSpecialists", () => {
+  test("recognises Tunisian Arabizi market-price wording", () => {
+    expect(planSpecialists("aswamat zitoun wla tmatem?")).toContain("market");
+  });
+
   test("only returns allow-listed registry ids", () => {
     const allowed = new Set(SPECIALISTS.map((s) => s.id));
     const plan = planSpecialists("nheb nzra3 tmatem fi torba w kifeh ns9i?");
