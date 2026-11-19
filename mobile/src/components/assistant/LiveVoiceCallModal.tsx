@@ -84,6 +84,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const [error, setError] = useState("");
   const sessionRef = useRef<LiveVoiceSession | null>(null);
   const levelRef = useRef(0);
+  const stateRef = useRef<LiveVoiceState | "ready">("ready");
   const copyText = copy(language);
   const isRtl = language === "ar";
 
@@ -102,10 +103,15 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   useEffect(() => {
     if (!visible) return;
     const subscription = AppState.addEventListener("change", (nextState) => {
-      if ((nextState === "background" || nextState === "inactive") && sessionRef.current) {
+      // Android can emit "background" while showing a system permission
+      // activity (notably the microphone permission prompt). Do not tear down
+      // a session while it is still connecting; that would turn a successful
+      // permission grant into an immediately-ended call.
+      if (nextState === "background" && sessionRef.current && stateRef.current !== "connecting") {
         const activeSession = sessionRef.current;
         sessionRef.current = null;
         void activeSession.stop().finally(() => {
+          stateRef.current = "ended";
           setState("ended");
           setLevel(0);
           levelRef.current = 0;
@@ -120,9 +126,13 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
     setError("");
     setLevel(0);
     levelRef.current = 0;
+    stateRef.current = "connecting";
     setState("connecting");
     const session = new LiveVoiceSession({
-      onState: setState,
+      onState: (nextState) => {
+        stateRef.current = nextState;
+        setState(nextState);
+      },
       onLevel: (nextLevel) => {
         if (Math.abs(nextLevel - levelRef.current) > 0.07) {
           levelRef.current = nextLevel;
@@ -141,6 +151,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
       sessionRef.current = null;
       // stop() performs cleanup; apply the failure state afterwards so its
       // final callback cannot turn a failed startup into "Conversation ended".
+      stateRef.current = "error";
       setState("error");
       setError(message);
     }
@@ -149,6 +160,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const end = async () => {
     await sessionRef.current?.stop();
     sessionRef.current = null;
+    stateRef.current = "ended";
     setState("ended");
     setLevel(0);
     levelRef.current = 0;
