@@ -938,8 +938,8 @@ export class LiveVoiceSession {
         if (typeof payload.conversationId === "string") this.platformConversationId = payload.conversationId;
         const updatedHistory: Array<{ role: "user" | "assistant"; content: string }> = [
           ...this.platformConversationHistory,
-          { role: "user", content: question },
-          { role: "assistant", content: answer.slice(0, 4000) },
+          { role: "user" as const, content: String(question) },
+          { role: "assistant" as const, content: String(answer).slice(0, 4000) },
         ].slice(-8);
         this.platformConversationHistory = updatedHistory;
         const traceSteps = Array.isArray(payload.orchestrationTrace?.steps)
