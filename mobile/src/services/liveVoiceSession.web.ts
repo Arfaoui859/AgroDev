@@ -802,14 +802,13 @@ export class LiveVoiceSession {
         };
         const normaliseCommodity = (value: unknown) => String(value ?? "")
           .toLocaleLowerCase().normalize("NFD")
-          .replace(/[\\u0300-\\u036f]/g, "")
+          .replace(/[\u0300-\u036f]/g, "")
           .replace(/[أإآٱ]/g, "ا").replace(/ة/g, "ه")
-          .replace(/[^\\p{L}\\p{N}]+/gu, " ").trim();
+          .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
         const normalizedRequest = normaliseCommodity(commodity);
-        const matchedAliases = Object.values(commodityAliases)
-          .flat()
-          .filter((alias) => normalizedRequest.includes(normaliseCommodity(alias)));
-        const matchTerms = matchedAliases.length ? matchedAliases : (commodity ? [commodity] : []);
+        const matchedAliasGroup = Object.values(commodityAliases)
+          .find((aliases) => aliases.some((alias) => normalizedRequest.includes(normaliseCommodity(alias))));
+        const matchTerms = matchedAliasGroup ?? (commodity ? [commodity] : []);
         const [listingResult, marketResult] = await Promise.all([
           apiRequest<any>(`/api/agro-market/listings?${listingQuery.toString()}`, { method: "GET" }),
           apiRequest<any>(`/api/agro-market/intelligence?period=${period}`, { method: "GET" }),
