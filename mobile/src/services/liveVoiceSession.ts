@@ -786,7 +786,29 @@ export class LiveVoiceSession {
         const requestedPeriod = Number(args.period);
         const period = [7, 30, 90].includes(requestedPeriod) ? requestedPeriod : 30;
         const listingQuery = new URLSearchParams({ limit: "50" });
-        if (commodity) listingQuery.set("q", commodity);
+        // Fetch a bounded listing page, then match commodity aliases locally.
+        // Sending Arabizi (e.g. "tmatem") as a server-side title query missed
+        // Arabic/French/English listings for the same crop.
+        const commodityAliases: Record<string, string[]> = {
+          tomato: ["طماطم", "مطيشة", "tomato", "tomatoes", "tomate", "tmatem", "maticha"],
+          olive: ["زيتون", "زيتونة", "زيت الزيتون", "olive", "olives", "olivier", "zitoun", "zitouna"],
+          potato: ["بطاطا", "بطاطس", "pomme de terre", "potato", "potatoes", "batata"],
+          pepper: ["فلفل", "فلفلة", "poivron", "piment", "pepper", "felfel"],
+          wheat: ["قمح", "قمح صلب", "blé", "ble", "wheat", "9amh"],
+          barley: ["شعير", "orge", "barley", "cha3ir"],
+          date: ["تمور", "تمر", "دقلة", "dates", "datte", "deglet nour", "tamr"],
+          citrus: ["حوامض", "برتقال", "ليمون", "قارس", "agrumes", "orange", "citrus", "limoun"],
+        };
+        const normaliseCommodity = (value: unknown) => String(value ?? "")
+          .toLocaleLowerCase().normalize("NFD")
+          .replace(/[\\u0300-\\u036f]/g, "")
+          .replace(/[أإآٱ]/g, "ا").replace(/ة/g, "ه")
+          .replace(/[^\\p{L}\\p{N}]+/gu, " ").trim();
+        const normalizedRequest = normaliseCommodity(commodity);
+        const matchedAliases = Object.values(commodityAliases)
+          .flat()
+          .filter((alias) => normalizedRequest.includes(normaliseCommodity(alias)));
+        const matchTerms = matchedAliases.length ? matchedAliases : (commodity ? [commodity] : []);
         const [listingResult, marketResult] = await Promise.all([
           apiRequest<any>(`/api/agro-market/listings?${listingQuery.toString()}`, { method: "GET" }),
           apiRequest<any>(`/api/agro-market/intelligence?period=${period}`, { method: "GET" }),
@@ -794,11 +816,13 @@ export class LiveVoiceSession {
         const listingPayload = listingResult.data;
         const allListings = Array.isArray(listingPayload?.data?.listings) ? listingPayload.data.listings : [];
         const productListings = allListings
-          .filter((item: any) =>
-            ["agricultural_product", "harvest"].includes(item.listing_type) &&
-            item.price !== null && item.price !== undefined && Number.isFinite(Number(item.price)) &&
-            (!commodity || String(item.title ?? "").toLocaleLowerCase().includes(commodity.toLocaleLowerCase()))
-          )
+          .filter((item: any) => {
+            const searchable = normaliseCommodity([item.title, item.harvest_crop, item.category].filter(Boolean).join(" "));
+            const commodityMatches = matchTerms.length === 0 || matchTerms.some((term) => searchable.includes(normaliseCommodity(term)));
+            return ["agricultural_product", "harvest"].includes(item.listing_type) &&
+              item.price !== null && item.price !== undefined &&
+              Number.isFinite(Number(item.price)) && commodityMatches;
+          })
           .slice(0, 15)
           .map((item: any) => ({
             title: item.title,
