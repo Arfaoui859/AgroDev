@@ -792,14 +792,25 @@ export class LiveVoiceSession {
         // Arabic/French/English listings for the same crop.
         const commodityAliases: Record<string, string[]> = {
           tomato: ["طماطم", "مطيشة", "tomato", "tomatoes", "tomate", "tmatem", "maticha"],
-          olive: ["زيتون", "زيتونة", "زيت الزيتون", "زيت زيتون", "زيت الزيتونة", "olive", "olives", "olive oil", "olivier", "huile d olive", "huile olive", "zitoun", "zitouna", "zit zitoun"],
+          // Keep olive fruit and olive oil separate: their market prices are not interchangeable.
+          olive_oil: ["زيت الزيتون", "زيت زيتون", "زيت الزيتونة", "olive oil", "huile d olive", "huile olive", "zit zitoun"],
+          olive: ["زيتون", "زيتونة", "olive", "olives", "olivier", "zitoun", "zitouna"],
           potato: ["بطاطا", "بطاطس", "pomme de terre", "potato", "potatoes", "batata"],
           pepper: ["فلفل", "فلفلة", "poivron", "piment", "pepper", "felfel"],
           wheat: ["قمح", "قمح صلب", "blé", "ble", "wheat", "9amh"],
           barley: ["شعير", "orge", "barley", "cha3ir"],
           date: ["تمور", "تمر", "دقلة", "dates", "datte", "deglet nour", "tamr"],
           citrus: ["حوامض", "برتقال", "ليمون", "قارس", "agrumes", "orange", "citrus", "limoun"],
-        };
+          onion: ["بصل", "بصلة", "oignon", "onion", "basal"],
+          garlic: ["ثوم", "توم", "ail", "garlic", "thoum"],
+          grape: ["عنب", "كرم", "raisin", "raisins", "grape", "grapes", "3neb"],
+          almond: ["لوز", "amande", "amandes", "almond", "almonds", "louze"],
+          fig: ["تين", "كرموس", "figue", "figues", "fig", "figs", "karmous"],
+          pomegranate: ["رمان", "grenade", "pomegranate", "rommen"],
+          strawberry: ["فراولة", "فريز", "fraise", "fraisier", "strawberry", "fraise"],
+          melon: ["دلاع", "بطيخ", "شمام", "melon", "watermelon", "pastèque", "pasteque"],
+          carrot: ["جزر", "carotte", "carrot", "زرودية", "zroudia"],
+        };;
         const normaliseCommodity = (value: unknown) => String(value ?? "")
           .toLocaleLowerCase().normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
