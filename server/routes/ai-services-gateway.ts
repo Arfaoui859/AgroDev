@@ -1271,22 +1271,18 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             const operationalAlerts = (alertsResult.error ? [] : (alertsResult.data ?? []))
               .filter((alert: any) => typeof alert.title === "string" && typeof alert.message === "string")
               .map((alert: any) => `[${alert.priority || "normal"}; ${alert.read_at ? "read" : "unread"}; category=${alert.category || "general"}] ${alert.title}: ${alert.message}`);
-            const marketCropNames = Array.from(new Set((cropResult.data ?? []).map((item: any) => item.crop_name).filter((name: any): name is string => typeof name === "string" && name.length > 0)));
-          const marketResult = marketCropNames.length
-            ? await db.from("market_prices")
-                .select("crop_name,variety,quality_grade,price_per_kg,currency,market_location,price_date,supply_level,demand_level,source")
-                .in("crop_name", marketCropNames)
-                .order("price_date", { ascending: false })
-                .limit(12)
-            : { data: [], error: null };
-          const marketPredictionsResult = marketCropNames.length
-            ? await db.from("market_predictions")
-                .select("crop_name,prediction_period,prediction_data,predicted_price_range,confidence_level,influencing_factors,valid_from,valid_until,created_at")
-                .in("crop_name", marketCropNames)
-                .gte("valid_until", new Date().toISOString().slice(0, 10))
-                .order("valid_from", { ascending: true })
-                .limit(8)
-            : { data: [], error: null };
+            // Market questions may concern a crop the user does not currently grow.
+          // Load a bounded public snapshot independent of the user's cultivation list;
+          // the market specialist filters it against the commodity in the question.
+          const marketResult = await db.from("market_prices")
+            .select("crop_name,variety,quality_grade,price_per_kg,currency,market_location,price_date,supply_level,demand_level,source")
+            .order("price_date", { ascending: false })
+            .limit(30);
+          const marketPredictionsResult = await db.from("market_predictions")
+            .select("crop_name,prediction_period,prediction_data,predicted_price_range,confidence_level,influencing_factors,valid_from,valid_until,created_at")
+            .gte("valid_until", new Date().toISOString().slice(0, 10))
+            .order("valid_from", { ascending: true })
+            .limit(20);
           const cultivationIds = (cropResult.data ?? []).map((item: any) => item.id).filter(Boolean);
           const leafHealthResult = cultivationIds.length
             ? await db.from("leaf_health_analyses")
@@ -1358,6 +1354,12 @@ export const chatWithAIAssistant = async (req: Request, res: Response) => {
             }
             for (const observation of (satelliteResult.error ? [] : satelliteResult.data ?? [])) {
               platformRecords.push("Saved satellite observation [farm_id=" + observation.farm_id + "; index=" + observation.index_name + "; mean=" + observation.mean_value + "; min=" + observation.min_value + "; max=" + observation.max_value + "; interval=" + observation.observed_from + " to " + observation.observed_to + "; provider=" + observation.provider + "; valid_pixels=" + observation.sample_count + "; no_data_pixels=" + observation.no_data_count + "]. Periodic satellite vegetation index, not live telemetry or a disease diagnosis.");
+            }
+            if (marketResult.error) {
+              platformRecords.push("MARKET PRICE SOURCE STATUS [available=false; error=" + String(marketResult.error.code || "read_failed") + "]. Stored market quotes could not be read; do not say the market has no prices.");
+            }
+            if (marketPredictionsResult.error) {
+              platformRecords.push("MARKET PREDICTION SOURCE STATUS [available=false; error=" + String(marketPredictionsResult.error.code || "read_failed") + "]. Stored forecasts could not be read; do not say there are no forecasts.");
             }
             for (const prediction of (marketPredictionsResult.error ? [] : marketPredictionsResult.data ?? [])) {
               const range = JSON.stringify(prediction.predicted_price_range ?? {}).slice(0, 250);
