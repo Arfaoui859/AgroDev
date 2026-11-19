@@ -6,7 +6,7 @@
 const CORRECTION_MARKERS = [
   /(?:لا\s*[،,]?\s*(?:الصحيح|موش|مش)|غلط|موش صحيح|مش صحيح|قصدي|نقصد|تصحيح|المعلومة الصحيحة)/i,
   /(?:no\\s*[,:]|that is wrong|correction:|i meant|not correct|the correct (?:answer|value|name) is)/i,
-  /(?:non\s*[,:]?\s*(?:c'est|ce n'est pas)|correction\s*:|je voulais dire|la bonne (?:réponse|valeur) est)/i,
+  /(?:non\\s*[,:]|je voulais dire|la bonne (?:réponse|valeur) est|correction\\s*:)/i,
 ];
 const AGRICULTURE_MARKERS = /(?:فلاحة|فلاح|ضيعة|مزرعة|حقل|محصول|زيتون|زيت|طماطم|مطيشة|قمح|تربة|ري|سقي|سماد|مرض|آفة|طقس|مطر|سعر|سوق|غراسة|زراعة|agri|farm|field|crop|olive|tomato|soil|irrigat|fertili[sz]|pest|disease|market price|harvest|plantation|sol|culture|irrigation|prix|récolte)/i;
 
