@@ -593,6 +593,13 @@ describe("planSpecialistsWithLLM (allow-list enforced, deterministic fallback)",
     expect(result.plan).toContain("crop");
   });
 
+  test("keeps keyword-matched market specialist even when the LLM planner omits it", async () => {
+    configureProvider('{"specialists":["advisor"]}');
+    const result = await planSpecialistsWithLLM("aswamat zitoun wla tmatem?");
+    expect(result.plannedBy).toBe("llm");
+    expect(result.plan).toContain("market");
+  });
+
   test("drops ids the model proposes that are not allow-listed and reports them", async () => {
     configureProvider('{"specialists":["crop","run_shell","delete_farm"]}');
     const result = await planSpecialistsWithLLM("ما أفضل محصول؟");
