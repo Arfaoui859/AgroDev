@@ -56,7 +56,7 @@
         "expo-camera",
         {
           "cameraPermission": "يطلب التطبيق استخدام الكاميرا لفحص المحاصيل والتقاط صور الأوراق مباشرة.",
-          "recordAudioAndroid": false
+          "recordAudioAndroid": true
         }
       ],
       [
