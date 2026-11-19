@@ -271,10 +271,10 @@ const MARKET_COMMODITY_ALIASES: Array<{ key: string; terms: string[] }> = [
 function normaliseMarketText(value: string): string {
   return value.toLocaleLowerCase()
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[أإآٱ]/g, "ا")
     .replace(/ة/g, "ه")
-    .replace(/[^\\p{L}\\p{N}]+/gu, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
 
