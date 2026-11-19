@@ -56,6 +56,8 @@ export type StepStatus =
   | "failed";
 
 export interface OrchestratorContext {
+  /** Original question, used only to match requested commodities against sourced records. */
+  question?: string;
   governorate?: string;
   crop?: string;
   farmSizeHectares?: number;
@@ -248,7 +250,46 @@ function livestockRecords(ctx: OrchestratorContext): string[] {
  * reports `unavailable` — it never fabricates a listing or a buyer.
  */
 function marketplaceRecords(ctx: OrchestratorContext): string[] {
-  return (ctx.platformRecords ?? []).filter((r) => /^MARKETPLACE/.test(r));
+  // Only public, published seller offers are market evidence. Never pass private
+  // buyer/seller inquiries into the market specialist's answer.
+  return (ctx.platformRecords ?? []).filter((r) =>
+    /^MARKETPLACE published seller offer /.test(r),
+  );
+}
+
+const MARKET_COMMODITY_ALIASES: Array<{ key: string; terms: string[] }> = [
+  { key: "tomato", terms: ["طماطم", "مطيشة", "مطیشة", "tomato", "tomatoes", "tomate", "tmatem", "maticha"] },
+  { key: "olive", terms: ["زيتون", "زيتونة", "زيت الزيتون", "olive", "olives", "olivier", "zitoun", "zitouna", "zaytoun"] },
+  { key: "potato", terms: ["بطاطا", "بطاطس", "pomme de terre", "potato", "potatoes", "batata"] },
+  { key: "pepper", terms: ["فلفل", "فلفلة", "poivron", "piment", "pepper", "felfel"] },
+  { key: "wheat", terms: ["قمح", "قمح صلب", "blé", "ble", "wheat", "9amh"] },
+  { key: "barley", terms: ["شعير", "orge", "barley", "cha3ir"] },
+  { key: "date", terms: ["تمور", "تمر", "دقلة", "dates", "datte", "deglet nour", "tamr"] },
+  { key: "citrus", terms: ["حوامض", "برتقال", "ليمون", "قارس", "agrumes", "orange", "citrus", "limoun"] },
+];
+
+function normaliseMarketText(value: string): string {
+  return value.toLocaleLowerCase()
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/[^\\p{L}\\p{N}]+/gu, " ")
+    .trim();
+}
+
+function requestedMarketTerms(question?: string): string[] {
+  if (!question) return [];
+  const q = normaliseMarketText(question);
+  return MARKET_COMMODITY_ALIASES
+    .filter((entry) => entry.terms.some((term) => q.includes(normaliseMarketText(term))))
+    .flatMap((entry) => [entry.key, ...entry.terms].map(normaliseMarketText));
+}
+
+function matchesRequestedCommodity(record: string, terms: string[]): boolean {
+  if (terms.length === 0) return true;
+  const value = normaliseMarketText(record);
+  return terms.some((term) => term.length > 1 && value.includes(term));
 }
 
 /**
@@ -514,35 +555,44 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     dependsOn: [],
     keywords: /(سعر|سوق|تصدير|price|marché|market|sou9|souq|sou3|prix|souma|soum|9adeh|9addech|ch7al|b9adeh|b9addeh)/i,
     run: (ctx) => {
-      const records = marketRecords(ctx);
-      if (records.length === 0) {
-        const sellerOffers = marketplaceRecords(ctx);
-        if (sellerOffers.length > 0) {
-          return {
-            status: "ok",
-            findings: sellerOffers.slice(0, 6),
-            dataSource: "marketplace-seller-listings",
-            isRealData: true,
-            confidence: "medium",
-            note: "These are current published seller asking prices from Marketplace, not official market observations, a market average, or a guaranteed transaction price. State the seller/location/quantity when available.",
-          };
-        }
+      const requestedTerms = requestedMarketTerms(ctx.question);
+      const records = marketRecords(ctx).filter((record) =>
+        matchesRequestedCommodity(record, requestedTerms),
+      );
+      const sellerOffers = marketplaceRecords(ctx).filter((record) =>
+        matchesRequestedCommodity(record, requestedTerms),
+      );
+      const findings = [
+        ...records.slice(0, 6),
+        ...sellerOffers.slice(0, Math.max(0, 6 - Math.min(records.length, 6))),
+      ];
+      if (findings.length === 0) {
         return {
           status: "unavailable",
           findings: [],
           dataSource: null,
           isRealData: false,
           confidence: "unknown",
-          note: "No dated, sourced market record or matching published seller offer was found. Prices are never invented.",
+          note: requestedTerms.length
+            ? "No dated market quote or published seller offer matching the requested commodity was found. Other commodities are deliberately excluded. Prices are never invented."
+            : "No dated, sourced market record or published seller offer was found. Prices are never invented.",
         };
       }
+      const hasMarketQuotes = records.length > 0;
+      const hasSellerOffers = sellerOffers.length > 0;
       return {
         status: "ok",
-        findings: records.slice(0, 6),
-        dataSource: "persisted-records",
-        isRealData: false,
+        findings,
+        dataSource: hasMarketQuotes && hasSellerOffers
+          ? "persisted-market-and-marketplace"
+          : hasMarketQuotes ? "persisted-records" : "marketplace-seller-listings",
+        isRealData: hasSellerOffers,
         confidence: "medium",
-        note: "Historical recorded market quotes, not guaranteed live prices. If seller offers are also available, keep them separate from these market observations.",
+        note: [
+          hasMarketQuotes ? "Recorded market quotes are historical observations; state their date, market and source and do not call them live." : "",
+          hasSellerOffers ? "Marketplace values are published seller asking prices, not official market observations, a market average or a completed transaction. State location, quantity and publication date when available." : "",
+          requestedTerms.length ? "Only records matching the commodity named in the user's question are included." : "",
+        ].filter(Boolean).join(" "),
       };
     },
   },
@@ -1236,7 +1286,10 @@ export async function orchestrateAgriculturalQuestion(
   options: RunOptions = {},
 ): Promise<OrchestrationResult> {
   const language = request.language ?? "ar";
-  const context = request.context ?? {};
+  const context: OrchestratorContext = {
+    ...(request.context ?? {}),
+    question: request.question,
+  };
   const startedAt = new Date().toISOString();
   const { plan, plannedBy, rejected } = await planSpecialistsWithLLM(request.question, context);
   const { steps, concurrency } = await executePlan(plan, context, language, options);
