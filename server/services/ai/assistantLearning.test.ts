@@ -15,7 +15,7 @@ describe("Samih agricultural correction learning", () => {
   it("does not persist generic chat or non-agricultural content", () => {
     expect(extractExplicitAgriculturalCorrection("Actually, I prefer short answers")).toBeNull();
     expect(extractExplicitAgriculturalCorrection("The weather is nice today")).toBeNull();
-    expect(extractExplicitAgriculturalCorrection("Correction: my phone number is 123456789")).toBeNull();
+    expect(extractExplicitAgriculturalCorrection("Correction: my phone number is 123456789; olive oil is sold by litre")).toBeNull();
     expect(extractExplicitAgriculturalCorrection("لا، رقم هاتفي ٢٢ ١٢٣ ٤٥٦، وزيت الزيتون باللتر")).toBeNull();
     expect(extractExplicitAgriculturalCorrection("لا، اتصل بيا على +216 22 123 456، زيت الزيتون باللتر")).toBeNull();
   });
