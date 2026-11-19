@@ -557,7 +557,7 @@ export const SPECIALISTS: SpecialistDefinition[] = [
     id: "market",
     title: TITLES.market,
     dependsOn: [],
-    keywords: /(سعر|سوق|تصدير|price|marché|market|sou9|souq|sou3|prix|souma|soum|9adeh|9addech|ch7al|b9adeh|b9addeh)/i,
+    keywords: /(سعر|أسعار|اسعار|سوم|أسوام|أسوامات|سوق|تصدير|price|marché|market|sou9|souq|sou3|prix|souma|soum|aswem|aswema|aswemat|aswamat|9adeh|9addech|ch7al|b9adeh|b9addeh)/i,
     run: (ctx) => {
       const requestedTerms = requestedMarketTerms(ctx.question);
       const records = marketRecords(ctx).filter((record) =>
