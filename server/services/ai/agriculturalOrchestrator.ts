@@ -1081,6 +1081,12 @@ export async function planSpecialistsWithLLM(
     }
     // The LLM may return nothing useful; keep the deterministic plan then.
     if (accepted.size === 0) return { ...fallback, rejected };
+    // Deterministic keyword hits are hard routing signals: the LLM planner may
+    // add specialists, but must not suppress an explicit market/weather/news/etc.
+    // request merely because its short JSON plan omitted that specialist.
+    for (const specialist of SPECIALISTS) {
+      if (specialist.keywords.test(question)) accepted.add(specialist.id);
+    }
     // Lab analytes present is a hard signal the model cannot see — always keep it.
     if (context?.labAnalytes && Object.keys(context.labAnalytes).length > 0) {
       accepted.add("lab_soil");
