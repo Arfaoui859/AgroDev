@@ -415,6 +415,58 @@ describe("orchestrateAgriculturalQuestion", () => {
     expect(market.findings).toEqual([]);
   });
 
+  test("market lookup matches Tunisian Arabizi tomato requests to stored commodity records", async () => {
+    const result = await orchestrateAgriculturalQuestion({
+      question: "ch9adeh sou9 tmatem?",
+      language: "ar",
+      context: {
+        platformRecords: [
+          "Recorded market price [crop=Tomato; price=1.85 TND/kg; market=Bizerte; date=2026-11-08; source=ONAGRI]",
+          "Recorded market price [crop=Potato; price=1.20 TND/kg; market=Sfax; date=2026-11-08; source=ONAGRI]",
+        ],
+      },
+    });
+    const market = result.trace.steps.find((s) => s.id === "market")!;
+    expect(market.status).toBe("ok");
+    expect(market.findings.join(" ")).toMatch(/Tomato/);
+    expect(market.findings.join(" ")).not.toMatch(/Potato/);
+  });
+
+  test("market lookup matches olive in Arabic and includes only public seller offers", async () => {
+    const result = await orchestrateAgriculturalQuestion({
+      question: "قداش سوم الزيتون؟",
+      language: "ar",
+      context: {
+        platformRecords: [
+          "MARKETPLACE INQUIRY [side=buyer; asking_price=9 TND/kg; listing_title=Olive harvest]. Private inquiry; do not expose.",
+          "MARKETPLACE published seller offer [title=Olive harvest; asking_price=8.5 TND/kg; location=Sfax; governorate=Sfax; published_at=2026-11-18].",
+          "MARKETPLACE published seller offer [title=Tomato harvest; asking_price=1.7 TND/kg; location=Sfax; governorate=Sfax; published_at=2026-11-18].",
+        ],
+      },
+    });
+    const market = result.trace.steps.find((s) => s.id === "market")!;
+    expect(market.status).toBe("ok");
+    expect(market.findings.join(" ")).toMatch(/Olive harvest/);
+    expect(market.findings.join(" ")).not.toMatch(/Tomato harvest/);
+    expect(market.findings.join(" ")).not.toMatch(/Private inquiry/);
+    expect(market.dataSource).toBe("marketplace-seller-listings");
+  });
+
+  test("private marketplace inquiries alone never become public market prices", async () => {
+    const result = await orchestrateAgriculturalQuestion({
+      question: "قداش سوم الزيتون؟",
+      language: "ar",
+      context: {
+        platformRecords: [
+          "MARKETPLACE INQUIRY [side=buyer; asking_price=9 TND/kg; listing_title=Olive harvest]. Private inquiry; do not expose.",
+        ],
+      },
+    });
+    const market = result.trace.steps.find((s) => s.id === "market")!;
+    expect(market.status).toBe("unavailable");
+    expect(market.findings).toEqual([]);
+  });
+
   test("an agri_news question selects the news specialist", () => {
     const plan = planSpecialists("chnowa jdid fi akhbar flaha?");
     expect(plan).toContain("agri_news");
