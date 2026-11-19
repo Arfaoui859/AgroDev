@@ -57,6 +57,23 @@ describe("Gemini Live voice contract", () => {
     }
   });
 
+
+  it("keeps market commodity aliases identical and separates olive fruit from olive oil", () => {
+    const extractAliases = (source: string) =>
+      source.match(/const commodityAliases: Record<string, string\[]> = \{[\s\S]*?\n        \};/)?.[0] ?? "";
+    const nativeAliases = extractAliases(nativeSource);
+    const webAliases = extractAliases(webSource);
+
+    expect(nativeAliases).toBeTruthy();
+    expect(nativeAliases).toBe(webAliases);
+    expect(nativeAliases).toContain('olive_oil: ["زيت الزيتون"');
+    expect(nativeAliases).toContain('olive: ["زيتون"');
+    expect(nativeAliases).toContain("tomato:");
+    expect(nativeAliases).toContain("onion:");
+    expect(nativeAliases).toContain("grape:");
+    expect(nativeAliases).toContain("pomegranate:");
+  });
+
   it("keeps verified farm context and persisted memory in both prompts", () => {
     for (const source of [nativeSource, webSource]) {
       expect(source).toContain("verifiedFarmContext");
