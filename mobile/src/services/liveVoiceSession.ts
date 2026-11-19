@@ -807,7 +807,8 @@ export class LiveVoiceSession {
           fig: ["تين", "كرموس", "figue", "figues", "fig", "figs", "karmous"],
           pomegranate: ["رمان", "grenade", "pomegranate", "rommen"],
           strawberry: ["فراولة", "فريز", "fraise", "fraisier", "strawberry", "fraise"],
-          melon: ["دلاع", "بطيخ", "شمام", "melon", "watermelon", "pastèque", "pasteque"],
+          watermelon: ["دلاع", "بطيخ", "watermelon", "pastèque", "pasteque", "della3"],
+          melon: ["شمام", "melon", "cantaloupe", "chammem"],
           carrot: ["جزر", "carotte", "carrot", "زرودية", "zroudia"],
         };;
         const normaliseCommodity = (value: unknown) => String(value ?? "")
