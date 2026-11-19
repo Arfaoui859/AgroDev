@@ -456,6 +456,37 @@ describe("orchestrateAgriculturalQuestion", () => {
     expect(market.dataSource).toBe("marketplace-seller-listings");
   });
 
+  test("a forecast is not presented as a current market quote", async () => {
+    const result = await orchestrateAgriculturalQuestion({
+      question: "قداش سعر الطماطم اليوم؟",
+      language: "ar",
+      context: {
+        platformRecords: [
+          "Stored market prediction [crop=Tomato; period=30 days; price_range={min:2,max:3}; confidence=0.7; valid=2026-11-01 to 2026-11-30; created=2026-11-01]. Prediction, not a current market quote.",
+        ],
+      },
+    });
+    const market = result.trace.steps.find((s) => s.id === "market")!;
+    expect(market.status).toBe("unavailable");
+    expect(market.findings).toEqual([]);
+  });
+
+  test("a forecast is returned only when the user asks for a price trend", async () => {
+    const result = await orchestrateAgriculturalQuestion({
+      question: "شنوة توقعات أسعار الطماطم؟",
+      language: "ar",
+      context: {
+        platformRecords: [
+          "Stored market prediction [crop=Tomato; period=30 days; price_range={min:2,max:3}; confidence=0.7; valid=2026-11-01 to 2026-11-30; created=2026-11-01]. Prediction, not a current market quote.",
+        ],
+      },
+    });
+    const market = result.trace.steps.find((s) => s.id === "market")!;
+    expect(market.status).toBe("ok");
+    expect(market.dataSource).toBe("stored-market-forecasts");
+    expect(market.findings.join(" ")).toMatch(/Tomato/);
+  });
+
   test("private marketplace inquiries alone never become public market prices", async () => {
     const result = await orchestrateAgriculturalQuestion({
       question: "قداش سوم الزيتون؟",
