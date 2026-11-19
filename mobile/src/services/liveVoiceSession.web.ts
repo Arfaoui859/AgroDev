@@ -809,16 +809,23 @@ export class LiveVoiceSession {
         const matchedAliasGroup = Object.values(commodityAliases)
           .find((aliases) => aliases.some((alias) => normalizedRequest.includes(normaliseCommodity(alias))));
         const matchTerms = matchedAliasGroup ?? (commodity ? [commodity] : []);
-        const [listingResult, marketResult] = await Promise.all([
+        if (!commodity) {
+          const response = { success: false, needsInput: true, error: "حدّد اسم المنتوج أو المحصول قبل البحث عن الأسعار." };
+          if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ toolResponse: { functionResponses: [{ id: call.id, name: call.name, response }] } }));
+          continue;
+        }
+        const [listingResult, ...observationResults] = await Promise.all([
           apiRequest<any>(`/api/agro-market/listings?${listingQuery.toString()}`, { method: "GET" }),
-          apiRequest<any>(`/api/agro-market/intelligence?period=${period}`, { method: "GET" }),
+          ...matchTerms.slice(0, 6).map((term) =>
+            apiRequest<any>(`/api/agro-market/prices?${new URLSearchParams({ crop: term, limit: "100" }).toString()}`, { method: "GET" }),
+          ),
         ]);
         const listingPayload = listingResult.data;
         const allListings = Array.isArray(listingPayload?.data?.listings) ? listingPayload.data.listings : [];
         const productListings = allListings
           .filter((item: any) => {
             const searchable = normaliseCommodity([item.title, item.harvest_crop, item.category].filter(Boolean).join(" "));
-            const commodityMatches = matchTerms.length === 0 || matchTerms.some((term) => searchable.includes(normaliseCommodity(term)));
+            const commodityMatches = matchTerms.some((term) => searchable.includes(normaliseCommodity(term)));
             return ["agricultural_product", "harvest"].includes(item.listing_type) &&
               item.price !== null && item.price !== undefined &&
               Number.isFinite(Number(item.price)) && commodityMatches;
@@ -837,27 +844,40 @@ export class LiveVoiceSession {
             publishedAt: item.created_at ?? null,
             source: "AgroGrowth Marketplace seller listing",
           }));
-        const market = marketResult.data;
-        const hasObservationData =
-          !marketResult.error &&
-          market?.success !== false &&
-          market?.dataAvailable !== false &&
-          market?.status !== "unavailable" &&
-          market?.data != null;
+        const rawObservations = observationResults.flatMap((result: any) =>
+          !result.error && result.data?.success === true && Array.isArray(result.data?.data)
+            ? result.data.data
+            : [],
+        );
+        const seenObservationIds = new Set<string>();
+        const recordedMarketObservations = rawObservations.filter((item: any) => {
+          const searchable = normaliseCommodity(item.commodity_name);
+          const commodityMatches = matchTerms.some((term) => searchable.includes(normaliseCommodity(term)));
+          if (!commodityMatches) return false;
+          const key = String(item.id ?? JSON.stringify(item));
+          if (seenObservationIds.has(key)) return false;
+          seenObservationIds.add(key);
+          return true;
+        }).slice(0, 30);
+        const hasObservationData = recordedMarketObservations.length > 0;
+        const observationErrors = observationResults
+          .filter((result: any) => result.error || result.data?.success === false)
+          .map((result: any) => result.data?.code ?? result.error)
+          .filter(Boolean);
         const response = {
           success: productListings.length > 0 || hasObservationData,
-          isRealData: productListings.length > 0 || (hasObservationData && (market?.isRealData === true || market?.data?.isRealData === true)),
-          commodity: commodity || null,
+          isRealData: productListings.length > 0 || hasObservationData,
+          commodity,
           marketplaceOffers: productListings,
           marketplaceOffersCount: productListings.length,
           marketplaceSource: listingPayload?.meta?.provenance ?? "seller-published-listings",
-          recordedMarketObservations: hasObservationData ? market.data : null,
-          marketObservationSource: hasObservationData ? (market.dataSource ?? market.provenance?.source ?? null) : null,
+          recordedMarketObservations: hasObservationData ? recordedMarketObservations : [],
+          marketObservationSource: hasObservationData ? "market-price-observations" : null,
           periodDays: period,
           dataAvailable: productListings.length > 0 || hasObservationData,
           marketplaceError: listingResult.error ?? (listingPayload?.success === false ? listingPayload.code : null),
-          observationError: hasObservationData ? null : (market?.code ?? market?.message ?? marketResult.error ?? "NO_RECORDED_MARKET_OBSERVATIONS"),
-          instruction: "Prioritize matching Marketplace seller offers for the requested product. Clearly label these as seller asking prices, not official market averages. State currency, unit, location and date only when supplied. Then separately summarize recorded market observations if present. If neither source returns matching numeric prices, say no matching prices were found; never guess or infer a price.",
+          observationError: hasObservationData ? null : (observationErrors[0] ?? "NO_MATCHING_COMMODITY_OBSERVATIONS"),
+          instruction: "Only report observations whose commodity_name matches the requested commodity. Seller asking prices and recorded observations are separate sources. State currency, unit, market location, observed_on date and source only when supplied. Never mix other crops or infer a current price from an old observation. If neither source has a matching numeric price, say no matching prices were found; never guess.",
         };
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
         this.socket.send(JSON.stringify({
