@@ -53,6 +53,8 @@ describe("Gemini Live voice contract", () => {
       expect(source).toContain("commodity_name");
       expect(source).toContain("NO_MATCHING_COMMODITY_OBSERVATIONS");
       expect(source).toContain("withinPeriod");
+      expect(source).toContain("containsCommodityAlias");
+      expect(source).toContain("matchTerms.some((term) => containsCommodityAlias(searchable, term))");
       expect(source).not.toContain("/api/agro-market/intelligence?period=");
     }
   });
