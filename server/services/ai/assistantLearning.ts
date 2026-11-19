@@ -15,8 +15,11 @@ export function extractExplicitAgriculturalCorrection(message: string): string |
   if (!value || value.length > 1200) return null;
   if (!CORRECTION_MARKERS.some((marker) => marker.test(value))) return null;
   if (!AGRICULTURE_MARKERS.test(value)) return null;
-  // Avoid persisting likely contact/credential strings from accidental pastes.
-  if (/(?:\b\d{8,}\b|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b)/i.test(value)) return null;
+  // Avoid persisting likely contact details from accidental pastes. Normalize Arabic-Indic digits first.
+  const normalizedDigits = value.replace(/[٠-٩۰-۹]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹".indexOf(digit) % 10));
+  const hasEmail = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(value);
+  const hasPhone = /(?:\b\d{8,}\b|(?:\+?216[\s().-]*)?[24579](?:[\s().-]*\d){7}\b)/.test(normalizedDigits);
+  if (hasEmail || hasPhone) return null;
   return value.slice(0, 700);
 }
 
