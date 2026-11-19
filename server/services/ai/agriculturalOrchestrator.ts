@@ -192,8 +192,12 @@ function hasSoilMeasurements(soil?: SoilInput): boolean {
 }
 
 function marketRecords(ctx: OrchestratorContext): string[] {
+  return (ctx.platformRecords ?? []).filter((r) => /^Recorded market price/.test(r));
+}
+
+function marketPredictionRecords(ctx: OrchestratorContext): string[] {
   return (ctx.platformRecords ?? []).filter((r) =>
-    /^(Recorded market price|Stored market prediction|Public stored market prediction)/.test(r),
+    /^(Stored market prediction|Public stored market prediction)/.test(r),
   );
 }
 
@@ -559,12 +563,17 @@ export const SPECIALISTS: SpecialistDefinition[] = [
       const records = marketRecords(ctx).filter((record) =>
         matchesRequestedCommodity(record, requestedTerms),
       );
+      const predictions = marketPredictionRecords(ctx).filter((record) =>
+        matchesRequestedCommodity(record, requestedTerms),
+      );
       const sellerOffers = marketplaceRecords(ctx).filter((record) =>
         matchesRequestedCommodity(record, requestedTerms),
       );
+      const asksForForecast = /(توقع|توقعات|تنبؤ|اتجاه|forecast|prediction|trend|prévision|tendance)/i.test(ctx.question ?? "");
       const findings = [
-        ...records.slice(0, 6),
-        ...sellerOffers.slice(0, Math.max(0, 6 - Math.min(records.length, 6))),
+        ...records.slice(0, 4),
+        ...sellerOffers.slice(0, Math.max(0, 4 - Math.min(records.length, 4))),
+        ...(asksForForecast ? predictions.slice(0, 2) : []),
       ];
       if (findings.length === 0) {
         return {
@@ -580,17 +589,21 @@ export const SPECIALISTS: SpecialistDefinition[] = [
       }
       const hasMarketQuotes = records.length > 0;
       const hasSellerOffers = sellerOffers.length > 0;
+      const hasForecasts = asksForForecast && predictions.length > 0;
       return {
         status: "ok",
         findings,
-        dataSource: hasMarketQuotes && hasSellerOffers
-          ? "persisted-market-and-marketplace"
-          : hasMarketQuotes ? "persisted-records" : "marketplace-seller-listings",
+        dataSource: [
+          hasMarketQuotes ? "persisted-market-quotes" : "",
+          hasSellerOffers ? "marketplace-seller-listings" : "",
+          hasForecasts ? "stored-market-forecasts" : "",
+        ].filter(Boolean).join("+"),
         isRealData: hasSellerOffers,
         confidence: "medium",
         note: [
           hasMarketQuotes ? "Recorded market quotes are historical observations; state their date, market and source and do not call them live." : "",
           hasSellerOffers ? "Marketplace values are published seller asking prices, not official market observations, a market average or a completed transaction. State location, quantity and publication date when available." : "",
+          hasForecasts ? "Stored forecasts are predictions, not current quotes or guaranteed sale prices; state the forecast period and confidence when supplied." : "",
           requestedTerms.length ? "Only records matching the commodity named in the user's question are included." : "",
         ].filter(Boolean).join(" "),
       };
