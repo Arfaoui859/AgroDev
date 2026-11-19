@@ -792,7 +792,7 @@ export class LiveVoiceSession {
         // Arabic/French/English listings for the same crop.
         const commodityAliases: Record<string, string[]> = {
           tomato: ["طماطم", "مطيشة", "tomato", "tomatoes", "tomate", "tmatem", "maticha"],
-          olive: ["زيتون", "زيتونة", "زيت الزيتون", "olive", "olives", "olivier", "zitoun", "zitouna"],
+          olive: ["زيتون", "زيتونة", "زيت الزيتون", "زيت زيتون", "زيت الزيتونة", "olive", "olives", "olive oil", "olivier", "huile d olive", "huile olive", "zitoun", "zitouna", "zit zitoun"],
           potato: ["بطاطا", "بطاطس", "pomme de terre", "potato", "potatoes", "batata"],
           pepper: ["فلفل", "فلفلة", "poivron", "piment", "pepper", "felfel"],
           wheat: ["قمح", "قمح صلب", "blé", "ble", "wheat", "9amh"],
@@ -853,7 +853,9 @@ export class LiveVoiceSession {
         const recordedMarketObservations = rawObservations.filter((item: any) => {
           const searchable = normaliseCommodity(item.commodity_name);
           const commodityMatches = matchTerms.some((term) => searchable.includes(normaliseCommodity(term)));
-          if (!commodityMatches) return false;
+          const observedAt = Date.parse(String(item.observed_on ?? ""));
+          const withinPeriod = Number.isFinite(observedAt) && observedAt >= Date.now() - period * 24 * 60 * 60 * 1000;
+          if (!commodityMatches || !withinPeriod) return false;
           const key = String(item.id ?? JSON.stringify(item));
           if (seenObservationIds.has(key)) return false;
           seenObservationIds.add(key);
