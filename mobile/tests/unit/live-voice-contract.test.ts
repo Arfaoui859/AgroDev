@@ -47,6 +47,16 @@ describe("Gemini Live voice contract", () => {
     }
   });
 
+  it("queries and filters market observations by the requested commodity on native and web", () => {
+    for (const source of [nativeSource, webSource]) {
+      expect(source).toContain("/api/agro-market/prices?");
+      expect(source).toContain("commodity_name");
+      expect(source).toContain("NO_MATCHING_COMMODITY_OBSERVATIONS");
+      expect(source).toContain("withinPeriod");
+      expect(source).not.toContain("/api/agro-market/intelligence?period=");
+    }
+  });
+
   it("keeps verified farm context and persisted memory in both prompts", () => {
     for (const source of [nativeSource, webSource]) {
       expect(source).toContain("verifiedFarmContext");
