@@ -816,9 +816,11 @@ export class LiveVoiceSession {
           .replace(/[\u0300-\u036f]/g, "")
           .replace(/[أإآٱ]/g, "ا").replace(/ة/g, "ه")
           .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+        const containsCommodityAlias = (value: string, alias: string) =>
+          (` ${normaliseCommodity(value)} `).includes(` ${normaliseCommodity(alias)} `);
         const normalizedRequest = normaliseCommodity(commodity);
         const matchedAliasGroup = Object.values(commodityAliases)
-          .find((aliases) => aliases.some((alias) => normalizedRequest.includes(normaliseCommodity(alias))));
+          .find((aliases) => aliases.some((alias) => containsCommodityAlias(normalizedRequest, alias)));
         const matchTerms = matchedAliasGroup ?? (commodity ? [commodity] : []);
         if (!commodity) {
           const response = { success: false, needsInput: true, error: "حدّد اسم المنتوج أو المحصول قبل البحث عن الأسعار." };
@@ -836,7 +838,7 @@ export class LiveVoiceSession {
         const productListings = allListings
           .filter((item: any) => {
             const searchable = normaliseCommodity([item.title, item.harvest_crop, item.category].filter(Boolean).join(" "));
-            const commodityMatches = matchTerms.some((term) => searchable.includes(normaliseCommodity(term)));
+            const commodityMatches = matchTerms.some((term) => containsCommodityAlias(searchable, term));
             return ["agricultural_product", "harvest"].includes(item.listing_type) &&
               item.price !== null && item.price !== undefined &&
               Number.isFinite(Number(item.price)) && commodityMatches;
