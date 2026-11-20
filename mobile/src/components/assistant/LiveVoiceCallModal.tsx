@@ -90,16 +90,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const isRtl = language === "ar";
 
   useEffect(() => {
-    if (visible) {
-      // Every opening starts with a clean UI state; a previous call's ended
-      // state must never leak into the next call.
-      stateRef.current = "ready";
-      setState("ready");
-      setError("");
-      setLevel(0);
-      levelRef.current = 0;
-      return;
-    }
+    if (visible) return;
     const session = sessionRef.current;
     sessionRef.current = null;
     if (session) void session.stop();
@@ -138,6 +129,8 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const start = async () => {
     if (startInProgressRef.current || sessionRef.current) return;
     startInProgressRef.current = true;
+    stateRef.current = "ready";
+    setState("ready");
     setError("");
     setLevel(0);
     levelRef.current = 0;
