@@ -30,6 +30,7 @@ export interface ExtraTranslations {
   authErrSignUpFailed: string;
   authErrResetFailed: string;
   authErrUnreachable: string;
+  authErrOutdatedBuild: string;
   authErrEmailNotConfirmed: string;
   authResendConfirmation: string;
   authResendSent: string;
@@ -562,6 +563,7 @@ const ar: ExtraTranslations = {
   authErrSignUpFailed: 'تعذّر إنشاء الحساب',
   authErrResetFailed: 'تعذّر إرسال رابط الاستعادة',
   authErrUnreachable: 'تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.',
+  authErrOutdatedBuild: 'مفتاح الخدمة في هذه النسخة لم يعد صالحاً. حدّث التطبيق إلى آخر إصدار ثم أعد المحاولة.',
   authErrEmailNotConfirmed: 'يجب تأكيد بريدك الإلكتروني قبل تسجيل الدخول. تحقّق من صندوق بريدك ثم حاول مرة أخرى.',
   authResendConfirmation: 'إعادة إرسال رابط التأكيد',
   authResendSent: 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني.',
@@ -1066,6 +1068,7 @@ const fr: ExtraTranslations = {
   authErrSignUpFailed: 'Création du compte impossible',
   authErrResetFailed: 'Envoi du lien de réinitialisation impossible',
   authErrUnreachable: 'Service de compte injoignable. Vérifiez votre connexion internet et réessayez.',
+  authErrOutdatedBuild: 'La clé de service de cette version n’est plus valide. Mettez l’application à jour puis réessayez.',
   authErrEmailNotConfirmed: 'Confirmez votre adresse e-mail avant de vous connecter. Vérifiez votre boîte de réception puis réessayez.',
   authResendConfirmation: 'Renvoyer l’e-mail de confirmation',
   authResendSent: 'L’e-mail de confirmation a été renvoyé.',
@@ -1571,6 +1574,7 @@ const en: ExtraTranslations = {
   authErrSignUpFailed: 'Could not create the account',
   authErrResetFailed: 'Could not send the reset link',
   authErrUnreachable: 'The account service is unreachable. Check your internet connection and try again.',
+  authErrOutdatedBuild: 'This build’s service key is no longer valid. Update the app to the latest version and try again.',
   authErrEmailNotConfirmed: 'Confirm your email address before signing in. Check your inbox, then try again.',
   authResendConfirmation: 'Resend confirmation email',
   authResendSent: 'The confirmation email has been sent again.',

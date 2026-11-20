@@ -34,7 +34,11 @@ type Tab = 'signin' | 'signup' | 'reset';
 // Auth: no connectivity, a timeout, or a rejected project key. Anything else is
 // a real server response (bad credentials, unconfirmed email, …).
 const AUTH_TRANSPORT_ERROR_RE =
-  /network request failed|failed to fetch|fetch failed|network ?error|timed? ?out|timeout|econn\w*|enotfound|dns|socket|offline|unreachable|invalid api key/i;
+  /network request failed|failed to fetch|fetch failed|network ?error|timed? ?out|timeout|econn\w*|enotfound|dns|socket|offline|unreachable/i;
+
+// A rotated or revoked project key answers 401 "Invalid API key". It looks like
+// an outage but is a build/deployment problem: the bundled key is stale.
+const AUTH_STALE_CLIENT_RE = /invalid api key|no api key|invalid jwt|jwt expired|invalid signature/i;
 
 const ROLE_OPTIONS: { role: UserRole; labelKey: keyof ExtraTranslations; icon: string }[] = [
   { role: 'farmer', labelKey: 'roleFarmer', icon: 'tractor' },
@@ -66,13 +70,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
     setPassword('');
   };
 
-  // Only a transport-level failure (or a backend that rejects the app's public
-  // key) is reported as an unreachable account service. A credential error must
-  // reach the user unchanged: labelling every failure a connection problem made
-  // a wrong password look like an outage.
+  // Only a transport-level failure is reported as an unreachable account
+  // service. A credential error must reach the user unchanged, and a rejected
+  // key means the installed build is out of date — not that the network is down.
   const describeAuthError = (message: string | undefined) => {
     const text = (message ?? '').trim();
-    if (!text || AUTH_TRANSPORT_ERROR_RE.test(text)) return x.authErrUnreachable;
+    if (!text) return x.authErrUnreachable;
+    if (AUTH_STALE_CLIENT_RE.test(text)) return `${x.authErrOutdatedBuild} (${text})`;
+    if (AUTH_TRANSPORT_ERROR_RE.test(text)) return `${x.authErrUnreachable} (${text})`;
     return text;
   };
 

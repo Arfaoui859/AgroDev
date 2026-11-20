@@ -88,6 +88,22 @@ describe('production configuration', () => {
     );
   });
 
+  it('rejects an override key older than the bundled one', () => {
+    // A rotated key still decodes and names this project, so `ref` alone cannot
+    // catch it; the server answers 401 "Invalid API key" for it.
+    const staleKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjc2NzEsImV4cCI6MjA0OTYwMzY3MX0.aAGN3jLnpCjNOw7-J3Lp4iQBbwMT9X6kMzgRgQtYz7E';
+    expect(resolveSupabaseConfig(VALID_URL, staleKey)).toEqual({
+      url: VALID_URL,
+      anonKey: SUPABASE_ANON_KEY,
+    });
+  });
+
+  it('accepts a rotated key issued after the bundled one', () => {
+    const rotated = jwt({ role: 'anon', ref: 'jymrhhlwdbclctobhbsi', iat: 1900000000 });
+    expect(resolveSupabaseConfig(VALID_URL, rotated)).toEqual({ url: VALID_URL, anonKey: rotated });
+  });
+
   it('ignores a malformed or mismatched anon key override', () => {
     expect(resolveSupabaseConfig(VALID_URL, 'value').anonKey).toBe(SUPABASE_ANON_KEY);
     const otherProject = jwt({ role: 'anon', ref: 'otherownprojectref' });

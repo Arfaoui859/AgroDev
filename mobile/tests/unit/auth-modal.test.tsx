@@ -87,28 +87,24 @@ describe('AuthModal UX', () => {
     expect(screen.getByText('Invalid login credentials')).toBeTruthy();
   });
 
-  it('reports a rejected/misconfigured auth backend as a localised connection problem', async () => {
+  it('reports a rejected project key as an outdated build, not an outage', async () => {
     mockSignIn.mockResolvedValueOnce({ success: false, error: 'Invalid API key' });
     await renderModal();
     await type(emailField(), 'user@example.com');
     await type(passwordField(), 'secret123');
     await press(screen.getByText('دخول إلى حسابي'));
-    expect(
-      screen.getByText('تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.'),
-    ).toBeTruthy();
-    expect(screen.queryByText(/Login diagnostic/)).toBeNull();
-    expect(screen.queryByText('Invalid API key')).toBeNull();
+    expect(screen.getByText(/مفتاح الخدمة في هذه النسخة لم يعد صالحاً/)).toBeTruthy();
+    expect(screen.queryByText(/تعذّر الاتصال بخدمة الحساب/)).toBeNull();
   });
 
-  it('localises a network failure as a connection problem', async () => {
+  it('localises a network failure as a connection problem and keeps the raw reason', async () => {
     mockSignIn.mockResolvedValueOnce({ success: false, error: 'Network request failed' });
     await renderModal();
     await type(emailField(), 'user@example.com');
     await type(passwordField(), 'secret123');
     await press(screen.getByText('دخول إلى حسابي'));
-    expect(
-      screen.getByText('تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.'),
-    ).toBeTruthy();
+    expect(screen.getByText(/تعذّر الاتصال بخدمة الحساب/)).toBeTruthy();
+    expect(screen.getByText(/Network request failed/)).toBeTruthy();
   });
 
   it('never labels a wrong password as an unreachable account service', async () => {
