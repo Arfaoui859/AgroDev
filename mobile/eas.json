@@ -7,24 +7,33 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://agrodev-3.onrender.com"
-      }
+      },
+      "environment": "development"
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://agrodev-3.onrender.com"
-      }
+      },
+      "environment": "preview"
     },
     "production": {
       "autoIncrement": true,
-      "android": { "buildType": "app-bundle" },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://agrodev-3.onrender.com"
-      }
+      },
+      "environment": "production"
     }
   },
   "submit": {
