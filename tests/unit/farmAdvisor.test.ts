@@ -214,7 +214,7 @@ describe("answerAgriculturalQuestion", () => {
       language: "en",
       context: {
         platformRecords: [
-          "LIVE WEATHER FROM WEATHERAPI.COM [observation_time=2026-11-09T18:00; provider=Open-Meteo; current_temperature=22.3 C; humidity=45%]. Real provider forecast, not an on-farm sensor measurement.",
+          "LIVE WEATHER FROM WEATHERAPI.COM [observation_time=2026-11-09T18:00; provider=WeatherAPI.com; current_temperature=22.3 C; humidity=45%]. Real provider forecast, not an on-farm sensor measurement.",
         ],
       },
     });
