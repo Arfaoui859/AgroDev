@@ -153,6 +153,9 @@ jobs:
       - name: 🔎 TypeScript type checking
         run: npm run typecheck
 
+      - name: 🔐 Mobile authentication regression tests
+        run: npx jest --runInBand tests/unit/supabase-transport.test.ts tests/integration/auth-context.test.tsx
+
       - name: 🧹 Expo lint
         run: npm run lint
 
