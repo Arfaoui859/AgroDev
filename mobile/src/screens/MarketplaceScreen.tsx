@@ -23,7 +23,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { addMarketplaceFavorite, createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, reportMarketplaceListing, removeMarketplaceFavorite, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { addMarketplaceFavorite, createMarketplaceInquiry, createMarketplaceListing, createMarketplaceSellerReview, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, reportMarketplaceListing, requestMarketplacePromotion, removeMarketplaceFavorite, submitMarketplaceSellerVerification, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
 import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
@@ -42,6 +42,10 @@ export const MarketplaceScreen: React.FC = () => {
   const [marketIntelligenceUnavailable, setMarketIntelligenceUnavailable] = useState(false);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [verificationBusinessName, setVerificationBusinessName] = useState('');
+  const [verificationRegistration, setVerificationRegistration] = useState('');
+  const [verificationEvidenceUrl, setVerificationEvidenceUrl] = useState('');
+  const [verificationSubmitting, setVerificationSubmitting] = useState(false);
   const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('sell');
   const [tradeFilter, setTradeFilter] = useState<'all' | 'buy' | 'sell'>('all');
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
@@ -269,6 +273,60 @@ export const MarketplaceScreen: React.FC = () => {
     }
     setFavoriteIds(current => alreadySaved ? current.filter(id => id !== listingId) : [...current, listingId]);
   };
+
+  const requestPromotion = async (listingId: string, type: 'urgent' | 'featured' | 'premium') => {
+    const result = await requestMarketplacePromotion(listingId, type);
+    Alert.alert(
+      result.success ? (language === 'ar' ? 'تم إرسال طلب التمييز' : language === 'fr' ? 'Demande envoyée' : 'Promotion requested')
+        : (language === 'ar' ? 'تعذر إرسال الطلب' : language === 'fr' ? 'Échec' : 'Request failed'),
+      result.success ? (language === 'ar' ? 'الطلب في انتظار مراجعة الإدارة. الدفع الإلكتروني غير مفعّل حالياً.' : language === 'fr' ? 'En attente de validation. Le paiement en ligne n’est pas activé.' : 'Pending admin review. Online payment is not enabled yet.') : (result.error || ''),
+    );
+  };
+
+  const choosePromotion = (listingId: string) => Alert.alert(
+    language === 'ar' ? 'تمييز العرض' : language === 'fr' ? 'Mettre en avant' : 'Promote listing',
+    language === 'ar' ? 'اختر نوع التمييز' : language === 'fr' ? 'Choisissez une option' : 'Choose a promotion type',
+    [
+      { text: language === 'ar' ? 'عاجل' : 'Urgent', onPress: () => { void requestPromotion(listingId, 'urgent'); } },
+      { text: 'Featured', onPress: () => { void requestPromotion(listingId, 'featured'); } },
+      { text: 'Premium', onPress: () => { void requestPromotion(listingId, 'premium'); } },
+      { text: language === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
+    ],
+  );
+
+  const submitSellerVerification = async () => {
+    if (verificationBusinessName.trim().length < 2 || !/^https:\/\//i.test(verificationEvidenceUrl.trim())) {
+      Alert.alert(language === 'ar' ? 'أكمل بيانات التوثيق' : language === 'fr' ? 'Informations manquantes' : 'Verification details required');
+      return;
+    }
+    setVerificationSubmitting(true);
+    try {
+      const result = await submitMarketplaceSellerVerification({
+        business_name: verificationBusinessName.trim(),
+        registration_number: verificationRegistration.trim() || undefined,
+        evidence_urls: [verificationEvidenceUrl.trim()],
+      });
+      if (!result.success) throw new Error(result.error || 'VERIFICATION_SUBMIT_FAILED');
+      setVerificationBusinessName(''); setVerificationRegistration(''); setVerificationEvidenceUrl('');
+      Alert.alert(language === 'ar' ? 'تم إرسال طلب التوثيق' : language === 'fr' ? 'Demande envoyée' : 'Verification submitted',
+        language === 'ar' ? 'سيتم التثبت من الوثائق قبل منح علامة موثّق.' : language === 'fr' ? 'Les documents seront examinés avant toute validation.' : 'Documents will be reviewed before a verified badge is granted.');
+    } catch (error) {
+      Alert.alert(language === 'ar' ? 'تعذر إرسال الطلب' : 'Could not submit request', error instanceof Error ? error.message : '');
+    } finally {
+      setVerificationSubmitting(false);
+    }
+  };
+
+  const rateInquiry = (inquiryId: string) => Alert.alert(
+    language === 'ar' ? 'قيّم التعامل' : language === 'fr' ? 'Évaluer la transaction' : 'Rate this transaction',
+    language === 'ar' ? 'اختار تقييمك للبائع من 1 إلى 5.' : language === 'fr' ? 'Choisissez une note de 1 à 5.' : 'Choose a seller rating from 1 to 5.',
+    [1,2,3,4,5].map(value => ({ text: '★'.repeat(value), onPress: () => {
+      void createMarketplaceSellerReview(inquiryId, value).then(result => Alert.alert(
+        result.success ? (language === 'ar' ? 'شكراً على تقييمك' : 'Thank you for your review') : (language === 'ar' ? 'تعذر حفظ التقييم' : 'Could not save review'),
+        result.error || '',
+      ));
+    }})).concat([{ text: language === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' as const }]),
+  );
 
   const reportListing = async (listingId: string) => {
     const result = await reportMarketplaceListing(listingId, 'other');
@@ -978,11 +1036,21 @@ export const MarketplaceScreen: React.FC = () => {
                   ) : null}
                   <Button title={language === 'ar' ? 'حذف' : language === 'fr' ? 'Supprimer' : 'Delete'}
                     onPress={() => confirmDeleteListing(listing.id)} variant="outline" size="sm" fullWidth={false} />
+                  <Button title={language === 'ar' ? 'تمييز العرض' : language === 'fr' ? 'Promouvoir' : 'Promote'}
+                    onPress={() => choosePromotion(listing.id)} variant="outline" size="sm" fullWidth={false} />
                 </View>
               </View>
             ))}
           </View>
         )}
+        <View style={{ gap: spacing.sm, padding: spacing.md, marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
+          <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'توثيق حساب البائع' : language === 'fr' ? 'Vérification du vendeur' : 'Seller verification'}</Text>
+          <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'قدّم اسم النشاط ورابط وثيقة رسمية. علامة التوثيق لا تُمنح إلا بعد مراجعة الإدارة.' : language === 'fr' ? 'Fournissez les informations et une preuve officielle. Le badge est accordé après examen.' : 'Submit business details and an official evidence URL. Verification is granted only after admin review.'}</Text>
+          <TextInput value={verificationBusinessName} onChangeText={setVerificationBusinessName} placeholder={language === 'ar' ? 'اسم النشاط التجاري' : 'Business name'} style={{ minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+          <TextInput value={verificationRegistration} onChangeText={setVerificationRegistration} placeholder={language === 'ar' ? 'رقم التسجيل (اختياري)' : 'Registration number (optional)'} style={{ minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+          <TextInput value={verificationEvidenceUrl} onChangeText={setVerificationEvidenceUrl} placeholder="https://... (official evidence)" autoCapitalize="none" style={{ minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }} />
+          <Button title={language === 'ar' ? 'إرسال طلب التوثيق' : language === 'fr' ? 'Soumettre' : 'Submit verification'} onPress={() => { void submitSellerVerification(); }} loading={verificationSubmitting} disabled={verificationSubmitting} size="md" />
+        </View>
         {myPesticideOffers.length > 0 ? (
           <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
             <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>
@@ -1052,6 +1120,10 @@ export const MarketplaceScreen: React.FC = () => {
                 {inquiry.isSeller && inquiry.status === 'new' ? (
                   <Button title={language === 'ar' ? 'قبول الطلب' : language === 'fr' ? 'Accepter' : 'Accept inquiry'}
                     onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
+                ) : null}
+                {!inquiry.isSeller && ['accepted','closed'].includes(inquiry.status) ? (
+                  <Button title={language === 'ar' ? 'قيّم البائع' : language === 'fr' ? 'Évaluer le vendeur' : 'Rate seller'}
+                    onPress={() => rateInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
                 ) : null}
               </View>
             ))}
