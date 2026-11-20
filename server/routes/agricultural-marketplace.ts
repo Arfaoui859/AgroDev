@@ -7,6 +7,15 @@ const router = express.Router();
 const LISTING_TYPES = new Set(["agricultural_input","equipment","agricultural_product","harvest","livestock","other"]);
 const PRODUCT_TYPES = new Set(["pesticide","fertilizer","seed","seedling","soil_amendment","animal_input","other"]);
 const text = (v: unknown, max = 500) => typeof v === "string" ? v.trim().slice(0,max) : "";
+const isSecureHttpsUrl = (value: unknown): value is string => {
+  if (typeof value !== "string" || value.length > 2048) return false;
+  try {
+    const parsed = new URL(value.trim());
+    return parsed.protocol === "https:" && Boolean(parsed.hostname) && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
+};
 const positive = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : NaN;
 const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
 const positiveSigned = (v: unknown) => v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) ? Number(v) : NaN;
@@ -622,7 +631,7 @@ router.post("/seller-verification", requireAuth, requireVerifiedAuth, async (req
   const businessName=text(req.body?.business_name,180), registrationNumber=text(req.body?.registration_number,100)||null;
   const evidenceUrls=Array.isArray(req.body?.evidence_urls)?req.body.evidence_urls:[];
   if(businessName.length<2||evidenceUrls.length<1||evidenceUrls.length>5||
-    !evidenceUrls.every((u:unknown)=>typeof u==="string"&&/^https:\/\//i.test(u)))
+    !evidenceUrls.every(isSecureHttpsUrl))
     return res.status(400).json({success:false,code:"INVALID_VERIFICATION_REQUEST"});
   const {data:existing,error:lookupError}=await db.from("marketplace_seller_verifications")
     .select("id,status").eq("seller_id",req.userId).eq("status","pending_review").maybeSingle();
