@@ -593,7 +593,7 @@ export const MarketplaceScreen: React.FC = () => {
         </Text>
         <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
           {(['sell','buy'] as const).map(mode => (
-            <Pressable key={mode} onPress={() => setTradeMode(mode)}
+            <Pressable key={mode} onPress={() => { setTradeMode(mode); setSellerType(mode === 'buy' ? 'other' : 'agricultural_input'); }}
               style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.lg, borderWidth: 1, borderColor: tradeMode === mode ? colors.primary : colors.border, backgroundColor: tradeMode === mode ? colors.primaryLight : colors.surface }}>
               <Text style={{ color: tradeMode === mode ? colors.primaryDark : colors.text, fontWeight: '600' }}>
                 {mode === 'sell' ? (language === 'ar' ? 'نعرض للبيع' : language === 'fr' ? 'Vendre' : 'Sell') : (language === 'ar' ? 'نطلب للشراء' : language === 'fr' ? 'Acheter' : 'Buy request')}
@@ -608,7 +608,7 @@ export const MarketplaceScreen: React.FC = () => {
         {sellerFormOpen ? (
           <View style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-              {(tradeMode === 'buy' ? ['other'] as const : ['agricultural_input','equipment','agricultural_product','harvest'] as const).map(type => (
+              {(tradeMode === 'buy' ? ['other'] as const : ['agricultural_input','equipment','agricultural_product','harvest','livestock'] as const).map(type => (
                 <Pressable key={type} onPress={() => setSellerType(type)}
                   style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.lg, borderWidth: 1, borderColor: sellerType === type ? colors.primary : colors.border, backgroundColor: sellerType === type ? colors.primaryLight : colors.surface }}>
                   <Text style={{ color: sellerType === type ? colors.primaryDark : colors.text, fontSize: typography.fontSizes.xs }}>
@@ -616,6 +616,7 @@ export const MarketplaceScreen: React.FC = () => {
                      type === 'equipment' ? (language === 'ar' ? 'معدات' : language === 'fr' ? 'Matériel' : 'Equipment') :
                      type === 'agricultural_product' ? (language === 'ar' ? 'منتوج فلاحي' : language === 'fr' ? 'Produit agricole' : 'Farm produce') :
                      type === 'other' ? (language === 'ar' ? 'طلب عام' : language === 'fr' ? 'Demande générale' : 'General request') :
+                     type === 'livestock' ? (language === 'ar' ? 'مواشي' : language === 'fr' ? 'Bétail' : 'Livestock') :
                      (language === 'ar' ? 'محصول قادم' : language === 'fr' ? 'Récolte à venir' : 'Future harvest')}
                   </Text>
                 </Pressable>
