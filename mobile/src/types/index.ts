@@ -504,6 +504,10 @@ export interface MarketplaceListing {
   imageUrl?: string | null;
   listingType?: 'agricultural_input' | 'equipment' | 'agricultural_product' | 'harvest' | 'livestock' | 'other';
   tradeType?: 'buy' | 'sell';
+  sellerVerified?: boolean;
+  sellerRatingAverage?: number | null;
+  sellerReviewCount?: number;
+  promotionType?: 'urgent' | 'featured' | 'premium' | null;
   expectedHarvestDate?: string | null;
   harvestWindowEnd?: string | null;
   governorate?: string | null;
