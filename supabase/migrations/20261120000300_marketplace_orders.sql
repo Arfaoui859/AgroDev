@@ -77,15 +77,7 @@ BEGIN
   END IF;
 
   IF NEW.status = OLD.status THEN
-    IF NEW.updated_at IS DISTINCT FROM OLD.updated_at
-      AND NEW.buyer_confirmed_at IS NOT DISTINCT FROM OLD.buyer_confirmed_at
-      AND NEW.completed_at IS NOT DISTINCT FROM OLD.completed_at
-      AND NEW.cancelled_at IS NOT DISTINCT FROM OLD.cancelled_at
-      AND NEW.cancellation_reason IS NOT DISTINCT FROM OLD.cancellation_reason
-      AND NEW.dispute_reason IS NOT DISTINCT FROM OLD.dispute_reason THEN
-      RAISE EXCEPTION 'ORDER_NOOP_UPDATE';
-    END IF;
-    RETURN NEW;
+    RAISE EXCEPTION 'ORDER_NOOP_UPDATE';
   END IF;
 
   IF OLD.status = 'awaiting_buyer_confirmation'
