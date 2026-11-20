@@ -337,12 +337,27 @@ export const MarketplaceScreen: React.FC = () => {
     }}))), { text: language === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' as const }],
   );
 
-  const reportListing = async (listingId: string) => {
-    const result = await reportMarketplaceListing(listingId, 'other');
+  const reportListing = (listingId: string) => {
+    const submit = async (reason: 'spam' | 'fraud' | 'misleading' | 'prohibited_item' | 'unsafe' | 'other') => {
+      const result = await reportMarketplaceListing(listingId, reason);
+      Alert.alert(
+        result.success ? (language === 'ar' ? 'تم إرسال البلاغ' : language === 'fr' ? 'Signalement envoyé' : 'Report submitted')
+          : (language === 'ar' ? 'تعذر إرسال البلاغ' : language === 'fr' ? 'Échec du signalement' : 'Could not submit report'),
+        result.success ? (language === 'ar' ? 'سيتم مراجعته من فريق الإشراف.' : language === 'fr' ? 'Notre équipe de modération le vérifiera.' : 'Our moderation team will review it.') : (result.error || ''),
+      );
+    };
     Alert.alert(
-      result.success ? (language === 'ar' ? 'تم إرسال البلاغ' : language === 'fr' ? 'Signalement envoyé' : 'Report submitted')
-        : (language === 'ar' ? 'تعذر إرسال البلاغ' : language === 'fr' ? 'Échec du signalement' : 'Could not submit report'),
-      result.success ? (language === 'ar' ? 'سيتم مراجعته من فريق الإشراف.' : language === 'fr' ? 'Notre équipe de modération le vérifiera.' : 'Our moderation team will review it.') : (result.error || ''),
+      language === 'ar' ? 'سبب التبليغ' : language === 'fr' ? 'Motif du signalement' : 'Report reason',
+      language === 'ar' ? 'اختر السبب الأقرب للمخالفة.' : language === 'fr' ? 'Choisissez le motif le plus adapté.' : 'Choose the reason that best describes the issue.',
+      [
+        { text: language === 'ar' ? 'احتيال' : language === 'fr' ? 'Fraude' : 'Fraud', onPress: () => { void submit('fraud'); } },
+        { text: language === 'ar' ? 'معلومات مضللة' : language === 'fr' ? 'Trompeur' : 'Misleading', onPress: () => { void submit('misleading'); } },
+        { text: language === 'ar' ? 'منتج ممنوع' : language === 'fr' ? 'Article interdit' : 'Prohibited item', onPress: () => { void submit('prohibited_item'); } },
+        { text: language === 'ar' ? 'غير آمن' : language === 'fr' ? 'Dangereux' : 'Unsafe', onPress: () => { void submit('unsafe'); } },
+        { text: language === 'ar' ? 'إشهار مزعج' : language === 'fr' ? 'Spam' : 'Spam', onPress: () => { void submit('spam'); } },
+        { text: language === 'ar' ? 'سبب آخر' : language === 'fr' ? 'Autre' : 'Other', onPress: () => { void submit('other'); } },
+        { text: language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel', style: 'cancel' },
+      ],
     );
   };
 
