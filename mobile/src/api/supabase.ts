@@ -56,8 +56,26 @@ const supabaseFetch: typeof fetch = async (input, init) => {
   else callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
   const timeoutId = setTimeout(() => controller.abort(), 25000);
 
+  // Some Android/React Native networking stacks have been observed to
+  // omit custom headers before the request reaches Supabase's API gateway.
+  // Supabase also accepts the public anon key as an `apikey` URL parameter.
+  // Send both forms for string URLs so authentication still works if the
+  // native bridge strips the header. Never log the URL or its query string.
+  let fetchInput: RequestInfo | URL = input;
+  if (typeof input === 'string') {
+    try {
+      const requestUrl = new URL(input);
+      if (requestUrl.origin === new URL(SUPABASE_URL).origin) {
+        requestUrl.searchParams.set('apikey', SUPABASE_ANON_KEY);
+        fetchInput = requestUrl.toString();
+      }
+    } catch {
+      // Keep the original input; the request will report a normal URL error.
+    }
+  }
+
   try {
-    const response = await fetch(input, {
+    const response = await fetch(fetchInput, {
       ...init,
       headers: fetchHeaders,
       signal: controller.signal,
