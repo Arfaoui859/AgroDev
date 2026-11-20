@@ -583,6 +583,15 @@ export interface MarketplaceInquiry {
   isSeller?: boolean;
 }
 
+export interface MarketplaceInquiryMessage {
+  id: string;
+  inquiryId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
 export type MarketplaceOrderStatus =
   | 'awaiting_buyer_confirmation' | 'confirmed' | 'processing'
   | 'ready_for_pickup' | 'completed' | 'cancelled' | 'disputed';
