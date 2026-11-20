@@ -848,7 +848,7 @@ export class LiveVoiceSession {
           watermelon: ["دلاع", "بطيخ", "watermelon", "pastèque", "pasteque", "della3"],
           melon: ["شمام", "melon", "cantaloupe", "chammem"],
           carrot: ["جزر", "carotte", "carrot", "زرودية", "zroudia"],
-        };;
+        };
         const normaliseCommodity = (value: unknown) => String(value ?? "")
           .toLocaleLowerCase().normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
