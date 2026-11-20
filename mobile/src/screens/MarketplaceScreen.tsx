@@ -848,6 +848,7 @@ export const MarketplaceScreen: React.FC = () => {
                   <Button title={language === 'ar' ? 'تواصل' : language === 'fr' ? 'Contacter' : (listing.tradeType === 'buy' ? 'Contact buyer' : 'Contact seller')}
                   onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" fullWidth={false} />
               </View>
+              </View>
             ))}
           </View>
         )}
