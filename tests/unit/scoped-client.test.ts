@@ -38,7 +38,7 @@ describe("🔐 Caller-scoped Supabase client", () => {
       URL,
       ANON,
       expect.objectContaining({
-        global: { headers: { Authorization: "Bearer user-jwt" } },
+        global: { headers: { Authorization: "Bearer user-jwt", apikey: ANON } },
         auth: { persistSession: false, autoRefreshToken: false },
       }),
     );
@@ -57,7 +57,7 @@ describe("🔐 Caller-scoped Supabase client", () => {
       URL,
       ANON,
       expect.objectContaining({
-        global: { headers: { Authorization: "Bearer abc.def.ghi" } },
+        global: { headers: { Authorization: "Bearer abc.def.ghi", apikey: ANON } },
       }),
     );
   });
