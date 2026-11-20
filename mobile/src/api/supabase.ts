@@ -19,6 +19,14 @@ const supabaseFetch: typeof fetch = async (input, init) => {
 
   headers.set('apikey', SUPABASE_ANON_KEY);
 
+  // React Native's native fetch bridge is more reliable with a plain object
+  // than a WHATWG Headers instance. Passing Headers directly can silently
+  // drop custom headers (including Supabase's required apikey header).
+  const fetchHeaders: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    fetchHeaders[key] = value;
+  });
+
   const rawUrl = typeof input === 'string' ? input : input.url;
   let requestPath = '<unparseable-url>';
   try {
@@ -39,7 +47,7 @@ const supabaseFetch: typeof fetch = async (input, init) => {
   });
 
   try {
-    const response = await fetch(input, { ...init, headers });
+    const response = await fetch(input, { ...init, headers: fetchHeaders });
     let responsePath = requestPath;
     try {
       responsePath = new URL(response.url || rawUrl).pathname;
