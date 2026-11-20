@@ -48,11 +48,13 @@ router.get("/listings", async (req, res) => {
   try {
     const q = text(req.query.q, 100).replace(/[,%()]/g, " ");
     const type = text(req.query.type, 40);
+    const tradeType = text(req.query.trade_type, 10);
     const governorate = text(req.query.governorate, 80);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
     let query = db.from("marketplace_listings").select("*").eq("status","published")
       .order("created_at",{ascending:false}).limit(limit);
     if (type && LISTING_TYPES.has(type)) query = query.eq("listing_type",type);
+    if (tradeType === "buy" || tradeType === "sell") query = query.eq("trade_type",tradeType);
     if (governorate) query = query.ilike("governorate",governorate);
     if (q) query = query.ilike("title", `%${q}%`);
     const {data,error} = await query;
@@ -78,6 +80,7 @@ router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,re
   if (!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
   const b = req.body ?? {};
   const listingType = text(b.listing_type,40);
+  const tradeType = text(b.trade_type,10) || "sell";
   const title = text(b.title,160);
   const category = text(b.category,80);
   const price = positive(b.price);
@@ -86,7 +89,7 @@ router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,re
     return res.status(400).json({success:false,code:"USE_REGULATED_PESTICIDE_OFFER_FLOW",
       message:"عروض المبيدات والأدوية الفلاحية تتطلب مسار التثبت من ترخيص المنتج وترخيص البائع."});
   }
-  if (!LISTING_TYPES.has(listingType) || title.length < 3 || !category ||
+  if (!LISTING_TYPES.has(listingType) || !["buy","sell"].includes(tradeType) || title.length < 3 || !category ||
       Number.isNaN(price) || Number.isNaN(quantity) ||
       !Array.isArray(b.image_urls ?? []) || (b.image_urls ?? []).length > 8 ||
       !(b.image_urls ?? []).every((u:unknown)=>typeof u === "string" && /^https:\/\//i.test(u))) {
@@ -99,7 +102,7 @@ router.post("/listings", requireAuth, requireVerifiedAuth, async (req:Request,re
   }
   try {
     const payload = {
-      seller_id:sellerId, listing_type:listingType, title, description:text(b.description,3000) || null,
+      seller_id:sellerId, trade_type:tradeType, listing_type:listingType, title, description:text(b.description,3000) || null,
       category, price, currency:text(b.currency,3) || "TND", unit:text(b.unit,40) || null,
       quantity, location:text(b.location,160) || null, governorate:text(b.governorate,80) || null,
       image_urls:b.image_urls ?? [], status:"published", harvest_crop:harvestCrop,
@@ -512,5 +515,202 @@ router.post("/ingest/products", requireAdminAccess, async (req,res) => {
   await updateSourceStatus(db,{source_key:sourceKey,source_name:sourceName,source_url:sourceUrl,source_type:sourceType,enabled:true,last_attempt_at:new Date().toISOString(),last_success_at:new Date().toISOString(),last_status:"success",last_error:null});
   res.json({success:true,insertedOrUpdated:data?.length??records.length,sourceKey});
 });
+
+
+// ---------------------------------------------------------------------------
+// KILOGRAM-inspired trust and buyer/seller workflows.
+// All user-owned reads/writes use the caller JWT + RLS; admin transitions use service role.
+// ---------------------------------------------------------------------------
+
+router.get("/favorites", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const {data,error}=await db.from("marketplace_favorites")
+    .select("listing_id,created_at,listing:marketplace_listings(*)")
+    .eq("user_id",req.userId).order("created_at",{ascending:false}).limit(200);
+  if(error) return res.status(503).json({success:false,code:"FAVORITES_UNAVAILABLE"});
+  res.json({success:true,data:(data??[]).filter((x:any)=>x.listing).map((x:any)=>({...x.listing,favorited_at:x.created_at}))});
+});
+
+router.post("/favorites/:listingId", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const {data:listing,error:lookupError}=await db.from("marketplace_listings").select("id,status")
+    .eq("id",req.params.listingId).eq("status","published").maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"LISTING_LOOKUP_FAILED"});
+  if(!listing) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
+  const {error}=await db.from("marketplace_favorites").upsert({user_id:req.userId,listing_id:listing.id},{onConflict:"user_id,listing_id"});
+  if(error) return res.status(503).json({success:false,code:"FAVORITE_CREATE_FAILED"});
+  res.status(201).json({success:true});
+});
+
+router.delete("/favorites/:listingId", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const {error}=await db.from("marketplace_favorites").delete().eq("user_id",req.userId).eq("listing_id",req.params.listingId);
+  if(error) return res.status(503).json({success:false,code:"FAVORITE_DELETE_FAILED"});
+  res.json({success:true});
+});
+
+router.get("/seller/:sellerId/reputation", async (req,res) => {
+  const db=publicDb(res); if(!db) return;
+  const sellerId=text(req.params.sellerId,80);
+  const {data:reviews,error}=await db.from("marketplace_seller_reviews")
+    .select("id,rating,review,created_at").eq("seller_id",sellerId).eq("status","published").order("created_at",{ascending:false}).limit(100);
+  if(error) return res.status(503).json({success:false,code:"SELLER_REPUTATION_UNAVAILABLE"});
+  const rows=reviews??[];
+  res.json({success:true,data:{sellerId,reviewCount:rows.length,
+    averageRating:rows.length?Number((rows.reduce((s:number,r:any)=>s+Number(r.rating),0)/rows.length).toFixed(2)):null,
+    reviews:rows}});
+});
+
+router.post("/inquiries/:id/review", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const rating=Number(req.body?.rating), review=text(req.body?.review,1200)||null;
+  if(!Number.isInteger(rating)||rating<1||rating>5) return res.status(400).json({success:false,code:"INVALID_RATING"});
+  const {data:inquiry,error:lookupError}=await db.from("marketplace_inquiries").select("id,listing_id,buyer_id,seller_id,status")
+    .eq("id",req.params.id).eq("buyer_id",req.userId).maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"INQUIRY_LOOKUP_FAILED"});
+  if(!inquiry) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
+  if(!["accepted","closed"].includes(inquiry.status)) return res.status(409).json({success:false,code:"INQUIRY_NOT_COMPLETED"});
+  const {data,error}=await db.from("marketplace_seller_reviews").insert({
+    listing_id:inquiry.listing_id,reviewer_id:req.userId,seller_id:inquiry.seller_id,
+    inquiry_id:inquiry.id,rating,review,status:"published"
+  }).select("id,rating,review,created_at").single();
+  if(error) return res.status(error.code==="23505"?409:503).json({success:false,code:error.code==="23505"?"REVIEW_ALREADY_SUBMITTED":"REVIEW_CREATE_FAILED"});
+  res.status(201).json({success:true,data});
+});
+
+router.post("/listings/:id/report", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const reason=text(req.body?.reason,40), details=text(req.body?.details,1200)||null;
+  if(!["spam","fraud","misleading","prohibited_item","unsafe","other"].includes(reason))
+    return res.status(400).json({success:false,code:"INVALID_REPORT_REASON"});
+  const {data:listing,error:lookupError}=await db.from("marketplace_listings").select("id,seller_id")
+    .eq("id",req.params.id).maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"LISTING_LOOKUP_FAILED"});
+  if(!listing) return res.status(404).json({success:false,code:"LISTING_NOT_FOUND"});
+  if(listing.seller_id===req.userId) return res.status(400).json({success:false,code:"CANNOT_REPORT_OWN_LISTING"});
+  const {error}=await db.from("marketplace_listing_reports").insert({listing_id:listing.id,reporter_id:req.userId,reason,details});
+  if(error) return res.status(error.code==="23505"?409:503).json({success:false,code:error.code==="23505"?"ALREADY_REPORTED":"REPORT_CREATE_FAILED"});
+  res.status(201).json({success:true,message:"Report submitted for moderation."});
+});
+
+router.post("/seller-verification", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const businessName=text(req.body?.business_name,180), registrationNumber=text(req.body?.registration_number,100)||null;
+  const evidenceUrls=Array.isArray(req.body?.evidence_urls)?req.body.evidence_urls:[];
+  if(businessName.length<2||evidenceUrls.length<1||evidenceUrls.length>5||
+    !evidenceUrls.every((u:unknown)=>typeof u==="string"&&/^https:\/\//i.test(u)))
+    return res.status(400).json({success:false,code:"INVALID_VERIFICATION_REQUEST"});
+  const {data:existing,error:lookupError}=await db.from("marketplace_seller_verifications")
+    .select("id,status").eq("seller_id",req.userId).eq("status","pending_review").maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"VERIFICATION_LOOKUP_FAILED"});
+  if(existing) return res.status(409).json({success:false,code:"VERIFICATION_ALREADY_PENDING"});
+  const {data,error}=await db.from("marketplace_seller_verifications").insert({
+    seller_id:req.userId,business_name:businessName,registration_number:registrationNumber,evidence_urls:evidenceUrls
+  }).select("id,status,created_at").single();
+  if(error) return res.status(503).json({success:false,code:"VERIFICATION_SUBMIT_FAILED"});
+  res.status(201).json({success:true,data});
+});
+
+router.get("/seller-verification/me", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const {data,error}=await db.from("marketplace_seller_verifications")
+    .select("id,business_name,registration_number,status,review_note,created_at,reviewed_at")
+    .eq("seller_id",req.userId).order("created_at",{ascending:false}).limit(10);
+  if(error) return res.status(503).json({success:false,code:"VERIFICATION_STATUS_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.post("/listings/:id/promotions", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const promotionType=text(req.body?.promotion_type,20);
+  if(!["urgent","featured","premium"].includes(promotionType))
+    return res.status(400).json({success:false,code:"INVALID_PROMOTION_TYPE"});
+  const {data:listing,error:lookupError}=await db.from("marketplace_listings").select("id,seller_id,status")
+    .eq("id",req.params.id).eq("seller_id",req.userId).maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"LISTING_LOOKUP_FAILED"});
+  if(!listing||listing.status!=="published") return res.status(404).json({success:false,code:"PUBLISHED_OWN_LISTING_REQUIRED"});
+  const {data,error}=await db.from("marketplace_listing_promotions").insert({
+    listing_id:listing.id,seller_id:req.userId,promotion_type:promotionType
+  }).select("id,promotion_type,status,payment_status,created_at").single();
+  if(error) return res.status(503).json({success:false,code:"PROMOTION_REQUEST_FAILED"});
+  res.status(201).json({success:true,data,
+    message:"Promotion request received. It remains pending until admin review; checkout is not configured."});
+});
+
+router.get("/my-promotions", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const {data,error}=await db.from("marketplace_listing_promotions")
+    .select("id,listing_id,promotion_type,status,payment_status,starts_at,ends_at,created_at")
+    .eq("seller_id",req.userId).order("created_at",{ascending:false}).limit(50);
+  if(error) return res.status(503).json({success:false,code:"PROMOTIONS_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.get("/admin/moderation/reports", requireAdminAccess, async (_req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const {data,error}=await db.from("marketplace_listing_reports")
+    .select("*,listing:marketplace_listings(id,title,seller_id,status)")
+    .eq("status","open").order("created_at",{ascending:true}).limit(200);
+  if(error) return res.status(503).json({success:false,code:"REPORT_QUEUE_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.patch("/admin/moderation/reports/:id", requireAdminAccess, async (req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const status=text(req.body?.status,20), adminNote=text(req.body?.admin_note,1200)||null;
+  if(!["reviewing","resolved","dismissed"].includes(status)) return res.status(400).json({success:false,code:"INVALID_REPORT_STATUS"});
+  const {data,error}=await db.from("marketplace_listing_reports").update({
+    status,admin_note:adminNote,reviewed_by:req.userId??null,reviewed_at:new Date().toISOString()
+  }).eq("id",req.params.id).select("*").maybeSingle();
+  if(error) return res.status(503).json({success:false,code:"REPORT_REVIEW_FAILED"});
+  if(!data) return res.status(404).json({success:false,code:"REPORT_NOT_FOUND"});
+  res.json({success:true,data});
+});
+
+router.get("/admin/seller-verifications", requireAdminAccess, async (_req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const {data,error}=await db.from("marketplace_seller_verifications").select("*")
+    .eq("status","pending_review").order("created_at",{ascending:true}).limit(200);
+  if(error) return res.status(503).json({success:false,code:"VERIFICATION_QUEUE_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.patch("/admin/seller-verifications/:id", requireAdminAccess, async (req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const status=text(req.body?.status,20), reviewNote=text(req.body?.review_note,1200)||null;
+  if(!["verified","rejected"].includes(status)) return res.status(400).json({success:false,code:"INVALID_VERIFICATION_STATUS"});
+  const {data,error}=await db.from("marketplace_seller_verifications").update({
+    status,review_note:reviewNote,reviewed_by:req.userId??null,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()
+  }).eq("id",req.params.id).select("id,seller_id,status,review_note,reviewed_at").maybeSingle();
+  if(error) return res.status(503).json({success:false,code:"VERIFICATION_REVIEW_FAILED"});
+  if(!data) return res.status(404).json({success:false,code:"VERIFICATION_NOT_FOUND"});
+  res.json({success:true,data});
+});
+
+router.get("/admin/promotions", requireAdminAccess, async (_req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const {data,error}=await db.from("marketplace_listing_promotions")
+    .select("*,listing:marketplace_listings(id,title,seller_id,status)")
+    .eq("status","pending_review").order("created_at",{ascending:true}).limit(200);
+  if(error) return res.status(503).json({success:false,code:"PROMOTION_QUEUE_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.patch("/admin/promotions/:id", requireAdminAccess, async (req,res) => {
+  const db=adminDb(res); if(!db) return;
+  const status=text(req.body?.status,20);
+  const startsAt=text(req.body?.starts_at,50)||new Date().toISOString();
+  const endsAt=text(req.body?.ends_at,50);
+  if(!["active","rejected"].includes(status)||(status==="active"&&(!endsAt||!Number.isFinite(Date.parse(endsAt))||Date.parse(endsAt)<=Date.parse(startsAt))))
+    return res.status(400).json({success:false,code:"INVALID_PROMOTION_REVIEW"});
+  const {data,error}=await db.from("marketplace_listing_promotions").update({
+    status,starts_at:status==="active"?startsAt:null,ends_at:status==="active"?endsAt:null,
+    reviewed_by:req.userId??null,reviewed_at:new Date().toISOString()
+  }).eq("id",req.params.id).select("*").maybeSingle();
+  if(error) return res.status(503).json({success:false,code:"PROMOTION_REVIEW_FAILED"});
+  if(!data) return res.status(404).json({success:false,code:"PROMOTION_NOT_FOUND"});
+  res.json({success:true,data});
+});
+
 
 export default router;
