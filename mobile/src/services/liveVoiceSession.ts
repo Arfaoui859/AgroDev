@@ -26,11 +26,6 @@ const FRAME_MS = 20;
 const FRAME_SAMPLES = (INPUT_RATE * FRAME_MS) / 1000;
 // Android speaker playback can leak into the microphone more than browser AEC.
 // Use a slightly stricter gate on native to avoid feeding Samih's own voice back to Gemini.
-const SPEECH_RMS_THRESHOLD = 0.035;
-const SPEECH_NOISE_MULTIPLIER = 2.8;
-// Ignore short speaker echoes/clicks; real user speech remains responsive (<200 ms).
-const SPEECH_START_CONFIRM_MS = 180;
-const END_SILENCE_MS = 900;
 
 function resample(input: Float32Array, fromRate: number, toRate: number): Float32Array {
   if (fromRate === toRate) return input;
@@ -79,10 +74,6 @@ export class LiveVoiceSession {
   private active = false;
   private socketReady = false;
   private stopped = false;
-  private speechActive = false;
-  private silenceMs = 0;
-  private speechCandidateMs = 0;
-  private noiseFloorRms = 0.006;
   private queueStarted = false;
   private decodeChain: Promise<void> = Promise.resolve();
   private lastReplyId = 0;
@@ -96,8 +87,6 @@ export class LiveVoiceSession {
   private sessionHandle: string | null = null;
   private reconnecting = false;
   private reconnectAttempts = 0;
-  private responsePending = false;
-  private responseWatchdog: ReturnType<typeof setTimeout> | null = null;
 
   constructor(callbacks: VoiceCallbacks) {
     this.callbacks = callbacks;
@@ -365,7 +354,7 @@ export class LiveVoiceSession {
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
         },
         realtimeInputConfig: {
-          automaticActivityDetection: { disabled: true },
+          automaticActivityDetection: { disabled: false, prefixPaddingMs: 120, silenceDurationMs: 700 },
           activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
         },
         sessionResumption: resumeHandle ? { handle: resumeHandle } : {},
@@ -385,9 +374,7 @@ export class LiveVoiceSession {
       );
       this.socket = socket;
       this.socketReady = false;
-      this.speechActive = false;
-      this.silenceMs = 0;
-      let setupComplete = false;
+        let setupComplete = false;
       let settled = false;
       const timeout = setTimeout(() => {
         if (settled) return;
@@ -549,88 +536,21 @@ export class LiveVoiceSession {
       { sampleRate: INPUT_RATE, bufferLength: FRAME_SAMPLES, channelCount: 1 },
       ({ buffer, numFrames }) => {
         if (!this.active || !this.socketReady || this.socket?.readyState !== WebSocket.OPEN) return;
-        // Once the user finishes a turn, keep the microphone from treating room noise
-        // or speaker echo as a new turn while Gemini is thinking or speaking.
-        if (this.responsePending) {
-          this.callbacks.onLevel?.(0);
-          return;
-        }
         const raw = buffer.getChannelData(0).subarray(0, numFrames);
         if (!raw.length) return;
-
         let energy = 0;
         for (let i = 0; i < raw.length; i += 1) energy += raw[i] * raw[i];
-        const rms = Math.sqrt(energy / raw.length);
-        this.callbacks.onLevel?.(Math.min(1, rms * 9));
-
-        const frameDurationMs = (numFrames / (buffer.sampleRate || INPUT_RATE)) * 1000;
-        const speechThreshold = Math.max(SPEECH_RMS_THRESHOLD, this.noiseFloorRms * SPEECH_NOISE_MULTIPLIER);
-        if (!this.speechActive && rms < speechThreshold) {
-          // Learn the room's quiet noise floor slowly; never treat it as speech.
-          this.noiseFloorRms = this.noiseFloorRms * 0.95 + rms * 0.05;
-        }
-
-        if (!this.speechActive) {
-          if (rms >= speechThreshold) {
-            this.speechCandidateMs += frameDurationMs;
-            if (this.speechCandidateMs >= SPEECH_START_CONFIRM_MS) {
-              this.speechActive = true;
-              this.speechCandidateMs = 0;
-              this.silenceMs = 0;
-              this.interruptPlayback();
-              this.socket?.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
-            }
-          } else {
-            this.speechCandidateMs = 0;
-          }
-        } else if (rms >= speechThreshold * 0.65) {
-          this.silenceMs = 0;
-        } else {
-          this.silenceMs += frameDurationMs;
-          if (this.silenceMs >= END_SILENCE_MS) {
-            this.speechActive = false;
-            this.silenceMs = 0;
-            this.speechCandidateMs = 0;
-            this.socket?.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
-            this.responsePending = true;
-            this.callbacks.onState("thinking");
-            this.startResponseWatchdog();
-            return;
-          }
-        }
-
-        if (this.speechActive) {
-          const pcm = resample(raw, buffer.sampleRate || INPUT_RATE, INPUT_RATE);
-          this.socket?.send(JSON.stringify({
-            realtimeInput: {
-              audio: { mimeType: "audio/pcm;rate=16000", data: floatToBase64(pcm) },
-            },
-          }));
-        }
+        this.callbacks.onLevel?.(Math.min(1, Math.sqrt(energy / raw.length) * 9));
+        const pcm = resample(raw, buffer.sampleRate || INPUT_RATE, INPUT_RATE);
+        this.socket?.send(JSON.stringify({
+          realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: floatToBase64(pcm) } },
+        }));
       },
     );
     if (callback.status === "error") throw new Error(callback.message || "تعذّر تشغيل الميكروفون.");
     const result = await recorder.start();
     if (result.status === "error") throw new Error(result.message || "تعذّر تشغيل الميكروفون.");
     this.callbacks.onState("listening");
-  }
-
-  private clearResponseWatchdog(): void {
-    if (this.responseWatchdog) clearTimeout(this.responseWatchdog);
-    this.responseWatchdog = null;
-  }
-
-  private startResponseWatchdog(): void {
-    this.clearResponseWatchdog();
-    this.responseWatchdog = setTimeout(() => {
-      if (!this.active || !this.responsePending) return;
-      this.responsePending = false;
-      this.speechActive = false;
-      this.silenceMs = 0;
-      this.speechCandidateMs = 0;
-      this.callbacks.onError?.("تأخّر ردّ المستشار الصوتي. الميكروفون رجع يسمعك؛ عاود احكي.");
-      this.callbacks.onState("listening");
-    }, 45000);
   }
 
   private interruptPlayback(): void {
@@ -648,9 +568,7 @@ export class LiveVoiceSession {
     if (!serverContent) return;
 
     if (serverContent.interrupted) {
-      this.clearResponseWatchdog();
-      this.responsePending = false;
-      this.interruptPlayback();
+          this.interruptPlayback();
       return;
     }
 
@@ -663,12 +581,7 @@ export class LiveVoiceSession {
       this.callbacks.onState("speaking");
     }
     if (serverContent.turnComplete) {
-      this.clearResponseWatchdog();
-      this.responsePending = false;
-      this.speechActive = false;
-      this.silenceMs = 0;
-      this.speechCandidateMs = 0;
-      this.callbacks.onState("listening");
+            this.callbacks.onState("listening");
     }
   }
 
@@ -1220,9 +1133,6 @@ export class LiveVoiceSession {
     this.stopped = true;
     this.active = false;
     this.socketReady = false;
-    this.speechActive = false;
-    this.responsePending = false;
-    this.clearResponseWatchdog();
     this.lastReplyId += 1;
     this.recorder?.clearOnAudioReady();
     if (this.recorder?.isRecording()) await this.recorder.stop().catch(() => undefined);
