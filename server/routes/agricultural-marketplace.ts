@@ -238,6 +238,96 @@ router.patch("/inquiries/:id/status", requireAuth, requireVerifiedAuth, async (r
   res.json({success:true,data});
 });
 
+// Orders are created only by the seller after accepting an inquiry.
+router.post("/inquiries/:id/order", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const sellerId=req.userId;
+  if(!sellerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const {data:inquiry,error:inquiryError}=await db.from("marketplace_inquiries")
+    .select("id,listing_id,buyer_id,seller_id,quantity,status,listing:marketplace_listings(id,title,price,currency,unit,status)")
+    .eq("id",req.params.id).eq("seller_id",sellerId).maybeSingle();
+  if(inquiryError) return res.status(503).json({success:false,code:"INQUIRY_LOOKUP_FAILED"});
+  if(!inquiry) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
+  if(inquiry.status!=="accepted") return res.status(409).json({success:false,code:"INQUIRY_MUST_BE_ACCEPTED"});
+  const listing=Array.isArray(inquiry.listing)?inquiry.listing[0]:inquiry.listing;
+  if(!listing) return res.status(409).json({success:false,code:"LISTING_UNAVAILABLE"});
+  const requestedQuantity=positive(req.body?.quantity ?? inquiry.quantity);
+  const unitPrice=positive(req.body?.unit_price ?? listing.price);
+  const quantity=requestedQuantity;
+  if(quantity===null || Number.isNaN(quantity) || quantity<=0 || unitPrice===null || Number.isNaN(unitPrice))
+    return res.status(400).json({success:false,code:"INVALID_ORDER_TERMS"});
+  const payload={
+    inquiry_id:inquiry.id, listing_id:inquiry.listing_id, buyer_id:inquiry.buyer_id, seller_id:sellerId,
+    listing_title:text(listing.title,180), quantity, unit:text(listing.unit,40)||null,
+    unit_price:unitPrice, currency:text(listing.currency,3).toUpperCase()||"TND",
+    buyer_note:text(req.body?.buyer_note,1200)||null, status:"awaiting_buyer_confirmation",
+  };
+  const {data,error}=await db.from("marketplace_orders").insert(payload).select("*").single();
+  if(error) {
+    if(error.code==="23505") return res.status(409).json({success:false,code:"ORDER_ALREADY_EXISTS"});
+    if(error.code==="42501") return res.status(403).json({success:false,code:"ORDER_CREATION_NOT_ALLOWED"});
+    console.error("[agro-market] order create failed",error.message);
+    return res.status(503).json({success:false,code:"ORDER_CREATE_FAILED"});
+  }
+  res.status(201).json({success:true,data});
+});
+
+router.get("/orders", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const userId=req.userId;
+  if(!userId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const {data,error}=await db.from("marketplace_orders").select("*")
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .order("created_at",{ascending:false}).limit(100);
+  if(error) return res.status(503).json({success:false,code:"ORDERS_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.post("/orders/:id/confirm", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const buyerId=req.userId;
+  if(!buyerId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const {data,error}=await db.from("marketplace_orders").update({
+    status:"confirmed", updated_at:new Date().toISOString(),
+  }).eq("id",req.params.id).eq("buyer_id",buyerId)
+    .eq("status","awaiting_buyer_confirmation").select("*").maybeSingle();
+  if(error) return res.status(409).json({success:false,code:"ORDER_CONFIRMATION_REJECTED"});
+  if(!data) return res.status(404).json({success:false,code:"ORDER_NOT_FOUND_OR_NOT_CONFIRMABLE"});
+  res.json({success:true,data});
+});
+
+router.patch("/orders/:id/status", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
+  const db=callerDb(req,res); if(!db) return;
+  const userId=req.userId;
+  if(!userId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const status=text(req.body?.status,40);
+  const allowed=["processing","ready_for_pickup","completed","cancelled","disputed"];
+  if(!allowed.includes(status)) return res.status(400).json({success:false,code:"INVALID_ORDER_STATUS"});
+  const {data:order,error:lookupError}=await db.from("marketplace_orders")
+    .select("id,buyer_id,seller_id,status").eq("id",req.params.id).maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"ORDER_LOOKUP_FAILED"});
+  if(!order) return res.status(404).json({success:false,code:"ORDER_NOT_FOUND"});
+  const isBuyer=order.buyer_id===userId, isSeller=order.seller_id===userId;
+  if(!isBuyer&&!isSeller) return res.status(404).json({success:false,code:"ORDER_NOT_FOUND"});
+  if((status==="processing"||status==="ready_for_pickup")&&!isSeller)
+    return res.status(403).json({success:false,code:"SELLER_ACTION_REQUIRED"});
+  if(status==="completed"&&!isBuyer)
+    return res.status(403).json({success:false,code:"BUYER_CONFIRMATION_REQUIRED"});
+  if((status==="cancelled"||status==="disputed")&&!isBuyer&&!isSeller)
+    return res.status(403).json({success:false,code:"ORDER_PARTICIPANT_REQUIRED"});
+  const reason=text(req.body?.reason,1200);
+  if(status==="disputed"&&reason.length<5)
+    return res.status(400).json({success:false,code:"DISPUTE_REASON_REQUIRED"});
+  const patch:Record<string,unknown>={status,updated_at:new Date().toISOString()};
+  if(status==="cancelled") patch.cancellation_reason=reason||null;
+  if(status==="disputed") patch.dispute_reason=reason;
+  const {data,error}=await db.from("marketplace_orders").update(patch)
+    .eq("id",req.params.id).eq("status",order.status).select("*").maybeSingle();
+  if(error) return res.status(409).json({success:false,code:"ORDER_TRANSITION_REJECTED"});
+  if(!data) return res.status(409).json({success:false,code:"ORDER_STATUS_CHANGED_RETRY"});
+  res.json({success:true,data});
+});
+
 router.get("/products", async (req,res) => {
   const db = publicDb(res); if (!db) return;
   try {
