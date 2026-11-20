@@ -39,6 +39,7 @@ const validReport = {
 describe("Detailed soil analysis with a configured provider",()=>{
   let app:express.Application;
   beforeEach(()=>{
+    global.fetch = jest.fn() as unknown as typeof fetch;
     clearProviderEnv();jest.resetModules();
     process.env.AI_API_KEY="test-key";
     process.env.AI_BASE_URL="https://api.openai.com/v1";
