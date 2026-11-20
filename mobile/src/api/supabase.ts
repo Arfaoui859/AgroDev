@@ -10,6 +10,14 @@ import { secureStorageAdapter } from './secureStorage';
  * has no browser URL to parse.
  */
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // Set the public project key explicitly on every Supabase request. This is
+  // normally added by supabase-js itself; making it explicit also protects
+  // native builds from requests being created without the required apikey.
+  global: {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+    },
+  },
   auth: {
     storage: secureStorageAdapter,
     autoRefreshToken: true,
