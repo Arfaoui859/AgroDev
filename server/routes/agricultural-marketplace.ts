@@ -333,8 +333,8 @@ router.post("/pesticide-offers", requireAuth, requireVerifiedAuth, async (req:Re
   const authorizationDocumentUrl=text(b.seller_authorization_document_url,1000);
   const packageSize=positive(b.package_size), price=positive(b.price), quantity=positive(b.quantity);
   const imageUrls=b.image_urls??[];
-  if(tradeName.length<2||!registrationNumber||!/^https:\/\//i.test(registrationEvidenceUrl)||
-    !authorizationNumber||!/^https:\/\//i.test(authorizationDocumentUrl)||
+  if(tradeName.length<2||!registrationNumber||!isSecureHttpsUrl(registrationEvidenceUrl)||
+    !authorizationNumber||!isSecureHttpsUrl(authorizationDocumentUrl)||
     packageSize===null||Number.isNaN(packageSize)||packageSize<=0||
     price===null||Number.isNaN(price)||price<=0||quantity===null||Number.isNaN(quantity)||quantity<=0||
     !text(b.package_unit,30)||!Array.isArray(imageUrls)||imageUrls.length>8||
@@ -372,8 +372,8 @@ router.patch("/admin/pesticide-offers/:id/review", requireAdminAccess, async (re
     .eq("id",req.params.id).maybeSingle();
   if(lookupError) return res.status(503).json({success:false,code:"PESTICIDE_OFFER_LOOKUP_FAILED"});
   if(!existing) return res.status(404).json({success:false,code:"PESTICIDE_OFFER_NOT_FOUND"});
-  if(status==="approved"&&(!existing.registration_number||!/^https:\/\//i.test(existing.product_registration_evidence_url??"")||
-    !existing.seller_authorization_number||!/^https:\/\//i.test(existing.seller_authorization_document_url??"")))
+  if(status==="approved"&&(!existing.registration_number||!isSecureHttpsUrl(existing.product_registration_evidence_url)||
+    !existing.seller_authorization_number||!isSecureHttpsUrl(existing.seller_authorization_document_url)))
     return res.status(400).json({success:false,code:"REGISTRATION_AND_SELLER_PERMIT_EVIDENCE_REQUIRED"});
   const {data,error}=await db.from("pesticide_seller_offers").update({status,review_note:reviewNote,
     reviewed_at:new Date().toISOString(),reviewed_by:req.userId??null,updated_at:new Date().toISOString()})
