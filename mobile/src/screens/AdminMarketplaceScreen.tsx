@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { apiRequest } from '../api/client';
 import { useLanguage } from '../context/LanguageContext';
@@ -94,9 +94,19 @@ export const AdminMarketplaceScreen: React.FC<{ onBack: () => void }> = ({ onBac
     item.listing?.title || item.business_name || item.seller_name || item.title ||
     (tab === 'verifications' ? item.registration_number : item.reason) || item.id;
   const detailFor = (item: QueueItem) => {
-    if (tab === 'reports') return [item.reason, item.description, item.reporter_id].filter(Boolean).join(' · ');
+    if (tab === 'reports') return [item.reason, item.details, item.reporter_id].filter(Boolean).join(' · ');
     if (tab === 'verifications') return [item.business_name, item.seller_id, item.registration_number, ...(Array.isArray(item.evidence_urls) ? item.evidence_urls : [])].filter(Boolean).join(' · ');
     return [item.promotion_type, item.listing?.status, item.listing?.seller_id].filter(Boolean).join(' · ');
+  };
+
+  const openEvidence = async (url: string) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password) throw new Error('INVALID_EVIDENCE_URL');
+      await Linking.openURL(parsed.toString());
+    } catch {
+      Alert.alert(copy.failed, ar ? 'رابط الوثيقة غير صالح أو تعذّر فتحه.' : fr ? 'Lien de document invalide ou impossible à ouvrir.' : 'Invalid evidence link or unable to open it.');
+    }
   };
 
   if (user?.role !== 'admin') {
@@ -123,6 +133,10 @@ export const AdminMarketplaceScreen: React.FC<{ onBack: () => void }> = ({ onBac
             <Card key={item.id} style={styles.item}>
               <Text style={styles.itemTitle}>{titleFor(item)}</Text>
               {!!detailFor(item) && <Text style={styles.detail} selectable>{detailFor(item)}</Text>}
+              {tab === 'verifications' && Array.isArray(item.evidence_urls) ? item.evidence_urls.map((url: string, index: number) => (
+                <Button key={url} title={ar ? `فتح الوثيقة ${index + 1}` : fr ? `Ouvrir le document ${index + 1}` : `Open evidence ${index + 1}`}
+                  size="sm" variant="outline" onPress={() => { void openEvidence(url); }} />
+              )) : null}
               {!!item.created_at && <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>}
               <View style={[styles.actions, isRtl && styles.rtl]}>
                 {tab === 'reports' ? <>
