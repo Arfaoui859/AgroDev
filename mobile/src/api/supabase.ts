@@ -3,41 +3,14 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import { secureStorageAdapter } from './secureStorage';
 
 /**
- * Ensure the public project key is present at the native fetch boundary.
- * Merge headers from both Request and RequestInit because React Native's
- * fetch implementation may not preserve the SDK's global headers otherwise.
- */
-const fetchWithSupabaseApiKey: typeof fetch = async (input, init) => {
-  const headers = new Headers(
-    input instanceof Request ? input.headers : undefined,
-  );
-
-  new Headers(init?.headers).forEach((value, name) => {
-    headers.set(name, value);
-  });
-
-  headers.set('apikey', SUPABASE_ANON_KEY);
-
-  return fetch(input, {
-    ...init,
-    headers,
-  });
-};
-
-/**
- * Supabase client for the mobile app.
- *
- * Sessions are persisted in the OS secure store (chunked, see secureStorage.ts)
- * and refreshed automatically. `detectSessionInUrl` is off because React Native
- * has no browser URL to parse.
+ * Supabase JS already attaches the project API key to Auth and REST requests.
+ * Keep the native client on the platform fetch implementation: wrapping fetch
+ * and inspecting `input instanceof Request` is not reliable across React
+ * Native runtimes, where the global Request constructor may be unavailable or
+ * implemented differently. That wrapper could throw before the request ever
+ * reaches Supabase and be misreported as a connection failure.
  */
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  global: {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-    },
-    fetch: fetchWithSupabaseApiKey,
-  },
   auth: {
     storage: secureStorageAdapter,
     autoRefreshToken: true,
