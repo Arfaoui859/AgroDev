@@ -1220,7 +1220,7 @@ export async function getProjectFinancialSummary(farmId?: string, cultivationId?
  * connected; the gateway fails closed with 503 `MARKETPLACE_STORE_NOT_CONNECTED`
  * until then, which the UI renders as an honest "no matching product" state.
  */
-export async function getMarketplaceListings(params: { q?: string; type?: string } = {}): Promise<{
+export async function getMarketplaceListings(params: { q?: string; type?: string; tradeType?: 'buy' | 'sell' } = {}): Promise<{
   data: MarketplaceResult;
   error: string | null;
   unavailable: boolean;
@@ -1228,6 +1228,7 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
   const query = new URLSearchParams();
   if (params.q) query.set('q', params.q);
   if (params.type) query.set('type', params.type);
+  if (params.tradeType) query.set('trade_type', params.tradeType);
   const suffix = query.toString() ? `?${query.toString()}` : '';
   const res = await apiRequest<any>(`/api/agro-market/listings${suffix}`, {
     cacheKey: `marketplace:${params.type || 'all'}:${params.q || 'all'}`,
@@ -1251,6 +1252,7 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
     quantity: l.quantity == null ? null : Number(l.quantity),
     imageUrl: Array.isArray(l.image_urls) ? l.image_urls[0] ?? null : null,
     listingType: l.listing_type,
+    tradeType: l.trade_type === 'buy' ? 'buy' : 'sell',
     expectedHarvestDate: l.expected_harvest_date ?? null,
     harvestWindowEnd: l.harvest_window_end ?? null,
     governorate: l.governorate ?? null,
@@ -1261,6 +1263,37 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
     error: null,
     unavailable: false,
   };
+}
+
+
+export async function getMarketplaceFavorites(): Promise<{ data: MarketplaceListing[]; error: string | null }> {
+  const res = await apiRequest<any>('/api/agro-market/favorites');
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  return { data: rows.map((l:any) => ({
+    id:String(l.id), title:l.title, category:l.category, price:l.price==null?null:Number(l.price),
+    currency:l.currency??'TND', unit:l.unit??undefined, sellerName:l.seller_name??null,
+    location:l.location??null, quantity:l.quantity==null?null:Number(l.quantity),
+    imageUrl:Array.isArray(l.image_urls)?l.image_urls[0]??null:null,
+    listingType:l.listing_type, tradeType:l.trade_type==='buy'?'buy':'sell',
+    governorate:l.governorate??null, description:l.description??null, status:l.status,
+  })), error:res.error };
+}
+
+export async function addMarketplaceFavorite(listingId:string):Promise<{success:boolean;error:string|null}> {
+  const res=await apiRequest<any>(`/api/agro-market/favorites/${encodeURIComponent(listingId)}`,{method:'POST'});
+  return {success:Boolean(res.data?.success),error:res.data?.success?null:res.error||'FAVORITE_CREATE_FAILED'};
+}
+
+export async function removeMarketplaceFavorite(listingId:string):Promise<{success:boolean;error:string|null}> {
+  const res=await apiRequest<any>(`/api/agro-market/favorites/${encodeURIComponent(listingId)}`,{method:'DELETE'});
+  return {success:Boolean(res.data?.success),error:res.data?.success?null:res.error||'FAVORITE_DELETE_FAILED'};
+}
+
+export async function reportMarketplaceListing(listingId:string,reason:'spam'|'fraud'|'misleading'|'prohibited_item'|'unsafe'|'other',details?:string):Promise<{success:boolean;error:string|null}> {
+  const res=await apiRequest<any>(`/api/agro-market/listings/${encodeURIComponent(listingId)}/report`,{
+    method:'POST',body:JSON.stringify({reason,details}),
+  });
+  return {success:Boolean(res.data?.success),error:res.data?.success?null:res.error||'REPORT_CREATE_FAILED'};
 }
 
 export async function uploadMarketplaceImage(uri: string, mimeType = 'image/jpeg'): Promise<{ url: string | null; error: string | null }> {
@@ -1285,6 +1318,7 @@ export async function uploadMarketplaceImage(uri: string, mimeType = 'image/jpeg
 
 export async function createMarketplaceListing(input: {
   listing_type: NonNullable<MarketplaceListing['listingType']>;
+  trade_type?: 'buy' | 'sell';
   title: string;
   category: string;
   description?: string;
@@ -1310,7 +1344,7 @@ export async function createMarketplaceListing(input: {
     id: String(l.id), title: l.title, category: l.category, price: l.price == null ? null : Number(l.price),
     currency: l.currency ?? 'TND', unit: l.unit, sellerName: l.seller_name ?? null, location: l.location ?? null,
     quantity: l.quantity == null ? null : Number(l.quantity), imageUrl: l.image_urls?.[0] ?? null,
-    listingType: l.listing_type, expectedHarvestDate: l.expected_harvest_date ?? null,
+    listingType: l.listing_type, tradeType: l.trade_type === 'buy' ? 'buy' : 'sell', expectedHarvestDate: l.expected_harvest_date ?? null,
     harvestWindowEnd: l.harvest_window_end ?? null, governorate: l.governorate ?? null, description: l.description ?? null,
   }, error: null };
 }
