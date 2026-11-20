@@ -1428,11 +1428,11 @@ export async function createMarketplaceOrder(inquiryId: string, input: {
   });
   const p = res.data?.data;
   if (!res.data?.success || !p) return { data: null, error: res.error || res.data?.code || 'ORDER_CREATE_FAILED' };
-  return { data: mapMarketplaceOrder(p), error: null };
+  const { data: { user } } = await supabase.auth.getUser();
+  return { data: mapMarketplaceOrder(p, user?.id ?? null), error: null };
 }
 
-function mapMarketplaceOrder(p: any): MarketplaceOrder {
-  const { data: { user } } = supabase.auth.getUser() as any;
+function mapMarketplaceOrder(p: any, userId: string | null): MarketplaceOrder {
   return {
     id: String(p.id), inquiryId: String(p.inquiry_id), listingId: String(p.listing_id),
     buyerId: String(p.buyer_id), sellerId: String(p.seller_id), listingTitle: String(p.listing_title ?? ''),
@@ -1440,7 +1440,7 @@ function mapMarketplaceOrder(p: any): MarketplaceOrder {
     currency: String(p.currency ?? 'TND'), status: p.status, buyerNote: p.buyer_note ?? null,
     cancellationReason: p.cancellation_reason ?? null, disputeReason: p.dispute_reason ?? null,
     createdAt: p.created_at, updatedAt: p.updated_at,
-    isSeller: Boolean(user?.id && user.id === p.seller_id),
+    isSeller: Boolean(userId && userId === p.seller_id),
   };
 }
 
@@ -1449,15 +1449,7 @@ export async function getMarketplaceOrders(): Promise<{ data: MarketplaceOrder[]
   const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
   const { data: { user } } = await supabase.auth.getUser();
   return {
-    data: rows.map((p: any) => ({
-      id: String(p.id), inquiryId: String(p.inquiry_id), listingId: String(p.listing_id),
-      buyerId: String(p.buyer_id), sellerId: String(p.seller_id), listingTitle: String(p.listing_title ?? ''),
-      quantity: Number(p.quantity), unit: p.unit ?? null, unitPrice: Number(p.unit_price),
-      currency: String(p.currency ?? 'TND'), status: p.status, buyerNote: p.buyer_note ?? null,
-      cancellationReason: p.cancellation_reason ?? null, disputeReason: p.dispute_reason ?? null,
-      createdAt: p.created_at, updatedAt: p.updated_at,
-      isSeller: Boolean(user?.id && user.id === p.seller_id),
-    })),
+    data: rows.map((p: any) => mapMarketplaceOrder(p, user?.id ?? null)),
     error: res.error,
   };
 }
