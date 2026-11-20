@@ -39,3 +39,45 @@ tests/
 README.md
 AGENTS.md
 LICENSE
+
+# Heavy local archives and previous build outputs (never needed by EAS)
+**/archive/
+**/archives/
+**/backup/
+**/backups/
+**/old/
+**/old-builds/
+**/temp/
+**/tmp/
+**/node_modules/
+**/.git/
+**/.expo/
+**/coverage/
+**/dist/
+**/web-build/
+**/.gradle/
+**/.turbo/
+
+# Exported installers, compressed backups and debug dumps
+**/*.zip
+**/*.rar
+**/*.7z
+**/*.tar
+**/*.tar.gz
+**/*.tgz
+**/*.gz
+**/*.bak
+**/*.old
+**/*.log
+**/*.tmp
+**/*.apk
+**/*.aab
+**/*.ipa
+**/*.hprof
+**/*.dump
+
+# Local media captures / recordings not used as app assets
+**/*.mp4
+**/*.mov
+**/*.mkv
+**/*.avi
