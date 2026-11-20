@@ -54,7 +54,7 @@ export const HomeFarmOverview: React.FC<HomeFarmOverviewProps> = ({ onOpenFarms,
     }
   }, [isAuthenticated, userRole]);
 
-  useEffect(() => { void load(); }, [load, refreshKey]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load, refreshKey]);
 
   if (!isAuthenticated || !['farmer', 'gardener', 'agronomist', 'company', 'inspector'].includes(user?.role ?? 'farmer')) return null;
 
