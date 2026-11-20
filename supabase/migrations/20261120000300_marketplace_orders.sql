@@ -35,6 +35,20 @@ CREATE POLICY "Order participants can read their orders"
   ON public.marketplace_orders FOR SELECT TO authenticated
   USING (auth.uid() IN (buyer_id, seller_id));
 
+DROP POLICY IF EXISTS "Sellers can create orders from accepted inquiries" ON public.marketplace_orders;
+CREATE POLICY "Sellers can create orders from accepted inquiries"
+  ON public.marketplace_orders FOR INSERT TO authenticated
+  WITH CHECK (
+    seller_id = auth.uid()
+    AND status = 'awaiting_buyer_confirmation'
+    AND EXISTS (
+      SELECT 1 FROM public.marketplace_inquiries i
+      WHERE i.id = inquiry_id AND i.listing_id = listing_id
+        AND i.buyer_id = buyer_id AND i.seller_id = auth.uid()
+        AND i.status = 'accepted'
+    )
+  );
+
 DROP POLICY IF EXISTS "Order participants can update lifecycle" ON public.marketplace_orders;
 CREATE POLICY "Order participants can update lifecycle"
   ON public.marketplace_orders FOR UPDATE TO authenticated
@@ -42,7 +56,7 @@ CREATE POLICY "Order participants can update lifecycle"
   WITH CHECK (auth.uid() IN (buyer_id, seller_id));
 
 REVOKE ALL ON public.marketplace_orders FROM anon, authenticated;
-GRANT SELECT ON public.marketplace_orders TO authenticated;
+GRANT SELECT, INSERT ON public.marketplace_orders TO authenticated;
 GRANT UPDATE (status, buyer_confirmed_at, completed_at, cancelled_at, cancellation_reason, dispute_reason, updated_at)
   ON public.marketplace_orders TO authenticated;
 
