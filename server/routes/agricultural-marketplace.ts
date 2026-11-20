@@ -252,7 +252,7 @@ router.post("/inquiries/:id/order", requireAuth, requireVerifiedAuth, async (req
   const listing=Array.isArray(inquiry.listing)?inquiry.listing[0]:inquiry.listing;
   if(!listing) return res.status(409).json({success:false,code:"LISTING_UNAVAILABLE"});
   const requestedQuantity=positive(req.body?.quantity ?? inquiry.quantity);
-  const unitPrice=positive(req.body?.unit_price ?? listing.price);
+  const unitPrice=positive(req.body?.unit_price ?? listing.price ?? 0);
   const quantity=requestedQuantity;
   if(quantity===null || Number.isNaN(quantity) || quantity<=0 || unitPrice===null || Number.isNaN(unitPrice))
     return res.status(400).json({success:false,code:"INVALID_ORDER_TERMS"});
