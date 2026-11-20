@@ -43,8 +43,9 @@ CREATE POLICY "Sellers can create orders from accepted inquiries"
     AND status = 'awaiting_buyer_confirmation'
     AND EXISTS (
       SELECT 1 FROM public.marketplace_inquiries i
-      WHERE i.id = inquiry_id AND i.listing_id = listing_id
-        AND i.buyer_id = buyer_id AND i.seller_id = auth.uid()
+      WHERE i.id = marketplace_orders.inquiry_id
+        AND i.listing_id = marketplace_orders.listing_id
+        AND i.buyer_id = marketplace_orders.buyer_id AND i.seller_id = auth.uid()
         AND i.status = 'accepted'
     )
   );
