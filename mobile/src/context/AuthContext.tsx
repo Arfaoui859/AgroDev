@@ -202,10 +202,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (data.user) {
         authUserIdRef.current = data.user.id;
-        const profile = await fetchProfile();
-        if (authUserIdRef.current === data.user.id) {
-          setUser(withPreference(mapUser(data.user, profile)));
-          setSession(data.session);
+        // Establish the authenticated session immediately. Profile hydration is
+        // supplementary: a temporary gateway outage must not turn a successful
+        // Supabase sign-in into a reported login failure.
+        setSession(data.session);
+        setUser(withPreference(mapUser(data.user)));
+        try {
+          const profile = await fetchProfile();
+          if (authUserIdRef.current === data.user.id) {
+            setUser(withPreference(mapUser(data.user, profile)));
+          }
+        } catch (profileError) {
+          console.warn('profile hydration failed after sign-in; continuing with authenticated session:', profileError);
         }
       }
       return { success: true };
@@ -243,10 +251,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (data.session?.user) {
         authUserIdRef.current = data.session.user.id;
-        const profile = await fetchProfile();
-        if (authUserIdRef.current === data.session.user.id) {
-          setUser(withPreference(mapUser(data.session.user, profile)));
-          setSession(data.session);
+        // Keep signup successful even if the profile gateway is temporarily
+        // unavailable; the user metadata provides a safe initial profile.
+        setSession(data.session);
+        setUser(withPreference(mapUser(data.session.user)));
+        try {
+          const profile = await fetchProfile();
+          if (authUserIdRef.current === data.session.user.id) {
+            setUser(withPreference(mapUser(data.session.user, profile)));
+          }
+        } catch (profileError) {
+          console.warn('profile hydration failed after sign-up; continuing with authenticated session:', profileError);
         }
       }
       return { success: true };
