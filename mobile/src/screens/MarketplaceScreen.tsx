@@ -830,6 +830,12 @@ export const MarketplaceScreen: React.FC = () => {
                   <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
                     {[listing.category, listing.sellerName, listing.location].filter(Boolean).join(' • ')}
                   </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs }}>
+                    <Badge label={listing.tradeType === 'buy' ? (language === 'ar' ? 'طلب شراء' : language === 'fr' ? 'Demande d’achat' : 'BUY REQUEST') : (language === 'ar' ? 'للبيع' : language === 'fr' ? 'À vendre' : 'FOR SALE')} variant={listing.tradeType === 'buy' ? 'info' : 'success'} size="sm" />
+                    {listing.sellerVerified ? <Badge label={language === 'ar' ? 'بائع موثّق' : language === 'fr' ? 'Vendeur vérifié' : 'Verified seller'} variant="success" size="sm" /> : null}
+                    {listing.sellerRatingAverage != null ? <Text style={styles.listingMeta}>★ {listing.sellerRatingAverage.toFixed(1)} ({listing.sellerReviewCount || 0})</Text> : null}
+                    {listing.promotionType ? <Badge label={listing.promotionType.toUpperCase()} variant="warning" size="sm" /> : null}
+                  </View>
                 </View>
                 {listing.price != null ? (
                   <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
