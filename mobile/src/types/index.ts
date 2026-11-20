@@ -503,6 +503,7 @@ export interface MarketplaceListing {
   quantity?: number | null;
   imageUrl?: string | null;
   listingType?: 'agricultural_input' | 'equipment' | 'agricultural_product' | 'harvest' | 'livestock' | 'other';
+  tradeType?: 'buy' | 'sell';
   expectedHarvestDate?: string | null;
   harvestWindowEnd?: string | null;
   governorate?: string | null;
