@@ -485,7 +485,7 @@ export class LiveVoiceSession {
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
         },
         realtimeInputConfig: {
-          automaticActivityDetection: { disabled: false, prefixPaddingMs: 120, silenceDurationMs: 700 },
+          automaticActivityDetection: { disabled: false, prefixPaddingMs: 80, silenceDurationMs: 400 },
           activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
         },
         sessionResumption: resumeHandle ? { handle: resumeHandle } : {},
