@@ -95,7 +95,7 @@ export const AdminMarketplaceScreen: React.FC<{ onBack: () => void }> = ({ onBac
     (tab === 'verifications' ? item.registration_number : item.reason) || item.id;
   const detailFor = (item: QueueItem) => {
     if (tab === 'reports') return [item.reason, item.description, item.reporter_id].filter(Boolean).join(' · ');
-    if (tab === 'verifications') return [item.seller_id, item.registration_number, item.evidence_url].filter(Boolean).join(' · ');
+    if (tab === 'verifications') return [item.business_name, item.seller_id, item.registration_number, ...(Array.isArray(item.evidence_urls) ? item.evidence_urls : [])].filter(Boolean).join(' · ');
     return [item.promotion_type, item.listing?.status, item.listing?.seller_id].filter(Boolean).join(' · ');
   };
 
@@ -105,7 +105,9 @@ export const AdminMarketplaceScreen: React.FC<{ onBack: () => void }> = ({ onBac
 
   return (
     <View style={styles.container}>
-      <ScreenHeading title={copy.title} subtitle={copy.subtitle} />
+      <ScreenHeading title={copy.title} subtitle={copy.subtitle}
+        leading={<Button title={ar ? 'رجوع' : fr ? 'Retour' : 'Back'} onPress={onBack} size="sm" variant="outline" fullWidth={false}
+          icon={<MaterialCommunityIcons name={isRtl ? 'arrow-right' : 'arrow-left'} size={18} color={colors.text} />} />} />
       <View style={[styles.tabs, isRtl && styles.rtl]}>
         {(['reports', 'verifications', 'promotions'] as QueueTab[]).map(key => (
           <Button key={key} title={copy[key]} size="sm" variant={tab === key ? 'primary' : 'outline'} onPress={() => setTab(key)} style={styles.tabButton} />
