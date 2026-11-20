@@ -61,9 +61,9 @@ export const AdminMarketplaceScreen: React.FC<{ onBack: () => void }> = ({ onBac
       setItems(res.data.data);
     }
     setLoading(false);
-  }, [tab, language]);
+  }, [tab, language, copy.denied, copy.failed]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
   const update = async (item: QueueItem, action: string) => {
     let body: Record<string, string> = {};
