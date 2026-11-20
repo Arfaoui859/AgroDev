@@ -30,12 +30,14 @@ export const supabaseFetch: typeof fetch = async (input, init) => {
   // Supabase's fetch adapter may receive a string, URL, or Request depending
   // on the SDK/runtime path. Normalize all three; otherwise a URL/Request
   // object can bypass the query fallback even though the header is present.
-  const rawUrl =
-    typeof input === 'string'
-      ? input
-      : typeof URL !== 'undefined' && input instanceof URL
-        ? input.toString()
-        : input.url;
+  let rawUrl: string;
+  if (typeof input === 'string') {
+    rawUrl = input;
+  } else if (typeof URL !== 'undefined' && input instanceof URL) {
+    rawUrl = input.toString();
+  } else {
+    rawUrl = (input as Request).url;
+  }
   let requestPath = '<unparseable-url>';
   try {
     requestPath = new URL(rawUrl).pathname;
