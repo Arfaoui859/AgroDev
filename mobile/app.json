@@ -64,7 +64,7 @@
         {
           "photosPermission": "يطلب التطبيق الوصول للصور لاختيار عينات النباتات والتربة.",
           "cameraPermission": "يطلب التطبيق استخدام الكاميرا لفحص المحاصيل مباشرة.",
-          "microphonePermission": false
+          "microphonePermission": "يسمح AgroVibe باستخدام الميكروفون للمحادثة الصوتية المباشرة مع المساعد."
         }
       ],
       [
