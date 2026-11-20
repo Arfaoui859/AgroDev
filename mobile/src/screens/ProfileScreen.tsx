@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { cardPad, flex1, gapXs, metaRow, paddedCardLg, primaryLightFill, rowGapMd, rowGapSm, screenStyles, stackLg } from '../theme/layout';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -90,6 +91,15 @@ export const ProfileScreen: React.FC<{ onOpenMarketplaceAdmin?: () => void }> = 
   };
 
   const handleSignOut = () => {
+    // React Native Alert.alert is not implemented by react-native-web. On
+    // Expo web the native confirmation never appears, making the logout
+    // button look unresponsive. Sign out directly on web; retain the native
+    // confirmation dialog on Android/iOS.
+    if (Platform.OS === 'web') {
+      void signOut();
+      return;
+    }
+
     Alert.alert(t.logoutBtn, x.profileSignOutConfirm, [
       { text: x.cancel, style: 'cancel' },
       {
