@@ -11,6 +11,10 @@ import { secureStorageAdapter } from './secureStorage';
  * reaches Supabase and be misreported as a connection failure.
  */
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // Set the header explicitly as well as the constructor key. This guarantees
+  // every Auth/PostgREST request carries apikey in native builds, even if a
+  // fetch/polyfill layer bypasses the SDK's default header injection.
+  global: { headers: { apikey: SUPABASE_ANON_KEY } },
   auth: {
     storage: secureStorageAdapter,
     autoRefreshToken: true,
