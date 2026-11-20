@@ -28,7 +28,7 @@ describe('secureStorageAdapter UTF-8 chunking', () => {
     for (let index = 0; index < count; index += 1) {
       const chunk = store.get(`sb-session.v2.${generation}.${index}`);
       expect(chunk).toBeDefined();
-      expect(Buffer.byteLength(chunk!, 'utf8')).toBeLessThanOrEqual(1800);
+      expect(new TextEncoder().encode(chunk!).length).toBeLessThanOrEqual(1800);
     }
 
     await expect(secureStorageAdapter.getItem('sb-session')).resolves.toBe(value);
