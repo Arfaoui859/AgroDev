@@ -6,7 +6,7 @@ import { secureStorageAdapter } from './secureStorage';
  * Supabase-owned transport with temporary, secret-safe diagnostics.
  * Never log request headers, credentials, tokens, or query parameters.
  */
-const supabaseFetch: typeof fetch = async (input, init) => {
+export const supabaseFetch: typeof fetch = async (input, init) => {
   const requestHeaders =
     typeof Request !== 'undefined' && input instanceof Request
       ? input.headers
@@ -27,7 +27,15 @@ const supabaseFetch: typeof fetch = async (input, init) => {
     fetchHeaders[key] = value;
   });
 
-  const rawUrl = typeof input === 'string' ? input : input.url;
+  // Supabase's fetch adapter may receive a string, URL, or Request depending
+  // on the SDK/runtime path. Normalize all three; otherwise a URL/Request
+  // object can bypass the query fallback even though the header is present.
+  const rawUrl =
+    typeof input === 'string'
+      ? input
+      : typeof URL !== 'undefined' && input instanceof URL
+        ? input.toString()
+        : input.url;
   let requestPath = '<unparseable-url>';
   try {
     requestPath = new URL(rawUrl).pathname;
@@ -62,16 +70,23 @@ const supabaseFetch: typeof fetch = async (input, init) => {
   // Send both forms for string URLs so authentication still works if the
   // native bridge strips the header. Never log the URL or its query string.
   let fetchInput: RequestInfo | URL = input;
-  if (typeof input === 'string') {
-    try {
-      const requestUrl = new URL(input);
-      if (requestUrl.origin === new URL(SUPABASE_URL).origin) {
-        requestUrl.searchParams.set('apikey', SUPABASE_ANON_KEY);
-        fetchInput = requestUrl.toString();
+  try {
+    const requestUrl = new URL(rawUrl);
+    if (requestUrl.origin === new URL(SUPABASE_URL).origin) {
+      requestUrl.searchParams.set('apikey', SUPABASE_ANON_KEY);
+      const urlWithKey = requestUrl.toString();
+
+      if (typeof input === 'string' || (typeof URL !== 'undefined' && input instanceof URL)) {
+        fetchInput = urlWithKey;
+      } else if (typeof Request !== 'undefined' && input instanceof Request) {
+        // Preserve method, body, credentials, and request headers while
+        // replacing only the URL. The headers are also passed as a plain
+        // object below for React Native's native fetch bridge.
+        fetchInput = new Request(urlWithKey, input);
       }
-    } catch {
-      // Keep the original input; the request will report a normal URL error.
     }
+  } catch {
+    // Keep the original input; the request will report a normal URL error.
   }
 
   try {
