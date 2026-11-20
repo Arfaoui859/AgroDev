@@ -24,7 +24,7 @@ import {
   PROBE_TIMEOUT_FLOOR_MS,
 } from "../../server/services/providers/llmProvider";
 import { geminiGenerateContent } from "../../server/services/providers/gemini";
-import { getWeatherFromOpenMeteo } from "../../server/services/providers/weatherProvider";
+import { getWeatherFromWeatherApi } from "../../server/services/providers/weatherProvider";
 
 const originalFetch = global.fetch;
 
@@ -131,47 +131,54 @@ describe("http provider helpers", () => {
   });
 });
 
-describe("Open-Meteo weather provider payload guard", () => {
-  test("a 200 response with no current/daily block is a parse error, not a crash", async () => {
-    mockFetch(async () => new Response(JSON.stringify({ latitude: 36.8 }), { status: 200 }));
+describe("WeatherAPI weather provider payload guard", () => {
+  beforeEach(() => {
+    process.env.WEATHERAPI_KEY = "test-weather-key";
+  });
+
+  afterEach(() => {
+    delete process.env.WEATHERAPI_KEY;
+  });
+
+  test("a 200 response without current/forecast data is a parse error", async () => {
+    mockFetch(async () => new Response(JSON.stringify({ location: {} }), { status: 200 }));
     await expect(
-      getWeatherFromOpenMeteo({ lat: 36.8, lon: 10.2 }),
+      getWeatherFromWeatherApi({ lat: 37.11, lon: 10.31 }),
     ).rejects.toMatchObject({ kind: "parse" });
   });
 
-  test("a 200 response with current but no daily block is rejected", async () => {
-    mockFetch(
-      async () =>
-        new Response(JSON.stringify({ current: { temperature_2m: 22 } }), { status: 200 }),
-    );
-    await expect(
-      getWeatherFromOpenMeteo({ lat: 36.8, lon: 10.2 }),
-    ).rejects.toMatchObject({ kind: "parse" });
-  });
-
-  test("a well-formed payload returns real data with provenance", async () => {
-    mockFetch(
-      async () =>
-        new Response(
-          JSON.stringify({
-            current: { temperature_2m: 24, relative_humidity_2m: 60, weather_code: 0 },
-            daily: {
-              time: ["2026-11-11", "2026-11-12"],
-              weather_code: [0, 1],
-              temperature_2m_max: [26, 27],
-              temperature_2m_min: [16, 17],
-              precipitation_sum: [0, 1.2],
-              relative_humidity_2m_mean: [60, 62],
-              et0_fao_evapotranspiration: [3.1, 3.4],
-            },
-          }),
-          { status: 200 },
-        ),
-    );
-    const data = await getWeatherFromOpenMeteo({ lat: 36.8, lon: 10.2 });
+  test("a well-formed payload returns provider data and provenance", async () => {
+    mockFetch(async () => new Response(JSON.stringify({
+      current: {
+        last_updated: "2026-11-20 12:00",
+        temp_c: 24,
+        humidity: 60,
+        wind_kph: 12,
+        pressure_mb: 1012,
+        vis_km: 10,
+        condition: { text: "مشمس", code: 1000 },
+      },
+      forecast: {
+        forecastday: [{
+          date: "2026-11-20",
+          day: {
+            maxtemp_c: 26,
+            mintemp_c: 17,
+            avghumidity: 58,
+            totalprecip_mm: 0,
+            condition: { text: "مشمس", code: 1000 },
+            maxwind_kph: 14,
+            avgvis_km: 10,
+            uv: 5,
+          },
+        }],
+      },
+    }), { status: 200 }));
+    const data = await getWeatherFromWeatherApi({ lat: 37.12, lon: 10.32 });
     expect(data.source.isRealData).toBe(true);
-    expect(data.source.provider).toBe("Open-Meteo");
-    expect(data.forecast.daily.length).toBe(2);
+    expect(data.source.provider).toBe("WeatherAPI.com");
+    expect(data.current.temperature).toBe(24);
+    expect(data.forecast.daily).toHaveLength(1);
   });
 });
 
