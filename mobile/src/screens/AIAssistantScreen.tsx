@@ -199,11 +199,13 @@ export const AIAssistantScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <LiveVoiceCallModal
-        visible={liveVoiceVisible}
-        language={language}
-        onClose={() => setLiveVoiceVisible(false)}
-      />
+      {liveVoiceVisible ? (
+        <LiveVoiceCallModal
+          visible={true}
+          language={language}
+          onClose={() => setLiveVoiceVisible(false)}
+        />
+      ) : null}
 
       {/* Suggested Quick Prompt Chips */}
       <View style={styles.chipsSection}>
