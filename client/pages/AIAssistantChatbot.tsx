@@ -142,6 +142,11 @@ const SPECIALIST_LABELS: Record<string, { ar: string; fr: string; en: string }> 
   finance: { ar: 'المالية الزراعية', fr: 'Finance agricole', en: 'Agricultural finance' },
   yield_intel: { ar: 'ذكاء المردود', fr: 'Intelligence de rendement', en: 'Yield intelligence' },
   livestock: { ar: 'المواشي والصحة الحيوانية', fr: 'Bétail et santé animale', en: 'Livestock & veterinary' },
+  farm_tasks: { ar: 'مهام المزرعة', fr: 'Tâches de l’exploitation', en: 'Farm tasks' },
+  farm_equipment: { ar: 'المعدّات والصيانة', fr: 'Équipements et maintenance', en: 'Farm equipment' },
+  monitoring: { ar: 'المراقبة والتنبيهات', fr: 'Surveillance et alertes', en: 'Monitoring & alerts' },
+  supply_chain: { ar: 'تتبّع سلسلة التوريد', fr: 'Traçabilité de la chaîne d’approvisionnement', en: 'Supply-chain traceability' },
+  logistics: { ar: 'النقل واللوجستيك', fr: 'Transport et logistique', en: 'Transport & logistics' },
   marketplace: { ar: 'السوق التجاري', fr: 'Intelligence commerciale', en: 'Marketplace intelligence' },
   advisor: { ar: 'المستشار الزراعي العام', fr: 'Conseiller agricole général', en: 'General agricultural advisor' },
 };
