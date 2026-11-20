@@ -513,6 +513,7 @@ export interface MarketplaceListing {
   governorate?: string | null;
   description?: string | null;
   status?: 'draft' | 'published' | 'reserved' | 'sold' | 'archived';
+  createdAt?: string;
 }
 
 export interface AgriculturalCatalogProduct {
