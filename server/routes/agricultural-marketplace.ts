@@ -61,12 +61,36 @@ router.get("/listings", async (req, res) => {
     if (error) throw error;
     const rows = (data ?? []).filter((r:any) => !(r.listing_type === "agricultural_input" && isRegulatedPesticideText(r.title,r.category)));
     let sellers: Record<string,string> = {};
+    let verifiedSellers = new Set<string>();
+    const reputation: Record<string,{average:number;count:number}> = {};
+    const activePromotions: Record<string,string> = {};
     if (supabaseAdmin && rows.length) {
       const ids = [...new Set(rows.map((r:any)=>r.seller_id))];
-      const {data:profiles} = await supabaseAdmin.from("users").select("id,full_name").in("id",ids);
+      const listingIds = rows.map((r:any)=>r.id);
+      const [{data:profiles},{data:verifications},{data:promotions}] = await Promise.all([
+        supabaseAdmin.from("users").select("id,full_name").in("id",ids),
+        supabaseAdmin.from("marketplace_seller_verifications").select("seller_id").in("seller_id",ids).eq("status","verified"),
+        supabaseAdmin.from("marketplace_listing_promotions").select("listing_id,promotion_type,ends_at").in("listing_id",listingIds).eq("status","active").gt("ends_at",new Date().toISOString()),
+      ]);
       sellers = Object.fromEntries((profiles ?? []).map((p:any)=>[p.id,p.full_name]));
+      verifiedSellers = new Set((verifications ?? []).map((v:any)=>v.seller_id));
+      for (const promotion of promotions ?? []) activePromotions[promotion.listing_id] = promotion.promotion_type;
+      const {data:reviews,error:reviewError} = await db.from("marketplace_seller_reviews")
+        .select("seller_id,rating").in("seller_id",ids).eq("status","published").limit(5000);
+      if (reviewError) console.warn("[agro-market] seller reputation lookup unavailable",reviewError.message);
+      for (const review of reviews ?? []) {
+        const current = reputation[review.seller_id] ?? {average:0,count:0};
+        current.average += Number(review.rating); current.count += 1;
+        reputation[review.seller_id] = current;
+      }
+      for (const value of Object.values(reputation)) value.average = Number((value.average/value.count).toFixed(2));
     }
-    res.json({success:true,data:{listings:rows.map((r:any)=>({...r,seller_name:sellers[r.seller_id] ?? null}))},
+    res.json({success:true,data:{listings:rows.map((r:any)=>({
+      ...r,seller_name:sellers[r.seller_id] ?? null,seller_verified:verifiedSellers.has(r.seller_id),
+      seller_rating_average:reputation[r.seller_id]?.average ?? null,
+      seller_review_count:reputation[r.seller_id]?.count ?? 0,
+      promotion_type:activePromotions[r.id] ?? null,
+    }))},
       meta:{provenance:"database",isRealData:true,source:"seller-published-listings",updatedAt:new Date().toISOString()}});
   } catch (e:any) {
     console.error("[agro-market] listing read failed",e?.message);
