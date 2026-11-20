@@ -83,6 +83,7 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const [level, setLevel] = useState(0);
   const [error, setError] = useState("");
   const sessionRef = useRef<LiveVoiceSession | null>(null);
+  const startInProgressRef = useRef(false);
   const levelRef = useRef(0);
   const stateRef = useRef<LiveVoiceState | "ready">("ready");
   const copyText = copy(language);
@@ -123,11 +124,13 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   }, [visible, language]);
 
   const start = async () => {
+    if (startInProgressRef.current || sessionRef.current) return;
+    startInProgressRef.current = true;
     setError("");
     setLevel(0);
     levelRef.current = 0;
-    stateRef.current = "connecting";
-    setState("connecting");
+    // Keep the modal ready while Android displays its one-time permission
+    // dialog. The session switches to "connecting" only after permission is granted.
     const session = new LiveVoiceSession({
       onState: (nextState) => {
         stateRef.current = nextState;
@@ -154,6 +157,8 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
       stateRef.current = "error";
       setState("error");
       setError(message);
+    } finally {
+      startInProgressRef.current = false;
     }
   };
 
