@@ -62,3 +62,26 @@ BEGIN
     RAISE EXCEPTION 'Promotion payment_status is missing';
   END IF;
 END $$;
+
+DO $$
+BEGIN
+  IF to_regclass('public.marketplace_inquiry_messages') IS NULL THEN
+    RAISE EXCEPTION 'marketplace_inquiry_messages table is missing';
+  END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.marketplace_inquiry_messages'::regclass) THEN
+    RAISE EXCEPTION 'marketplace_inquiry_messages must have RLS enabled';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public'
+    AND tablename='marketplace_inquiry_messages' AND policyname='Inquiry participants can read messages') THEN
+    RAISE EXCEPTION 'message participant read policy is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public'
+    AND tablename='marketplace_inquiry_messages' AND policyname='Participants can send inquiry messages') THEN
+    RAISE EXCEPTION 'message participant insert policy is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.column_privileges
+    WHERE table_schema='public' AND table_name='marketplace_inquiry_messages'
+      AND grantee='authenticated' AND column_name='read_at' AND privilege_type='UPDATE') THEN
+    RAISE EXCEPTION 'authenticated users must only receive read_at update permission';
+  END IF;
+END $$;

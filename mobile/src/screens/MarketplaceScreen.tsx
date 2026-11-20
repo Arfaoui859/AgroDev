@@ -23,7 +23,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { addMarketplaceFavorite, createMarketplaceInquiry, createMarketplaceListing, createMarketplaceSellerReview, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiryMessages, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, reportMarketplaceListing, requestMarketplacePromotion, removeMarketplaceFavorite, submitMarketplaceSellerVerification, sendMarketplaceInquiryMessage, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { addMarketplaceFavorite, createMarketplaceInquiry, createMarketplaceListing, createMarketplaceSellerReview, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, reportMarketplaceListing, requestMarketplacePromotion, removeMarketplaceFavorite, submitMarketplaceSellerVerification, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
 import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
@@ -60,11 +60,6 @@ export const MarketplaceScreen: React.FC = () => {
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
   const [myPesticideOffers, setMyPesticideOffers] = useState<PesticideSellerOffer[]>([]);
   const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [conversationMessages, setConversationMessages] = useState<Awaited<ReturnType<typeof getMarketplaceInquiryMessages>>['data']>([]);
-  const [conversationDraft, setConversationDraft] = useState('');
-  const [conversationLoading, setConversationLoading] = useState(false);
-  const [conversationSending, setConversationSending] = useState(false);
   const [activeInquiryListing, setActiveInquiryListing] = useState<string | null>(null);
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
@@ -394,40 +389,6 @@ export const MarketplaceScreen: React.FC = () => {
       return;
     }
     await loadPrices();
-  };
-
-  const openInquiryConversation = async (inquiryId: string) => {
-    if (activeConversationId === inquiryId) {
-      setActiveConversationId(null);
-      setConversationMessages([]);
-      return;
-    }
-    setActiveConversationId(inquiryId);
-    setConversationLoading(true);
-    try {
-      const result = await getMarketplaceInquiryMessages(inquiryId);
-      setConversationMessages(result.data);
-      if (result.error) Alert.alert(language === 'ar' ? 'تعذر تحميل الرسائل' : language === 'fr' ? 'Messages indisponibles' : 'Could not load messages', result.error);
-    } finally {
-      setConversationLoading(false);
-    }
-  };
-
-  const sendInquiryChatMessage = async (inquiryId: string) => {
-    const body = conversationDraft.trim();
-    if (!body || conversationSending) return;
-    setConversationSending(true);
-    try {
-      const result = await sendMarketplaceInquiryMessage(inquiryId, body);
-      if (!result.success || !result.data) {
-        Alert.alert(language === 'ar' ? 'تعذر إرسال الرسالة' : language === 'fr' ? 'Envoi impossible' : 'Message not sent', result.error || '');
-        return;
-      }
-      setConversationMessages(current => [...current, result.data!]);
-      setConversationDraft('');
-    } finally {
-      setConversationSending(false);
-    }
   };
 
   const acceptMarketplaceInquiry = async (id: string) => {
@@ -1189,28 +1150,6 @@ export const MarketplaceScreen: React.FC = () => {
                   {(inquiry.isSeller ? (language === 'ar' ? 'مشتري' : language === 'fr' ? 'Acheteur' : 'Buyer') : (language === 'ar' ? 'بائع' : language === 'fr' ? 'Vendeur' : 'Seller'))} · {inquiry.status} · {inquiry.createdAt.slice(0, 10)}
                 </Text>
                 <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{inquiry.message}</Text>
-                <Button title={activeConversationId === inquiry.id
-                  ? (language === 'ar' ? 'إغلاق المحادثة' : language === 'fr' ? 'Fermer la conversation' : 'Close conversation')
-                  : (language === 'ar' ? 'فتح المحادثة' : language === 'fr' ? 'Ouvrir la conversation' : 'Open conversation')}
-                  onPress={() => { void openInquiryConversation(inquiry.id); }} variant="outline" size="sm" fullWidth={false} />
-                {activeConversationId === inquiry.id ? (
-                  <View style={{ gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
-                    {conversationLoading ? <Text style={styles.listingMeta}>{language === 'ar' ? 'جاري تحميل الرسائل...' : 'Loading messages...'}</Text> : null}
-                    {conversationMessages.map(message => (
-                      <View key={message.id} style={{ alignSelf: message.sender_id === (inquiry.isSeller ? inquiry.sellerId : inquiry.buyerId) ? 'flex-end' : 'flex-start', maxWidth: '88%', padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}>
-                        <Text style={[styles.listingMeta, { color: colors.text }]}>{message.body}</Text>
-                        <Text style={styles.listingMeta}>{new Date(message.created_at).toLocaleString()}</Text>
-                      </View>
-                    ))}
-                    <TextInput value={conversationDraft} onChangeText={setConversationDraft}
-                      placeholder={language === 'ar' ? 'اكتب رسالتك...' : language === 'fr' ? 'Votre message...' : 'Write a message...'}
-                      multiline maxLength={4000}
-                      style={{ minHeight: 44, maxHeight: 110, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }} />
-                    <Button title={language === 'ar' ? 'إرسال' : language === 'fr' ? 'Envoyer' : 'Send message'}
-                      onPress={() => { void sendInquiryChatMessage(inquiry.id); }} loading={conversationSending}
-                      disabled={conversationSending || !conversationDraft.trim()} size="sm" />
-                  </View>
-                ) : null}
                 {inquiry.isSeller && inquiry.status === 'new' ? (
                   <Button title={language === 'ar' ? 'قبول الطلب' : language === 'fr' ? 'Accepter' : 'Accept inquiry'}
                     onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
