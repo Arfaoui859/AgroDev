@@ -106,35 +106,34 @@ export class LiveVoiceSession {
     this.stopped = false;
     this.platformConversationId = null;
     this.platformConversationHistory = [];
-    this.callbacks.onState("connecting");
-
     let permissionGranted = false;
     if (Platform.OS === "android") {
-      // Request the dangerous Android permission directly from the OS.
-      // This makes the runtime dialog explicit instead of relying only on
-      // the audio library to trigger it as a side effect of recorder setup.
-      const permission = await PermissionsAndroid.request(
+      // Android remembers this dangerous permission after the first approval.
+      // Check first so returning users go straight into the call without seeing
+      // another permission prompt. The manifest declaration makes the app
+      // appear under Android Settings > Apps > AgroVibe > Permissions.
+      permissionGranted = await PermissionsAndroid.check(
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-        {
-          title: "السماح باستخدام الميكروفون",
-          message: "يحتاج AgriVibe إلى الميكروفون حتى تنجم تحكي مباشرة مع سميح توكبري.",
-          buttonPositive: "السماح",
-          buttonNegative: "إلغاء",
-        },
       );
-      if (this.stopped) return;
-      if (permission === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-        throw new Error("صلاحية الميكروفون مرفوضة نهائياً. افتح إعدادات الهاتف ثم التطبيقات ثم AgriVibe ثم الأذونات واسمح باستخدام الميكروفون.");
-      }
-      permissionGranted = permission === PermissionsAndroid.RESULTS.GRANTED;
       if (!permissionGranted) {
-        throw new Error("ما نجّمش نبدأ المكالمة من غير صلاحية الميكروفون. اضغط على السماح وقت تظهرلك نافذة Android.");
+        const permission = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+          {
+            title: "السماح باستخدام الميكروفون",
+            message: "يحتاج AgroVibe إلى الميكروفون حتى تنجم تحكي مباشرة مع سميح توكبري.",
+            buttonPositive: "السماح",
+            buttonNegative: "إلغاء",
+          },
+        );
+        if (this.stopped) return;
+        if (permission === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          throw new Error("صلاحية الميكروفون مرفوضة نهائياً. افتح إعدادات الهاتف ثم التطبيقات ثم AgroVibe ثم الأذونات واسمح باستخدام الميكروفون.");
+        }
+        permissionGranted = permission === PermissionsAndroid.RESULTS.GRANTED;
+        if (!permissionGranted) {
+          throw new Error("ما نجّمش نبدأ المكالمة من غير صلاحية الميكروفون. اضغط على السماح وقت تظهرلك نافذة Android.");
+        }
       }
-
-      // Confirm that the native audio module sees the same granted permission
-      // before creating the recorder.
-      const audioPermission = await AudioManager.checkRecordingPermissions();
-      permissionGranted = audioPermission === "Granted";
     } else {
       const permission = await AudioManager.requestRecordingPermissions();
       permissionGranted = permission === "Granted";
@@ -142,8 +141,12 @@ export class LiveVoiceSession {
 
     if (this.stopped) return;
     if (!permissionGranted) {
-      throw new Error("تعذّر التثبت من صلاحية الميكروفون. راجع أذونات AgriVibe وحاول من جديد.");
+      throw new Error("تعذّر التثبت من صلاحية الميكروفون. راجع أذونات AgroVibe وحاول من جديد.");
     }
+
+    // Do not show the call as connecting, mint an LLM token, or initialise
+    // audio until microphone access has been granted.
+    this.callbacks.onState("connecting");
 
     // Mint the one-use token only after permission is granted, because its
     // new-session window is intentionally short.
