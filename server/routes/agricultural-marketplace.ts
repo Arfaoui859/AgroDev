@@ -816,7 +816,7 @@ router.get("/admin/moderation/reports", requireAdminAccess, async (_req,res) => 
   const db=adminDb(res); if(!db) return;
   const {data,error}=await db.from("marketplace_listing_reports")
     .select("*,listing:marketplace_listings(id,title,seller_id,status)")
-    .eq("status","open").order("created_at",{ascending:true}).limit(200);
+    .in("status",["open","reviewing"]).order("created_at",{ascending:true}).limit(200);
   if(error) return res.status(503).json({success:false,code:"REPORT_QUEUE_UNAVAILABLE"});
   res.json({success:true,data:data??[]});
 });
