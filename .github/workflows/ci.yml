@@ -262,6 +262,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261119_product_registration_evidence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261118_onagri_catalog_sources.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261120000100_marketplace_trust_buy_sell.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261120000200_marketplace_inquiry_messages.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261119_product_registration_evidence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/marketplace-intelligence-verification.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/db/marketplace-trust-verification.sql
@@ -282,6 +283,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261116_marketplace_market_intelligence.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/migrations/20261117_bir_el_kassaa_and_marketplace_inquiries.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261120000100_marketplace_trust_buy_sell.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261120000200_marketplace_inquiry_messages.sql
 
       - name: 🔒 Verify tenant isolation and RLS policies
         env:
