@@ -250,16 +250,18 @@ router.post("/inquiries/:id/order", requireAuth, requireVerifiedAuth, async (req
   if(!inquiry) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
   if(inquiry.status!=="accepted") return res.status(409).json({success:false,code:"INQUIRY_MUST_BE_ACCEPTED"});
   const listing=Array.isArray(inquiry.listing)?inquiry.listing[0]:inquiry.listing;
-  if(!listing) return res.status(409).json({success:false,code:"LISTING_UNAVAILABLE"});
+  if(!listing || listing.status!=="published") return res.status(409).json({success:false,code:"LISTING_UNAVAILABLE"});
   const requestedQuantity=positive(req.body?.quantity ?? inquiry.quantity);
   const unitPrice=positive(req.body?.unit_price ?? listing.price ?? 0);
   const quantity=requestedQuantity;
   if(quantity===null || Number.isNaN(quantity) || quantity<=0 || unitPrice===null || Number.isNaN(unitPrice))
     return res.status(400).json({success:false,code:"INVALID_ORDER_TERMS"});
+  const currency=text(listing.currency,3).toUpperCase()||"TND";
+  if(!/^[A-Z]{3}$/.test(currency)) return res.status(400).json({success:false,code:"INVALID_ORDER_CURRENCY"});
   const payload={
     inquiry_id:inquiry.id, listing_id:inquiry.listing_id, buyer_id:inquiry.buyer_id, seller_id:sellerId,
     listing_title:text(listing.title,180), quantity, unit:text(listing.unit,40)||null,
-    unit_price:unitPrice, currency:text(listing.currency,3).toUpperCase()||"TND",
+    unit_price:unitPrice, currency,
     buyer_note:text(req.body?.buyer_note,1200)||null, status:"awaiting_buyer_confirmation",
   };
   const {data,error}=await db.from("marketplace_orders").insert(payload).select("*").single();
