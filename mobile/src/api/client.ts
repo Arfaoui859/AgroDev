@@ -1407,7 +1407,11 @@ export async function getMarketplaceInquiries(): Promise<{ data: MarketplaceInqu
     data: rows.map((i: any) => ({
       id: String(i.id), listingId: String(i.listing_id), buyerId: String(i.buyer_id), sellerId: String(i.seller_id),
       message: i.message, quantity: i.quantity == null ? null : Number(i.quantity), status: i.status,
-      createdAt: i.created_at, listingTitle: i.listing?.title ?? null, isSeller: Boolean(user?.id && user.id === i.seller_id),
+      createdAt: i.created_at, listingTitle: i.listing?.title ?? null,
+      listingPrice: i.listing?.price == null ? null : Number(i.listing.price),
+      listingQuantity: i.listing?.quantity == null ? null : Number(i.listing.quantity),
+      listingUnit: i.listing?.unit ?? null, listingCurrency: i.listing?.currency ?? 'TND',
+      isSeller: Boolean(user?.id && user.id === i.seller_id),
     })),
     error: res.error,
   };
