@@ -80,7 +80,7 @@ export const MarketplaceScreen: React.FC = () => {
   const [sellerRegistrationEvidenceUrl, setSellerRegistrationEvidenceUrl] = useState('');
   const [sellerAuthorizationNumber, setSellerAuthorizationNumber] = useState('');
   const [sellerAuthorizationDocumentUrl, setSellerAuthorizationDocumentUrl] = useState('');
-  const isPesticideOffer = sellerType === 'agricultural_input' &&
+  const isPesticideOffer = tradeMode === 'sell' && sellerType === 'agricultural_input' &&
     /pesticid|herbicid|fungicid|insecticid|acaricid|rodenticid|phytosanitaire|مبيد|مبيدات|دواء\s*فلاحي|أدوية\s*فلاحية|ادوية\s*فلاحية/i.test(sellerTitle + ' ' + sellerCategory);
   const [harvestCrop, setHarvestCrop] = useState('');
   const [harvestDate, setHarvestDate] = useState('');
@@ -209,7 +209,7 @@ export const MarketplaceScreen: React.FC = () => {
       Alert.alert(language === 'ar' ? 'بيانات وترخيص المبيد مطلوبة' : language === 'fr' ? 'Informations et autorisations requises' : 'Pesticide details and permits are required');
       return;
     }
-    if (sellerType === 'harvest' && (!harvestCrop.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(harvestDate))) {
+    if (tradeMode === 'sell' && sellerType === 'harvest' && (!harvestCrop.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(harvestDate))) {
       Alert.alert(language === 'ar' ? 'نوع المحصول وتاريخ الحصاد مطلوبان' : language === 'fr' ? 'Culture et date de récolte requises' : 'Crop and harvest date are required (YYYY-MM-DD)');
       return;
     }
@@ -242,8 +242,8 @@ export const MarketplaceScreen: React.FC = () => {
         currency: 'TND', unit: sellerUnit.trim() || undefined,
         location: sellerLocation.trim() || undefined, governorate: sellerGovernorate.trim() || undefined,
         image_urls: imageUrls,
-        harvest_crop: sellerType === 'harvest' ? harvestCrop.trim() : undefined,
-        expected_harvest_date: sellerType === 'harvest' ? harvestDate : undefined,
+        harvest_crop: tradeMode === 'sell' && sellerType === 'harvest' ? harvestCrop.trim() : undefined,
+        expected_harvest_date: tradeMode === 'sell' && sellerType === 'harvest' ? harvestDate : undefined,
       });
       if (!result.data) throw new Error(result.error || 'Could not publish listing');
       setSellerTitle(''); setSellerCategory(''); setSellerDescription(''); setSellerPrice('');
@@ -660,7 +660,7 @@ export const MarketplaceScreen: React.FC = () => {
               <TextInput value={sellerDescription} onChangeText={setSellerDescription} multiline
                 style={{ minHeight: 76, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }} />
             </View>
-            {sellerType === 'harvest' ? (
+            {tradeMode === 'sell' && sellerType === 'harvest' ? (
               <>
                 <View style={{ gap: 4 }}>
                   <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'نوع المحصول' : language === 'fr' ? 'Culture' : 'Crop'}</Text>
