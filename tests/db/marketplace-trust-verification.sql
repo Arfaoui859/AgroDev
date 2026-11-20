@@ -1,0 +1,64 @@
+-- Verify marketplace trust, buy/sell, and moderation schema and RLS.
+DO $$
+DECLARE
+  required_table text;
+  required_tables text[] := ARRAY[
+    'marketplace_favorites',
+    'marketplace_seller_reviews',
+    'marketplace_listing_reports',
+    'marketplace_seller_verifications',
+    'marketplace_listing_promotions'
+  ];
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='marketplace_listings'
+      AND column_name='trade_type'
+  ) THEN
+    RAISE EXCEPTION 'marketplace_listings.trade_type is missing';
+  END IF;
+
+  FOREACH required_table IN ARRAY required_tables LOOP
+    IF to_regclass('public.' || required_table) IS NULL THEN
+      RAISE EXCEPTION 'Required table public.% is missing', required_table;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_class c
+      WHERE c.oid = to_regclass('public.' || required_table)
+        AND c.relrowsecurity
+    ) THEN
+      RAISE EXCEPTION 'RLS is not enabled on public.%', required_table;
+    END IF;
+  END LOOP;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_favorites' AND policyname='Users manage own marketplace favorites') THEN
+    RAISE EXCEPTION 'Marketplace favorites owner policy is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_seller_reviews' AND policyname='Reviewers can create own seller reviews') THEN
+    RAISE EXCEPTION 'Seller review ownership policy is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_listing_reports' AND policyname='Users can submit own listing reports') THEN
+    RAISE EXCEPTION 'Listing report ownership policy is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_seller_verifications' AND policyname='Sellers can submit verification requests') THEN
+    RAISE EXCEPTION 'Seller verification ownership policy is missing';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='marketplace_listing_promotions' AND policyname='Sellers can request listing promotions') THEN
+    RAISE EXCEPTION 'Seller promotion ownership policy is missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='marketplace_seller_verifications'
+      AND column_name='evidence_urls' AND data_type='ARRAY'
+  ) THEN
+    RAISE EXCEPTION 'Seller verification evidence_urls column is missing';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='marketplace_listing_promotions'
+      AND column_name='payment_status'
+  ) THEN
+    RAISE EXCEPTION 'Promotion payment_status is missing';
+  END IF;
+END $$;
