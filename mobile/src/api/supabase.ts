@@ -3,15 +3,10 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import { secureStorageAdapter } from './secureStorage';
 
 /**
- * Use a fetch implementation owned by this Supabase client.
- *
- * Supabase captures its fetch implementation when createClient() runs. A
- * global.fetch wrapper installed later by the Expo entrypoint is therefore
- * too late and may never see Auth requests. Inject the apikey here, at the
- * transport actually used by supabase-js, while preserving Authorization and
- * every other caller-supplied header.
+ * Supabase-owned transport with temporary, secret-safe diagnostics.
+ * Never log request headers, credentials, tokens, or query parameters.
  */
-const supabaseFetch: typeof fetch = (input, init) => {
+const supabaseFetch: typeof fetch = async (input, init) => {
   const requestHeaders =
     typeof Request !== 'undefined' && input instanceof Request
       ? input.headers
@@ -24,7 +19,72 @@ const supabaseFetch: typeof fetch = (input, init) => {
 
   headers.set('apikey', SUPABASE_ANON_KEY);
 
-  return fetch(input, { ...init, headers });
+  const rawUrl = typeof input === 'string' ? input : input.url;
+  let requestPath = '<unparseable-url>';
+  try {
+    requestPath = new URL(rawUrl).pathname;
+  } catch {
+    // Keep the URL itself out of logs in case it contains sensitive data.
+  }
+
+  const method = (init?.method || (typeof Request !== 'undefined' && input instanceof Request ? input.method : 'GET')).toUpperCase();
+  console.info('[AGROVIBE-AUTH] request', {
+    method,
+    path: requestPath,
+    apikeyPresent: headers.has('apikey'),
+    apikeyLength: headers.get('apikey')?.length ?? 0,
+    projectHost: (() => {
+      try { return new URL(SUPABASE_URL).host; } catch { return '<invalid-url>'; }
+    })(),
+  });
+
+  try {
+    const response = await fetch(input, { ...init, headers });
+    let responsePath = requestPath;
+    try {
+      responsePath = new URL(response.url || rawUrl).pathname;
+    } catch {
+      // Do not log an unparsed URL.
+    }
+
+    console.info('[AGROVIBE-AUTH] response', {
+      method,
+      path: requestPath,
+      responsePath,
+      status: response.status,
+      ok: response.ok,
+      redirected: response.redirected,
+    });
+
+    if (!response.ok) {
+      try {
+        const body = await response.clone().text();
+        const safeBody = body
+          .replace(/eyJ[A-Za-z0-9._-]{20,}/g, '<redacted-token>')
+          .replace(/(apikey|authorization|access_token|refresh_token|password)["'\s:=]+[^,}"'\s]+/gi, '$1=<redacted>')
+          .slice(0, 300);
+        console.warn('[AGROVIBE-AUTH] error-body', {
+          status: response.status,
+          path: responsePath,
+          body: safeBody,
+        });
+      } catch (diagnosticError) {
+        console.warn('[AGROVIBE-AUTH] error-body-unavailable', {
+          name: diagnosticError instanceof Error ? diagnosticError.name : 'UnknownError',
+        });
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error('[AGROVIBE-AUTH] network-error', {
+      method,
+      path: requestPath,
+      name: error instanceof Error ? error.name : 'UnknownError',
+      message: error instanceof Error ? error.message.slice(0, 180) : 'Request failed',
+    });
+    throw error;
+  }
 };
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
