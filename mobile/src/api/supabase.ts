@@ -46,8 +46,22 @@ const supabaseFetch: typeof fetch = async (input, init) => {
     })(),
   });
 
+  // Auth requests must never leave the login UI spinning forever when
+  // Android's native network stack stalls. Keep the timeout local to this
+  // transport so Supabase receives a normal AbortError and signIn can finish.
+  const controller = new AbortController();
+  const callerSignal = init?.signal;
+  const abortFromCaller = () => controller.abort();
+  if (callerSignal?.aborted) controller.abort();
+  else callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
+
   try {
-    const response = await fetch(input, { ...init, headers: fetchHeaders });
+    const response = await fetch(input, {
+      ...init,
+      headers: fetchHeaders,
+      signal: controller.signal,
+    });
     let responsePath = requestPath;
     try {
       responsePath = new URL(response.url || rawUrl).pathname;
@@ -92,6 +106,9 @@ const supabaseFetch: typeof fetch = async (input, init) => {
       message: error instanceof Error ? error.message.slice(0, 180) : 'Request failed',
     });
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    callerSignal?.removeEventListener('abort', abortFromCaller);
   }
 };
 
