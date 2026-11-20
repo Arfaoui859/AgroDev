@@ -58,7 +58,7 @@ CREATE POLICY "Order participants can update lifecycle"
 
 REVOKE ALL ON public.marketplace_orders FROM anon, authenticated;
 GRANT SELECT, INSERT ON public.marketplace_orders TO authenticated;
-GRANT UPDATE (status, buyer_confirmed_at, completed_at, cancelled_at, cancellation_reason, dispute_reason, updated_at)
+GRANT UPDATE (status, cancellation_reason, dispute_reason, updated_at)
   ON public.marketplace_orders TO authenticated;
 
 -- Enforce role-specific state transitions even if a client bypasses the API.
