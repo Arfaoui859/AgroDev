@@ -28,6 +28,15 @@ import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffe
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
 
+const isSecureHttpsUrl = (value: string): boolean => {
+  try {
+    const parsed = new URL(value.trim());
+    return parsed.protocol === 'https:' && Boolean(parsed.hostname) && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Market prices read from the platform's stored `market_prices` records.
  * These are platform records, not an independently verified market feed, so the
@@ -200,8 +209,8 @@ export const MarketplaceScreen: React.FC = () => {
       return;
     }
     if (isPesticideOffer && (
-      !sellerRegistrationNumber.trim() || !/^https:\/\//i.test(sellerRegistrationEvidenceUrl.trim()) ||
-      !sellerAuthorizationNumber.trim() || !/^https:\/\//i.test(sellerAuthorizationDocumentUrl.trim()) ||
+      !sellerRegistrationNumber.trim() || !isSecureHttpsUrl(sellerRegistrationEvidenceUrl) ||
+      !sellerAuthorizationNumber.trim() || !isSecureHttpsUrl(sellerAuthorizationDocumentUrl) ||
       !Number.isFinite(Number(sellerPackageSize)) || Number(sellerPackageSize) <= 0 ||
       !sellerPrice.trim() || !sellerQuantity.trim() || !Number.isFinite(Number(sellerPrice)) || Number(sellerPrice) <= 0 ||
       !Number.isFinite(Number(sellerQuantity)) || Number(sellerQuantity) <= 0
@@ -295,7 +304,7 @@ export const MarketplaceScreen: React.FC = () => {
   );
 
   const submitSellerVerification = async () => {
-    if (verificationBusinessName.trim().length < 2 || !/^https:\/\//i.test(verificationEvidenceUrl.trim())) {
+    if (verificationBusinessName.trim().length < 2 || !isSecureHttpsUrl(verificationEvidenceUrl)) {
       Alert.alert(language === 'ar' ? 'أكمل بيانات التوثيق' : language === 'fr' ? 'Informations manquantes' : 'Verification details required');
       return;
     }
