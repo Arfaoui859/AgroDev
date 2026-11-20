@@ -90,7 +90,16 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
   const isRtl = language === "ar";
 
   useEffect(() => {
-    if (visible) return;
+    if (visible) {
+      // Every opening starts with a clean UI state; a previous call's ended
+      // state must never leak into the next call.
+      stateRef.current = "ready";
+      setState("ready");
+      setError("");
+      setLevel(0);
+      levelRef.current = 0;
+      return;
+    }
     const session = sessionRef.current;
     sessionRef.current = null;
     if (session) void session.stop();
@@ -108,7 +117,10 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
       // activity (notably the microphone permission prompt). Do not tear down
       // a session while it is still connecting; that would turn a successful
       // permission grant into an immediately-ended call.
-      if (nextState === "background" && sessionRef.current && stateRef.current !== "connecting") {
+      // Android may report the permission dialog as background before the
+      // session has emitted "connecting". Never kill a session while start()
+      // is still obtaining permission or completing its first handshake.
+      if (nextState === "background" && sessionRef.current && !startInProgressRef.current && stateRef.current !== "connecting") {
         const activeSession = sessionRef.current;
         sessionRef.current = null;
         void activeSession.stop().finally(() => {
@@ -147,6 +159,18 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
     sessionRef.current = session;
     try {
       await session.start();
+      // If the user really left the app during startup (rather than Android
+      // temporarily opening the permission activity), clean up after the
+      // handshake completes because the earlier background event was ignored.
+      if (AppState.currentState === "background" && sessionRef.current === session) {
+        sessionRef.current = null;
+        await session.stop();
+        stateRef.current = "ended";
+        setState("ended");
+        setLevel(0);
+        levelRef.current = 0;
+        setError(copy(language).background);
+      }
     } catch (reason) {
       if (sessionRef.current !== session || !visible) return;
       const message = reason instanceof Error ? reason.message : copyText.error;
