@@ -62,6 +62,7 @@ export const MarketplaceScreen: React.FC = () => {
   const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
   const [orders, setOrders] = useState<MarketplaceOrder[]>([]);
   const [orderActionId, setOrderActionId] = useState<string | null>(null);
+  const [orderTerms, setOrderTerms] = useState<Record<string, { quantity: string; unitPrice: string }>>({});
   const [activeInquiryListing, setActiveInquiryListing] = useState<string | null>(null);
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
@@ -407,9 +408,13 @@ export const MarketplaceScreen: React.FC = () => {
   const createOrderFromInquiry = async (inquiry: MarketplaceInquiry) => {
     setOrderActionId(inquiry.id);
     try {
-      const result = await createMarketplaceOrder(inquiry.id, {
-        quantity: inquiry.quantity ?? undefined,
-      });
+      const terms = orderTerms[inquiry.id];
+      const quantity = terms?.quantity?.trim() ? Number(terms.quantity) : inquiry.quantity;
+      const unitPrice = terms?.unitPrice?.trim() ? Number(terms.unitPrice) : inquiry.listingPrice;
+      if (quantity == null || !Number.isFinite(quantity) || quantity <= 0 || unitPrice == null || !Number.isFinite(unitPrice) || unitPrice < 0) {
+        throw new Error(language === 'ar' ? 'أدخل الكمية وسعر الوحدة قبل إنشاء الطلب.' : language === 'fr' ? 'Saisissez la quantité et le prix unitaire.' : 'Enter the order quantity and unit price first.');
+      }
+      const result = await createMarketplaceOrder(inquiry.id, { quantity, unit_price: unitPrice });
       if (!result.data) throw new Error(result.error || 'ORDER_CREATE_FAILED');
       Alert.alert(language === 'ar' ? 'تم إنشاء الطلب' : language === 'fr' ? 'Commande créée' : 'Order created',
         language === 'ar' ? 'في انتظار تأكيد المشتري للشروط.' : language === 'fr' ? 'En attente de confirmation de l’acheteur.' : 'Waiting for buyer confirmation.');
@@ -1191,9 +1196,25 @@ export const MarketplaceScreen: React.FC = () => {
                     onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
                 ) : null}
                 {inquiry.isSeller && inquiry.status === 'accepted' && !orders.some(order => order.inquiryId === inquiry.id) ? (
-                  <Button title={language === 'ar' ? 'إنشاء طلب بيع' : language === 'fr' ? 'Créer une commande' : 'Create order'}
-                    onPress={() => { void createOrderFromInquiry(inquiry); }} loading={orderActionId === inquiry.id}
-                    disabled={Boolean(orderActionId)} variant="outline" size="sm" fullWidth={false} />
+                  <>
+                    <TextInput
+                      value={orderTerms[inquiry.id]?.quantity ?? (inquiry.quantity == null ? '' : String(inquiry.quantity))}
+                      onChangeText={value => setOrderTerms(current => ({ ...current, [inquiry.id]: { quantity: value, unitPrice: current[inquiry.id]?.unitPrice ?? (inquiry.listingPrice == null ? '' : String(inquiry.listingPrice)) } }))}
+                      keyboardType="decimal-pad"
+                      placeholder={language === 'ar' ? 'كمية الطلب' : language === 'fr' ? 'Quantité commandée' : 'Order quantity'}
+                      style={{ minHeight: 42, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }}
+                    />
+                    <TextInput
+                      value={orderTerms[inquiry.id]?.unitPrice ?? (inquiry.listingPrice == null ? '' : String(inquiry.listingPrice))}
+                      onChangeText={value => setOrderTerms(current => ({ ...current, [inquiry.id]: { quantity: current[inquiry.id]?.quantity ?? (inquiry.quantity == null ? '' : String(inquiry.quantity)), unitPrice: value } }))}
+                      keyboardType="decimal-pad"
+                      placeholder={language === 'ar' ? 'سعر الوحدة بالدينار' : language === 'fr' ? 'Prix unitaire (TND)' : 'Unit price (TND)'}
+                      style={{ minHeight: 42, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text }}
+                    />
+                    <Button title={language === 'ar' ? 'إنشاء طلب بيع' : language === 'fr' ? 'Créer une commande' : 'Create order'}
+                      onPress={() => { void createOrderFromInquiry(inquiry); }} loading={orderActionId === inquiry.id}
+                      disabled={Boolean(orderActionId)} variant="outline" size="sm" fullWidth={false} />
+                  </>
                 ) : null}
                 {!inquiry.isSeller && ['accepted','closed'].includes(inquiry.status) ? (
                   <Button title={language === 'ar' ? 'قيّم البائع' : language === 'fr' ? 'Évaluer le vendeur' : 'Rate seller'}
