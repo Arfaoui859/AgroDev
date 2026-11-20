@@ -36,6 +36,7 @@ import {
   OrchestrationTrace,
   MarketplaceListing,
   MarketplaceInquiry,
+  MarketplaceOrder,
   MarketplaceResult,
   NewsArticle,
   NewsResult,
@@ -1417,6 +1418,62 @@ export async function updateMarketplaceInquiryStatus(id: string, status: Marketp
     method: 'PATCH', body: JSON.stringify({ status }),
   });
   return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || 'INQUIRY_UPDATE_FAILED' };
+}
+
+export async function createMarketplaceOrder(inquiryId: string, input: {
+  quantity?: number; unit_price?: number; buyer_note?: string;
+} = {}): Promise<{ data: MarketplaceOrder | null; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/inquiries/${encodeURIComponent(inquiryId)}/order`, {
+    method: 'POST', body: JSON.stringify(input),
+  });
+  const p = res.data?.data;
+  if (!res.data?.success || !p) return { data: null, error: res.error || res.data?.code || 'ORDER_CREATE_FAILED' };
+  return { data: mapMarketplaceOrder(p), error: null };
+}
+
+function mapMarketplaceOrder(p: any): MarketplaceOrder {
+  const { data: { user } } = supabase.auth.getUser() as any;
+  return {
+    id: String(p.id), inquiryId: String(p.inquiry_id), listingId: String(p.listing_id),
+    buyerId: String(p.buyer_id), sellerId: String(p.seller_id), listingTitle: String(p.listing_title ?? ''),
+    quantity: Number(p.quantity), unit: p.unit ?? null, unitPrice: Number(p.unit_price),
+    currency: String(p.currency ?? 'TND'), status: p.status, buyerNote: p.buyer_note ?? null,
+    cancellationReason: p.cancellation_reason ?? null, disputeReason: p.dispute_reason ?? null,
+    createdAt: p.created_at, updatedAt: p.updated_at,
+    isSeller: Boolean(user?.id && user.id === p.seller_id),
+  };
+}
+
+export async function getMarketplaceOrders(): Promise<{ data: MarketplaceOrder[]; error: string | null }> {
+  const res = await apiRequest<any>('/api/agro-market/orders');
+  const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
+  const { data: { user } } = await supabase.auth.getUser();
+  return {
+    data: rows.map((p: any) => ({
+      id: String(p.id), inquiryId: String(p.inquiry_id), listingId: String(p.listing_id),
+      buyerId: String(p.buyer_id), sellerId: String(p.seller_id), listingTitle: String(p.listing_title ?? ''),
+      quantity: Number(p.quantity), unit: p.unit ?? null, unitPrice: Number(p.unit_price),
+      currency: String(p.currency ?? 'TND'), status: p.status, buyerNote: p.buyer_note ?? null,
+      cancellationReason: p.cancellation_reason ?? null, disputeReason: p.dispute_reason ?? null,
+      createdAt: p.created_at, updatedAt: p.updated_at,
+      isSeller: Boolean(user?.id && user.id === p.seller_id),
+    })),
+    error: res.error,
+  };
+}
+
+export async function confirmMarketplaceOrder(orderId: string): Promise<{ success: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/orders/${encodeURIComponent(orderId)}/confirm`, { method: 'POST' });
+  return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || res.data?.code || 'ORDER_CONFIRM_FAILED' };
+}
+
+export async function updateMarketplaceOrderStatus(
+  orderId: string, status: MarketplaceOrder['status'], reason?: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const res = await apiRequest<any>(`/api/agro-market/orders/${encodeURIComponent(orderId)}/status`, {
+    method: 'PATCH', body: JSON.stringify({ status, reason }),
+  });
+  return { success: Boolean(res.data?.success), error: res.data?.success ? null : res.error || res.data?.code || 'ORDER_UPDATE_FAILED' };
 }
 
 export async function updateMarketplaceListing(id: string, input: {
