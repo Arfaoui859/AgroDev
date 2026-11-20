@@ -36,6 +36,7 @@ import {
   OrchestrationTrace,
   MarketplaceListing,
   MarketplaceInquiry,
+  MarketplaceInquiryMessage,
   MarketplaceOrder,
   MarketplaceResult,
   NewsArticle,
