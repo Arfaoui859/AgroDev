@@ -3,6 +3,28 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import { secureStorageAdapter } from './secureStorage';
 
 /**
+ * Ensure the public project key is present at the native fetch boundary.
+ * Merge headers from both Request and RequestInit because React Native's
+ * fetch implementation may not preserve the SDK's global headers otherwise.
+ */
+const fetchWithSupabaseApiKey: typeof fetch = async (input, init) => {
+  const headers = new Headers(
+    input instanceof Request ? input.headers : undefined,
+  );
+
+  new Headers(init?.headers).forEach((value, name) => {
+    headers.set(name, value);
+  });
+
+  headers.set('apikey', SUPABASE_ANON_KEY);
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
+};
+
+/**
  * Supabase client for the mobile app.
  *
  * Sessions are persisted in the OS secure store (chunked, see secureStorage.ts)
@@ -10,13 +32,11 @@ import { secureStorageAdapter } from './secureStorage';
  * has no browser URL to parse.
  */
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  // Set the public project key explicitly on every Supabase request. This is
-  // normally added by supabase-js itself; making it explicit also protects
-  // native builds from requests being created without the required apikey.
   global: {
     headers: {
       apikey: SUPABASE_ANON_KEY,
     },
+    fetch: fetchWithSupabaseApiKey,
   },
   auth: {
     storage: secureStorageAdapter,
