@@ -1231,7 +1231,7 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
   if (params.tradeType) query.set('trade_type', params.tradeType);
   const suffix = query.toString() ? `?${query.toString()}` : '';
   const res = await apiRequest<any>(`/api/agro-market/listings${suffix}`, {
-    cacheKey: `marketplace:${params.type || 'all'}:${params.q || 'all'}`,
+    cacheKey: `marketplace:${params.tradeType || 'all'}:${params.type || 'all'}:${params.q || 'all'}`,
   });
   if (!res.data?.success || !Array.isArray(res.data?.data?.listings)) {
     return {
@@ -1357,7 +1357,7 @@ export async function getMyMarketplaceListings(): Promise<{ data: MarketplaceLis
       id: String(l.id), title: l.title, category: l.category, price: l.price == null ? null : Number(l.price),
       currency: l.currency ?? 'TND', unit: l.unit ?? undefined, location: l.location ?? null,
       quantity: l.quantity == null ? null : Number(l.quantity), imageUrl: l.image_urls?.[0] ?? null,
-      listingType: l.listing_type, expectedHarvestDate: l.expected_harvest_date ?? null,
+      listingType: l.listing_type, tradeType: l.trade_type === 'buy' ? 'buy' : 'sell', expectedHarvestDate: l.expected_harvest_date ?? null,
       harvestWindowEnd: l.harvest_window_end ?? null, governorate: l.governorate ?? null,
       description: l.description ?? null, status: l.status,
     })),
