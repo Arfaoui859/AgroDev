@@ -1253,6 +1253,8 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
     imageUrl: Array.isArray(l.image_urls) ? l.image_urls[0] ?? null : null,
     listingType: l.listing_type,
     tradeType: l.trade_type === 'buy' ? 'buy' : 'sell',
+    sellerVerified: Boolean(l.seller_verified), sellerRatingAverage: l.seller_rating_average == null ? null : Number(l.seller_rating_average),
+    sellerReviewCount: Number(l.seller_review_count || 0), promotionType: l.promotion_type ?? null,
     expectedHarvestDate: l.expected_harvest_date ?? null,
     harvestWindowEnd: l.harvest_window_end ?? null,
     governorate: l.governorate ?? null,
@@ -1296,7 +1298,9 @@ export async function getMarketplaceFavorites(): Promise<{ data: MarketplaceList
     currency:l.currency??'TND', unit:l.unit??undefined, sellerName:l.seller_name??null,
     location:l.location??null, quantity:l.quantity==null?null:Number(l.quantity),
     imageUrl:Array.isArray(l.image_urls)?l.image_urls[0]??null:null,
-    listingType:l.listing_type, tradeType:l.trade_type==='buy'?'buy':'sell',
+    listingType:l.listing_type, tradeType:l.trade_type==='buy'?'buy':'sell', sellerVerified:Boolean(l.seller_verified),
+    sellerRatingAverage:l.seller_rating_average==null?null:Number(l.seller_rating_average),
+    sellerReviewCount:Number(l.seller_review_count||0), promotionType:l.promotion_type??null,
     governorate:l.governorate??null, description:l.description??null, status:l.status,
   })), error:res.error };
 }
