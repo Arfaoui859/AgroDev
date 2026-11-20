@@ -20,6 +20,7 @@ import { ServicesScreen } from './src/screens/ServicesScreen';
 import { AIAssistantScreen } from './src/screens/AIAssistantScreen';
 import { MarketplaceScreen } from './src/screens/MarketplaceScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { AdminMarketplaceScreen } from './src/screens/AdminMarketplaceScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
 
 // Service screens
@@ -138,6 +139,8 @@ const MainAppContent: React.FC = () => {
           return { title: x.recentAnalysesTitle };
         case 'projects':
           return { title: getProjects(language).title };
+        case 'admin_marketplace':
+          return { title: language === 'ar' ? 'إدارة السوق' : language === 'fr' ? 'Administration du marché' : 'Marketplace Admin' };
         default:
           return { title: t.servicesTitle };
       }
@@ -245,6 +248,8 @@ const MainAppContent: React.FC = () => {
         );
       case 'projects':
         return <ProjectsScreen onBack={() => setActiveService(null)} />;
+      case 'admin_marketplace':
+        return <AdminMarketplaceScreen onBack={() => setActiveService(null)} />;
       default:
         return <GeneralServiceModal serviceId={activeService as string} onBack={() => setActiveService(null)} />;
     }
@@ -324,7 +329,7 @@ const MainAppContent: React.FC = () => {
             )}
             {activeTab === 'assistant' && <AIAssistantScreen />}
             {activeTab === 'marketplace' && <MarketplaceScreen />}
-            {activeTab === 'profile' && <ProfileScreen />}
+            {activeTab === 'profile' && <ProfileScreen onOpenMarketplaceAdmin={() => setActiveService('admin_marketplace')} />}
           </>
         )}
         </ErrorBoundary>
