@@ -129,10 +129,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(restored);
         authUserIdRef.current = restored?.user?.id ?? null;
         if (restored?.user) {
-          const profile = await fetchProfile();
-          if (active && authUserIdRef.current === restored.user.id) {
-            setUser(withPreference(mapUser(restored.user, profile)));
-          }
+          // Never block app startup on the profile API. The verified Supabase
+          // session is sufficient to render an authenticated fallback user;
+          // onAuthStateChange hydrates the authoritative DB profile in the
+          // background after the auth lock has been released.
+          setUser(withPreference(mapUser(restored.user)));
         }
       } catch (error) {
         console.warn('session restore failed:', error);
