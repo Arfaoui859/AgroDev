@@ -224,8 +224,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { success: true };
     } catch (error: any) {
-      // Empty string lets the UI layer localise the failure message.
-      return { success: false, error: error?.message || '' };
+      console.warn('Supabase sign-in transport failure:', {
+        name: error?.name || 'UnknownError',
+        message: error?.message || String(error),
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+      });
+      return { success: false, error: error?.message || String(error || '') };
     } finally {
       setIsLoading(false);
     }
@@ -246,7 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             phone: phone?.trim(),
             // A self-declared role is a request only; the backend assigns the
             // authoritative role and never trusts client metadata for authz.
-            role: role ?? 'farmer',
+            requested_role: role ?? 'farmer',
           },
         },
       });
@@ -262,18 +267,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // unavailable; the user metadata provides a safe initial profile.
         setSession(data.session);
         setUser(withPreference(mapUser(data.session.user)));
-        try {
-          const profile = await fetchProfile();
-          if (authUserIdRef.current === data.session.user.id) {
-            setUser(withPreference(mapUser(data.session.user, profile)));
-          }
-        } catch (profileError) {
-          console.warn('profile hydration failed after sign-up; continuing with authenticated session:', profileError);
-        }
+        // Keep account creation independent from the profile gateway. The
+        // verified Supabase session is already valid; profile provisioning is
+        // handled asynchronously just like the sign-in path.
+        setTimeout(() => {
+          void (async () => {
+            if (authUserIdRef.current !== data.session!.user.id) return;
+            try {
+              const profile = await fetchProfile();
+              if (authUserIdRef.current === data.session!.user.id) {
+                setUser(withPreference(mapUser(data.session!.user, profile)));
+              }
+            } catch (profileError) {
+              console.warn('deferred profile hydration after sign-up failed:', profileError);
+            }
+          })();
+        }, 0);
       }
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error?.message || '' };
+      console.warn('Supabase sign-up transport failure:', {
+        name: error?.name || 'UnknownError',
+        message: error?.message || String(error),
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+      });
+      return { success: false, error: error?.message || String(error || '') };
     } finally {
       setIsLoading(false);
     }
