@@ -84,6 +84,11 @@
       ],
       "expo-asset",
       "./plugins/withAgroVibeMicrophonePermission"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b5c58a50-10c3-4d2a-9011-386c2d719c10"
+      }
+    }
   }
 }
