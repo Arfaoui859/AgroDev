@@ -9,12 +9,14 @@ import { AuthModal } from '../../src/components/auth/AuthModal';
 const mockSignIn = jest.fn();
 const mockSignUp = jest.fn();
 const mockResetPassword = jest.fn();
+const mockResendConfirmation = jest.fn();
 
 jest.mock('../../src/context/AuthContext', () => ({
   useAuth: () => ({
     signIn: mockSignIn,
     signUp: mockSignUp,
     resetPassword: mockResetPassword,
+    resendConfirmation: mockResendConfirmation,
     isLoading: false,
   }),
 }));
@@ -85,14 +87,57 @@ describe('AuthModal UX', () => {
     expect(screen.getByText('Invalid login credentials')).toBeTruthy();
   });
 
-  it('shows the raw Supabase login error for native connection diagnosis', async () => {
+  it('reports a rejected/misconfigured auth backend as a localised connection problem', async () => {
     mockSignIn.mockResolvedValueOnce({ success: false, error: 'Invalid API key' });
     await renderModal();
     await type(emailField(), 'user@example.com');
     await type(passwordField(), 'secret123');
     await press(screen.getByText('دخول إلى حسابي'));
-    expect(screen.getByText('Login diagnostic: Invalid API key')).toBeTruthy();
+    expect(
+      screen.getByText('تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Login diagnostic/)).toBeNull();
     expect(screen.queryByText('Invalid API key')).toBeNull();
+  });
+
+  it('localises a network failure as a connection problem', async () => {
+    mockSignIn.mockResolvedValueOnce({ success: false, error: 'Network request failed' });
+    await renderModal();
+    await type(emailField(), 'user@example.com');
+    await type(passwordField(), 'secret123');
+    await press(screen.getByText('دخول إلى حسابي'));
+    expect(
+      screen.getByText('تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.'),
+    ).toBeTruthy();
+  });
+
+  it('never labels a wrong password as an unreachable account service', async () => {
+    mockSignIn.mockResolvedValueOnce({ success: false, error: 'Invalid login credentials' });
+    await renderModal();
+    await type(emailField(), 'user@example.com');
+    await type(passwordField(), 'wrongpass');
+    await press(screen.getByText('دخول إلى حسابي'));
+    expect(screen.getByText('Invalid login credentials')).toBeTruthy();
+    expect(screen.queryByText(/تعذّر الاتصال بخدمة الحساب/)).toBeNull();
+  });
+
+  it('guides an unconfirmed account to confirm its email and offers a resend', async () => {
+    mockSignIn.mockResolvedValueOnce({
+      success: false,
+      error: 'Email not confirmed',
+      needsConfirmation: true,
+    });
+    mockResendConfirmation.mockResolvedValueOnce({ success: true });
+    await renderModal();
+    await type(emailField(), 'new@example.com');
+    await type(passwordField(), 'secret123');
+    await press(screen.getByText('دخول إلى حسابي'));
+    expect(screen.getByText(/يجب تأكيد بريدك الإلكتروني/)).toBeTruthy();
+    expect(screen.queryByText('Email not confirmed')).toBeNull();
+
+    await press(screen.getByText('إعادة إرسال رابط التأكيد'));
+    expect(mockResendConfirmation).toHaveBeenCalledWith('new@example.com');
+    expect(Alert.alert).toHaveBeenCalledWith('تأكيد البريد الإلكتروني', expect.any(String));
   });
 
   it('requires a full name before sign-up', async () => {

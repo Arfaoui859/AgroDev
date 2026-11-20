@@ -30,6 +30,12 @@ interface AuthModalProps {
 
 type Tab = 'signin' | 'signup' | 'reset';
 
+// Errors that mean the request never produced a usable answer from Supabase
+// Auth: no connectivity, a timeout, or a rejected project key. Anything else is
+// a real server response (bad credentials, unconfirmed email, …).
+const AUTH_TRANSPORT_ERROR_RE =
+  /network request failed|failed to fetch|fetch failed|network ?error|timed? ?out|timeout|econn\w*|enotfound|dns|socket|offline|unreachable|invalid api key/i;
+
 const ROLE_OPTIONS: { role: UserRole; labelKey: keyof ExtraTranslations; icon: string }[] = [
   { role: 'farmer', labelKey: 'roleFarmer', icon: 'tractor' },
   { role: 'gardener', labelKey: 'roleGardener', icon: 'flower' },
@@ -44,7 +50,7 @@ const ROLE_OPTIONS: { role: UserRole; labelKey: keyof ExtraTranslations; icon: s
 
 export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   const { t, x, isRtl } = useLanguage();
-  const { signIn, signUp, resetPassword, isLoading } = useAuth();
+  const { signIn, signUp, resetPassword, resendConfirmation, isLoading } = useAuth();
 
   const [tab, setTab] = useState<Tab>('signin');
   const [email, setEmail] = useState('');
@@ -53,24 +59,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>('farmer');
   const [error, setError] = useState<string | null>(null);
+  const [showResend, setShowResend] = useState(false);
 
   const reset = () => {
     setError(null);
     setPassword('');
   };
 
-  // Distinguish an unreachable/misconfigured auth backend from a genuine
-  // credential error: the former is not actionable for the user, so it is
-  // replaced with a localised connection message.
-  const describeAuthError = (message: string | undefined, fallback: string) => {
-    // Diagnostic sentinel: if this exact text never appears, the running
-    // device is not loading this source revision or this is not the active modal.
-    if (!message) return 'Login diagnostic: Supabase returned no error message';
-    return `Login diagnostic: ${message}`;
+  // Only a transport-level failure (or a backend that rejects the app's public
+  // key) is reported as an unreachable account service. A credential error must
+  // reach the user unchanged: labelling every failure a connection problem made
+  // a wrong password look like an outage.
+  const describeAuthError = (message: string | undefined) => {
+    const text = (message ?? '').trim();
+    if (!text || AUTH_TRANSPORT_ERROR_RE.test(text)) return x.authErrUnreachable;
+    return text;
   };
 
   const handleSubmit = async () => {
     setError(null);
+    setShowResend(false);
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail) {
@@ -91,8 +99,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
       if (res.success) {
         onClose();
         reset();
+      } else if (res.needsConfirmation) {
+        setError(x.authErrEmailNotConfirmed);
+        setShowResend(true);
       } else {
-        setError(describeAuthError(res.error, x.authErrSignInFailed));
+        setError(describeAuthError(res.error));
       }
     } else if (tab === 'signup') {
       const res = await signUp({ email: trimmedEmail, password, fullName, phone, role });
@@ -105,7 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
           reset();
         }
       } else {
-        setError(describeAuthError(res.error, x.authErrSignUpFailed));
+        setError(describeAuthError(res.error));
       }
     } else {
       const res = await resetPassword(trimmedEmail);
@@ -113,8 +124,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
         Alert.alert(x.authResetSentTitle, x.authResetSentBody);
         setTab('signin');
       } else {
-        setError(describeAuthError(res.error, x.authErrResetFailed));
+        setError(describeAuthError(res.error));
       }
+    }
+  };
+
+  const handleResend = async () => {
+    const res = await resendConfirmation(email.trim());
+    if (res.success) {
+      Alert.alert(x.authConfirmTitle, x.authResendSent);
+      setShowResend(false);
+    } else {
+      setError(describeAuthError(res.error));
     }
   };
 
@@ -149,6 +170,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
                 onPress={() => {
                   setTab(item);
                   setError(null);
+                  setShowResend(false);
                 }}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: tab === item }}
@@ -244,6 +266,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
               </View>
             ) : null}
 
+            {showResend ? (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleResend}
+                style={styles.resendButton}
+                accessibilityRole="button"
+                accessibilityLabel={x.authResendConfirmation}
+              >
+                <Text style={styles.resendText}>{x.authResendConfirmation}</Text>
+              </TouchableOpacity>
+            ) : null}
+
             <Button
               title={tab === 'signin' ? x.authSignInBtn : tab === 'signup' ? x.authSignUpBtn : x.authResetBtn}
               variant="primary"
@@ -328,6 +362,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   errorText: { flex: 1, fontSize: typography.fontSizes.xs, color: colors.danger, lineHeight: typography.lineHeights.xs },
+  resendButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44, marginTop: spacing.xs },
+  resendText: {
+    ...primaryBoldText,
+    fontSize: typography.fontSizes.sm,
+    lineHeight: typography.lineHeights.sm,
+  },
   switchRow: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: spacing.md },
   switchText: subtleCaption,
   switchLink: primaryBoldText,

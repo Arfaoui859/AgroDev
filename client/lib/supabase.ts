@@ -5,10 +5,13 @@ const supabaseUrl =
   (import.meta.env.VITE_SUPABASE_URL as string) ||
   "https://jymrhhlwdbclctobhbsi.supabase.co";
 
-// Prefer Vite public anon key; fall back to embedded key only as last resort
+// Prefer Vite public anon key; fall back to embedded key only as last resort.
+// This fallback must stay valid: a stale key makes every sign-in fail with
+// "Invalid API key" while the rest of the app still looks healthy. It is the
+// same public, RLS-protected anon key the mobile app ships.
 const supabaseAnonKey =
   (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQwMjc2NzEsImV4cCI6MjA0OTYwMzY3MX0.aAGN3jLnpCjNOw7-J3Lp4iQBbwMT9X6kMzgRgQtYz7E";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MTM2NDYsImV4cCI6MjA3MDE4OTY0Nn0.l2VjAq1vZgkiAeL2EtAJp3iUWBHWbXPmQdNuNq197po";
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

@@ -183,6 +183,19 @@ for future work; re-verify before relying on them.
   soil recommendation sentences are Arabic-only by design and are labelled
   as such for fr/en callers.
 
+### Authentication (verified)
+- Supabase email confirmation is on (`mailer_autoconfirm: false`), so an
+  unconfirmed account cannot sign in. The mobile modal shows a localised
+  "confirm your email" message plus a resend action instead of masking it.
+- `EXPO_PUBLIC_SUPABASE_*` overrides are accepted only when the URL is a
+  canonical `https://<ref>.supabase.co` and the anon key's JWT `ref`/`role`
+  match it; otherwise the embedded pair is used (`resolveSupabaseConfig`).
+- Web `AppRouter` gates its full-screen spinner on `isInitialising` (initial
+  session restore only). Gating on `isLoading` unmounted `/login` on every
+  submit and silently discarded the error message.
+- Confirmation and recovery emails set `emailRedirectTo`/`redirectTo` to the
+  deployed origin; without it Supabase falls back to the dashboard Site URL.
+
 ### Honesty conventions
 - Never invent weather, market prices, diagnoses or confidence values.
 - Weather comes from WeatherAPI.com (`/api/weather/coordinates` returns

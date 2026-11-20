@@ -10,9 +10,19 @@ import {
   DEFAULT_API_BASE_URL,
   PRODUCTION_API_BASE_URL,
   resolveApiBaseUrl,
+  resolveSupabaseConfig,
+  supabaseProjectRef,
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
 } from '../../src/config';
+
+function jwt(payload: Record<string, unknown>): string {
+  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  return `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${encoded}.signature`;
+}
+
+const VALID_URL = 'https://jymrhhlwdbclctobhbsi.supabase.co';
+const VALID_KEY = jwt({ role: 'anon', ref: 'jymrhhlwdbclctobhbsi' });
 
 describe('production configuration', () => {
   it('uses the deployed gateway by default in both development and release builds', () => {
@@ -57,5 +67,42 @@ describe('production configuration', () => {
     expect(bundleSources).not.toMatch(/service_role/i);
     expect(bundleSources).not.toMatch(/postgres(ql)?:\/\//i);
     expect(bundleSources).not.toMatch(/DATABASE_URL/);
+  });
+
+  it('accepts a coherent Supabase override pair', () => {
+    expect(resolveSupabaseConfig(VALID_URL, VALID_KEY)).toEqual({ url: VALID_URL, anonKey: VALID_KEY });
+    expect(resolveSupabaseConfig(`  ${VALID_URL}/  `, ` ${VALID_KEY} `)).toEqual({
+      url: VALID_URL,
+      anonKey: VALID_KEY,
+    });
+  });
+
+  it('ignores a malformed Supabase URL override', () => {
+    // A literal "value" (the Render env-var defect pattern) must never be used.
+    expect(resolveSupabaseConfig('value', VALID_KEY)).toEqual({
+      url: VALID_URL,
+      anonKey: SUPABASE_ANON_KEY,
+    });
+    expect(resolveSupabaseConfig('http://jymrhhlwdbclctobhbsi.supabase.co', VALID_KEY).url).toBe(
+      VALID_URL,
+    );
+  });
+
+  it('ignores a malformed or mismatched anon key override', () => {
+    expect(resolveSupabaseConfig(VALID_URL, 'value').anonKey).toBe(SUPABASE_ANON_KEY);
+    const otherProject = jwt({ role: 'anon', ref: 'otherownprojectref' });
+    expect(resolveSupabaseConfig(VALID_URL, otherProject).anonKey).toBe(SUPABASE_ANON_KEY);
+    const serviceRole = jwt({ role: 'service_role', ref: 'jymrhhlwdbclctobhbsi' });
+    expect(resolveSupabaseConfig(VALID_URL, serviceRole).anonKey).toBe(SUPABASE_ANON_KEY);
+  });
+
+  it('parses only canonical Supabase project hosts', () => {
+    expect(supabaseProjectRef(VALID_URL)).toBe('jymrhhlwdbclctobhbsi');
+    expect(supabaseProjectRef('https://jymrhhlwdbclctobhbsi.supabase.co/')).toBe(
+      'jymrhhlwdbclctobhbsi',
+    );
+    expect(supabaseProjectRef('https://jymrhhlwdbclctobhbsi.supabase.co/auth/v1')).toBeNull();
+    expect(supabaseProjectRef('value')).toBeNull();
+    expect(supabaseProjectRef('http://jymrhhlwdbclctobhbsi.supabase.co')).toBeNull();
   });
 });

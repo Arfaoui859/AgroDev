@@ -232,6 +232,8 @@ describe('AuthContext', () => {
       result = await (screen.getByTestId('do-reset').props as any).onPress();
     });
     expect(result).toEqual({ success: true });
-    expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith('reset@example.com');
+    expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith('reset@example.com', {
+      redirectTo: 'https://agrodev-3.onrender.com',
+    });
   });
 });

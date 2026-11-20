@@ -5,10 +5,16 @@ import { supabase } from '../api/supabase';
 import { apiRequest } from '../api/client';
 import { clearCache, setCacheNamespace, namespaceUserId } from '../api/cache';
 import { clearLegacyHistory, setHistoryUserId } from '../api/history';
+import { PRODUCTION_API_BASE_URL } from '../config';
 import { User, UserRole } from '../types';
 
 const ONBOARDED_KEY = 'agrogrowth.onboarded';
 const PREFERRED_ROLE_KEY = 'agrogrowth.preferredRole';
+
+// Confirmation and recovery links must land on a deployed page. Without an
+// explicit target Supabase falls back to the dashboard Site URL, which may still
+// be localhost — a link a phone can never open.
+const EMAIL_REDIRECT_URL = PRODUCTION_API_BASE_URL;
 
 const VALID_ROLES: UserRole[] = [
   'farmer',
@@ -48,6 +54,7 @@ interface AuthContextType {
   signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string; needsConfirmation?: boolean }>;
   signUp: (input: SignUpInput) => Promise<{ success: boolean; error?: string; needsConfirmation?: boolean }>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  resendConfirmation: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   updateRole: (role: UserRole) => Promise<void>;
   completeOnboarding: () => Promise<void>;
@@ -198,6 +205,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass });
       if (error) {
+        // Raw reason for device logs; the UI localises it. Never a credential.
+        console.warn('Supabase sign-in rejected:', error.status, error.message);
         const needsConfirmation = /confirm/i.test(error.message);
         return { success: false, error: error.message, needsConfirmation };
       }
@@ -230,6 +239,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         phone: phone?.trim() || undefined,
         options: {
+          emailRedirectTo: EMAIL_REDIRECT_URL,
           data: {
             full_name: fullName.trim(),
             full_name_ar: fullName.trim(),
@@ -272,13 +282,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetPassword: AuthContextType['resetPassword'] = async (email) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: EMAIL_REDIRECT_URL,
+      });
       if (error) return { success: false, error: error.message };
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error?.message || '' };
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const resendConfirmation: AuthContextType['resendConfirmation'] = async (email) => {
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim() });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error?.message || '' };
     }
   };
 
@@ -346,6 +368,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signUp,
         resetPassword,
+        resendConfirmation,
         signOut,
         updateRole,
         completeOnboarding,

@@ -29,17 +29,83 @@ function asNumber(value: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+const SUPABASE_PROJECT_REF = 'jymrhhlwdbclctobhbsi';
+const EMBEDDED_SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
+// Public anon credential protected by Row Level Security; safe to ship.
+const EMBEDDED_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MTM2NDYsImV4cCI6MjA3MDE4OTY0Nn0.l2VjAq1vZgkiAeL2EtAJp3iUWBHWbXPmQdNuNq197po';
+
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function decodeBase64Url(value: string): string | null {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+  let bits = 0;
+  let buffer = 0;
+  let output = '';
+  for (const character of normalized) {
+    const index = BASE64_ALPHABET.indexOf(character);
+    if (index < 0) return null;
+    buffer = (buffer << 6) | index;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      output += String.fromCharCode((buffer >> bits) & 0xff);
+      buffer &= (1 << bits) - 1;
+    }
+  }
+  return output;
+}
+
+/** Project ref of a canonical `https://<ref>.supabase.co` URL, or null. */
+export function supabaseProjectRef(url: string): string | null {
+  const match = /^https:\/\/([a-z0-9-]+)\.supabase\.co\/?$/i.exec(url.trim());
+  return match ? match[1].toLowerCase() : null;
+}
+
+function anonKeyProjectRef(key: string): string | null {
+  const parts = key.split('.');
+  if (parts.length !== 3) return null;
+  const payload = decodeBase64Url(parts[1]);
+  if (!payload) return null;
+  try {
+    const claims = JSON.parse(payload) as { role?: string; ref?: string };
+    if (claims.role !== 'anon' || !claims.ref) return null;
+    return claims.ref.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Accept an `EXPO_PUBLIC_*` override only when it is a coherent Supabase pair.
+ * A malformed URL, a non-anon key (e.g. a service-role key) or a key issued for
+ * a different project would otherwise make every auth request fail with
+ * "Invalid API key" while the rest of the app looks healthy.
+ */
+export function resolveSupabaseConfig(
+  urlOverride?: string,
+  keyOverride?: string,
+): { url: string; anonKey: string } {
+  const candidateUrl = firstNonEmpty(urlOverride);
+  const candidateKey = firstNonEmpty(keyOverride);
+  const ref = candidateUrl ? supabaseProjectRef(candidateUrl) : null;
+  if (candidateUrl && candidateKey && ref && anonKeyProjectRef(candidateKey) === ref) {
+    return { url: candidateUrl.replace(/\/+$/, ''), anonKey: candidateKey };
+  }
+  return { url: EMBEDDED_SUPABASE_URL, anonKey: EMBEDDED_SUPABASE_ANON_KEY };
+}
+
+const supabaseConfig = resolveSupabaseConfig(
+  process.env.EXPO_PUBLIC_SUPABASE_URL,
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+);
+
 /** Public Supabase project (same project as the web application). */
-export const SUPABASE_URL =
-  firstNonEmpty(process.env.EXPO_PUBLIC_SUPABASE_URL) ?? 'https://jymrhhlwdbclctobhbsi.supabase.co';
+export const SUPABASE_URL = supabaseConfig.url;
 
 /** Public Supabase anon key (RLS-protected; safe to ship in a client). */
 // Keep this identical to the web client's fallback key in client/lib/supabase.ts.
-// It is a public anon credential protected by Row Level Security; override it
-// with EXPO_PUBLIC_SUPABASE_ANON_KEY if the project rotates its keys.
-export const SUPABASE_ANON_KEY =
-  firstNonEmpty(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ??
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5bXJoaGx3ZGJjbGN0b2JoYnNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MTM2NDYsImV4cCI6MjA3MDE4OTY0Nn0.l2VjAq1vZgkiAeL2EtAJp3iUWBHWbXPmQdNuNq197po';
+export const SUPABASE_ANON_KEY = supabaseConfig.anonKey;
 
 /** Deployed Express gateway (the app's only backend entry point). */
 export const PRODUCTION_API_BASE_URL = 'https://agrodev-3.onrender.com';

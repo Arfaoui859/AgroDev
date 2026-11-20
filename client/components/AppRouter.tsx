@@ -109,10 +109,11 @@ const NotFound = lazyWithRetry(() => import("../pages/NotFound"));
 
 export default function AppRouter() {
   const location = useLocation();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitialising } = useAuth();
 
-  // Show loading state
-  if (isLoading) {
+  // Gate only on the initial session restore: auth actions set `isLoading`,
+  // and unmounting the login page on submit discarded its error message.
+  if (isInitialising) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
