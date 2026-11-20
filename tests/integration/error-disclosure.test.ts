@@ -35,10 +35,10 @@ jest.mock("../../server/services/providers/weatherProvider", () => {
 });
 
 import axios from "axios";
-import { getWeatherFromOpenMeteo } from "../../server/services/providers/weatherProvider";
+import { getWeatherFromWeatherApi } from "../../server/services/providers/weatherProvider";
 
 const mockedAxios = axios as unknown as jest.Mock;
-const mockedWeather = getWeatherFromOpenMeteo as jest.Mock;
+const mockedWeather = getWeatherFromWeatherApi as jest.Mock;
 const PRIVATE_HOST = "ai-soil-analysis.internal";
 
 describe("🔒 Transport errors never disclose internal addresses", () => {
