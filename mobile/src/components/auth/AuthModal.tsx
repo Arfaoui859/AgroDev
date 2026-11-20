@@ -64,10 +64,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   // replaced with a localised connection message.
   const describeAuthError = (message: string | undefined, fallback: string) => {
     if (!message) return fallback;
-    if (/invalid api key|failed to fetch|network request failed|fetch failed|timeout|timed out/i.test(message)) {
-      return x.authErrUnreachable;
-    }
-    return message;
+    // Temporarily expose the exact Supabase auth failure during native login
+    // diagnosis instead of hiding it behind the generic connectivity message.
+    return `Login diagnostic: ${message}`;
   };
 
   const handleSubmit = async () => {
