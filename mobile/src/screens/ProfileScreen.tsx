@@ -25,7 +25,7 @@ import { clearCache } from '../api/cache';
 import { AuthModal } from '../components/auth/AuthModal';
 import { BrandMark } from '../components/ui/BrandMark';
 
-export const ProfileScreen: React.FC = () => {
+export const ProfileScreen: React.FC<{ onOpenMarketplaceAdmin?: () => void }> = ({ onOpenMarketplaceAdmin }) => {
   const { t, x, isRtl, isArabic, language, setLanguage } = useLanguage();
   const { user, isAuthenticated, signOut } = useAuth();
 
@@ -208,6 +208,22 @@ export const ProfileScreen: React.FC = () => {
           </View>
         </Card>
       </View>
+
+      {user?.role === 'admin' && onOpenMarketplaceAdmin ? (
+        <View style={styles.section}>
+          <SectionHeader title={language === 'ar' ? 'إدارة المنصة' : language === 'fr' ? 'Administration' : 'Administration'} />
+          <Card variant="outlined" style={styles.statusCard}>
+            <View style={[styles.statusRow, isRtl && rtlStyles.rtlRow]}>
+              <MaterialCommunityIcons name="shield-check" size={25} color={colors.primary} />
+              <View style={styles.statusTextContainer}>
+                <Text style={[styles.statusMainText, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'إدارة السوق' : language === 'fr' ? 'Administration du marché' : 'Marketplace moderation'}</Text>
+                <Text style={[styles.statusSubText, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'البلاغات وتوثيق البائعين والترقيات' : language === 'fr' ? 'Signalements, vendeurs et promotions' : 'Reports, seller verification and promotions'}</Text>
+              </View>
+            </View>
+            <Button title={language === 'ar' ? 'فتح لوحة الإدارة' : language === 'fr' ? 'Ouvrir le panneau' : 'Open admin panel'} onPress={onOpenMarketplaceAdmin} style={{ marginTop: spacing.md }} />
+          </Card>
+        </View>
+      ) : null}
 
       {/* 3. Server & Backend Connectivity Diagnostics */}
       <View style={styles.section}>
