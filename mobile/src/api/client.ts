@@ -1222,7 +1222,7 @@ export async function getProjectFinancialSummary(farmId?: string, cultivationId?
  * connected; the gateway fails closed with 503 `MARKETPLACE_STORE_NOT_CONNECTED`
  * until then, which the UI renders as an honest "no matching product" state.
  */
-export async function getMarketplaceListings(params: { q?: string; type?: string; tradeType?: 'buy' | 'sell' } = {}): Promise<{
+export async function getMarketplaceListings(params: { q?: string; type?: string; tradeType?: 'buy' | 'sell'; limit?: number } = {}): Promise<{
   data: MarketplaceResult;
   error: string | null;
   unavailable: boolean;
@@ -1231,9 +1231,10 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
   if (params.q) query.set('q', params.q);
   if (params.type) query.set('type', params.type);
   if (params.tradeType) query.set('trade_type', params.tradeType);
+  query.set('limit', String(Math.min(100, Math.max(1, params.limit ?? 100))));
   const suffix = query.toString() ? `?${query.toString()}` : '';
   const res = await apiRequest<any>(`/api/agro-market/listings${suffix}`, {
-    cacheKey: `marketplace:${params.tradeType || 'all'}:${params.type || 'all'}:${params.q || 'all'}`,
+    cacheKey: `marketplace:${params.tradeType || 'all'}:${params.type || 'all'}:${params.q || 'all'}:${params.limit ?? 100}`,
   });
   if (!res.data?.success || !Array.isArray(res.data?.data?.listings)) {
     return {
@@ -1261,6 +1262,7 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
     harvestWindowEnd: l.harvest_window_end ?? null,
     governorate: l.governorate ?? null,
     description: l.description ?? null,
+    createdAt: l.created_at ?? undefined,
   }));
   return {
     data: { listings, meta: metaFrom(res.data?.meta, 'database', 'seller-published-listings') },
