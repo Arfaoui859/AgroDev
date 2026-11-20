@@ -38,7 +38,9 @@ export function assertDbAvailable(client: SupabaseClient | null = supabase): voi
 }
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(supabaseUrl as string, supabaseAnonKey as string)
+  ? createClient(supabaseUrl as string, supabaseAnonKey as string, {
+      global: { headers: { apikey: supabaseAnonKey as string } },
+    })
   : null;
 
 /**
@@ -60,7 +62,12 @@ export function createScopedClient(
 ): SupabaseClient | null {
   if (!supabaseUrl || !supabaseAnonKey || !accessToken) return null;
   return createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    global: {
+      headers: {
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
@@ -87,7 +94,10 @@ export const supabaseAdmin: SupabaseClient | null = isSupabaseAdminConfigured
   ? createClient(
       supabaseUrl as string,
       process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-      { auth: { persistSession: false, autoRefreshToken: false } },
+      {
+        global: { headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY as string } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
     )
   : null;
 
