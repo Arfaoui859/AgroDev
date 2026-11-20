@@ -3,18 +3,35 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import { secureStorageAdapter } from './secureStorage';
 
 /**
- * Supabase JS already attaches the project API key to Auth and REST requests.
- * Keep the native client on the platform fetch implementation: wrapping fetch
- * and inspecting `input instanceof Request` is not reliable across React
- * Native runtimes, where the global Request constructor may be unavailable or
- * implemented differently. That wrapper could throw before the request ever
- * reaches Supabase and be misreported as a connection failure.
+ * Use a fetch implementation owned by this Supabase client.
+ *
+ * Supabase captures its fetch implementation when createClient() runs. A
+ * global.fetch wrapper installed later by the Expo entrypoint is therefore
+ * too late and may never see Auth requests. Inject the apikey here, at the
+ * transport actually used by supabase-js, while preserving Authorization and
+ * every other caller-supplied header.
  */
+const supabaseFetch: typeof fetch = (input, init) => {
+  const requestHeaders =
+    typeof Request !== 'undefined' && input instanceof Request
+      ? input.headers
+      : undefined;
+  const headers = new Headers(requestHeaders);
+
+  new Headers(init?.headers).forEach((value, key) => {
+    headers.set(key, value);
+  });
+
+  headers.set('apikey', SUPABASE_ANON_KEY);
+
+  return fetch(input, { ...init, headers });
+};
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  // Set the header explicitly as well as the constructor key. This guarantees
-  // every Auth/PostgREST request carries apikey in native builds, even if a
-  // fetch/polyfill layer bypasses the SDK's default header injection.
-  global: { headers: { apikey: SUPABASE_ANON_KEY } },
+  global: {
+    headers: { apikey: SUPABASE_ANON_KEY },
+    fetch: supabaseFetch,
+  },
   auth: {
     storage: secureStorageAdapter,
     autoRefreshToken: true,
