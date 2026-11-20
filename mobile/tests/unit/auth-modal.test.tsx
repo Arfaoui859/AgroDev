@@ -85,15 +85,13 @@ describe('AuthModal UX', () => {
     expect(screen.getByText('Invalid login credentials')).toBeTruthy();
   });
 
-  it('replaces an unreachable-backend error with a localised connection message', async () => {
+  it('shows the raw Supabase login error for native connection diagnosis', async () => {
     mockSignIn.mockResolvedValueOnce({ success: false, error: 'Invalid API key' });
     await renderModal();
     await type(emailField(), 'user@example.com');
     await type(passwordField(), 'secret123');
     await press(screen.getByText('دخول إلى حسابي'));
-    expect(
-      screen.getByText('تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.'),
-    ).toBeTruthy();
+    expect(screen.getByText('Login diagnostic: Invalid API key')).toBeTruthy();
     expect(screen.queryByText('Invalid API key')).toBeNull();
   });
 
