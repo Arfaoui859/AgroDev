@@ -195,6 +195,31 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('auth')).toHaveTextContent('false');
   });
 
+  it('does not report success when Supabase returns a user without a session', async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+    (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValueOnce({
+      data: {
+        user: { id: 'u11', email: 'farmer@example.com', user_metadata: {} },
+        session: null,
+      },
+      error: null,
+    });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId('init')).toHaveTextContent('false'), { timeout: 5000 });
+
+    let result: any;
+    await act(async () => {
+      result = await (screen.getByTestId('do-signin').props as any).onPress();
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/no authenticated session/i);
+    expect(screen.getByTestId('auth')).toHaveTextContent('false');
+  });
+
   it('surfaces the email-confirmation requirement on sign-up', async () => {
     mockGetSession.mockResolvedValueOnce({ data: { session: null } });
     (supabase.auth.signUp as jest.Mock).mockResolvedValueOnce({
