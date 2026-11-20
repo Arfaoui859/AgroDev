@@ -1412,28 +1412,6 @@ export async function getMarketplaceInquiries(): Promise<{ data: MarketplaceInqu
   };
 }
 
-
-export interface MarketplaceInquiryMessage {
-  id: string;
-  inquiry_id: string;
-  sender_id: string;
-  body: string;
-  created_at: string;
-  read_at: string | null;
-}
-
-export async function getMarketplaceInquiryMessages(inquiryId: string): Promise<{data: MarketplaceInquiryMessage[]; error: string | null}> {
-  const res = await apiRequest<any>(`/api/agro-market/inquiries/${encodeURIComponent(inquiryId)}/messages`);
-  return {data:Array.isArray(res.data?.data)?res.data.data:[],error:res.error};
-}
-
-export async function sendMarketplaceInquiryMessage(inquiryId: string, body: string): Promise<{success:boolean; data:MarketplaceInquiryMessage|null; error:string|null}> {
-  const res = await apiRequest<any>(`/api/agro-market/inquiries/${encodeURIComponent(inquiryId)}/messages`, {
-    method:'POST', body:JSON.stringify({body}),
-  });
-  return {success:Boolean(res.data?.success),data:res.data?.data??null,error:res.data?.success?null:res.error||res.data?.code||'MESSAGE_SEND_FAILED'};
-}
-
 export async function updateMarketplaceInquiryStatus(id: string, status: MarketplaceInquiry['status']): Promise<{ success: boolean; error: string | null }> {
   const res = await apiRequest<any>(`/api/agro-market/inquiries/${encodeURIComponent(id)}/status`, {
     method: 'PATCH', body: JSON.stringify({ status }),
