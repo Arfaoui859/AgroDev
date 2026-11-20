@@ -299,7 +299,12 @@ class AgroChatAI:
                 {"role": "user", "content": user},
             ],
             temperature=0.3,
-            max_tokens=900,
+            max_tokens=600,
+            # Keep the chat UI responsive. If the provider is slow or unavailable,
+            # process_query returns the grounded local answer instead of leaving
+            # the user waiting through long retries.
+            timeout_s=10,
+            max_retries=0,
         )
         return text.strip() or None
 
