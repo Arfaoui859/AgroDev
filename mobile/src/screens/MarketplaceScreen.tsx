@@ -320,12 +320,12 @@ export const MarketplaceScreen: React.FC = () => {
   const rateInquiry = (inquiryId: string) => Alert.alert(
     language === 'ar' ? 'قيّم التعامل' : language === 'fr' ? 'Évaluer la transaction' : 'Rate this transaction',
     language === 'ar' ? 'اختار تقييمك للبائع من 1 إلى 5.' : language === 'fr' ? 'Choisissez une note de 1 à 5.' : 'Choose a seller rating from 1 to 5.',
-    [1,2,3,4,5].map(value => ({ text: '★'.repeat(value), onPress: () => {
+    [...([1,2,3,4,5].map(value => ({ text: '★'.repeat(value), onPress: () => {
       void createMarketplaceSellerReview(inquiryId, value).then(result => Alert.alert(
         result.success ? (language === 'ar' ? 'شكراً على تقييمك' : 'Thank you for your review') : (language === 'ar' ? 'تعذر حفظ التقييم' : 'Could not save review'),
         result.error || '',
       ));
-    }})).concat([{ text: language === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' as const }]),
+    }}))), { text: language === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' as const }],
   );
 
   const reportListing = async (listingId: string) => {
@@ -615,6 +615,7 @@ export const MarketplaceScreen: React.FC = () => {
                     {type === 'agricultural_input' ? (language === 'ar' ? 'أدوية وأسمدة' : language === 'fr' ? 'Intrants' : 'Inputs') :
                      type === 'equipment' ? (language === 'ar' ? 'معدات' : language === 'fr' ? 'Matériel' : 'Equipment') :
                      type === 'agricultural_product' ? (language === 'ar' ? 'منتوج فلاحي' : language === 'fr' ? 'Produit agricole' : 'Farm produce') :
+                     type === 'other' ? (language === 'ar' ? 'طلب عام' : language === 'fr' ? 'Demande générale' : 'General request') :
                      (language === 'ar' ? 'محصول قادم' : language === 'fr' ? 'Récolte à venir' : 'Future harvest')}
                   </Text>
                 </Pressable>
