@@ -14,8 +14,40 @@ import { Platform } from 'react-native';
  * least sensitive target and the anon session is already RLS-scoped).
  */
 
+// SecureStore's Android limit is measured in UTF-8 bytes, not JS characters.
+// Leave headroom below its ~2 KB per-value limit for native serialization.
 const CHUNK_SIZE = 1800;
 const CHUNK_COUNT_SUFFIX = '.n';
+
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+  for (const character of value) {
+    const point = character.codePointAt(0)!;
+    bytes += point <= 0x7f ? 1 : point <= 0x7ff ? 2 : point <= 0xffff ? 3 : 4;
+  }
+  return bytes;
+}
+
+/** Split without breaking Unicode code points and keep every SecureStore value below its byte limit. */
+function splitUtf8Chunks(value: string, maxBytes: number): string[] {
+  const chunks: string[] = [];
+  let current = '';
+  let currentBytes = 0;
+
+  for (const character of value) {
+    const bytes = utf8ByteLength(character);
+    if (current && currentBytes + bytes > maxBytes) {
+      chunks.push(current);
+      current = '';
+      currentBytes = 0;
+    }
+    current += character;
+    currentBytes += bytes;
+  }
+
+  if (current) chunks.push(current);
+  return chunks;
+}
 
 const isWeb = Platform.OS === 'web';
 
@@ -97,16 +129,13 @@ export const secureStorageAdapter = {
       // is fully written. Supabase treats a resolved setItem as durable, so
       // write failures must propagate instead of being silently swallowed.
       const previousHead = await SecureStore.getItemAsync(key);
-      if (value.length <= CHUNK_SIZE) {
+      if (utf8ByteLength(value) <= CHUNK_SIZE) {
         await SecureStore.setItemAsync(key, value);
         await cleanupPreviousChunks(key, previousHead);
         return;
       }
 
-      const chunks: string[] = [];
-      for (let i = 0; i < value.length; i += CHUNK_SIZE) {
-        chunks.push(value.slice(i, i + CHUNK_SIZE));
-      }
+      const chunks = splitUtf8Chunks(value, CHUNK_SIZE);
       const generation = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const chunkPrefix = `${key}.v2.${generation}.`;
       await Promise.all(
