@@ -22,6 +22,7 @@ import { SectionHeader } from '../components/ui/SectionHeader';
 import { UserRole } from '../types';
 import { apiRequest, getApiBaseUrl } from '../api/client';
 import { supabaseHost, isSupabaseConfigured } from '../api/supabase';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import { clearCache } from '../api/cache';
 import { AuthModal } from '../components/auth/AuthModal';
 import { BrandMark } from '../components/ui/BrandMark';
@@ -33,6 +34,7 @@ export const ProfileScreen: React.FC<{ onOpenMarketplaceAdmin?: () => void }> = 
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
+  const [authConnectionStatus, setAuthConnectionStatus] = useState<'unknown' | 'online' | 'offline'>('unknown');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
 
@@ -61,18 +63,78 @@ export const ProfileScreen: React.FC<{ onOpenMarketplaceAdmin?: () => void }> = 
     setTestingConnection(true);
     setConnectionResult(null);
     setConnectionStatus('unknown');
+    setAuthConnectionStatus('unknown');
+
+    const details: string[] = [];
     try {
-      const res = await apiRequest('/api/ping', { anonymous: true });
-      if (res.isOnline) {
-        setConnectionStatus('online');
-        setConnectionResult(x.profileServerReachable);
+      // The gateway ping and Supabase Auth health are separate services.
+      // Check both from this device so a healthy Render API cannot mask an
+      // unreachable or incorrectly configured Supabase Auth endpoint.
+      const [apiResult, authResult] = await Promise.allSettled([
+        apiRequest('/api/ping', { anonymous: true }),
+        (async () => {
+          if (!isSupabaseConfigured) {
+            throw new Error('Supabase URL or anon key is missing');
+          }
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          try {
+            const response = await fetch(`${SUPABASE_URL}/auth/v1/health`, {
+              method: 'GET',
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Accept: 'application/json',
+              },
+              signal: controller.signal,
+            });
+            const body = await response.text();
+            return { ok: response.ok, status: response.status, body };
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        })(),
+      ]);
+
+      if (apiResult.status === 'fulfilled') {
+        const api = apiResult.value;
+        const apiOk = api.isOnline && api.status !== null && api.status >= 200 && api.status < 300;
+        setConnectionStatus(apiOk ? 'online' : 'offline');
+        details.push(
+          apiOk
+            ? `Render API: ONLINE (HTTP ${api.status})`
+            : `Render API: FAILED${api.status ? ` (HTTP ${api.status})` : ''}${api.error ? ` — ${api.error}` : ''}`,
+        );
       } else {
         setConnectionStatus('offline');
-        setConnectionResult(res.error || x.stateOffline);
+        details.push(`Render API: FAILED — ${apiResult.reason instanceof Error ? apiResult.reason.message : String(apiResult.reason)}`);
       }
+
+      if (authResult.status === 'fulfilled') {
+        const auth = authResult.value;
+        setAuthConnectionStatus(auth.ok ? 'online' : 'offline');
+        let version = '';
+        if (auth.ok) {
+          try {
+            const payload = JSON.parse(auth.body);
+            if (typeof payload.version === 'string') version = ` — GoTrue ${payload.version}`;
+          } catch {
+            // Health endpoint returned a non-JSON body; HTTP status is still useful.
+          }
+        }
+        details.push(
+          auth.ok
+            ? `Supabase Auth: ONLINE (HTTP ${auth.status})${version}`
+            : `Supabase Auth: FAILED (HTTP ${auth.status}) — ${auth.body || 'No response body'}`,
+        );
+      } else {
+        setAuthConnectionStatus('offline');
+        const reason = authResult.reason instanceof Error ? authResult.reason.message : String(authResult.reason);
+        details.push(`Supabase Auth: FAILED — ${reason}`);
+      }
+
+      setConnectionResult(details.join('\n'));
     } catch (cause) {
-      setConnectionStatus('offline');
-      setConnectionResult(cause instanceof Error ? cause.message : x.stateOffline);
+      setConnectionResult(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setTestingConnection(false);
     }
@@ -260,7 +322,7 @@ export const ProfileScreen: React.FC<{ onOpenMarketplaceAdmin?: () => void }> = 
             <View
               style={[
                 styles.statusIndicatorOnline,
-                { backgroundColor: isSupabaseConfigured ? colors.success : colors.warning },
+                { backgroundColor: authConnectionStatus === 'online' ? colors.success : authConnectionStatus === 'offline' ? colors.danger : isSupabaseConfigured ? colors.textMuted : colors.warning },
               ]}
             />
             <View style={styles.statusTextContainer}>
@@ -268,7 +330,7 @@ export const ProfileScreen: React.FC<{ onOpenMarketplaceAdmin?: () => void }> = 
                 Supabase PostgreSQL & Auth
               </Text>
               <Text style={[styles.statusSubText, isRtl && rtlStyles.rtlText]}>
-                {isSupabaseConfigured ? supabaseHost : x.profileSupabaseUnconfigured}
+                {!isSupabaseConfigured ? x.profileSupabaseUnconfigured : `${supabaseHost} · ${authConnectionStatus === 'online' ? 'AUTH ONLINE' : authConnectionStatus === 'offline' ? 'AUTH FAILED' : 'NOT TESTED'}`}
               </Text>
             </View>
           </View>
