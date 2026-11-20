@@ -30,7 +30,7 @@ jest.mock("../../server/services/providers/weatherProvider", () => {
   const actual = jest.requireActual("../../server/services/providers/weatherProvider");
   return {
     ...actual,
-    getWeatherFromOpenMeteo: jest.fn(),
+    getWeatherFromWeatherApi: jest.fn(),
   };
 });
 
@@ -60,7 +60,7 @@ describe("🔒 Transport errors never disclose internal addresses", () => {
   test("GET /api/weather/coordinates does not echo a DNS failure host", async () => {
     mockedWeather.mockRejectedValue(
       new ProviderError(
-        "Open-Meteo",
+        "WeatherAPI.com",
         "network",
         `getaddrinfo ENOTFOUND ${PRIVATE_HOST}`,
       ),
@@ -75,7 +75,7 @@ describe("🔒 Transport errors never disclose internal addresses", () => {
 
   test("GET /api/weather/coordinates collapses a connection refusal", async () => {
     mockedWeather.mockRejectedValue(
-      new ProviderError("Open-Meteo", "network", "connect ECONNREFUSED 10.0.0.7:8001"),
+      new ProviderError("WeatherAPI.com", "network", "connect ECONNREFUSED 10.0.0.7:8001"),
     );
     const res = await request(app).get("/api/weather/coordinates?lat=36.8&lon=10.2");
     expect(res.status).toBe(502);
