@@ -23,8 +23,8 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { addMarketplaceFavorite, confirmMarketplaceOrder, createMarketplaceInquiry, createMarketplaceListing, createMarketplaceOrder, createMarketplaceSellerReview, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceOrderStatus, getMarketplaceOrders, reportMarketplaceListing, requestMarketplacePromotion, removeMarketplaceFavorite, submitMarketplaceSellerVerification, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
-import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceOrder, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
+import { addMarketplaceFavorite, confirmMarketplaceOrder, createMarketplaceInquiry, createMarketplaceListing, createMarketplaceOrder, createMarketplaceSellerReview, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceInquiryMessages, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceOrderStatus, getMarketplaceOrders, reportMarketplaceListing, requestMarketplacePromotion, removeMarketplaceFavorite, sendMarketplaceInquiryMessage, submitMarketplaceSellerVerification, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceInquiryMessage, MarketplaceOrder, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
 
@@ -57,6 +57,12 @@ export const MarketplaceScreen: React.FC = () => {
   const [verificationSubmitting, setVerificationSubmitting] = useState(false);
   const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('sell');
   const [tradeFilter, setTradeFilter] = useState<'all' | 'buy' | 'sell'>('all');
+  const [listingSearchQuery, setListingSearchQuery] = useState('');
+  const [listingTypeFilter, setListingTypeFilter] = useState<'all' | NonNullable<MarketplaceListing['listingType']>>('all');
+  const [listingGovernorateFilter, setListingGovernorateFilter] = useState('');
+  const [listingMinPrice, setListingMinPrice] = useState('');
+  const [listingMaxPrice, setListingMaxPrice] = useState('');
+  const [listingSort, setListingSort] = useState<'newest' | 'price_low' | 'price_high'>('newest');
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
   const [myPesticideOffers, setMyPesticideOffers] = useState<PesticideSellerOffer[]>([]);
   const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
@@ -66,6 +72,11 @@ export const MarketplaceScreen: React.FC = () => {
   const [activeInquiryListing, setActiveInquiryListing] = useState<string | null>(null);
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
+  const [activeInquiryChat, setActiveInquiryChat] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<MarketplaceInquiryMessage[]>([]);
+  const [chatDraft, setChatDraft] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
   const [editingListingId, setEditingListingId] = useState<string | null>(null);
   const [editListingTitle, setEditListingTitle] = useState('');
   const [editListingPrice, setEditListingPrice] = useState('');
@@ -113,7 +124,7 @@ export const MarketplaceScreen: React.FC = () => {
     // in one must not suppress useful data returned by the other.
     const [priceOutcome, listingsOutcome, favoritesOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, pesticideOffersOutcome, inquiriesOutcome, ordersOutcome, intelligenceOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
-      getMarketplaceListings({ tradeType: tradeFilter === 'all' ? undefined : tradeFilter }).then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMarketplaceListings({ tradeType: tradeFilter === 'all' ? undefined : tradeFilter, limit: 100 }).then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceFavorites().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalCatalog().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalInputPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
@@ -387,6 +398,37 @@ export const MarketplaceScreen: React.FC = () => {
     }
   };
 
+  const openInquiryChat = async (inquiry: MarketplaceInquiry) => {
+    if (activeInquiryChat === inquiry.id) {
+      setActiveInquiryChat(null);
+      return;
+    }
+    setActiveInquiryChat(inquiry.id);
+    setChatMessages([]);
+    setChatDraft('');
+    setChatLoading(true);
+    const result = await getMarketplaceInquiryMessages(inquiry.id);
+    if (result.error) {
+      Alert.alert(language === 'ar' ? 'تعذر تحميل المحادثة' : language === 'fr' ? 'Conversation indisponible' : 'Could not load conversation', result.error);
+    } else {
+      setChatMessages(result.data);
+    }
+    setChatLoading(false);
+  };
+
+  const sendInquiryChatMessage = async () => {
+    if (!activeInquiryChat || !chatDraft.trim() || chatSending) return;
+    setChatSending(true);
+    const result = await sendMarketplaceInquiryMessage(activeInquiryChat, chatDraft.trim());
+    if (!result.data) {
+      Alert.alert(language === 'ar' ? 'تعذر إرسال الرسالة' : language === 'fr' ? 'Envoi impossible' : 'Could not send message', result.error || '');
+    } else {
+      setChatMessages(current => [...current, result.data!]);
+      setChatDraft('');
+    }
+    setChatSending(false);
+  };
+
   const archiveMyListing = async (id: string) => {
     const result = await updateMarketplaceListingStatus(id, 'archived');
     if (!result.success) {
@@ -496,6 +538,27 @@ export const MarketplaceScreen: React.FC = () => {
 
   const sellerListings = listings.filter((item) => item.listingType !== 'harvest');
   const futureHarvests = listings.filter((item) => item.listingType === 'harvest');
+  const normalizedListingQuery = listingSearchQuery.trim().toLocaleLowerCase();
+  const normalizedGovernorate = listingGovernorateFilter.trim().toLocaleLowerCase();
+  const minimumListingPrice = listingMinPrice.trim() ? Number(listingMinPrice) : null;
+  const maximumListingPrice = listingMaxPrice.trim() ? Number(listingMaxPrice) : null;
+  const filteredSellerListings = sellerListings.filter((listing) => {
+    if (listingTypeFilter !== 'all' && listing.listingType !== listingTypeFilter) return false;
+    if (normalizedGovernorate && !String(listing.governorate || listing.location || '').toLocaleLowerCase().includes(normalizedGovernorate)) return false;
+    if (normalizedListingQuery && ![listing.title, listing.category, listing.description, listing.sellerName, listing.location, listing.governorate]
+      .some((value) => String(value || '').toLocaleLowerCase().includes(normalizedListingQuery))) return false;
+    if (minimumListingPrice !== null && Number.isFinite(minimumListingPrice) &&
+      (listing.price == null || listing.price < minimumListingPrice)) return false;
+    if (maximumListingPrice !== null && Number.isFinite(maximumListingPrice) &&
+      (listing.price == null || listing.price > maximumListingPrice)) return false;
+    return true;
+  }).sort((a, b) => {
+    if (listingSort === 'price_low') return (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY);
+    if (listingSort === 'price_high') return (b.price ?? Number.NEGATIVE_INFINITY) - (a.price ?? Number.NEGATIVE_INFINITY);
+    const aDate = Date.parse(a.createdAt || '');
+    const bDate = Date.parse(b.createdAt || '');
+    return (Number.isFinite(bDate) ? bDate : 0) - (Number.isFinite(aDate) ? aDate : 0);
+  });
 
   // Keep one latest observation per crop in the current-price view.
   // All historical observations remain untouched in the database.
@@ -883,13 +946,65 @@ export const MarketplaceScreen: React.FC = () => {
             </Pressable>
           ))}
         </View>
+        <View style={{ gap: spacing.sm, paddingVertical: spacing.sm }}>
+          <TextInput
+            value={listingSearchQuery}
+            onChangeText={setListingSearchQuery}
+            placeholder={language === 'ar' ? 'ابحث عن منتوج أو بائع أو وصف' : language === 'fr' ? 'Rechercher un produit ou vendeur' : 'Search products, sellers or descriptions'}
+            style={{ minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }}
+          />
+          <View style={{ flexDirection: isRtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+            {([
+              ['all', language === 'ar' ? 'كل الأصناف' : language === 'fr' ? 'Toutes catégories' : 'All categories'],
+              ['agricultural_input', language === 'ar' ? 'مستلزمات' : language === 'fr' ? 'Intrants' : 'Inputs'],
+              ['equipment', language === 'ar' ? 'معدات' : language === 'fr' ? 'Matériel' : 'Equipment'],
+              ['agricultural_product', language === 'ar' ? 'منتوجات' : language === 'fr' ? 'Produits' : 'Produce'],
+              ['livestock', language === 'ar' ? 'مواشي' : language === 'fr' ? 'Bétail' : 'Livestock'],
+              ['other', language === 'ar' ? 'أخرى' : language === 'fr' ? 'Autres' : 'Other'],
+            ] as const).map(([value, label]) => (
+              <Pressable key={value} onPress={() => setListingTypeFilter(value as typeof listingTypeFilter)}
+                style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.md, borderWidth: 1, borderColor: listingTypeFilter === value ? colors.primary : colors.border, backgroundColor: listingTypeFilter === value ? colors.primaryLight : colors.surface }}>
+                <Text style={{ color: listingTypeFilter === value ? colors.primaryDark : colors.text, fontSize: typography.fontSizes.xs }}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={{ flexDirection: isRtl ? 'row-reverse' : 'row', gap: spacing.xs }}>
+            <TextInput value={listingGovernorateFilter} onChangeText={setListingGovernorateFilter}
+              placeholder={language === 'ar' ? 'الولاية' : language === 'fr' ? 'Gouvernorat' : 'Governorate'}
+              style={{ flex: 1, minHeight: 42, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.sm, color: colors.text, textAlign: isRtl ? 'right' : 'left' }} />
+            <TextInput value={listingMinPrice} onChangeText={setListingMinPrice} keyboardType="decimal-pad"
+              placeholder={language === 'ar' ? 'أقل سعر' : language === 'fr' ? 'Prix min.' : 'Min TND'}
+              style={{ flex: 1, minHeight: 42, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.sm, color: colors.text, textAlign: 'center' }} />
+            <TextInput value={listingMaxPrice} onChangeText={setListingMaxPrice} keyboardType="decimal-pad"
+              placeholder={language === 'ar' ? 'أعلى سعر' : language === 'fr' ? 'Prix max.' : 'Max TND'}
+              style={{ flex: 1, minHeight: 42, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.sm, color: colors.text, textAlign: 'center' }} />
+          </View>
+          <View style={{ flexDirection: isRtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+              {([
+                ['newest', language === 'ar' ? 'الأحدث' : language === 'fr' ? 'Récents' : 'Newest'],
+                ['price_low', language === 'ar' ? 'الأقل سعراً' : language === 'fr' ? 'Prix croissant' : 'Price ↑'],
+                ['price_high', language === 'ar' ? 'الأعلى سعراً' : language === 'fr' ? 'Prix décroissant' : 'Price ↓'],
+              ] as const).map(([value, label]) => (
+                <Pressable key={value} onPress={() => setListingSort(value as typeof listingSort)}
+                  style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.md, borderWidth: 1, borderColor: listingSort === value ? colors.primary : colors.border, backgroundColor: listingSort === value ? colors.primaryLight : colors.surface }}>
+                  <Text style={{ color: listingSort === value ? colors.primaryDark : colors.text, fontSize: typography.fontSizes.xs }}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable onPress={() => { setListingSearchQuery(''); setListingTypeFilter('all'); setListingGovernorateFilter(''); setListingMinPrice(''); setListingMaxPrice(''); setListingSort('newest'); }}>
+              <Text style={{ color: colors.primary, fontSize: typography.fontSizes.xs, fontWeight: '600' }}>{language === 'ar' ? 'مسح الفلاتر' : language === 'fr' ? 'Effacer' : 'Clear'}</Text>
+            </Pressable>
+          </View>
+          <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{filteredSellerListings.length} {language === 'ar' ? 'نتيجة' : language === 'fr' ? 'résultats' : 'results'}</Text>
+        </View>
         {listingsUnavailable ? (
           <StateCard kind="unavailable" title={x.marketListingsUnavailable} message={x.marketListingsBody} compact />
-        ) : sellerListings.length === 0 ? (
+        ) : filteredSellerListings.length === 0 ? (
           <StateCard kind="empty" title={x.stateEmpty} message={x.marketNoMatch} compact />
         ) : (
           <View style={styles.listingRows}>
-            {sellerListings.map((listing) => (
+            {filteredSellerListings.map((listing) => (
               <View key={listing.id} style={[styles.listingRow, isRtl && rtlStyles.rtlRow]}>
                 {listing.imageUrl ? <Image source={{ uri: listing.imageUrl }} style={styles.listingThumb} resizeMode="cover" /> : null}
                 <View style={styles.listingText}>
@@ -1191,6 +1306,29 @@ export const MarketplaceScreen: React.FC = () => {
                   {(inquiry.isSeller ? (language === 'ar' ? 'مشتري' : language === 'fr' ? 'Acheteur' : 'Buyer') : (language === 'ar' ? 'بائع' : language === 'fr' ? 'Vendeur' : 'Seller'))} · {inquiry.status} · {inquiry.createdAt.slice(0, 10)}
                 </Text>
                 <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{inquiry.message}</Text>
+                <Button title={activeInquiryChat === inquiry.id ? (language === 'ar' ? 'إغلاق المحادثة' : language === 'fr' ? 'Fermer' : 'Close chat') : (language === 'ar' ? 'فتح المحادثة' : language === 'fr' ? 'Ouvrir la conversation' : 'Open conversation')}
+                  onPress={() => { void openInquiryChat(inquiry); }} variant="outline" size="sm" fullWidth={false} />
+                {activeInquiryChat === inquiry.id ? (
+                  <View style={{ gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.surfaceSubtle }}>
+                    {chatLoading ? <Text style={styles.listingMeta}>{language === 'ar' ? 'جاري تحميل الرسائل…' : language === 'fr' ? 'Chargement…' : 'Loading messages…'}</Text> : chatMessages.length === 0 ? (
+                      <Text style={styles.listingMeta}>{language === 'ar' ? 'ابدأ المحادثة برسالة واضحة.' : language === 'fr' ? 'Commencez la conversation.' : 'Start the conversation with a message.'}</Text>
+                    ) : chatMessages.map(message => (
+                      <View key={message.id} style={{ alignSelf: message.senderId === (inquiry.isSeller ? inquiry.sellerId : inquiry.buyerId) ? 'flex-end' : 'flex-start', maxWidth: '92%', padding: spacing.sm, borderRadius: radius.md, backgroundColor: message.senderId === (inquiry.isSeller ? inquiry.sellerId : inquiry.buyerId) ? colors.primaryLight : colors.surface, gap: 3 }}>
+                        <Text style={{ color: colors.text, fontSize: typography.fontSizes.sm }}>{message.body}</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: typography.fontSizes.xs }}>{new Date(message.createdAt).toLocaleString()}</Text>
+                      </View>
+                    ))}
+                    {!['closed','rejected'].includes(inquiry.status) ? (
+                      <View style={{ flexDirection: isRtl ? 'row-reverse' : 'row', alignItems: 'center', gap: spacing.xs }}>
+                        <TextInput value={chatDraft} onChangeText={setChatDraft} multiline
+                          placeholder={language === 'ar' ? 'اكتب رسالتك…' : language === 'fr' ? 'Votre message…' : 'Write a message…'}
+                          style={{ flex: 1, minHeight: 44, maxHeight: 100, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, color: colors.text, textAlign: isRtl ? 'right' : 'left', backgroundColor: colors.surface }} />
+                        <Button title={language === 'ar' ? 'إرسال' : language === 'fr' ? 'Envoyer' : 'Send'} onPress={() => { void sendInquiryChatMessage(); }}
+                          loading={chatSending} disabled={chatSending || !chatDraft.trim()} size="sm" fullWidth={false} />
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
                 {inquiry.isSeller && inquiry.status === 'new' ? (
                   <Button title={language === 'ar' ? 'قبول الطلب' : language === 'fr' ? 'Accepter' : 'Accept inquiry'}
                     onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
