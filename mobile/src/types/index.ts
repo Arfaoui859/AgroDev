@@ -576,6 +576,10 @@ export interface MarketplaceInquiry {
   status: 'new' | 'replied' | 'accepted' | 'rejected' | 'closed';
   createdAt: string;
   listingTitle?: string | null;
+  listingPrice?: number | null;
+  listingQuantity?: number | null;
+  listingUnit?: string | null;
+  listingCurrency?: string | null;
   isSeller?: boolean;
 }
 
