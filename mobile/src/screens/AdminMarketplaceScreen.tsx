@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ScreenHeading } from '../components/ui/ScreenHeading';
-import { colors, radius, spacing, typography } from '../theme/colors';
+import { colors, spacing, typography } from '../theme/colors';
 
 type QueueTab = 'reports' | 'verifications' | 'promotions';
 type QueueItem = { id: string; status?: string; created_at?: string; listing?: { title?: string; seller_id?: string }; [key: string]: any };
@@ -105,7 +105,7 @@ export const AdminMarketplaceScreen: React.FC<{ onBack: () => void }> = ({ onBac
 
   return (
     <View style={styles.container}>
-      <ScreenHeading title={copy.title} subtitle={copy.subtitle} onBack={onBack} />
+      <ScreenHeading title={copy.title} subtitle={copy.subtitle} />
       <View style={[styles.tabs, isRtl && styles.rtl]}>
         {(['reports', 'verifications', 'promotions'] as QueueTab[]).map(key => (
           <Button key={key} title={copy[key]} size="sm" variant={tab === key ? 'primary' : 'outline'} onPress={() => setTab(key)} style={styles.tabButton} />
