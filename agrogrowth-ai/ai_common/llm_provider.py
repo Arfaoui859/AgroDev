@@ -24,7 +24,7 @@ import random
 import re
 import time
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any, Dict, List, Optional
@@ -416,8 +416,18 @@ class LLMProvider:
         temperature: float = 0.3,
         max_tokens: int = 1024,
         json_mode: bool = False,
+        timeout_s: Optional[float] = None,
+        max_retries: Optional[int] = None,
     ) -> str:
         cfg = self.config
+        # Allow latency-sensitive callers (the interactive chat agent) to
+        # enforce a short deadline without changing timeouts for other AI services.
+        if timeout_s is not None or max_retries is not None:
+            cfg = replace(
+                cfg,
+                timeout_s=max(1.0, float(timeout_s)) if timeout_s is not None else cfg.timeout_s,
+                max_retries=max(0, int(max_retries)) if max_retries is not None else cfg.max_retries,
+            )
 
         if cfg.kind == "none":
             raise LLMError(
