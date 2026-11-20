@@ -62,7 +62,7 @@ describe("Gemini Live voice contract", () => {
 
   it("keeps market commodity aliases identical and separates olive fruit from olive oil", () => {
     const extractAliases = (source: string) =>
-      source.match(/const\s+commodityAliases: Record<string, string\[]> = \{[\s\S]*?\n        \};/)?.[0] ?? "";
+      source.match(/const\s+commodityAliases: Record<string, string\[]> = \{[\s\S]*?\n\s{8}\};/)?.[0] ?? "";
     const nativeAliases = extractAliases(nativeSource);
     const webAliases = extractAliases(webSource);
 
