@@ -51,6 +51,7 @@ export const MarketplaceScreen: React.FC = () => {
   const [marketIntelligenceUnavailable, setMarketIntelligenceUnavailable] = useState(false);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteListings, setFavoriteListings] = useState<MarketplaceListing[]>([]);
   const [verificationBusinessName, setVerificationBusinessName] = useState('');
   const [verificationRegistration, setVerificationRegistration] = useState('');
   const [verificationEvidenceUrl, setVerificationEvidenceUrl] = useState('');
@@ -113,7 +114,7 @@ export const MarketplaceScreen: React.FC = () => {
   // the backend's own provenance. Never default to `isRealData: true`.
   const [meta, setMeta] = useState<ProvenanceMeta>({ provenance: 'database', isRealData: false });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices' | 'marketIntel'>('home');
+  const [selectedMarketCategory, setSelectedMarketCategory] = useState<'home' | 'favorites' | 'inquiries' | 'myListings' | 'catalog' | 'harvest' | 'listings' | 'prices' | 'marketIntel'>('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +157,7 @@ export const MarketplaceScreen: React.FC = () => {
     }
 
     setFavoriteIds('data' in favoritesOutcome ? favoritesOutcome.data.data.map((item) => item.id) : []);
+    setFavoriteListings('data' in favoritesOutcome ? favoritesOutcome.data.data : []);
 
     if ('data' in catalogOutcome) {
       setCatalog(catalogOutcome.data.data);
@@ -297,6 +299,9 @@ export const MarketplaceScreen: React.FC = () => {
       return;
     }
     setFavoriteIds(current => alreadySaved ? current.filter(id => id !== listingId) : [...current, listingId]);
+    setFavoriteListings(current => alreadySaved
+      ? current.filter(item => item.id !== listingId)
+      : [...current, ...listings.filter(item => item.id === listingId && !current.some(saved => saved.id === listingId))]);
   };
 
   const requestPromotion = async (listingId: string, type: 'urgent' | 'featured' | 'premium') => {
@@ -637,6 +642,7 @@ export const MarketplaceScreen: React.FC = () => {
         </Text>
         <View style={styles.marketCategoryGrid}>
           {([
+            { id: 'favorites', icon: 'heart-outline', ar: 'المفضلة', fr: 'Favoris', en: 'Favorites', count: favoriteListings.length },
             { id: 'inquiries', icon: 'message-text-outline', ar: 'طلبات التواصل', fr: 'Demandes de contact', en: 'Contact requests', count: inquiries.length },
             { id: 'myListings', icon: 'clipboard-list-outline', ar: 'عروضي للبيع', fr: 'Mes annonces', en: 'My sale offers', count: myListings.length + myPesticideOffers.length },
             { id: 'catalog', icon: 'book-open-variant', ar: 'دليل وأسعار الأدوية والأسمدة', fr: 'Guide et prix des intrants', en: 'Inputs guide & prices', count: catalog.length + inputPrices.length },
@@ -1034,6 +1040,31 @@ export const MarketplaceScreen: React.FC = () => {
         )}
       </Card>
       )}
+
+      {selectedMarketCategory === 'favorites' ? (
+      <Card variant="outlined" style={styles.listingsCard}>
+        <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+          <MaterialCommunityIcons name="heart" size={21} color={colors.primary} />
+          <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>{language === 'ar' ? 'العروض المحفوظة' : language === 'fr' ? 'Annonces enregistrées' : 'Saved listings'}</Text>
+        </View>
+        {favoriteListings.length === 0 ? (
+          <StateCard kind="empty" title={language === 'ar' ? 'المفضلة فارغة' : language === 'fr' ? 'Aucun favori' : 'No saved listings'} message={language === 'ar' ? 'اضغط على رمز القلب في أي عرض باش تحفظه وترجعله وقت تحب.' : language === 'fr' ? 'Utilisez le cœur sur une annonce pour la retrouver ici.' : 'Tap the heart on any listing to save it here.'} compact />
+        ) : (
+          <View style={styles.listingRows}>
+            {favoriteListings.map(listing => (
+              <View key={listing.id} style={styles.listingRow}>
+                {listing.imageUrl ? <Image source={{ uri: listing.imageUrl }} style={styles.listingThumb} resizeMode="cover" /> : null}
+                <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{listing.title}</Text>
+                <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>{[listing.category, listing.governorate || listing.location, listing.sellerName].filter(Boolean).join(' • ')}</Text>
+                {listing.price != null ? <Text style={styles.listingPrice}>{listing.price.toFixed(2)} {listing.currency || 'TND'}{listing.unit ? ' / ' + listing.unit : ''}</Text> : null}
+                <Button title={language === 'ar' ? 'إزالة من المفضلة' : language === 'fr' ? 'Retirer des favoris' : 'Remove from favorites'}
+                  onPress={() => { void toggleFavorite(listing.id); }} variant="outline" size="sm" fullWidth={false} />
+              </View>
+            ))}
+          </View>
+        )}
+      </Card>
+      ) : null}
 
       {selectedMarketCategory === 'harvest' && (
       <Card variant="outlined" style={styles.listingsCard}>
