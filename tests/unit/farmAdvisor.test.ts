@@ -186,7 +186,7 @@ describe("answerAgriculturalQuestion", () => {
       "Authenticated AgroGrowth account role=investor",
       "Farm A · 2 ha",
       ...Array.from({ length: 48 }, (_, index) => "Historical record " + index),
-      "LIVE WEATHER FROM OPEN-METEO [provider=Open-Meteo; observation_time=2026-11-09T18:00]",
+      "LIVE WEATHER FROM WEATHERAPI.COM [provider=Open-Meteo; observation_time=2026-11-09T18:00]",
       "Latest sensor reading [recorded_at=2026-11-09T17:55]",
     ];
     const result = await answerAgriculturalQuestion({
@@ -195,7 +195,7 @@ describe("answerAgriculturalQuestion", () => {
     });
     const summary = result.contextSummary.join(" ");
     expect(summary).toContain("role=investor");
-    expect(summary).toContain("LIVE WEATHER FROM OPEN-METEO");
+    expect(summary).toContain("LIVE WEATHER FROM WEATHERAPI.COM");
     expect(summary).toContain("Latest sensor reading");
   });
 
@@ -214,14 +214,14 @@ describe("answerAgriculturalQuestion", () => {
       language: "en",
       context: {
         platformRecords: [
-          "LIVE WEATHER FROM OPEN-METEO [observation_time=2026-11-09T18:00; provider=Open-Meteo; current_temperature=22.3 C; humidity=45%]. Real provider forecast, not an on-farm sensor measurement.",
+          "LIVE WEATHER FROM WEATHERAPI.COM [observation_time=2026-11-09T18:00; provider=Open-Meteo; current_temperature=22.3 C; humidity=45%]. Real provider forecast, not an on-farm sensor measurement.",
         ],
       },
     });
     expect(market.dataSource).toBe("rule-based");
     expect(market.answer).toContain("2.75 TND/kg");
     expect(weather.answer).toContain("current_temperature=22.3 C");
-    expect(weather.answer).toContain("Open-Meteo");
+    expect(weather.answer).toContain("WeatherAPI.com");
   });
 
   test("does not invent market prices in rule-based mode", async () => {
