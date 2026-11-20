@@ -23,8 +23,8 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { addMarketplaceFavorite, createMarketplaceInquiry, createMarketplaceListing, createMarketplaceSellerReview, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, reportMarketplaceListing, requestMarketplacePromotion, removeMarketplaceFavorite, submitMarketplaceSellerVerification, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
-import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
+import { addMarketplaceFavorite, confirmMarketplaceOrder, createMarketplaceInquiry, createMarketplaceListing, createMarketplaceOrder, createMarketplaceSellerReview, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceOrderStatus, getMarketplaceOrders, reportMarketplaceListing, requestMarketplacePromotion, removeMarketplaceFavorite, submitMarketplaceSellerVerification, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceOrder, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
 
@@ -60,6 +60,8 @@ export const MarketplaceScreen: React.FC = () => {
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
   const [myPesticideOffers, setMyPesticideOffers] = useState<PesticideSellerOffer[]>([]);
   const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
+  const [orders, setOrders] = useState<MarketplaceOrder[]>([]);
+  const [orderActionId, setOrderActionId] = useState<string | null>(null);
   const [activeInquiryListing, setActiveInquiryListing] = useState<string | null>(null);
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
@@ -108,7 +110,7 @@ export const MarketplaceScreen: React.FC = () => {
   const loadPrices = useCallback(async () => {
     // Prices and seller listings are separate backend capabilities. A failure
     // in one must not suppress useful data returned by the other.
-    const [priceOutcome, listingsOutcome, favoritesOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, pesticideOffersOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
+    const [priceOutcome, listingsOutcome, favoritesOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, pesticideOffersOutcome, inquiriesOutcome, ordersOutcome, intelligenceOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceListings({ tradeType: tradeFilter === 'all' ? undefined : tradeFilter }).then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceFavorites().then((data) => ({ data })).catch((error: unknown) => ({ error })),
@@ -117,6 +119,7 @@ export const MarketplaceScreen: React.FC = () => {
       getMyMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMyPesticideSellerOffers().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketplaceInquiries().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMarketplaceOrders().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMarketIntelligence(30).then((data) => ({ data })).catch((error: unknown) => ({ error })), 
     ]);
 
@@ -159,6 +162,7 @@ export const MarketplaceScreen: React.FC = () => {
     setMyListings('data' in myListingsOutcome ? myListingsOutcome.data.data : []);
     setMyPesticideOffers('data' in pesticideOffersOutcome ? pesticideOffersOutcome.data.data : []);
     setInquiries('data' in inquiriesOutcome ? inquiriesOutcome.data.data : []);
+    setOrders('data' in ordersOutcome ? ordersOutcome.data.data : []);
     if ('data' in intelligenceOutcome) {
       setMarketIntelligence(intelligenceOutcome.data.data);
       setMarketIntelligenceError(intelligenceOutcome.data.error);
@@ -398,6 +402,38 @@ export const MarketplaceScreen: React.FC = () => {
       return;
     }
     await loadPrices();
+  };
+
+  const createOrderFromInquiry = async (inquiry: MarketplaceInquiry) => {
+    setOrderActionId(inquiry.id);
+    try {
+      const result = await createMarketplaceOrder(inquiry.id, {
+        quantity: inquiry.quantity ?? undefined,
+      });
+      if (!result.data) throw new Error(result.error || 'ORDER_CREATE_FAILED');
+      Alert.alert(language === 'ar' ? 'تم إنشاء الطلب' : language === 'fr' ? 'Commande créée' : 'Order created',
+        language === 'ar' ? 'في انتظار تأكيد المشتري للشروط.' : language === 'fr' ? 'En attente de confirmation de l’acheteur.' : 'Waiting for buyer confirmation.');
+      await loadPrices();
+    } catch (error) {
+      Alert.alert(language === 'ar' ? 'تعذر إنشاء الطلب' : language === 'fr' ? 'Création impossible' : 'Could not create order',
+        error instanceof Error ? error.message : '');
+    } finally { setOrderActionId(null); }
+  };
+
+  const runOrderAction = async (order: MarketplaceOrder, action: 'confirm' | 'processing' | 'ready_for_pickup' | 'completed' | 'cancelled' | 'disputed') => {
+    setOrderActionId(order.id);
+    try {
+      const result = action === 'confirm'
+        ? await confirmMarketplaceOrder(order.id)
+        : await updateMarketplaceOrderStatus(order.id, action,
+            action === 'cancelled' ? 'Cancelled by buyer or seller' :
+            action === 'disputed' ? 'Order issue reported by participant' : undefined);
+      if (!result.success) throw new Error(result.error || 'ORDER_UPDATE_FAILED');
+      await loadPrices();
+    } catch (error) {
+      Alert.alert(language === 'ar' ? 'تعذر تحديث الطلب' : language === 'fr' ? 'Mise à jour impossible' : 'Could not update order',
+        error instanceof Error ? error.message : '');
+    } finally { setOrderActionId(null); }
   };
 
   const beginEditListing = (listing: MarketplaceListing) => {
@@ -1154,6 +1190,11 @@ export const MarketplaceScreen: React.FC = () => {
                   <Button title={language === 'ar' ? 'قبول الطلب' : language === 'fr' ? 'Accepter' : 'Accept inquiry'}
                     onPress={() => acceptMarketplaceInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
                 ) : null}
+                {inquiry.isSeller && inquiry.status === 'accepted' && !orders.some(order => order.inquiryId === inquiry.id) ? (
+                  <Button title={language === 'ar' ? 'إنشاء طلب بيع' : language === 'fr' ? 'Créer une commande' : 'Create order'}
+                    onPress={() => { void createOrderFromInquiry(inquiry); }} loading={orderActionId === inquiry.id}
+                    disabled={Boolean(orderActionId)} variant="outline" size="sm" fullWidth={false} />
+                ) : null}
                 {!inquiry.isSeller && ['accepted','closed'].includes(inquiry.status) ? (
                   <Button title={language === 'ar' ? 'قيّم البائع' : language === 'fr' ? 'Évaluer le vendeur' : 'Rate seller'}
                     onPress={() => rateInquiry(inquiry.id)} variant="outline" size="sm" fullWidth={false} />
@@ -1163,6 +1204,61 @@ export const MarketplaceScreen: React.FC = () => {
           </View>
         )}
       </Card>
+      ) : null}
+
+      {selectedMarketCategory === 'inquiries' ? (
+        <Card variant="outlined" style={styles.listingsCard}>
+          <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
+            <MaterialCommunityIcons name="clipboard-list-outline" size={21} color={colors.primary} />
+            <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
+              {language === 'ar' ? 'الطلبات والصفقات' : language === 'fr' ? 'Commandes' : 'Orders'}
+            </Text>
+          </View>
+          {orders.length === 0 ? (
+            <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+              {language === 'ar' ? 'لا توجد طلبات مؤكدة بعد.' : language === 'fr' ? 'Aucune commande pour le moment.' : 'No orders yet.'}
+            </Text>
+          ) : (
+            <View style={styles.listingRows}>
+              {orders.map(order => (
+                <View key={order.id} style={{ gap: spacing.xs, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <Text style={[styles.listingName, isRtl && rtlStyles.rtlText]}>{order.listingTitle}</Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {order.quantity} {order.unit || ''} × {order.unitPrice.toFixed(3)} {order.currency}
+                    {' · '}{language === 'ar' ? 'الإجمالي' : language === 'fr' ? 'Total' : 'Total'}: {(order.quantity * order.unitPrice).toFixed(3)} {order.currency}
+                  </Text>
+                  <Text style={[styles.listingMeta, isRtl && rtlStyles.rtlText]}>
+                    {language === 'ar' ? 'الحالة' : language === 'fr' ? 'Statut' : 'Status'}: {order.status.replace(/_/g, ' ')}
+                  </Text>
+                  {order.status === 'awaiting_buyer_confirmation' && !order.isSeller ? (
+                    <Button title={language === 'ar' ? 'تأكيد الطلب' : language === 'fr' ? 'Confirmer' : 'Confirm order'}
+                      onPress={() => { void runOrderAction(order, 'confirm'); }} loading={orderActionId === order.id} disabled={Boolean(orderActionId)} size="sm" fullWidth={false} />
+                  ) : null}
+                  {order.isSeller && order.status === 'confirmed' ? (
+                    <Button title={language === 'ar' ? 'بدء التجهيز' : language === 'fr' ? 'Commencer la préparation' : 'Start processing'}
+                      onPress={() => { void runOrderAction(order, 'processing'); }} loading={orderActionId === order.id} disabled={Boolean(orderActionId)} size="sm" fullWidth={false} />
+                  ) : null}
+                  {order.isSeller && order.status === 'processing' ? (
+                    <Button title={language === 'ar' ? 'جاهز للاستلام' : language === 'fr' ? 'Prêt au retrait' : 'Ready for pickup'}
+                      onPress={() => { void runOrderAction(order, 'ready_for_pickup'); }} loading={orderActionId === order.id} disabled={Boolean(orderActionId)} size="sm" fullWidth={false} />
+                  ) : null}
+                  {!order.isSeller && order.status === 'ready_for_pickup' ? (
+                    <Button title={language === 'ar' ? 'تأكيد الاستلام' : language === 'fr' ? 'Confirmer la réception' : 'Confirm receipt'}
+                      onPress={() => { void runOrderAction(order, 'completed'); }} loading={orderActionId === order.id} disabled={Boolean(orderActionId)} size="sm" fullWidth={false} />
+                  ) : null}
+                  {['awaiting_buyer_confirmation','confirmed'].includes(order.status) ? (
+                    <Button title={language === 'ar' ? 'إلغاء الطلب' : language === 'fr' ? 'Annuler' : 'Cancel order'}
+                      onPress={() => { void runOrderAction(order, 'cancelled'); }} variant="outline" size="sm" fullWidth={false} disabled={Boolean(orderActionId)} />
+                  ) : null}
+                  {['confirmed','processing','ready_for_pickup'].includes(order.status) ? (
+                    <Button title={language === 'ar' ? 'الإبلاغ عن مشكلة' : language === 'fr' ? 'Signaler un problème' : 'Report an issue'}
+                      onPress={() => { void runOrderAction(order, 'disputed'); }} variant="outline" size="sm" fullWidth={false} disabled={Boolean(orderActionId)} />
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          )}
+        </Card>
       ) : null}
 
 
