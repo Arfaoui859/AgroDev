@@ -238,6 +238,47 @@ router.patch("/inquiries/:id/status", requireAuth, requireVerifiedAuth, async (r
   res.json({success:true,data});
 });
 
+// Buyer/seller conversation thread for an existing inquiry. RLS scopes every row to participants.
+router.get("/inquiries/:id/messages", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const userId=req.userId;
+  if(!userId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const {data:inquiry,error:inquiryError}=await db.from("marketplace_inquiries")
+    .select("id,buyer_id,seller_id").eq("id",req.params.id)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).maybeSingle();
+  if(inquiryError) return res.status(503).json({success:false,code:"INQUIRY_LOOKUP_FAILED"});
+  if(!inquiry) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
+  const {error:readError}=await db.from("marketplace_inquiry_messages")
+    .update({read_at:new Date().toISOString()}).eq("inquiry_id",inquiry.id)
+    .neq("sender_id",userId).is("read_at",null);
+  if(readError) return res.status(503).json({success:false,code:"MESSAGE_READ_RECEIPT_FAILED"});
+  const {data,error}=await db.from("marketplace_inquiry_messages")
+    .select("id,inquiry_id,sender_id,body,created_at,read_at")
+    .eq("inquiry_id",inquiry.id).order("created_at",{ascending:true}).limit(200);
+  if(error) return res.status(503).json({success:false,code:"MESSAGES_UNAVAILABLE"});
+  res.json({success:true,data:data??[]});
+});
+
+router.post("/inquiries/:id/messages", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const userId=req.userId;
+  if(!userId) return res.status(401).json({success:false,code:"VERIFIED_SESSION_REQUIRED"});
+  const body=text(req.body?.body,4000);
+  if(!body) return res.status(400).json({success:false,code:"MESSAGE_BODY_REQUIRED"});
+  const {data:inquiry,error:inquiryError}=await db.from("marketplace_inquiries")
+    .select("id,status,buyer_id,seller_id").eq("id",req.params.id)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`).maybeSingle();
+  if(inquiryError) return res.status(503).json({success:false,code:"INQUIRY_LOOKUP_FAILED"});
+  if(!inquiry) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
+  if(["rejected","closed"].includes(inquiry.status))
+    return res.status(409).json({success:false,code:"INQUIRY_CONVERSATION_CLOSED"});
+  const {data,error}=await db.from("marketplace_inquiry_messages").insert({
+    inquiry_id:inquiry.id,sender_id:userId,body,
+  }).select("id,inquiry_id,sender_id,body,created_at,read_at").single();
+  if(error) return res.status(503).json({success:false,code:"MESSAGE_SEND_FAILED"});
+  res.status(201).json({success:true,data});
+});
+
 // Orders are created only by the seller after accepting an inquiry.
 router.post("/inquiries/:id/order", requireAuth, requireVerifiedAuth, async (req:Request,res:Response) => {
   const db=callerDb(req,res); if(!db) return;
