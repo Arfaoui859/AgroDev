@@ -579,6 +579,30 @@ export interface MarketplaceInquiry {
   isSeller?: boolean;
 }
 
+export type MarketplaceOrderStatus =
+  | 'awaiting_buyer_confirmation' | 'confirmed' | 'processing'
+  | 'ready_for_pickup' | 'completed' | 'cancelled' | 'disputed';
+
+export interface MarketplaceOrder {
+  id: string;
+  inquiryId: string;
+  listingId: string;
+  buyerId: string;
+  sellerId: string;
+  listingTitle: string;
+  quantity: number;
+  unit: string | null;
+  unitPrice: number;
+  currency: string;
+  status: MarketplaceOrderStatus;
+  buyerNote: string | null;
+  cancellationReason: string | null;
+  disputeReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  isSeller: boolean;
+}
+
 export interface MarketplaceResult {
   listings: MarketplaceListing[];
   meta: ProvenanceMeta;
