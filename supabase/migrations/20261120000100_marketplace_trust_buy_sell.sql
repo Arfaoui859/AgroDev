@@ -40,7 +40,15 @@ CREATE POLICY "Public can read published seller reviews" ON public.marketplace_s
   FOR SELECT USING (status = 'published');
 DROP POLICY IF EXISTS "Reviewers can create own seller reviews" ON public.marketplace_seller_reviews;
 CREATE POLICY "Reviewers can create own seller reviews" ON public.marketplace_seller_reviews
-  FOR INSERT TO authenticated WITH CHECK (reviewer_id = auth.uid());
+  FOR INSERT TO authenticated WITH CHECK (
+    reviewer_id = auth.uid() AND status = 'published'
+    AND EXISTS (
+      SELECT 1 FROM public.marketplace_inquiries i
+      WHERE i.id = inquiry_id AND i.listing_id = marketplace_seller_reviews.listing_id
+        AND i.buyer_id = auth.uid() AND i.seller_id = marketplace_seller_reviews.seller_id
+        AND i.status IN ('accepted','closed')
+    )
+  );
 GRANT SELECT, INSERT ON public.marketplace_seller_reviews TO anon, authenticated;
 
 CREATE TABLE IF NOT EXISTS public.marketplace_listing_reports (
@@ -115,7 +123,11 @@ CREATE POLICY "Sellers can read own promotion requests" ON public.marketplace_li
   FOR SELECT TO authenticated USING (seller_id = auth.uid());
 DROP POLICY IF EXISTS "Sellers can request listing promotions" ON public.marketplace_listing_promotions;
 CREATE POLICY "Sellers can request listing promotions" ON public.marketplace_listing_promotions
-  FOR INSERT TO authenticated WITH CHECK (seller_id = auth.uid() AND status = 'pending_review' AND payment_status = 'not_configured');
+  FOR INSERT TO authenticated WITH CHECK (
+    seller_id = auth.uid() AND status = 'pending_review' AND payment_status = 'not_configured'
+    AND EXISTS (SELECT 1 FROM public.marketplace_listings l
+      WHERE l.id = listing_id AND l.seller_id = auth.uid() AND l.status = 'published')
+  );
 GRANT SELECT, INSERT ON public.marketplace_listing_promotions TO authenticated;
 
 -- No client can grant verification, activate promotions, or moderate reports.
