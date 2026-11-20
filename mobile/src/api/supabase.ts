@@ -3,22 +3,6 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import { secureStorageAdapter } from './secureStorage';
 
 /**
- * React Native fetch adapter: merge headers from both Request and init, then
- * force the public project key onto every Supabase Auth/REST request.
- * Never logs or exposes the key.
- */
-const supabaseFetch: typeof fetch = async (input, init) => {
-  const requestHeaders =
-    input && typeof input === 'object' && 'headers' in input
-      ? (input as Request).headers
-      : undefined;
-  const headers = new Headers(requestHeaders);
-  new Headers(init?.headers).forEach((value, name) => headers.set(name, value));
-  headers.set('apikey', SUPABASE_ANON_KEY);
-  return fetch(input, { ...init, headers });
-};
-
-/**
  * Supabase JS already attaches the project API key to Auth and REST requests.
  * Keep the native client on the platform fetch implementation: wrapping fetch
  * and inspecting `input instanceof Request` is not reliable across React
@@ -30,7 +14,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   // Set the header explicitly as well as the constructor key. This guarantees
   // every Auth/PostgREST request carries apikey in native builds, even if a
   // fetch/polyfill layer bypasses the SDK's default header injection.
-  global: { headers: { apikey: SUPABASE_ANON_KEY }, fetch: supabaseFetch },
+  global: { headers: { apikey: SUPABASE_ANON_KEY } },
   auth: {
     storage: secureStorageAdapter,
     autoRefreshToken: true,
