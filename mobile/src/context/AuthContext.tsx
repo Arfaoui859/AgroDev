@@ -210,6 +210,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const needsConfirmation = /confirm/i.test(error.message);
         return { success: false, error: error.message, needsConfirmation };
       }
+      // A successful HTTP response without a persisted Supabase session
+      // is not a successful login. Do not close the modal or mark the caller
+      // authenticated unless both the user and session are present.
+      if (!data.user || !data.session) {
+        return {
+          success: false,
+          error: 'Supabase sign-in returned no authenticated session. Please retry.',
+        };
+      }
+
       if (data.user) {
         authUserIdRef.current = data.user.id;
         // Establish the authenticated session immediately. Profile hydration is
