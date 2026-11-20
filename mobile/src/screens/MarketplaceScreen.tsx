@@ -23,7 +23,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { SearchBar } from '../components/ui/SearchBar';
 import { ProvenanceBar } from '../components/ui/ProvenanceBar';
 import { StateCard } from '../components/ui/StateCard';
-import { createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
+import { addMarketplaceFavorite, createMarketplaceInquiry, createMarketplaceListing, createPesticideSellerOffer, deleteMarketplaceListing, getAgriculturalCatalog, getAgriculturalInputPrices, getMarketIntelligence, getMarketPrices, getMarketplaceFavorites, getMarketplaceInquiries, getMarketplaceListings, getMyMarketplaceListings, getMyPesticideSellerOffers, updateMarketplaceInquiryStatus, updateMarketplaceListing, reportMarketplaceListing, removeMarketplaceFavorite, updateMarketplaceListingStatus, uploadMarketplaceImage } from '../api/client';
 import { AgriculturalCatalogProduct, AgriculturalInputPrice, PesticideSellerOffer, MarketplaceInquiry, MarketplaceListing, MarketPriceItem, ProvenanceMeta } from '../types';
 import * as ImagePicker from 'expo-image-picker';
 import { Button } from '../components/ui/Button';
@@ -41,6 +41,9 @@ export const MarketplaceScreen: React.FC = () => {
   const [marketIntelligenceError, setMarketIntelligenceError] = useState<string | null>(null);
   const [marketIntelligenceUnavailable, setMarketIntelligenceUnavailable] = useState(false);
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('sell');
+  const [tradeFilter, setTradeFilter] = useState<'all' | 'buy' | 'sell'>('all');
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
   const [myPesticideOffers, setMyPesticideOffers] = useState<PesticideSellerOffer[]>([]);
   const [inquiries, setInquiries] = useState<MarketplaceInquiry[]>([]);
@@ -92,9 +95,10 @@ export const MarketplaceScreen: React.FC = () => {
   const loadPrices = useCallback(async () => {
     // Prices and seller listings are separate backend capabilities. A failure
     // in one must not suppress useful data returned by the other.
-    const [priceOutcome, listingsOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, pesticideOffersOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
+    const [priceOutcome, listingsOutcome, favoritesOutcome, catalogOutcome, inputPricesOutcome, myListingsOutcome, pesticideOffersOutcome, inquiriesOutcome, intelligenceOutcome] = await Promise.all([
       getMarketPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
-      getMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMarketplaceListings({ tradeType: tradeFilter === 'all' ? undefined : tradeFilter }).then((data) => ({ data })).catch((error: unknown) => ({ error })),
+      getMarketplaceFavorites().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalCatalog().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getAgriculturalInputPrices().then((data) => ({ data })).catch((error: unknown) => ({ error })),
       getMyMarketplaceListings().then((data) => ({ data })).catch((error: unknown) => ({ error })),
@@ -123,6 +127,8 @@ export const MarketplaceScreen: React.FC = () => {
       setListingsUnavailable(true);
     }
 
+    setFavoriteIds('data' in favoritesOutcome ? favoritesOutcome.data.data.map((item) => item.id) : []);
+
     if ('data' in catalogOutcome) {
       setCatalog(catalogOutcome.data.data);
       setCatalogUnavailable(Boolean(catalogOutcome.data.error));
@@ -149,7 +155,7 @@ export const MarketplaceScreen: React.FC = () => {
       setMarketIntelligenceError(intelligenceOutcome.error instanceof Error ? intelligenceOutcome.error.message : 'Market intelligence request failed');
       setMarketIntelligenceUnavailable(true);
     }
-  }, []);
+  }, [tradeFilter]);
 
   React.useEffect(() => {
     (async () => {
@@ -211,7 +217,7 @@ export const MarketplaceScreen: React.FC = () => {
         if (!uploaded.url) throw new Error(uploaded.error || 'Image upload failed');
         imageUrls = [uploaded.url];
       }
-      const result = isPesticideOffer
+      const result = isPesticideOffer && tradeMode === 'sell'
         ? await createPesticideSellerOffer({
             trade_name: sellerTitle.trim(), active_ingredient: undefined,
             registration_number: sellerRegistrationNumber.trim(),
@@ -224,7 +230,8 @@ export const MarketplaceScreen: React.FC = () => {
             governorate: sellerGovernorate.trim() || undefined, image_urls: imageUrls,
           })
         : await createMarketplaceListing({
-        listing_type: sellerType, title: sellerTitle.trim(), category: sellerCategory.trim(),
+        listing_type: tradeMode === 'buy' ? 'other' : sellerType,
+        trade_type: tradeMode, title: sellerTitle.trim(), category: sellerCategory.trim(),
         description: sellerDescription.trim() || undefined,
         price: sellerPrice.trim() ? Number(sellerPrice) : null,
         quantity: sellerQuantity.trim() ? Number(sellerQuantity) : null,
@@ -251,6 +258,25 @@ export const MarketplaceScreen: React.FC = () => {
     } finally {
       setSellerSubmitting(false);
     }
+  };
+
+  const toggleFavorite = async (listingId: string) => {
+    const alreadySaved = favoriteIds.includes(listingId);
+    const result = alreadySaved ? await removeMarketplaceFavorite(listingId) : await addMarketplaceFavorite(listingId);
+    if (!result.success) {
+      Alert.alert(language === 'ar' ? 'تعذر تحديث المفضلة' : language === 'fr' ? 'Favoris indisponibles' : 'Could not update favorites', result.error || '');
+      return;
+    }
+    setFavoriteIds(current => alreadySaved ? current.filter(id => id !== listingId) : [...current, listingId]);
+  };
+
+  const reportListing = async (listingId: string) => {
+    const result = await reportMarketplaceListing(listingId, 'other');
+    Alert.alert(
+      result.success ? (language === 'ar' ? 'تم إرسال البلاغ' : language === 'fr' ? 'Signalement envoyé' : 'Report submitted')
+        : (language === 'ar' ? 'تعذر إرسال البلاغ' : language === 'fr' ? 'Échec du signalement' : 'Could not submit report'),
+      result.success ? (language === 'ar' ? 'سيتم مراجعته من فريق الإشراف.' : language === 'fr' ? 'Notre équipe de modération le vérifiera.' : 'Our moderation team will review it.') : (result.error || ''),
+    );
   };
 
   const sendMarketplaceInquiry = async () => {
@@ -501,20 +527,30 @@ export const MarketplaceScreen: React.FC = () => {
         <View style={[styles.listingsHeading, isRtl && rtlStyles.rtlRow]}>
           <MaterialCommunityIcons name="store-plus-outline" size={21} color={colors.primary} />
           <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>
-            {language === 'ar' ? 'بيع منتوجك على AgroGrowth' : language === 'fr' ? 'Vendre sur AgroGrowth' : 'Sell on AgroGrowth'}
+            {tradeMode === 'buy' ? (language === 'ar' ? 'اطلب منتوجاً أو خدمة' : language === 'fr' ? 'Publier une demande d’achat' : 'Request a product or service') : (language === 'ar' ? 'بيع منتوجك على AgroVibe' : language === 'fr' ? 'Vendre sur AgroVibe' : 'Sell on AgroVibe')}
           </Text>
         </View>
         <Text style={[styles.listingMeta, { textAlign: isRtl ? 'right' : 'left' }]}>
-          {language === 'ar' ? 'انشر منتوج فلاحي أو معدات أو محصولك القادم. يلزم تسجيل الدخول.' : language === 'fr' ? 'Publiez un intrant, un équipement ou une récolte à venir. Connexion requise.' : 'Publish agricultural inputs, equipment or an upcoming harvest. Sign-in required.'}
+          {tradeMode === 'buy' ? (language === 'ar' ? 'انشر طلب شراء مع الكمية والسعر والمكان حتى يتصل بك البائعون.' : language === 'fr' ? 'Publiez votre besoin avec quantité, prix et lieu.' : 'Post what you need with quantity, target price and location.') : (language === 'ar' ? 'انشر منتوج فلاحي أو معدات أو محصولك القادم. يلزم تسجيل الدخول.' : language === 'fr' ? 'Publiez un intrant, un équipement ou une récolte à venir. Connexion requise.' : 'Publish agricultural inputs, equipment or an upcoming harvest. Sign-in required.')}
         </Text>
+        <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
+          {(['sell','buy'] as const).map(mode => (
+            <Pressable key={mode} onPress={() => setTradeMode(mode)}
+              style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.lg, borderWidth: 1, borderColor: tradeMode === mode ? colors.primary : colors.border, backgroundColor: tradeMode === mode ? colors.primaryLight : colors.surface }}>
+              <Text style={{ color: tradeMode === mode ? colors.primaryDark : colors.text, fontWeight: '600' }}>
+                {mode === 'sell' ? (language === 'ar' ? 'نعرض للبيع' : language === 'fr' ? 'Vendre' : 'Sell') : (language === 'ar' ? 'نطلب للشراء' : language === 'fr' ? 'Acheter' : 'Buy request')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
         <Button title={sellerFormOpen
           ? (language === 'ar' ? 'إغلاق النموذج' : language === 'fr' ? 'Fermer' : 'Close form')
-          : (language === 'ar' ? 'إضافة عرض للبيع' : language === 'fr' ? 'Ajouter une annonce' : 'Create a listing')}
+          : (tradeMode === 'buy' ? (language === 'ar' ? 'نشر طلب شراء' : language === 'fr' ? 'Publier une demande d’achat' : 'Post a buy request') : (language === 'ar' ? 'إضافة عرض للبيع' : language === 'fr' ? 'Ajouter une annonce' : 'Create a listing'))}
           onPress={() => setSellerFormOpen(v => !v)} variant="outline" size="md" />
         {sellerFormOpen ? (
           <View style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-              {(['agricultural_input','equipment','agricultural_product','harvest'] as const).map(type => (
+              {(tradeMode === 'buy' ? ['other'] as const : ['agricultural_input','equipment','agricultural_product','harvest'] as const).map(type => (
                 <Pressable key={type} onPress={() => setSellerType(type)}
                   style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.lg, borderWidth: 1, borderColor: sellerType === type ? colors.primary : colors.border, backgroundColor: sellerType === type ? colors.primaryLight : colors.surface }}>
                   <Text style={{ color: sellerType === type ? colors.primaryDark : colors.text, fontSize: typography.fontSizes.xs }}>
@@ -712,6 +748,16 @@ export const MarketplaceScreen: React.FC = () => {
           <MaterialCommunityIcons name="storefront-outline" size={21} color={colors.primary} />
           <Text style={[styles.listingsTitle, isRtl && rtlStyles.rtlText]}>{x.marketListingsTitle}</Text>
         </View>
+        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+          {(['all','sell','buy'] as const).map(filter => (
+            <Pressable key={filter} onPress={() => setTradeFilter(filter)}
+              style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.md, backgroundColor: tradeFilter === filter ? colors.primaryLight : colors.surface, borderWidth: 1, borderColor: tradeFilter === filter ? colors.primary : colors.border }}>
+              <Text style={{ color: tradeFilter === filter ? colors.primaryDark : colors.text, fontSize: typography.fontSizes.xs }}>
+                {filter === 'all' ? (language === 'ar' ? 'الكل' : language === 'fr' ? 'Tout' : 'All') : filter === 'sell' ? (language === 'ar' ? 'للبيع' : language === 'fr' ? 'À vendre' : 'For sale') : (language === 'ar' ? 'طلبات شراء' : language === 'fr' ? 'Demandes' : 'Buy requests')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
         {listingsUnavailable ? (
           <StateCard kind="unavailable" title={x.marketListingsUnavailable} message={x.marketListingsBody} compact />
         ) : sellerListings.length === 0 ? (
@@ -730,7 +776,10 @@ export const MarketplaceScreen: React.FC = () => {
                 {listing.price != null ? (
                   <Text style={styles.listingPrice}>{listing.price.toFixed(2) + ' ' + (listing.currency || 'TND') + (listing.unit ? ' / ' + listing.unit : '')}</Text>
                 ) : null}
-                <Button title={language === 'ar' ? 'تواصل' : language === 'fr' ? 'Contacter' : 'Contact seller'}
+                <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
+                  <Button title={favoriteIds.includes(listing.id) ? '♥' : '♡'} onPress={() => { void toggleFavorite(listing.id); }} variant="outline" size="sm" fullWidth={false} />
+                  <Button title={language === 'ar' ? 'إبلاغ' : language === 'fr' ? 'Signaler' : 'Report'} onPress={() => { void reportListing(listing.id); }} variant="outline" size="sm" fullWidth={false} />
+                  <Button title={language === 'ar' ? 'تواصل' : language === 'fr' ? 'Contacter' : (listing.tradeType === 'buy' ? 'Contact buyer' : 'Contact seller')}
                   onPress={() => { setActiveInquiryListing(listing.id); setInquiryMessage(''); }} variant="outline" size="sm" fullWidth={false} />
               </View>
             ))}
