@@ -96,6 +96,8 @@ export class LiveVoiceSession {
   private sessionHandle: string | null = null;
   private reconnecting = false;
   private reconnectAttempts = 0;
+  private responsePending = false;
+  private responseWatchdog: ReturnType<typeof setTimeout> | null = null;
 
   constructor(callbacks: VoiceCallbacks) {
     this.callbacks = callbacks;
@@ -547,6 +549,12 @@ export class LiveVoiceSession {
       { sampleRate: INPUT_RATE, bufferLength: FRAME_SAMPLES, channelCount: 1 },
       ({ buffer, numFrames }) => {
         if (!this.active || !this.socketReady || this.socket?.readyState !== WebSocket.OPEN) return;
+        // Once the user finishes a turn, keep the microphone from treating room noise
+        // or speaker echo as a new turn while Gemini is thinking or speaking.
+        if (this.responsePending) {
+          this.callbacks.onLevel?.(0);
+          return;
+        }
         const raw = buffer.getChannelData(0).subarray(0, numFrames);
         if (!raw.length) return;
 
@@ -584,7 +592,9 @@ export class LiveVoiceSession {
             this.silenceMs = 0;
             this.speechCandidateMs = 0;
             this.socket?.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
+            this.responsePending = true;
             this.callbacks.onState("thinking");
+            this.startResponseWatchdog();
             return;
           }
         }
@@ -605,6 +615,24 @@ export class LiveVoiceSession {
     this.callbacks.onState("listening");
   }
 
+  private clearResponseWatchdog(): void {
+    if (this.responseWatchdog) clearTimeout(this.responseWatchdog);
+    this.responseWatchdog = null;
+  }
+
+  private startResponseWatchdog(): void {
+    this.clearResponseWatchdog();
+    this.responseWatchdog = setTimeout(() => {
+      if (!this.active || !this.responsePending) return;
+      this.responsePending = false;
+      this.speechActive = false;
+      this.silenceMs = 0;
+      this.speechCandidateMs = 0;
+      this.callbacks.onError?.("تأخّر ردّ المستشار الصوتي. الميكروفون رجع يسمعك؛ عاود احكي.");
+      this.callbacks.onState("listening");
+    }, 45000);
+  }
+
   private interruptPlayback(): void {
     this.lastReplyId += 1;
     this.playbackQueue?.clearBuffers();
@@ -620,6 +648,8 @@ export class LiveVoiceSession {
     if (!serverContent) return;
 
     if (serverContent.interrupted) {
+      this.clearResponseWatchdog();
+      this.responsePending = false;
       this.interruptPlayback();
       return;
     }
@@ -632,7 +662,12 @@ export class LiveVoiceSession {
     if (parts.some((part: any) => part.inlineData?.data)) {
       this.callbacks.onState("speaking");
     }
-    if (serverContent.turnComplete && !this.speechActive) {
+    if (serverContent.turnComplete) {
+      this.clearResponseWatchdog();
+      this.responsePending = false;
+      this.speechActive = false;
+      this.silenceMs = 0;
+      this.speechCandidateMs = 0;
       this.callbacks.onState("listening");
     }
   }
@@ -1186,6 +1221,8 @@ export class LiveVoiceSession {
     this.active = false;
     this.socketReady = false;
     this.speechActive = false;
+    this.responsePending = false;
+    this.clearResponseWatchdog();
     this.lastReplyId += 1;
     this.recorder?.clearOnAudioReady();
     if (this.recorder?.isRecording()) await this.recorder.stop().catch(() => undefined);
