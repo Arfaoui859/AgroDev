@@ -51,6 +51,19 @@ export default function Login() {
           "يرجى تأكيد البريد الإلكتروني أولاً من خلال الرابط المرسل إليك.";
       } else if (errorMessageIncludes(error, "Invalid email")) {
         errorMessage = "البريد الإلكتروني غير صحيح.";
+      } else if (
+        errorMessageIncludes(error, "Failed to fetch") ||
+        errorMessageIncludes(error, "NetworkError") ||
+        errorMessageIncludes(error, "Network request failed") ||
+        errorMessageIncludes(error, "fetch failed") ||
+        errorMessageIncludes(error, "Load failed")
+      ) {
+        errorMessage =
+          "تعذّر الاتصال بخدمة الحساب. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.";
+      } else if (errorMessageIncludes(error, "Invalid API key")) {
+        // A rejected project key is a deployment problem, not the user's input.
+        errorMessage =
+          "خدمة الحساب غير مهيّأة حالياً. يرجى المحاولة لاحقاً أو التواصل مع الدعم.";
       }
 
       setError(errorMessage);

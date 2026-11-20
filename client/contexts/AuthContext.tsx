@@ -31,6 +31,8 @@ interface AuthContextType {
   userProfile: AppUserProfile | null;
   session: Session | null;
   isLoading: boolean;
+  /** True only until the persisted session has been restored on first load. */
+  isInitialising: boolean;
   isAuthenticated: boolean;
   /**
    * True only when the caller's trusted `public.users` row (and therefore its
@@ -79,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [userProfile, setUserProfile] = useState<AppUserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialising, setIsInitialising] = useState(true);
   // True only once the trusted `public.users` row has been read. While false,
   // role-gated routes must deny (see ProtectedRoute / routeAccess).
   const [roleVerified, setRoleVerified] = useState(false);
@@ -92,6 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (mounted) {
         console.warn("Auth initialization fallback timeout triggered");
         setIsLoading(false);
+        setIsInitialising(false);
       }
     }, 15000);
 
@@ -104,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setSession(nextSession);
       setIsLoading(false);
+      setIsInitialising(false);
 
       if (!nextSession?.user) {
         setUser(null);
@@ -165,7 +170,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (error) {
         console.error("Error initializing auth:", error);
       } finally {
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+          setIsInitialising(false);
+        }
       }
     };
 
@@ -390,6 +398,7 @@ Row Level Security (RLS) policies are blocking access.
         email,
         password,
         options: {
+          emailRedirectTo: window.location.origin,
           data: {
             full_name: userData.full_name,
             full_name_ar: userData.full_name_ar,
@@ -563,7 +572,9 @@ Row Level Security (RLS) policies are blocking access.
   // Reset password function
   const resetPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
       if (error) throw error;
     } catch (error) {
       console.error("Reset password error:", error);
@@ -582,6 +593,7 @@ Row Level Security (RLS) policies are blocking access.
     userProfile,
     session,
     isLoading,
+    isInitialising,
     isAuthenticated: !!session?.user,
     roleVerified,
     signUp,
