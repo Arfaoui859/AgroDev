@@ -962,8 +962,8 @@ export class LiveVoiceSession {
         const listingType = listingTypes.includes(args.listing_type) ? args.listing_type : "";
         const title = typeof args.title === "string" ? args.title.trim().slice(0, 160) : "";
         const category = typeof args.category === "string" ? args.category.trim().slice(0, 80) : "";
-        const price = Number(args.price);
-        const quantity = Number(args.quantity);
+        const price = typeof args.price === "number" ? args.price : Number.NaN;
+        const quantity = typeof args.quantity === "number" ? args.quantity : Number.NaN;
         const currency = typeof args.currency === "string" ? args.currency.trim().toUpperCase().slice(0, 3) : "TND";
         const harvestCrop = typeof args.harvest_crop === "string" ? args.harvest_crop.trim().slice(0, 100) : "";
         const harvestDate = typeof args.expected_harvest_date === "string" ? args.expected_harvest_date.trim() : "";
