@@ -63,9 +63,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onClose }) => {
   // credential error: the former is not actionable for the user, so it is
   // replaced with a localised connection message.
   const describeAuthError = (message: string | undefined, fallback: string) => {
-    if (!message) return fallback;
-    // Temporarily expose the exact Supabase auth failure during native login
-    // diagnosis instead of hiding it behind the generic connectivity message.
+    // Diagnostic sentinel: if this exact text never appears, the running
+    // device is not loading this source revision or this is not the active modal.
+    if (!message) return 'Login diagnostic: Supabase returned no error message';
     return `Login diagnostic: ${message}`;
   };
 
