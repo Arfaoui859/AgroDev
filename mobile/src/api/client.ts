@@ -1266,6 +1266,28 @@ export async function getMarketplaceListings(params: { q?: string; type?: string
 }
 
 
+
+export async function requestMarketplacePromotion(listingId:string,promotionType:'urgent'|'featured'|'premium'):Promise<{success:boolean;error:string|null}> {
+  const res=await apiRequest<any>(`/api/agro-market/listings/${encodeURIComponent(listingId)}/promotions`,{
+    method:'POST',body:JSON.stringify({promotion_type:promotionType}),
+  });
+  return {success:Boolean(res.data?.success),error:res.data?.success?null:res.error||res.data?.code||'PROMOTION_REQUEST_FAILED'};
+}
+
+export async function submitMarketplaceSellerVerification(input:{business_name:string;registration_number?:string;evidence_urls:string[]}):Promise<{success:boolean;error:string|null}> {
+  const res=await apiRequest<any>('/api/agro-market/seller-verification',{
+    method:'POST',body:JSON.stringify(input),
+  });
+  return {success:Boolean(res.data?.success),error:res.data?.success?null:res.error||res.data?.code||'VERIFICATION_SUBMIT_FAILED'};
+}
+
+export async function createMarketplaceSellerReview(inquiryId:string,rating:number,review?:string):Promise<{success:boolean;error:string|null}> {
+  const res=await apiRequest<any>(`/api/agro-market/inquiries/${encodeURIComponent(inquiryId)}/review`,{
+    method:'POST',body:JSON.stringify({rating,review}),
+  });
+  return {success:Boolean(res.data?.success),error:res.data?.success?null:res.error||res.data?.code||'REVIEW_CREATE_FAILED'};
+}
+
 export async function getMarketplaceFavorites(): Promise<{ data: MarketplaceListing[]; error: string | null }> {
   const res = await apiRequest<any>('/api/agro-market/favorites');
   const rows: any[] = Array.isArray(res.data?.data) ? res.data.data : [];
