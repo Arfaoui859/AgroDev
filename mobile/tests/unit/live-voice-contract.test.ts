@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 const nativePath = join(__dirname, "../../src/services/liveVoiceSession.ts");
 const webPath = join(__dirname, "../../src/services/liveVoiceSession.web.ts");
+const modalPath = join(__dirname, "../../src/components/assistant/LiveVoiceCallModal.tsx");
 
 function readSource(path: string): string {
   return readFileSync(path, "utf8");
@@ -22,6 +23,7 @@ function explicitlyHandledTools(source: string): string[] {
 describe("Gemini Live voice contract", () => {
   const nativeSource = readSource(nativePath);
   const webSource = readSource(webPath);
+  const modalSource = readSource(modalPath);
 
   it("keeps native and web function declarations in sync", () => {
     expect(declaredTools(nativeSource)).toEqual(declaredTools(webSource));
@@ -74,6 +76,12 @@ describe("Gemini Live voice contract", () => {
     expect(nativeAliases).toContain("onion:");
     expect(nativeAliases).toContain("grape:");
     expect(nativeAliases).toContain("pomegranate:");
+  });
+
+  it("does not end Android voice startup when the microphone permission dialog backgrounds the app", () => {
+    expect(modalSource).toContain("!startInProgressRef.current && stateRef.current !== \"connecting\"");
+    expect(modalSource).toContain("if (AppState.currentState === \"background\" && sessionRef.current === session)");
+    expect(modalSource).toContain("Every opening starts with a clean UI state");
   });
 
   it("keeps verified farm context and persisted memory in both prompts", () => {
