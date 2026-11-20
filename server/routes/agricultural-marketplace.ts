@@ -238,6 +238,38 @@ router.patch("/inquiries/:id/status", requireAuth, requireVerifiedAuth, async (r
   res.json({success:true,data});
 });
 
+
+router.get("/inquiries/:id/messages", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const {data:inquiry,error:lookupError}=await db.from("marketplace_inquiries").select("id,buyer_id,seller_id")
+    .eq("id",req.params.id).or(`buyer_id.eq.${req.userId},seller_id.eq.${req.userId}`).maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"INQUIRY_LOOKUP_FAILED"});
+  if(!inquiry) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
+  const {data,error}=await db.from("marketplace_inquiry_messages")
+    .select("id,inquiry_id,sender_id,body,created_at,read_at").eq("inquiry_id",inquiry.id)
+    .order("created_at",{ascending:true}).limit(500);
+  if(error) return res.status(503).json({success:false,code:"MESSAGES_UNAVAILABLE"});
+  await db.from("marketplace_inquiry_messages").update({read_at:new Date().toISOString()})
+    .eq("inquiry_id",inquiry.id).neq("sender_id",req.userId).is("read_at",null);
+  res.json({success:true,data:data??[]});
+});
+
+router.post("/inquiries/:id/messages", requireAuth, requireVerifiedAuth, async (req,res) => {
+  const db=callerDb(req,res); if(!db) return;
+  const body=text(req.body?.body,4000);
+  if(body.length<1) return res.status(400).json({success:false,code:"MESSAGE_REQUIRED"});
+  const {data:inquiry,error:lookupError}=await db.from("marketplace_inquiries").select("id,buyer_id,seller_id,status")
+    .eq("id",req.params.id).or(`buyer_id.eq.${req.userId},seller_id.eq.${req.userId}`).maybeSingle();
+  if(lookupError) return res.status(503).json({success:false,code:"INQUIRY_LOOKUP_FAILED"});
+  if(!inquiry) return res.status(404).json({success:false,code:"INQUIRY_NOT_FOUND"});
+  if(["rejected","closed"].includes(inquiry.status)) return res.status(409).json({success:false,code:"INQUIRY_CLOSED"});
+  const {data,error}=await db.from("marketplace_inquiry_messages").insert({
+    inquiry_id:inquiry.id,sender_id:req.userId,body
+  }).select("id,inquiry_id,sender_id,body,created_at,read_at").single();
+  if(error) return res.status(503).json({success:false,code:"MESSAGE_SEND_FAILED"});
+  res.status(201).json({success:true,data});
+});
+
 router.get("/products", async (req,res) => {
   const db = publicDb(res); if (!db) return;
   try {
