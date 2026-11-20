@@ -10,7 +10,7 @@ import { ScreenHeading } from '../components/ui/ScreenHeading';
 import { colors, spacing, typography } from '../theme/colors';
 
 type QueueTab = 'reports' | 'verifications' | 'promotions';
-type QueueItem = { id: string; status?: string; created_at?: string; listing?: { title?: string; seller_id?: string }; [key: string]: any };
+type QueueItem = { id: string; status?: string; created_at?: string; listing?: { title?: string; seller_id?: string; status?: string }; [key: string]: any };
 
 const endpoint: Record<QueueTab, string> = {
   reports: '/api/agro-market/admin/moderation/reports',
