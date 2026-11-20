@@ -207,14 +207,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Supabase sign-in into a reported login failure.
         setSession(data.session);
         setUser(withPreference(mapUser(data.user)));
-        try {
-          const profile = await fetchProfile();
-          if (authUserIdRef.current === data.user.id) {
-            setUser(withPreference(mapUser(data.user, profile)));
-          }
-        } catch (profileError) {
-          console.warn('profile hydration failed after sign-in; continuing with authenticated session:', profileError);
-        }
+        // Do not wait for the profile API during login. The auth state listener
+        // hydrates the profile asynchronously after Supabase releases its lock.
+        // Awaiting this network request here can leave the login button spinning
+        // until the gateway timeout and make a valid sign-in look like a failure.
       }
       return { success: true };
     } catch (error: any) {
