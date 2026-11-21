@@ -3,7 +3,7 @@ import { geminiApiKey } from "../services/providers/gemini";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
 import { UNTRUSTED_DATA_GUARD, wrapUntrusted } from "../lib/promptSafety";
 
-// Gemini Live ephemeral auth tokens and constrained WebSocket sessions use v1beta.
+// Gemini Live ephemeral auth tokens are currently supported on v1alpha.
 // Keep token provisioning and the constrained WebSocket API versions aligned.
 const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "models/gemini-3.8-live";
 
@@ -177,15 +177,15 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
 
   try {
     const now = Date.now();
-    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/auth_tokens", {
+    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1alpha/auth_tokens", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // Current Gemini REST schema: v1beta AuthToken uses
-        // liveConnectConstraints (not the older v1alpha resource shape).
+        // Gemini ephemeral-token provisioning is supported on v1alpha.
+        // Use liveConnectConstraints to lock the Live session configuration.
         uses: 1,
         expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
         // Allow time for Android audio initialization and cold networks.
@@ -219,14 +219,14 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       return;
     }
 
-    console.info("[assistant-live] Gemini ephemeral token created", { model: GEMINI_LIVE_MODEL, apiVersion: "v1beta" });
+    console.info("[assistant-live] Gemini ephemeral token created", { model: GEMINI_LIVE_MODEL, apiVersion: "v1alpha" });
     const farmContext = await farmContextPromise;
 
     res.status(200).json({
       success: true,
       token: payload.name,
       model: GEMINI_LIVE_MODEL,
-      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained",
+      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained",
       // Caller-scoped context is loaded only from the verified JWT and is
       // already wrapped as untrusted data. The client adds it to the Live
       // system instruction; never return it for anonymous/unverified callers.
