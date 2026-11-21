@@ -74,10 +74,6 @@ export class LiveVoiceSession {
   private socket: WebSocket | null = null;
   private callbacks: VoiceCallbacks;
   private active = false;
-  private speechActive = false;
-  private silenceMs = 0;
-  private speechCandidateMs = 0;
-  private noiseFloorRms = 0.006;
   private userTranscriptBuffer = "";
   private assistantTranscriptBuffer = "";
   private socketReady = false;
@@ -1713,9 +1709,6 @@ export class LiveVoiceSession {
     this.stopped = true;
     this.active = false;
     this.socketReady = false;
-    this.speechActive = false;
-    this.silenceMs = 0;
-    this.speechCandidateMs = 0;
     this.lastReplyId += 1;
     this.recorder?.clearOnAudioReady();
     if (this.recorder?.isRecording()) await this.recorder.stop().catch(() => undefined);
