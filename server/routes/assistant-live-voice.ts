@@ -183,19 +183,16 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
+      // Gemini Developer API v1alpha expects the SDK-transformed REST shape:
+      // bidiGenerateContentSetup (not liveConnectConstraints or authToken).
       body: JSON.stringify({
-        // REST CreateAuthTokenRequest wraps the AuthToken resource in authToken.
-        authToken: {
-          uses: 1,
-          expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
-          // Allow time for Android audio initialization and cold networks.
-          newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
-          liveConnectConstraints: {
-            model: GEMINI_LIVE_MODEL,
-            config: {
-              responseModalities: ["AUDIO"],
-              sessionResumption: {},
-            },
+        uses: 1,
+        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+        newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
+        bidiGenerateContentSetup: {
+          model: GEMINI_LIVE_MODEL,
+          generationConfig: {
+            responseModalities: ["AUDIO"],
           },
         },
       }),
