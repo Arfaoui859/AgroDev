@@ -5,7 +5,7 @@ import { UNTRUSTED_DATA_GUARD, wrapUntrusted } from "../lib/promptSafety";
 
 // Gemini Live ephemeral auth tokens are currently supported on v1alpha.
 // Keep token provisioning and the constrained WebSocket API versions aligned.
-const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "models/gemini-3.8-live";
+const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "models/gemini-3.1-flash-live-preview";
 
 function liveSystemInstruction(farmContext: string | null): string {
   const basePrompt = [
