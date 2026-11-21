@@ -97,12 +97,17 @@ describe("Gemini Live voice contract", () => {
     }
   });
 
-  it("uses explicit Android speech boundaries so Gemini receives a reliable end-of-turn signal", () => {
-    expect(nativeSource).toContain("automaticActivityDetection: { disabled: true }");
-    expect(nativeSource).toContain("realtimeInput: { activityStart: {} }");
-    expect(nativeSource).toContain("realtimeInput: { activityEnd: {} }");
-    expect(nativeSource).toContain("this.callbacks.onState(\"thinking\")");
-    expect(nativeSource).toContain("END_SILENCE_MS = 900");
+  it("streams microphone audio continuously and delegates turn detection to Gemini Live on native and web", () => {
+    for (const source of [nativeSource, webSource]) {
+      expect(source).toContain('mimeType: "audio/pcm;rate=16000"');
+      expect(source).toContain("realtimeInput: {");
+      expect(source).toContain("this.callbacks.onState(\"thinking\")");
+      expect(source).not.toContain("automaticActivityDetection: { disabled: true }");
+      expect(source).not.toContain("activityStart: {}");
+      expect(source).not.toContain("activityEnd: {}");
+      expect(source).not.toContain("SPEECH_RMS_THRESHOLD");
+      expect(source).not.toContain("END_SILENCE_MS");
+    }
   });
 
   it("does not reset the user's saved conversation context when a new live session starts", () => {
