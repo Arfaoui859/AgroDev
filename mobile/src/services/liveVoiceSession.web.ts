@@ -84,10 +84,6 @@ export class LiveVoiceSession {
   private assistantTranscriptBuffer = "";
   private socketReady = false;
   private stopped = false;
-  private speechActive = false;
-  private silenceMs = 0;
-  private speechCandidateMs = 0;
-  private noiseFloorRms = 0.006;
   private lastReplyId = 0;
   private apiToken: string | null = null;
   private personalMemoryContext = "";
@@ -384,9 +380,7 @@ export class LiveVoiceSession {
       );
       this.socket = socket;
       this.socketReady = false;
-      this.speechActive = false;
-      this.silenceMs = 0;
-      let setupComplete = false;
+          let setupComplete = false;
       let settled = false;
       const timeout = window.setTimeout(() => {
         if (settled) return;
@@ -583,7 +577,7 @@ export class LiveVoiceSession {
         this.callbacks.onTranscript?.("assistant", this.assistantTranscriptBuffer);
         this.assistantTranscriptBuffer = "";
       }
-      if (!this.speechActive) this.callbacks.onState("listening");
+      this.callbacks.onState("listening");
     }
   }
 
@@ -1148,7 +1142,6 @@ export class LiveVoiceSession {
     this.stopped = true;
     this.active = false;
     this.socketReady = false;
-    this.speechActive = false;
     this.lastReplyId += 1;
     if (this.processor) {
       this.processor.onaudioprocess = null;
