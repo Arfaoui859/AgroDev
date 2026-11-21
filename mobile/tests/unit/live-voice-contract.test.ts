@@ -97,6 +97,14 @@ describe("Gemini Live voice contract", () => {
     }
   });
 
+  it("uses explicit Android speech boundaries so Gemini receives a reliable end-of-turn signal", () => {
+    expect(nativeSource).toContain("automaticActivityDetection: { disabled: true }");
+    expect(nativeSource).toContain("realtimeInput: { activityStart: {} }");
+    expect(nativeSource).toContain("realtimeInput: { activityEnd: {} }");
+    expect(nativeSource).toContain("this.callbacks.onState(\"thinking\")");
+    expect(nativeSource).toContain("END_SILENCE_MS = 900");
+  });
+
   it("does not reset the user's saved conversation context when a new live session starts", () => {
     expect(modalSource).toContain("conversationHistory,");
     expect(modalSource).toContain("onTranscript,");
