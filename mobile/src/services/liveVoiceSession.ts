@@ -16,6 +16,8 @@ type VoiceCallbacks = {
   onState: (state: LiveVoiceState) => void;
   onLevel?: (level: number) => void;
   onError?: (message: string) => void;
+  onTranscript?: (role: "user" | "assistant", text: string) => void;
+  conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
 };
 
 const INPUT_RATE = 16_000;
@@ -72,6 +74,8 @@ export class LiveVoiceSession {
   private socket: WebSocket | null = null;
   private callbacks: VoiceCallbacks;
   private active = false;
+  private userTranscriptBuffer = "";
+  private assistantTranscriptBuffer = "";
   private socketReady = false;
   private stopped = false;
   private queueStarted = false;
@@ -214,6 +218,10 @@ export class LiveVoiceSession {
         model: this.model,
         systemInstruction: {
           parts: [{ text: AGROVIBE_LIVE_SYSTEM_INSTRUCTION
+            + (this.callbacks.conversationHistory?.length
+              ? "\\n\\nسياق المحادثات السابقة للمستخدم للمتابعة عبر الأيام (تاريخ محادثة وليس بيانات حساب موثّقة):\\n"
+                + this.callbacks.conversationHistory.slice(-12).map((turn) => `${turn.role === "user" ? "المستخدم" : "المساعد"}: ${turn.content}`).join("\\n").slice(-6000)
+              : "")
             + (this.verifiedFarmContext ? "\n\nسياق فلاحي موثّق من حساب المستخدم الحالي، محمّل من الخادم بعد التحقق من هويته ومقيّد بمزارعه فقط. استعمله للإجابة عن أسئلة المزارع والحقول والزراعات ونتائج التربة، وميّز السجلات القديمة عن الظروف الحالية. هذه بيانات محفوظة وليست قياسات مباشرة. إذا تعددت المزارع أو الحقول اسأل أيّها يقصد. لا تستنتج قيماً ناقصة.\n" + this.verifiedFarmContext : "")
             + (this.personalMemoryContext ? "\n\nذاكرة المستخدم المحفوظة من حسابه (استعملها عند الحاجة، وهي ليست بيانات مباشرة). إذا صرّح المستخدم بمعلومة ثابتة أو تفضيل تواصل بوضوح، احفظها عبر remember_user_memory من غير تخمين. لا تحفظ بيانات حساسة أو مؤقتة. إذا طلب نسيان معلومة، استعمل forget_user_memory. لا تقل إنك حفظت أو نسيت إلا بعد نجاح الأداة:\n" + this.personalMemoryContext : "") }],
         },
@@ -487,6 +495,8 @@ export class LiveVoiceSession {
           responseModalities: ["AUDIO"],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
         },
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
         realtimeInputConfig: {
           automaticActivityDetection: { disabled: false, prefixPaddingMs: 80, silenceDurationMs: 400 },
           activityHandling: "START_OF_ACTIVITY_INTERRUPTS",
@@ -701,8 +711,16 @@ export class LiveVoiceSession {
     const serverContent = message.serverContent;
     if (!serverContent) return;
 
+    const inputText = typeof serverContent.inputTranscription?.text === "string"
+      ? serverContent.inputTranscription.text.trim() : "";
+    if (inputText) this.userTranscriptBuffer = this.mergeTranscript(this.userTranscriptBuffer, inputText);
+
+    const outputText = typeof serverContent.outputTranscription?.text === "string"
+      ? serverContent.outputTranscription.text.trim() : "";
+    if (outputText) this.assistantTranscriptBuffer = this.mergeTranscript(this.assistantTranscriptBuffer, outputText);
+
     if (serverContent.interrupted) {
-          this.interruptPlayback();
+      this.interruptPlayback();
       return;
     }
 
@@ -711,12 +729,26 @@ export class LiveVoiceSession {
       const audio = part.inlineData?.data;
       if (typeof audio === "string") this.enqueueAudio(audio);
     }
-    if (parts.some((part: any) => part.inlineData?.data)) {
-      this.callbacks.onState("speaking");
-    }
+    if (parts.some((part: any) => part.inlineData?.data)) this.callbacks.onState("speaking");
+
     if (serverContent.turnComplete) {
-            this.callbacks.onState("listening");
+      if (this.userTranscriptBuffer) {
+        this.callbacks.onTranscript?.("user", this.userTranscriptBuffer);
+        this.userTranscriptBuffer = "";
+      }
+      if (this.assistantTranscriptBuffer) {
+        this.callbacks.onTranscript?.("assistant", this.assistantTranscriptBuffer);
+        this.assistantTranscriptBuffer = "";
+      }
+      this.callbacks.onState("listening");
     }
+  }
+
+  private mergeTranscript(previous: string, incoming: string): string {
+    if (!previous) return incoming;
+    if (incoming.startsWith(previous)) return incoming;
+    if (previous.endsWith(incoming)) return previous;
+    return `${previous} ${incoming}`.trim();
   }
 
   private async handleToolCall(message: any): Promise<void> {
