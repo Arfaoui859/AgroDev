@@ -184,20 +184,21 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // Gemini ephemeral-token provisioning is supported on v1alpha.
-        // Use liveConnectConstraints to lock the Live session configuration.
-        uses: 1,
-        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
-        // Allow time for Android audio initialization and cold networks.
-        newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
-        liveConnectConstraints: {
-          model: GEMINI_LIVE_MODEL,
-          config: {
-            responseModalities: ["AUDIO"],
-            sessionResumption: {},
+        // REST CreateAuthTokenRequest wraps the AuthToken resource in authToken.
+        authToken: {
+          uses: 1,
+          expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+          // Allow time for Android audio initialization and cold networks.
+          newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
+          liveConnectConstraints: {
+            model: GEMINI_LIVE_MODEL,
+            config: {
+              responseModalities: ["AUDIO"],
+              sessionResumption: {},
+            },
           },
         },
-      }),
+      })
       signal: AbortSignal.timeout(15000),
     });
 
