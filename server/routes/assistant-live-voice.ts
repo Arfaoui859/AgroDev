@@ -3,8 +3,8 @@ import { geminiApiKey } from "../services/providers/gemini";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
 import { UNTRUSTED_DATA_GUARD, wrapUntrusted } from "../lib/promptSafety";
 
-// Gemini Live ephemeral auth tokens and constrained WebSocket sessions use v1alpha.
-// Normalize an optional Render value so token constraints and client setup match.
+// Gemini Live ephemeral auth tokens and constrained WebSocket sessions use v1beta.
+// Keep token provisioning and the constrained WebSocket API versions aligned.
 const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "models/gemini-3.8-live";
 
 function liveSystemInstruction(farmContext: string | null): string {
@@ -142,9 +142,11 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
   res.setHeader("Pragma", "no-cache");
 
+  console.info("[assistant-live] Token route reached");
   const apiKey = geminiApiKey();
 
   if (!apiKey) {
+    console.error("[assistant-live] Gemini API key is not configured");
     res.status(503).json({
       success: false,
       code: "GEMINI_LIVE_NOT_CONFIGURED",
@@ -175,26 +177,25 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
 
   try {
     const now = Date.now();
-    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1alpha/auth_tokens", {
+    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/auth_tokens", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // The auth_tokens REST endpoint accepts an AuthToken resource directly.
-        // Do not wrap this body in "authToken": that wrapper belongs to a
-        // different CreateAuthTokenRequest surface and is rejected here.
+        // Current Gemini REST schema: v1beta AuthToken uses
+        // liveConnectConstraints (not the older v1alpha resource shape).
         uses: 1,
         expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
         // Allow time for Android audio initialization and cold networks.
         newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
-        bidiGenerateContentSetup: {
+        liveConnectConstraints: {
           model: GEMINI_LIVE_MODEL,
-          generationConfig: {
+          config: {
             responseModalities: ["AUDIO"],
+            sessionResumption: {},
           },
-          sessionResumption: {},
         },
       }),
       signal: AbortSignal.timeout(15000),
@@ -218,13 +219,14 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       return;
     }
 
+    console.info("[assistant-live] Gemini ephemeral token created", { model: GEMINI_LIVE_MODEL, apiVersion: "v1beta" });
     const farmContext = await farmContextPromise;
 
     res.status(200).json({
       success: true,
       token: payload.name,
       model: GEMINI_LIVE_MODEL,
-      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained",
+      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained",
       // Caller-scoped context is loaded only from the verified JWT and is
       // already wrapped as untrusted data. The client adds it to the Live
       // system instruction; never return it for anonymous/unverified callers.
