@@ -182,11 +182,20 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // Keep token creation compatible with the previously working REST contract.
-        // Live model/configuration are negotiated by the WebSocket client at connect time.
-        uses: 5,
+        // Bind the ephemeral token to the exact Live model and audio modality
+        // used by the mobile WebSocket setup. Constrained tokens must carry
+        // liveConnectConstraints or the client setup can be rejected by Gemini.
+        uses: 1,
         expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
-        newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
+        // Allow a little extra time for Android audio initialization and cold networks.
+        newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
+        liveConnectConstraints: {
+          model: GEMINI_LIVE_MODEL,
+          config: {
+            responseModalities: ["AUDIO"],
+            sessionResumption: {},
+          },
+        },
       }),
       signal: AbortSignal.timeout(15000),
     });
