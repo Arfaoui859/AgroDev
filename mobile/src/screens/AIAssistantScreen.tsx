@@ -203,6 +203,22 @@ export const AIAssistantScreen: React.FC = () => {
         <LiveVoiceCallModal
           visible={true}
           language={language}
+          conversationHistory={messages.slice(-12).map((message) => ({
+            role: message.sender,
+            content: message.text,
+          }))}
+          onTranscript={(role, text) => {
+            const transcriptMessage: ChatMessage = {
+              id: nextMessageId(),
+              sender: role,
+              text,
+              timestamp: formatTime(new Date(), language),
+            };
+            setMessages((previous) => [...previous, transcriptMessage]);
+            setTimeout(() => {
+              scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+          }}
           onClose={() => setLiveVoiceVisible(false)}
         />
       ) : null}
