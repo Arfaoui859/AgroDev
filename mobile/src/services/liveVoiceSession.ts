@@ -162,6 +162,9 @@ export class LiveVoiceSession {
 
     const tokenResult = await apiRequest<LiveTokenResponse>("/api/ai/assistant/live-token", {
       method: "POST",
+      // Render free instances can need ~50s to wake after idle. Allow that
+      // cold start plus the server's bounded Gemini token request to complete.
+      timeoutMs: 90_000,
       body: JSON.stringify({}),
     });
     this.apiToken = tokenResult.data?.token ?? null;
