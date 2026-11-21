@@ -5,7 +5,7 @@ import { UNTRUSTED_DATA_GUARD, wrapUntrusted } from "../lib/promptSafety";
 
 // Gemini Live ephemeral auth tokens and constrained WebSocket sessions use v1alpha.
 // Normalize an optional Render value so token constraints and client setup match.
-const GEMINI_LIVE_MODEL = (process.env.GEMINI_LIVE_MODEL || "gemini-3.8-live").replace(/^models\//, "");
+const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "models/gemini-3.8-live";
 
 function liveSystemInstruction(farmContext: string | null): string {
   const basePrompt = [
@@ -182,18 +182,11 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // Authorize the exact model and Live capabilities used by the client.
-        // Session resumption must be enabled when the ephemeral token is minted.
+        // Keep token creation compatible with the previously working REST contract.
+        // Live model/configuration are negotiated by the WebSocket client at connect time.
         uses: 5,
         expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
         newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
-        liveConnectConstraints: {
-          model: `models/${GEMINI_LIVE_MODEL}`,
-          config: {
-            responseModalities: ["AUDIO"],
-            sessionResumption: {},
-          },
-        },
       }),
       signal: AbortSignal.timeout(15000),
     });
