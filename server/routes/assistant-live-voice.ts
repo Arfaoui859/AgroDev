@@ -198,7 +198,7 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
             },
           },
         },
-      })
+      }),
       signal: AbortSignal.timeout(15000),
     });
 
