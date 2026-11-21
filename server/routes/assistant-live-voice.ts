@@ -175,7 +175,7 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
 
   try {
     const now = Date.now();
-    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/auth_tokens", {
+    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1alpha/auth_tokens", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -224,7 +224,7 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       success: true,
       token: payload.name,
       model: GEMINI_LIVE_MODEL,
-      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained",
+      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained",
       // Caller-scoped context is loaded only from the verified JWT and is
       // already wrapped as untrusted data. The client adds it to the Live
       // system instruction; never return it for anonymous/unverified callers.
