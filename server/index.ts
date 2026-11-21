@@ -756,6 +756,13 @@ export function createServer() {
   // Secure one-use token for direct, bidirectional voice sessions.
   app.post(
     "/api/ai/assistant/live-token",
+    (req, _res, next) => {
+      // Log only request presence, never the Authorization header or token.
+      console.info("[assistant-live] Token endpoint request received", {
+        authorizationPresent: Boolean(req.header("authorization")),
+      });
+      next();
+    },
     requireAuth,
     requireVerifiedAuth,
     createAssistantLiveToken,
