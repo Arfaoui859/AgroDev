@@ -3,7 +3,9 @@ import { geminiApiKey } from "../services/providers/gemini";
 import { scopedClientFromAuthHeader } from "../lib/supabase";
 import { UNTRUSTED_DATA_GUARD, wrapUntrusted } from "../lib/promptSafety";
 
-const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "models/gemini-3.8-live";
+// Gemini Live ephemeral auth tokens and constrained WebSocket sessions use v1alpha.
+// Normalize an optional Render value so token constraints and client setup match.
+const GEMINI_LIVE_MODEL = (process.env.GEMINI_LIVE_MODEL || "gemini-3.8-live").replace(/^models\//, "");
 
 function liveSystemInstruction(farmContext: string | null): string {
   const basePrompt = [
@@ -173,20 +175,25 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
 
   try {
     const now = Date.now();
-    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/auth_tokens", {
+    const tokenResponse = await fetch("https://generativelanguage.googleapis.com/v1alpha/auth_tokens", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // Gemini REST CreateAuthTokenRequest accepts AuthToken fields directly
-        // at the request root. Do not wrap them in "authToken".
-        // Keep token creation un-constrained for compatibility with the
-        // currently exposed v1alpha REST schema; Live config is sent at connect.
+        // Authorize the exact model and Live capabilities used by the client.
+        // Session resumption must be enabled when the ephemeral token is minted.
         uses: 5,
         expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
         newSessionExpireTime: new Date(now + 60 * 1000).toISOString(),
+        liveConnectConstraints: {
+          model: GEMINI_LIVE_MODEL,
+          config: {
+            responseModalities: ["AUDIO"],
+            sessionResumption: {},
+          },
+        },
       }),
       signal: AbortSignal.timeout(15000),
     });
@@ -215,7 +222,7 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       success: true,
       token: payload.name,
       model: GEMINI_LIVE_MODEL,
-      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained",
+      websocketUrl: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained",
       // Caller-scoped context is loaded only from the verified JWT and is
       // already wrapped as untrusted data. The client adds it to the Live
       // system instruction; never return it for anonymous/unverified callers.
