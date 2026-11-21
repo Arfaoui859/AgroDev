@@ -17,6 +17,8 @@ import { LiveVoiceSession, LiveVoiceState } from "../../services/liveVoiceSessio
 type Props = {
   visible: boolean;
   language: string;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  onTranscript: (role: "user" | "assistant", text: string) => void;
   onClose: () => void;
 };
 
@@ -35,7 +37,7 @@ const copy = (language: string) => {
       ended: "Conversation terminée",
       error: "La connexion a échoué",
       retry: "Réessayer",
-      privacy: "Votre audio et les données agricoles pertinentes sont traités par Google Gemini. Aucune transcription n'est affichée.",
+      privacy: "Votre parole et les réponses vocales sont transcrites dans votre conversation pour retrouver son historique.",
       close: "Fermer",
       background: "L’appel a été arrêté lorsque l’application est passée en arrière-plan.",
     };
@@ -54,7 +56,7 @@ const copy = (language: string) => {
       ended: "Conversation ended",
       error: "Connection failed",
       retry: "Try again",
-      privacy: "Your voice and relevant farm records are processed by Google Gemini to generate replies. No speech transcript is displayed.",
+      privacy: "Your spoken messages and the assistant's spoken replies are transcribed into your conversation history.",
       close: "Close",
       background: "The call ended when the app went into the background.",
     };
@@ -72,13 +74,13 @@ const copy = (language: string) => {
     ended: "وفات المحادثة",
     error: "تعذّر الاتصال",
     retry: "عاود حاول",
-    privacy: "صوتك والبيانات الفلاحية المرتبطة بحسابك تتعالج عبر Gemini. ما نعرضوش تفريغ كلامك كنص.",
+    privacy: "كلامك وإجابات المساعد الصوتية يتسجّلوا في Conversation باش تنجم ترجع لهم وقت تحب.",
     close: "إغلاق",
     background: "وفّينا المكالمة كي خرج التطبيق للخلفية.",
   };
 };
 
-export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose }) => {
+export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, conversationHistory, onTranscript, onClose }) => {
   const [state, setState] = useState<LiveVoiceState | "ready">("ready");
   const [level, setLevel] = useState(0);
   const [error, setError] = useState("");
@@ -137,6 +139,8 @@ export const LiveVoiceCallModal: React.FC<Props> = ({ visible, language, onClose
     // Keep the modal ready while Android displays its one-time permission
     // dialog. The session switches to "connecting" only after permission is granted.
     const session = new LiveVoiceSession({
+      conversationHistory,
+      onTranscript,
       onState: (nextState) => {
         stateRef.current = nextState;
         setState(nextState);
