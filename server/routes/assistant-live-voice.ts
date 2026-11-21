@@ -182,21 +182,19 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        // REST CreateAuthTokenRequest wraps the token resource in authToken.
-        // The REST AuthToken schema uses bidiGenerateContentSetup (the SDK's
-        // liveConnectConstraints option is translated to this field by the SDK).
-        authToken: {
-          uses: 1,
-          expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
-          // Allow time for Android audio initialization and cold networks.
-          newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
-          bidiGenerateContentSetup: {
-            model: GEMINI_LIVE_MODEL,
-            generationConfig: {
-              responseModalities: ["AUDIO"],
-            },
-            sessionResumption: {},
+        // The auth_tokens REST endpoint accepts an AuthToken resource directly.
+        // Do not wrap this body in "authToken": that wrapper belongs to a
+        // different CreateAuthTokenRequest surface and is rejected here.
+        uses: 1,
+        expireTime: new Date(now + 30 * 60 * 1000).toISOString(),
+        // Allow time for Android audio initialization and cold networks.
+        newSessionExpireTime: new Date(now + 5 * 60 * 1000).toISOString(),
+        bidiGenerateContentSetup: {
+          model: GEMINI_LIVE_MODEL,
+          generationConfig: {
+            responseModalities: ["AUDIO"],
           },
+          sessionResumption: {},
         },
       }),
       signal: AbortSignal.timeout(15000),
