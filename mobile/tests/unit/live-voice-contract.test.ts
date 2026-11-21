@@ -84,6 +84,24 @@ describe("Gemini Live voice contract", () => {
     expect(modalSource).toContain("Every opening starts with a clean UI state");
   });
 
+  it("requests and captures user and assistant speech transcription while keeping audio-only replies", () => {
+    for (const source of [nativeSource, webSource]) {
+      expect(source).toContain("responseModalities: [\"AUDIO\"]");
+      expect(source).toContain("inputAudioTranscription: {}");
+      expect(source).toContain("outputAudioTranscription: {}");
+      expect(source).toContain("serverContent.inputTranscription?.text");
+      expect(source).toContain("serverContent.outputTranscription?.text");
+      expect(source).toContain("onTranscript?.(\"user\"");
+      expect(source).toContain("onTranscript?.(\"assistant\"");
+      expect(source).toContain("conversationHistory");
+    }
+  });
+
+  it("does not reset the user's saved conversation context when a new live session starts", () => {
+    expect(modalSource).toContain("conversationHistory,");
+    expect(modalSource).toContain("onTranscript,");
+  });
+
   it("keeps verified farm context and persisted memory in both prompts", () => {
     for (const source of [nativeSource, webSource]) {
       expect(source).toContain("verifiedFarmContext");
