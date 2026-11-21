@@ -151,12 +151,25 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
     return;
   }
 
-  let farmContext: string | null = null;
-  try {
-    farmContext = await loadVerifiedFarmContext(_req);
-  } catch (error) {
-    console.error("[assistant-live] Farm context unavailable:", error instanceof Error ? error.message : "Unknown error");
-  }
+  // Farm context is optional for starting a voice call. Load it alongside
+  // token creation and cap its contribution to startup latency: slow Supabase
+  // queries must never leave the client waiting before Gemini is contacted.
+  const farmContextPromise = (async (): Promise<string | null> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        loadVerifiedFarmContext(_req),
+        new Promise<null>((resolve) => {
+          timeoutId = setTimeout(() => resolve(null), 3000);
+        }),
+      ]);
+    } catch (error) {
+      console.error("[assistant-live] Farm context unavailable:", error instanceof Error ? error.message : "Unknown error");
+      return null;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  })();
 
   try {
     const now = Date.now();
@@ -195,6 +208,8 @@ export async function createAssistantLiveToken(_req: Request, res: Response): Pr
       });
       return;
     }
+
+    const farmContext = await farmContextPromise;
 
     res.status(200).json({
       success: true,
